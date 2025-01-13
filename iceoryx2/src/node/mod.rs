@@ -152,7 +152,9 @@ use crate::service::config_scheme::{
 };
 use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
-use crate::service::{self, remove_service_tag};
+use crate::service::{
+    self, remove_service_tag, remove_static_service_config, ServiceRemoveNodeError,
+};
 use crate::signal_handling_mode::SignalHandlingMode;
 use crate::{config::Config, service::config_scheme::node_details_config};
 use iceoryx2_bb_container::semantic_string::SemanticString;
@@ -267,6 +269,8 @@ pub enum NodeCleanupFailure {
     InternalError,
     /// The stale resources of a dead [`Node`] could not be removed since the process does not have sufficient permissions.
     InsufficientPermissions,
+    /// Trying to cleanup resources from a dead node which was using a different iceoryx2 version.
+    VersionMismatch,
 }
 
 impl std::fmt::Display for NodeCleanupFailure {
@@ -519,12 +523,49 @@ impl<Service: service::Service> DeadNodeView<Service> {
         }
         let cleaner = cleaner.unwrap();
 
+        let mut cleanup_failure = Ok(false);
         let remove_node_from_service = |service_id: &ServiceId| {
-            if Service::__internal_remove_node_from_service(self.id(), service_id, config).is_ok() {
-                if let Err(e) = remove_service_tag::<Service>(self.id(), service_id, config) {
-                    debug!(from self,
-                                    "The service tag coult not be removed from the dead node ({:?}).",
+            match Service::__internal_remove_node_from_service(self.id(), service_id, config) {
+                Ok(()) => {
+                    if let Err(e) = remove_service_tag::<Service>(self.id(), service_id, config) {
+                        debug!(from self,
+                                    "The service tag could not be removed from the dead node ({:?}).",
                                     e);
+                    }
+                }
+                Err(ServiceRemoveNodeError::VersionMismatch) => {
+                    cleanup_failure = Err(NodeCleanupFailure::VersionMismatch);
+                    debug!(from self,
+                        "{msg} since the dead node was using a different iceoryx2 version.");
+                }
+                Err(ServiceRemoveNodeError::ServiceInCorruptedState) => {
+                    debug!(from self,
+                        "{msg} since the service itself is corrupted. Trying to remove the corrupted remainders of the service.");
+                    match unsafe {
+                        remove_static_service_config::<Service>(config, &service_id.0.into())
+                    } {
+                        Ok(true) => {
+                            debug!(from self, "Successfully removed corrupted static service config.");
+                        }
+                        Ok(false) => {
+                            debug!(from self, "Corrupted static service config no longer exists, another instance might have cleaned it up.");
+                        }
+                        Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                            cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);
+                            debug!(from self,
+                                "{msg} since the corrupted service remainders to could not be removed due to insufficient permissions.");
+                        }
+                        Err(e) => {
+                            cleanup_failure = Err(NodeCleanupFailure::InternalError);
+                            debug!(from self,
+                                "{msg} since the corrupted service remainders to could not be removed due to an internal error ({:?}).", e);
+                        }
+                    }
+                }
+                Err(e) => {
+                    cleanup_failure = Err(NodeCleanupFailure::InternalError);
+                    debug!(from self,
+                        "{msg} due to an internal error while removing the node from the service ({:?}).", e);
                 }
             }
             CallbackProgression::Continue
@@ -539,6 +580,8 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     "{} since the service tags could not be read ({:?}).", msg, e);
             }
         };
+
+        cleanup_failure?;
 
         match remove_node::<Service>(*self.id(), config) {
             Ok(_) => {

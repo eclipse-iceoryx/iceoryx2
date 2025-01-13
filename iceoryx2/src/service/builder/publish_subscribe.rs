@@ -638,6 +638,12 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                             fail!(from self, with PublishSubscribeOpenError::ExceedsMaxNumberOfNodes,
                                 "{} since it would exceed the maximum number of supported nodes.", msg);
                         }
+                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
+                            DynamicStorageOpenError::DoesNotExist,
+                        )) => {
+                            fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
+                                "{} since the dynamic segment of the service is missing.", msg);
+                        }
                         Err(e) => {
                             if self.is_service_available(msg)?.is_none() {
                                 fail!(from self, with PublishSubscribeOpenError::DoesNotExist,
