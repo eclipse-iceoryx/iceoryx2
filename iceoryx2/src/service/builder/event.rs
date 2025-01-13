@@ -394,6 +394,12 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                             fail!(from self, with EventOpenError::ExceedsMaxNumberOfNodes,
                                 "{} since it would exceed the maximum number of supported nodes.", msg);
                         }
+                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
+                            DynamicStorageOpenError::DoesNotExist,
+                        )) => {
+                            fail!(from self, with EventOpenError::ServiceInCorruptedState,
+                                "{} since the dynamic segment of the service is missing.", msg);
+                        }
                         Err(e) => {
                             if self.base.is_service_available(msg)?.is_none() {
                                 fail!(from self, with EventOpenError::DoesNotExist,

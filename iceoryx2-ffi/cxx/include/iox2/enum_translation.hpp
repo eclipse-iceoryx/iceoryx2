@@ -1519,6 +1519,8 @@ constexpr auto from<int, iox2::NodeCleanupFailure>(const int value) noexcept -> 
         return iox2::NodeCleanupFailure::InternalError;
     case iox2_node_cleanup_failure_e_INSUFFICIENT_PERMISSIONS:
         return iox2::NodeCleanupFailure::InsufficientPermissions;
+    case iox2_node_cleanup_failure_e_VERSION_MISMATCH:
+        return iox2::NodeCleanupFailure::VersionMismatch;
     }
 
     IOX_UNREACHABLE();

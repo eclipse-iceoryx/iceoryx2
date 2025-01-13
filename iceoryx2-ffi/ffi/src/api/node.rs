@@ -90,6 +90,8 @@ pub enum iox2_node_cleanup_failure_e {
     INTERNAL_ERROR,
     /// The stale resources of a dead node could not be removed since the process does not have sufficient permissions.
     INSUFFICIENT_PERMISSIONS,
+    /// Trying to cleanup resources from a dead node which was using a different iceoryx2 version.
+    VERSION_MISMATCH,
 }
 
 impl IntoCInt for NodeCleanupFailure {
@@ -100,6 +102,7 @@ impl IntoCInt for NodeCleanupFailure {
             NodeCleanupFailure::InsufficientPermissions => {
                 iox2_node_cleanup_failure_e::INSUFFICIENT_PERMISSIONS
             }
+            NodeCleanupFailure::VersionMismatch => iox2_node_cleanup_failure_e::VERSION_MISMATCH,
         }) as c_int
     }
 }

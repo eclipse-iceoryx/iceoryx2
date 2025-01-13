@@ -206,6 +206,7 @@ use self::service_name::ServiceName;
 pub(crate) enum ServiceRemoveNodeError {
     VersionMismatch,
     InternalError,
+    ServiceInCorruptedState,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -335,7 +336,6 @@ impl<S: Service> Drop for ServiceState<S> {
 
 pub(crate) mod internal {
     use builder::event::EventOpenError;
-    use config_scheme::static_config_storage_config;
     use dynamic_config::{PortCleanupAction, RemoveDeadNodeResult};
     use port_factory::PortFactory;
 
@@ -445,7 +445,11 @@ pub(crate) mod internal {
 
             let dynamic_config = match open_dynamic_config::<S>(config, service_id) {
                 Ok(Some(c)) => c,
-                Ok(None) => return Ok(()),
+                Ok(None) => {
+                    fail!(from origin,
+                          with ServiceRemoveNodeError::ServiceInCorruptedState,
+                          "{} since the dynamic service segment is missing - service seems to be in a corrupted state.", msg);
+                }
                 Err(ServiceDetailsError::VersionMismatch) => {
                     fail!(from origin, with ServiceRemoveNodeError::VersionMismatch,
                         "{} since the service version does not match.", msg);
@@ -509,12 +513,7 @@ pub(crate) mod internal {
             };
 
             if remove_service {
-                match unsafe {
-                    <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
-                        &service_id.0.into(),
-                        &static_config_storage_config::<S>(config),
-                    )
-                } {
+                match unsafe { remove_static_service_config::<S>(config, &service_id.0.into()) } {
                     Ok(_) => {
                         debug!(from origin, "Remove unused service.");
                         dynamic_config.acquire_ownership()
@@ -667,6 +666,22 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
         }
 
         Ok(())
+    }
+}
+
+pub(crate) unsafe fn remove_static_service_config<S: Service>(
+    config: &config::Config,
+    uuid: &FileName,
+) -> Result<bool, NamedConceptRemoveError> {
+    let msg = "Unable to remove static service config";
+    let origin = "Service::remove_static_service_config()";
+    let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
+
+    match <S::StaticStorage as NamedConceptMgmt>::remove_cfg(uuid, &static_storage_config) {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            fail!(from origin, with e, "{msg} due to ({:?}).", e);
+        }
     }
 }
 

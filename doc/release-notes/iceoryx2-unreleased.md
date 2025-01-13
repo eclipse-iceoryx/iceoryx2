@@ -25,6 +25,8 @@
     conflicts when merging.
 -->
 
+* Corrupted services are removed when they are part of a dead node
+    [#458](https://github.com/eclipse-iceoryx/iceoryx2/issues/458)
 * Completion queue capacity exceeded when history > buffer
     [#571](https://github.com/eclipse-iceoryx/iceoryx2/issues/571)
 * Increase max supported shared memory size in Windows that restricts
