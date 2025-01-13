@@ -5,6 +5,7 @@
 1. Write release announcement blog article
 2. Write LinkedIn post
 3. Write reddit/hacker news post
+4. Update the `ROADMAP.md` document
 
 ### Article Templates
 
