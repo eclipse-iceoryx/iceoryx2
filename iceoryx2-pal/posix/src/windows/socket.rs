@@ -156,7 +156,15 @@ pub unsafe fn setsockopt(
     option_len: socklen_t,
 ) -> int {
     let socket_handle = match HandleTranslator::get_instance().get(socket) {
-        Some(FdHandleEntry::Socket(s)) => s.fd,
+        Some(FdHandleEntry::Socket(mut s)) => {
+            if option_name == SO_RCVTIMEO {
+                fcntl_int(socket, F_SETFL, O_NONBLOCK);
+                s.recv_timeout = Some(*(option_value as *const timeval));
+                HandleTranslator::get_instance().update(FdHandleEntry::Socket(s));
+                return 0;
+            }
+            s.fd
+        }
         Some(FdHandleEntry::UdsDatagramSocket(mut s)) => {
             level = SOL_SOCKET;
             if option_name == SO_SNDTIMEO {
@@ -231,7 +239,10 @@ pub unsafe fn accept(socket: int, address: *mut sockaddr, address_len: *mut sock
         return -1;
     }
 
-    HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle { fd: socket }))
+    HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle {
+        fd: socket,
+        recv_timeout: None,
+    }))
 }
 
 pub unsafe fn listen(socket: int, backlog: int) -> int {
@@ -358,7 +369,10 @@ pub unsafe fn socket(domain: int, socket_type: int, protocol: int) -> int {
             return -1;
         }
 
-        HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle { fd: socket }))
+        HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle {
+            fd: socket,
+            recv_timeout: None,
+        }))
     }
 }
 
@@ -511,11 +525,44 @@ pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int
 pub unsafe fn recv(socket: int, buffer: *mut void, length: size_t, flags: int) -> ssize_t {
     match HandleTranslator::get_instance().get_socket(socket) {
         Some(s) => {
-            let (bytes_received, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags) };
-            if bytes_received == SOCKET_ERROR {
-                return -1;
+            if let Some(mut timeout) = s.recv_timeout {
+                let mut remaining_time = Duration::from_secs(timeout.tv_sec as _)
+                    + Duration::from_micros(timeout.tv_usec as _);
+                let now = Instant::now();
+
+                loop {
+                    let mut read_set = fd_set::new();
+                    read_set.fd_count = 1;
+                    read_set.fd_array[0] = s.fd;
+
+                    let (number_of_triggered_fds, _) = win32call! {select((s.fd + 1) as _, &mut read_set, core::ptr::null_mut::<fd_set>(), core::ptr::null_mut::<fd_set>(), &mut timeout)};
+
+                    if number_of_triggered_fds == SOCKET_ERROR {
+                        Errno::set(Errno::EINVAL);
+                        return -1;
+                    }
+
+                    let elapsed_time = now.elapsed();
+                    if remaining_time < elapsed_time {
+                        return 0;
+                    }
+
+                    if 0 < number_of_triggered_fds {
+                        let (received_bytes, _) = win32call! { winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK};
+                        if 0 < received_bytes {
+                            return received_bytes as _;
+                        }
+                    }
+
+                    remaining_time -= elapsed_time;
+                }
+            } else {
+                let (bytes_received, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags) };
+                if bytes_received == SOCKET_ERROR {
+                    return -1;
+                }
+                bytes_received as _
             }
-            bytes_received as _
         }
         None => {
             Errno::set(Errno::EBADF);
