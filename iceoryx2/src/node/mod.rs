@@ -544,11 +544,20 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     match unsafe {
                         remove_static_service_config::<Service>(config, &service_id.0.into())
                     } {
-                        Ok(true) => {
-                            debug!(from self, "Successfully removed corrupted static service config.");
-                        }
-                        Ok(false) => {
-                            debug!(from self, "Corrupted static service config no longer exists, another instance might have cleaned it up.");
+                        Ok(v) => {
+                            if let Err(e) =
+                                remove_service_tag::<Service>(self.id(), service_id, config)
+                            {
+                                debug!(from self,
+                                    "The service tag could not be removed from the dead node ({:?}).",
+                                    e);
+                            }
+
+                            if v {
+                                debug!(from self, "Successfully removed corrupted static service config.");
+                            } else {
+                                debug!(from self, "Corrupted static service config no longer exists, another instance might have cleaned it up.");
+                            }
                         }
                         Err(NamedConceptRemoveError::InsufficientPermissions) => {
                             cleanup_failure = Err(NodeCleanupFailure::InsufficientPermissions);
