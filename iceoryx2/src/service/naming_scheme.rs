@@ -18,10 +18,9 @@ use iceoryx2_bb_system_types::file_name::FileName;
 pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
     let msg = "The system does not support the required file name length for the listeners event concept name.";
     let origin = "event_concept_name()";
-    let mut file = fatal_panic!(from origin, when FileName::new(listener_id.0.pid().to_string().as_bytes()), "{}", msg);
-    fatal_panic!(from origin, when file.push(b'_'), "{}", msg);
-    fatal_panic!(from origin, when file.push_bytes(listener_id.0.value().to_string().as_bytes()), "{}", msg);
-    file
+    fatal_panic!(from origin,
+                 when FileName::new(listener_id.0.value().to_string().as_bytes()),
+                 "{}", msg)
 }
 
 pub(crate) fn connection_name(
@@ -55,8 +54,7 @@ pub(crate) fn data_segment_name(publisher_id: &UniquePublisherId) -> FileName {
     let msg = "The system does not support the required file name length for the publishers data segment.";
     let origin = "data_segment_name()";
 
-    let mut file = fatal_panic!(from origin, when FileName::new(publisher_id.0.pid().to_string().as_bytes()), "{}", msg);
-    fatal_panic!(from origin, when file.push(b'_'), "{}", msg);
-    fatal_panic!(from origin, when file.push_bytes(publisher_id.0.value().to_string().as_bytes()), "{}", msg);
-    file
+    fatal_panic!(from origin,
+                 when FileName::new(publisher_id.0.value().to_string().as_bytes()),
+                 "{}", msg)
 }
