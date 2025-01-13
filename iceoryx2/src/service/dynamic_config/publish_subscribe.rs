@@ -48,23 +48,25 @@ pub(crate) struct DynamicConfigSettings {
     pub number_of_publishers: usize,
 }
 
+#[doc(hidden)]
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct PublisherDetails {
-    pub(crate) publisher_id: UniquePublisherId,
-    pub(crate) node_id: NodeId,
-    pub(crate) number_of_samples: usize,
-    pub(crate) max_slice_len: usize,
-    pub(crate) data_segment_type: DataSegmentType,
-    pub(crate) max_number_of_segments: u8,
+pub struct PublisherDetails {
+    pub publisher_id: UniquePublisherId,
+    pub node_id: NodeId,
+    pub number_of_samples: usize,
+    pub max_slice_len: usize,
+    pub data_segment_type: DataSegmentType,
+    pub max_number_of_segments: u8,
 }
 
+#[doc(hidden)]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub(crate) struct SubscriberDetails {
-    pub(crate) subscriber_id: UniqueSubscriberId,
-    pub(crate) node_id: NodeId,
-    pub(crate) buffer_size: usize,
+pub struct SubscriberDetails {
+    pub subscriber_id: UniqueSubscriberId,
+    pub node_id: NodeId,
+    pub buffer_size: usize,
 }
 
 /// The dynamic configuration of an [`crate::service::messaging_pattern::MessagingPattern::Event`]
@@ -143,21 +145,21 @@ impl DynamicConfig {
     }
 
     #[doc(hidden)]
-    pub fn __internal_subscriber_owners<F: FnMut(&NodeId)>(&self, mut callback: F) {
+    pub fn __internal_list_subscribers<F: FnMut(&SubscriberDetails)>(&self, mut callback: F) {
         let state = unsafe { self.subscribers.get_state() };
 
         state.for_each(|_, details| {
-            callback(&details.node_id);
+            callback(details);
             CallbackProgression::Continue
         });
     }
 
     #[doc(hidden)]
-    pub fn __internal_publisher_owners<F: FnMut(&NodeId)>(&self, mut callback: F) {
+    pub fn __internal_list_publishers<F: FnMut(&PublisherDetails)>(&self, mut callback: F) {
         let state = unsafe { self.publishers.get_state() };
 
         state.for_each(|_, details| {
-            callback(&details.node_id);
+            callback(details);
             CallbackProgression::Continue
         });
     }

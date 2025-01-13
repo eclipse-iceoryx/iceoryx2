@@ -56,18 +56,20 @@ pub struct DynamicConfig {
     pub(crate) elapsed_time_since_last_notification: IoxAtomicU64,
 }
 
+#[doc(hidden)]
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct ListenerDetails {
-    pub(crate) listener_id: UniqueListenerId,
-    pub(crate) node_id: NodeId,
+pub struct ListenerDetails {
+    pub listener_id: UniqueListenerId,
+    pub node_id: NodeId,
 }
 
+#[doc(hidden)]
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct NotifierDetails {
-    pub(crate) notifier_id: UniqueNotifierId,
-    pub(crate) node_id: NodeId,
+pub struct NotifierDetails {
+    pub notifier_id: UniqueNotifierId,
+    pub node_id: NodeId,
 }
 
 impl DynamicConfig {
@@ -104,21 +106,21 @@ impl DynamicConfig {
     }
 
     #[doc(hidden)]
-    pub fn __internal_listener_owners<F: FnMut(&NodeId)>(&self, mut callback: F) {
+    pub fn __internal_list_listeners<F: FnMut(&ListenerDetails)>(&self, mut callback: F) {
         let state = unsafe { self.listeners.get_state() };
 
         state.for_each(|_, details| {
-            callback(&details.node_id);
+            callback(details);
             CallbackProgression::Continue
         });
     }
 
     #[doc(hidden)]
-    pub fn __internal_notifier_owners<F: FnMut(&NodeId)>(&self, mut callback: F) {
+    pub fn __internal_list_notifiers<F: FnMut(&NotifierDetails)>(&self, mut callback: F) {
         let state = unsafe { self.notifiers.get_state() };
 
         state.for_each(|_, details| {
-            callback(&details.node_id);
+            callback(details);
             CallbackProgression::Continue
         });
     }

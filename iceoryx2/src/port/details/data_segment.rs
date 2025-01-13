@@ -36,9 +36,10 @@ use crate::{
     },
 };
 
+#[doc(hidden)]
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub(crate) enum DataSegmentType {
+pub enum DataSegmentType {
     Dynamic,
     Static,
 }
