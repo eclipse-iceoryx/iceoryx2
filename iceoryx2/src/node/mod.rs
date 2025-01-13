@@ -523,7 +523,7 @@ impl<Service: service::Service> DeadNodeView<Service> {
         }
         let cleaner = cleaner.unwrap();
 
-        let mut cleanup_failure = Ok(false);
+        let mut cleanup_failure = Ok(());
         let remove_node_from_service = |service_id: &ServiceId| {
             match Service::__internal_remove_node_from_service(self.id(), service_id, config) {
                 Ok(()) => {
