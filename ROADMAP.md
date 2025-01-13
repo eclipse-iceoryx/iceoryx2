@@ -1,31 +1,37 @@
 # Roadmap
 
-## v0.5
+## v0.6
 
 ### Main Focus
 
-* [ ] (Waitset), event multiplexing and advanced push notifications
-* [ ] Finalize C and C++ API
-* [ ] Fully dynamic payload for pub/sub
-* [ ] ROS 2 rmw binding
-* [ ] Health monitoring
-* [ ] Reliability features for pub/sub
+The list is sorted by priority
+
+* [ ] Request/Response
+* [ ] Zenoh Gateway
+* [ ] Finalize C and C++ API (still some tiny things open)
+* [ ] Improve cross-compilation support
 
 ### Bonus
 
-* [ ] Derive macro for SHM transferable types
-* [ ] `serde`-based shm serialization to transmit arbitrary types
-* [ ] Request/Response
+The list is sorted by priority
 
-## Moonshots
+* [ ] Derive macro for SHM transferable types
+* [ ] proof of concept with <https://github.com/rkyv/rkyv>
+* [ ] `#![no_std]` for low-level crates
+* [ ] Finish ROS 2 rmw binding (requires request/response)
+* [ ] `serde`-based shm serialization to transmit arbitrary types
+
+## Backlog
+
+### Moonshots
 
 * [ ] high performance d-bus alternative (thanks to true zero-copy)
 * [ ] `#![no_std]` on `nightly` on all tier 1 platforms
 * [ ] `#![no_std]` on `stable` on all tier 1 platforms
-* [ ] completely dynamic setup with dynamic shared memory
+* [x] completely dynamic setup with dynamic shared memory
 * [ ] iceoryx on a rover on the moon
 
-## Shared Memory Container & Types
+### Shared Memory Container & Types
 
 * [ ] Make `iceoryx2_bb_container` public with announcement
 * [ ] Create and document dynamic size container concept for shared memory and
@@ -38,22 +44,26 @@
 * [ ] Add `derive` proc macro to ensure that only shm compatible types can be
       transferred via zero-copy
 
-## Language Bindings
+### Language Bindings
 
 * [x] C
 * [x] C++
-* [ ] Lua
 * [ ] Python
+* [ ] Swift
+* [ ] Kotlin
+* [ ] Typescript
+* [ ] Lua
 * [ ] Zig
+* [ ] C#
 
-## Building Blocks
+### Building Blocks
 
-* [ ] WaitSet - event multiplexer based on reactor pattern
+* [x] WaitSet - event multiplexer based on reactor pattern
 * [ ] Introduce trait and proc macro to generate types that can be sent via
       shared memory
     * ensure that only these types are used for inter-process communication
 
-## Gateways
+### Gateways
 
 * [ ] Host2Host Communication based on <https://github.com/smoltcp-rs/smoltcp>
 * [ ] mqtt (rumqtt)
@@ -62,9 +72,9 @@
 * [ ] someip (maybe sommr)
 * [ ] dbus (zbus)
 
-## Microservices (Quality of Life Improvements)
+### Microservices (Quality of Life Improvements)
 
-### iceoryx Tooling
+#### iceoryx Tooling
 
 * [ ] Service Discovery
 * [ ] Introspection Service
@@ -75,11 +85,11 @@
 * [ ] Tooling for advanced introspection, cool WebGUI
 * [ ] Command line client as interface to microservices
 
-### Tools and Gadgets
+#### Tools and Gadgets
 
 * [ ] System Monitor (show CPU load etc. like top)
 
-## Communication
+### Communication
 
 * [x] publish subscribe
 * [x] events
@@ -104,13 +114,13 @@
     * Introduce runtime fixed-size types
 * [x] Untyped API
 
-## Expert/Advanced Features
+### Expert/Advanced Features
 
 * [ ] Filtering/Routing of messages in pub-sub
 * [ ] Handle approach to resend samples that could not be delivered caused by a
       full queue in pub-sub
 
-## Robustness
+### Robustness
 
 * [X] Node as basis for monitoring and resource cleanup
 * [ ] Add ability to recover samples when subscriber died
@@ -121,7 +131,7 @@
     OS
     * add `iceoryx2_cal` implementations that are using the `SharedMemoryGroup`
 
-## Platform Support
+### Platform Support
 
 * [ ] Android
 * [x] Linux
@@ -132,8 +142,11 @@
 * [x] FreeBSD
 * [ ] FreeRTOS
 * [ ] QNX
+* [ ] VxWorks
+* [ ] BareMetal
+* [ ] Sandbox Mode (only process internal communication)
 
-## Hardware Support
+### Hardware Support
 
 * [x] x86_64
 * [x] aarch64
@@ -141,27 +154,27 @@
 * [ ] x32
 * [ ] risc-v
 
-## Framework Integration
+### Framework Integration
 
 * [ ] ROS2 rmw binding
 * [ ] dora-rs integration
 
-## Safety & Security
+### Safety & Security
 
-* [ ] Mixed Criticallity setup, e.g. applications do not interfer with each
+* [ ] Mixed Criticality setup, e.g. applications do not interfere with each
       other
-* [ ] Sample Tracking when application crashes
+* [x] Sample Tracking when application crashes
 * [ ] Identity and Access Management, e.g. service that create additional
       services
 * [ ] Use Kani, Loom and Miri for tests of lock-free constructs
 
-## Development
+### Development
 
 * [ ] Tracing integration for advanced performance measurements, see google
       chrome chrome://tracing/ and flame graphs See lttng, add trace points to
       the source code on the important functions
 
-## Quality Of Life Improvements
+### Quality Of Life Improvements
 
 * [ ] Evaluate and refactor basic error handling approach based on enums
     * all error classes should implement `std::error::Error` for the non `no_std`
@@ -172,20 +185,20 @@
       `publish_subscribe`
     * or maybe rename it into behavior: queue and ringbuffer, get inspired by
     crossbeam queues
-* [ ] Provide `[T]` (slice) as special transmission type for pub/sub
+* [x] Provide `[T]` (slice) as special transmission type for pub/sub
     * `loan_slice`, `loan_uninit_slice` and `loan_uninit_slice_with_alignment`
 * [ ] QoS feature for blocking publisher or pub/sub failures to perform custom
       error handling or expert behavior
     * explore implementation as trait
     * explore implementation as callback
-* [ ] Explore if it is useful to have the same service name for different
+* [x] Explore if it is useful to have the same service name for different
       messaging patterns
     * separate them via internal suffix/prefix
     * simple use case: pub/sub + event to notify subscriber to notify sample send
     * would reduce error handling: connect to service with wrong messaging pattern
-* [ ] Implement Resizable SharedMemoryConcept that is able to extend the shared
+* [x] Implement Resizable SharedMemoryConcept that is able to extend the shared
       memory by adding additional POSIX shared memory objects
 
-## Integration Into Other Projects
+### Integration Into Other Projects
 
 * [ ] Maybe Hyprland
