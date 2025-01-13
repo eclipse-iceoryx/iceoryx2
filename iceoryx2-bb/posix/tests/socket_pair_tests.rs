@@ -289,3 +289,25 @@ fn blocking_send_blocks_until_message_buffer_is_free_again() {
         }
     });
 }
+
+#[test]
+fn peeking_message_does_not_remove_message() {
+    let _watchdog = Watchdog::new();
+
+    let (sut_lhs, sut_rhs) = StreamingSocketPairBuilder::create().unwrap();
+
+    let send_data = Vec::from(b"get schwifty!");
+
+    let result = sut_lhs.try_send(&send_data);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data.len());
+
+    for _ in 0..5 {
+        let mut received_data = vec![];
+        received_data.resize(send_data.len(), 0);
+        let result = sut_rhs.peek(&mut received_data);
+        assert_that!(result, is_ok);
+        assert_that!(result.unwrap(), eq send_data.len());
+        assert_that!(send_data, eq received_data);
+    }
+}

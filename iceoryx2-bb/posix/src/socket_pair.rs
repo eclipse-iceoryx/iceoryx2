@@ -21,7 +21,17 @@ pub enum StreamingSocketPairCreationError {
     InsufficientPermissions,
     InsufficientResources,
     InsufficientMemory,
+    Interrupt,
     UnknownError(i32),
+}
+
+impl From<FcntlError> for StreamingSocketPairCreationError {
+    fn from(value: FcntlError) -> Self {
+        match value {
+            FcntlError::Interrupt => StreamingSocketPairCreationError::Interrupt,
+            FcntlError::UnknownError(v) => StreamingSocketPairCreationError::UnknownError(v),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -31,11 +41,31 @@ enum FcntlError {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+enum SetSockoptError {
+    InsufficientResources,
+    InsufficientMemory,
+    UnknownError(i32),
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum StreamingSocketPairSendError {
+    InsufficientMemory,
     InsufficientResources,
     Interrupt,
     ConnectionReset,
     UnknownError(i32),
+}
+
+impl From<SetSockoptError> for StreamingSocketPairSendError {
+    fn from(value: SetSockoptError) -> Self {
+        match value {
+            SetSockoptError::UnknownError(v) => StreamingSocketPairSendError::UnknownError(v),
+            SetSockoptError::InsufficientResources => {
+                StreamingSocketPairSendError::InsufficientResources
+            }
+            SetSockoptError::InsufficientMemory => StreamingSocketPairSendError::InsufficientMemory,
+        }
+    }
 }
 
 impl From<FcntlError> for StreamingSocketPairSendError {
@@ -61,6 +91,20 @@ impl From<FcntlError> for StreamingSocketPairReceiveError {
         match value {
             FcntlError::Interrupt => StreamingSocketPairReceiveError::Interrupt,
             FcntlError::UnknownError(v) => StreamingSocketPairReceiveError::UnknownError(v),
+        }
+    }
+}
+
+impl From<SetSockoptError> for StreamingSocketPairReceiveError {
+    fn from(value: SetSockoptError) -> Self {
+        match value {
+            SetSockoptError::UnknownError(v) => StreamingSocketPairReceiveError::UnknownError(v),
+            SetSockoptError::InsufficientResources => {
+                StreamingSocketPairReceiveError::InsufficientResources
+            }
+            SetSockoptError::InsufficientMemory => {
+                StreamingSocketPairReceiveError::InsufficientMemory
+            }
         }
     }
 }
@@ -100,12 +144,14 @@ impl StreamingSocketPairBuilder {
                 file_descriptor: fd_1,
                 is_non_blocking: IoxAtomicBool::new(false),
             };
-            socket_1.set_non_blocking(true);
+            fail!(from origin, when socket_1.set_non_blocking(true),
+                "{msg} since the first file descriptor of the socket pair could not be set to non-blocking.");
             let socket_2 = StreamingSocket {
                 file_descriptor: fd_2,
                 is_non_blocking: IoxAtomicBool::new(false),
             };
-            socket_2.set_non_blocking(true);
+            fail!(from origin, when socket_2.set_non_blocking(true),
+                "{msg} since the second file descriptor of the socket pair could not be set to non-blocking.");
             return Ok((socket_1, socket_2));
         };
 
@@ -178,7 +224,7 @@ impl StreamingSocket {
         msg: &str,
         value: &T,
         socket_option: posix::int,
-    ) -> Result<(), ()> {
+    ) -> Result<(), SetSockoptError> {
         if unsafe {
             posix::setsockopt(
                 self.file_descriptor.native_handle(),
@@ -192,16 +238,16 @@ impl StreamingSocket {
             return Ok(());
         }
 
-        todo!()
-
-        //handle_errno!(UnixDatagramSetSocketOptionError, from self,
-        //    Errno::ENOMEM => (InsufficientMemory, "{} due to insufficient memory.", msg),
-        //    Errno::ENOBUFS => (InsufficientResources, "{} due to insufficient resources.", msg),
-        //    v => (UnknownError(v as i32), "{} caused by an unknown error ({}).", msg, v)
-        //);
+        handle_errno!(SetSockoptError, from self,
+            fatal Errno::EBADF => ("This should never happen! {} since the file descriptor is invalid", msg);
+            fatal Errno::EINVAL => ("This should never happen! {} since an argument is invalid", msg),
+            Errno::ENOMEM => (InsufficientMemory, "{} due to insufficient memory.", msg),
+            Errno::ENOBUFS => (InsufficientResources, "{} due to insufficient resources.", msg),
+            v => (UnknownError(v as i32), "{} caused by an unknown error ({}).", msg, v)
+        );
     }
 
-    fn set_send_timeout(&self, timeout: Duration) -> Result<(), ()> {
+    fn set_send_timeout(&self, timeout: Duration) -> Result<(), SetSockoptError> {
         self.set_socket_option(
             "Unable to set send timeout",
             &timeout.as_timeval(),
@@ -209,7 +255,7 @@ impl StreamingSocket {
         )
     }
 
-    fn set_receive_timeout(&self, timeout: Duration) -> Result<(), ()> {
+    fn set_receive_timeout(&self, timeout: Duration) -> Result<(), SetSockoptError> {
         self.set_socket_option(
             "Unable to set receive timeout",
             &timeout.as_timeval(),
@@ -242,8 +288,10 @@ impl StreamingSocket {
     }
 
     pub fn try_send(&self, buf: &[u8]) -> Result<usize, StreamingSocketPairSendError> {
-        self.set_non_blocking(true)?;
-        self.send_impl("Unable to try sending message", buf)
+        let msg = "Unable to try sending message";
+        fail!(from self, when self.set_non_blocking(true),
+            "{msg} since the socket could not be set into non-blocking mode");
+        self.send_impl(msg, buf)
     }
 
     pub fn timed_send(
@@ -251,27 +299,35 @@ impl StreamingSocket {
         buf: &[u8],
         timeout: Duration,
     ) -> Result<usize, StreamingSocketPairSendError> {
-        self.set_non_blocking(false)?;
-        self.set_send_timeout(timeout);
-        self.send_impl("Unable to try sending message", buf)
+        let msg = "Unable to send message with a timeout";
+        fail!(from self, when self.set_non_blocking(false),
+            "{msg} ({timeout:?}) since the socket could not be set into blocking mode");
+        fail!(from self, when self.set_send_timeout(timeout),
+            "{msg} ({timeout:?}) since the socket send timeout could not be set.");
+        self.send_impl(msg, buf)
     }
 
     pub fn blocking_send(&self, buf: &[u8]) -> Result<usize, StreamingSocketPairSendError> {
-        self.set_non_blocking(false)?;
-        self.set_send_timeout(BLOCKING_TIMEOUT);
-        self.send_impl("Unable to try sending message", buf)
+        let msg = "Unable to send message with blocking behavior";
+        fail!(from self, when self.set_non_blocking(false),
+            "{msg} since the socket could not be set into blocking mode");
+        fail!(from self, when self.set_send_timeout(BLOCKING_TIMEOUT),
+            "{msg} since the socket blocking send timeout could not be set.");
+        self.send_impl(msg, buf)
     }
 
     fn receive_impl(
         &self,
         msg: &str,
         buf: &mut [u8],
+        flags: i32,
     ) -> Result<usize, StreamingSocketPairReceiveError> {
         let number_of_bytes_read = unsafe {
-            posix::read(
+            posix::recv(
                 self.file_descriptor.native_handle(),
                 buf.as_mut_ptr().cast(),
                 buf.len(),
+                flags,
             )
         };
 
@@ -293,8 +349,10 @@ impl StreamingSocket {
     }
 
     pub fn try_receive(&self, buf: &mut [u8]) -> Result<usize, StreamingSocketPairReceiveError> {
-        self.set_non_blocking(true)?;
-        self.receive_impl("Unable to try receiving message", buf)
+        let msg = "Unable to try receiving message";
+        fail!(from self, when self.set_non_blocking(true),
+            "{msg} since the socket could not be set into non-blocking mode");
+        self.receive_impl(msg, buf, 0)
     }
 
     pub fn timed_receive(
@@ -302,25 +360,31 @@ impl StreamingSocket {
         buf: &mut [u8],
         timeout: Duration,
     ) -> Result<usize, StreamingSocketPairReceiveError> {
-        self.set_non_blocking(false)?;
-        self.set_receive_timeout(timeout);
-        self.receive_impl("Unable to try receiving message", buf)
+        let msg = "Unable to receive message with a timeout";
+        fail!(from self, when self.set_non_blocking(false),
+            "{msg} ({timeout:?}) since the socket could not be set into blocking mode");
+        fail!(from self, when self.set_receive_timeout(timeout),
+            "{msg} ({timeout:?}) since the socket receive timeout could not be set.");
+        self.receive_impl("Unable to try receiving message", buf, 0)
     }
 
     pub fn blocking_receive(
         &self,
         buf: &mut [u8],
     ) -> Result<usize, StreamingSocketPairReceiveError> {
-        self.set_non_blocking(false)?;
-        self.set_receive_timeout(BLOCKING_TIMEOUT);
-        self.receive_impl("Unable to try receiving message", buf)
+        let msg = "Unable to receive message with blocking behavior";
+        fail!(from self, when self.set_non_blocking(false),
+            "{msg} since the socket could not be set into blocking mode");
+        fail!(from self, when self.set_receive_timeout(BLOCKING_TIMEOUT),
+            "{msg} since the socket blocking receive timeout could not be set.");
+
+        self.receive_impl("Unable to try receiving message", buf, 0)
     }
 
-    pub fn peek(&self, buf: &mut [u8]) -> Result<usize, ()> {
-        todo!()
-    }
-
-    pub fn number_of_bytes_to_read(&self) -> Result<usize, ()> {
-        todo!()
+    pub fn peek(&self, buf: &mut [u8]) -> Result<usize, StreamingSocketPairReceiveError> {
+        let msg = "Unable to peek message";
+        fail!(from self, when self.set_non_blocking(true),
+            "{msg} since the socket could not be set into non-blocking mode");
+        self.receive_impl(msg, buf, posix::MSG_PEEK)
     }
 }
