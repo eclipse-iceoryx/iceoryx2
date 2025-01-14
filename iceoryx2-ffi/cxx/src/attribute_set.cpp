@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/attribute_set.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
@@ -32,6 +33,15 @@ auto AttributeSetView::len() const -> uint64_t {
 
 auto AttributeSetView::at(const uint64_t index) const -> AttributeView {
     return AttributeView(iox2_attribute_set_at(m_handle, index));
+}
+
+auto AttributeSetView::get_key_value_len(const Attribute::Key& key) const -> uint64_t {
+    IOX_TODO();
+}
+
+auto AttributeSetView::get_key_value_at(const Attribute::Key& key, const uint64_t idx)
+    -> iox::optional<Attribute::Value> {
+    IOX_TODO();
 }
 
 void AttributeSetView::get_key_values(
