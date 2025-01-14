@@ -22,11 +22,11 @@ use std::time::Instant;
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
 use windows_sys::Win32::Networking::WinSock::{SOCKADDR_UN, WSAEWOULDBLOCK};
 
-use crate::posix::htons;
 use crate::posix::ntohs;
 use crate::posix::types::*;
 use crate::posix::SockAddrIn;
 use crate::posix::{constants::*, fcntl_int};
+use crate::posix::{getpid, htons};
 use crate::posix::{htonl, select};
 use crate::posix::{Errno, Struct};
 
@@ -81,6 +81,7 @@ pub unsafe fn socketpair(
     socket_vector: *mut int, // actually it shall be [int; 2]
 ) -> int {
     static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+    let pid = getpid();
     let socket_listen = socket(domain, socket_type, protocol);
     if socket_listen == -1 {
         return -1;
@@ -97,7 +98,8 @@ pub unsafe fn socketpair(
     };
 
     let counter = COUNTER.fetch_add(1, Ordering::Relaxed);
-    let socket_path = String::from("uds_stream_socket_") + &counter.to_string();
+    let socket_path =
+        String::from("uds_stream_socket_") + &pid.to_string() + "_" + &counter.to_string() + "\0";
     core::ptr::copy_nonoverlapping(
         socket_path.as_ptr(),
         address.sun_path.as_mut_ptr().cast(),
@@ -118,6 +120,7 @@ pub unsafe fn socketpair(
     if listen(socket_listen, 20) == -1 {
         close(socket_listen);
         close(socket_data_1);
+        remove(socket_path.as_ptr().cast());
         return -1;
     }
 
@@ -129,6 +132,7 @@ pub unsafe fn socketpair(
     {
         close(socket_listen);
         close(socket_data_1);
+        remove(socket_path.as_ptr().cast());
         return -1;
     }
 
@@ -136,14 +140,14 @@ pub unsafe fn socketpair(
     if socket_data_2 == -1 {
         close(socket_listen);
         close(socket_data_1);
+        remove(socket_path.as_ptr().cast());
         return -1;
     }
-
-    remove(socket_path.as_ptr().cast());
 
     close(socket_listen);
     socket_vector.write(socket_data_1);
     socket_vector.add(1).write(socket_data_2);
+    remove(socket_path.as_ptr().cast());
 
     0
 }
@@ -547,7 +551,7 @@ pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int
                     remaining_time -= elapsed_time;
                 }
             } else {
-                let (bytes_sent, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::send(s.fd, message as *const u8, length as _, flags)};
+                let (bytes_sent, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::send(s.fd, message as *const u8, length as _, flags), ignore WSAEWOULDBLOCK};
                 if bytes_sent == SOCKET_ERROR {
                     return -1;
                 }
@@ -596,7 +600,7 @@ pub unsafe fn recv(socket: int, buffer: *mut void, length: size_t, flags: int) -
                     remaining_time -= elapsed_time;
                 }
             } else {
-                let (bytes_received, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags) };
+                let (bytes_received, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK };
                 if bytes_received == SOCKET_ERROR {
                     return -1;
                 }
