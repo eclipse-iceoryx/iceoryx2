@@ -58,7 +58,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add simplified attribute value accessors
+    [#590](https://github.com/eclipse-iceoryx/iceoryx2/issues/590)
 
 ### API Breaking Changes
 
