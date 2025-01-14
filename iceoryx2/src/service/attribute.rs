@@ -250,6 +250,27 @@ impl AttributeSet {
             .collect()
     }
 
+    /// Returns the number of values stored under a specific key. If the key does not exist it
+    /// returns 0.
+    pub fn get_key_value_len(&self, key: &str) -> usize {
+        self.get_vec(key).len()
+    }
+
+    /// Returns a value of a key at a specific index. The index enumerates the values of the key
+    /// if the key has multiple values. The values are always stored at the same position during
+    /// the lifetime of the service but they can change when the process is recreated by another
+    /// process when the system restarts.
+    /// If the key does not exist or it does not have a value at the specified index, it returns
+    /// [`None`].
+    pub fn get_key_value_at(&self, key: &str, idx: usize) -> Option<&str> {
+        let v = self.get_vec(key);
+        if v.len() <= idx {
+            return None;
+        }
+
+        Some(self.get_vec(key)[idx])
+    }
+
     /// Returns all values to a specific key
     pub fn get_key_values<F: FnMut(&str) -> CallbackProgression>(
         &self,
