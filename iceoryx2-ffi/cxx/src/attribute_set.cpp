@@ -35,11 +35,11 @@ auto AttributeSetView::at(const uint64_t index) const -> AttributeView {
     return AttributeView(iox2_attribute_set_at(m_handle, index));
 }
 
-auto AttributeSetView::get_key_value_len(const Attribute::Key& key) const -> uint64_t {
+auto AttributeSetView::get_key_value_len([[maybe_unused]] const Attribute::Key& key) const -> uint64_t {
     IOX_TODO();
 }
 
-auto AttributeSetView::get_key_value_at(const Attribute::Key& key, const uint64_t idx)
+auto AttributeSetView::get_key_value_at([[maybe_unused]] const Attribute::Key& key, [[maybe_unused]] const uint64_t idx)
     -> iox::optional<Attribute::Value> {
     IOX_TODO();
 }
