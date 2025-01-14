@@ -268,7 +268,7 @@ impl StreamingSocket {
                 posix::SOL_SOCKET,
                 socket_option,
                 (value as *const T) as *const posix::void,
-                std::mem::size_of::<T>() as u32,
+                core::mem::size_of::<T>() as u32,
             )
         } == 0
         {
