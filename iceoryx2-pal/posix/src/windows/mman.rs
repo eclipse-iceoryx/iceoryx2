@@ -18,6 +18,7 @@ use crate::posix::{constants::*, settings::*, to_dir_search_string, types::*, Er
 use crate::win32call;
 
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
+use windows_sys::Win32::Foundation::ERROR_FILE_EXISTS;
 use windows_sys::Win32::Storage::FileSystem::{
     FindClose, FindFirstFileA, FindNextFileA, FILE_ATTRIBUTE_DIRECTORY, WIN32_FIND_DATAA,
 };
@@ -170,8 +171,7 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
         }
 
         let last_mapping_error;
-        (shm_handle, last_mapping_error) =
-            win32call! {OpenFileMappingA(FILE_MAP_ALL_ACCESS, false as i32, name as *const u8)};
+        (shm_handle, last_mapping_error) = win32call! {OpenFileMappingA(FILE_MAP_ALL_ACCESS, false as i32, name as *const u8), ignore ERROR_FILE_NOT_FOUND};
 
         if shm_handle == 0 {
             Errno::set(Errno::ENOENT);
@@ -227,15 +227,25 @@ unsafe fn shm_file_path(name: *const c_char, suffix: &[u8]) -> [u8; MAX_PATH_LEN
 unsafe fn create_state_handle(name: *const c_char) -> HANDLE {
     let name = remove_leading_path_separator(name);
 
-    let (handle, _) = win32call! {CreateFileA(
-        shm_file_path(name, SHM_STATE_SUFFIX).as_ptr(),
-        GENERIC_WRITE | GENERIC_READ,
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-        core::ptr::null::<SECURITY_ATTRIBUTES>(),
-        CREATE_NEW,
-        FILE_ATTRIBUTE_NORMAL,
-        0,
-    )};
+    let create_file = || {
+        let (handle, last_error) = win32call! {CreateFileA(
+            shm_file_path(name, SHM_STATE_SUFFIX).as_ptr(),
+            GENERIC_WRITE | GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            core::ptr::null::<SECURITY_ATTRIBUTES>(),
+            CREATE_NEW,
+            FILE_ATTRIBUTE_NORMAL,
+            0,
+        ), ignore ERROR_FILE_EXISTS};
+        (handle, last_error)
+    };
+
+    let (mut handle, last_error) = create_file();
+    if handle == INVALID_HANDLE_VALUE && last_error == ERROR_FILE_EXISTS && !does_shm_exist(name) {
+        remove_state_handle(name);
+        (handle, _) = create_file();
+    }
+
     handle
 }
 
@@ -252,6 +262,24 @@ unsafe fn open_state_handle(name: *const c_char) -> HANDLE {
         0,
     ), ignore ERROR_FILE_NOT_FOUND };
     handle
+}
+
+unsafe fn remove_state_handle(name: *const c_char) -> int {
+    let name = remove_leading_path_separator(name);
+
+    let (has_deleted_file, error_code) = win32call! { DeleteFileA(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr()),
+    ignore ERROR_FILE_NOT_FOUND, ERROR_ACCESS_DENIED};
+    if has_deleted_file == FALSE {
+        // TODO: [#9]
+        Errno::set(Errno::ENOENT);
+        return -1;
+    }
+    0
+}
+
+unsafe fn does_shm_exist(name: *const c_char) -> bool {
+    let (shm_handle, last_error) = win32call! {OpenFileMappingA(FILE_MAP_ALL_ACCESS, false as i32, name as *const u8), ignore ERROR_FILE_NOT_FOUND};
+    !(shm_handle == 0 && last_error == ERROR_FILE_NOT_FOUND)
 }
 
 pub(crate) unsafe fn shm_set_size(fd_handle: HANDLE, shm_size: u64) {
@@ -299,16 +327,7 @@ pub(crate) unsafe fn shm_get_size(fd_handle: HANDLE) -> u64 {
 }
 
 pub unsafe fn shm_unlink(name: *const c_char) -> int {
-    let name = remove_leading_path_separator(name);
-
-    let (has_deleted_file, _) = win32call! { DeleteFileA(shm_file_path(name, SHM_STATE_SUFFIX).as_ptr()),
-    ignore ERROR_FILE_NOT_FOUND, ERROR_ACCESS_DENIED};
-    if has_deleted_file == FALSE {
-        // TODO: [#9]
-        Errno::set(Errno::ENOENT);
-        return -1;
-    }
-    0
+    remove_state_handle(name)
 }
 
 pub unsafe fn mmap(
