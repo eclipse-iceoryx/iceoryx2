@@ -505,8 +505,4 @@ mod communication_channel {
 
     #[instantiate_tests(<communication_channel::process_local::Channel>)]
     mod process_local {}
-
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
-    #[instantiate_tests(<communication_channel::message_queue::Channel<u64>>)]
-    mod message_queue {}
 }

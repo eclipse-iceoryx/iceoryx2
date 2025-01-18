@@ -55,7 +55,6 @@ pub mod group;
 pub mod ipc_capable;
 pub mod memory;
 pub mod memory_lock;
-pub mod message_queue;
 pub mod metadata;
 pub mod mutex;
 pub mod ownership;

@@ -65,7 +65,6 @@
 //! }
 //! ```
 
-pub mod message_queue;
 pub mod posix_shared_memory;
 pub mod process_local;
 pub mod unix_datagram;
