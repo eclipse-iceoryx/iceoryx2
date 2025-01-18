@@ -38,7 +38,6 @@ pub mod access_mode;
 pub mod adaptive_wait;
 pub mod barrier;
 pub mod clock;
-pub mod condition_variable;
 pub mod config;
 pub mod creation_mode;
 pub mod udp_socket;
