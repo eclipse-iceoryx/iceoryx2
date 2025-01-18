@@ -139,20 +139,6 @@ impl Struct for pthread_rwlock_t {
     }
 }
 
-pub struct pthread_cond_t {
-    pub(crate) cv: ConditionVariable,
-}
-impl Struct for pthread_cond_t {
-    fn new() -> Self {
-        Self {
-            cv: ConditionVariable::new(),
-        }
-    }
-}
-
-pub struct pthread_condattr_t {}
-impl Struct for pthread_condattr_t {}
-
 #[repr(C)]
 pub struct pthread_mutex_t {
     pub(crate) mtx: Mutex,

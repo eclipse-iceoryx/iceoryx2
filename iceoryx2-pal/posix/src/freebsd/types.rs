@@ -82,12 +82,6 @@ impl Struct for pthread_rwlockattr_t {}
 pub type pthread_rwlock_t = crate::internal::pthread_rwlock_t;
 impl Struct for pthread_rwlock_t {}
 
-pub type pthread_cond_t = crate::internal::pthread_cond_t;
-impl Struct for pthread_cond_t {}
-
-pub type pthread_condattr_t = crate::internal::pthread_condattr_t;
-impl Struct for pthread_condattr_t {}
-
 pub type pthread_mutex_t = crate::internal::pthread_mutex_t;
 impl Struct for pthread_mutex_t {}
 
