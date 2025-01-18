@@ -53,7 +53,6 @@ pub const PTHREAD_BARRIER_SERIAL_THREAD: int = crate::internal::PTHREAD_BARRIER_
 pub const PTHREAD_EXPLICIT_SCHED: int = crate::internal::PTHREAD_EXPLICIT_SCHED as _;
 pub const PTHREAD_INHERIT_SCHED: int = crate::internal::PTHREAD_INHERIT_SCHED as _;
 
-pub const MQ_INVALID: mqd_t = -1;
 pub const SIGPOLL: int = crate::internal::SIGPOLL as _;
 pub const MAX_SIGNAL_VALUE: usize = 32;
 

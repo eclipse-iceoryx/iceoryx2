@@ -42,7 +42,6 @@ pub type ino_t = u64;
 pub type int = core::ffi::c_int;
 pub type long = core::ffi::c_long;
 pub type mode_t = u64;
-pub type mqd_t = u64;
 pub type nlink_t = u64;
 pub type off_t = i64;
 pub type pid_t = u32;
@@ -201,14 +200,6 @@ pub struct flock {
     pub l_pid: pid_t,
 }
 impl Struct for flock {}
-
-pub struct mq_attr {
-    pub mq_flags: long,
-    pub mq_maxmsg: long,
-    pub mq_msgsize: long,
-    pub mq_curmsgs: long,
-}
-impl Struct for mq_attr {}
 
 pub struct rlimit {
     pub rlim_cur: rlim_t,

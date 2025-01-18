@@ -15,7 +15,6 @@
 
 #ifdef __FreeBSD__
 #include <libutil.h>
-#include <mqueue.h>
 #include <sys/param.h>
 #include <sys/sysctl.h>
 #include <sys/ucred.h>
@@ -25,10 +24,6 @@
 #ifdef __APPLE__
 #include <libproc.h>
 #include <mach-o/dyld.h>
-#endif
-
-#ifdef __linux__
-#include <mqueue.h>
 #endif
 
 #if !(defined(_WIN64) || defined(_WIN32))

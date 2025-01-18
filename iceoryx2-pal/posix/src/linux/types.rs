@@ -40,7 +40,6 @@ pub type in_port_t = u16;
 pub type in_addr_t = u32;
 pub type long = core::ffi::c_long;
 pub type mode_t = crate::internal::mode_t;
-pub type mqd_t = crate::internal::mqd_t;
 pub type nlink_t = crate::internal::nlink_t;
 pub type off_t = crate::internal::off_t;
 pub type pid_t = crate::internal::pid_t;
@@ -98,9 +97,6 @@ impl Struct for sem_t {}
 
 pub type flock = crate::internal::flock;
 impl Struct for flock {}
-
-pub type mq_attr = crate::internal::mq_attr;
-impl Struct for mq_attr {}
 
 pub type rlimit = crate::internal::rlimit;
 impl Struct for rlimit {}

@@ -49,7 +49,6 @@ pub const MCL_CURRENT: int = 16;
 pub const MCL_FUTURE: int = 32;
 pub const MAP_SHARED: int = 64;
 pub const MAP_FAILED: *mut void = 0 as *mut void;
-pub const MQ_INVALID: mqd_t = mqd_t::MAX;
 
 pub const PTHREAD_MUTEX_NORMAL: int = 1;
 pub const PTHREAD_MUTEX_RECURSIVE: int = 2;
