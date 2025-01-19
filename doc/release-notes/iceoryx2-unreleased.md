@@ -40,7 +40,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Remove obsolete POSIX wrapper
+    [#594](https://github.com/eclipse-iceoryx/iceoryx2/issues/594)
 
 ### Workflow
 
