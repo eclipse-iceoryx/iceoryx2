@@ -322,4 +322,11 @@ fn peeking_message_does_not_remove_message() {
         assert_that!(result.unwrap(), eq send_data.len());
         assert_that!(send_data, eq received_data);
     }
+
+    let mut received_data = vec![];
+    received_data.resize(send_data.len(), 0);
+    let result = sut_rhs.try_receive(&mut received_data);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data.len());
+    assert_that!(send_data, eq received_data);
 }
