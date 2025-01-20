@@ -24,6 +24,14 @@ pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ZeroCopyPortRemoveError {
+    InternalError,
+    VersionMismatch,
+    InsufficientPermissions,
+    DoesNotExist,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ZeroCopyCreationError {
     InternalError,
     AnotherInstanceIsAlreadyConnected,
@@ -165,6 +173,30 @@ pub trait ZeroCopyConnection: Debug + Sized + NamedConceptMgmt {
     type Sender: ZeroCopySender;
     type Receiver: ZeroCopyReceiver;
     type Builder: ZeroCopyConnectionBuilder<Self>;
+
+    /// Removes the [`ZeroCopySender`] forcefully from the [`ZeroCopyConnection`]. This shall only
+    /// be called when the [`ZeroCopySender`] died and the connection shall be cleaned up without
+    /// causing any problems on the living [`ZeroCopyReceiver`] side.
+    ///
+    /// # Safety
+    ///
+    ///  * must ensure that the [`ZeroCopySender`] died while being connected.
+    unsafe fn remove_sender(
+        name: &FileName,
+        config: &Self::Configuration,
+    ) -> Result<(), ZeroCopyPortRemoveError>;
+
+    /// Removes the [`ZeroCopyReceiver`] forcefully from the [`ZeroCopyConnection`]. This shall
+    /// only be called when the [`ZeroCopySender`] died and the connection shall be cleaned up
+    /// without causing any problems on the living [`ZeroCopySender`] side.
+    ///
+    /// # Safety
+    ///
+    ///  * must ensure that the [`ZeroCopyReceiver`] died while being connected.
+    unsafe fn remove_receiver(
+        name: &FileName,
+        config: &Self::Configuration,
+    ) -> Result<(), ZeroCopyPortRemoveError>;
 
     /// Returns true if the connection supports safe overflow
     fn does_support_safe_overflow() -> bool {

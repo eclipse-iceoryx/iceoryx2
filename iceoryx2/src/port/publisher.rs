@@ -138,8 +138,8 @@ use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
-    ZeroCopySender,
+    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopyPortRemoveError,
+    ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 
@@ -232,7 +232,9 @@ impl std::error::Error for PublisherSendError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum RemovePubSubPortFromAllConnectionsError {
+    CleanupRaceDetected,
     InsufficientPermissions,
+    VersionMismatch,
     InternalError,
 }
 
@@ -1176,20 +1178,25 @@ pub(crate) unsafe fn remove_publisher_from_all_connections<Service: service::Ser
     for connection in connection_list {
         let publisher_id = extract_publisher_id_from_connection(&connection);
         if publisher_id == *port_id {
-            match <Service::Connection as NamedConceptMgmt>::remove_cfg(
-                &connection,
-                &connection_config,
-            ) {
+            match Service::Connection::remove_sender(&connection, &connection_config) {
                 Ok(_) => (),
-                Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                Err(ZeroCopyPortRemoveError::DoesNotExist) => {
+                    debug!(from origin, "{} since the connection ({:?}) no longer exists! This could indicate a race in the node cleanup algorithm or that the underlying resources were removed manually.", msg, connection);
+                    ret_val = Err(RemovePubSubPortFromAllConnectionsError::CleanupRaceDetected);
+                }
+                Err(ZeroCopyPortRemoveError::InsufficientPermissions) => {
                     debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
                     ret_val = Err(RemovePubSubPortFromAllConnectionsError::InsufficientPermissions);
                 }
-                Err(NamedConceptRemoveError::InternalError) => {
+                Err(ZeroCopyPortRemoveError::VersionMismatch) => {
+                    debug!(from origin, "{} since connection ({:?}) has a different iceoryx2 version.", msg, connection);
+                    ret_val = Err(RemovePubSubPortFromAllConnectionsError::VersionMismatch);
+                }
+                Err(ZeroCopyPortRemoveError::InternalError) => {
                     debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
                     ret_val = Err(RemovePubSubPortFromAllConnectionsError::InternalError);
                 }
-            }
+            };
         }
     }
 
