@@ -16,6 +16,15 @@
 use crate::posix::types::*;
 use crate::posix::Errno;
 
+pub unsafe fn socketpair(
+    domain: int,
+    socket_type: int,
+    protocol: int,
+    socket_vector: *mut int, // actually it shall be [int; 2]
+) -> int {
+    crate::internal::socketpair(domain, socket_type, protocol, socket_vector)
+}
+
 pub unsafe fn setsockopt(
     socket: int,
     level: int,

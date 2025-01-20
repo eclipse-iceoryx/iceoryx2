@@ -17,16 +17,16 @@
 use core::cell::OnceCell;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8};
 use std::time::Instant;
-use windows_sys::Win32::Networking::WinSock::WSAEWOULDBLOCK;
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
+use windows_sys::Win32::Networking::WinSock::{SOCKADDR_UN, WSAEWOULDBLOCK};
 
-use crate::posix::htons;
 use crate::posix::ntohs;
 use crate::posix::types::*;
 use crate::posix::SockAddrIn;
 use crate::posix::{constants::*, fcntl_int};
+use crate::posix::{getpid, htons};
 use crate::posix::{htonl, select};
 use crate::posix::{Errno, Struct};
 
@@ -34,6 +34,7 @@ use crate::win32call;
 
 use super::win32_handle_translator::UdsDatagramSocketHandle;
 use super::win32_handle_translator::{FdHandleEntry, HandleTranslator, SocketHandle};
+use super::{close, remove};
 
 struct GlobalWsaInitializer {
     _wsa_data: WSADATA,
@@ -73,6 +74,84 @@ impl Drop for GlobalWsaInitializer {
 unsafe impl Sync for GlobalWsaInitializer {}
 unsafe impl Send for GlobalWsaInitializer {}
 
+pub unsafe fn socketpair(
+    domain: int,
+    socket_type: int,
+    protocol: int,
+    socket_vector: *mut int, // actually it shall be [int; 2]
+) -> int {
+    static COUNTER: IoxAtomicU64 = IoxAtomicU64::new(0);
+    let pid = getpid();
+    let socket_listen = socket(domain, socket_type, protocol);
+    if socket_listen == -1 {
+        return -1;
+    }
+    let socket_data_1 = socket(domain, socket_type, protocol);
+    if socket_data_1 == -1 {
+        close(socket_listen);
+        return -1;
+    }
+
+    let mut address = SOCKADDR_UN {
+        sun_family: domain as _,
+        sun_path: [0; 108],
+    };
+
+    let counter = COUNTER.fetch_add(1, Ordering::Relaxed);
+    let socket_path =
+        String::from("uds_stream_socket_") + &pid.to_string() + "_" + &counter.to_string() + "\0";
+    core::ptr::copy_nonoverlapping(
+        socket_path.as_ptr(),
+        address.sun_path.as_mut_ptr().cast(),
+        socket_path.len(),
+    );
+
+    if bind(
+        socket_listen,
+        (&address as *const SOCKADDR_UN).cast(),
+        core::mem::size_of::<SOCKADDR_UN>() as _,
+    ) == -1
+    {
+        close(socket_listen);
+        close(socket_data_1);
+        return -1;
+    }
+
+    if listen(socket_listen, 20) == -1 {
+        close(socket_listen);
+        close(socket_data_1);
+        remove(socket_path.as_ptr().cast());
+        return -1;
+    }
+
+    if connect(
+        socket_data_1,
+        (&address as *const SOCKADDR_UN).cast(),
+        core::mem::size_of::<SOCKADDR_UN>() as _,
+    ) == -1
+    {
+        close(socket_listen);
+        close(socket_data_1);
+        remove(socket_path.as_ptr().cast());
+        return -1;
+    }
+
+    let socket_data_2 = accept(socket_listen, core::ptr::null_mut(), core::ptr::null_mut());
+    if socket_data_2 == -1 {
+        close(socket_listen);
+        close(socket_data_1);
+        remove(socket_path.as_ptr().cast());
+        return -1;
+    }
+
+    close(socket_listen);
+    socket_vector.write(socket_data_1);
+    socket_vector.add(1).write(socket_data_2);
+    remove(socket_path.as_ptr().cast());
+
+    0
+}
+
 pub unsafe fn setsockopt(
     socket: int,
     mut level: int,
@@ -81,7 +160,19 @@ pub unsafe fn setsockopt(
     option_len: socklen_t,
 ) -> int {
     let socket_handle = match HandleTranslator::get_instance().get(socket) {
-        Some(FdHandleEntry::Socket(s)) => s.fd,
+        Some(FdHandleEntry::Socket(mut s)) => {
+            if option_name == SO_RCVTIMEO || option_name == SO_SNDTIMEO {
+                fcntl_int(socket, F_SETFL, O_NONBLOCK);
+                if option_name == SO_RCVTIMEO {
+                    s.recv_timeout = Some(*(option_value as *const timeval));
+                } else if option_name == SO_SNDTIMEO {
+                    s.send_timeout = Some(*(option_value as *const timeval));
+                }
+                HandleTranslator::get_instance().update(FdHandleEntry::Socket(s));
+                return 0;
+            }
+            s.fd
+        }
         Some(FdHandleEntry::UdsDatagramSocket(mut s)) => {
             level = SOL_SOCKET;
             if option_name == SO_SNDTIMEO {
@@ -139,6 +230,46 @@ unsafe fn create_uds_address(port: u16) -> sockaddr_in {
     udp_address.set_s_addr(htonl(localhost));
     udp_address.sin_port = htons(port);
     udp_address
+}
+
+pub unsafe fn accept(socket: int, address: *mut sockaddr, address_len: *mut socklen_t) -> int {
+    let socket_handle = match HandleTranslator::get_instance().get(socket) {
+        Some(FdHandleEntry::Socket(s)) => s.fd,
+        Some(FdHandleEntry::UdsDatagramSocket(s)) => s.fd,
+        None | Some(_) => {
+            Errno::set(Errno::EBADF);
+            return -1;
+        }
+    };
+
+    let (socket, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::accept(socket_handle, address.cast(), address_len.cast())};
+    if socket == INVALID_SOCKET {
+        return -1;
+    }
+
+    HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle {
+        fd: socket,
+        recv_timeout: None,
+        send_timeout: None,
+    }))
+}
+
+pub unsafe fn listen(socket: int, backlog: int) -> int {
+    let socket_handle = match HandleTranslator::get_instance().get(socket) {
+        Some(FdHandleEntry::Socket(s)) => s.fd,
+        Some(FdHandleEntry::UdsDatagramSocket(s)) => s.fd,
+        None | Some(_) => {
+            Errno::set(Errno::EBADF);
+            return -1;
+        }
+    };
+
+    let (listen_result, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::listen(socket_handle, backlog as _)};
+    if listen_result == SOCKET_ERROR {
+        return -1;
+    }
+
+    0
 }
 
 pub unsafe fn bind(socket: int, address: *const sockaddr, address_len: socklen_t) -> int {
@@ -247,7 +378,11 @@ pub unsafe fn socket(domain: int, socket_type: int, protocol: int) -> int {
             return -1;
         }
 
-        HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle { fd: socket }))
+        HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle {
+            fd: socket,
+            recv_timeout: None,
+            send_timeout: None,
+        }))
     }
 }
 
@@ -384,11 +519,44 @@ pub unsafe fn getsockname(socket: int, address: *mut sockaddr, address_len: *mut
 pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int) -> ssize_t {
     match HandleTranslator::get_instance().get_socket(socket) {
         Some(s) => {
-            let (bytes_sent, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::send(s.fd, message as *const u8, length as _, flags)};
-            if bytes_sent == SOCKET_ERROR {
-                return -1;
+            if let Some(mut timeout) = s.send_timeout {
+                let mut remaining_time = Duration::from_secs(timeout.tv_sec as _)
+                    + Duration::from_micros(timeout.tv_usec as _);
+                let now = Instant::now();
+
+                loop {
+                    let mut write_set = fd_set::new();
+                    write_set.fd_count = 1;
+                    write_set.fd_array[0] = s.fd;
+
+                    let (number_of_triggered_fds, _) = win32call! {select((s.fd + 1) as _, core::ptr::null_mut::<fd_set>(), &mut write_set, core::ptr::null_mut::<fd_set>(), &mut timeout)};
+
+                    if number_of_triggered_fds == SOCKET_ERROR {
+                        Errno::set(Errno::EINVAL);
+                        return -1;
+                    }
+
+                    let elapsed_time = now.elapsed();
+                    if remaining_time < elapsed_time {
+                        return 0;
+                    }
+
+                    if 0 < number_of_triggered_fds {
+                        let (sent_bytes, _) = win32call! { winsock windows_sys::Win32::Networking::WinSock::send(s.fd, message as *const u8, length as _, flags), ignore WSAEWOULDBLOCK};
+                        if 0 < sent_bytes {
+                            return sent_bytes as _;
+                        }
+                    }
+
+                    remaining_time -= elapsed_time;
+                }
+            } else {
+                let (bytes_sent, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::send(s.fd, message as *const u8, length as _, flags), ignore WSAEWOULDBLOCK};
+                if bytes_sent == SOCKET_ERROR {
+                    return -1;
+                }
+                bytes_sent as _
             }
-            bytes_sent as _
         }
         None => {
             Errno::set(Errno::EBADF);
@@ -400,11 +568,44 @@ pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int
 pub unsafe fn recv(socket: int, buffer: *mut void, length: size_t, flags: int) -> ssize_t {
     match HandleTranslator::get_instance().get_socket(socket) {
         Some(s) => {
-            let (bytes_received, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags) };
-            if bytes_received == SOCKET_ERROR {
-                return -1;
+            if let Some(mut timeout) = s.recv_timeout {
+                let mut remaining_time = Duration::from_secs(timeout.tv_sec as _)
+                    + Duration::from_micros(timeout.tv_usec as _);
+                let now = Instant::now();
+
+                loop {
+                    let mut read_set = fd_set::new();
+                    read_set.fd_count = 1;
+                    read_set.fd_array[0] = s.fd;
+
+                    let (number_of_triggered_fds, _) = win32call! {select((s.fd + 1) as _, &mut read_set, core::ptr::null_mut::<fd_set>(), core::ptr::null_mut::<fd_set>(), &mut timeout)};
+
+                    if number_of_triggered_fds == SOCKET_ERROR {
+                        Errno::set(Errno::EINVAL);
+                        return -1;
+                    }
+
+                    let elapsed_time = now.elapsed();
+                    if remaining_time < elapsed_time {
+                        return 0;
+                    }
+
+                    if 0 < number_of_triggered_fds {
+                        let (received_bytes, _) = win32call! { winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK};
+                        if 0 < received_bytes {
+                            return received_bytes as _;
+                        }
+                    }
+
+                    remaining_time -= elapsed_time;
+                }
+            } else {
+                let (bytes_received, _) = win32call! {winsock windows_sys::Win32::Networking::WinSock::recv(s.fd, buffer as *mut u8, length as _, flags), ignore WSAEWOULDBLOCK };
+                if bytes_received == SOCKET_ERROR {
+                    return -1;
+                }
+                bytes_received as _
             }
-            bytes_received as _
         }
         None => {
             Errno::set(Errno::EBADF);

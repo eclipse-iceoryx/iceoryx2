@@ -41,6 +41,7 @@ pub mod clock;
 pub mod condition_variable;
 pub mod config;
 pub mod creation_mode;
+pub mod socket_pair;
 pub mod udp_socket;
 #[macro_use]
 pub mod handle_errno;

@@ -88,10 +88,20 @@ impl UdsDatagramSocketHandle {
 }
 
 #[doc(hidden)]
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy)]
 pub struct SocketHandle {
     pub fd: usize,
+    pub recv_timeout: Option<timeval>,
+    pub send_timeout: Option<timeval>,
 }
+
+impl PartialEq for SocketHandle {
+    fn eq(&self, other: &Self) -> bool {
+        self.fd == other.fd
+    }
+}
+
+impl Eq for SocketHandle {}
 
 #[doc(hidden)]
 pub struct HandleTranslator {

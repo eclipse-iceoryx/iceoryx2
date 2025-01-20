@@ -28,9 +28,13 @@ mod win32_select {
 
         let mut socket_fd = vec![];
         for i in 0..FD_SET_CAPACITY {
-            socket_fd.push(
-                HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle { fd: i })),
-            );
+            socket_fd.push(HandleTranslator::get_instance().add(FdHandleEntry::Socket(
+                SocketHandle {
+                    fd: i,
+                    recv_timeout: None,
+                    send_timeout: None,
+                },
+            )));
         }
 
         for fd in socket_fd {
@@ -46,9 +50,13 @@ mod win32_select {
 
         let mut socket_fd = vec![];
         for i in 0..FD_SET_CAPACITY {
-            socket_fd.push(
-                HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle { fd: i })),
-            );
+            socket_fd.push(HandleTranslator::get_instance().add(FdHandleEntry::Socket(
+                SocketHandle {
+                    fd: i,
+                    recv_timeout: None,
+                    send_timeout: None,
+                },
+            )));
         }
 
         for fd in &socket_fd {
@@ -68,9 +76,13 @@ mod win32_select {
 
         let mut socket_fd = vec![];
         for i in 0..FD_SET_CAPACITY {
-            socket_fd.push(
-                HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle { fd: i })),
-            );
+            socket_fd.push(HandleTranslator::get_instance().add(FdHandleEntry::Socket(
+                SocketHandle {
+                    fd: i,
+                    recv_timeout: None,
+                    send_timeout: None,
+                },
+            )));
         }
 
         for fd in &socket_fd {
@@ -90,9 +102,13 @@ mod win32_select {
 
         let mut socket_fd = vec![];
         for i in 0..FD_SET_CAPACITY {
-            socket_fd.push(
-                HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle { fd: i })),
-            );
+            socket_fd.push(HandleTranslator::get_instance().add(FdHandleEntry::Socket(
+                SocketHandle {
+                    fd: i,
+                    recv_timeout: None,
+                    send_timeout: None,
+                },
+            )));
         }
 
         for fd in &socket_fd {
