@@ -18,7 +18,10 @@ use windows_sys::Win32::{
     Foundation::{
         CloseHandle, ERROR_FILE_NOT_FOUND, ERROR_NO_MORE_FILES, FALSE, INVALID_HANDLE_VALUE, TRUE,
     },
-    Networking::WinSock::closesocket,
+    Networking::WinSock::{
+        closesocket, WSADuplicateSocketA, WSASocketA, INVALID_SOCKET, SOCKET_ERROR,
+        WSAPROTOCOL_INFOA,
+    },
     Storage::FileSystem::{
         FlushFileBuffers, GetFileAttributesA, ReadFile, RemoveDirectoryA, SetEndOfFile,
         SetFilePointerEx, WriteFile, FILE_ATTRIBUTE_DIRECTORY, FILE_ATTRIBUTE_READONLY, FILE_BEGIN,
@@ -42,7 +45,10 @@ use crate::{
     posix::{constants::*, types::*, win32_handle_translator::FdHandleEntry, Errno},
 };
 
-use super::{settings::MAX_PATH_LENGTH, win32_handle_translator::HandleTranslator};
+use super::{
+    settings::MAX_PATH_LENGTH,
+    win32_handle_translator::{HandleTranslator, SocketHandle},
+};
 use crate::win32call;
 
 impl Struct for SYSTEM_INFO {}
@@ -142,8 +148,33 @@ pub unsafe fn getppid() -> pid_t {
     parent_process_id
 }
 
+impl Struct for WSAPROTOCOL_INFOA {}
+
 pub unsafe fn dup(fildes: int) -> int {
-    -1
+    match HandleTranslator::get_instance().get(fildes) {
+        Some(FdHandleEntry::Socket(handle)) => {
+            let mut protocol_info = WSAPROTOCOL_INFOA::new();
+            let (result, _) = win32call! { winsock WSADuplicateSocketA(handle.fd, GetCurrentProcessId(), &mut protocol_info) };
+            if result == SOCKET_ERROR {
+                return -1;
+            }
+            let (duplicated_socket, _) =
+                win32call! { WSASocketA(AF_UNIX as _, SOCK_STREAM, 0, &protocol_info, 0, 0)};
+            if duplicated_socket == INVALID_SOCKET {
+                return -1;
+            }
+
+            HandleTranslator::get_instance().add(FdHandleEntry::Socket(SocketHandle {
+                fd: duplicated_socket,
+                recv_timeout: None,
+                send_timeout: None,
+            }))
+        }
+        _ => {
+            Errno::set(Errno::EBADF);
+            -1
+        }
+    }
 }
 
 pub unsafe fn close(fd: int) -> int {
