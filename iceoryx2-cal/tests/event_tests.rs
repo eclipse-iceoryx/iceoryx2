@@ -19,6 +19,7 @@ mod event {
     use std::time::Instant;
 
     use iceoryx2_bb_container::semantic_string::*;
+    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
@@ -712,6 +713,7 @@ mod event {
 
     #[test]
     fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
+        set_log_level(LogLevel::Trace);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
@@ -727,6 +729,7 @@ mod event {
         drop(sut_listener);
 
         let result = sut_notifier.notify(TriggerId::new(0));
+
         // either present a disconnect error when available or continue sending without counterpart, for
         // instance when the event is network socket based
         if result.is_err() {

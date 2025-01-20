@@ -106,6 +106,7 @@ pub enum StreamingSocketPairSendError {
     InsufficientResources,
     Interrupt,
     ConnectionReset,
+    Disconnected,
     UnknownError(i32),
 }
 
@@ -367,6 +368,7 @@ impl StreamingSocket {
             fatal Errno::EINVAL => ("This should never happen! {msg} since an internal argument was invalid."),
             Errno::EINTR => (Interrupt, "{msg} since an interrupt signal was received."),
             Errno::ECONNRESET => (ConnectionReset, "{msg} since the connection was reset."),
+            Errno::EPIPE => (Disconnected, "{msg} since the socket is no longer connected."),
             Errno::ENOBUFS => (InsufficientResources, "{msg} due to insufficient resources."),
             v => (UnknownError(v as i32), "{msg} since an unknown error occurred ({v}).")
         )

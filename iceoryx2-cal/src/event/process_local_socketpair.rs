@@ -215,7 +215,8 @@ impl crate::event::Notifier for Notifier {
                 fail!(from self, with NotifierNotifyError::Interrupt,
                     "{msg} since an interrupt signal was received.");
             }
-            Err(StreamingSocketPairSendError::ConnectionReset) => {
+            Err(StreamingSocketPairSendError::ConnectionReset)
+            | Err(StreamingSocketPairSendError::Disconnected) => {
                 fail!(from self, with NotifierNotifyError::Disconnected,
                     "{msg} since the corresponding listener disconnected.");
             }
@@ -332,9 +333,9 @@ impl Listener {
         match waitcall(raw_trigger_id) {
             Ok(number_of_bytes) => {
                 if number_of_bytes == 0 {
-                    return Ok(None);
+                    Ok(None)
                 } else if number_of_bytes == trigger_id_size {
-                    return Ok(Some(trigger_id));
+                    Ok(Some(trigger_id))
                 } else {
                     fail!(from self, with ListenerWaitError::ContractViolation,
                     "{msg} due to a contract violation. Expected to receive {} bytes but got {} bytes.",
