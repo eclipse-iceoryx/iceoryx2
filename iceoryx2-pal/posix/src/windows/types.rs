@@ -17,7 +17,6 @@
 use core::fmt::Debug;
 
 use iceoryx2_pal_concurrency_sync::barrier::Barrier;
-use iceoryx2_pal_concurrency_sync::condition_variable::*;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use iceoryx2_pal_concurrency_sync::mutex::Mutex;
 use iceoryx2_pal_concurrency_sync::rwlock::*;
@@ -42,7 +41,6 @@ pub type ino_t = u64;
 pub type int = core::ffi::c_int;
 pub type long = core::ffi::c_long;
 pub type mode_t = u64;
-pub type mqd_t = u64;
 pub type nlink_t = u64;
 pub type off_t = i64;
 pub type pid_t = u32;
@@ -140,20 +138,6 @@ impl Struct for pthread_rwlock_t {
     }
 }
 
-pub struct pthread_cond_t {
-    pub(crate) cv: ConditionVariable,
-}
-impl Struct for pthread_cond_t {
-    fn new() -> Self {
-        Self {
-            cv: ConditionVariable::new(),
-        }
-    }
-}
-
-pub struct pthread_condattr_t {}
-impl Struct for pthread_condattr_t {}
-
 #[repr(C)]
 pub struct pthread_mutex_t {
     pub(crate) mtx: Mutex,
@@ -201,14 +185,6 @@ pub struct flock {
     pub l_pid: pid_t,
 }
 impl Struct for flock {}
-
-pub struct mq_attr {
-    pub mq_flags: long,
-    pub mq_maxmsg: long,
-    pub mq_msgsize: long,
-    pub mq_curmsgs: long,
-}
-impl Struct for mq_attr {}
 
 pub struct rlimit {
     pub rlim_cur: rlim_t,

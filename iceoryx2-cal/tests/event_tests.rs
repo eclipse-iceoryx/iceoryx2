@@ -737,9 +737,6 @@ mod event {
     #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl>)]
     mod unix_datagram {}
 
-    #[instantiate_tests(<iceoryx2_cal::event::process_local::EventImpl>)]
-    mod process_local {}
-
     #[instantiate_tests(<iceoryx2_cal::event::sem_bitset_process_local::Event>)]
     mod sem_bitset_process_local {}
 

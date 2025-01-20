@@ -203,50 +203,6 @@ pub unsafe fn pthread_rwlock_timedrdlock(
     crate::internal::pthread_rwlock_timedrdlock(lock, abs_timeout)
 }
 
-pub unsafe fn pthread_cond_broadcast(cond: *mut pthread_cond_t) -> int {
-    crate::internal::pthread_cond_broadcast(cond)
-}
-
-pub unsafe fn pthread_cond_signal(cond: *mut pthread_cond_t) -> int {
-    crate::internal::pthread_cond_signal(cond)
-}
-
-pub unsafe fn pthread_cond_destroy(cond: *mut pthread_cond_t) -> int {
-    crate::internal::pthread_cond_destroy(cond)
-}
-
-pub unsafe fn pthread_cond_init(cond: *mut pthread_cond_t, attr: *const pthread_condattr_t) -> int {
-    crate::internal::pthread_cond_init(cond, attr)
-}
-
-pub unsafe fn pthread_cond_wait(cond: *mut pthread_cond_t, mutex: *mut pthread_mutex_t) -> int {
-    crate::internal::pthread_cond_wait(cond, mutex)
-}
-
-pub unsafe fn pthread_cond_timedwait(
-    cond: *mut pthread_cond_t,
-    mutex: *mut pthread_mutex_t,
-    abstime: *const timespec,
-) -> int {
-    crate::internal::pthread_cond_timedwait(cond, mutex, abstime)
-}
-
-pub unsafe fn pthread_condattr_init(attr: *mut pthread_condattr_t) -> int {
-    crate::internal::pthread_condattr_init(attr)
-}
-
-pub unsafe fn pthread_condattr_destroy(attr: *mut pthread_condattr_t) -> int {
-    crate::internal::pthread_condattr_destroy(attr)
-}
-
-pub unsafe fn pthread_condattr_setclock(attr: *mut pthread_condattr_t, clock_id: clockid_t) -> int {
-    crate::internal::pthread_condattr_setclock(attr, clock_id)
-}
-
-pub unsafe fn pthread_condattr_setpshared(attr: *mut pthread_condattr_t, pshared: int) -> int {
-    crate::internal::pthread_condattr_setpshared(attr, pshared)
-}
-
 pub unsafe fn pthread_mutex_init(
     mtx: *mut pthread_mutex_t,
     attr: *const pthread_mutexattr_t,
