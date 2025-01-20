@@ -138,8 +138,8 @@ use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySendError,
-    ZeroCopySender,
+    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopyPortRemoveError,
+    ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 
@@ -232,7 +232,9 @@ impl std::error::Error for PublisherSendError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum RemovePubSubPortFromAllConnectionsError {
+    CleanupRaceDetected,
     InsufficientPermissions,
+    VersionMismatch,
     InternalError,
 }
 
@@ -1158,6 +1160,33 @@ fn connections<Service: service::Service>(
     }
 }
 
+fn handle_port_remove_error(
+    result: Result<(), ZeroCopyPortRemoveError>,
+    origin: &str,
+    msg: &str,
+    connection: &FileName,
+) -> Result<(), RemovePubSubPortFromAllConnectionsError> {
+    match result {
+        Ok(()) => Ok(()),
+        Err(ZeroCopyPortRemoveError::DoesNotExist) => {
+            debug!(from origin, "{} since the connection ({:?}) no longer exists! This could indicate a race in the node cleanup algorithm or that the underlying resources were removed manually.", msg, connection);
+            Err(RemovePubSubPortFromAllConnectionsError::CleanupRaceDetected)
+        }
+        Err(ZeroCopyPortRemoveError::InsufficientPermissions) => {
+            debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
+            Err(RemovePubSubPortFromAllConnectionsError::InsufficientPermissions)
+        }
+        Err(ZeroCopyPortRemoveError::VersionMismatch) => {
+            debug!(from origin, "{} since connection ({:?}) has a different iceoryx2 version.", msg, connection);
+            Err(RemovePubSubPortFromAllConnectionsError::VersionMismatch)
+        }
+        Err(ZeroCopyPortRemoveError::InternalError) => {
+            debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
+            Err(RemovePubSubPortFromAllConnectionsError::InternalError)
+        }
+    }
+}
+
 pub(crate) unsafe fn remove_publisher_from_all_connections<Service: service::Service>(
     port_id: &UniquePublisherId,
     config: &config::Config,
@@ -1176,19 +1205,15 @@ pub(crate) unsafe fn remove_publisher_from_all_connections<Service: service::Ser
     for connection in connection_list {
         let publisher_id = extract_publisher_id_from_connection(&connection);
         if publisher_id == *port_id {
-            match <Service::Connection as NamedConceptMgmt>::remove_cfg(
+            let result = handle_port_remove_error(
+                Service::Connection::remove_sender(&connection, &connection_config),
+                &origin,
+                msg,
                 &connection,
-                &connection_config,
-            ) {
-                Ok(_) => (),
-                Err(NamedConceptRemoveError::InsufficientPermissions) => {
-                    debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
-                    ret_val = Err(RemovePubSubPortFromAllConnectionsError::InsufficientPermissions);
-                }
-                Err(NamedConceptRemoveError::InternalError) => {
-                    debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
-                    ret_val = Err(RemovePubSubPortFromAllConnectionsError::InternalError);
-                }
+            );
+
+            if ret_val.is_ok() {
+                ret_val = result;
             }
         }
     }
@@ -1214,19 +1239,15 @@ pub(crate) unsafe fn remove_subscriber_from_all_connections<Service: service::Se
     for connection in connection_list {
         let subscriber_id = extract_subscriber_id_from_connection(&connection);
         if subscriber_id == *port_id {
-            match <Service::Connection as NamedConceptMgmt>::remove_cfg(
+            let result = handle_port_remove_error(
+                Service::Connection::remove_receiver(&connection, &connection_config),
+                &origin,
+                msg,
                 &connection,
-                &connection_config,
-            ) {
-                Ok(_) => (),
-                Err(NamedConceptRemoveError::InsufficientPermissions) => {
-                    debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
-                    ret_val = Err(RemovePubSubPortFromAllConnectionsError::InsufficientPermissions);
-                }
-                Err(NamedConceptRemoveError::InternalError) => {
-                    debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
-                    ret_val = Err(RemovePubSubPortFromAllConnectionsError::InternalError);
-                }
+            );
+
+            if ret_val.is_ok() {
+                ret_val = result;
             }
         }
     }

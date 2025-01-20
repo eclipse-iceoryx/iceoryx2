@@ -32,7 +32,7 @@ pub mod details {
         index_queue::RelocatableIndexQueue,
         safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,
     };
-    use iceoryx2_bb_log::{fail, fatal_panic};
+    use iceoryx2_bb_log::{fail, fatal_panic, warn};
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 
     use self::used_chunk_list::RelocatableUsedChunkList;
@@ -123,6 +123,12 @@ pub mod details {
         state_to_remove: State,
     ) {
         let mut current_state = storage.get().state.load(Ordering::Relaxed);
+        if current_state == State::MarkedForDestruction.value() {
+            warn!(from "common::ZeroCopyConnection::cleanup_shared_memory()",
+                    "Trying to remove state {:?} on the connection {:?} which is already marked for destruction.", state_to_remove, storage.name());
+            return;
+        }
+
         loop {
             let new_state = if current_state == state_to_remove.value() {
                 State::MarkedForDestruction.value()
@@ -783,11 +789,67 @@ pub mod details {
             Ok(())
         }
     }
+    impl<Storage: DynamicStorage<SharedManagementData>> Connection<Storage> {
+        fn open_storage(
+            name: &FileName,
+            config: &<Connection<Storage> as NamedConceptMgmt>::Configuration,
+            msg: &str,
+        ) -> Result<Storage, ZeroCopyPortRemoveError> {
+            let origin = "Connection::open_storage()";
+            match <<Storage as DynamicStorage<SharedManagementData>>::Builder<'_> as NamedConceptBuilder<
+                    Storage>>::new(name)
+                       .config(&config.dynamic_storage_config).open() {
+                           Ok(storage) => Ok(storage),
+                           Err(DynamicStorageOpenError::VersionMismatch) => {
+                               fail!(from origin, with ZeroCopyPortRemoveError::VersionMismatch,
+                                   "{msg} since the underlying dynamic storage has a different iceoryx2 version.");
+                           }
+                           Err(DynamicStorageOpenError::InitializationNotYetFinalized) => {
+                               fail!(from origin, with ZeroCopyPortRemoveError::InsufficientPermissions,
+                                   "{msg} due to insufficient permissions.");
+                           }
+                           Err(DynamicStorageOpenError::DoesNotExist) => {
+                               fail!(from origin, with ZeroCopyPortRemoveError::DoesNotExist,
+                                   "{msg} since the underlying dynamic storage does not exist.");
+                           }
+                           Err(DynamicStorageOpenError::InternalError) => {
+                               fail!(from origin, with ZeroCopyPortRemoveError::InternalError,
+                                   "{msg} due to an internal error.");
+                           }
+                       }
+        }
+    }
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyConnection for Connection<Storage> {
         type Sender = Sender<Storage>;
         type Builder = Builder<Storage>;
         type Receiver = Receiver<Storage>;
+
+        unsafe fn remove_sender(
+            name: &FileName,
+            config: &Self::Configuration,
+        ) -> Result<(), ZeroCopyPortRemoveError> {
+            let storage = Self::open_storage(
+                name,
+                config,
+                "Unable to remove forcefully the sender of the Zero Copy Connection",
+            )?;
+            cleanup_shared_memory(&storage, State::Sender);
+            Ok(())
+        }
+
+        unsafe fn remove_receiver(
+            name: &FileName,
+            config: &Self::Configuration,
+        ) -> Result<(), ZeroCopyPortRemoveError> {
+            let storage = Self::open_storage(
+                name,
+                config,
+                "Unable to remove forcefully the receiver of the Zero Copy Connection",
+            )?;
+            cleanup_shared_memory(&storage, State::Receiver);
+            Ok(())
+        }
 
         fn does_support_safe_overflow() -> bool {
             true

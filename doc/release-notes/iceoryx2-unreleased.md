@@ -36,6 +36,9 @@
 * Increase max supported shared memory size in Windows that restricts
     the maximum supported payload size
     [#575](https://github.com/eclipse-iceoryx/iceoryx2/issues/575)
+* Undefined behavior due to ZeroCopyConnection removal when stale resources
+    are cleaned up
+    [#596](https://github.com/eclipse-iceoryx/iceoryx2/issues/596)
 
 ### Refactoring
 
