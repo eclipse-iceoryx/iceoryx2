@@ -734,6 +734,9 @@ mod event {
         }
     }
 
+    #[instantiate_tests(<iceoryx2_cal::event::process_local_socketpair::EventImpl>)]
+    mod process_local_socket_pair {}
+
     #[instantiate_tests(<iceoryx2_cal::event::unix_datagram_socket::EventImpl>)]
     mod unix_datagram {}
 
