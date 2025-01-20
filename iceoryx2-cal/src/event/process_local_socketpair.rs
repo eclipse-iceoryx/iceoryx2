@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{char::MAX, collections::HashMap, time::Duration};
+use std::{collections::HashMap, time::Duration};
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, fatal_panic};
@@ -19,13 +19,17 @@ use iceoryx2_bb_posix::{
     file_descriptor_set::SynchronousMultiplexing,
     mutex::{Handle, Mutex, MutexBuilder, MutexHandle},
     socket_pair::{
-        StreamingSocket, StreamingSocketPairCreationError, StreamingSocketPairReceiveError,
+        StreamingSocket, StreamingSocketDuplicateError, StreamingSocketPairCreationError,
+        StreamingSocketPairReceiveError, StreamingSocketPairSendError,
     },
 };
 pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 use once_cell::sync::Lazy;
 
-use crate::named_concept::NamedConceptConfiguration;
+use crate::named_concept::{
+    NamedConceptConfiguration, NamedConceptDoesExistError, NamedConceptListError,
+    NamedConceptRemoveError,
+};
 
 use super::{
     ListenerCreateError, ListenerWaitError, NamedConcept, NamedConceptBuilder, NamedConceptMgmt,
@@ -108,27 +112,63 @@ impl NamedConceptMgmt for EventImpl {
     fn does_exist_cfg(
         name: &FileName,
         cfg: &Self::Configuration,
-    ) -> Result<bool, crate::named_concept::NamedConceptDoesExistError> {
-        todo!()
+    ) -> Result<bool, NamedConceptDoesExistError> {
+        let msg = "Unable to check if event::process_local_socketpair exists";
+        let origin = "event::process_local_socketpair::Event::does_exist_cfg()";
+
+        let guard = fail!(from origin, when PROCESS_LOCAL_STORAGE.lock(),
+                        with NamedConceptDoesExistError::InternalError,
+                        "{} since the lock could not be acquired.", msg);
+
+        match guard.get(&cfg.path_for(name)) {
+            Some(_) => Ok(true),
+            None => Ok(false),
+        }
     }
 
-    fn list_cfg(
-        cfg: &Self::Configuration,
-    ) -> Result<Vec<FileName>, crate::named_concept::NamedConceptListError> {
-        todo!()
+    fn list_cfg(cfg: &Self::Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
+        let msg = "Unable to list all event::process_local_socketpairs";
+        let origin = "event::process_local_socketpair::Event::list_cfg()";
+
+        let guard = fail!(from origin, when PROCESS_LOCAL_STORAGE.lock(),
+                                with NamedConceptListError::InternalError,
+                                "{} since the lock could not be acquired.", msg);
+
+        let mut result = vec![];
+        for storage_name in guard.keys() {
+            if let Some(v) = cfg.extract_name_from_path(storage_name) {
+                result.push(v);
+            }
+        }
+
+        Ok(result)
     }
 
     unsafe fn remove_cfg(
         name: &FileName,
         cfg: &Self::Configuration,
-    ) -> Result<bool, crate::named_concept::NamedConceptRemoveError> {
-        todo!()
+    ) -> Result<bool, NamedConceptRemoveError> {
+        let storage_name = cfg.path_for(name);
+
+        let msg = "Unable to remove dynamic_storage::process_local";
+        let origin = "dynamic_storage::process_local::Storage::remove_cfg()";
+
+        let mut guard = fail!(from origin, when PROCESS_LOCAL_STORAGE.lock(),
+                                with NamedConceptRemoveError::InternalError,
+                                "{} since the lock could not be acquired.", msg);
+
+        let entry = guard.get_mut(&storage_name);
+        if entry.is_none() {
+            return Ok(false);
+        }
+
+        Ok(guard.remove(&storage_name).is_some())
     }
 
     fn remove_path_hint(
-        value: &Path,
+        _value: &Path,
     ) -> Result<(), crate::named_concept::NamedConceptPathHintRemoveError> {
-        todo!()
+        Ok(())
     }
 }
 
@@ -155,6 +195,7 @@ impl EventImpl {
 
 #[derive(Debug)]
 pub struct Notifier {
+    socket: StreamingSocket,
     name: FileName,
 }
 
@@ -166,7 +207,37 @@ impl NamedConcept for Notifier {
 
 impl crate::event::Notifier for Notifier {
     fn notify(&self, id: TriggerId) -> Result<(), NotifierNotifyError> {
-        todo!()
+        let msg = "Unable to send notification";
+        let buffer = unsafe {
+            core::slice::from_raw_parts(
+                (&id as *const TriggerId) as *const u8,
+                core::mem::size_of::<TriggerId>(),
+            )
+        };
+        match self.socket.try_send(buffer) {
+            Ok(number_of_bytes) => {
+                if number_of_bytes == 0 {
+                    fail!(from self, with NotifierNotifyError::FailedToDeliverSignal,
+                        "{msg} {id:?} since the listener buffer seems to be full.");
+                } else if number_of_bytes == core::mem::size_of::<TriggerId>() {
+                    Ok(())
+                } else {
+                    fatal_panic!(from self, "This should never happen! {msg} {id:?} could be sent only partially.");
+                }
+            }
+            Err(StreamingSocketPairSendError::Interrupt) => {
+                fail!(from self, with NotifierNotifyError::Interrupt,
+                    "{msg} since an interrupt signal was received.");
+            }
+            Err(StreamingSocketPairSendError::ConnectionReset) => {
+                fail!(from self, with NotifierNotifyError::Disconnected,
+                    "{msg} since the corresponding listener disconnected.");
+            }
+            Err(e) => {
+                fail!(from self, with NotifierNotifyError::InternalFailure,
+                    "{msg} due to an unknown failure ({:?}).", e);
+            }
+        }
     }
 }
 
@@ -204,12 +275,25 @@ impl crate::event::NotifierBuilder<EventImpl> for NotifierBuilder {
             "{msg} due to a failure while acquiring the lock.");
 
         match guard.get(&full_path) {
-            Some(entry) => todo!(),
+            Some(entry) => match entry.notifier.duplicate() {
+                Ok(socket) => Ok(Notifier {
+                    name: self.name,
+                    socket,
+                }),
+                Err(StreamingSocketDuplicateError::Interrupt) => {
+                    fail!(from self, with NotifierCreateError::Interrupt,
+                        "{msg} since an interrupt signal was received.");
+                }
+                Err(e) => {
+                    fail!(from self, with NotifierCreateError::InternalFailure,
+                        "{msg} due to an unknown failure ({:?}).", e);
+                }
+            },
             None => {
                 fail!(from self, with NotifierCreateError::DoesNotExist,
                     "{msg} since the event does not exist.");
             }
-        };
+        }
     }
 }
 
@@ -241,11 +325,11 @@ impl Listener {
         mut waitcall: WaitCall,
         msg: &str,
     ) -> Result<Option<TriggerId>, ListenerWaitError> {
-        let trigger_id_size = core::mem::size_of::<usize>();
-        let mut trigger_id: usize = 0;
+        let trigger_id_size = core::mem::size_of::<TriggerId>();
+        let mut trigger_id = TriggerId::new(0);
         let raw_trigger_id = unsafe {
             core::slice::from_raw_parts_mut(
-                ((&mut trigger_id) as *mut usize) as *mut u8,
+                ((&mut trigger_id) as *mut TriggerId) as *mut u8,
                 trigger_id_size,
             )
         };
@@ -255,7 +339,7 @@ impl Listener {
                 if number_of_bytes == 0 {
                     return Ok(None);
                 } else if number_of_bytes == trigger_id_size {
-                    return Ok(Some(TriggerId::new(trigger_id)));
+                    return Ok(Some(trigger_id));
                 } else {
                     fail!(from self, with ListenerWaitError::ContractViolation,
                     "{msg} due to a contract violation. Expected to receive {} bytes but got {} bytes.",

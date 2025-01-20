@@ -44,6 +44,25 @@ const BLOCKING_TIMEOUT: Duration = Duration::from_secs(i16::MAX as _);
 /// Defines the errors that can occur when a socket pair is created with
 /// [`StreamingSocket::create_pair()`].
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum StreamingSocketDuplicateError {
+    PerProcessFileHandleLimitReached,
+    Interrupt,
+    FileDescriptorBroken,
+    UnknownError(i32),
+}
+
+impl From<FcntlError> for StreamingSocketDuplicateError {
+    fn from(value: FcntlError) -> Self {
+        match value {
+            FcntlError::Interrupt => StreamingSocketDuplicateError::Interrupt,
+            FcntlError::UnknownError(v) => StreamingSocketDuplicateError::UnknownError(v),
+        }
+    }
+}
+
+/// Defines the errors that can occur when a socket pair is created with
+/// [`StreamingSocket::create_pair()`].
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum StreamingSocketPairCreationError {
     FileDescriptorBroken,
     PerProcessFileHandleLimitReached,
@@ -225,13 +244,14 @@ impl StreamingSocket {
     }
 
     /// Duplicates a [`StreamingSocket`]. It is connected to all existing sockets.
-    pub fn duplicate(&self) -> Result<StreamingSocket, StreamingSocketPairCreationError> {
+    pub fn duplicate(&self) -> Result<StreamingSocket, StreamingSocketDuplicateError> {
         let origin = "StreamingSocket::duplicate()";
         let msg = "Unable to duplicate StreamingSocket";
         let duplicated_fd = unsafe { posix::dup(self.file_descriptor.native_handle()) };
         if duplicated_fd != -1 {
             let new_socket = StreamingSocket {
-                file_descriptor: Self::create_type_safe_fd(duplicated_fd, origin, msg)?,
+                file_descriptor: Self::create_type_safe_fd(duplicated_fd, origin, msg)
+                    .map_err(|_| StreamingSocketDuplicateError::FileDescriptorBroken)?,
                 is_non_blocking: IoxAtomicBool::new(false),
             };
 
@@ -241,7 +261,7 @@ impl StreamingSocket {
             return Ok(new_socket);
         }
 
-        handle_errno!(StreamingSocketPairCreationError, from origin,
+        handle_errno!(StreamingSocketDuplicateError, from origin,
             Errno::EMFILE => (PerProcessFileHandleLimitReached, "{msg} since the processes file descriptor limit was reached."),
             v => (UnknownError(v as i32), "{msg} since an unknown error occurred ({v}).")
         )

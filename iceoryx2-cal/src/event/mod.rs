@@ -26,6 +26,7 @@ pub use iceoryx2_bb_system_types::path::Path;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NotifierNotifyError {
+    Interrupt,
     FailedToDeliverSignal,
     TriggerIdOutOfBounds,
     Disconnected,
@@ -42,6 +43,7 @@ impl std::error::Error for NotifierNotifyError {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NotifierCreateError {
+    Interrupt,
     DoesNotExist,
     InsufficientPermissions,
     VersionMismatch,
