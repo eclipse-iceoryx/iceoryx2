@@ -13,7 +13,7 @@
 use std::{collections::HashMap, time::Duration};
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_log::{debug, fail, fatal_panic};
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptorBased,
     file_descriptor_set::SynchronousMultiplexing,
@@ -32,8 +32,8 @@ use crate::named_concept::{
 };
 
 use super::{
-    ListenerCreateError, ListenerWaitError, NamedConcept, NamedConceptBuilder, NamedConceptMgmt,
-    NotifierCreateError, NotifierNotifyError, TriggerId,
+    Event, ListenerCreateError, ListenerWaitError, NamedConcept, NamedConceptBuilder,
+    NamedConceptMgmt, NotifierCreateError, NotifierNotifyError, TriggerId,
 };
 
 const MAX_BATCH_SIZE: usize = 512;
@@ -179,20 +179,6 @@ impl crate::event::Event for EventImpl {
     type ListenerBuilder = ListenerBuilder;
 }
 
-impl EventImpl {
-    fn default_path_hint() -> Path {
-        Path::new(b"").unwrap()
-    }
-
-    fn default_prefix() -> FileName {
-        FileName::new(b"iox2").unwrap()
-    }
-
-    fn default_suffix() -> FileName {
-        FileName::new(b".event").unwrap()
-    }
-}
-
 #[derive(Debug)]
 pub struct Notifier {
     socket: StreamingSocket,
@@ -301,6 +287,15 @@ impl crate::event::NotifierBuilder<EventImpl> for NotifierBuilder {
 pub struct Listener {
     name: FileName,
     socket: StreamingSocket,
+    config: Configuration,
+}
+
+impl Drop for Listener {
+    fn drop(&mut self) {
+        if let Err(e) = unsafe { EventImpl::remove_cfg(&self.name, &self.config) } {
+            debug!(from self, "Unable to cleanup event after the Listener was dropped ({:?}).", e);
+        }
+    }
 }
 
 impl FileDescriptorBased for Listener {
@@ -491,6 +486,7 @@ impl crate::event::ListenerBuilder<EventImpl> for ListenerBuilder {
         Ok(Listener {
             name: self.name,
             socket: listener,
+            config: self.config,
         })
     }
 }
