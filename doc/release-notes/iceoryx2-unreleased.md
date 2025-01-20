@@ -13,6 +13,8 @@
 
 * Introduce `socket_pair` abstraction in POSIX wrapper
     [#508](https://github.com/eclipse-iceoryx/iceoryx2/issues/508)
+* Introduce `socket_pair` event concept
+    [#508](https://github.com/eclipse-iceoryx/iceoryx2/issues/508)
 * Deadline property for event services
     [#573](https://github.com/eclipse-iceoryx/iceoryx2/issues/573)
 * Use 'std_instead_of_core' clippy warning

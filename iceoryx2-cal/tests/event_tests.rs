@@ -713,7 +713,6 @@ mod event {
 
     #[test]
     fn out_of_scope_listener_shall_not_corrupt_notifier<Sut: Event>() {
-        set_log_level(LogLevel::Trace);
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
