@@ -32,7 +32,7 @@ pub mod details {
         index_queue::RelocatableIndexQueue,
         safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,
     };
-    use iceoryx2_bb_log::{fail, fatal_panic};
+    use iceoryx2_bb_log::{fail, fatal_panic, warn};
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 
     use self::used_chunk_list::RelocatableUsedChunkList;
@@ -123,6 +123,12 @@ pub mod details {
         state_to_remove: State,
     ) {
         let mut current_state = storage.get().state.load(Ordering::Relaxed);
+        if current_state == State::MarkedForDestruction.value() {
+            warn!(from "common::ZeroCopyConnection::cleanup_shared_memory()",
+                    "Trying to remove state {:?} on the connection {:?} which is already marked for destruction.", state_to_remove, storage.name());
+            return;
+        }
+
         loop {
             let new_state = if current_state == state_to_remove.value() {
                 State::MarkedForDestruction.value()
