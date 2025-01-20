@@ -166,11 +166,26 @@ impl SynchronousMultiplexing for StreamingSocket {}
 unsafe impl Send for StreamingSocket {}
 
 impl StreamingSocket {
+    fn create_type_safe_fd(
+        raw_fd: i32,
+        origin: &str,
+        msg: &str,
+    ) -> Result<FileDescriptor, StreamingSocketPairCreationError> {
+        match FileDescriptor::new(raw_fd) {
+            Some(fd) => Ok(fd),
+            None => {
+                fail!(from origin,
+                    with StreamingSocketPairCreationError::FileDescriptorBroken,
+                    "This should never happen! {msg} since the socketpair implementation returned a broken file descriptor.");
+            }
+        }
+    }
+
     /// Creates a new [`StreamingSocket`] pair.
     pub fn create_pair(
     ) -> Result<(StreamingSocket, StreamingSocket), StreamingSocketPairCreationError> {
         let msg = "Unable to create streaming socket pair";
-        let origin = "StreamingSocketPairBuilder::create()";
+        let origin = "StreamingSocket::create_pair()";
         let mut fd_values = [0, 0];
 
         if unsafe {
@@ -182,19 +197,8 @@ impl StreamingSocket {
             )
         } == 0
         {
-            let create_fd = |fd| -> Result<FileDescriptor, StreamingSocketPairCreationError> {
-                match FileDescriptor::new(fd) {
-                    Some(fd) => Ok(fd),
-                    None => {
-                        fail!(from origin,
-                            with StreamingSocketPairCreationError::FileDescriptorBroken,
-                            "This should never happen! {msg} since the socketpair implementation returned a broken file descriptor.");
-                    }
-                }
-            };
-
-            let fd_1 = create_fd(fd_values[0])?;
-            let fd_2 = create_fd(fd_values[1])?;
+            let fd_1 = Self::create_type_safe_fd(fd_values[0], origin, msg)?;
+            let fd_2 = Self::create_type_safe_fd(fd_values[1], origin, msg)?;
             let socket_1 = StreamingSocket {
                 file_descriptor: fd_1,
                 is_non_blocking: IoxAtomicBool::new(false),
@@ -216,6 +220,29 @@ impl StreamingSocket {
             Errno::EACCES => (InsufficientPermissions, "{msg} due to insufficient permissions."),
             Errno::ENOBUFS => (InsufficientResources, "{msg} due to insufficient resources."),
             Errno::ENOMEM => (InsufficientResources, "{msg} due to insufficient memory."),
+            v => (UnknownError(v as i32), "{msg} since an unknown error occurred ({v}).")
+        )
+    }
+
+    /// Duplicates a [`StreamingSocket`]. It is connected to all existing sockets.
+    pub fn duplicate(&self) -> Result<StreamingSocket, StreamingSocketPairCreationError> {
+        let origin = "StreamingSocket::duplicate()";
+        let msg = "Unable to duplicate StreamingSocket";
+        let duplicated_fd = unsafe { posix::dup(self.file_descriptor.native_handle()) };
+        if duplicated_fd != -1 {
+            let new_socket = StreamingSocket {
+                file_descriptor: Self::create_type_safe_fd(duplicated_fd, origin, msg)?,
+                is_non_blocking: IoxAtomicBool::new(false),
+            };
+
+            fail!(from origin, when new_socket.set_non_blocking(true),
+                "{msg} since the duplicated streaming socket could not be set to non-blocking.");
+
+            return Ok(new_socket);
+        }
+
+        handle_errno!(StreamingSocketPairCreationError, from origin,
+            Errno::EMFILE => (PerProcessFileHandleLimitReached, "{msg} since the processes file descriptor limit was reached."),
             v => (UnknownError(v as i32), "{msg} since an unknown error occurred ({v}).")
         )
     }
