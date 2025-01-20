@@ -1326,6 +1326,71 @@ mod zero_copy_connection {
         assert_that!(returned_sample, eq Some(overflow_sample));
     }
 
+    #[test]
+    fn explicitly_releasing_first_sender_then_receiver_removes_connection<
+        Sut: ZeroCopyConnection,
+    >() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        core::mem::forget(sut_receiver);
+        core::mem::forget(sut_sender);
+
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+        assert_that!(unsafe { Sut::remove_sender(&name, &config) }, is_ok);
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+        assert_that!(unsafe { Sut::remove_receiver(&name, &config) }, is_ok);
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
+    }
+
+    #[test]
+    fn explicitly_releasing_first_receiver_then_sender_removes_connection<
+        Sut: ZeroCopyConnection,
+    >() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        core::mem::forget(sut_receiver);
+        core::mem::forget(sut_sender);
+
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+        assert_that!(unsafe { Sut::remove_receiver(&name, &config) }, is_ok);
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+        assert_that!(unsafe { Sut::remove_sender(&name, &config) }, is_ok);
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
+    }
+
+    #[test]
+    fn removing_port_from_non_existing_connection_leads_to_error<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        assert_that!(unsafe { Sut::remove_receiver(&name, &config) }, eq Err(ZeroCopyPortRemoveError::DoesNotExist));
+        assert_that!(unsafe { Sut::remove_sender(&name, &config) }, eq Err(ZeroCopyPortRemoveError::DoesNotExist));
+    }
+
     #[instantiate_tests(<zero_copy_connection::posix_shared_memory::Connection>)]
     mod posix_shared_memory {}
 
