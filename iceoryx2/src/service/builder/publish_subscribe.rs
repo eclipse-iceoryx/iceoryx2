@@ -377,7 +377,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
     }
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
-    fn adjust_attributes_to_meaningful_values(&mut self) {
+    fn adjust_configuration_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.publish_subscribe_mut();
 
@@ -412,7 +412,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         }
     }
 
-    fn verify_service_attributes(
+    fn verify_service_configuration(
         &self,
         existing_settings: &static_config::StaticConfig,
         required_attributes: &AttributeVerifier,
@@ -502,7 +502,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeCreateError,
     > {
-        self.adjust_attributes_to_meaningful_values();
+        self.adjust_configuration_to_meaningful_values();
 
         let msg = "Unable to create publish subscribe service";
 
@@ -622,7 +622,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                 }
                 Some((static_config, static_storage)) => {
                     let pub_sub_static_config =
-                        self.verify_service_attributes(&static_config, attributes)?;
+                        self.verify_service_configuration(&static_config, attributes)?;
 
                     let service_tag = self
                         .base

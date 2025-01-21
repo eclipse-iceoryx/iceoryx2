@@ -378,7 +378,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 }
                 Some((static_config, static_storage)) => {
                     let event_static_config =
-                        self.verify_service_attributes(&static_config, required_attributes)?;
+                        self.verify_service_configuration(&static_config, required_attributes)?;
 
                     let service_tag = self
                         .base
@@ -570,7 +570,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         }
     }
 
-    fn verify_service_attributes(
+    fn verify_service_configuration(
         &self,
         existing_settings: &static_config::StaticConfig,
         required_attributes: &AttributeVerifier,
