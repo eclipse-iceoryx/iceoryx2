@@ -16,7 +16,7 @@ use std::marker::PhantomData;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 
-use crate::prelude::AttributeVerifier;
+use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder;
 use crate::service::{self, static_config};
 
