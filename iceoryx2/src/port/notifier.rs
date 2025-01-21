@@ -155,6 +155,9 @@ impl<Service: service::Service> ListenerConnections<Service> {
                 Err(iceoryx2_cal::event::NotifierCreateError::InsufficientPermissions) => {
                     warn!(from self, "{} since the permissions do not match. The service or the participants are maybe misconfigured.", msg);
                 }
+                Err(iceoryx2_cal::event::NotifierCreateError::Interrupt) => {
+                    debug!(from self, "{} since an interrupt signal was received.", msg);
+                }
                 Err(iceoryx2_cal::event::NotifierCreateError::InternalFailure) => {
                     debug!(from self, "{} due to an internal failure.", msg);
                 }

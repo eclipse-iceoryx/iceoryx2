@@ -330,3 +330,88 @@ fn peeking_message_does_not_remove_message() {
     assert_that!(result.unwrap(), eq send_data.len());
     assert_that!(send_data, eq received_data);
 }
+
+#[test]
+fn send_from_duplicated_socket_works() {
+    let _watchdog = Watchdog::new();
+
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
+    let sut_lhs_dup = sut_lhs.duplicate().unwrap();
+
+    let send_data = Vec::from(b"!hello hypnotoad!");
+
+    let result = sut_lhs_dup.try_send(&send_data);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data.len());
+
+    let mut received_data = vec![];
+    received_data.resize(send_data.len(), 0);
+    let result = sut_rhs.try_receive(&mut received_data);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data.len());
+    assert_that!(send_data, eq received_data);
+}
+
+#[test]
+fn receive_from_duplicated_socket_works() {
+    let _watchdog = Watchdog::new();
+
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
+    let sut_rhs_dup = sut_rhs.duplicate().unwrap();
+
+    let send_data = Vec::from(b"!hello hypnotoad!");
+
+    let result = sut_lhs.try_send(&send_data);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data.len());
+
+    let mut received_data = vec![];
+    received_data.resize(send_data.len(), 0);
+    let result = sut_rhs_dup.try_receive(&mut received_data);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data.len());
+    assert_that!(send_data, eq received_data);
+}
+
+#[test]
+fn multiple_duplicated_sockets_can_send() {
+    let _watchdog = Watchdog::new();
+
+    let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
+    let sut_lhs_dup_1 = sut_lhs.duplicate().unwrap();
+    let sut_lhs_dup_2 = sut_lhs.duplicate().unwrap();
+
+    let send_data_1 = Vec::from(b"!1!");
+    let send_data_2 = Vec::from(b"!2!");
+    let send_data_3 = Vec::from(b"!3!");
+
+    let result = sut_lhs.try_send(&send_data_1);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data_1.len());
+
+    let result = sut_lhs_dup_1.try_send(&send_data_2);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data_2.len());
+
+    let result = sut_lhs_dup_2.try_send(&send_data_3);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data_3.len());
+
+    let mut received_data = vec![];
+    received_data.resize(send_data_1.len(), 0);
+
+    let result = sut_rhs.try_receive(&mut received_data);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data_1.len());
+    assert_that!(send_data_1, eq received_data);
+
+    let result = sut_rhs.try_receive(&mut received_data);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data_2.len());
+    assert_that!(send_data_2, eq received_data);
+
+    let result = sut_rhs.try_receive(&mut received_data);
+    assert_that!(result, is_ok);
+    assert_that!(result.unwrap(), eq send_data_3.len());
+    assert_that!(send_data_3, eq received_data);
+}

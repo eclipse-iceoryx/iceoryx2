@@ -58,6 +58,9 @@ extern crate alloc;
 use alloc::sync::Arc;
 
 pub use crate::dynamic_storage::*;
+use crate::named_concept::{
+    NamedConceptDoesExistError, NamedConceptListError, NamedConceptRemoveError,
+};
 use crate::static_storage::file::NamedConceptConfiguration;
 
 use self::dynamic_storage_configuration::DynamicStorageConfiguration;
@@ -206,12 +209,12 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
     fn does_exist_cfg(
         name: &FileName,
         config: &Self::Configuration,
-    ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
+    ) -> Result<bool, NamedConceptDoesExistError> {
         let msg = "Unable to check if dynamic_storage::process_local exists";
         let origin = "dynamic_storage::process_local::Storage::does_exist_cfg()";
 
-        let guard = fatal_panic!(from origin,
-                        when PROCESS_LOCAL_STORAGE.lock(),
+        let guard = fail!(from origin, when PROCESS_LOCAL_STORAGE.lock(),
+                        with NamedConceptDoesExistError::InternalError,
                         "{} since the lock could not be acquired.", msg);
 
         match guard.get(&config.path_for(name)) {
@@ -220,14 +223,12 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
         }
     }
 
-    fn list_cfg(
-        config: &Self::Configuration,
-    ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
+    fn list_cfg(config: &Self::Configuration) -> Result<Vec<FileName>, NamedConceptListError> {
         let msg = "Unable to list all dynamic_storage::process_local";
         let origin = "dynamic_storage::process_local::Storage::list_cfg()";
 
-        let guard = fatal_panic!(from origin,
-                                 when PROCESS_LOCAL_STORAGE.lock(),
+        let guard = fail!(from origin, when PROCESS_LOCAL_STORAGE.lock(),
+                                with NamedConceptListError::InternalError,
                                 "{} since the lock could not be acquired.", msg);
 
         let mut result = vec![];
@@ -243,14 +244,15 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
     unsafe fn remove_cfg(
         name: &FileName,
         cfg: &Self::Configuration,
-    ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
+    ) -> Result<bool, NamedConceptRemoveError> {
         let storage_name = cfg.path_for(name);
 
         let msg = "Unable to remove dynamic_storage::process_local";
         let origin = "dynamic_storage::process_local::Storage::remove_cfg()";
 
-        let mut guard = fatal_panic!(from origin, when PROCESS_LOCAL_STORAGE.lock()
-                                , "{} since the lock could not be acquired.", msg);
+        let mut guard = fail!(from origin, when PROCESS_LOCAL_STORAGE.lock(),
+                                with NamedConceptRemoveError::InternalError,
+                                "{} since the lock could not be acquired.", msg);
 
         let mut entry = guard.get_mut(&storage_name);
         if entry.is_none() {
