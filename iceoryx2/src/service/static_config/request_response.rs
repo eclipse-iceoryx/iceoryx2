@@ -22,7 +22,7 @@ pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_responses: bool,
     pub(crate) max_active_requests: usize,
     pub(crate) max_borrowed_responses: usize,
-    pub(crate) response_buffer_size: usize,
+    pub(crate) max_response_buffer_size: usize,
     pub(crate) max_servers: usize,
     pub(crate) max_clients: usize,
     pub(crate) max_nodes: usize,
@@ -43,7 +43,7 @@ impl StaticConfig {
                 .enable_safe_overflow_for_responses,
             max_active_requests: config.defaults.request_response.max_active_requests,
             max_borrowed_responses: config.defaults.request_response.max_borrowed_responses,
-            response_buffer_size: config.defaults.request_response.response_buffer_size,
+            max_response_buffer_size: config.defaults.request_response.max_response_buffer_size,
             max_servers: config.defaults.request_response.max_servers,
             max_clients: config.defaults.request_response.max_clients,
             max_nodes: config.defaults.request_response.max_nodes,
@@ -68,8 +68,8 @@ impl StaticConfig {
         self.max_borrowed_responses
     }
 
-    pub fn response_buffer_size(&self) -> usize {
-        self.response_buffer_size
+    pub fn max_response_buffer_size(&self) -> usize {
+        self.max_response_buffer_size
     }
 
     pub fn max_servers(&self) -> usize {
