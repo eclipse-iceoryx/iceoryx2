@@ -20,6 +20,8 @@ pub mod event;
 /// based service.
 pub mod publish_subscribe;
 
+pub mod request_response;
+
 use core::fmt::Display;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -56,6 +58,7 @@ pub(crate) enum RemoveDeadNodeResult {
 
 #[derive(Debug)]
 pub(crate) enum MessagingPattern {
+    RequestResonse(request_response::DynamicConfig),
     PublishSubscribe(publish_subscribe::DynamicConfig),
     Event(event::DynamicConfig),
 }
@@ -98,6 +101,7 @@ impl DynamicConfig {
         match &mut self.messaging_pattern {
             MessagingPattern::PublishSubscribe(ref mut v) => v.init(allocator),
             MessagingPattern::Event(ref mut v) => v.init(allocator),
+            MessagingPattern::RequestResonse(ref mut v) => v.init(allocator),
         }
     }
 
@@ -113,6 +117,9 @@ impl DynamicConfig {
                 v.remove_dead_node_id(node_id, port_cleanup_callback)
             }
             MessagingPattern::Event(ref v) => v.remove_dead_node_id(node_id, port_cleanup_callback),
+            MessagingPattern::RequestResonse(ref v) => {
+                v.remove_dead_node_id(node_id, port_cleanup_callback)
+            }
         };
 
         let mut ret_val = Err(RemoveDeadNodeResult::NodeNotRegistered);
@@ -167,11 +174,20 @@ impl DynamicConfig {
         }
     }
 
+    pub(crate) fn request_response(&self) -> &request_response::DynamicConfig {
+        match &self.messaging_pattern {
+            MessagingPattern::RequestResonse(ref v) => v,
+            m => {
+                fatal_panic!(from self, "This should never happen! Trying to access request_response::DynamicConfig when the messaging pattern is actually {:?}.", m);
+            }
+        }
+    }
+
     pub(crate) fn publish_subscribe(&self) -> &publish_subscribe::DynamicConfig {
         match &self.messaging_pattern {
             MessagingPattern::PublishSubscribe(ref v) => v,
             m => {
-                fatal_panic!(from self, "This should never happen! Try to access publish_subscribe::DynamicConfig when the messaging pattern is actually {:?}.", m);
+                fatal_panic!(from self, "This should never happen! Trying to access publish_subscribe::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }
         }
     }
@@ -180,7 +196,7 @@ impl DynamicConfig {
         match &self.messaging_pattern {
             MessagingPattern::Event(ref v) => v,
             m => {
-                fatal_panic!(from self, "This should never happen! Try to access event::DynamicConfig when the messaging pattern is actually {:?}.", m);
+                fatal_panic!(from self, "This should never happen! Trying to access event::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }
         }
     }

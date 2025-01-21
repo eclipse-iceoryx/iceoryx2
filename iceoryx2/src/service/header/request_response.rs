@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-/// Sample header used by
-/// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
-pub mod publish_subscribe;
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct RequestHeader {}
 
-pub mod request_response;
+#[derive(Debug, Copy, Clone)]
+#[repr(C)]
+pub struct ResponseHeader {}
