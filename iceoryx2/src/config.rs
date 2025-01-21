@@ -215,6 +215,8 @@ pub struct Defaults {
     pub publish_subscribe: PublishSubscribe,
     /// Default settings for the messaging pattern event
     pub event: Event,
+
+    pub request_response: RequestResonse,
 }
 
 /// Default settings for the publish-subscribe messaging pattern. These settings are used unless
@@ -284,6 +286,20 @@ pub struct Event {
     pub notifier_dead_event: Option<usize>,
 }
 
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct RequestResonse {
+    pub enable_safe_overflow_for_requests: bool,
+    pub enable_safe_overflow_for_responses: bool,
+    pub max_active_requests: usize,
+    pub max_borrowed_responses: usize,
+    pub response_buffer_size: usize,
+    pub max_servers: usize,
+    pub max_clients: usize,
+    pub max_nodes: usize,
+}
+
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
 /// the [Global] settings, which must align with the iceoryx2 instance the application intends to
 /// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
@@ -326,6 +342,16 @@ impl Default for Config {
                 },
             },
             defaults: Defaults {
+                request_response: RequestResonse {
+                    enable_safe_overflow_for_requests: true,
+                    enable_safe_overflow_for_responses: true,
+                    max_active_requests: 2,
+                    max_borrowed_responses: 2,
+                    response_buffer_size: 2,
+                    max_servers: 2,
+                    max_clients: 8,
+                    max_nodes: 20,
+                },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,
                     max_publishers: 2,
