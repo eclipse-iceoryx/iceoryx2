@@ -20,6 +20,8 @@ pub mod event;
 /// Builder for [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 pub mod publish_subscribe;
 
+pub mod request_response;
+
 use crate::node::SharedNode;
 use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
@@ -112,6 +114,19 @@ impl<S: Service> Builder<S> {
         }
     }
 
+    pub fn request<RequestPayload: Debug>(
+        self,
+    ) -> request_response::BuilderRequest<RequestPayload, S> {
+        BuilderWithServiceType::new(
+            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
+                &self.name,
+                self.shared_node.config(),
+            ),
+            self.shared_node,
+        )
+        .request::<RequestPayload>()
+    }
+
     /// Create a new builder to create a
     /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
     pub fn publish_subscribe<PayloadType: Debug + ?Sized>(
@@ -153,6 +168,12 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             shared_node,
             _phantom_data: PhantomData,
         }
+    }
+
+    fn request<RequestPayload: Debug>(
+        self,
+    ) -> request_response::BuilderRequest<RequestPayload, ServiceType> {
+        request_response::BuilderRequest::new(self)
     }
 
     fn publish_subscribe<PayloadType: Debug + ?Sized>(

@@ -46,4 +46,6 @@ pub enum MessagingPattern {
     /// ability to sleep until a signal/event arrives.
     /// Building block to realize push-notifications.
     Event,
+
+    RequestResponse,
 }
