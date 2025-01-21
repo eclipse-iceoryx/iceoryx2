@@ -33,6 +33,9 @@
     [#458](https://github.com/eclipse-iceoryx/iceoryx2/issues/458)
 * Remove stale shm state files in Windows
     [#458](https://github.com/eclipse-iceoryx/iceoryx2/issues/458)
+* Make process local services truly process local by using socket pairs
+    for events
+    [#508](https://github.com/eclipse-iceoryx/iceoryx2/issues/508)
 * Completion queue capacity exceeded when history > buffer
     [#571](https://github.com/eclipse-iceoryx/iceoryx2/issues/571)
 * Increase max supported shared memory size in Windows that restricts
