@@ -57,8 +57,7 @@ impl crate::service::Service for Service {
     type ResizableSharedMemory =
         resizable_shared_memory::dynamic::DynamicMemory<PoolAllocator, Self::SharedMemory>;
     type Connection = zero_copy_connection::process_local::Connection;
-    //type Event = event::process_local::EventImpl;
-    type Event = event::unix_datagram_socket::EventImpl;
+    type Event = event::process_local_socketpair::EventImpl;
     type Monitoring = monitoring::process_local::ProcessLocalMonitoring;
     type Reactor = reactor::posix_select::Reactor;
 }
