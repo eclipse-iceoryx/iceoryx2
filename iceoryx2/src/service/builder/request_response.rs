@@ -13,8 +13,11 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use crate::service;
+use iceoryx2_bb_elementary::alignment::Alignment;
+use iceoryx2_bb_log::fatal_panic;
+
 use crate::service::builder;
+use crate::service::{self, static_config};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseOpenError {}
@@ -96,6 +99,14 @@ pub struct Builder<
     ServiceType: service::Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
+    override_request_alignment: Option<usize>,
+    override_response_alignment: Option<usize>,
+    verify_enable_safe_overflow_for_requests: bool,
+    verify_enable_safe_overflow_for_responses: bool,
+    verify_max_active_requests: bool,
+    verify_max_borrowed_responses: bool,
+    verify_max_response_buffer_size: bool,
+
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -113,10 +124,35 @@ impl<
     fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         Self {
             base,
+            override_request_alignment: None,
+            override_response_alignment: None,
+            verify_enable_safe_overflow_for_requests: false,
+            verify_enable_safe_overflow_for_responses: false,
+            verify_max_active_requests: false,
+            verify_max_borrowed_responses: false,
+            verify_max_response_buffer_size: false,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
+        }
+    }
+
+    fn config_details_mut(&mut self) -> &mut static_config::request_response::StaticConfig {
+        match self.base.service_config.messaging_pattern {
+            static_config::messaging_pattern::MessagingPattern::RequestResponse(ref mut v) => v,
+            _ => {
+                fatal_panic!(from self, "This should never happen! Accessing wrong messaging pattern in RequestResponse builder!");
+            }
+        }
+    }
+
+    fn config_details(&self) -> &static_config::request_response::StaticConfig {
+        match self.base.service_config.messaging_pattern {
+            static_config::messaging_pattern::MessagingPattern::RequestResponse(ref v) => v,
+            _ => {
+                fatal_panic!(from self, "This should never happen! Accessing wrong messaging pattern in RequestResponse builder!");
+            }
         }
     }
 
@@ -142,24 +178,44 @@ impl<
         }
     }
 
+    pub fn request_payload_alignment(mut self, alignment: Alignment) -> Self {
+        self.override_request_alignment = Some(alignment.value());
+        self
+    }
+
+    pub fn response_payload_alignment(mut self, alignment: Alignment) -> Self {
+        self.override_response_alignment = Some(alignment.value());
+        self
+    }
+
     pub fn enable_safe_overflow_for_requests(mut self, value: bool) -> Self {
-        todo!()
+        self.config_details_mut().enable_safe_overflow_for_requests = value;
+        self.verify_enable_safe_overflow_for_requests = true;
+        self
     }
 
     pub fn enable_safe_overflow_for_responses(mut self, value: bool) -> Self {
-        todo!()
+        self.config_details_mut().enable_safe_overflow_for_responses = value;
+        self.verify_enable_safe_overflow_for_responses = true;
+        self
     }
 
     pub fn max_active_requests(mut self, value: usize) -> Self {
-        todo!()
+        self.config_details_mut().max_active_requests = value;
+        self.verify_max_active_requests = true;
+        self
     }
 
     pub fn max_borrowed_responses(mut self, value: usize) -> Self {
-        todo!()
+        self.config_details_mut().max_borrowed_responses = value;
+        self.verify_max_borrowed_responses = true;
+        self
     }
 
-    pub fn response_buffer_size(mut self, value: usize) -> Self {
-        todo!()
+    pub fn max_response_buffer_size(mut self, value: usize) -> Self {
+        self.config_details_mut().max_response_buffer_size = value;
+        self.verify_max_response_buffer_size = true;
+        self
     }
 
     pub fn max_servers(mut self, value: usize) -> Self {
