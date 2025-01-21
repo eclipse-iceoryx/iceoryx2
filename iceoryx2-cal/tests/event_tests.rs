@@ -19,7 +19,6 @@ mod event {
     use std::time::Instant;
 
     use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::watchdog::Watchdog;
