@@ -15,11 +15,12 @@ use std::marker::PhantomData;
 
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
-use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
+use iceoryx2_cal::dynamic_storage::{DynamicStorageCreateError, DynamicStorageOpenError};
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
 
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
+use crate::service::builder::OpenDynamicStorageFailure;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
 use crate::service::{self, static_config};
@@ -29,12 +30,14 @@ use super::ServiceState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseOpenError {
+    DoesNotExist,
     DoesNotSupportRequestedAmountOfActiveRequests,
     DoesNotSupportRequestedAmountOfBorrowedResponses,
     DoesNotSupportRequestedResponseBufferSize,
     DoesNotSupportRequestedAmountOfServers,
     DoesNotSupportRequestedAmountOfClients,
     DoesNotSupportRequestedAmountOfNodes,
+    ExceedsMaxNumberOfNodes,
     HangsInCreation,
     IncompatibleRequestType,
     IncompatibleResponseType,
@@ -43,6 +46,8 @@ pub enum RequestResponseOpenError {
     IncompatibleOverflowBehaviorForRequests,
     IncompatibleOverflowBehaviorForResponses,
     InsufficientPermissions,
+    InternalFailure,
+    IsMarkedForDestruction,
     ServiceInCorruptedState,
 }
 
@@ -592,6 +597,88 @@ impl<
                         unlocked_static_details,
                     )),
                 ))
+            }
+        }
+    }
+
+    fn open_impl(
+        &mut self,
+        attributes: &AttributeVerifier,
+    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenError> {
+        const OPEN_RETRY_LIMIT: usize = 5;
+        let msg = "Unable to open request response service";
+
+        let mut service_open_retry_count = 0;
+        loop {
+            match self.is_service_available(msg)? {
+                None => {
+                    fail!(from self, with RequestResponseOpenError::DoesNotExist,
+                        "{} since the service does not exist.",
+                        msg);
+                }
+                Some((static_config, static_storage)) => {
+                    let request_response_static_config =
+                        self.verify_service_configuration(&static_config, attributes)?;
+
+                    let service_tag = self
+                        .base
+                        .create_node_service_tag(msg, RequestResponseOpenError::InternalFailure)?;
+
+                    let dynamic_config = match self.base.open_dynamic_config_storage() {
+                        Ok(v) => v,
+                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
+                            fail!(from self, with RequestResponseOpenError::IsMarkedForDestruction,
+                                "{} since the service is marked for destruction.",
+                                msg);
+                        }
+                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
+                            fail!(from self, with RequestResponseOpenError::ExceedsMaxNumberOfNodes,
+                                "{} since it would exceed the maximum number of supported nodes.",
+                                msg);
+                        }
+                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
+                            DynamicStorageOpenError::DoesNotExist,
+                        )) => {
+                            fail!(from self, with RequestResponseOpenError::ServiceInCorruptedState,
+                                "{} since the dynamic segment of the service is missing.",
+                                msg);
+                        }
+                        Err(e) => {
+                            if self.is_service_available(msg)?.is_none() {
+                                fail!(from self, with RequestResponseOpenError::DoesNotExist,
+                                    "{} since the service does not exist.", msg);
+                            }
+
+                            service_open_retry_count += 1;
+
+                            if OPEN_RETRY_LIMIT < service_open_retry_count {
+                                fail!(from self, with RequestResponseOpenError::ServiceInCorruptedState,
+                                    "{} since the dynamic service information could not be opened ({:?}).",
+                                    msg, e);
+                            }
+
+                            continue;
+                        }
+                    };
+
+                    self.base.service_config.messaging_pattern =
+                        static_config::messaging_pattern::MessagingPattern::RequestResponse(
+                            request_response_static_config.clone(),
+                        );
+
+                    if let Some(mut service_tag) = service_tag {
+                        service_tag.release_ownership();
+                    }
+
+                    return Ok(request_response::PortFactory::new(
+                        ServiceType::__internal_from_state(service::ServiceState::new(
+                            static_config,
+                            self.base.shared_node.clone(),
+                            dynamic_config,
+                            static_storage,
+                        )),
+                    ));
+                }
             }
         }
     }
