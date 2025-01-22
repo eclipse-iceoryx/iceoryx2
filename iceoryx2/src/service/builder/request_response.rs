@@ -23,10 +23,11 @@ use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::OpenDynamicStorageFailure;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
-use crate::service::{self, static_config};
+use crate::service::{self, header, static_config};
 use crate::service::{builder, dynamic_config};
 
-use super::ServiceState;
+use super::message_type_details::{MessageTypeDetails, TypeVariant};
+use super::{ServiceState, RETRY_LIMIT};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseOpenError {
@@ -127,6 +128,13 @@ impl From<ServiceAvailabilityState> for RequestResponseCreateError {
 pub enum RequestResponseOpenOrCreateError {
     RequestResponseOpenError(RequestResponseOpenError),
     RequestResponseCreateError(RequestResponseCreateError),
+    SystemInFlux,
+}
+
+impl From<ServiceAvailabilityState> for RequestResponseOpenOrCreateError {
+    fn from(value: ServiceAvailabilityState) -> Self {
+        RequestResponseOpenOrCreateError::RequestResponseOpenError(value.into())
+    }
 }
 
 impl From<RequestResponseOpenError> for RequestResponseOpenOrCreateError {
@@ -681,5 +689,121 @@ impl<
                 }
             }
         }
+    }
+
+    fn open_or_create_impl(
+        mut self,
+        attributes: &AttributeVerifier,
+    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenOrCreateError> {
+        let msg = "Unable to open or create request response service";
+
+        let mut retry_count = 0;
+        loop {
+            if RETRY_LIMIT < retry_count {
+                fail!(from self,
+                      with RequestResponseOpenOrCreateError::SystemInFlux,
+                      "{} since an instance is creating and removing the same service repeatedly.",
+                      msg);
+            }
+            retry_count += 1;
+
+            match self.is_service_available(msg)? {
+                Some(_) => match self.open_impl(attributes) {
+                    Ok(factory) => return Ok(factory),
+                    Err(RequestResponseOpenError::DoesNotExist) => continue,
+                    Err(e) => return Err(e.into()),
+                },
+                None => {
+                    match self.create_impl(&AttributeSpecifier(attributes.attributes().clone())) {
+                        Ok(factory) => return Ok(factory),
+                        Err(RequestResponseCreateError::AlreadyExists)
+                        | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
+                            continue;
+                        }
+                        Err(e) => return Err(e.into()),
+                    }
+                }
+            }
+        }
+    }
+
+    fn prepare_message_type_details(&mut self) {
+        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+            header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >(TypeVariant::FixedSize);
+
+        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+            header::request_response::ResponseHeader,
+            ResponseHeader,
+            ResponsePayload,
+        >(TypeVariant::FixedSize);
+
+        if let Some(alignment) = self.override_request_alignment {
+            self.config_details_mut()
+                .request_message_type_details
+                .payload
+                .alignment = self
+                .config_details()
+                .request_message_type_details
+                .payload
+                .alignment
+                .max(alignment);
+        }
+
+        if let Some(alignment) = self.override_response_alignment {
+            self.config_details_mut()
+                .response_message_type_details
+                .payload
+                .alignment = self
+                .config_details()
+                .response_message_type_details
+                .payload
+                .alignment
+                .max(alignment);
+        }
+    }
+
+    pub fn open_or_create(
+        self,
+    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenOrCreateError> {
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
+    }
+
+    pub fn open_or_create_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenOrCreateError> {
+        self.prepare_message_type_details();
+        self.open_or_create_impl(required_attributes)
+    }
+
+    pub fn open(
+        self,
+    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenError> {
+        self.open_with_attributes(&AttributeVerifier::new())
+    }
+
+    pub fn open_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenError> {
+        self.prepare_message_type_details();
+        self.open_impl(required_attributes)
+    }
+
+    pub fn create(
+        self,
+    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseCreateError> {
+        self.create_with_attributes(&AttributeSpecifier::new())
+    }
+
+    pub fn create_with_attributes(
+        mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseCreateError> {
+        self.prepare_message_type_details();
+        self.create_impl(attributes)
     }
 }
