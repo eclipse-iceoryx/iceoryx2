@@ -23,12 +23,16 @@ use super::PortCleanupAction;
 #[doc(hidden)]
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub struct ServerDetails {}
+pub struct ServerDetails {
+    _stub: usize,
+}
 
 #[doc(hidden)]
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
-pub struct ClientDetails {}
+pub struct ClientDetails {
+    _stub: usize,
+}
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

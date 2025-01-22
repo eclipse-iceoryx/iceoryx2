@@ -116,17 +116,17 @@ impl<S: Service> Builder<S> {
         }
     }
 
-    pub fn request<RequestPayload: Debug>(
+    pub fn request_response<RequestPayload: Debug, ResponsePayload: Debug>(
         self,
-    ) -> request_response::BuilderRequest<RequestPayload, S> {
+    ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), S> {
         BuilderWithServiceType::new(
-            StaticConfig::new_publish_subscribe::<S::ServiceNameHasher>(
+            StaticConfig::new_request_response::<S::ServiceNameHasher>(
                 &self.name,
                 self.shared_node.config(),
             ),
             self.shared_node,
         )
-        .request::<RequestPayload>()
+        .request_response::<RequestPayload, ResponsePayload>()
     }
 
     /// Create a new builder to create a
@@ -172,10 +172,10 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         }
     }
 
-    fn request<RequestPayload: Debug>(
+    fn request_response<RequestPayload: Debug, ResponsePayload: Debug>(
         self,
-    ) -> request_response::BuilderRequest<RequestPayload, ServiceType> {
-        request_response::BuilderRequest::new(self)
+    ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), ServiceType> {
+        request_response::Builder::new(self)
     }
 
     fn publish_subscribe<PayloadType: Debug + ?Sized>(
