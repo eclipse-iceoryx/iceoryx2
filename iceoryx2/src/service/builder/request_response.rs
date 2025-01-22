@@ -15,25 +15,35 @@ use std::marker::PhantomData;
 
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
+use iceoryx2_cal::serialize::Serialize;
+use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
 
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
-use crate::service::builder;
+use crate::service::dynamic_config::request_response::DynamicConfigSettings;
+use crate::service::port_factory::request_response;
 use crate::service::{self, static_config};
+use crate::service::{builder, dynamic_config};
 
 use super::ServiceState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseOpenError {
-    IncompatibleAttributes,
-    IncompatibleMessagingPattern,
-    IncompatibleOverflowBehaviorForRequests,
-    IncompatibleOverflowBehaviorForResponses,
     DoesNotSupportRequestedAmountOfActiveRequests,
     DoesNotSupportRequestedAmountOfBorrowedResponses,
     DoesNotSupportRequestedResponseBufferSize,
     DoesNotSupportRequestedAmountOfServers,
     DoesNotSupportRequestedAmountOfClients,
     DoesNotSupportRequestedAmountOfNodes,
+    HangsInCreation,
+    IncompatibleRequestType,
+    IncompatibleResponseType,
+    IncompatibleAttributes,
+    IncompatibleMessagingPattern,
+    IncompatibleOverflowBehaviorForRequests,
+    IncompatibleOverflowBehaviorForResponses,
+    InsufficientPermissions,
+    ServiceInCorruptedState,
 }
 
 impl core::fmt::Display for RequestResponseOpenError {
@@ -44,8 +54,40 @@ impl core::fmt::Display for RequestResponseOpenError {
 
 impl std::error::Error for RequestResponseOpenError {}
 
+impl From<ServiceAvailabilityState> for RequestResponseOpenError {
+    fn from(value: ServiceAvailabilityState) -> Self {
+        match value {
+            ServiceAvailabilityState::IncompatibleRequestType => {
+                RequestResponseOpenError::IncompatibleRequestType
+            }
+            ServiceAvailabilityState::IncompatibleResponseType => {
+                RequestResponseOpenError::IncompatibleResponseType
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+                RequestResponseOpenError::IncompatibleMessagingPattern
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+                RequestResponseOpenError::InsufficientPermissions
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
+                RequestResponseOpenError::HangsInCreation
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
+                RequestResponseOpenError::ServiceInCorruptedState
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum RequestResponseCreateError {}
+pub enum RequestResponseCreateError {
+    AlreadyExists,
+    InternalFailure,
+    IsBeingCreatedByAnotherInstance,
+    InsufficientPermissions,
+    HangsInCreation,
+    ServiceInCorruptedState,
+}
 
 impl core::fmt::Display for RequestResponseCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -54,6 +96,27 @@ impl core::fmt::Display for RequestResponseCreateError {
 }
 
 impl std::error::Error for RequestResponseCreateError {}
+
+impl From<ServiceAvailabilityState> for RequestResponseCreateError {
+    fn from(value: ServiceAvailabilityState) -> Self {
+        match value {
+            ServiceAvailabilityState::IncompatibleRequestType
+            | ServiceAvailabilityState::IncompatibleResponseType
+            | ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+                RequestResponseCreateError::AlreadyExists
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+                RequestResponseCreateError::InsufficientPermissions
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
+                RequestResponseCreateError::HangsInCreation
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
+                RequestResponseCreateError::ServiceInCorruptedState
+            }
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum RequestResponseOpenOrCreateError {
@@ -430,6 +493,106 @@ impl<
             }
             Ok(None) => Ok(None),
             Err(e) => Err(ServiceAvailabilityState::ServiceState(e)),
+        }
+    }
+
+    fn create_impl(
+        &mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseCreateError> {
+        let msg = "Unable to create request response service";
+        self.adjust_configuration_to_meaningful_values();
+
+        match self.is_service_available(msg)? {
+            Some(_) => {
+                fail!(from self, with RequestResponseCreateError::AlreadyExists,
+                    "{} since the service already exists.",
+                    msg);
+            }
+            None => {
+                let service_tag = self
+                    .base
+                    .create_node_service_tag(msg, RequestResponseCreateError::InternalFailure)?;
+
+                let static_config = match self.base.create_static_config_storage() {
+                    Ok(static_config) => static_config,
+                    Err(StaticStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with RequestResponseCreateError::AlreadyExists,
+                            "{} since the service already exists.", msg);
+                    }
+                    Err(StaticStorageCreateError::Creation) => {
+                        fail!(from self, with RequestResponseCreateError::IsBeingCreatedByAnotherInstance,
+                            "{} since the service is being created by another instance.", msg);
+                    }
+                    Err(StaticStorageCreateError::InsufficientPermissions) => {
+                        fail!(from self, with RequestResponseCreateError::InsufficientPermissions,
+                            "{} since the static service information could not be created due to insufficient permissions.",
+                            msg);
+                    }
+                    Err(e) => {
+                        fail!(from self, with RequestResponseCreateError::InternalFailure,
+                            "{} since the static service information could not be created due to an internal failure ({:?}).",
+                            msg, e);
+                    }
+                };
+
+                let request_response_config = self.base.service_config.request_response();
+                let dynamic_config_setting = DynamicConfigSettings {
+                    number_of_servers: request_response_config.max_servers,
+                    number_of_clients: request_response_config.max_clients,
+                };
+
+                let dynamic_config = match self.base.create_dynamic_config_storage(
+                    dynamic_config::MessagingPattern::RequestResonse(
+                        dynamic_config::request_response::DynamicConfig::new(
+                            &dynamic_config_setting,
+                        ),
+                    ),
+                    dynamic_config::request_response::DynamicConfig::memory_size(
+                        &dynamic_config_setting,
+                    ),
+                    request_response_config.max_nodes,
+                ) {
+                    Ok(dynamic_config) => dynamic_config,
+                    Err(DynamicStorageCreateError::AlreadyExists) => {
+                        fail!(from self, with RequestResponseCreateError::ServiceInCorruptedState,
+                            "{} since the dynamic config of a previous instance of the service still exists.",
+                            msg);
+                    }
+                    Err(e) => {
+                        fail!(from self, with RequestResponseCreateError::InternalFailure,
+                            "{} since the dynamic service segment could not be created ({:?}).",
+                            msg, e);
+                    }
+                };
+
+                self.base.service_config.attributes = attributes.0.clone();
+                let serialized_service_config = fail!(from self,
+                          when ServiceType::ConfigSerializer::serialize(&self.base.service_config),
+                          with RequestResponseCreateError::ServiceInCorruptedState,
+                          "{} since the configuration could not be serialized.",
+                          msg);
+
+                let mut unlocked_static_details = fail!(from self,
+                        when static_config.unlock(serialized_service_config.as_slice()),
+                        with RequestResponseCreateError::ServiceInCorruptedState,
+                        "{} since the configuration could not be written into the static storage.",
+                        msg);
+
+                unlocked_static_details.release_ownership();
+                if let Some(mut service_tag) = service_tag {
+                    service_tag.release_ownership();
+                }
+
+                Ok(request_response::PortFactory::new(
+                    ServiceType::__internal_from_state(service::ServiceState::new(
+                        self.base.service_config.clone(),
+                        self.base.shared_node.clone(),
+                        dynamic_config,
+                        unlocked_static_details,
+                    )),
+                ))
+            }
         }
     }
 }
