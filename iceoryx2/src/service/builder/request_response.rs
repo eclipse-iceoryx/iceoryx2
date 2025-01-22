@@ -165,29 +165,6 @@ enum ServiceAvailabilityState {
 }
 
 #[derive(Debug)]
-pub struct BuilderRequest<RequestPayload: Debug, ServiceType: service::Service> {
-    base: builder::BuilderWithServiceType<ServiceType>,
-    _request_payload: PhantomData<RequestPayload>,
-}
-
-impl<RequestPayload: Debug, ServiceType: service::Service>
-    BuilderRequest<RequestPayload, ServiceType>
-{
-    pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
-        Self {
-            base,
-            _request_payload: PhantomData,
-        }
-    }
-
-    pub fn response<ResponsePayload: Debug>(
-        self,
-    ) -> Builder<RequestPayload, (), ResponsePayload, (), ServiceType> {
-        Builder::new(self.base)
-    }
-}
-
-#[derive(Debug)]
 pub struct Builder<
     RequestPayload: Debug,
     RequestHeader: Debug,
@@ -221,7 +198,7 @@ impl<
         ServiceType: service::Service,
     > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
-    fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
+    pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         Self {
             base,
             override_request_alignment: None,
