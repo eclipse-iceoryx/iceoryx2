@@ -51,6 +51,8 @@ use super::config_scheme::static_config_storage_config;
 use super::service_name::ServiceName;
 use super::Service;
 
+const RETRY_LIMIT: usize = 5;
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceState {
     IncompatibleMessagingPattern,

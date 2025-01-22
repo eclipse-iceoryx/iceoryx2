@@ -20,6 +20,7 @@ use crate::service::port_factory::event;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use crate::service::{self, dynamic_config::event::DynamicConfigSettings};
+use builder::RETRY_LIMIT;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::clock::Time;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
@@ -141,6 +142,7 @@ pub enum EventOpenOrCreateError {
     EventOpenError(EventOpenError),
     /// Failures that can occur when an event [`Service`] is created.
     EventCreateError(EventCreateError),
+    SystemInFlux,
 }
 
 impl From<EventOpenError> for EventOpenOrCreateError {
@@ -336,7 +338,16 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     ) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
         let msg = "Unable to open or create event service";
 
+        let mut retry_count = 0;
         loop {
+            if RETRY_LIMIT < retry_count {
+                fail!(from self,
+                      with EventOpenOrCreateError::SystemInFlux,
+                      "{} since an instance is creating and removing the same service repeatedly.",
+                      msg);
+            }
+            retry_count += 1;
+
             match self.base.is_service_available(msg)? {
                 Some(_) => return Ok(self.open_with_attributes(required_attributes)?),
                 None => {
@@ -366,7 +377,6 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
         mut self,
         required_attributes: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
-        const OPEN_RETRY_LIMIT: usize = 5;
         let msg = "Unable to open event service";
 
         let mut service_open_retry_count = 0;
@@ -408,7 +418,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
 
                             service_open_retry_count += 1;
 
-                            if OPEN_RETRY_LIMIT < service_open_retry_count {
+                            if RETRY_LIMIT < service_open_retry_count {
                                 fail!(from self, with EventOpenError::ServiceInCorruptedState,
                                 "{} since the dynamic service information could not be opened ({:?}). This could indicate a corrupted system or a misconfigured system where services are created/removed with a high frequency.",
                                 msg, e);
