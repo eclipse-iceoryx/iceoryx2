@@ -440,7 +440,7 @@ impl<
         if self.verify_max_nodes
             && existing_configuration.max_nodes < required_configuration.max_nodes
         {
-            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfClients,
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfNodes,
                 "{} since the service supports at most {} nodes but {} are required.",
                 msg, existing_configuration.max_nodes, required_configuration.max_nodes);
         }
