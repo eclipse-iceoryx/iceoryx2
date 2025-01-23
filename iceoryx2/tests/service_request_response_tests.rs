@@ -315,6 +315,162 @@ mod service_request_response {
         assert_that!(sut_open, is_ok);
     }
 
+    #[test]
+    fn opening_service_with_attributes_and_acquiring_attributes_works<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let attribute_key = "wanna try this head";
+        let attribute_value = "no its a brainslug";
+
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let _sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create_with_attributes(
+                &AttributeSpecifier::new().define(attribute_key, attribute_value),
+            )
+            .unwrap();
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open()
+            .unwrap();
+
+        let attributes = sut_open.attributes();
+        assert_that!(attributes.len(), eq 1);
+        assert_that!(attributes.get_key_value_at(attribute_key, 0), eq Some(attribute_value));
+    }
+
+    #[test]
+    fn opening_service_with_incompatible_attributes_fails<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let attribute_key = "there is a muffin";
+        let attribute_value = "with molten chocolate";
+        let attribute_incompatible_value = "its delicious";
+
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let _sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create_with_attributes(
+                &AttributeSpecifier::new().define(attribute_key, attribute_value),
+            )
+            .unwrap();
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open_with_attributes(
+                &AttributeVerifier::new().require(&attribute_key, &attribute_incompatible_value),
+            );
+
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleAttributes));
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open_with_attributes(
+                &AttributeVerifier::new().require_key(&attribute_incompatible_value),
+            );
+
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleAttributes));
+    }
+
+    #[test]
+    fn opening_service_with_compatible_attributes_works<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let attribute_key = "kermit the brave knight";
+        let attribute_value = "rides on hypnotoad into the sunset";
+
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let _sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create_with_attributes(
+                &AttributeSpecifier::new().define(attribute_key, attribute_value),
+            )
+            .unwrap();
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open_with_attributes(
+                &AttributeVerifier::new().require(&attribute_key, &attribute_value),
+            );
+
+        assert_that!(sut_open, is_ok);
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open_with_attributes(&AttributeVerifier::new().require_key(&attribute_key));
+
+        assert_that!(sut_open, is_ok);
+    }
+
+    #[test]
+    fn recreate_after_drop_works<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create();
+        assert_that!(sut, is_ok);
+
+        drop(sut);
+
+        let sut2 = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create();
+        assert_that!(sut2, is_ok);
+    }
+
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_request_overflow_requirement<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .enable_safe_overflow_for_requests(true)
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .enable_safe_overflow_for_requests(false)
+            .open();
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleOverflowBehaviorForRequests));
+    }
+
+    #[test]
+    fn open_fails_when_service_does_not_satisfy_response_overflow_requirement<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .enable_safe_overflow_for_responses(true)
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .enable_safe_overflow_for_responses(false)
+            .open();
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleOverflowBehaviorForResponses));
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
