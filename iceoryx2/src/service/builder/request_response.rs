@@ -388,7 +388,7 @@ impl<
     }
 
     /// If the [`Service`] is created it defines how many responses fit in the
-    /// [`Clients`](crate::port::server::Clients)s buffer. If an existing
+    /// [`Clients`](crate::port::client::Client)s buffer. If an existing
     /// [`Service`] is opened it defines the minimum required.
     pub fn max_response_buffer_size(mut self, value: usize) -> Self {
         self.config_details_mut().max_response_buffer_size = value;
