@@ -912,6 +912,42 @@ mod service_request_response {
         assert_that!(number_of_listed_services, eq service_names.len());
     }
 
+    #[test]
+    fn service_cannot_be_opened_by_more_nodes_than_specified<Sut: Service>() {
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+
+        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_3 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut_1 = node_1
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_nodes(2)
+            .create();
+        assert_that!(sut_1, is_ok);
+
+        let sut_2 = node_2
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(sut_2, is_ok);
+
+        let sut_3 = node_3
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(sut_3.err(), eq Some(RequestResponseOpenError::ExceedsMaxNumberOfNodes));
+        drop(sut_2);
+
+        let sut_3 = node_3
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(sut_3, is_ok);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
