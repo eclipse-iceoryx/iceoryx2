@@ -17,22 +17,22 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
-//! let pubsub = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//! let req_res = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .request_response::<u64, u64>()
 //!     .open_or_create()?;
 //!
-//! println!("type details:              {:?}", pubsub.static_config().message_type_details());
-//! println!("max active requests:       {:?}", pubsub.static_config().max_active_requests());
-//! println!("max active responses:      {:?}", pubsub.static_config().max_active_responses());
-//! println!("max borrowed responses:    {:?}", pubsub.static_config().max_borrowed_responses());
-//! println!("max borrowed requests:     {:?}", pubsub.static_config().max_borrowed_requests());
-//! println!("max response buffer size:  {:?}", pubsub.static_config().max_response_buffer_size());
-//! println!("max request buffer size:   {:?}", pubsub.static_config().max_request_buffer_size());
-//! println!("max servers:               {:?}", pubsub.static_config().max_clients());
-//! println!("max clients:               {:?}", pubsub.static_config().max_servers());
-//! println!("max nodes:                 {:?}", pubsub.static_config().max_nodes());
-//! println!("request safe overflow:     {:?}", pubsub.static_config().has_safe_overflow_for_requests());
-//! println!("response safe overflow:    {:?}", pubsub.static_config().has_safe_overflow_for_responses());
+//! println!("type details:              {:?}", req_res.static_config().message_type_details());
+//! println!("max active requests:       {:?}", req_res.static_config().max_active_requests());
+//! println!("max active responses:      {:?}", req_res.static_config().max_active_responses());
+//! println!("max borrowed responses:    {:?}", req_res.static_config().max_borrowed_responses());
+//! println!("max borrowed requests:     {:?}", req_res.static_config().max_borrowed_requests());
+//! println!("max response buffer size:  {:?}", req_res.static_config().max_response_buffer_size());
+//! println!("max request buffer size:   {:?}", req_res.static_config().max_request_buffer_size());
+//! println!("max servers:               {:?}", req_res.static_config().max_clients());
+//! println!("max clients:               {:?}", req_res.static_config().max_servers());
+//! println!("max nodes:                 {:?}", req_res.static_config().max_nodes());
+//! println!("request safe overflow:     {:?}", req_res.static_config().has_safe_overflow_for_requests());
+//! println!("response safe overflow:    {:?}", req_res.static_config().has_safe_overflow_for_responses());
 //!
 //! # Ok(())
 //! # }

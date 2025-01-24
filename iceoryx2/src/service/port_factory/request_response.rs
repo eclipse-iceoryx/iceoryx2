@@ -10,6 +10,36 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let req_res = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .request_response::<u64, u64>()
+//!     .open_or_create()?;
+//!
+//! println!("name:                             {:?}", req_res.name());
+//! println!("service id:                       {:?}", req_res.service_id());
+//! println!("type details:                     {:?}", req_res.static_config().message_type_details());
+//! println!("max active requests:              {:?}", req_res.static_config().max_active_requests());
+//! println!("max active responses:             {:?}", req_res.static_config().max_active_responses());
+//! println!("max borrowed responses:           {:?}", req_res.static_config().max_borrowed_responses());
+//! println!("max borrowed requests:            {:?}", req_res.static_config().max_borrowed_requests());
+//! println!("max response buffer size:         {:?}", req_res.static_config().max_response_buffer_size());
+//! println!("max request buffer size:          {:?}", req_res.static_config().max_request_buffer_size());
+//! println!("max servers:                      {:?}", req_res.static_config().max_clients());
+//! println!("max clients:                      {:?}", req_res.static_config().max_servers());
+//! println!("max nodes:                        {:?}", req_res.static_config().max_nodes());
+//! println!("request safe overflow:            {:?}", req_res.static_config().has_safe_overflow_for_requests());
+//! println!("response safe overflow:           {:?}", req_res.static_config().has_safe_overflow_for_responses());
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
@@ -23,6 +53,11 @@ use crate::{
 
 use super::nodes;
 
+/// The factory for
+/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse).
+/// It can acquire dynamic and static service informations and create
+/// [`crate::port::client::Client`]
+/// or [`crate::port::server::Server`] ports.
 #[derive(Debug)]
 pub struct PortFactory<Service: service::Service> {
     pub(crate) service: Service,

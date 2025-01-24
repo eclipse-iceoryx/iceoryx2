@@ -20,6 +20,9 @@ pub mod event;
 /// based service.
 pub mod publish_subscribe;
 
+/// The dynamic service configuration of an
+/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
+/// based service.
 pub mod request_response;
 
 use core::fmt::Display;
