@@ -19,9 +19,10 @@ COLOR_RED='\033[1;31m'
 COLOR_GREEN='\033[1;32m'
 COLOR_YELLOW='\033[1;33m'
 
+LLVM_PATH=$(dirname $(which llvm-profdata))
 LLVM_PROFILE_PATH="target/debug/llvm-profile-files"
 export LLVM_PROFILE_FILE="${LLVM_PROFILE_PATH}/iceoryx2-%p-%m.profraw"
-export RUSTFLAGS="-Cinstrument-coverage"
+export RUSTFLAGS="-C instrument-coverage -Z coverage-options=mcdc"
 
 COVERAGE_DIR="target/debug/coverage"
 
@@ -132,6 +133,7 @@ generate_html_report() {
           --ignore "**/benchmarks/*" \
           --ignore "**/target/*" \
           --ignore "**/.cargo/*" \
+          --llvm-path ${LLVM_PATH} \
           --output-path ./${COVERAGE_DIR}/html
     sed -i 's/coverage/grcov/' ${COVERAGE_DIR}/html/coverage.json
     sed -i 's/coverage/grcov/' ${COVERAGE_DIR}/html/badges/*.svg
@@ -157,6 +159,7 @@ generate_lcov_report() {
           --ignore "**/benchmarks/*" \
           --ignore "**/target/*" \
           --ignore "**/.cargo/*" \
+          --llvm-path ${LLVM_PATH} \
           --output-path ./${COVERAGE_DIR}/lcov.info
 }
 
