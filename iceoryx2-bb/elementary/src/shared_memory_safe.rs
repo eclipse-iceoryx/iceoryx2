@@ -14,57 +14,57 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 
 /// Marks types that can be safely stored in shared memory and consumed from multiple process
 /// using different address spaces.
-pub trait SharedMemorySafe {
+pub unsafe trait SharedMemorySafe {
     fn type_name() -> &'static str {
         core::any::type_name::<Self>()
     }
 }
 
-impl SharedMemorySafe for u8 {}
-impl SharedMemorySafe for u16 {}
-impl SharedMemorySafe for u32 {}
-impl SharedMemorySafe for u64 {}
-impl SharedMemorySafe for u128 {}
+unsafe impl SharedMemorySafe for u8 {}
+unsafe impl SharedMemorySafe for u16 {}
+unsafe impl SharedMemorySafe for u32 {}
+unsafe impl SharedMemorySafe for u64 {}
+unsafe impl SharedMemorySafe for u128 {}
 
-impl SharedMemorySafe for i8 {}
-impl SharedMemorySafe for i16 {}
-impl SharedMemorySafe for i32 {}
-impl SharedMemorySafe for i64 {}
-impl SharedMemorySafe for i128 {}
+unsafe impl SharedMemorySafe for i8 {}
+unsafe impl SharedMemorySafe for i16 {}
+unsafe impl SharedMemorySafe for i32 {}
+unsafe impl SharedMemorySafe for i64 {}
+unsafe impl SharedMemorySafe for i128 {}
 
-impl SharedMemorySafe for f32 {}
-impl SharedMemorySafe for f64 {}
+unsafe impl SharedMemorySafe for f32 {}
+unsafe impl SharedMemorySafe for f64 {}
 
-impl SharedMemorySafe for char {}
-impl SharedMemorySafe for bool {}
+unsafe impl SharedMemorySafe for char {}
+unsafe impl SharedMemorySafe for bool {}
 
-impl SharedMemorySafe for IoxAtomicU8 {}
-impl SharedMemorySafe for IoxAtomicU16 {}
-impl SharedMemorySafe for IoxAtomicU32 {}
-impl SharedMemorySafe for IoxAtomicU64 {}
+unsafe impl SharedMemorySafe for IoxAtomicU8 {}
+unsafe impl SharedMemorySafe for IoxAtomicU16 {}
+unsafe impl SharedMemorySafe for IoxAtomicU32 {}
+unsafe impl SharedMemorySafe for IoxAtomicU64 {}
 
-impl SharedMemorySafe for IoxAtomicI8 {}
-impl SharedMemorySafe for IoxAtomicI16 {}
-impl SharedMemorySafe for IoxAtomicI32 {}
-impl SharedMemorySafe for IoxAtomicI64 {}
+unsafe impl SharedMemorySafe for IoxAtomicI8 {}
+unsafe impl SharedMemorySafe for IoxAtomicI16 {}
+unsafe impl SharedMemorySafe for IoxAtomicI32 {}
+unsafe impl SharedMemorySafe for IoxAtomicI64 {}
 
-impl<T: SharedMemorySafe> SharedMemorySafe for [T] {}
-impl<T: SharedMemorySafe, const N: usize> SharedMemorySafe for [T; N] {}
-impl<T: SharedMemorySafe> SharedMemorySafe for Option<T> {}
-impl<T: SharedMemorySafe, E: SharedMemorySafe> SharedMemorySafe for Result<T, E> {}
-impl<T: SharedMemorySafe> SharedMemorySafe for core::mem::MaybeUninit<T> {}
-impl<T: SharedMemorySafe> SharedMemorySafe for core::cell::UnsafeCell<T> {}
+unsafe impl<T: SharedMemorySafe> SharedMemorySafe for [T] {}
+unsafe impl<T: SharedMemorySafe, const N: usize> SharedMemorySafe for [T; N] {}
+unsafe impl<T: SharedMemorySafe> SharedMemorySafe for Option<T> {}
+unsafe impl<T: SharedMemorySafe, E: SharedMemorySafe> SharedMemorySafe for Result<T, E> {}
+unsafe impl<T: SharedMemorySafe> SharedMemorySafe for core::mem::MaybeUninit<T> {}
+unsafe impl<T: SharedMemorySafe> SharedMemorySafe for core::cell::UnsafeCell<T> {}
 
-impl<T1: SharedMemorySafe, T2: SharedMemorySafe> SharedMemorySafe for (T1, T2) {}
-impl<T1: SharedMemorySafe, T2: SharedMemorySafe, T3: SharedMemorySafe> SharedMemorySafe
+unsafe impl<T1: SharedMemorySafe, T2: SharedMemorySafe> SharedMemorySafe for (T1, T2) {}
+unsafe impl<T1: SharedMemorySafe, T2: SharedMemorySafe, T3: SharedMemorySafe> SharedMemorySafe
     for (T1, T2, T3)
 {
 }
-impl<T1: SharedMemorySafe, T2: SharedMemorySafe, T3: SharedMemorySafe, T4: SharedMemorySafe>
+unsafe impl<T1: SharedMemorySafe, T2: SharedMemorySafe, T3: SharedMemorySafe, T4: SharedMemorySafe>
     SharedMemorySafe for (T1, T2, T3, T4)
 {
 }
-impl<
+unsafe impl<
         T1: SharedMemorySafe,
         T2: SharedMemorySafe,
         T3: SharedMemorySafe,
@@ -73,7 +73,7 @@ impl<
     > SharedMemorySafe for (T1, T2, T3, T4, T5)
 {
 }
-impl<
+unsafe impl<
         T1: SharedMemorySafe,
         T2: SharedMemorySafe,
         T3: SharedMemorySafe,
@@ -83,7 +83,7 @@ impl<
     > SharedMemorySafe for (T1, T2, T3, T4, T5, T6)
 {
 }
-impl<
+unsafe impl<
         T1: SharedMemorySafe,
         T2: SharedMemorySafe,
         T3: SharedMemorySafe,
@@ -94,7 +94,7 @@ impl<
     > SharedMemorySafe for (T1, T2, T3, T4, T5, T6, T7)
 {
 }
-impl<
+unsafe impl<
         T1: SharedMemorySafe,
         T2: SharedMemorySafe,
         T3: SharedMemorySafe,
