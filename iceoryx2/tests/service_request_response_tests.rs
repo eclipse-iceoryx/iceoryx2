@@ -472,6 +472,33 @@ mod service_request_response {
     }
 
     #[test]
+    fn open_verifies_max_active_responses_correctly<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_active_responses(10)
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_active_responses(11)
+            .open();
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveResponses));
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_active_responses(9)
+            .open();
+        assert_that!(sut_open, is_ok);
+    }
+
+    #[test]
     fn open_verifies_max_active_requests_correctly<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
@@ -526,6 +553,33 @@ mod service_request_response {
     }
 
     #[test]
+    fn open_verifies_max_borrowed_requests_correctly<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_borrowed_requests(10)
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_borrowed_requests(11)
+            .open();
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedRequests));
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_borrowed_requests(9)
+            .open();
+        assert_that!(sut_open, is_ok);
+    }
+
+    #[test]
     fn open_verifies_max_response_buffer_size_correctly<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
@@ -548,6 +602,33 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .max_response_buffer_size(9)
+            .open();
+        assert_that!(sut_open, is_ok);
+    }
+
+    #[test]
+    fn open_verifies_max_request_buffer_size_correctly<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_request_buffer_size(10)
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_request_buffer_size(11)
+            .open();
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedRequestBufferSize));
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_request_buffer_size(9)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -640,10 +721,8 @@ mod service_request_response {
     mod local {}
 
     // todo:
-    //   service does exist, list, remove with rpc
-    //   add:
-    //      * request buffer size
-    //      * borrowed requests
-    //      * active responses
+    //   * service does exist, list, remove with rpc
+    //   * set from 0 to 1
+    //   * read limits on open
     //
 }
