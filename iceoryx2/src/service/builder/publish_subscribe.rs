@@ -182,6 +182,8 @@ pub enum PublishSubscribeOpenOrCreateError {
     PublishSubscribeOpenError(PublishSubscribeOpenError),
     /// Failures that can occur when a [`Service`] could not be created.
     PublishSubscribeCreateError(PublishSubscribeCreateError),
+    /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
+    /// high frequency.
     SystemInFlux,
 }
 

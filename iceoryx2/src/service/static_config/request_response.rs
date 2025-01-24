@@ -22,8 +22,8 @@ pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_responses: bool,
     pub(crate) max_active_responses: usize,
     pub(crate) max_active_requests: usize,
-    pub(crate) max_borrowed_responses: usize,
-    pub(crate) max_borrowed_requests: usize,
+    pub(crate) max_borrowed_response_samples: usize,
+    pub(crate) max_borrowed_request_samples: usize,
     pub(crate) max_response_buffer_size: usize,
     pub(crate) max_request_buffer_size: usize,
     pub(crate) max_servers: usize,
@@ -46,8 +46,14 @@ impl StaticConfig {
                 .enable_safe_overflow_for_responses,
             max_active_responses: config.defaults.request_response.max_active_responses,
             max_active_requests: config.defaults.request_response.max_active_requests,
-            max_borrowed_responses: config.defaults.request_response.max_borrowed_responses,
-            max_borrowed_requests: config.defaults.request_response.max_borrowed_requests,
+            max_borrowed_response_samples: config
+                .defaults
+                .request_response
+                .max_borrowed_response_samples,
+            max_borrowed_request_samples: config
+                .defaults
+                .request_response
+                .max_borrowed_request_samples,
             max_response_buffer_size: config.defaults.request_response.max_response_buffer_size,
             max_request_buffer_size: config.defaults.request_response.max_request_buffer_size,
             max_servers: config.defaults.request_response.max_servers,
@@ -74,12 +80,12 @@ impl StaticConfig {
         self.max_active_requests
     }
 
-    pub fn max_borrowed_responses(&self) -> usize {
-        self.max_borrowed_responses
+    pub fn max_borrowed_response_samples(&self) -> usize {
+        self.max_borrowed_response_samples
     }
 
-    pub fn max_borrowed_requests(&self) -> usize {
-        self.max_borrowed_requests
+    pub fn max_borrowed_request_samples(&self) -> usize {
+        self.max_borrowed_request_samples
     }
 
     pub fn max_response_buffer_size(&self) -> usize {

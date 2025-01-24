@@ -142,6 +142,8 @@ pub enum EventOpenOrCreateError {
     EventOpenError(EventOpenError),
     /// Failures that can occur when an event [`Service`] is created.
     EventCreateError(EventCreateError),
+    /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
+    /// high frequency.
     SystemInFlux,
 }
 

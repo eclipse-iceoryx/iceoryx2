@@ -16,6 +16,8 @@ use tiny_fn::tiny_fn;
 
 pub(crate) mod details;
 
+/// Sends requests to a [`Server`](crate::port::server::Server) and receives responses.
+pub mod client;
 /// Defines the event id used to identify the source of an event.
 pub mod event_id;
 /// Receiving endpoint (port) for event based communication
@@ -26,6 +28,8 @@ pub mod notifier;
 pub mod port_identifiers;
 /// Sending endpoint (port) for publish-subscribe based communication
 pub mod publisher;
+/// Receives requests from a [`Client`](crate::port::client::Client) port and sends back responses.
+pub mod server;
 /// Receiving endpoint (port) for publish-subscribe based communication
 pub mod subscriber;
 /// Interface to perform cyclic updates to the ports. Required to deliver history to new

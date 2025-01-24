@@ -13,45 +13,72 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use crate::prelude::{AttributeSpecifier, AttributeVerifier};
+use crate::service::builder::OpenDynamicStorageFailure;
+use crate::service::dynamic_config::request_response::DynamicConfigSettings;
+use crate::service::port_factory::request_response;
+use crate::service::static_config::messaging_pattern::MessagingPattern;
+use crate::service::{self, header, static_config};
+use crate::service::{builder, dynamic_config, Service};
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::{DynamicStorageCreateError, DynamicStorageOpenError};
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
 
-use crate::prelude::{AttributeSpecifier, AttributeVerifier};
-use crate::service::builder::OpenDynamicStorageFailure;
-use crate::service::dynamic_config::request_response::DynamicConfigSettings;
-use crate::service::port_factory::request_response;
-use crate::service::{self, header, static_config};
-use crate::service::{builder, dynamic_config};
-
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
 use super::{ServiceState, RETRY_LIMIT};
 
+/// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
+/// be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseOpenError {
+    /// Service could not be openen since it does not exist
     DoesNotExist,
+    /// The [`Service`] has a lower maximum amount of active responses than requested.
     DoesNotSupportRequestedAmountOfActiveResponses,
+    /// The [`Service`] has a lower maximum amount of active requests than requested.
     DoesNotSupportRequestedAmountOfActiveRequests,
+    /// The [`Service`] has a lower maximum amount of borrowed responses than requested.
     DoesNotSupportRequestedAmountOfBorrowedResponses,
+    /// The [`Service`] has a lower maximum amount of borrowed requests than requested.
     DoesNotSupportRequestedAmountOfBorrowedRequests,
+    /// The [`Service`] has a lower maximum response buffer size than requested.
     DoesNotSupportRequestedResponseBufferSize,
+    /// The [`Service`] has a lower maximum request buffer size than requested.
     DoesNotSupportRequestedRequestBufferSize,
+    /// The [`Service`] has a lower maximum number of servers than requested.
     DoesNotSupportRequestedAmountOfServers,
+    /// The [`Service`] has a lower maximum number of clients than requested.
     DoesNotSupportRequestedAmountOfClients,
+    /// The [`Service`] has a lower maximum number of nodes than requested.
     DoesNotSupportRequestedAmountOfNodes,
+    /// The maximum number of [`Node`](crate::node::Node)s have already opened the [`Service`].
     ExceedsMaxNumberOfNodes,
+    /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
+    /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
+    /// The [`Service`] has the wrong request payload type, request header type or type alignment.
     IncompatibleRequestType,
+    /// The [`Service`] has the wrong response payload type, response header type or type alignment.
     IncompatibleResponseType,
+    /// The [`AttributeVerifier`] required attributes that the [`Service`] does not satisfy.
     IncompatibleAttributes,
+    /// The [`Service`] has the wrong messaging pattern.
     IncompatibleMessagingPattern,
+    /// The [`Service`] required overflow behavior for requests is not compatible.
     IncompatibleOverflowBehaviorForRequests,
+    /// The [`Service`] required overflow behavior for responses is not compatible.
     IncompatibleOverflowBehaviorForResponses,
+    /// The process has not enough permissions to open the [`Service`].
     InsufficientPermissions,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// The [`Service`] is marked for destruction and currently cleaning up since no one is using it anymore.
+    /// When the call creation call is repeated with a little delay the [`Service`] should be
+    /// recreatable.
     IsMarkedForDestruction,
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
 }
 
@@ -88,13 +115,21 @@ impl From<ServiceAvailabilityState> for RequestResponseOpenError {
     }
 }
 
+/// Errors that can occur when a new [`MessagingPattern::RequestResponse`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseCreateError {
+    /// The [`Service`] already exists.
     AlreadyExists,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// Multiple processes are trying to create the same [`Service`].
     IsBeingCreatedByAnotherInstance,
+    /// The process has insufficient permissions to create the [`Service`].
     InsufficientPermissions,
+    /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
+    /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
 }
 
@@ -127,10 +162,16 @@ impl From<ServiceAvailabilityState> for RequestResponseCreateError {
     }
 }
 
+/// Errors that can occur when a [`MessagingPattern::RequestResponse`] [`Service`] shall be
+/// created or opened.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum RequestResponseOpenOrCreateError {
+    /// Failures that can occur when an existing [`Service`] could not be opened.
     RequestResponseOpenError(RequestResponseOpenError),
+    /// Failures that can occur when a [`Service`] could not be created.
     RequestResponseCreateError(RequestResponseCreateError),
+    /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
+    /// high frequency.
     SystemInFlux,
 }
 
@@ -167,13 +208,18 @@ enum ServiceAvailabilityState {
     IncompatibleResponseType,
 }
 
+/// Builder to create new [`MessagingPattern::RequestResponse`] based [`Service`]s
+///
+/// # Example
+///
+/// See [`crate::service`]
 #[derive(Debug)]
 pub struct Builder<
     RequestPayload: Debug,
     RequestHeader: Debug,
     ResponsePayload: Debug,
     ResponseHeader: Debug,
-    ServiceType: service::Service,
+    ServiceType: Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
     override_request_alignment: Option<usize>,
@@ -182,8 +228,8 @@ pub struct Builder<
     verify_enable_safe_overflow_for_responses: bool,
     verify_max_active_responses: bool,
     verify_max_active_requests: bool,
-    verify_max_borrowed_responses: bool,
-    verify_max_borrowed_requests: bool,
+    verify_max_borrowed_response_samples: bool,
+    verify_max_borrowed_request_samples: bool,
     verify_max_response_buffer_size: bool,
     verify_max_request_buffer_size: bool,
     verify_max_servers: bool,
@@ -201,7 +247,7 @@ impl<
         RequestHeader: Debug,
         ResponsePayload: Debug,
         ResponseHeader: Debug,
-        ServiceType: service::Service,
+        ServiceType: Service,
     > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
@@ -213,8 +259,8 @@ impl<
             verify_enable_safe_overflow_for_responses: false,
             verify_max_active_responses: false,
             verify_max_active_requests: false,
-            verify_max_borrowed_responses: false,
-            verify_max_borrowed_requests: false,
+            verify_max_borrowed_response_samples: false,
+            verify_max_borrowed_request_samples: false,
             verify_max_response_buffer_size: false,
             verify_max_request_buffer_size: false,
             verify_max_servers: false,
@@ -245,7 +291,8 @@ impl<
         }
     }
 
-    pub fn request_header<M: Debug>(
+    /// Sets the request user header type of the [`Service`].
+    pub fn request_user_header<M: Debug>(
         self,
     ) -> Builder<RequestPayload, M, ResponsePayload, ResponseHeader, ServiceType> {
         unsafe {
@@ -256,7 +303,8 @@ impl<
         }
     }
 
-    pub fn response_header<M: Debug>(
+    /// Sets the response user header type of the [`Service`].
+    pub fn response_user_header<M: Debug>(
         self,
     ) -> Builder<RequestPayload, RequestHeader, ResponsePayload, M, ServiceType> {
         unsafe {
@@ -267,76 +315,117 @@ impl<
         }
     }
 
+    /// If the [`Service`] is created, it defines the request [`Alignment`] of the payload for the
+    /// service. If an existing [`Service`] is opened it requires the service to have at least the
+    /// defined [`Alignment`]. If the Payload [`Alignment`] is greater than the provided
+    /// [`Alignment`] then the Payload [`Alignment`] is used.
     pub fn request_payload_alignment(mut self, alignment: Alignment) -> Self {
         self.override_request_alignment = Some(alignment.value());
         self
     }
 
+    /// If the [`Service`] is created, it defines the response [`Alignment`] of the payload for the
+    /// service. If an existing [`Service`] is opened it requires the service to have at least the
+    /// defined [`Alignment`]. If the Payload [`Alignment`] is greater than the provided
+    /// [`Alignment`] then the Payload [`Alignment`] is used.
     pub fn response_payload_alignment(mut self, alignment: Alignment) -> Self {
         self.override_response_alignment = Some(alignment.value());
         self
     }
 
+    /// If the [`Service`] is created, defines the overflow behavior of the service for requests.
+    /// If an existing [`Service`] is opened it requires the service to have the defined overflow
+    /// behavior.
     pub fn enable_safe_overflow_for_requests(mut self, value: bool) -> Self {
         self.config_details_mut().enable_safe_overflow_for_requests = value;
         self.verify_enable_safe_overflow_for_requests = true;
         self
     }
 
+    /// If the [`Service`] is created, defines the overflow behavior of the service for responses.
+    /// If an existing [`Service`] is opened it requires the service to have the defined overflow
+    /// behavior.
     pub fn enable_safe_overflow_for_responses(mut self, value: bool) -> Self {
         self.config_details_mut().enable_safe_overflow_for_responses = value;
         self.verify_enable_safe_overflow_for_responses = true;
         self
     }
 
+    /// Defines how many active responses a [`Client`](crate::port::client::Client) can hold in
+    /// parallel. The objects are used to receive the samples to a request that was sent earlier
+    /// to a [`Server`](crate::port::server::Server)
     pub fn max_active_responses(mut self, value: usize) -> Self {
         self.config_details_mut().max_active_responses = value;
         self.verify_max_active_responses = true;
         self
     }
 
+    /// Defines how many active requests a [`Server`](crate::port::server::Server) can hold in
+    /// parallel. The objects are used to send answers to a request that was received earlier
+    /// from a [`Client`](crate::port::client::Client)
     pub fn max_active_requests(mut self, value: usize) -> Self {
         self.config_details_mut().max_active_requests = value;
         self.verify_max_active_requests = true;
         self
     }
 
-    pub fn max_borrowed_responses(mut self, value: usize) -> Self {
-        self.config_details_mut().max_borrowed_responses = value;
-        self.verify_max_borrowed_responses = true;
+    /// If the [`Service`] is created it defines how many samples a
+    /// response can borrow at most in parallel. If an existing
+    /// [`Service`] is opened it defines the minimum required.
+    pub fn max_borrowed_response_samples(mut self, value: usize) -> Self {
+        self.config_details_mut().max_borrowed_response_samples = value;
+        self.verify_max_borrowed_response_samples = true;
         self
     }
 
-    pub fn max_borrowed_requests(mut self, value: usize) -> Self {
-        self.config_details_mut().max_borrowed_requests = value;
-        self.verify_max_borrowed_requests = true;
+    /// If the [`Service`] is created it defines how many samples a
+    /// request can borrow at most in parallel. If an existing
+    /// [`Service`] is opened it defines the minimum required.
+    pub fn max_borrowed_request_samples(mut self, value: usize) -> Self {
+        self.config_details_mut().max_borrowed_request_samples = value;
+        self.verify_max_borrowed_request_samples = true;
         self
     }
 
+    /// If the [`Service`] is created it defines how many responses fit in the
+    /// [`Clients`](crate::port::server::Clients)s buffer. If an existing
+    /// [`Service`] is opened it defines the minimum required.
     pub fn max_response_buffer_size(mut self, value: usize) -> Self {
         self.config_details_mut().max_response_buffer_size = value;
         self.verify_max_response_buffer_size = true;
         self
     }
 
+    /// If the [`Service`] is created it defines how many requests fit in the
+    /// [`Server`](crate::port::server::Server)s buffer. If an existing
+    /// [`Service`] is opened it defines the minimum required.
     pub fn max_request_buffer_size(mut self, value: usize) -> Self {
         self.config_details_mut().max_request_buffer_size = value;
         self.verify_max_request_buffer_size = true;
         self
     }
 
+    /// If the [`Service`] is created it defines how many [`crate::port::server::Server`]s shall
+    /// be supported at most. If an existing [`Service`] is opened it defines how many
+    /// [`crate::port::server::Server`]s must be at least supported.
     pub fn max_servers(mut self, value: usize) -> Self {
         self.config_details_mut().max_servers = value;
         self.verify_max_servers = true;
         self
     }
 
+    /// If the [`Service`] is created it defines how many [`crate::port::client::Client`]s shall
+    /// be supported at most. If an existing [`Service`] is opened it defines how many
+    /// [`crate::port::client::Client`]s must be at least supported.
     pub fn max_clients(mut self, value: usize) -> Self {
         self.config_details_mut().max_clients = value;
         self.verify_max_clients = true;
         self
     }
 
+    /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
+    /// be able to open it in parallel. If an existing [`Service`] is opened it defines how many
+    /// [`Node`](crate::node::Node)s must be at least supported.
     pub fn max_nodes(mut self, value: usize) -> Self {
         self.config_details_mut().max_nodes = value;
         self.verify_max_nodes = true;
@@ -371,16 +460,16 @@ impl<
             settings.max_active_responses = 1;
         }
 
-        if settings.max_borrowed_responses == 0 {
+        if settings.max_borrowed_response_samples == 0 {
             warn!(from origin,
                 "Setting the maximum number of borrowed responses to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_borrowed_responses = 1;
+            settings.max_borrowed_response_samples = 1;
         }
 
-        if settings.max_borrowed_requests == 0 {
+        if settings.max_borrowed_request_samples == 0 {
             warn!(from origin,
                 "Setting the maximum number of borrowed requests to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_borrowed_requests = 1;
+            settings.max_borrowed_request_samples = 1;
         }
 
         if settings.max_servers == 0 {
@@ -419,7 +508,7 @@ impl<
 
         let required_configuration = self.base.service_config.request_response();
         let existing_configuration = match &existing_settings.messaging_pattern {
-            static_config::messaging_pattern::MessagingPattern::RequestResponse(ref v) => v,
+            MessagingPattern::RequestResponse(ref v) => v,
             p => {
                 fail!(from self, with RequestResponseOpenError::IncompatibleMessagingPattern,
                     "{} since a service with the messaging pattern {:?} exists but MessagingPattern::RequestResponse is required.",
@@ -463,22 +552,22 @@ impl<
                 msg, existing_configuration.max_active_requests, required_configuration.max_active_requests);
         }
 
-        if self.verify_max_borrowed_responses
-            && existing_configuration.max_borrowed_responses
-                < required_configuration.max_borrowed_responses
+        if self.verify_max_borrowed_response_samples
+            && existing_configuration.max_borrowed_response_samples
+                < required_configuration.max_borrowed_response_samples
         {
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponses,
                 "{} since the service supports only {} borrowed responses but {} are required.",
-                msg, existing_configuration.max_borrowed_responses, required_configuration.max_borrowed_responses);
+                msg, existing_configuration.max_borrowed_response_samples, required_configuration.max_borrowed_response_samples);
         }
 
-        if self.verify_max_borrowed_requests
-            && existing_configuration.max_borrowed_requests
-                < required_configuration.max_borrowed_requests
+        if self.verify_max_borrowed_request_samples
+            && existing_configuration.max_borrowed_request_samples
+                < required_configuration.max_borrowed_request_samples
         {
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedRequests,
                 "{} since the service supports only {} borrowed requests but {} are required.",
-                msg, existing_configuration.max_borrowed_requests, required_configuration.max_borrowed_requests);
+                msg, existing_configuration.max_borrowed_request_samples, required_configuration.max_borrowed_request_samples);
         }
 
         if self.verify_max_response_buffer_size
@@ -611,7 +700,7 @@ impl<
                 };
 
                 let dynamic_config = match self.base.create_dynamic_config_storage(
-                    dynamic_config::MessagingPattern::RequestResonse(
+                    dynamic_config::MessagingPattern::RequestResponse(
                         dynamic_config::request_response::DynamicConfig::new(
                             &dynamic_config_setting,
                         ),
@@ -725,9 +814,7 @@ impl<
                     };
 
                     self.base.service_config.messaging_pattern =
-                        static_config::messaging_pattern::MessagingPattern::RequestResponse(
-                            request_response_static_config.clone(),
-                        );
+                        MessagingPattern::RequestResponse(request_response_static_config.clone());
 
                     if let Some(mut service_tag) = service_tag {
                         service_tag.release_ownership();
@@ -820,12 +907,20 @@ impl<
         }
     }
 
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
     pub fn open_or_create(
         self,
     ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenOrCreateError> {
         self.open_or_create_with_attributes(&AttributeVerifier::new())
     }
 
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes.
+    ///
+    /// If the [`Service`] already exists all attribute requirements must be satisfied,
+    /// and service payload type must be the same, otherwise the open process will fail.
+    /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
         required_attributes: &AttributeVerifier,
@@ -834,12 +929,15 @@ impl<
         self.open_or_create_impl(required_attributes)
     }
 
+    /// Opens an existing [`Service`].
     pub fn open(
         self,
     ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenError> {
         self.open_with_attributes(&AttributeVerifier::new())
     }
 
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         mut self,
         required_attributes: &AttributeVerifier,
@@ -848,12 +946,14 @@ impl<
         self.open_impl(required_attributes)
     }
 
+    /// Creates a new [`Service`].
     pub fn create(
         self,
     ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseCreateError> {
         self.create_with_attributes(&AttributeSpecifier::new())
     }
 
+    /// Creates a new [`Service`] with a set of attributes.
     pub fn create_with_attributes(
         mut self,
         attributes: &AttributeSpecifier,
