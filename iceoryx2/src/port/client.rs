@@ -10,19 +10,5 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use examples_common::TransmissionData;
-use iceoryx2::prelude::*;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .request_response::<u64, TransmissionData>()
-        .open_or_create()?;
-
-    drop(service);
-    println!("exit");
-
-    Ok(())
-}
+/// TODO
+pub struct Client {}
