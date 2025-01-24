@@ -10,12 +10,44 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let pubsub = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .request_response::<u64, u64>()
+//!     .open_or_create()?;
+//!
+//! println!("type details:                     {:?}", pubsub.static_config().message_type_details());
+//! println!("max active requests:              {:?}", pubsub.static_config().max_active_requests());
+//! println!("max active responses:             {:?}", pubsub.static_config().max_active_responses());
+//! println!("max borrowed response samples:    {:?}", pubsub.static_config().max_borrowed_response_samples());
+//! println!("max borrowed request samples:     {:?}", pubsub.static_config().max_borrowed_request_samples());
+//! println!("max response buffer size:         {:?}", pubsub.static_config().max_response_buffer_size());
+//! println!("max request buffer size:          {:?}", pubsub.static_config().max_request_buffer_size());
+//! println!("max servers:                      {:?}", pubsub.static_config().max_clients());
+//! println!("max clients:                      {:?}", pubsub.static_config().max_servers());
+//! println!("max nodes:                        {:?}", pubsub.static_config().max_nodes());
+//! println!("request safe overflow:            {:?}", pubsub.static_config().has_safe_overflow_for_requests());
+//! println!("response safe overflow:           {:?}", pubsub.static_config().has_safe_overflow_for_responses());
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use serde::{Deserialize, Serialize};
 
 use crate::config;
 
 use super::message_type_details::MessageTypeDetails;
 
+/// The static configuration of an
+/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
+/// based service. Contains all parameters that do not change during the lifetime of a
+/// [`Service`](crate::service::Service).
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_requests: bool,
@@ -64,18 +96,40 @@ impl StaticConfig {
         }
     }
 
-    pub fn enable_safe_overflow_for_requests(&self) -> bool {
+    /// Returns the request type details of the [`crate::service::Service`].
+    pub fn request_message_type_details(&self) -> &MessageTypeDetails {
+        &self.request_message_type_details
+    }
+
+    /// Returns the response type details of the [`crate::service::Service`].
+    pub fn response_message_type_details(&self) -> &MessageTypeDetails {
+        &self.response_message_type_details
+    }
+
+    /// Returns true if the request buffer of the [`crate::service::Service`] safely overflows,
+    /// otherwise false. Safe overflow means that the [`crate::port::client::Client`] will
+    /// recycle the oldest requests from the [`crate::port::server::Server`] when its buffer
+    /// is full.
+    pub fn has_safe_overflow_for_requests(&self) -> bool {
         self.enable_safe_overflow_for_requests
     }
 
-    pub fn enable_safe_overflow_for_responses(&self) -> bool {
+    /// Returns true if the response buffer of the [`crate::service::Service`] safely overflows,
+    /// otherwise false. Safe overflow means that the [`crate::port::server::Server`] will
+    /// recycle the oldest responses from the [`crate::port::client::Client`] when its buffer
+    /// is full.
+    pub fn has_safe_overflow_for_responses(&self) -> bool {
         self.enable_safe_overflow_for_responses
     }
 
+    /// Returns the maximum of active responses a [`crate::port::server::Server`] can hold in
+    /// parallel.
     pub fn max_active_responses(&self) -> usize {
         self.max_active_responses
     }
 
+    /// Returns the maximum of active requests a [`crate::port::client::Client`] can hold in
+    /// parallel.
     pub fn max_active_requests(&self) -> usize {
         self.max_active_requests
     }

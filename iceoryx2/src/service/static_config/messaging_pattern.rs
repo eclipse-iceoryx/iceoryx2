@@ -25,6 +25,8 @@ use super::request_response;
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "messaging_pattern")]
 pub enum MessagingPattern {
+    /// Stores the static config of the
+    /// [`service::MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
     RequestResponse(request_response::StaticConfig),
 
     /// Stores the static config of the
