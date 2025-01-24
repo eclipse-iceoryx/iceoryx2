@@ -32,9 +32,12 @@ use super::{ServiceState, RETRY_LIMIT};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RequestResponseOpenError {
     DoesNotExist,
+    DoesNotSupportRequestedAmountOfActiveResponses,
     DoesNotSupportRequestedAmountOfActiveRequests,
     DoesNotSupportRequestedAmountOfBorrowedResponses,
+    DoesNotSupportRequestedAmountOfBorrowedRequests,
     DoesNotSupportRequestedResponseBufferSize,
+    DoesNotSupportRequestedRequestBufferSize,
     DoesNotSupportRequestedAmountOfServers,
     DoesNotSupportRequestedAmountOfClients,
     DoesNotSupportRequestedAmountOfNodes,
@@ -177,9 +180,12 @@ pub struct Builder<
     override_response_alignment: Option<usize>,
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
+    verify_max_active_responses: bool,
     verify_max_active_requests: bool,
     verify_max_borrowed_responses: bool,
+    verify_max_borrowed_requests: bool,
     verify_max_response_buffer_size: bool,
+    verify_max_request_buffer_size: bool,
     verify_max_servers: bool,
     verify_max_clients: bool,
     verify_max_nodes: bool,
@@ -205,9 +211,12 @@ impl<
             override_response_alignment: None,
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
+            verify_max_active_responses: false,
             verify_max_active_requests: false,
             verify_max_borrowed_responses: false,
+            verify_max_borrowed_requests: false,
             verify_max_response_buffer_size: false,
+            verify_max_request_buffer_size: false,
             verify_max_servers: false,
             verify_max_clients: false,
             verify_max_nodes: false,
@@ -280,6 +289,12 @@ impl<
         self
     }
 
+    pub fn max_active_responses(mut self, value: usize) -> Self {
+        self.config_details_mut().max_active_responses = value;
+        self.verify_max_active_responses = true;
+        self
+    }
+
     pub fn max_active_requests(mut self, value: usize) -> Self {
         self.config_details_mut().max_active_requests = value;
         self.verify_max_active_requests = true;
@@ -292,9 +307,21 @@ impl<
         self
     }
 
+    pub fn max_borrowed_requests(mut self, value: usize) -> Self {
+        self.config_details_mut().max_borrowed_requests = value;
+        self.verify_max_borrowed_requests = true;
+        self
+    }
+
     pub fn max_response_buffer_size(mut self, value: usize) -> Self {
         self.config_details_mut().max_response_buffer_size = value;
         self.verify_max_response_buffer_size = true;
+        self
+    }
+
+    pub fn max_request_buffer_size(mut self, value: usize) -> Self {
+        self.config_details_mut().max_request_buffer_size = value;
+        self.verify_max_request_buffer_size = true;
         self
     }
 
@@ -320,16 +347,40 @@ impl<
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.request_response_mut();
 
+        if settings.max_request_buffer_size == 0 {
+            warn!(from origin,
+                "Setting the maximum size of the request buffer to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_request_buffer_size = 1;
+        }
+
+        if settings.max_response_buffer_size == 0 {
+            warn!(from origin,
+                "Setting the maximum size of the response buffer to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_response_buffer_size = 1;
+        }
+
         if settings.max_active_requests == 0 {
             warn!(from origin,
                 "Setting the maximum number of active requests to 0 is not supported. Adjust it to 1, the smallest supported value.");
             settings.max_active_requests = 1;
         }
 
+        if settings.max_active_responses == 0 {
+            warn!(from origin,
+                "Setting the maximum number of active responses to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_active_responses = 1;
+        }
+
         if settings.max_borrowed_responses == 0 {
             warn!(from origin,
                 "Setting the maximum number of borrowed responses to 0 is not supported. Adjust it to 1, the smallest supported value.");
             settings.max_borrowed_responses = 1;
+        }
+
+        if settings.max_borrowed_requests == 0 {
+            warn!(from origin,
+                "Setting the maximum number of borrowed requests to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_borrowed_requests = 1;
         }
 
         if settings.max_servers == 0 {
@@ -394,6 +445,15 @@ impl<
                 msg);
         }
 
+        if self.verify_max_active_responses
+            && existing_configuration.max_active_responses
+                < required_configuration.max_active_responses
+        {
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveResponses,
+                "{} since the service supports only {} active responses but {} are required.",
+                msg, existing_configuration.max_active_responses, required_configuration.max_active_responses);
+        }
+
         if self.verify_max_active_requests
             && existing_configuration.max_active_requests
                 < required_configuration.max_active_requests
@@ -412,6 +472,15 @@ impl<
                 msg, existing_configuration.max_borrowed_responses, required_configuration.max_borrowed_responses);
         }
 
+        if self.verify_max_borrowed_requests
+            && existing_configuration.max_borrowed_requests
+                < required_configuration.max_borrowed_requests
+        {
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedRequests,
+                "{} since the service supports only {} borrowed requests but {} are required.",
+                msg, existing_configuration.max_borrowed_requests, required_configuration.max_borrowed_requests);
+        }
+
         if self.verify_max_response_buffer_size
             && existing_configuration.max_response_buffer_size
                 < required_configuration.max_response_buffer_size
@@ -419,6 +488,15 @@ impl<
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedResponseBufferSize,
                 "{} since the service supports a maximum response buffer size of {} but a size of {} is required.",
                 msg, existing_configuration.max_response_buffer_size, required_configuration.max_response_buffer_size);
+        }
+
+        if self.verify_max_request_buffer_size
+            && existing_configuration.max_request_buffer_size
+                < required_configuration.max_request_buffer_size
+        {
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedRequestBufferSize,
+                "{} since the service supports a maximum request buffer size of {} but a size of {} is required.",
+                msg, existing_configuration.max_request_buffer_size, required_configuration.max_request_buffer_size);
         }
 
         if self.verify_max_servers
