@@ -23,7 +23,8 @@
 //!
 //! println!("name:                             {:?}", req_res.name());
 //! println!("service id:                       {:?}", req_res.service_id());
-//! println!("type details:                     {:?}", req_res.static_config().message_type_details());
+//! println!("request type details:             {:?}", req_res.static_config().request_message_type_details());
+//! println!("response type details:            {:?}", req_res.static_config().response_message_type_details());
 //! println!("max active requests:              {:?}", req_res.static_config().max_active_requests());
 //! println!("max active responses:             {:?}", req_res.static_config().max_active_responses());
 //! println!("max borrowed responses:           {:?}", req_res.static_config().max_borrowed_responses());

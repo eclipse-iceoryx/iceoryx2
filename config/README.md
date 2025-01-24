@@ -97,10 +97,12 @@ Adjusting `global` settings ensures a non-interfering setup.
 
 ### Service: Request Response Messaging Pattern
 
-* `defaults.request-response.enable_safe_overflow_for_requests` - [`true`|`false`]:
-  Defines if the request buffer of the service safely overflows.
-* `defaults.request-response.enable_safe_overflow_for_responses` - [`true`|`false`]:
-  Defines if the request buffer of the service safely overflows.
+* `defaults.request-response.enable_safe_overflow_for_requests` -
+  [`true`|`false`]: Defines if the request buffer of the service safely
+  overflows.
+* `defaults.request-response.enable_safe_overflow_for_responses` -
+  [`true`|`false`]: Defines if the request buffer of the service safely
+  overflows.
 * `defaults.request-response.max_active_responses` - [int]:
   The maximum of active responses a [`crate::port::server::Server`] can hold in
   parallel.
@@ -118,7 +120,6 @@ Adjusting `global` settings ensures a non-interfering setup.
   The maximum amount of supported servers.
 * `defaults.request-response.max_clients` - [int]:
   The maximum amount of supported clients.
-* `defaults.request-response.max_nodes` - [int]`:
-  The maximum amount of supported nodess. Defines indirectly how many
+* `defaults.request-response.max_nodes` - [int]:
+  The maximum amount of supported nodes. Defines indirectly how many
   processes can open the service at the same time.
-
