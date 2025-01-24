@@ -18,11 +18,6 @@
 
 #[macro_use]
 pub mod enum_gen;
-pub mod fixed_size;
-#[macro_use]
-pub mod composable_marker_trait;
-pub mod relocatable;
-pub mod self_contained;
 pub mod shared_memory_safe;
 
 mod as_cstr;
