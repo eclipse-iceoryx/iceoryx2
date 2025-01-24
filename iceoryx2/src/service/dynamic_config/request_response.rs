@@ -12,7 +12,7 @@
 
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_lock_free::mpmc::container::{Container, ContainerHandle, ReleaseMode};
+use iceoryx2_bb_lock_free::mpmc::container::Container;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
@@ -41,6 +41,9 @@ pub(crate) struct DynamicConfigSettings {
     pub number_of_clients: usize,
 }
 
+/// The dynamic configuration of an
+/// [`crate::service::messaging_pattern::MessagingPattern::RequestResponse`]
+/// based service. Contains dynamic parameters like the connected endpoints etc..
 #[repr(C)]
 #[derive(Debug)]
 pub struct DynamicConfig {
@@ -70,11 +73,12 @@ impl DynamicConfig {
             + Container::<ClientDetails>::memory_size(config.number_of_clients)
     }
 
+    /// Returns how many [`crate::port::client::Client`] ports are currently connected.
     pub fn number_of_clients(&self) -> usize {
         self.clients.len()
     }
 
-    /// Returns how many [`crate::port::subscriber::Subscriber`] ports are currently connected.
+    /// Returns how many [`crate::port::server::Server`] ports are currently connected.
     pub fn number_of_servers(&self) -> usize {
         self.servers.len()
     }
@@ -83,8 +87,8 @@ impl DynamicConfig {
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
         &self,
-        node_id: &NodeId,
-        mut port_cleanup_callback: PortCleanup,
+        _node_id: &NodeId,
+        mut _port_cleanup_callback: PortCleanup,
     ) {
         todo!()
     }
@@ -107,21 +111,5 @@ impl DynamicConfig {
             callback(details);
             CallbackProgression::Continue
         });
-    }
-
-    pub(crate) fn add_server(&self, details: ServerDetails) -> Option<ContainerHandle> {
-        unsafe { self.servers.add(details).ok() }
-    }
-
-    pub(crate) fn release_server_handle(&self, handle: ContainerHandle) {
-        unsafe { self.servers.remove(handle, ReleaseMode::Default) };
-    }
-
-    pub(crate) fn add_client(&self, details: ClientDetails) -> Option<ContainerHandle> {
-        unsafe { self.clients.add(details).ok() }
-    }
-
-    pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
-        unsafe { self.clients.remove(handle, ReleaseMode::Default) };
     }
 }

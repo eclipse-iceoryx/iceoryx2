@@ -10,10 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+/// Request header used by
+/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct RequestHeader {}
 
+/// Response header used by
+/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
 pub struct ResponseHeader {}

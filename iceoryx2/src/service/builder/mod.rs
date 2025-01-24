@@ -20,6 +20,7 @@ pub mod event;
 /// Builder for [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 pub mod publish_subscribe;
 
+/// Builder for [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 pub mod request_response;
 
 use crate::node::SharedNode;
@@ -116,6 +117,8 @@ impl<S: Service> Builder<S> {
         }
     }
 
+    /// Create a new builder to create a
+    /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse) [`Service`].
     pub fn request_response<RequestPayload: Debug, ResponsePayload: Debug>(
         self,
     ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), S> {
