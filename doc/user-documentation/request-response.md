@@ -1,5 +1,19 @@
 # Request-Response
 
+## Classes Involved In ActiveRequest to ActiveResponse Stream Communication
+
+User has send request to the server and receives a stream of responses.
+
+```mermaid
+classDiagram
+    Client "1" --> "1" DataSegment: stores request payload
+    Server "1" --> "1" DataSegment: stores response payload
+    Client "1" --> "1..*" ActiveRequest
+    Server "1" --> "1..*" ActiveResponse
+    ActiveRequest "1" --> "1" ZeroCopyConnection: receive response
+    ActiveResponse "1" --> "1" ZeroCopyConnection: send response
+```
+
 ## Sending Request: Client View
 
 ```mermaid

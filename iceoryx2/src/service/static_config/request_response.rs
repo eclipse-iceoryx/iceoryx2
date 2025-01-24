@@ -21,18 +21,18 @@
 //!     .request_response::<u64, u64>()
 //!     .open_or_create()?;
 //!
-//! println!("type details:                     {:?}", pubsub.static_config().message_type_details());
-//! println!("max active requests:              {:?}", pubsub.static_config().max_active_requests());
-//! println!("max active responses:             {:?}", pubsub.static_config().max_active_responses());
-//! println!("max borrowed response samples:    {:?}", pubsub.static_config().max_borrowed_response_samples());
-//! println!("max borrowed request samples:     {:?}", pubsub.static_config().max_borrowed_request_samples());
-//! println!("max response buffer size:         {:?}", pubsub.static_config().max_response_buffer_size());
-//! println!("max request buffer size:          {:?}", pubsub.static_config().max_request_buffer_size());
-//! println!("max servers:                      {:?}", pubsub.static_config().max_clients());
-//! println!("max clients:                      {:?}", pubsub.static_config().max_servers());
-//! println!("max nodes:                        {:?}", pubsub.static_config().max_nodes());
-//! println!("request safe overflow:            {:?}", pubsub.static_config().has_safe_overflow_for_requests());
-//! println!("response safe overflow:           {:?}", pubsub.static_config().has_safe_overflow_for_responses());
+//! println!("type details:              {:?}", pubsub.static_config().message_type_details());
+//! println!("max active requests:       {:?}", pubsub.static_config().max_active_requests());
+//! println!("max active responses:      {:?}", pubsub.static_config().max_active_responses());
+//! println!("max borrowed responses:    {:?}", pubsub.static_config().max_borrowed_responses());
+//! println!("max borrowed requests:     {:?}", pubsub.static_config().max_borrowed_requests());
+//! println!("max response buffer size:  {:?}", pubsub.static_config().max_response_buffer_size());
+//! println!("max request buffer size:   {:?}", pubsub.static_config().max_request_buffer_size());
+//! println!("max servers:               {:?}", pubsub.static_config().max_clients());
+//! println!("max clients:               {:?}", pubsub.static_config().max_servers());
+//! println!("max nodes:                 {:?}", pubsub.static_config().max_nodes());
+//! println!("request safe overflow:     {:?}", pubsub.static_config().has_safe_overflow_for_requests());
+//! println!("response safe overflow:    {:?}", pubsub.static_config().has_safe_overflow_for_responses());
 //!
 //! # Ok(())
 //! # }
@@ -54,8 +54,8 @@ pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_responses: bool,
     pub(crate) max_active_responses: usize,
     pub(crate) max_active_requests: usize,
-    pub(crate) max_borrowed_response_samples: usize,
-    pub(crate) max_borrowed_request_samples: usize,
+    pub(crate) max_borrowed_responses: usize,
+    pub(crate) max_borrowed_requests: usize,
     pub(crate) max_response_buffer_size: usize,
     pub(crate) max_request_buffer_size: usize,
     pub(crate) max_servers: usize,
@@ -78,14 +78,8 @@ impl StaticConfig {
                 .enable_safe_overflow_for_responses,
             max_active_responses: config.defaults.request_response.max_active_responses,
             max_active_requests: config.defaults.request_response.max_active_requests,
-            max_borrowed_response_samples: config
-                .defaults
-                .request_response
-                .max_borrowed_response_samples,
-            max_borrowed_request_samples: config
-                .defaults
-                .request_response
-                .max_borrowed_request_samples,
+            max_borrowed_responses: config.defaults.request_response.max_borrowed_responses,
+            max_borrowed_requests: config.defaults.request_response.max_borrowed_requests,
             max_response_buffer_size: config.defaults.request_response.max_response_buffer_size,
             max_request_buffer_size: config.defaults.request_response.max_request_buffer_size,
             max_servers: config.defaults.request_response.max_servers,
@@ -134,30 +128,41 @@ impl StaticConfig {
         self.max_active_requests
     }
 
-    pub fn max_borrowed_response_samples(&self) -> usize {
-        self.max_borrowed_response_samples
+    /// Returns the maximum number of responses a [`crate::port::client::Client`] can borrow from
+    /// an active request.
+    pub fn max_borrowed_responses(&self) -> usize {
+        self.max_borrowed_responses
     }
 
-    pub fn max_borrowed_request_samples(&self) -> usize {
-        self.max_borrowed_request_samples
+    /// Returns the maximum number of requests a [`crate::port::server::Server`] can borrow.
+    pub fn max_borrowed_requests(&self) -> usize {
+        self.max_borrowed_requests
     }
 
+    /// Returns the maximum buffer size for responses for an active request.
     pub fn max_response_buffer_size(&self) -> usize {
         self.max_response_buffer_size
     }
 
+    /// Returns the maximum buffer size for requests for a [`crate::port::server::Server`].
     pub fn max_request_buffer_size(&self) -> usize {
         self.max_request_buffer_size
     }
 
+    /// Returns the maximum number of supported [`crate::port::server::Server`] ports for the
+    /// [`crate::service::Service`].
     pub fn max_servers(&self) -> usize {
         self.max_servers
     }
 
+    /// Returns the maximum number of supported [`crate::port::client::Client`] ports for the
+    /// [`crate::service::Service`].
     pub fn max_clients(&self) -> usize {
         self.max_clients
     }
 
+    /// Returns the maximum number of supported [`crate::node::Node`]s for the
+    /// [`crate::service::Service`].
     pub fn max_nodes(&self) -> usize {
         self.max_nodes
     }

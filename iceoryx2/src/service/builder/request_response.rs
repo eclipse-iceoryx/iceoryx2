@@ -228,8 +228,8 @@ pub struct Builder<
     verify_enable_safe_overflow_for_responses: bool,
     verify_max_active_responses: bool,
     verify_max_active_requests: bool,
-    verify_max_borrowed_response_samples: bool,
-    verify_max_borrowed_request_samples: bool,
+    verify_max_borrowed_responses: bool,
+    verify_max_borrowed_requests: bool,
     verify_max_response_buffer_size: bool,
     verify_max_request_buffer_size: bool,
     verify_max_servers: bool,
@@ -259,8 +259,8 @@ impl<
             verify_enable_safe_overflow_for_responses: false,
             verify_max_active_responses: false,
             verify_max_active_requests: false,
-            verify_max_borrowed_response_samples: false,
-            verify_max_borrowed_request_samples: false,
+            verify_max_borrowed_responses: false,
+            verify_max_borrowed_requests: false,
             verify_max_response_buffer_size: false,
             verify_max_request_buffer_size: false,
             verify_max_servers: false,
@@ -372,18 +372,18 @@ impl<
     /// If the [`Service`] is created it defines how many samples a
     /// response can borrow at most in parallel. If an existing
     /// [`Service`] is opened it defines the minimum required.
-    pub fn max_borrowed_response_samples(mut self, value: usize) -> Self {
-        self.config_details_mut().max_borrowed_response_samples = value;
-        self.verify_max_borrowed_response_samples = true;
+    pub fn max_borrowed_responses(mut self, value: usize) -> Self {
+        self.config_details_mut().max_borrowed_responses = value;
+        self.verify_max_borrowed_responses = true;
         self
     }
 
     /// If the [`Service`] is created it defines how many samples a
     /// request can borrow at most in parallel. If an existing
     /// [`Service`] is opened it defines the minimum required.
-    pub fn max_borrowed_request_samples(mut self, value: usize) -> Self {
-        self.config_details_mut().max_borrowed_request_samples = value;
-        self.verify_max_borrowed_request_samples = true;
+    pub fn max_borrowed_requests(mut self, value: usize) -> Self {
+        self.config_details_mut().max_borrowed_requests = value;
+        self.verify_max_borrowed_requests = true;
         self
     }
 
@@ -460,16 +460,16 @@ impl<
             settings.max_active_responses = 1;
         }
 
-        if settings.max_borrowed_response_samples == 0 {
+        if settings.max_borrowed_responses == 0 {
             warn!(from origin,
                 "Setting the maximum number of borrowed responses to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_borrowed_response_samples = 1;
+            settings.max_borrowed_responses = 1;
         }
 
-        if settings.max_borrowed_request_samples == 0 {
+        if settings.max_borrowed_requests == 0 {
             warn!(from origin,
                 "Setting the maximum number of borrowed requests to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_borrowed_request_samples = 1;
+            settings.max_borrowed_requests = 1;
         }
 
         if settings.max_servers == 0 {
@@ -552,22 +552,22 @@ impl<
                 msg, existing_configuration.max_active_requests, required_configuration.max_active_requests);
         }
 
-        if self.verify_max_borrowed_response_samples
-            && existing_configuration.max_borrowed_response_samples
-                < required_configuration.max_borrowed_response_samples
+        if self.verify_max_borrowed_responses
+            && existing_configuration.max_borrowed_responses
+                < required_configuration.max_borrowed_responses
         {
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponses,
                 "{} since the service supports only {} borrowed responses but {} are required.",
-                msg, existing_configuration.max_borrowed_response_samples, required_configuration.max_borrowed_response_samples);
+                msg, existing_configuration.max_borrowed_responses, required_configuration.max_borrowed_responses);
         }
 
-        if self.verify_max_borrowed_request_samples
-            && existing_configuration.max_borrowed_request_samples
-                < required_configuration.max_borrowed_request_samples
+        if self.verify_max_borrowed_requests
+            && existing_configuration.max_borrowed_requests
+                < required_configuration.max_borrowed_requests
         {
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedRequests,
                 "{} since the service supports only {} borrowed requests but {} are required.",
-                msg, existing_configuration.max_borrowed_request_samples, required_configuration.max_borrowed_request_samples);
+                msg, existing_configuration.max_borrowed_requests, required_configuration.max_borrowed_requests);
         }
 
         if self.verify_max_response_buffer_size
