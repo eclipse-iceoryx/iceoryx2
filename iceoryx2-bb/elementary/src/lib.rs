@@ -18,7 +18,9 @@
 
 #[macro_use]
 pub mod enum_gen;
-pub mod shared_memory_safe;
+pub mod identifiable;
+pub mod relocatable;
+pub mod transferable;
 
 mod as_cstr;
 pub use as_cstr::*;
