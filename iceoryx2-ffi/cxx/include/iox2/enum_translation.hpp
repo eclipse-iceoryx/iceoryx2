@@ -342,6 +342,8 @@ constexpr auto from<int, iox2::EventOpenOrCreateError>(const int value) noexcept
         return iox2::EventOpenOrCreateError::CreateInsufficientPermissions;
     case iox2_event_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
         return iox2::EventOpenOrCreateError::CreateOldConnectionsStillActive;
+    case iox2_event_open_or_create_error_e_SYSTEM_IN_FLUX:
+        return iox2::EventOpenOrCreateError::SystemInFlux;
     }
 
     IOX_UNREACHABLE();
@@ -585,6 +587,8 @@ constexpr auto from<int, iox2::PublishSubscribeOpenOrCreateError>(const int valu
         return iox2::PublishSubscribeOpenOrCreateError::CreateHangsInCreation;
     case iox2_pub_sub_open_or_create_error_e_C_OLD_CONNECTION_STILL_ACTIVE:
         return iox2::PublishSubscribeOpenOrCreateError::CreateOldConnectionsStillActive;
+    case iox2_pub_sub_open_or_create_error_e_SYSTEM_IN_FLUX:
+        return iox2::PublishSubscribeOpenOrCreateError::SystemInFlux;
     }
 
     IOX_UNREACHABLE();
