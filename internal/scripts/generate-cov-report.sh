@@ -22,7 +22,15 @@ COLOR_YELLOW='\033[1;33m'
 LLVM_PATH=$(dirname $(which llvm-profdata))
 LLVM_PROFILE_PATH="target/debug/llvm-profile-files"
 export LLVM_PROFILE_FILE="${LLVM_PROFILE_PATH}/iceoryx2-%p-%m.profraw"
-export RUSTFLAGS="-C instrument-coverage -Z coverage-options=mcdc"
+
+if [[ "$(rustc --version | grep nightly | wc -l)" == "1" ]]
+then
+    echo -e "${COLOR_GREEN}rust nightly compiler found, activating MC/DC coverage check${COLOR_OFF}"
+    export RUSTFLAGS="-C instrument-coverage -Z coverage-options=mcdc"
+else
+    echo -e "${COLOR_YELLOW}no rust nightly compiler found, MC/DC coverage is not available only line coverage${COLOR_OFF}"
+    export RUSTFLAGS="-C instrument-coverage"
+fi
 
 COVERAGE_DIR="target/debug/coverage"
 
