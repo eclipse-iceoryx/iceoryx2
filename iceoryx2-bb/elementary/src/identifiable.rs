@@ -12,6 +12,12 @@
 
 /// A type implementing Identifiable can be uniquely identified by its [`Identifiable::type_name()`]
 /// in an inter-process communication context.
+///
+/// # Safety
+///
+///  * The user must guarantee that all types, also definitions in different languages, have
+///    the same memory layout.
+///
 pub unsafe trait Identifiable {
     /// The unique identifier of the type. It shall be used to identify a specific type accross
     /// processes and languages.

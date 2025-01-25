@@ -13,17 +13,20 @@
 use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 
 /// Marks types that can be safely used from within different process address spaces.
-/// * The types must be self-contained, meaning they shall not contain pointer, references,
-///   indices or handles that are identifying resources outside of the struct.
-///   Examples:
-///      * File descriptors point to resources that can be different in another process.
-///      * A list with pointers into the heap.
-/// * The type must have a uniform memory representation, meaning they are annotated with
-///   `#[repr(C)]`
-/// * The type does not have references or pointer members. It shall not use pointers to manage
-///   its internal structure.
-///   Examples:
-///      * A list must be implemented using indices to structure itself.
+///
+/// # Safety
+///
+///  * The types must be self-contained, meaning they shall not contain pointer, references,
+///    indices or handles that are identifying resources outside of the struct.
+///    Examples:
+///       * File descriptors point to resources that can be different in another process.
+///       * A list with pointers into the heap.
+///  * The type must have a uniform memory representation, meaning they are annotated with
+///    `#[repr(C)]`
+///  * The type does not have references or pointer members. It shall not use pointers to manage
+///    its internal structure.
+///    Examples:
+///       * A list must be implemented using indices to structure itself.
 pub unsafe trait Relocatable {}
 
 unsafe impl Relocatable for usize {}

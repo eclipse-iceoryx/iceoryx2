@@ -13,6 +13,16 @@
 use crate::{identifiable::Identifiable, relocatable::Relocatable};
 
 /// Marks types that can be used for shared-memory zero-copy communication.
+///
+/// # Safety
+///
+/// The user must ensure that
+///  * the types are self-contained, no pointers, references or handles to resources that are not
+///    part of the type
+///  * the types are relocatable, no pointers, references or handles to manage internal structures
+///  * the types have the same type layout independent of the compilation unit, e.g. are
+///    annotated with `#[repr(C)]`
+///
 pub unsafe trait Transferable {}
 
 unsafe impl<T: Relocatable + Identifiable> Transferable for T {}
