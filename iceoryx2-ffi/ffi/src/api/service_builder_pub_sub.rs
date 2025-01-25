@@ -93,7 +93,7 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     #[CStr = "hangs in creation"]
     C_HANGS_IN_CREATION,
     #[CStr = "same service is created and removed repeatedly"]
-    SERVICE_IN_FLUX,
+    SYSTEM_IN_FLUX,
 }
 
 impl IntoCInt for PublishSubscribeOpenError {

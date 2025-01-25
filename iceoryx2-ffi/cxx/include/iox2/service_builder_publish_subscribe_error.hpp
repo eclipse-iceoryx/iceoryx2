@@ -174,6 +174,9 @@ enum class PublishSubscribeOpenOrCreateError : uint8_t {
     /// initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
     CreateHangsInCreation,
+    /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
+    /// high frequency.
+    SystemInFlux,
 };
 
 } // namespace iox2

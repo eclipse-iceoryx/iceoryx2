@@ -86,7 +86,7 @@ pub enum iox2_event_open_or_create_error_e {
     #[CStr = "old connection still active"]
     C_OLD_CONNECTION_STILL_ACTIVE,
     #[CStr = "same service is created and removed repeatedly"]
-    SERVICE_IN_FLUX,
+    SYSTEM_IN_FLUX,
 }
 
 impl IntoCInt for EventOpenError {
