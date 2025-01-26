@@ -193,7 +193,6 @@ define_signals! {
     BackgroundProcessReadAttempt = posix::SIGTTIN,
     BackgroundProcessWriteAttempt = posix::SIGTTOU,
     UserDefined1 = posix::SIGUSR1,
-    PollableEvent = posix::SIGPOLL,
     ProfilingTimerExpired = posix::SIGPROF,
     UrgentDataAvailableAtSocket = posix::SIGURG,
     VirtualTimerExpired = posix::SIGVTALRM
