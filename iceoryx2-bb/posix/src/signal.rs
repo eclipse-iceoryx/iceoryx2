@@ -102,7 +102,7 @@ macro_rules! define_signals {
         #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Sequence)]
         #[repr(i32)]
         pub enum FatalFetchableSignal {
-          $($fatal_entry = $fatal_nn::$value),*,
+          $($fatal_entry = $fatal_nn::$fatal_value),*,
         }
 
         enum_gen! {
