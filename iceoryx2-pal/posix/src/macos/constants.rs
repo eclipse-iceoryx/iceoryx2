@@ -55,7 +55,6 @@ pub const PTHREAD_BARRIER_SERIAL_THREAD: int = int::MAX;
 pub const PTHREAD_EXPLICIT_SCHED: int = crate::internal::PTHREAD_EXPLICIT_SCHED as _;
 pub const PTHREAD_INHERIT_SCHED: int = crate::internal::PTHREAD_INHERIT_SCHED as _;
 
-pub const SIGPOLL: int = crate::internal::SIGIO as _;
 pub const MAX_SIGNAL_VALUE: usize = 34;
 
 pub const SO_PASSCRED: int = crate::internal::LOCAL_PEERCRED as _;

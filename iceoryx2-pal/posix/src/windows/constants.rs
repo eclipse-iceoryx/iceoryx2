@@ -127,7 +127,6 @@ pub const SIGVTALRM: int = 24;
 pub const SIGXCPU: int = 25;
 pub const SIGXFSZ: int = 26;
 pub const SIG_ERR: sighandler_t = sighandler_t::MAX;
-pub const SIGPOLL: int = 27;
 pub const SIG_DFL: int = 0;
 pub const SIG_IGN: int = 1;
 pub const SA_RESTART: int = 1;
