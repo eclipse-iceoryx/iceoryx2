@@ -19,7 +19,10 @@ use crate::{port::client::Client, service};
 use super::request_response::PortFactory;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum ClientCreateError {}
+pub enum ClientCreateError {
+    UnableToCreateDataSegment,
+    ExceedsMaxSupportedClients,
+}
 
 impl core::fmt::Display for ClientCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
