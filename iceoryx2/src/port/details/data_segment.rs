@@ -13,6 +13,7 @@
 use core::alloc::Layout;
 
 use iceoryx2_bb_log::fail;
+use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
     resizable_shared_memory::*,
@@ -65,35 +66,45 @@ pub(crate) struct DataSegment<Service: service::Service> {
 }
 
 impl<Service: service::Service> DataSegment<Service> {
-    pub(crate) fn create(
-        details: &PublisherDetails,
-        global_config: &config::Config,
+    pub(crate) fn create_static_segment(
+        segment_name: &FileName,
         sample_layout: Layout,
-        allocation_strategy: AllocationStrategy,
+        global_config: &config::Config,
+        number_of_samples: usize,
     ) -> Result<Self, SharedMemoryCreateError> {
         let allocator_config = shm_allocator::pool_allocator::Config {
             bucket_layout: sample_layout,
         };
-        let msg = "Unable to create the data segment since the underlying shared memory could not be created.";
-        let origin = "DataSegment::create()";
+        let msg = "Unable to create the static data segment since the underlying shared memory could not be created.";
+        let origin = "DataSegment::create_static_segment()";
 
-        let segment_name = data_segment_name(&details.publisher_id);
-        let memory = match details.data_segment_type {
-            DataSegmentType::Static => {
-                let segment_config = data_segment_config::<Service>(global_config);
-                let memory = fail!(from origin,
+        let segment_config = data_segment_config::<Service>(global_config);
+        let memory = fail!(from origin,
                                 when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
                                 Service::SharedMemory,
                                     >>::new(&segment_name)
                                     .config(&segment_config)
-                                    .size(sample_layout.size() * details.number_of_samples + sample_layout.align() - 1)
+                                    .size(sample_layout.size() * number_of_samples + sample_layout.align() - 1)
                                     .create(&allocator_config),
                                 "{msg}");
-                MemoryType::Static(memory)
-            }
-            DataSegmentType::Dynamic => {
-                let segment_config = resizable_data_segment_config::<Service>(global_config);
-                let memory = fail!(from origin,
+
+        Ok(Self {
+            memory: MemoryType::Static(memory),
+        })
+    }
+
+    pub(crate) fn create_dynamic_segment(
+        segment_name: &FileName,
+        sample_layout: Layout,
+        global_config: &config::Config,
+        number_of_samples: usize,
+        allocation_strategy: AllocationStrategy,
+    ) -> Result<Self, SharedMemoryCreateError> {
+        let msg = "Unable to create the dynamic data segment since the underlying shared memory could not be created.";
+        let origin = "DataSegment::create_dynamic_segment()";
+
+        let segment_config = resizable_data_segment_config::<Service>(global_config);
+        let memory = fail!(from origin,
                     when <<Service::ResizableSharedMemory as ResizableSharedMemory<
                         PoolAllocator,
                         Service::SharedMemory,
@@ -101,16 +112,15 @@ impl<Service: service::Service> DataSegment<Service> {
                         &segment_name,
                     )
                     .config(&segment_config)
-                    .max_number_of_chunks_hint(details.number_of_samples)
+                    .max_number_of_chunks_hint(number_of_samples)
                     .max_chunk_layout_hint(sample_layout)
                     .allocation_strategy(allocation_strategy)
                     .create(),
                     "{msg}");
-                MemoryType::Dynamic(memory)
-            }
-        };
 
-        Ok(Self { memory })
+        Ok(Self {
+            memory: MemoryType::Dynamic(memory),
+        })
     }
 
     pub(crate) fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError> {
