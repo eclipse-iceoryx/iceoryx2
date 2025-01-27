@@ -33,7 +33,7 @@ use crate::{
         self,
         config_scheme::{data_segment_config, resizable_data_segment_config},
         dynamic_config::publish_subscribe::PublisherDetails,
-        naming_scheme::data_segment_name,
+        naming_scheme::publisher_data_segment_name,
     },
 };
 
@@ -68,12 +68,12 @@ pub(crate) struct DataSegment<Service: service::Service> {
 impl<Service: service::Service> DataSegment<Service> {
     pub(crate) fn create_static_segment(
         segment_name: &FileName,
-        sample_layout: Layout,
+        chunk_layout: Layout,
         global_config: &config::Config,
-        number_of_samples: usize,
+        number_of_chunks: usize,
     ) -> Result<Self, SharedMemoryCreateError> {
         let allocator_config = shm_allocator::pool_allocator::Config {
-            bucket_layout: sample_layout,
+            bucket_layout: chunk_layout,
         };
         let msg = "Unable to create the static data segment since the underlying shared memory could not be created.";
         let origin = "DataSegment::create_static_segment()";
@@ -84,7 +84,7 @@ impl<Service: service::Service> DataSegment<Service> {
                                 Service::SharedMemory,
                                     >>::new(&segment_name)
                                     .config(&segment_config)
-                                    .size(sample_layout.size() * number_of_samples + sample_layout.align() - 1)
+                                    .size(chunk_layout.size() * number_of_chunks + chunk_layout.align() - 1)
                                     .create(&allocator_config),
                                 "{msg}");
 
@@ -95,9 +95,9 @@ impl<Service: service::Service> DataSegment<Service> {
 
     pub(crate) fn create_dynamic_segment(
         segment_name: &FileName,
-        sample_layout: Layout,
+        chunk_layout: Layout,
         global_config: &config::Config,
-        number_of_samples: usize,
+        number_of_chunks: usize,
         allocation_strategy: AllocationStrategy,
     ) -> Result<Self, SharedMemoryCreateError> {
         let msg = "Unable to create the dynamic data segment since the underlying shared memory could not be created.";
@@ -112,8 +112,8 @@ impl<Service: service::Service> DataSegment<Service> {
                         &segment_name,
                     )
                     .config(&segment_config)
-                    .max_number_of_chunks_hint(number_of_samples)
-                    .max_chunk_layout_hint(sample_layout)
+                    .max_number_of_chunks_hint(number_of_chunks)
+                    .max_chunk_layout_hint(chunk_layout)
                     .allocation_strategy(allocation_strategy)
                     .create(),
                     "{msg}");
@@ -193,7 +193,7 @@ impl<Service: service::Service> DataSegmentView<Service> {
         details: &PublisherDetails,
         global_config: &config::Config,
     ) -> Result<Self, SharedMemoryOpenError> {
-        let segment_name = data_segment_name(&details.publisher_id);
+        let segment_name = publisher_data_segment_name(&details.publisher_id);
         let origin = "DataSegment::open()";
         let msg =
             "Unable to open data segment since the underlying shared memory could not be opened.";
