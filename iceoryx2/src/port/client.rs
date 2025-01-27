@@ -10,5 +10,33 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-/// TODO
-pub struct Client {}
+use core::{fmt::Debug, marker::PhantomData};
+
+use crate::service::{self, port_factory::client::ClientCreateError};
+
+pub struct Client<
+    Service: service::Service,
+    RequestPayload: Debug,
+    RequestHeader: Debug,
+    ResponsePayload: Debug,
+    ResponseHeader: Debug,
+> {
+    _service: PhantomData<Service>,
+    _request_payload: PhantomData<RequestPayload>,
+    _request_header: PhantomData<RequestHeader>,
+    _response_payload: PhantomData<ResponsePayload>,
+    _response_header: PhantomData<ResponseHeader>,
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    pub(crate) fn new() -> Result<Self, ClientCreateError> {
+        todo!()
+    }
+}

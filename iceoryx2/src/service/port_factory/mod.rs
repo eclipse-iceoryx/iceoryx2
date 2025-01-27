@@ -21,6 +21,9 @@ use super::{attribute::AttributeSet, service_name::ServiceName};
 
 pub mod request_response;
 
+pub mod client;
+pub mod server;
+
 /// Factory to create the endpoints of
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) based
 /// communication and to acquire static and dynamic service information
