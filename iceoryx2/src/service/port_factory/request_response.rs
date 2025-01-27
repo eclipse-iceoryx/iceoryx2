@@ -41,6 +41,8 @@
 //! # }
 //! ```
 
+use core::{fmt::Debug, marker::PhantomData};
+
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
@@ -52,7 +54,7 @@ use crate::{
     },
 };
 
-use super::nodes;
+use super::{client::PortFactoryClient, nodes, server::PortFactoryServer};
 
 /// The factory for
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse).
@@ -60,14 +62,50 @@ use super::nodes;
 /// [`crate::port::client::Client`]
 /// or [`crate::port::server::Server`] ports.
 #[derive(Debug)]
-pub struct PortFactory<Service: service::Service> {
+pub struct PortFactory<
+    Service: service::Service,
+    RequestPayload: Debug,
+    RequestHeader: Debug,
+    ResponsePayload: Debug,
+    ResponseHeader: Debug,
+> {
     pub(crate) service: Service,
+    _request_payload: PhantomData<RequestPayload>,
+    _request_header: PhantomData<RequestHeader>,
+    _response_payload: PhantomData<ResponsePayload>,
+    _response_header: PhantomData<ResponseHeader>,
 }
 
-unsafe impl<Service: service::Service> Send for PortFactory<Service> {}
-unsafe impl<Service: service::Service> Sync for PortFactory<Service> {}
+unsafe impl<
+        Service: service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Send
+    for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+}
+unsafe impl<
+        Service: service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Sync
+    for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+}
 
-impl<Service: service::Service> crate::service::port_factory::PortFactory for PortFactory<Service> {
+impl<
+        Service: service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > crate::service::port_factory::PortFactory
+    for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
     type Service = Service;
     type StaticConfig = static_config::request_response::StaticConfig;
     type DynamicConfig = dynamic_config::request_response::DynamicConfig;
@@ -111,8 +149,35 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
     }
 }
 
-impl<Service: service::Service> PortFactory<Service> {
+impl<
+        Service: service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
     pub(crate) fn new(service: Service) -> Self {
-        Self { service }
+        Self {
+            service,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
+    }
+
+    pub fn client_builder(
+        &self,
+    ) -> PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    {
+        PortFactoryClient::new(self)
+    }
+
+    pub fn server_builder(
+        &self,
+    ) -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    {
+        PortFactoryServer::new(self)
     }
 }

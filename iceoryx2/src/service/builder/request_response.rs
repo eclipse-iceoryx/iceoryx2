@@ -656,7 +656,16 @@ impl<
     fn create_impl(
         &mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseCreateError> {
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
         let msg = "Unable to create request response service";
         self.adjust_configuration_to_meaningful_values();
 
@@ -756,7 +765,16 @@ impl<
     fn open_impl(
         &mut self,
         attributes: &AttributeVerifier,
-    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenError> {
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
         const OPEN_RETRY_LIMIT: usize = 5;
         let msg = "Unable to open request response service";
 
@@ -836,7 +854,16 @@ impl<
     fn open_or_create_impl(
         mut self,
         attributes: &AttributeVerifier,
-    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenOrCreateError> {
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
         let msg = "Unable to open or create request response service";
 
         let mut retry_count = 0;
@@ -911,7 +938,16 @@ impl<
     /// created.
     pub fn open_or_create(
         self,
-    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenOrCreateError> {
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
         self.open_or_create_with_attributes(&AttributeVerifier::new())
     }
 
@@ -924,7 +960,16 @@ impl<
     pub fn open_or_create_with_attributes(
         mut self,
         required_attributes: &AttributeVerifier,
-    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenOrCreateError> {
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
         self.prepare_message_type_details();
         self.open_or_create_impl(required_attributes)
     }
@@ -932,7 +977,16 @@ impl<
     /// Opens an existing [`Service`].
     pub fn open(
         self,
-    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenError> {
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
         self.open_with_attributes(&AttributeVerifier::new())
     }
 
@@ -941,7 +995,16 @@ impl<
     pub fn open_with_attributes(
         mut self,
         required_attributes: &AttributeVerifier,
-    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseOpenError> {
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
         self.prepare_message_type_details();
         self.open_impl(required_attributes)
     }
@@ -949,7 +1012,16 @@ impl<
     /// Creates a new [`Service`].
     pub fn create(
         self,
-    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseCreateError> {
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
         self.create_with_attributes(&AttributeSpecifier::new())
     }
 
@@ -957,7 +1029,16 @@ impl<
     pub fn create_with_attributes(
         mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<request_response::PortFactory<ServiceType>, RequestResponseCreateError> {
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
         self.prepare_message_type_details();
         self.create_impl(attributes)
     }
