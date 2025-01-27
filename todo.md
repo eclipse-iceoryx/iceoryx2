@@ -1,5 +1,7 @@
 # TODO
 
+* max_borrowed_requests and max_active_requests are the same, remove max_borrowed_requests
+
 ## POSIX
 
 * Windows stat.rs, allowed to fail if file no longer exists

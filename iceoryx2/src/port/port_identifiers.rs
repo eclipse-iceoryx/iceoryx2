@@ -60,6 +60,14 @@ generate_id! {
     /// The system-wide unique id of a [`Listener`](crate::port::listener::Listener).
     UniqueListenerId
 }
+generate_id! {
+    /// The system-wide unique id of a [`Client`](crate::port::client::Client).
+    UniqueClientId
+}
+generate_id! {
+    /// The system-wide unique id of a [`Server`](crate::port::server::Server).
+    UniqueServerId
+}
 
 /// Enum that contains the unique port id
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,4 +80,8 @@ pub enum UniquePortId {
     Notifier(UniqueNotifierId),
     /// The system-wide unique id of a [`Listener`](crate::port::listener::Listener).
     Listener(UniqueListenerId),
+    /// The system-wide unique id of a [`Client`](crate::port::client::Client).
+    Client(UniqueClientId),
+    /// The system-wide unique id of a [`Server`](crate::port::server::Server).
+    Server(UniqueServerId),
 }

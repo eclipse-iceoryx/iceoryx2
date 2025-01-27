@@ -12,7 +12,13 @@
 
 use core::{fmt::Debug, marker::PhantomData};
 
-use crate::service::{self, port_factory::client::ClientCreateError};
+use crate::{
+    port::UniqueClientId,
+    service::{
+        self,
+        port_factory::client::{ClientCreateError, PortFactoryClient},
+    },
+};
 
 pub struct Client<
     Service: service::Service,
@@ -36,7 +42,28 @@ impl<
         ResponseHeader: Debug,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    pub(crate) fn new() -> Result<Self, ClientCreateError> {
+    pub(crate) fn new(
+        client_factory: &PortFactoryClient<
+            Service,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+    ) -> Result<Self, ClientCreateError> {
+        let msg = "Unable to create Client port";
+        let origin = "Client::new()";
+        let service = &client_factory.factory.service;
+        let port_id = UniqueClientId::new();
+        let number_of_chunks = unsafe {
+            service
+                .__internal_state()
+                .static_config
+                .messaging_pattern
+                .request_response()
+        }
+        .required_amount_of_chunks_per_client_data_segment(client_factory.max_loaned_requests);
+
         todo!()
     }
 }
