@@ -73,6 +73,16 @@ impl StaticConfig {
         }
     }
 
+    pub(crate) fn required_amount_of_samples_per_data_segment(
+        &self,
+        publisher_max_loaned_data: usize,
+    ) -> usize {
+        self.max_subscribers
+            * (self.subscriber_max_buffer_size + self.subscriber_max_borrowed_samples)
+            + self.history_size
+            + publisher_max_loaned_data
+    }
+
     /// Returns the maximum supported amount of [`Node`](crate::node::Node)s that can open the
     /// [`Service`](crate::service::Service) in parallel.
     pub fn max_nodes(&self) -> usize {

@@ -648,11 +648,14 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .publish_subscribe()
             .subscribers;
 
-        let number_of_samples = service
-            .__internal_state()
-            .static_config
-            .messaging_pattern
-            .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
+        let number_of_samples = unsafe {
+            service
+                .__internal_state()
+                .static_config
+                .messaging_pattern
+                .publish_subscribe()
+        }
+        .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
         let data_segment_type =
             DataSegmentType::new_from_allocation_strategy(config.allocation_strategy);

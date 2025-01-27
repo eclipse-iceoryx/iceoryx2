@@ -332,6 +332,9 @@ pub struct RequestResonse {
     /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub max_nodes: usize,
+
+    pub client_max_loaned_requests: usize,
+    pub server_max_loaned_responses_per_request: usize,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -388,6 +391,8 @@ impl Default for Config {
                     max_servers: 2,
                     max_clients: 8,
                     max_nodes: 20,
+                    client_max_loaned_requests: 2,
+                    server_max_loaned_responses_per_request: 2,
                 },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,

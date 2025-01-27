@@ -38,13 +38,14 @@ pub struct PortFactoryClient<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    factory: &'factory PortFactory<
+    pub(crate) factory: &'factory PortFactory<
         Service,
         RequestPayload,
         RequestHeader,
         ResponsePayload,
         ResponseHeader,
     >,
+    pub(crate) max_loaned_requests: usize,
 }
 
 impl<
@@ -73,7 +74,22 @@ impl<
             ResponseHeader,
         >,
     ) -> Self {
-        Self { factory }
+        Self {
+            factory,
+            max_loaned_requests: factory
+                .service
+                .__internal_state()
+                .shared_node
+                .config()
+                .defaults
+                .request_response
+                .client_max_loaned_requests,
+        }
+    }
+
+    pub fn max_loaned_requests(mut self, value: usize) -> Self {
+        self.max_loaned_requests = value;
+        self
     }
 
     pub fn create(
@@ -83,7 +99,7 @@ impl<
         ClientCreateError,
     > {
         Ok(fail!(from self,
-              when Client::new(),
+              when Client::new(&self),
               "Failed to create new Client port."))
     }
 }

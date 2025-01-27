@@ -33,6 +33,8 @@ max-request-buffer-size                     = 4
 max-servers                                 = 2
 max-clients                                 = 8
 max-nodes                                   = 20
+client-max-loaned-requests                  = 2
+server-max-loaned-responses-per-request     = 2
 
 [defaults.publish-subscribe]
 max-subscribers                             = 8
