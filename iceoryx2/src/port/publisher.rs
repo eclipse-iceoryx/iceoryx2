@@ -677,8 +677,25 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         };
         let global_config = service.__internal_state().shared_node.config();
 
+        let segment_name = data_segment_name(&publisher_details.publisher_id);
+        let data_segment = match data_segment_type {
+            DataSegmentType::Static => DataSegment::create_static_segment(
+                &segment_name,
+                sample_layout,
+                global_config,
+                number_of_samples,
+            ),
+            DataSegmentType::Dynamic => DataSegment::create_dynamic_segment(
+                &segment_name,
+                sample_layout,
+                global_config,
+                number_of_samples,
+                config.allocation_strategy,
+            ),
+        };
+
         let data_segment = fail!(from origin,
-                when DataSegment::create(&publisher_details, global_config, sample_layout, config.allocation_strategy),
+                when data_segment,
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
