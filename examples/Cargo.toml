@@ -113,6 +113,16 @@ path = "rust/publish_subscribe_with_user_header/publisher.rs"
 name = "publish_subscribe_user_header_subscriber"
 path = "rust/publish_subscribe_with_user_header/subscriber.rs"
 
+# request_response
+
+[[example]]
+name = "request_response_server"
+path = "rust/request_response/server.rs"
+
+[[example]]
+name = "request_response_client"
+path = "rust/request_response/client.rs"
+
 # service attributes
 
 [[example]]
