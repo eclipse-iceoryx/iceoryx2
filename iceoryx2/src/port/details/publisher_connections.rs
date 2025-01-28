@@ -51,7 +51,7 @@ impl<Service: service::Service> Connection<Service> {
         let global_config = this.service_state.shared_node.config();
         let receiver = fail!(from this,
                         when <Service::Connection as ZeroCopyConnection>::
-                            Builder::new( &connection_name(details.publisher_id, this.subscriber_id))
+                            Builder::new( &connection_name(details.publisher_id.value(), this.subscriber_id.value()))
                                     .config(&connection_config::<Service>(global_config))
                                     .buffer_size(this.buffer_size)
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)

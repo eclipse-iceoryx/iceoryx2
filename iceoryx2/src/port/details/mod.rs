@@ -11,5 +11,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub(crate) mod data_segment;
+pub(crate) mod outgoing_connections;
 pub(crate) mod publisher_connections;
-pub(crate) mod subscriber_connections;
