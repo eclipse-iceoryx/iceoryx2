@@ -33,7 +33,7 @@ use crate::{
         self,
         config_scheme::{data_segment_config, resizable_data_segment_config},
         dynamic_config::publish_subscribe::PublisherDetails,
-        naming_scheme::publisher_data_segment_name,
+        naming_scheme::data_segment_name,
     },
 };
 
@@ -193,7 +193,7 @@ impl<Service: service::Service> DataSegmentView<Service> {
         details: &PublisherDetails,
         global_config: &config::Config,
     ) -> Result<Self, SharedMemoryOpenError> {
-        let segment_name = publisher_data_segment_name(&details.publisher_id);
+        let segment_name = data_segment_name(details.publisher_id.value());
         let origin = "DataSegment::open()";
         let msg =
             "Unable to open data segment since the underlying shared memory could not be opened.";

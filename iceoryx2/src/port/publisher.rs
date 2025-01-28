@@ -114,8 +114,7 @@ use crate::service::config_scheme::{connection_config, data_segment_config};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::{
-    extract_publisher_id_from_connection, extract_subscriber_id_from_connection,
-    publisher_data_segment_name,
+    data_segment_name, extract_publisher_id_from_connection, extract_subscriber_id_from_connection,
 };
 use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
 use crate::service::static_config::message_type_details::TypeVariant;
@@ -678,7 +677,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         };
         let global_config = service.__internal_state().shared_node.config();
 
-        let segment_name = publisher_data_segment_name(&publisher_details.publisher_id);
+        let segment_name = data_segment_name(publisher_details.publisher_id.value());
         let data_segment = match data_segment_type {
             DataSegmentType::Static => DataSegment::create_static_segment(
                 &segment_name,
@@ -1155,7 +1154,7 @@ pub(crate) unsafe fn remove_data_segment_of_publisher<Service: service::Service>
     );
 
     fail!(from origin, when <Service::SharedMemory as NamedConceptMgmt>::remove_cfg(
-            &publisher_data_segment_name(port_id),
+            &data_segment_name(port_id.value()),
             &data_segment_config::<Service>(config),
         ), "Unable to remove the publishers data segment."
     );
