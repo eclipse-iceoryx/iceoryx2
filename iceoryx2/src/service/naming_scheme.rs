@@ -52,27 +52,11 @@ pub(crate) fn extract_subscriber_id_from_connection(connection: &FileName) -> Un
     unsafe { core::mem::transmute::<u128, UniqueSubscriberId>(value) }
 }
 
-pub(crate) fn publisher_data_segment_name(publisher_id: &UniquePublisherId) -> FileName {
-    let msg = "The system does not support the required file name length for the publishers data segment.";
-    let origin = "publisher_data_segment_name()";
-
-    let mut file_name = unsafe { FileName::new_unchecked(b"publisher_") };
+pub(crate) fn data_segment_name(port_id_value: u128) -> FileName {
+    let msg = "The system does not support the required file name length for the data segment.";
+    let origin = "data_segment_name()";
 
     fatal_panic!(from origin,
-                 when file_name.push_bytes(publisher_id.0.value().to_string().as_bytes()),
-                 "{}", msg);
-    file_name
-}
-
-pub(crate) fn client_data_segment_name(client_id: &UniqueClientId) -> FileName {
-    let msg =
-        "The system does not support the required file name length for the client data segment.";
-    let origin = "client_data_segment_name()";
-
-    let mut file_name = unsafe { FileName::new_unchecked(b"client_") };
-
-    fatal_panic!(from origin,
-                 when file_name.push_bytes(client_id.0.value().to_string().as_bytes()),
-                 "{}", msg);
-    file_name
+                 when FileName::new(port_id_value.to_string().as_bytes()),
+                 "{}", msg)
 }

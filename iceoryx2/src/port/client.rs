@@ -22,7 +22,7 @@ use crate::{
     service::{
         self,
         dynamic_config::request_response::ClientDetails,
-        naming_scheme::client_data_segment_name,
+        naming_scheme::data_segment_name,
         port_factory::client::{ClientCreateError, PortFactoryClient},
     },
 };
@@ -74,7 +74,7 @@ impl<
 
         let static_config = client_factory.factory.static_config();
         let global_config = service.__internal_state().shared_node.config();
-        let segment_name = client_data_segment_name(&client_id);
+        let segment_name = data_segment_name(client_id.value());
         let data_segment = DataSegment::<Service>::create_static_segment(
             &segment_name,
             static_config.request_message_type_details.sample_layout(1),
