@@ -118,7 +118,7 @@ impl PublisherUnion {
 #[repr(C)]
 #[repr(align(16))] // alignment of Option<PublisherUnion>
 pub struct iox2_publisher_storage_t {
-    internal: [u8; 40], // magic number obtained with size_of::<Option<PublisherUnion>>()
+    internal: [u8; 248], // magic number obtained with size_of::<Option<PublisherUnion>>()
 }
 
 #[repr(C)]

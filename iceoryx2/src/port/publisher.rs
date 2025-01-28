@@ -104,7 +104,7 @@
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::port_identifiers::UniquePublisherId;
 use super::UniqueSubscriberId;
-use crate::port::details::subscriber_connections::*;
+use crate::port::details::outgoing_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
@@ -131,6 +131,7 @@ use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, error, fail, fatal_panic, warn};
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
@@ -301,7 +302,7 @@ pub(crate) struct PublisherBackend<Service: service::Service> {
     config: LocalPublisherConfig,
     service_state: Arc<ServiceState<Service>>,
 
-    subscriber_connections: SubscriberConnections<Service>,
+    subscriber_connections: OutgoingConnections<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
     static_config: crate::service::static_config::StaticConfig,
@@ -433,24 +434,26 @@ impl<Service: service::Service> PublisherBackend<Service> {
                             Some(c) => match c.call(
                                 self.static_config.clone(),
                                 self.port_id,
-                                connection.subscriber_id,
+                                UniqueSubscriberId(UniqueSystemId::from(
+                                    connection.receiver_port_id,
+                                )),
                             ) {
                                 DegrationAction::Ignore => (),
                                 DegrationAction::Warn => {
                                     error!(from self,
                                         "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                        offset, connection.subscriber_id);
+                                        offset, connection.receiver_port_id);
                                 }
                                 DegrationAction::Fail => {
                                     fail!(from self, with PublisherSendError::ConnectionCorrupted,
                                         "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                        offset, connection.subscriber_id);
+                                        offset, connection.receiver_port_id);
                                 }
                             },
                             None => {
                                 error!(from self,
                                     "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                    offset, connection.subscriber_id);
+                                    offset, connection.receiver_port_id);
                             }
                         }
                     }
@@ -485,8 +488,8 @@ impl<Service: service::Service> PublisherBackend<Service> {
                     let create_connection = match self.subscriber_connections.get(i) {
                         None => true,
                         Some(connection) => {
-                            let is_connected =
-                                connection.subscriber_id != subscriber_details.subscriber_id;
+                            let is_connected = connection.receiver_port_id
+                                != subscriber_details.subscriber_id.value();
                             if is_connected {
                                 self.remove_connection(i);
                             }
@@ -495,7 +498,11 @@ impl<Service: service::Service> PublisherBackend<Service> {
                     };
 
                     if create_connection {
-                        match self.subscriber_connections.create(i, *subscriber_details) {
+                        match self.subscriber_connections.create(
+                            i,
+                            subscriber_details.subscriber_id.value(),
+                            subscriber_details.buffer_size,
+                        ) {
                             Ok(()) => match &self.subscriber_connections.get(i) {
                                 Some(connection) => self.deliver_sample_history(connection),
                                 None => {
@@ -611,6 +618,7 @@ pub struct Publisher<
     pub(crate) backend: Arc<PublisherBackend<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
     payload_size: usize,
+    static_config: publish_subscribe::StaticConfig,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -711,11 +719,13 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             },
             service_state: service.__internal_state().clone(),
             port_id,
-            subscriber_connections: SubscriberConnections::new(
+            subscriber_connections: OutgoingConnections::new(
                 subscriber_list.capacity(),
                 service.__internal_state().shared_node.clone(),
-                port_id,
-                static_config,
+                port_id.value(),
+                static_config.subscriber_max_buffer_size,
+                static_config.subscriber_max_borrowed_samples,
+                static_config.enable_safe_overflow,
                 number_of_samples,
                 max_number_of_segments,
             ),
@@ -729,17 +739,13 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             loan_counter: IoxAtomicUsize::new(0),
         });
 
-        let payload_size = backend
-            .subscriber_connections
-            .static_config
-            .message_type_details
-            .payload
-            .size;
+        let payload_size = static_config.message_type_details.payload.size;
 
         let mut new_self = Self {
             backend,
             dynamic_publisher_handle: None,
             payload_size,
+            static_config: static_config.clone(),
             _payload: PhantomData,
             _user_header: PhantomData,
         };
@@ -820,38 +826,27 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     }
 
     fn sample_layout(&self, number_of_elements: usize) -> Layout {
-        self.backend
-            .subscriber_connections
-            .static_config
+        self.static_config
             .message_type_details
             .sample_layout(number_of_elements)
     }
 
     fn user_header_ptr(&self, header: *const Header) -> *const u8 {
-        self.backend
-            .subscriber_connections
-            .static_config
+        self.static_config
             .message_type_details
             .user_header_ptr_from_header(header.cast())
             .cast()
     }
 
     fn payload_ptr(&self, header: *const Header) -> *const u8 {
-        self.backend
-            .subscriber_connections
-            .static_config
+        self.static_config
             .message_type_details
             .payload_ptr_from_header(header.cast())
             .cast()
     }
 
     fn payload_type_variant(&self) -> TypeVariant {
-        self.backend
-            .subscriber_connections
-            .static_config
-            .message_type_details
-            .payload
-            .variant
+        self.static_config.message_type_details.payload.variant
     }
 }
 
