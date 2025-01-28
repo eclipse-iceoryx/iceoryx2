@@ -159,16 +159,6 @@ enum_gen! {
     FailedToSetAffinity <= ThreadSetAffinityError
 }
 
-/// Describes the scope in which a thread is competing with other threads for CPU time.
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-#[repr(i32)]
-pub enum ContentionScope {
-    /// The threads competes with all threads in the system
-    System = posix::PTHREAD_SCOPE_SYSTEM,
-    /// The thread competes only with threads from the parent process
-    Process = posix::PTHREAD_SCOPE_PROCESS,
-}
-
 /// The builder for a [`Thread`] object.
 #[derive(Debug)]
 pub struct ThreadBuilder {
@@ -176,7 +166,6 @@ pub struct ThreadBuilder {
     inherit_scheduling_attributes: bool,
     scheduler: Scheduler,
     priority: u8,
-    contention_scope: Option<ContentionScope>,
     stack_size: Option<u64>,
     affinity: [bool; posix::CPU_SETSIZE],
     name: ThreadName,
@@ -189,7 +178,6 @@ impl Default for ThreadBuilder {
             inherit_scheduling_attributes: true,
             priority: 0,
             scheduler: Scheduler::default(),
-            contention_scope: None,
             affinity: [true; posix::CPU_SETSIZE],
             stack_size: None,
             name: ThreadName::new(),
@@ -255,18 +243,6 @@ impl ThreadBuilder {
         self
     }
 
-    /// Defines the scope in which the thread competes with other threads for CPU time.
-    /// * [`ContentionScope::System`] the thread competes system wide
-    /// * [`ContentionScope::Process`] the thread competes only with other threads from the same
-    ///    process.
-    ///
-    /// With defining this value a thread with guarded stack is created. See
-    /// [`ThreadGuardedStackBuilder`].
-    pub fn contention_scope(mut self, value: ContentionScope) -> ThreadGuardedStackBuilder {
-        self.contention_scope = Some(value);
-        ThreadGuardedStackBuilder { config: self }
-    }
-
     /// Defines the size of the memory block which is put at the end of the stack memory to
     /// discover memory related bugs.
     ///
@@ -292,29 +268,16 @@ impl ThreadBuilder {
         ThreadGuardedStackBuilder { config: self }
     }
 
-    /// Provides memory which must have at least a size of the minimum required thread stack size
-    /// which is used as the threads stack.
-    pub fn stack(self, value: &mut [u8]) -> ThreadCustomStackBuilder {
-        ThreadCustomStackBuilder {
-            config: self,
-            stack: value,
-        }
-    }
-
-    pub fn spawn<'thread, T, F>(self, f: F) -> Result<Thread<'thread>, ThreadSpawnError>
+    pub fn spawn<'thread, T, F>(self, f: F) -> Result<Thread, ThreadSpawnError>
     where
         T: Debug + Send + 'thread,
         F: FnOnce() -> T + Send + 'thread,
     {
-        self.spawn_impl(f, None)
+        self.spawn_impl(f)
     }
 
     /// Creates a new thread with the provided callable `f`.
-    fn spawn_impl<'thread, T, F>(
-        self,
-        f: F,
-        stack: Option<&'thread mut [u8]>,
-    ) -> Result<Thread<'thread>, ThreadSpawnError>
+    fn spawn_impl<'thread, T, F>(self, f: F) -> Result<Thread, ThreadSpawnError>
     where
         T: Debug + Send + 'thread,
         F: FnOnce() -> T + Send + 'thread,
@@ -368,18 +331,6 @@ impl ThreadBuilder {
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         );
 
-        if self.contention_scope.is_some() {
-            let msg = "Failed to set contention scope";
-            handle_errno!(ThreadSpawnError, from self,
-                errno_source unsafe { posix::pthread_attr_setscope(attributes.get_mut(), self.contention_scope.unwrap() as i32).into() },
-                continue_on_success,
-                success Errno::ESUCCES => (),
-                Errno::ENOSYS => (ContentionScopeNotSupported, "{} since it is not supported by the system.", msg),
-                Errno::ENOTSUP => (ContentionScopeNotSupported, "{} since it is not supported by the system.", msg),
-                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-            );
-        }
-
         let mut param = posix::sched_param::new();
         param.sched_priority = self.scheduler.policy_specific_priority(self.priority);
         let msg = "Failed to set thread priority";
@@ -428,27 +379,6 @@ impl ThreadBuilder {
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg,v)
         );
 
-        if stack.is_some() {
-            let msg = "Failed to set threads stack";
-            let stack_size = stack.as_ref().unwrap().len();
-            let min_stack_size = Limit::MinStackSizeOfThread.value();
-
-            if stack_size < min_stack_size as usize {
-                fail!(from self, with ThreadSpawnError::ProvidedStackSizeMemoryTooSmall,
-                        "{} since the size {} of the provided stack is smaller than the minimum required stack size of {}.",
-                                    msg, stack_size, min_stack_size );
-            }
-
-            handle_errno!(ThreadSpawnError, from self,
-               errno_source unsafe { posix::pthread_attr_setstack(attributes.get_mut(), stack.as_ref().unwrap().as_ref().as_ptr() as *mut posix::void, stack_size)
-                                               .into()},
-               continue_on_success,
-               success Errno::ESUCCES => (),
-               Errno::EACCES => (ProvidedStackMemoryIsNotReadAndWritable, "{} since the provided memory is not read- and writable by the thread.", msg),
-               v => (UnknownError(v as i32), "{} since an unknown error has occurred ({}).", msg,v)
-            );
-        }
-
         extern "C" fn start_routine<'thread, FF, TT>(args: *mut posix::void) -> *mut posix::void
         where
             TT: Send + Debug + 'thread,
@@ -491,7 +421,7 @@ impl ThreadBuilder {
             posix::pthread_create(
                 &mut handle,
                 attributes.get(),
-                Some(start_routine::<F, T>),
+                start_routine::<F, T>,
                 startup_args as *mut posix::void,
             )
             .into()
@@ -515,21 +445,18 @@ impl ThreadBuilder {
             }
         };
 
-        Ok(Thread::<'thread>::new(
-            ThreadHandle {
-                handle,
-                name: UnsafeCell::new(self.name),
-            },
-            stack,
-        ))
+        Ok(Thread::new(ThreadHandle {
+            handle,
+            name: UnsafeCell::new(self.name),
+        }))
     }
 }
 
 /// Creates a thread with a custom sized and guarded stack. This means that a region at the end of
 /// the threads stack is defined which is later used to discover possible memory issues.
 ///
-/// Is being created when calling [stack_size](ThreadBuilder::stack_size()),
-/// [guard_size](ThreadBuilder::guard_size) or [contention_scope](ThreadBuilder::contention_scope())
+/// Is being created when calling [stack_size](ThreadBuilder::stack_size()) or
+/// [guard_size](ThreadBuilder::guard_size)
 /// inside the [`ThreadBuilder`].
 ///
 /// For an example take a look at [`ThreadBuilder`]s last example.
@@ -538,12 +465,6 @@ pub struct ThreadGuardedStackBuilder {
 }
 
 impl ThreadGuardedStackBuilder {
-    /// See: [`ThreadBuilder::contention_scope()`]
-    pub fn contention_scope(mut self, value: ContentionScope) -> Self {
-        self.config.contention_scope = Some(value);
-        self
-    }
-
     /// See: [`ThreadBuilder::guard_size()`]
     pub fn guard_size(mut self, value: u64) -> Self {
         self.config.guard_size = value;
@@ -557,31 +478,12 @@ impl ThreadGuardedStackBuilder {
     }
 
     /// See: [`ThreadBuilder::spawn()`]
-    pub fn spawn<'thread, T, F>(self, f: F) -> Result<Thread<'thread>, ThreadSpawnError>
+    pub fn spawn<T, F>(self, f: F) -> Result<Thread, ThreadSpawnError>
     where
         T: Debug + Send + 'static,
         F: FnOnce() -> T + Send + 'static,
     {
-        self.config.spawn_impl(f, None)
-    }
-}
-
-/// Creates a thread with a user provided stack. For an example take a look at the second example
-/// in [`ThreadBuilder`]
-#[derive(Debug)]
-pub struct ThreadCustomStackBuilder<'thread> {
-    config: ThreadBuilder,
-    stack: &'thread mut [u8],
-}
-
-impl<'thread> ThreadCustomStackBuilder<'thread> {
-    /// See: [`ThreadBuilder::spawn()`]
-    pub fn spawn<T, F>(self, f: F) -> Result<Thread<'thread>, ThreadSpawnError>
-    where
-        T: Debug + Send + 'static,
-        F: FnOnce() -> T + Send + 'static,
-    {
-        self.config.spawn_impl(f, Some(self.stack))
+        self.config.spawn_impl(f)
     }
 }
 
@@ -749,18 +651,17 @@ struct ThreadStartupArgs<'thread, T: Send + Debug + 'thread, F: FnOnce() -> T + 
 /// println!("Created thread: {:?}", thread);
 /// KEEP_RUNNING.store(false, Ordering::Relaxed);
 /// ```
-pub struct Thread<'thread> {
+pub struct Thread {
     handle: ThreadHandle,
-    _stack: Option<&'thread mut [u8]>,
 }
 
-impl Debug for Thread<'_> {
+impl Debug for Thread {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "Thread {{ handle: {:?} }}", self.handle)
     }
 }
 
-impl Drop for Thread<'_> {
+impl Drop for Thread {
     fn drop(&mut self) {
         let msg = "Unable to join thread";
         match unsafe {
@@ -787,9 +688,9 @@ impl Drop for Thread<'_> {
     }
 }
 
-impl<'thread> Thread<'thread> {
-    fn new(handle: ThreadHandle, _stack: Option<&'thread mut [u8]>) -> Self {
-        Self { handle, _stack }
+impl Thread {
+    fn new(handle: ThreadHandle) -> Self {
+        Self { handle }
     }
 
     /// Sends a [`Signal`] to the thread.
@@ -804,7 +705,7 @@ impl<'thread> Thread<'thread> {
     }
 }
 
-impl ThreadProperties for Thread<'_> {
+impl ThreadProperties for Thread {
     fn get_name(&self) -> Result<&ThreadName, ThreadGetNameError> {
         self.handle.get_name()
     }

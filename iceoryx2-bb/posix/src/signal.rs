@@ -59,8 +59,7 @@ use core::{
 
 use crate::{
     adaptive_wait::*,
-    clock::{NanosleepError, Time, TimeError},
-    file_lock::ClockType,
+    clock::{ClockType, NanosleepError, Time, TimeError},
     mutex::*,
 };
 use core::sync::atomic::Ordering;
