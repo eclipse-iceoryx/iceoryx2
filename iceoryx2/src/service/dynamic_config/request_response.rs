@@ -34,7 +34,7 @@ pub struct ServerDetails {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ClientDetails {
-    pub client_id: UniqueClientId,
+    pub client_port_id: UniqueClientId,
     pub node_id: NodeId,
     pub number_of_requests: usize,
 }

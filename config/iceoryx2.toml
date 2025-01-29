@@ -35,6 +35,8 @@ max-clients                                 = 8
 max-nodes                                   = 20
 client-max-loaned-requests                  = 2
 server-max-loaned-responses-per-request     = 2
+client-unable-to-deliver-strategy           = 'Block' # or 'DiscardSample'
+server-unable-to-deliver-strategy           = 'Block' # or 'DiscardSample'
 
 [defaults.publish-subscribe]
 max-subscribers                             = 8

@@ -265,7 +265,7 @@ impl<Service: service::Service> Notifier<Service> {
                 service.__internal_state().clone(),
             ),
             default_event_id,
-            listener_list_state: unsafe { UnsafeCell::new(listener_list.get_state()) },
+            listener_list_state: UnsafeCell::new(unsafe { listener_list.get_state() }),
             event_id_max_value: static_config.event_id_max_value,
             dynamic_notifier_handle: None,
             notifier_id,
