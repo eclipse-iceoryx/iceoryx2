@@ -15,7 +15,7 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```no_run
 //! use iceoryx2_bb_posix::file::*;
 //! use iceoryx2_bb_posix::file_lock::*;
 //! use iceoryx2_bb_system_types::file_path::FilePath;
@@ -271,7 +271,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
     /// A write-lock can be acquired when no reader and no writer locks are acquired by any
     /// other participant.
     pub fn write_lock(&self) -> Result<FileLockWriteGuard<'_, '_, T>, FileWriterGetLockError> {
-        let guard = fail!(from self, when self.file.write_lock(),
+        let guard = fail!(from self, when self.file.write_blocking_lock(),
             "Failed to acquire writer mutex lock in write_lock");
         self.internal_lock(
             LockType::Write,
@@ -318,7 +318,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
     /// lock as soon as it goes out of scope.
     /// A read-lock can be acquired when no write lock is acquired by any other participant.
     pub fn read_lock(&self) -> Result<FileLockReadGuard<'_, '_, T>, FileReaderGetLockError> {
-        let guard = fail!(from self, when self.file.read_lock(),
+        let guard = fail!(from self, when self.file.read_blocking_lock(),
                          "Failed to acquire reader mutex lock in read_lock");
 
         self.internal_lock(
@@ -382,7 +382,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
         let mut current_lock_state = posix::flock::new();
         current_lock_state.l_type = posix::F_WRLCK as _;
 
-        let fd_guard = fail!(from self, when self.file.read_lock(),
+        let fd_guard = fail!(from self, when self.file.read_blocking_lock(),
             "{} due to an internal failure in while acquiring the mutex.", msg);
 
         match unsafe {

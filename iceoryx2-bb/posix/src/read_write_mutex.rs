@@ -30,13 +30,13 @@
 //!
 //! thread::scope(|s| {
 //!     s.spawn(|| {
-//!         let guard = rw_mutex.read_lock()
+//!         let guard = rw_mutex.read_blocking_lock()
 //!                             .expect("failed to read_lock");
 //!         println!("The mutex value is: {}", *guard);
 //!     });
 //!
 //!     s.spawn(|| {
-//!         let mut guard = rw_mutex.write_lock()
+//!         let mut guard = rw_mutex.write_blocking_lock()
 //!                                 .expect("failed to write_lock");
 //!         println!("The old value is: {}", *guard);
 //!         *guard = 456;
@@ -204,7 +204,7 @@ impl ReadWriteMutexBuilder {
 
 /// A guard which provides read access to the underlying value of a [`ReadWriteMutex`].
 ///
-/// Is returned by [`ReadWriteMutex::read_lock()`] and [`ReadWriteMutex::read_try_lock()`].
+/// Is returned by [`ReadWriteMutex::read_blocking_lock()`] and [`ReadWriteMutex::read_try_lock()`].
 #[derive(Debug)]
 pub struct MutexReadGuard<'a, 'b, T: Debug> {
     mutex: &'a ReadWriteMutex<'b, T>,
@@ -231,7 +231,7 @@ impl<T: Debug> Drop for MutexReadGuard<'_, '_, T> {
 
 /// A guard which provides read and write access to the underlying value of a [`ReadWriteMutex`].
 ///
-/// Is returned by [`ReadWriteMutex::write_lock()`] and [`ReadWriteMutex::write_try_lock()`].
+/// Is returned by [`ReadWriteMutex::write_blocking_lock()`] and [`ReadWriteMutex::write_try_lock()`].
 #[derive(Debug)]
 pub struct MutexWriteGuard<'a, 'b, T: Debug> {
     mutex: &'a ReadWriteMutex<'b, T>,
@@ -335,7 +335,9 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
         Self { handle }
     }
 
-    pub fn read_lock(&self) -> Result<MutexReadGuard<'_, '_, T>, ReadWriteMutexReadLockError> {
+    pub fn read_blocking_lock(
+        &self,
+    ) -> Result<MutexReadGuard<'_, '_, T>, ReadWriteMutexReadLockError> {
         let msg = "Failed to acquire read-lock";
         handle_errno!(ReadWriteMutexReadLockError, from self,
             errno_source unsafe { posix::pthread_rwlock_rdlock(self.handle.handle.get()).into() },
@@ -364,7 +366,9 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
 
     /// Blocks until a write-lock could be acquired and returns a [`MutexWriteGuard`] to provide
     /// read-write access to the underlying value.
-    pub fn write_lock(&self) -> Result<MutexWriteGuard<'_, '_, T>, ReadWriteMutexWriteLockError> {
+    pub fn write_blocking_lock(
+        &self,
+    ) -> Result<MutexWriteGuard<'_, '_, T>, ReadWriteMutexWriteLockError> {
         let msg = "Failed to acquire write-lock";
         handle_errno!(ReadWriteMutexWriteLockError, from self,
             errno_source unsafe { posix::pthread_rwlock_wrlock(self.handle.handle.get()).into() },

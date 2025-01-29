@@ -26,12 +26,12 @@ fn read_write_mutex_lock_works() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(456, &handle).unwrap();
     {
-        let mut value = sut.write_lock().unwrap();
+        let mut value = sut.write_blocking_lock().unwrap();
         assert_that!(*value, eq 456);
         *value = 123;
     }
 
-    let value = sut.read_lock().unwrap();
+    let value = sut.read_blocking_lock().unwrap();
     assert_that!(*value, eq 123);
 }
 
@@ -58,17 +58,17 @@ fn read_write_mutex_write_lock_blocks_read_and_write_locks() {
     let barrier = Barrier::new(3);
 
     thread::scope(|s| {
-        let _guard = sut.write_lock().unwrap();
+        let _guard = sut.write_blocking_lock().unwrap();
 
         let t1 = s.spawn(|| {
             barrier.wait();
-            let _guard = sut.write_lock().unwrap();
+            let _guard = sut.write_blocking_lock().unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
         let t2 = s.spawn(|| {
             barrier.wait();
-            let _guard = sut.read_lock().unwrap();
+            let _guard = sut.read_blocking_lock().unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
@@ -92,11 +92,11 @@ fn read_write_mutex_read_lock_blocks_only_write_locks() {
     let counter = AtomicUsize::new(5);
 
     thread::scope(|s| {
-        let _guard = sut.read_lock().unwrap();
-        let _guard2 = sut.read_lock().unwrap();
+        let _guard = sut.read_blocking_lock().unwrap();
+        let _guard2 = sut.read_blocking_lock().unwrap();
 
         let t1 = s.spawn(|| {
-            let _guard = sut.write_lock().unwrap();
+            let _guard = sut.write_blocking_lock().unwrap();
             counter.fetch_add(1, Ordering::Relaxed);
         });
 
@@ -114,12 +114,12 @@ fn read_write_mutex_read_lock_blocks_only_write_locks() {
 fn read_write_mutex_try_lock_fails_when_lock_was_acquired() {
     let handle = ReadWriteMutexHandle::<i32>::new();
     let sut = ReadWriteMutexBuilder::new().create(781, &handle).unwrap();
-    let _guard = sut.write_lock().unwrap();
+    let _guard = sut.write_blocking_lock().unwrap();
 
     assert_that!(sut.read_try_lock().unwrap(), is_none);
     drop(_guard);
 
-    let _guard = sut.read_lock().unwrap();
+    let _guard = sut.read_blocking_lock().unwrap();
     assert_that!(sut.write_try_lock().unwrap(), is_none);
 }
 
@@ -135,16 +135,16 @@ fn read_write_mutex_multiple_ipc_mutex_are_working() {
 
     thread::scope(|s| {
         s.spawn(|| {
-            let mut guard = sut2.write_lock().unwrap();
+            let mut guard = sut2.write_blocking_lock().unwrap();
             *guard = 99501;
             nanosleep(TIMEOUT * 4).unwrap();
         });
 
         nanosleep(TIMEOUT).unwrap();
         let start = Time::now().unwrap();
-        sut1.write_lock().unwrap();
+        sut1.write_blocking_lock().unwrap();
         assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
     });
 
-    assert_that!(*sut2.read_lock().unwrap(), eq 99501);
+    assert_that!(*sut2.read_blocking_lock().unwrap(), eq 99501);
 }
