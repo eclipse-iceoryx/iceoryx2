@@ -15,15 +15,24 @@ use core::cell::UnsafeCell;
 extern crate alloc;
 use alloc::sync::Arc;
 
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
+use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
+    ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopySender,
 };
 
 use crate::node::SharedNode;
+use crate::port::{DegrationAction, DegrationCallback};
 use crate::service::config_scheme::connection_config;
+use crate::service::ServiceState;
 use crate::{service, service::naming_scheme::connection_name};
+
+#[derive(Clone, Copy)]
+pub(crate) struct ReceiverDetails {
+    pub(crate) port_id: u128,
+    pub(crate) buffer_size: usize,
+}
 
 #[derive(Debug)]
 pub(crate) struct Connection<Service: service::Service> {
@@ -69,39 +78,19 @@ impl<Service: service::Service> Connection<Service> {
 
 #[derive(Debug)]
 pub(crate) struct OutgoingConnections<Service: service::Service> {
-    connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
-    sender_port_id: u128,
-    shared_node: Arc<SharedNode<Service>>,
-    receiver_max_buffer_size: usize,
-    receiver_max_borrowed_samples: usize,
-    enable_safe_overflow: bool,
-    number_of_samples: usize,
-    max_number_of_segments: u8,
+    pub(crate) connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
+    pub(crate) sender_port_id: u128,
+    pub(crate) shared_node: Arc<SharedNode<Service>>,
+    pub(crate) receiver_max_buffer_size: usize,
+    pub(crate) receiver_max_borrowed_samples: usize,
+    pub(crate) enable_safe_overflow: bool,
+    pub(crate) number_of_samples: usize,
+    pub(crate) max_number_of_segments: u8,
+    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
+    pub(crate) service_state: Arc<ServiceState<Service>>,
 }
 
 impl<Service: service::Service> OutgoingConnections<Service> {
-    pub(crate) fn new(
-        capacity: usize,
-        shared_node: Arc<SharedNode<Service>>,
-        sender_port_id: u128,
-        receiver_max_buffer_size: usize,
-        receiver_max_borrowed_samples: usize,
-        enable_safe_overflow: bool,
-        number_of_samples: usize,
-        max_number_of_segments: u8,
-    ) -> Self {
-        Self {
-            connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
-            shared_node,
-            sender_port_id,
-            receiver_max_buffer_size,
-            receiver_max_borrowed_samples,
-            enable_safe_overflow,
-            number_of_samples,
-            max_number_of_segments,
-        }
-    }
-
     pub(crate) fn get(&self, index: usize) -> &Option<Connection<Service>> {
         unsafe { &(*self.connections[index].get()) }
     }
@@ -122,13 +111,12 @@ impl<Service: service::Service> OutgoingConnections<Service> {
     pub(crate) fn create(
         &self,
         index: usize,
-        receiver_port_id: u128,
-        buffer_size: usize,
+        receiver_details: ReceiverDetails,
     ) -> Result<(), ZeroCopyCreationError> {
         *self.get_mut(index) = Some(Connection::new(
             self,
-            receiver_port_id,
-            buffer_size,
+            receiver_details.port_id,
+            receiver_details.buffer_size,
             self.number_of_samples,
         )?);
 
@@ -141,5 +129,89 @@ impl<Service: service::Service> OutgoingConnections<Service> {
 
     pub(crate) fn capacity(&self) -> usize {
         self.connections.capacity()
+    }
+
+    fn remove_connection<R: Fn(PointerOffset)>(&self, i: usize, release_pointer_offset_call: &R) {
+        if let Some(connection) = self.get(i) {
+            // # SAFETY: the receiver no longer exist, therefore we can
+            //           reacquire all delivered samples
+            unsafe {
+                connection
+                    .sender
+                    .acquire_used_offsets(|offset| release_pointer_offset_call(offset))
+            };
+
+            self.remove(i);
+        }
+    }
+
+    pub(crate) fn update_connections<R: Fn(PointerOffset), E: Fn(&Connection<Service>)>(
+        &self,
+        receiver_list: &[(usize, ReceiverDetails)],
+        release_pointer_offset_call: &R,
+        establish_new_connection_call: &E,
+    ) -> Result<(), ZeroCopyCreationError> {
+        let mut visited_indices = vec![];
+        visited_indices.resize(self.connections.capacity(), None);
+
+        for (index, details) in receiver_list {
+            visited_indices[*index] = Some(details);
+        }
+
+        for (i, index) in visited_indices.iter().enumerate() {
+            match index {
+                Some(receiver_details) => {
+                    let create_connection = match self.get(i) {
+                        None => true,
+                        Some(connection) => {
+                            let is_connected =
+                                connection.receiver_port_id != receiver_details.port_id;
+                            if is_connected {
+                                self.remove_connection(i, release_pointer_offset_call);
+                            }
+                            is_connected
+                        }
+                    };
+
+                    if create_connection {
+                        match self.create(i, **receiver_details) {
+                            Ok(()) => match &self.get(i) {
+                                Some(connection) => establish_new_connection_call(connection),
+                                None => {
+                                    fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
+                                }
+                            },
+                            Err(e) => match &self.degration_callback {
+                                Some(c) => match c.call(
+                                    &self.service_state.static_config,
+                                    self.sender_port_id,
+                                    receiver_details.port_id,
+                                ) {
+                                    DegrationAction::Ignore => (),
+                                    DegrationAction::Warn => {
+                                        warn!(from self,
+                                            "Unable to establish connection to new receiver {:?}.",
+                                            receiver_details.port_id )
+                                    }
+                                    DegrationAction::Fail => {
+                                        fail!(from self, with e,
+                                           "Unable to establish connection to new receiver {:?}.",
+                                           receiver_details.port_id );
+                                    }
+                                },
+                                None => {
+                                    warn!(from self,
+                                        "Unable to establish connection to new receiver {:?}.",
+                                        receiver_details.port_id )
+                                }
+                            },
+                        }
+                    }
+                }
+                None => self.remove_connection(i, release_pointer_offset_call),
+            }
+        }
+
+        Ok(())
     }
 }
