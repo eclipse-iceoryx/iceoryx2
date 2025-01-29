@@ -21,7 +21,7 @@ pub unsafe fn getpwnam_r(
     buflen: size_t,
     result: *mut *mut passwd,
 ) -> int {
-    crate::internal::getpwnam_r(name, pwd, buf, buflen, result)
+    libc::getpwnam_r(name, pwd, buf, buflen, result)
 }
 
 pub unsafe fn getpwuid_r(
@@ -31,7 +31,7 @@ pub unsafe fn getpwuid_r(
     buflen: size_t,
     result: *mut *mut passwd,
 ) -> int {
-    crate::internal::getpwuid_r(uid, pwd, buf, buflen, result)
+    libc::getpwuid_r(uid, pwd, buf, buflen, result)
 }
 
 pub unsafe fn getgrnam_r(
@@ -41,7 +41,7 @@ pub unsafe fn getgrnam_r(
     buflen: size_t,
     result: *mut *mut group,
 ) -> int {
-    crate::internal::getgrnam_r(name, grp, buf, buflen, result)
+    libc::getgrnam_r(name, grp, buf, buflen, result)
 }
 
 pub unsafe fn getgrgid_r(
@@ -51,5 +51,5 @@ pub unsafe fn getgrgid_r(
     buflen: size_t,
     result: *mut *mut group,
 ) -> int {
-    crate::internal::getgrgid_r(gid, grp, buf, buflen, result)
+    libc::getgrgid_r(gid, grp, buf, buflen, result)
 }

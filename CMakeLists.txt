@@ -103,6 +103,13 @@ add_rust_feature(
 )
 
 add_rust_feature(
+    NAME IOX2_FEATURE_LIBC_PLATFORM
+    DESCRIPTION "A platform abstraction based on the libc crate, eliminating the need for bindgen. Only available on Linux."
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2/libc_platform"
+)
+
+add_rust_feature(
     NAME IOX2_FEATURE_LOGGER_LOG
     DESCRIPTION "Enables https://crates.io/crates/log as default logger"
     DEFAULT_VALUE OFF

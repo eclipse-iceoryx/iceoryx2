@@ -213,13 +213,7 @@ pub struct stat_t {
     pub st_blksize: blksize_t,
     pub st_blocks: blkcnt_t,
 }
-impl From<crate::internal::stat> for stat_t {
-    fn from(value: crate::internal::stat) -> Self {
-        stat_t::new()
-    }
-}
 impl Struct for stat_t {}
-impl Struct for crate::internal::stat {}
 
 pub type timespec = crate::internal::timespec;
 impl Struct for timespec {}

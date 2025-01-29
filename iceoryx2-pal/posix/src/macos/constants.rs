@@ -103,8 +103,6 @@ pub const PTHREAD_PROCESS_SHARED: int = crate::internal::PTHREAD_PROCESS_SHARED 
 pub const PTHREAD_PRIO_NONE: int = crate::internal::PTHREAD_PRIO_NONE as _;
 pub const PTHREAD_PRIO_INHERIT: int = crate::internal::PTHREAD_PRIO_INHERIT as _;
 pub const PTHREAD_PRIO_PROTECT: int = crate::internal::PTHREAD_PRIO_PROTECT as _;
-pub const PTHREAD_SCOPE_SYSTEM: int = crate::internal::PTHREAD_SCOPE_SYSTEM as _;
-pub const PTHREAD_SCOPE_PROCESS: int = crate::internal::PTHREAD_SCOPE_PROCESS as _;
 
 pub const RLIMIT_CPU: __rlim_t = 0;
 pub const RLIMIT_FSIZE: __rlim_t = 1;

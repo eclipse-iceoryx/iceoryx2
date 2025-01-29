@@ -10,14 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate bindgen;
-extern crate cc;
+#[cfg(feature = "libc_platform")]
+fn main() {}
 
-use bindgen::*;
-use std::env;
-use std::path::PathBuf;
-
+#[cfg(not(feature = "libc_platform"))]
 fn main() {
+    extern crate bindgen;
+    extern crate cc;
+
+    use bindgen::*;
+    use std::env;
+    use std::path::PathBuf;
+
     #[cfg(any(target_os = "linux", target_os = "freebsd"))]
     println!("cargo:rustc-link-lib=pthread");
 

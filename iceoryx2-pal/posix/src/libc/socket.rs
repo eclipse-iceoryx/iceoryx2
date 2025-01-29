@@ -21,7 +21,7 @@ pub unsafe fn socketpair(
     protocol: int,
     socket_vector: *mut int, // actually it shall be [int; 2]
 ) -> int {
-    crate::internal::socketpair(domain, socket_type, protocol, socket_vector)
+    libc::socketpair(domain, socket_type, protocol, socket_vector)
 }
 
 pub unsafe fn setsockopt(
@@ -31,11 +31,11 @@ pub unsafe fn setsockopt(
     option_value: *const void,
     option_len: socklen_t,
 ) -> int {
-    crate::internal::setsockopt(socket, level, option_name, option_value, option_len)
+    libc::setsockopt(socket, level, option_name, option_value, option_len)
 }
 
 pub unsafe fn getsockname(socket: int, address: *mut sockaddr, address_len: *mut socklen_t) -> int {
-    crate::internal::getsockname(socket, address, address_len)
+    libc::getsockname(socket, address, address_len)
 }
 
 pub unsafe fn getsockopt(
@@ -45,23 +45,23 @@ pub unsafe fn getsockopt(
     option_value: *mut void,
     option_len: *mut socklen_t,
 ) -> int {
-    crate::internal::getsockopt(socket, level, option_name, option_value, option_len)
+    libc::getsockopt(socket, level, option_name, option_value, option_len)
 }
 
 pub unsafe fn bind(socket: int, address: *const sockaddr, address_len: socklen_t) -> int {
-    crate::internal::bind(socket, address, address_len)
+    libc::bind(socket, address, address_len)
 }
 
 pub unsafe fn connect(socket: int, address: *const sockaddr, address_len: socklen_t) -> int {
-    crate::internal::connect(socket, address, address_len)
+    libc::connect(socket, address, address_len)
 }
 
 pub unsafe fn socket(domain: int, socket_type: int, protocol: int) -> int {
-    crate::internal::socket(domain, socket_type, protocol)
+    libc::socket(domain, socket_type, protocol)
 }
 
 pub unsafe fn sendmsg(socket: int, message: *const msghdr, flags: int) -> ssize_t {
-    crate::internal::sendmsg(socket, message, flags)
+    libc::sendmsg(socket, message, flags)
 }
 
 pub unsafe fn sendto(
@@ -72,15 +72,15 @@ pub unsafe fn sendto(
     dest_addr: *const sockaddr,
     dest_len: socklen_t,
 ) -> ssize_t {
-    crate::internal::sendto(socket, message, length, flags, dest_addr, dest_len)
+    libc::sendto(socket, message, length, flags, dest_addr, dest_len)
 }
 
 pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int) -> ssize_t {
-    crate::internal::send(socket, message, length, flags)
+    libc::send(socket, message, length, flags)
 }
 
 pub unsafe fn recvmsg(socket: int, message: *mut msghdr, flags: int) -> ssize_t {
-    crate::internal::recvmsg(socket, message, flags)
+    libc::recvmsg(socket, message, flags)
 }
 
 pub unsafe fn recvfrom(
@@ -91,9 +91,9 @@ pub unsafe fn recvfrom(
     address: *mut sockaddr,
     address_len: *mut socklen_t,
 ) -> ssize_t {
-    crate::internal::recvfrom(socket, buffer, length, flags, address, address_len)
+    libc::recvfrom(socket, buffer, length, flags, address, address_len)
 }
 
 pub unsafe fn recv(socket: int, buffer: *mut void, length: size_t, flags: int) -> ssize_t {
-    crate::internal::recv(socket, buffer, length, flags)
+    libc::recv(socket, buffer, length, flags)
 }

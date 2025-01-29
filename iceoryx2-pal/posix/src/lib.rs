@@ -15,6 +15,7 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+#[cfg(not(feature = "libc_platform"))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]
@@ -32,13 +33,16 @@ pub(crate) mod internal {
     pub const ESUCCES: u32 = 0;
 }
 
-#[cfg(target_os = "freebsd")]
+#[cfg(feature = "libc_platform")]
+mod libc;
+
+#[cfg(all(target_os = "freebsd", not(feature = "libc_platform")))]
 mod freebsd;
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
 mod linux;
-#[cfg(target_os = "macos")]
+#[cfg(all(target_os = "macos", not(feature = "libc_platform")))]
 mod macos;
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
 mod windows;
 
 #[cfg(not(target_os = "windows"))]
@@ -49,13 +53,16 @@ use scandir::*;
 pub mod posix {
     #![allow(dead_code)]
 
-    #[cfg(target_os = "freebsd")]
+    #[cfg(feature = "libc_platform")]
+    pub use crate::libc::*;
+
+    #[cfg(all(target_os = "freebsd", not(feature = "libc_platform")))]
     pub use crate::freebsd::*;
-    #[cfg(target_os = "linux")]
+    #[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
     pub use crate::linux::*;
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", not(feature = "libc_platform")))]
     pub use crate::macos::*;
-    #[cfg(target_os = "windows")]
+    #[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
     pub use crate::windows::*;
 
     pub trait Struct: Sized {
@@ -116,7 +123,7 @@ pub mod posix {
     }
 }
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
 pub(crate) mod win_internal {
     #![allow(dead_code)]
     use std::os::windows::prelude::OsStrExt;

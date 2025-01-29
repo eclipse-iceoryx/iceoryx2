@@ -1,5 +1,5 @@
 {
-  "checksum": "904dcb8a11d275446a0883d509f57dc79d98a328977a4d37fb7915476bec2922",
+  "checksum": "8a4cb983bd3e3b39bbdffe7693e509356851eec3e62381640c88afa0dc207023",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -491,7 +491,7 @@
                 "target": "addr2line"
               },
               {
-                "id": "libc 0.2.159",
+                "id": "libc 0.2.169",
                 "target": "libc"
               },
               {
@@ -1371,7 +1371,7 @@
               "target": "glob"
             },
             {
-              "id": "libc 0.2.159",
+              "id": "libc 0.2.169",
               "target": "libc"
             },
             {
@@ -1715,7 +1715,7 @@
         "deps": {
           "common": [
             {
-              "id": "libc 0.2.159",
+              "id": "libc 0.2.169",
               "target": "libc"
             },
             {
@@ -1967,19 +1967,19 @@
           "selects": {
             "cfg(target_os = \"hermit\")": [
               {
-                "id": "libc 0.2.159",
+                "id": "libc 0.2.169",
                 "target": "libc"
               }
             ],
             "cfg(target_os = \"wasi\")": [
               {
-                "id": "libc 0.2.159",
+                "id": "libc 0.2.169",
                 "target": "libc"
               }
             ],
             "cfg(unix)": [
               {
-                "id": "libc 0.2.159",
+                "id": "libc 0.2.169",
                 "target": "libc"
               }
             ],
@@ -2156,7 +2156,7 @@
             ],
             "cfg(unix)": [
               {
-                "id": "libc 0.2.159",
+                "id": "libc 0.2.169",
                 "target": "libc"
               }
             ]
@@ -3268,6 +3268,10 @@
             {
               "id": "lazy_static 1.5.0",
               "target": "lazy_static"
+            },
+            {
+              "id": "libc 0.2.169",
+              "target": "libc"
             }
           ],
           "selects": {
@@ -3525,13 +3529,13 @@
       },
       "license": "MIT/Apache-2.0"
     },
-    "libc 0.2.159": {
+    "libc 0.2.169": {
       "name": "libc",
-      "version": "0.2.159",
+      "version": "0.2.169",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/libc/0.2.159/download",
-          "sha256": "561d97a539a36e26a9a5fad1ea11a3039a67714694aaa379433e580854bc3dc5"
+          "url": "https://static.crates.io/crates/libc/0.2.169/download",
+          "sha256": "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
         }
       },
       "targets": [
@@ -3621,14 +3625,14 @@
         "deps": {
           "common": [
             {
-              "id": "libc 0.2.159",
+              "id": "libc 0.2.169",
               "target": "build_script_build"
             }
           ],
           "selects": {}
         },
-        "edition": "2015",
-        "version": "0.2.159"
+        "edition": "2021",
+        "version": "0.2.169"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -4801,7 +4805,7 @@
                 "alias": "libc_errno"
               },
               {
-                "id": "libc 0.2.159",
+                "id": "libc 0.2.169",
                 "target": "libc"
               }
             ],
@@ -5623,7 +5627,7 @@
           "selects": {
             "cfg(unix)": [
               {
-                "id": "libc 0.2.159",
+                "id": "libc 0.2.169",
                 "target": "libc"
               }
             ],

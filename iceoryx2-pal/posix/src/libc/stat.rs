@@ -17,8 +17,8 @@ use crate::posix::types::*;
 use crate::posix::Struct;
 
 pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
-    let mut os_specific_buffer = crate::internal::stat::new();
-    match crate::internal::stat(path, &mut os_specific_buffer) {
+    let mut os_specific_buffer = native_stat_t::new();
+    match libc::stat(path, &mut os_specific_buffer) {
         0 => {
             *buf = os_specific_buffer.into();
             0
@@ -28,5 +28,5 @@ pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
 }
 
 pub unsafe fn umask(mask: mode_t) -> mode_t {
-    crate::internal::umask(mask)
+    libc::umask(mask)
 }
