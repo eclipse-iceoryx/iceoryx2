@@ -16,7 +16,7 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```no_run
 //! use iceoryx2_bb_posix::read_write_mutex::*;
 //! use std::thread;
 //! use core::time::Duration;
@@ -25,30 +25,22 @@
 //! let rw_handle = ReadWriteMutexHandle::new();
 //! let rw_mutex = ReadWriteMutexBuilder::new()
 //!                         .is_interprocess_capable(true)
-//!                         .mutex_priority(ReadWriteMutexPriority::PreferReader)
 //!                         .create(123, &rw_handle)
 //!                         .expect("failed to create rw mutex");
 //!
 //! thread::scope(|s| {
 //!     s.spawn(|| {
-//!         match rw_mutex.read_lock()
-//!                       .expect("failed to read_lock") {
-//!             None => println!("Timeout while acquiring read lock."),
-//!             Some(guard) => println!("The mutex value is: {}", *guard),
-//!
-//!         }
+//!         let guard = rw_mutex.read_lock()
+//!                             .expect("failed to read_lock");
+//!         println!("The mutex value is: {}", *guard);
 //!     });
 //!
 //!     s.spawn(|| {
-//!         match rw_mutex.write_lock()
-//!                       .expect("failed to write_lock") {
-//!             None => println!("Timeout while acquiring write lock."),
-//!             Some(mut guard) => {
-//!                 println!("The old value is: {}", *guard);
-//!                 *guard = 456;
-//!                 println!("The new value is: {}", *guard);
-//!             }
-//!         }
+//!         let mut guard = rw_mutex.write_lock()
+//!                                 .expect("failed to write_lock");
+//!         println!("The old value is: {}", *guard);
+//!         *guard = 456;
+//!         println!("The new value is: {}", *guard);
 //!     });
 //! });
 //! ```
@@ -343,8 +335,6 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
         Self { handle }
     }
 
-    /// Blocks until a read-lock could be acquired and returns a [`MutexReadGuard`] to provide
-    /// read access to the underlying value.
     pub fn read_lock(&self) -> Result<MutexReadGuard<'_, '_, T>, ReadWriteMutexReadLockError> {
         let msg = "Failed to acquire read-lock";
         handle_errno!(ReadWriteMutexReadLockError, from self,
