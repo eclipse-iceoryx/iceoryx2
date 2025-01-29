@@ -1,5 +1,7 @@
 # TODO
 
+* use update_connections from OutgoingConnections in publisher (populate_subscriber_channels)
+* extract all details in OutgoingConnection from service_state.static_config
 * max_borrowed_requests and max_active_requests are the same, remove max_borrowed_requests
 
 ## POSIX

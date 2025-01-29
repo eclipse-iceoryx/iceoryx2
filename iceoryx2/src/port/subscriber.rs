@@ -277,11 +277,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                                 }
                                 Some(c) => {
                                     match c.call(
-                                        self.static_config.clone(),
-                                        details.publisher_id,
-                                        UniqueSubscriberId(UniqueSystemId::from(
-                                            self.publisher_connections.receiver_port_id(),
-                                        )),
+                                        &self.static_config,
+                                        details.publisher_id.value(),
+                                        self.publisher_connections.receiver_port_id(),
                                     ) {
                                         DegrationAction::Ignore => (),
                                         DegrationAction::Warn => {

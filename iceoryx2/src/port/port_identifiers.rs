@@ -13,6 +13,8 @@
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 
+use crate::service::static_config::messaging_pattern::MessagingPattern;
+
 macro_rules! generate_id {
     { $(#[$documentation:meta])*
         $id_name:ident } => {

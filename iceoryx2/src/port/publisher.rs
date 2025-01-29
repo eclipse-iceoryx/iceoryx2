@@ -103,7 +103,7 @@
 
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::port_identifiers::UniquePublisherId;
-use super::UniqueSubscriberId;
+use super::{UniquePortId, UniqueSubscriberId};
 use crate::port::details::outgoing_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
@@ -432,11 +432,9 @@ impl<Service: service::Service> PublisherBackend<Service> {
                     Err(ZeroCopySendError::ConnectionCorrupted) => {
                         match &self.config.degration_callback {
                             Some(c) => match c.call(
-                                self.static_config.clone(),
-                                self.port_id,
-                                UniqueSubscriberId(UniqueSystemId::from(
-                                    connection.receiver_port_id,
-                                )),
+                                &self.static_config,
+                                self.port_id.value(),
+                                connection.receiver_port_id,
                             ) {
                                 DegrationAction::Ignore => (),
                                 DegrationAction::Warn => {
@@ -500,8 +498,10 @@ impl<Service: service::Service> PublisherBackend<Service> {
                     if create_connection {
                         match self.subscriber_connections.create(
                             i,
-                            subscriber_details.subscriber_id.value(),
-                            subscriber_details.buffer_size,
+                            ReceiverDetails {
+                                port_id: subscriber_details.subscriber_id.value(),
+                                buffer_size: subscriber_details.buffer_size,
+                            },
                         ) {
                             Ok(()) => match &self.subscriber_connections.get(i) {
                                 Some(connection) => self.deliver_sample_history(connection),
@@ -511,9 +511,9 @@ impl<Service: service::Service> PublisherBackend<Service> {
                             },
                             Err(e) => match &self.config.degration_callback {
                                 Some(c) => match c.call(
-                                    self.static_config.clone(),
-                                    self.port_id,
-                                    subscriber_details.subscriber_id,
+                                    &self.static_config,
+                                    self.port_id.value(),
+                                    subscriber_details.subscriber_id.value(),
                                 ) {
                                     DegrationAction::Ignore => (),
                                     DegrationAction::Warn => {
@@ -719,16 +719,20 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             },
             service_state: service.__internal_state().clone(),
             port_id,
-            subscriber_connections: OutgoingConnections::new(
-                subscriber_list.capacity(),
-                service.__internal_state().shared_node.clone(),
-                port_id.value(),
-                static_config.subscriber_max_buffer_size,
-                static_config.subscriber_max_borrowed_samples,
-                static_config.enable_safe_overflow,
+            subscriber_connections: OutgoingConnections {
+                connections: (0..subscriber_list.capacity())
+                    .map(|_| UnsafeCell::new(None))
+                    .collect(),
+                sender_port_id: port_id.value(),
+                shared_node: service.__internal_state().shared_node.clone(),
+                receiver_max_buffer_size: static_config.subscriber_max_buffer_size,
+                receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
+                enable_safe_overflow: static_config.enable_safe_overflow,
                 number_of_samples,
                 max_number_of_segments,
-            ),
+                degration_callback: None,
+                service_state: service.__internal_state().clone(),
+            },
             config,
             subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
             history: match static_config.history_size == 0 {

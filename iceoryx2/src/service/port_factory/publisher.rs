@@ -197,12 +197,7 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegrationAction`] measures will be taken.
     pub fn set_degration_callback<
-        F: Fn(
-                service::static_config::StaticConfig,
-                UniquePublisherId,
-                UniqueSubscriberId,
-            ) -> DegrationAction
-            + 'static,
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
     >(
         mut self,
         callback: Option<F>,

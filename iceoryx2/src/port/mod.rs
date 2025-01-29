@@ -54,7 +54,7 @@ pub enum DegrationAction {
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degregation.
-    pub struct DegrationCallback = Fn(service: service::static_config::StaticConfig, publisher_id: UniquePublisherId, subscriber_id: UniqueSubscriberId) -> DegrationAction;
+    pub struct DegrationCallback = Fn(service: &service::static_config::StaticConfig, sender_port_id: u128, receiver_port_id: u128) -> DegrationAction;
 }
 
 impl Debug for DegrationCallback<'_> {
