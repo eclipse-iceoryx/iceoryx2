@@ -44,6 +44,7 @@ use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::*;
 
@@ -56,10 +57,10 @@ use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{raw_sample::RawSample, sample::Sample, service};
 
-use super::details::publisher_connections::{Connection, PublisherConnections};
+use super::details::incoming_connections::*;
 use super::port_identifiers::UniqueSubscriberId;
 use super::update_connections::{ConnectionFailure, UpdateConnections};
-use super::DegrationCallback;
+use super::{DegrationCallback, UniquePublisherId};
 
 /// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -112,7 +113,7 @@ pub struct Subscriber<
     UserHeader: Debug,
 > {
     dynamic_subscriber_handle: Option<ContainerHandle>,
-    publisher_connections: PublisherConnections<Service>,
+    publisher_connections: IncomingConnections<Service>,
     to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
     static_config: crate::service::static_config::StaticConfig,
     degration_callback: Option<DegrationCallback<'static>>,
@@ -168,9 +169,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             None => static_config.subscriber_max_buffer_size,
         };
 
-        let publisher_connections = PublisherConnections::new(
+        let publisher_connections = IncomingConnections::new(
             publisher_list.capacity(),
-            subscriber_id,
+            subscriber_id.value(),
             service.__internal_state().clone(),
             static_config,
             buffer_size,
@@ -254,13 +255,21 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 Some(details) => {
                     let create_connection = match self.publisher_connections.get(i) {
                         None => true,
-                        Some(connection) => connection.publisher_id != details.publisher_id,
+                        Some(connection) => {
+                            connection.sender_port_id != details.publisher_id.value()
+                        }
                     };
 
                     if create_connection {
                         prepare_connection_removal(i);
 
-                        match self.publisher_connections.create(i, details) {
+                        match self.publisher_connections.create(
+                            i,
+                            details.data_segment_type,
+                            details.publisher_id.value(),
+                            details.number_of_samples,
+                            details.max_number_of_segments,
+                        ) {
                             Ok(()) => (),
                             Err(e) => match &self.degration_callback {
                                 None => {
@@ -270,7 +279,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                                     match c.call(
                                         self.static_config.clone(),
                                         details.publisher_id,
-                                        self.publisher_connections.subscriber_id(),
+                                        UniqueSubscriberId(UniqueSystemId::from(
+                                            self.publisher_connections.receiver_port_id(),
+                                        )),
                                     ) {
                                         DegrationAction::Ignore => (),
                                         DegrationAction::Warn => {
@@ -310,7 +321,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                     let details = SampleDetails {
                         publisher_connection: connection.clone(),
                         offset,
-                        origin: connection.publisher_id,
+                        origin: UniquePublisherId(UniqueSystemId::from(connection.sender_port_id)),
                     };
 
                     let offset = match connection
@@ -321,7 +332,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                         Err(e) => {
                             fail!(from self, with SubscriberReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapPublishersDataSegment(e)),
                                 "Unable to register and translate offset from publisher {:?} since the received offset {:?} could not be registered and translated.",
-                                connection.publisher_id, offset);
+                                connection.sender_port_id, offset);
                         }
                     };
 
@@ -338,7 +349,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
     /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
     pub fn id(&self) -> UniqueSubscriberId {
-        self.publisher_connections.subscriber_id()
+        UniqueSubscriberId(UniqueSystemId::from(
+            self.publisher_connections.receiver_port_id(),
+        ))
     }
 
     /// Returns the internal buffer size of the [`Subscriber`].

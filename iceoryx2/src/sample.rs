@@ -38,7 +38,7 @@ use alloc::sync::Arc;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::zero_copy_connection::{PointerOffset, ZeroCopyReceiver, ZeroCopyReleaseError};
 
-use crate::port::details::publisher_connections::Connection;
+use crate::port::details::incoming_connections::Connection;
 use crate::port::port_identifiers::UniquePublisherId;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
