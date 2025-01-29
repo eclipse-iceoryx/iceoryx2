@@ -39,7 +39,7 @@ impl<Service: service::Service> Connection<Service> {
         number_of_samples: usize,
     ) -> Result<Self, ZeroCopyCreationError> {
         let msg = format!(
-            "Unable to establish connection to receiver {:?} from sender {:?}",
+            "Unable to establish connection to receiver port {:?} from sender port {:?}",
             receiver_port_id, this.sender_port_id
         );
         if this.receiver_max_buffer_size < buffer_size {

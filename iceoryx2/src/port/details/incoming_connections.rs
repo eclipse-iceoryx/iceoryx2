@@ -15,13 +15,10 @@ use core::cell::UnsafeCell;
 extern crate alloc;
 use alloc::sync::Arc;
 
-use crate::{
-    port::port_identifiers::{UniquePublisherId, UniqueSubscriberId},
-    service::{
-        self, config_scheme::connection_config,
-        dynamic_config::publish_subscribe::PublisherDetails, naming_scheme::connection_name,
-        static_config::publish_subscribe::StaticConfig, ServiceState,
-    },
+use crate::service::naming_scheme::data_segment_name;
+use crate::service::{
+    self, config_scheme::connection_config, naming_scheme::connection_name,
+    static_config::publish_subscribe::StaticConfig, ServiceState,
 };
 
 use crate::port::update_connections::ConnectionFailure;
@@ -29,78 +26,91 @@ use iceoryx2_bb_log::fail;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
 
-use super::data_segment::DataSegmentView;
+use super::data_segment::{DataSegmentType, DataSegmentView};
 
 #[derive(Debug)]
 pub(crate) struct Connection<Service: service::Service> {
     pub(crate) receiver: <Service::Connection as ZeroCopyConnection>::Receiver,
     pub(crate) data_segment: DataSegmentView<Service>,
-    pub(crate) publisher_id: UniquePublisherId,
+    pub(crate) sender_port_id: u128,
 }
 
 impl<Service: service::Service> Connection<Service> {
     fn new(
-        this: &PublisherConnections<Service>,
-        details: &PublisherDetails,
+        this: &IncomingConnections<Service>,
+        data_segment_type: DataSegmentType,
+        sender_port_id: u128,
+        number_of_samples: usize,
+        max_number_of_segments: u8,
     ) -> Result<Self, ConnectionFailure> {
         let msg = format!(
-            "Unable to establish connection to publisher {:?} from subscriber {:?}.",
-            details.publisher_id, this.subscriber_id
+            "Unable to establish connection to sender port {:?} from receiver port {:?}.",
+            sender_port_id, this.receiver_port_id
         );
 
         let global_config = this.service_state.shared_node.config();
         let receiver = fail!(from this,
                         when <Service::Connection as ZeroCopyConnection>::
-                            Builder::new( &connection_name(details.publisher_id.value(), this.subscriber_id.value()))
+                            Builder::new( &connection_name(sender_port_id, this.receiver_port_id))
                                     .config(&connection_config::<Service>(global_config))
                                     .buffer_size(this.buffer_size)
                                     .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
                                     .enable_safe_overflow(this.static_config.enable_safe_overflow)
-                                    .number_of_samples_per_segment(details.number_of_samples)
-                                    .max_supported_shared_memory_segments(details.max_number_of_segments)
+                                    .number_of_samples_per_segment(number_of_samples)
+                                    .max_supported_shared_memory_segments(max_number_of_segments)
                                     .timeout(global_config.global.service.creation_timeout)
                                     .create_receiver(),
                         "{} since the zero copy connection could not be established.", msg);
 
+        let segment_name = data_segment_name(sender_port_id);
+        let data_segment = match data_segment_type {
+            DataSegmentType::Static => {
+                DataSegmentView::open_static_segment(&segment_name, global_config)
+            }
+            DataSegmentType::Dynamic => {
+                DataSegmentView::open_dynamic_segment(&segment_name, global_config)
+            }
+        };
+
         let data_segment = fail!(from this,
-                            when DataSegmentView::open(details, global_config),
-                            "{} since the publishers data segment could not be opened.", msg);
+                                 when data_segment,
+                                "{} since the publishers data segment could not be opened.", msg);
 
         Ok(Self {
             receiver,
             data_segment,
-            publisher_id: details.publisher_id,
+            sender_port_id,
         })
     }
 }
 #[derive(Debug)]
-pub(crate) struct PublisherConnections<Service: service::Service> {
+pub(crate) struct IncomingConnections<Service: service::Service> {
     connections: Vec<UnsafeCell<Option<Arc<Connection<Service>>>>>,
-    subscriber_id: UniqueSubscriberId,
+    receiver_port_id: u128,
     pub(crate) service_state: Arc<ServiceState<Service>>,
     pub(crate) static_config: StaticConfig,
     pub(crate) buffer_size: usize,
 }
 
-impl<Service: service::Service> PublisherConnections<Service> {
+impl<Service: service::Service> IncomingConnections<Service> {
     pub(crate) fn new(
         capacity: usize,
-        subscriber_id: UniqueSubscriberId,
+        receiver_port_id: u128,
         service_state: Arc<ServiceState<Service>>,
         static_config: &StaticConfig,
         buffer_size: usize,
     ) -> Self {
         Self {
             connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
-            subscriber_id,
+            receiver_port_id,
             service_state,
             static_config: static_config.clone(),
             buffer_size,
         }
     }
 
-    pub(crate) fn subscriber_id(&self) -> UniqueSubscriberId {
-        self.subscriber_id
+    pub(crate) fn receiver_port_id(&self) -> u128 {
+        self.receiver_port_id
     }
 
     pub(crate) fn get(&self, index: usize) -> &Option<Arc<Connection<Service>>> {
@@ -119,9 +129,18 @@ impl<Service: service::Service> PublisherConnections<Service> {
     pub(crate) fn create(
         &self,
         index: usize,
-        details: &PublisherDetails,
+        data_segment_type: DataSegmentType,
+        sender_port_id: u128,
+        number_of_samples: usize,
+        max_number_of_segments: u8,
     ) -> Result<(), ConnectionFailure> {
-        *self.get_mut(index) = Some(Arc::new(Connection::new(self, details)?));
+        *self.get_mut(index) = Some(Arc::new(Connection::new(
+            self,
+            data_segment_type,
+            sender_port_id,
+            number_of_samples,
+            max_number_of_segments,
+        )?));
 
         Ok(())
     }

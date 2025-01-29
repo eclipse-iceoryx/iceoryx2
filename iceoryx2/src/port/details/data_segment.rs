@@ -229,6 +229,53 @@ impl<Service: service::Service> DataSegmentView<Service> {
         Ok(Self { memory })
     }
 
+    pub(crate) fn open_static_segment(
+        segment_name: &FileName,
+        global_config: &config::Config,
+    ) -> Result<Self, SharedMemoryOpenError> {
+        let origin = "DataSegment::open()";
+        let msg =
+            "Unable to open data segment since the underlying shared memory could not be opened.";
+
+        let segment_config = data_segment_config::<Service>(global_config);
+        let memory = fail!(from origin,
+                            when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
+                                Builder::new(&segment_name)
+                                .config(&segment_config)
+                                .timeout(global_config.global.service.creation_timeout)
+                                .open(),
+                            "{msg}");
+
+        Ok(Self {
+            memory: MemoryViewType::Static(memory),
+        })
+    }
+
+    pub(crate) fn open_dynamic_segment(
+        segment_name: &FileName,
+        global_config: &config::Config,
+    ) -> Result<Self, SharedMemoryOpenError> {
+        let origin = "DataSegment::open()";
+        let msg =
+            "Unable to open data segment since the underlying shared memory could not be opened.";
+
+        let segment_config = resizable_data_segment_config::<Service>(global_config);
+        let memory = fail!(from origin,
+                    when <<Service::ResizableSharedMemory as ResizableSharedMemory<
+                        PoolAllocator,
+                        Service::SharedMemory,
+                    >>::ViewBuilder as NamedConceptBuilder<Service::ResizableSharedMemory>>::new(
+                        &segment_name,
+                    )
+                    .config(&segment_config)
+                    .open(),
+                    "{msg}");
+
+        Ok(Self {
+            memory: MemoryViewType::Dynamic(memory),
+        })
+    }
+
     pub(crate) fn register_and_translate_offset(
         &self,
         offset: PointerOffset,
