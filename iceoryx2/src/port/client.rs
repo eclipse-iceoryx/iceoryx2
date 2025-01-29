@@ -10,9 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{fmt::Debug, marker::PhantomData};
+use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData, sync::atomic::Ordering};
+use std::sync::Arc;
 
-use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
+use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
@@ -21,10 +22,16 @@ use crate::{
     prelude::PortFactory,
     service::{
         self,
-        dynamic_config::request_response::ClientDetails,
+        dynamic_config::request_response::{ClientDetails, ServerDetails},
         naming_scheme::data_segment_name,
         port_factory::client::{ClientCreateError, PortFactoryClient},
+        ServiceState,
     },
+};
+
+use super::{
+    details::{data_segment::DataSegmentType, outgoing_connections::OutgoingConnections},
+    update_connections::UpdateConnections,
 };
 
 pub struct Client<
@@ -36,6 +43,10 @@ pub struct Client<
 > {
     data_segment: DataSegment<Service>,
     client_handle: ContainerHandle,
+    server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
+    server_connections: OutgoingConnections<Service>,
+    service_state: Arc<ServiceState<Service>>,
+    client_port_id: UniqueClientId,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -62,7 +73,7 @@ impl<
         let msg = "Unable to create Client port";
         let origin = "Client::new()";
         let service = &client_factory.factory.service;
-        let client_id = UniqueClientId::new();
+        let client_port_id = UniqueClientId::new();
         let number_of_requests = unsafe {
             service
                 .__internal_state()
@@ -71,10 +82,19 @@ impl<
                 .request_response()
         }
         .required_amount_of_chunks_per_client_data_segment(client_factory.max_loaned_requests);
+        let server_list = &service
+            .__internal_state()
+            .dynamic_storage
+            .get()
+            .request_response()
+            .servers;
 
         let static_config = client_factory.factory.static_config();
         let global_config = service.__internal_state().shared_node.config();
-        let segment_name = data_segment_name(client_id.value());
+        let segment_name = data_segment_name(client_port_id.value());
+        let data_segment_type = DataSegmentType::Static;
+        let max_number_of_segments =
+            DataSegment::<Service>::max_number_of_segments(data_segment_type);
         let data_segment = DataSegment::<Service>::create_static_segment(
             &segment_name,
             static_config.request_message_type_details.sample_layout(1),
@@ -88,11 +108,15 @@ impl<
             "{} since the client data segment could not be created.", msg);
 
         let client_details = ClientDetails {
-            client_id,
+            client_port_id,
             node_id: *service.__internal_state().shared_node.id(),
             number_of_requests,
         };
 
+        core::sync::atomic::compiler_fence(Ordering::SeqCst);
+
+        // !MUST! be the last task otherwise a client is added to the dynamic config without the
+        // creation of all required resources
         let client_handle = match service
             .__internal_state()
             .dynamic_storage
@@ -112,10 +136,49 @@ impl<
         Ok(Self {
             data_segment,
             client_handle,
+            server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
+            server_connections: OutgoingConnections::new(
+                server_list.capacity(),
+                service.__internal_state().shared_node.clone(),
+                client_port_id.value(),
+                static_config.max_request_buffer_size,
+                static_config.max_borrowed_requests,
+                static_config.enable_safe_overflow_for_requests,
+                number_of_requests,
+                max_number_of_segments,
+            ),
+            client_port_id,
+            service_state: service.__internal_state().clone(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
         })
+    }
+
+    pub fn id(&self) -> UniqueClientId {
+        self.client_port_id
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > UpdateConnections
+    for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
+        if unsafe {
+            self.service_state
+                .dynamic_storage
+                .get()
+                .request_response()
+                .servers
+                .update_state(&mut *self.server_list_state.get())
+        } {}
+        todo!()
     }
 }

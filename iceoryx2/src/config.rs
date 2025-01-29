@@ -335,6 +335,8 @@ pub struct RequestResonse {
 
     pub client_max_loaned_requests: usize,
     pub server_max_loaned_responses_per_request: usize,
+    pub client_unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub server_unable_to_deliver_strategy: UnableToDeliverStrategy,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -393,6 +395,8 @@ impl Default for Config {
                     max_nodes: 20,
                     client_max_loaned_requests: 2,
                     server_max_loaned_responses_per_request: 2,
+                    client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+                    server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                 },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,

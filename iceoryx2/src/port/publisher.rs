@@ -730,7 +730,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 max_number_of_segments,
             ),
             config,
-            subscriber_list_state: unsafe { UnsafeCell::new(subscriber_list.get_state()) },
+            subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
             history: match static_config.history_size == 0 {
                 true => None,
                 false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
