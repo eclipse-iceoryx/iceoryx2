@@ -233,5 +233,7 @@ pub fn get_logger() -> &'static dyn Log {
 
 #[doc(hidden)]
 pub fn __internal_print_log_msg(log_level: LogLevel, origin: Arguments, args: Arguments) {
-    get_logger().log(log_level, origin, args)
+    if get_log_level() <= log_level as u8 {
+        get_logger().log(log_level, origin, args)
+    }
 }
