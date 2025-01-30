@@ -65,6 +65,7 @@ class TestLogger : public Log {
 };
 
 TEST(Log, custom_logger_works) {
+    set_log_level(LogLevel::Trace);
     ASSERT_TRUE(set_logger(TestLogger::get_instance()));
 
     log(LogLevel::Trace, "hello", "world");

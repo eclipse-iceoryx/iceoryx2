@@ -19,7 +19,7 @@ use std::io::IsTerminal;
 
 use termsize::Size;
 
-use crate::{get_log_level, LogLevel};
+use crate::LogLevel;
 
 pub enum ConsoleLogOrder {
     Time,
@@ -181,10 +181,6 @@ impl crate::Log for Logger {
         formatted_message: core::fmt::Arguments,
     ) {
         let counter = self.counter.fetch_add(1, Ordering::Relaxed);
-
-        if get_log_level() > log_level as u8 {
-            return;
-        }
 
         let origin_str = origin.to_string();
         let msg_str = formatted_message.to_string();
