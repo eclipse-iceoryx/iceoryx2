@@ -148,8 +148,8 @@ impl<Service: service::Service> OutgoingConnections<Service> {
     pub(crate) fn update_connections<R: Fn(PointerOffset), E: Fn(&Connection<Service>)>(
         &self,
         receiver_list: &[(usize, ReceiverDetails)],
-        release_pointer_offset_call: &R,
-        establish_new_connection_call: &E,
+        release_pointer_offset_call: R,
+        establish_new_connection_call: E,
     ) -> Result<(), ZeroCopyCreationError> {
         let mut visited_indices = vec![];
         visited_indices.resize(self.connections.capacity(), None);
@@ -167,7 +167,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
                             let is_connected =
                                 connection.receiver_port_id != receiver_details.port_id;
                             if is_connected {
-                                self.remove_connection(i, release_pointer_offset_call);
+                                self.remove_connection(i, &release_pointer_offset_call);
                             }
                             is_connected
                         }
@@ -208,7 +208,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
                         }
                     }
                 }
-                None => self.remove_connection(i, release_pointer_offset_call),
+                None => self.remove_connection(i, &release_pointer_offset_call),
             }
         }
 
