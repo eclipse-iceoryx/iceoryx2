@@ -21,6 +21,8 @@
     [#579](https://github.com/eclipse-iceoryx/iceoryx2/issues/579)
 * Use 'std_instead_of_alloc' and 'alloc_instead_of_core' clippy warning
     [#581](https://github.com/eclipse-iceoryx/iceoryx2/issues/581)
+* Extend benchmarks to test setups with multiple sending/receiving ports
+    [#610](https://github.com/eclipse-iceoryx/iceoryx2/issues/610)
 
 ### Bugfixes
 
