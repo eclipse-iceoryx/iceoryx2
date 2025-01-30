@@ -264,10 +264,6 @@ pub unsafe fn pthread_attr_setschedpolicy(attr: *mut pthread_attr_t, policy: int
     crate::internal::pthread_attr_setschedpolicy(&mut (*attr).attr, policy)
 }
 
-pub unsafe fn pthread_attr_setscope(attr: *mut pthread_attr_t, scope: int) -> int {
-    crate::internal::pthread_attr_setscope(&mut (*attr).attr, scope)
-}
-
 pub unsafe fn pthread_attr_setschedparam(
     attr: *mut pthread_attr_t,
     param: *const sched_param,
@@ -277,14 +273,6 @@ pub unsafe fn pthread_attr_setschedparam(
 
 pub unsafe fn pthread_attr_setstacksize(attr: *mut pthread_attr_t, stacksize: size_t) -> int {
     crate::internal::pthread_attr_setstacksize(&mut (*attr).attr, stacksize)
-}
-
-pub unsafe fn pthread_attr_setstack(
-    attr: *mut pthread_attr_t,
-    stackaddr: *mut void,
-    stacksize: size_t,
-) -> int {
-    crate::internal::pthread_attr_setstack(&mut (*attr).attr, stackaddr, stacksize)
 }
 
 pub unsafe fn pthread_attr_setaffinity_np(
@@ -303,10 +291,10 @@ pub unsafe fn pthread_attr_setaffinity_np(
 pub unsafe fn pthread_create(
     thread: *mut pthread_t,
     attr: *const pthread_attr_t,
-    start_routine: Option<unsafe extern "C" fn(*mut void) -> *mut void>,
+    start_routine: unsafe extern "C" fn(*mut void) -> *mut void,
     arg: *mut void,
 ) -> int {
-    let result = crate::internal::pthread_create(thread, &(*attr).attr, start_routine, arg);
+    let result = crate::internal::pthread_create(thread, &(*attr).attr, Some(start_routine), arg);
     if result == 0 {
         ThreadStates::get_instance().add(*thread);
     }
@@ -507,84 +495,6 @@ pub unsafe fn pthread_rwlock_trywrlock(lock: *mut pthread_rwlock_t) -> int {
         Errno::ESUCCES as _
     } else {
         Errno::EBUSY as _
-    }
-}
-
-pub unsafe fn pthread_rwlock_timedwrlock(
-    lock: *mut pthread_rwlock_t,
-    abs_timeout: *const timespec,
-) -> int {
-    let mut current_time = timespec::new();
-    let mut wait_time = timespec::new();
-
-    loop {
-        let wait_result = match (*lock).lock {
-            RwLockType::PreferReader(ref l) => l.try_write_lock(),
-            RwLockType::PreferWriter(ref l) => l.try_write_lock(),
-            _ => {
-                return Errno::EINVAL as _;
-            }
-        };
-
-        if wait_result == WaitResult::Success {
-            return Errno::ESUCCES as _;
-        } else {
-            clock_gettime(CLOCK_REALTIME, &mut current_time);
-
-            if (current_time.tv_sec > (*abs_timeout).tv_sec)
-                || (current_time.tv_sec == (*abs_timeout).tv_sec
-                    && current_time.tv_nsec > (*abs_timeout).tv_nsec)
-            {
-                return Errno::ETIMEDOUT as _;
-            }
-
-            current_time.tv_sec = 0;
-            current_time.tv_nsec = 1000000;
-
-            crate::internal::nanosleep(&current_time, &mut wait_time);
-        }
-    }
-}
-
-pub unsafe fn pthread_rwlock_timedrdlock(
-    lock: *mut pthread_rwlock_t,
-    abs_timeout: *const timespec,
-) -> int {
-    let mut current_time = timespec::new();
-    let mut wait_time = timespec::new();
-
-    loop {
-        let wait_result = match (*lock).lock {
-            RwLockType::PreferReader(ref l) => l.read_lock(|atomic, value| {
-                wait(atomic, value);
-                WaitAction::Continue
-            }),
-            RwLockType::PreferWriter(ref l) => l.read_lock(|atomic, value| {
-                wait(atomic, value);
-                WaitAction::Continue
-            }),
-            _ => {
-                return Errno::EINVAL as _;
-            }
-        };
-
-        if wait_result == WaitResult::Success {
-            return Errno::ESUCCES as _;
-        } else {
-            clock_gettime(CLOCK_REALTIME, &mut current_time);
-
-            if (current_time.tv_sec > (*abs_timeout).tv_sec)
-                || (current_time.tv_sec == (*abs_timeout).tv_sec
-                    && current_time.tv_nsec > (*abs_timeout).tv_nsec)
-            {
-                return Errno::ETIMEDOUT as _;
-            }
-
-            current_time.tv_sec = 0;
-            current_time.tv_nsec = 1000000;
-
-            crate::internal::nanosleep(&current_time, &mut wait_time);
-        }
     }
 }
 
@@ -790,23 +700,6 @@ pub unsafe fn pthread_mutex_consistent(mtx: *mut pthread_mutex_t) -> int {
     Errno::ESUCCES as _
 }
 
-pub unsafe fn pthread_mutex_setprioceiling(
-    _mtx: *mut pthread_mutex_t,
-    _prioceiling: int,
-    _old_ceiling: *mut int,
-) -> int {
-    Errno::set(Errno::ENOSYS);
-    -1
-}
-
-pub unsafe fn pthread_mutex_getprioceiling(
-    _mtx: *mut pthread_mutex_t,
-    _prioceiling: *mut int,
-) -> int {
-    Errno::set(Errno::ENOSYS);
-    -1
-}
-
 pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
     Errno::set(Errno::ESUCCES);
     attr.write(pthread_mutexattr_t::new());
@@ -845,12 +738,4 @@ pub unsafe fn pthread_mutexattr_settype(attr: *mut pthread_mutexattr_t, mtype: i
     Errno::set(Errno::ESUCCES);
     (*attr).mtype = mtype;
     0
-}
-
-pub unsafe fn pthread_mutexattr_setprioceiling(
-    _attr: *mut pthread_mutexattr_t,
-    _prioceiling: int,
-) -> int {
-    Errno::set(Errno::ENOSYS);
-    -1
 }

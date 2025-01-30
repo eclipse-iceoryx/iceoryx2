@@ -15,7 +15,7 @@
 //!
 //! # Example
 //!
-//! ```ignore
+//! ```no_run
 //! use iceoryx2_bb_posix::file::*;
 //! use iceoryx2_bb_posix::file_lock::*;
 //! use iceoryx2_bb_system_types::file_path::FilePath;
@@ -29,8 +29,7 @@
 //!                              .expect("failed to create file");
 //!
 //! let handle = ReadWriteMutexHandle::new();
-//! let fileWithLock = FileLockBuilder::new().clock_type(ClockType::Monotonic)
-//!                                          .create(file, &handle).expect("failed to create lock");
+//! let fileWithLock = FileLockBuilder::new().create(file, &handle).expect("failed to create lock");
 //!
 //! fileWithLock.write_lock().unwrap().write(b"Hello world!");
 //! let mut content = String::new();
@@ -40,11 +39,11 @@
 pub use crate::read_write_mutex::*;
 
 use crate::file_descriptor::FileDescriptor;
+use crate::file_descriptor::FileDescriptorBased;
 use crate::process::{Process, ProcessId};
-use crate::{clock::Time, file_descriptor::FileDescriptorBased};
 use core::fmt::Debug;
 use core::sync::atomic::Ordering;
-use core::{ops::Deref, ops::DerefMut, time::Duration};
+use core::{ops::Deref, ops::DerefMut};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
@@ -52,12 +51,7 @@ use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 
-use crate::{
-    adaptive_wait::*,
-    clock::{NanosleepError, TimeError},
-};
-
-pub use crate::clock::ClockType;
+use crate::clock::NanosleepError;
 
 enum_gen! { FileWriterGetLockError
   mapping:
@@ -112,29 +106,6 @@ enum_gen! { FileLockStateError
     ReadWriteMutexReadLockError
 }
 
-enum_gen! { FileTimedLockError
-  mapping:
-    FileTryLockError,
-    TimeError,
-    AdaptiveWaitError
-}
-
-enum_gen! { FileWriterTimedLockError
-  mapping:
-    TimeError,
-    FileTimedLockError,
-    ReadWriteMutexWriteTimedLockError
-
-}
-
-enum_gen! { FileReaderTimedLockError
-  mapping:
-    TimeError,
-    FileTimedLockError,
-    ReadWriteMutexReadTimedLockError
-
-}
-
 enum_gen! {
     /// The FileLockError enum is a generalization when one doesn't require the fine-grained error
     /// handling enums. One can forward FileLockError as more generic return value when a method
@@ -142,11 +113,11 @@ enum_gen! {
     /// On a higher level it is again convertable to [`crate::Error`]
     FileLockError
   generalization:
-    UnableToAcquireLock <= FileWriterGetLockError; FileReaderGetLockError; FileTryLockError; FileWriterTryLockError; FileReaderTryLockError; FileUnlockError; FileLockStateError;FileTimedLockError; FileWriterTimedLockError; FileReaderTimedLockError
+    UnableToAcquireLock <= FileWriterGetLockError; FileReaderGetLockError; FileTryLockError; FileWriterTryLockError; FileReaderTryLockError; FileUnlockError; FileLockStateError
 }
 
 /// A guard which is acquired when the file could be successfully locked for writing with
-/// [`FileLock::write_lock()`], [`FileLock::write_try_lock()`] or [`FileLock::write_timed_lock()`].
+/// [`FileLock::write_lock()`] or [`FileLock::write_try_lock()`].
 /// It provides read and write access to the underlying file and unlocks it as soon as it goes out
 /// of scope.
 #[derive(Debug)]
@@ -179,7 +150,7 @@ impl<T: FileDescriptorBased + Debug> Drop for FileLockWriteGuard<'_, '_, T> {
 }
 
 /// A guard which is acquired when the file could be successfully locked for reading with
-/// [`FileLock::read_lock()`], [`FileLock::read_try_lock()`] or [`FileLock::read_timed_lock()`].
+/// [`FileLock::read_lock()`] or [`FileLock::read_try_lock()`].
 /// It provides read access to the underlying file and unlocks it as soon as it goes out
 /// of scope.
 #[derive(Debug)]
@@ -209,40 +180,12 @@ impl<T: FileDescriptorBased + Debug> Drop for FileLockReadGuard<'_, '_, T> {
 ///
 /// One has to create an object first which implements the [`FileDescriptorBased`] trait.
 ///
-#[derive(Debug)]
-pub struct FileLockBuilder {
-    clock_type: ClockType,
-    priority: ReadWriteMutexPriority,
-}
-
-impl Default for FileLockBuilder {
-    fn default() -> Self {
-        Self {
-            clock_type: ClockType::default(),
-            priority: ReadWriteMutexPriority::PreferReader,
-        }
-    }
-}
+#[derive(Debug, Default)]
+pub struct FileLockBuilder {}
 
 impl FileLockBuilder {
     pub fn new() -> Self {
         Self::default()
-    }
-
-    /// Sets the clock type used for [`FileLock::read_timed_lock()`] or
-    /// [`FileLock::write_timed_lock()`].
-    ///
-    /// **Attention!** Be aware that [`ClockType::Realtime`] can cause deadlocks when the time
-    /// of the system is updated to a timepoint in the past.
-    pub fn clock_type(mut self, value: ClockType) -> Self {
-        self.clock_type = value;
-        self
-    }
-
-    /// Sets the priority and selects if reader locks or writer locks should be prioritized
-    pub fn priority(mut self, value: ReadWriteMutexPriority) -> Self {
-        self.priority = value;
-        self
     }
 
     pub fn create<T: FileDescriptorBased + Debug>(
@@ -268,7 +211,6 @@ impl FileLockBuilder {
 #[derive(Debug)]
 pub struct FileLock<'a, T: FileDescriptorBased + Debug> {
     file: ReadWriteMutex<'a, T>,
-    clock_type: ClockType,
     lock_state: IoxAtomicI64,
 }
 
@@ -317,11 +259,8 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
         Ok(Self {
             file: fail!(from config, when ReadWriteMutexBuilder::new()
                 .is_interprocess_capable(false)
-                .clock_type(config.clock_type)
-                .mutex_priority(config.priority)
                 .create(value, handle),
                 "Failed to create ReadWriteMutex for FileLock."),
-            clock_type: config.clock_type,
             lock_state: IoxAtomicI64::new(0),
         })
     }
@@ -332,7 +271,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
     /// A write-lock can be acquired when no reader and no writer locks are acquired by any
     /// other participant.
     pub fn write_lock(&self) -> Result<FileLockWriteGuard<'_, '_, T>, FileWriterGetLockError> {
-        let guard = fail!(from self, when self.file.write_lock(),
+        let guard = fail!(from self, when self.file.write_blocking_lock(),
             "Failed to acquire writer mutex lock in write_lock");
         self.internal_lock(
             LockType::Write,
@@ -374,52 +313,12 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
         }
     }
 
-    /// Tries to acquire the write lock and waits until timeout has passed. If the lock could be
-    /// acquired it returns a [`FileLockWriteGuard`] which provides read and write access to the
-    /// underlying file and releases the lock as soon as it goes out of scope. Otherwise it
-    /// returns [`None`].
-    /// A write-lock can be acquired when no reader and no writer locks are acquired by any
-    /// other participant.
-    pub fn write_timed_lock(
-        &self,
-        timeout: Duration,
-    ) -> Result<Option<FileLockWriteGuard<'_, '_, T>>, FileWriterTimedLockError> {
-        let time = fail!(from self, when Time::now_with_clock(self.clock_type),
-                            "Failed to acquire current system time in write_timed_lock.");
-
-        let guard = fail!(from self, when self.file.write_timed_lock(timeout),
-                            "Failed while trying to acquire writer mutex lock in write_timed_lock");
-
-        if guard.is_none() {
-            return Ok(None);
-        }
-
-        let elapsed_time = fail!(from self, when time.elapsed(),
-                            "Failed to acquire elapsed time in read_timed_lock.");
-
-        if elapsed_time >= timeout {
-            return Ok(None);
-        }
-
-        match self.internal_timed_lock(
-            LockType::Write,
-            timeout - elapsed_time,
-            guard.as_ref().unwrap().file_descriptor(),
-        )? {
-            true => Ok(Some(FileLockWriteGuard {
-                file_lock: self,
-                guard: guard.unwrap(),
-            })),
-            false => Ok(None),
-        }
-    }
-
     /// Blocking until the read lock of the underlying file is acquired. Returns a
     /// [`FileLockReadGuard`] which provides read access to the underlying file and releases the
     /// lock as soon as it goes out of scope.
     /// A read-lock can be acquired when no write lock is acquired by any other participant.
     pub fn read_lock(&self) -> Result<FileLockReadGuard<'_, '_, T>, FileReaderGetLockError> {
-        let guard = fail!(from self, when self.file.read_lock(),
+        let guard = fail!(from self, when self.file.read_blocking_lock(),
                          "Failed to acquire reader mutex lock in read_lock");
 
         self.internal_lock(
@@ -461,44 +360,6 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
         }
     }
 
-    /// Tries to acquire a read lock and waits until timeout has passed. If the lock could be acquired it returns a
-    /// [`FileLockReadGuard`] which provides read access to the underlying file and releases the
-    /// lock as soon as it goes out of scope. Otherwise it returns [`None`].
-    /// A read-lock can be acquired when no write lock is acquired by any other participant.
-    pub fn read_timed_lock(
-        &self,
-        timeout: Duration,
-    ) -> Result<Option<FileLockReadGuard<'_, '_, T>>, FileReaderTimedLockError> {
-        let time = fail!(from self, when Time::now_with_clock(self.clock_type),
-                         "Failed to acquire current system time in read_timed_lock.");
-
-        let guard = fail!(from self, when self.file.read_timed_lock(timeout),
-                         "Failed while trying to acquire writer mutex lock in read_timed_lock");
-
-        if guard.is_none() {
-            return Ok(None);
-        }
-
-        let elapsed_time = fail!(from self, when time.elapsed(),
-                            "Failed to acquire elapsed time in read_timed_lock.");
-
-        if elapsed_time >= timeout {
-            return Ok(None);
-        }
-
-        match self.internal_timed_lock(
-            LockType::Read,
-            timeout - elapsed_time,
-            guard.as_ref().unwrap().file_descriptor(),
-        )? {
-            true => Ok(Some(FileLockReadGuard {
-                file_lock: self,
-                guard: guard.unwrap(),
-            })),
-            false => Ok(None),
-        }
-    }
-
     /// Returns the current [`LockState`] of the [`FileLock`].
     pub fn get_lock_state(&self) -> Result<LockState, FileLockStateError> {
         match 0.cmp(&self.lock_state.load(Ordering::Relaxed)) {
@@ -521,7 +382,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
         let mut current_lock_state = posix::flock::new();
         current_lock_state.l_type = posix::F_WRLCK as _;
 
-        let fd_guard = fail!(from self, when self.file.read_lock(),
+        let fd_guard = fail!(from self, when self.file.read_blocking_lock(),
             "{} due to an internal failure in while acquiring the mutex.", msg);
 
         match unsafe {
@@ -571,41 +432,6 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
             Errno::EINTR => (Interrupt, "{} since an interrupt signal was received.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         );
-    }
-
-    fn internal_timed_lock(
-        &self,
-        lock_type: LockType,
-        timeout: Duration,
-        file_descriptor: &FileDescriptor,
-    ) -> Result<bool, FileTimedLockError> {
-        let msg = "Unable to wait in timed_lock with timeout ".to_string()
-            + &timeout.as_secs_f64().to_string()
-            + "s";
-        let time = fail!(from self, when Time::now_with_clock(self.clock_type), "Failed to acquire current system time in timed_lock.");
-        let mut adaptive_wait = fail!(from self, when AdaptiveWaitBuilder::new()
-            .clock_type(self.clock_type)
-            .create(), "{} since the adaptive wait could not be created.", msg);
-
-        loop {
-            match self.internal_lock(lock_type, InternalMode::NonBlocking, file_descriptor)? {
-                true => {
-                    return Ok(true);
-                }
-                false => {
-                    match fail!(from self, when time.elapsed(),
-                        "Failed to acquire elapsed time in timed_lock.")
-                        < timeout
-                    {
-                        true => {
-                            fail!(from self, when adaptive_wait.wait(),
-                                "AdaptiveWait failed in timed_lock.");
-                        }
-                        false => return Ok(false),
-                    }
-                }
-            }
-        }
     }
 
     fn internal_lock(
