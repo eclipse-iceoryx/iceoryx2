@@ -64,8 +64,7 @@
 //! ```
 
 use crate::{
-    port::publisher::{PublisherBackend, PublisherSendError},
-    raw_sample::RawSampleMut,
+    port::publisher::PublisherBackend, port::SendError, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
 use iceoryx2_cal::shared_memory::*;
@@ -269,7 +268,7 @@ impl<
     /// [`crate::port::subscriber::Subscriber`]s of the service.
     ///
     /// On success the number of [`crate::port::subscriber::Subscriber`]s that received
-    /// the data is returned, otherwise a [`PublisherSendError`] describing the failure.
+    /// the data is returned, otherwise a [`SendError`] describing the failure.
     ///
     /// # Example
     ///
@@ -292,7 +291,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn send(self) -> Result<usize, PublisherSendError> {
+    pub fn send(self) -> Result<usize, SendError> {
         self.publisher_backend
             .send_sample(self.offset_to_chunk, self.sample_size)
     }

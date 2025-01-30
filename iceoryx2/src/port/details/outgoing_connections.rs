@@ -18,17 +18,19 @@ extern crate alloc;
 use alloc::sync::Arc;
 
 use iceoryx2_bb_elementary::visitor::{Visitable, Visitor, VisitorMarker};
-use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopySender,
+    ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopySendError,
+    ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::node::SharedNode;
-use crate::port::{DegrationAction, DegrationCallback, LoanError};
+use crate::port::{DegrationAction, DegrationCallback, LoanError, SendError};
+use crate::prelude::UnableToDeliverStrategy;
 use crate::service::config_scheme::connection_config;
 use crate::service::ServiceState;
 use crate::{service, service::naming_scheme::connection_name};
@@ -116,10 +118,11 @@ pub(crate) struct OutgoingConnections<Service: service::Service> {
     pub(crate) service_state: Arc<ServiceState<Service>>,
     pub(crate) visitor: Visitor,
     pub(crate) loan_counter: IoxAtomicUsize,
+    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
 }
 
 impl<Service: service::Service> OutgoingConnections<Service> {
-    pub(crate) fn get(&self, index: usize) -> &Option<Connection<Service>> {
+    fn get(&self, index: usize) -> &Option<Connection<Service>> {
         unsafe { &(*self.connections[index].get()) }
     }
 
@@ -130,6 +133,70 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         unsafe {
             &mut (*self.connections[index].get())
         }
+    }
+
+    pub(crate) fn deliver_offset(
+        &self,
+        offset: PointerOffset,
+        sample_size: usize,
+    ) -> Result<usize, SendError> {
+        self.retrieve_returned_samples();
+        let deliver_call = match self.unable_to_deliver_strategy {
+            UnableToDeliverStrategy::Block => {
+                <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
+            }
+            UnableToDeliverStrategy::DiscardSample => {
+                <Service::Connection as ZeroCopyConnection>::Sender::try_send
+            }
+        };
+
+        let mut number_of_recipients = 0;
+        for i in 0..self.len() {
+            if let Some(ref connection) = self.get(i) {
+                match deliver_call(&connection.sender, offset, sample_size) {
+                    Err(ZeroCopySendError::ReceiveBufferFull)
+                    | Err(ZeroCopySendError::UsedChunkListFull) => {
+                        /* causes no problem
+                         *   blocking_send => can never happen
+                         *   try_send => we tried and expect that the buffer is full
+                         * */
+                    }
+                    Err(ZeroCopySendError::ConnectionCorrupted) => match &self.degration_callback {
+                        Some(c) => match c.call(
+                            &self.service_state.static_config,
+                            self.sender_port_id,
+                            connection.receiver_port_id,
+                        ) {
+                            DegrationAction::Ignore => (),
+                            DegrationAction::Warn => {
+                                error!(from self,
+                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                        offset, connection.receiver_port_id);
+                            }
+                            DegrationAction::Fail => {
+                                fail!(from self, with SendError::ConnectionCorrupted,
+                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                        offset, connection.receiver_port_id);
+                            }
+                        },
+                        None => {
+                            error!(from self,
+                                    "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                    offset, connection.receiver_port_id);
+                        }
+                    },
+                    Ok(overflow) => {
+                        self.borrow_sample(offset);
+                        number_of_recipients += 1;
+
+                        if let Some(old) = overflow {
+                            self.release_sample(old)
+                        }
+                    }
+                }
+            }
+        }
+        Ok(number_of_recipients)
     }
 
     pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
@@ -157,7 +224,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         Ok(())
     }
 
-    pub(crate) fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.connections.len()
     }
 
@@ -239,14 +306,14 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         }
     }
 
-    fn remove_connection<R: Fn(PointerOffset)>(&self, i: usize, release_pointer_offset_call: &R) {
+    fn remove_connection(&self, i: usize) {
         if let Some(connection) = self.get(i) {
             // # SAFETY: the receiver no longer exist, therefore we can
             //           reacquire all delivered samples
             unsafe {
                 connection
                     .sender
-                    .acquire_used_offsets(|offset| release_pointer_offset_call(offset))
+                    .acquire_used_offsets(|offset| self.release_sample(offset))
             };
 
             self.remove(i);
@@ -312,14 +379,11 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         Ok(())
     }
 
-    pub(crate) fn finish_update_connection_cycle<R: Fn(PointerOffset)>(
-        &self,
-        release_pointer_offset_call: R,
-    ) {
+    pub(crate) fn finish_update_connection_cycle(&self) {
         for n in 0..self.len() {
             if let Some(connection) = self.get(n) {
                 if !connection.was_visited_by(&self.visitor) {
-                    self.remove_connection(n, &release_pointer_offset_call);
+                    self.remove_connection(n);
                 }
             }
         }
