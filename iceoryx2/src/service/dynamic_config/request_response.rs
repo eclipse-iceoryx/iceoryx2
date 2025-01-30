@@ -18,7 +18,7 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
 use crate::{
     node::NodeId,
-    port::port_identifiers::{UniqueClientId, UniquePortId},
+    port::port_identifiers::{UniqueClientId, UniquePortId, UniqueServerId},
 };
 
 use super::PortCleanupAction;
@@ -27,7 +27,8 @@ use super::PortCleanupAction;
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ServerDetails {
-    _stub: usize,
+    pub server_port_id: UniqueServerId,
+    pub buffer_size: usize,
 }
 
 #[doc(hidden)]
