@@ -38,6 +38,28 @@ For more benchmark configuration details, see
 cargo run --bin benchmark-event --release -- --help
 ```
 
+> [!IMPORTANT]
+> When you increase the number of listeners or notifiers beyond a certain limit,
+> the benchmark may exceed the per-user file descriptor limit. This limit can be
+> increased by adjusting the `nofile` setting in the `/etc/security/limits.conf`
+> file:
+>
+> ```ascii
+> *     soft    nofile      4096
+> *     hard    nofile      8192
+> ```
+>
+> * `*` – Applies to all users
+> * `soft` | `hard` – The soft and hard limits
+> * The soft limit is set to 4096, while the hard limit is set to 8192
+>
+> After making these changes, you can use the following command to increase the
+> soft file descriptor limit up to the hard limit:
+>
+> ```bash
+> ulimit -n <new_limit>
+> ```
+
 ## Queue
 
 The queue quantifies the latency between pushing an element into a queue and
