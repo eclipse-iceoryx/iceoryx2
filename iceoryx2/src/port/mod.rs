@@ -62,3 +62,32 @@ impl Debug for DegrationCallback<'_> {
         write!(f, "")
     }
 }
+
+/// Defines a failure that can occur in
+/// [`Publisher::loan()`](crate::port::publisher::Publisher::loan()) and
+/// [`Publisher::loan_uninit()`](crate::port::publisher::Publisher::loan_uninit())
+/// or is part of [`PublisherSendError`](crate::port::publisher::PublisherSendError) emitted in
+/// [`Publisher::send_copy()`](crate::port::publisher::Publisher::send_copy()).
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
+pub enum LoanError {
+    /// The data segment does not have any more memory left
+    OutOfMemory,
+    /// The maximum amount of data a user can borrow is
+    /// defined in [`crate::config::Config`]. When this is exceeded those calls will fail.
+    ExceedsMaxLoanedSamples,
+    /// The provided slice size exceeds the configured max slice size.
+    /// To send data with this size a new port has to be created with as a larger slice size or the
+    /// port must be configured with an
+    /// [`AllocationStrategy`](iceoryx2_cal::shm_allocator::AllocationStrategy).
+    ExceedsMaxLoanSize,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    InternalFailure,
+}
+
+impl core::fmt::Display for LoanError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "LoanError::{:?}", self)
+    }
+}
+
+impl std::error::Error for LoanError {}

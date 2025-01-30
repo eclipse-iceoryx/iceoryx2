@@ -17,6 +17,7 @@ use iceoryx2_bb_elementary::visitor::Visitor;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::{
     port::{details::data_segment::DataSegment, UniqueClientId},
@@ -155,6 +156,8 @@ impl<
                 max_number_of_segments,
                 service_state: service.__internal_state().clone(),
                 visitor: Visitor::new(),
+                loan_counter: IoxAtomicUsize::new(0),
+                sender_max_borrowed_samples: static_config.max_active_requests,
             },
             client_port_id,
             service_state: service.__internal_state().clone(),

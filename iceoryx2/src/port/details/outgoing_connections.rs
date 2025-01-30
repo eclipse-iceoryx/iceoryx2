@@ -12,6 +12,7 @@
 
 use core::alloc::Layout;
 use core::cell::UnsafeCell;
+use core::sync::atomic::Ordering;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -20,13 +21,14 @@ use iceoryx2_bb_elementary::visitor::{Visitable, Visitor, VisitorMarker};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shared_memory::ShmPointer;
-use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocationError};
+use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopySender,
 };
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::node::SharedNode;
-use crate::port::{DegrationAction, DegrationCallback};
+use crate::port::{DegrationAction, DegrationCallback, LoanError};
 use crate::service::config_scheme::connection_config;
 use crate::service::ServiceState;
 use crate::{service, service::naming_scheme::connection_name};
@@ -106,12 +108,14 @@ pub(crate) struct OutgoingConnections<Service: service::Service> {
     pub(crate) shared_node: Arc<SharedNode<Service>>,
     pub(crate) receiver_max_buffer_size: usize,
     pub(crate) receiver_max_borrowed_samples: usize,
+    pub(crate) sender_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
     pub(crate) number_of_samples: usize,
     pub(crate) max_number_of_segments: u8,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
     pub(crate) service_state: Arc<ServiceState<Service>>,
     pub(crate) visitor: Visitor,
+    pub(crate) loan_counter: IoxAtomicUsize,
 }
 
 impl<Service: service::Service> OutgoingConnections<Service> {
@@ -126,6 +130,11 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         unsafe {
             &mut (*self.connections[index].get())
         }
+    }
+
+    pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
+        self.release_sample(distance_to_chunk);
+        self.loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 
     fn remove(&self, index: usize) {
@@ -152,17 +161,39 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         self.connections.len()
     }
 
-    pub(crate) fn allocate(&self, layout: Layout) -> Result<AllocationPair, ShmAllocationError> {
+    pub(crate) fn allocate(&self, layout: Layout) -> Result<AllocationPair, LoanError> {
         self.retrieve_returned_samples();
+        let msg = "Unable to allocate data";
 
-        let msg = "Unable to allocate Sample";
-        let shm_pointer = self.data_segment.allocate(layout)?;
+        if self.loan_counter.load(Ordering::Relaxed) >= self.sender_max_borrowed_samples {
+            fail!(from self, with LoanError::ExceedsMaxLoanedSamples,
+                "{} {:?} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
+                msg, layout, self.loan_counter.load(Ordering::Relaxed), self.sender_max_borrowed_samples);
+        }
+
+        let shm_pointer = match self.data_segment.allocate(layout) {
+            Ok(chunk) => chunk,
+            Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
+                fail!(from self, with LoanError::OutOfMemory,
+                    "{} {:?} since the underlying shared memory is out of memory.", msg, layout);
+            }
+            Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
+            | Err(ShmAllocationError::AllocationError(AllocationError::AlignmentFailure)) => {
+                fatal_panic!(from self, "{} {:?} since the system seems to be corrupted.", msg, layout);
+            }
+            Err(v) => {
+                fail!(from self, with LoanError::InternalFailure,
+                    "{} {:?} since an internal failure occurred ({:?}).", msg, layout, v);
+            }
+        };
+
         let (ref_count, sample_size) = self.borrow_sample(shm_pointer.offset);
         if ref_count != 0 {
             fatal_panic!(from self,
                 "{} since the allocated sample is already in use! This should never happen!", msg);
         }
 
+        self.loan_counter.fetch_add(1, Ordering::Relaxed);
         Ok(AllocationPair {
             shm_pointer,
             sample_size,

@@ -17,9 +17,10 @@ mod service_publish_subscribe {
     use std::thread;
 
     use iceoryx2::config::Config;
-    use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
+    use iceoryx2::port::publisher::PublisherCreateError;
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
+    use iceoryx2::port::LoanError;
     use iceoryx2::prelude::{AllocationStrategy, *};
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
@@ -1697,7 +1698,7 @@ mod service_publish_subscribe {
 
             let sample = sut_publisher.loan_uninit();
             assert_that!(sample, is_err);
-            assert_that!(sample.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
+            assert_that!(sample.err().unwrap(), eq LoanError::ExceedsMaxLoanedSamples);
 
             // cleanup
             borrowed_samples.clear();
@@ -3004,7 +3005,7 @@ mod service_publish_subscribe {
 
         let sample = publisher.loan_slice(SLICE_SIZE + 1);
         assert_that!(sample, is_err);
-        assert_that!(sample.err(), eq Some(PublisherLoanError::ExceedsMaxLoanSize));
+        assert_that!(sample.err(), eq Some(LoanError::ExceedsMaxLoanSize));
     }
 
     fn send_and_receives_increasing_samples_works<Sut: Service>(

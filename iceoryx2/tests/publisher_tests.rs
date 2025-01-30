@@ -17,7 +17,7 @@ mod publisher {
     use std::sync::Mutex;
     use std::time::Instant;
 
-    use iceoryx2::port::publisher::{PublisherCreateError, PublisherLoanError};
+    use iceoryx2::port::{publisher::PublisherCreateError, LoanError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::publish_subscribe::CustomPayloadMarker;
     use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
@@ -159,7 +159,7 @@ mod publisher {
 
         let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS + 1);
         assert_that!(sut, is_err);
-        assert_that!(sut.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanSize);
+        assert_that!(sut.err().unwrap(), eq LoanError::ExceedsMaxLoanSize);
 
         Ok(())
     }
@@ -233,7 +233,7 @@ mod publisher {
 
         let sample3 = sut.loan_uninit();
         assert_that!(sample3, is_err);
-        assert_that!(sample3.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
+        assert_that!(sample3.err().unwrap(), eq LoanError::ExceedsMaxLoanedSamples);
 
         Ok(())
     }
@@ -258,7 +258,7 @@ mod publisher {
         let _sample3 = sut.loan_uninit();
         let sample4 = sut.loan_uninit();
         assert_that!(sample4, is_err);
-        assert_that!(sample4.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
+        assert_that!(sample4.err().unwrap(), eq LoanError::ExceedsMaxLoanedSamples);
 
         Ok(())
     }
@@ -283,7 +283,7 @@ mod publisher {
         let _sample3 = sut.loan_uninit();
         let sample4 = sut.loan_uninit();
         assert_that!(sample4, is_err);
-        assert_that!(sample4.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
+        assert_that!(sample4.err().unwrap(), eq LoanError::ExceedsMaxLoanedSamples);
 
         Ok(())
     }
@@ -361,13 +361,13 @@ mod publisher {
     #[test]
     fn loan_error_display_works<S: Service>() {
         assert_that!(
-            format!("{}", PublisherLoanError::OutOfMemory), eq "PublisherLoanError::OutOfMemory");
+            format!("{}", LoanError::OutOfMemory), eq "LoanError::OutOfMemory");
         assert_that!(
-            format!("{}", PublisherLoanError::ExceedsMaxLoanedSamples), eq "PublisherLoanError::ExceedsMaxLoanedSamples");
+            format!("{}", LoanError::ExceedsMaxLoanedSamples), eq "LoanError::ExceedsMaxLoanedSamples");
         assert_that!(
-            format!("{}", PublisherLoanError::ExceedsMaxLoanSize), eq "PublisherLoanError::ExceedsMaxLoanSize");
+            format!("{}", LoanError::ExceedsMaxLoanSize), eq "LoanError::ExceedsMaxLoanSize");
         assert_that!(
-            format!("{}", PublisherLoanError::InternalFailure), eq "PublisherLoanError::InternalFailure");
+            format!("{}", LoanError::InternalFailure), eq "LoanError::InternalFailure");
     }
 
     #[test]

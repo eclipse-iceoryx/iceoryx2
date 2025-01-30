@@ -104,7 +104,7 @@
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::details::segment_state::SegmentState;
 use super::port_identifiers::UniquePublisherId;
-use super::UniqueSubscriberId;
+use super::{LoanError, UniqueSubscriberId};
 use crate::port::details::outgoing_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
@@ -128,16 +128,15 @@ use core::fmt::Debug;
 use core::sync::atomic::Ordering;
 use core::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 use iceoryx2_bb_container::queue::Queue;
-use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::visitor::Visitor;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{debug, error, fail, fatal_panic, warn};
+use iceoryx2_bb_log::{debug, error, fail, warn};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError};
-use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset, ShmAllocationError};
+use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopyPortRemoveError,
     ZeroCopySendError, ZeroCopySender,
@@ -168,33 +167,6 @@ impl core::fmt::Display for PublisherCreateError {
 
 impl core::error::Error for PublisherCreateError {}
 
-/// Defines a failure that can occur in [`Publisher::loan()`] and [`Publisher::loan_uninit()`]
-/// or is part of [`PublisherSendError`] emitted in [`Publisher::send_copy()`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
-pub enum PublisherLoanError {
-    /// The [`Publisher`]s data segment does not have any more memory left
-    OutOfMemory,
-    /// The maximum amount of [`SampleMut`]s a user can borrow with [`Publisher::loan()`] or
-    /// [`Publisher::loan_uninit()`] is
-    /// defined in [`crate::config::Config`]. When this is exceeded those calls will fail.
-    ExceedsMaxLoanedSamples,
-    /// The provided slice size exceeds the configured max slice size of the [`Publisher`].
-    /// To send a [`SampleMut`] with this size a new [`Publisher`] has to be created with
-    /// a [`crate::service::port_factory::publisher::PortFactoryPublisher::initial_max_slice_len()`]
-    /// greater or equal to the required len.
-    ExceedsMaxLoanSize,
-    /// Errors that indicate either an implementation issue or a wrongly configured system.
-    InternalFailure,
-}
-
-impl core::fmt::Display for PublisherLoanError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "PublisherLoanError::{:?}", self)
-    }
-}
-
-impl core::error::Error for PublisherLoanError {}
-
 /// Failure that can be emitted when a [`SampleMut`] is sent via [`SampleMut::send()`].
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum PublisherSendError {
@@ -205,14 +177,14 @@ pub enum PublisherSendError {
     /// [`Publisher`] is corrupted.
     ConnectionCorrupted,
     /// A failure occurred while acquiring memory for the payload
-    LoanError(PublisherLoanError),
+    LoanError(LoanError),
     /// A failure occurred while establishing a connection to a
     /// [`Subscriber`](crate::port::subscriber::Subscriber)
     ConnectionError(ConnectionFailure),
 }
 
-impl From<PublisherLoanError> for PublisherSendError {
-    fn from(value: PublisherLoanError) -> Self {
+impl From<LoanError> for PublisherSendError {
+    fn from(value: LoanError) -> Self {
         PublisherSendError::LoanError(value)
     }
 }
@@ -251,21 +223,14 @@ pub(crate) struct PublisherBackend<Service: service::Service> {
     config: LocalPublisherConfig,
     service_state: Arc<ServiceState<Service>>,
 
-    subscriber_connections: OutgoingConnections<Service>,
+    pub(crate) subscriber_connections: OutgoingConnections<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
     static_config: crate::service::static_config::StaticConfig,
-    loan_counter: IoxAtomicUsize,
     is_active: IoxAtomicBool,
 }
 
 impl<Service: service::Service> PublisherBackend<Service> {
-    pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
-        self.subscriber_connections
-            .release_sample(distance_to_chunk);
-        self.loan_counter.fetch_sub(1, Ordering::Relaxed);
-    }
-
     fn add_sample_to_history(&self, offset: PointerOffset, sample_size: usize) {
         match &self.history {
             None => (),
@@ -572,6 +537,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 degration_callback: None,
                 service_state: service.__internal_state().clone(),
                 visitor: Visitor::new(),
+                loan_counter: IoxAtomicUsize::new(0),
+                sender_max_borrowed_samples: config.max_loaned_samples,
             },
             config,
             subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
@@ -580,7 +547,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
             },
             static_config: service.__internal_state().static_config.clone(),
-            loan_counter: IoxAtomicUsize::new(0),
         });
 
         let payload_size = static_config.message_type_details.payload.size;
@@ -636,37 +602,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     /// Returns the maximum slice length configured for this [`Publisher`].
     pub fn initial_max_slice_len(&self) -> usize {
         self.backend.config.initial_max_slice_len
-    }
-
-    fn allocate(&self, layout: Layout) -> Result<AllocationPair, PublisherLoanError> {
-        let msg = "Unable to allocate Sample with";
-
-        if self.backend.loan_counter.load(Ordering::Relaxed)
-            >= self.backend.config.max_loaned_samples
-        {
-            fail!(from self, with PublisherLoanError::ExceedsMaxLoanedSamples,
-                "{} {:?} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
-                msg, layout, self.backend.loan_counter.load(Ordering::Relaxed), self.backend.config.max_loaned_samples);
-        }
-
-        match self.backend.subscriber_connections.allocate(layout) {
-            Ok(chunk) => {
-                self.backend.loan_counter.fetch_add(1, Ordering::Relaxed);
-                Ok(chunk)
-            }
-            Err(ShmAllocationError::AllocationError(AllocationError::OutOfMemory)) => {
-                fail!(from self, with PublisherLoanError::OutOfMemory,
-                    "{} {:?} since the underlying shared memory is out of memory.", msg, layout);
-            }
-            Err(ShmAllocationError::AllocationError(AllocationError::SizeTooLarge))
-            | Err(ShmAllocationError::AllocationError(AllocationError::AlignmentFailure)) => {
-                fatal_panic!(from self, "{} {:?} since the system seems to be corrupted.", msg, layout);
-            }
-            Err(v) => {
-                fail!(from self, with PublisherLoanError::InternalFailure,
-                    "{} {:?} since an internal failure occurred ({:?}).", msg, layout, v);
-            }
-        }
     }
 
     fn sample_layout(&self, number_of_elements: usize) -> Layout {
@@ -733,7 +668,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
-    /// On failure it returns [`PublisherLoanError`] describing the failure.
+    /// On failure it returns [`LoanError`] describing the failure.
     ///
     /// # Example
     ///
@@ -759,9 +694,11 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     /// ```
     pub fn loan_uninit(
         &self,
-    ) -> Result<SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>, PublisherLoanError>
-    {
-        let chunk = self.allocate(self.sample_layout(1))?;
+    ) -> Result<SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>, LoanError> {
+        let chunk = self
+            .backend
+            .subscriber_connections
+            .allocate(self.sample_layout(1))?;
         let header_ptr = chunk.shm_pointer.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
@@ -787,7 +724,7 @@ impl<Service: service::Service, Payload: Default + Debug + Sized, UserHeader: De
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
     /// can be used to loan a [`core::mem::MaybeUninit<Payload>`].
     ///
-    /// On failure it returns [`PublisherLoanError`] describing the failure.
+    /// On failure it returns [`LoanError`] describing the failure.
     ///
     /// # Example
     ///
@@ -810,7 +747,7 @@ impl<Service: service::Service, Payload: Default + Debug + Sized, UserHeader: De
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan(&self) -> Result<SampleMut<Service, Payload, UserHeader>, PublisherLoanError> {
+    pub fn loan(&self) -> Result<SampleMut<Service, Payload, UserHeader>, LoanError> {
         Ok(self.loan_uninit()?.write_payload(Payload::default()))
     }
 }
@@ -829,7 +766,7 @@ impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
     /// and [`Publisher::loan_slice_uninit()`] can be used to loan a slice of
     /// [`core::mem::MaybeUninit<Payload>`].
     ///
-    /// On failure it returns [`PublisherLoanError`] describing the failure.
+    /// On failure it returns [`LoanError`] describing the failure.
     ///
     /// # Example
     ///
@@ -858,7 +795,7 @@ impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
     pub fn loan_slice(
         &self,
         number_of_elements: usize,
-    ) -> Result<SampleMut<Service, [Payload], UserHeader>, PublisherLoanError> {
+    ) -> Result<SampleMut<Service, [Payload], UserHeader>, LoanError> {
         let sample = self.loan_slice_uninit(number_of_elements)?;
         Ok(sample.write_from_fn(|_| Payload::default()))
     }
@@ -870,7 +807,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
-    /// On failure it returns [`PublisherLoanError`] describing the failure.
+    /// On failure it returns [`LoanError`] describing the failure.
     ///
     /// # Example
     ///
@@ -897,8 +834,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     pub fn loan_slice_uninit(
         &self,
         slice_len: usize,
-    ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError>
-    {
+    ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, LoanError> {
         // required since Rust does not support generic specializations or negative traits
         debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
 
@@ -909,19 +845,21 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         &self,
         slice_len: usize,
         underlying_number_of_slice_elements: usize,
-    ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, PublisherLoanError>
-    {
+    ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, LoanError> {
         let max_slice_len = self.backend.config.initial_max_slice_len;
         if self.backend.config.allocation_strategy == AllocationStrategy::Static
             && max_slice_len < slice_len
         {
-            fail!(from self, with PublisherLoanError::ExceedsMaxLoanSize,
+            fail!(from self, with LoanError::ExceedsMaxLoanSize,
                 "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
                 slice_len, max_slice_len);
         }
 
         let sample_layout = self.sample_layout(slice_len);
-        let chunk = self.allocate(sample_layout)?;
+        let chunk = self
+            .backend
+            .subscriber_connections
+            .allocate(sample_layout)?;
         let header_ptr = chunk.shm_pointer.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
@@ -960,10 +898,8 @@ impl<Service: service::Service, UserHeader: Debug>
     pub unsafe fn loan_custom_payload(
         &self,
         slice_len: usize,
-    ) -> Result<
-        SampleMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], UserHeader>,
-        PublisherLoanError,
-    > {
+    ) -> Result<SampleMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], UserHeader>, LoanError>
+    {
         // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
         debug_assert!(slice_len == 1 || self.payload_type_variant() == TypeVariant::Dynamic);
 
