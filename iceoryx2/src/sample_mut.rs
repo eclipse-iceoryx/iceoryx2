@@ -116,6 +116,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
 {
     fn drop(&mut self) {
         self.publisher_backend
+            .subscriber_connections
             .return_loaned_sample(self.offset_to_chunk);
     }
 }
