@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::alloc::Layout;
 use core::cell::UnsafeCell;
 
 extern crate alloc;
@@ -18,7 +19,8 @@ use alloc::sync::Arc;
 use iceoryx2_bb_elementary::visitor::{Visitable, Visitor, VisitorMarker};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
-use iceoryx2_cal::shm_allocator::PointerOffset;
+use iceoryx2_cal::shared_memory::ShmPointer;
+use iceoryx2_cal::shm_allocator::{PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopySender,
 };
@@ -36,6 +38,12 @@ use super::segment_state::SegmentState;
 pub(crate) struct ReceiverDetails {
     pub(crate) port_id: u128,
     pub(crate) buffer_size: usize,
+}
+
+#[derive(Debug)]
+pub(crate) struct AllocationPair {
+    pub(crate) shm_pointer: ShmPointer,
+    pub(crate) sample_size: usize,
 }
 
 #[derive(Debug)]
@@ -142,6 +150,52 @@ impl<Service: service::Service> OutgoingConnections<Service> {
 
     pub(crate) fn len(&self) -> usize {
         self.connections.len()
+    }
+
+    pub(crate) fn allocate(&self, layout: Layout) -> Result<AllocationPair, ShmAllocationError> {
+        self.retrieve_returned_samples();
+
+        let msg = "Unable to allocate Sample";
+        let shm_pointer = self.data_segment.allocate(layout)?;
+        let (ref_count, sample_size) = self.borrow_sample(shm_pointer.offset);
+        if ref_count != 0 {
+            fatal_panic!(from self,
+                "{} since the allocated sample is already in use! This should never happen!", msg);
+        }
+
+        Ok(AllocationPair {
+            shm_pointer,
+            sample_size,
+        })
+    }
+
+    pub(crate) fn borrow_sample(&self, offset: PointerOffset) -> (u64, usize) {
+        let segment_id = offset.segment_id();
+        let segment_state = &self.segment_states[segment_id.value() as usize];
+        let mut payload_size = segment_state.payload_size();
+        if segment_state.payload_size() == 0 {
+            payload_size = self.data_segment.bucket_size(segment_id);
+            segment_state.set_payload_size(payload_size);
+        }
+        (segment_state.borrow_sample(offset.offset()), payload_size)
+    }
+
+    pub(crate) fn retrieve_returned_samples(&self) {
+        for i in 0..self.len() {
+            if let Some(ref connection) = self.get(i) {
+                loop {
+                    match connection.sender.reclaim() {
+                        Ok(Some(ptr_dist)) => {
+                            self.release_sample(ptr_dist);
+                        }
+                        Ok(None) => break,
+                        Err(e) => {
+                            warn!(from self, "Unable to reclaim samples from connection {:?} due to {:?}. This may lead to a situation where no more samples will be delivered to this connection.", connection, e)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     pub(crate) fn release_sample(&self, offset: PointerOffset) {

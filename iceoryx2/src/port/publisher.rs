@@ -137,7 +137,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError};
-use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopyPortRemoveError,
@@ -247,12 +246,6 @@ struct OffsetAndSize {
 }
 
 #[derive(Debug)]
-struct AllocationPair {
-    shm_pointer: ShmPointer,
-    sample_size: usize,
-}
-
-#[derive(Debug)]
 pub(crate) struct PublisherBackend<Service: service::Service> {
     port_id: UniquePublisherId,
     config: LocalPublisherConfig,
@@ -267,56 +260,6 @@ pub(crate) struct PublisherBackend<Service: service::Service> {
 }
 
 impl<Service: service::Service> PublisherBackend<Service> {
-    fn allocate(&self, layout: Layout) -> Result<AllocationPair, ShmAllocationError> {
-        self.retrieve_returned_samples();
-
-        let msg = "Unable to allocate Sample";
-        let shm_pointer = self.subscriber_connections.data_segment.allocate(layout)?;
-        let (ref_count, sample_size) = self.borrow_sample(shm_pointer.offset);
-        if ref_count != 0 {
-            fatal_panic!(from self,
-                "{} since the allocated sample is already in use! This should never happen!", msg);
-        }
-
-        Ok(AllocationPair {
-            shm_pointer,
-            sample_size,
-        })
-    }
-
-    fn borrow_sample(&self, offset: PointerOffset) -> (u64, usize) {
-        let segment_id = offset.segment_id();
-        let segment_state =
-            &self.subscriber_connections.segment_states[segment_id.value() as usize];
-        let mut payload_size = segment_state.payload_size();
-        if segment_state.payload_size() == 0 {
-            payload_size = self
-                .subscriber_connections
-                .data_segment
-                .bucket_size(segment_id);
-            segment_state.set_payload_size(payload_size);
-        }
-        (segment_state.borrow_sample(offset.offset()), payload_size)
-    }
-
-    fn retrieve_returned_samples(&self) {
-        for i in 0..self.subscriber_connections.len() {
-            if let Some(ref connection) = self.subscriber_connections.get(i) {
-                loop {
-                    match connection.sender.reclaim() {
-                        Ok(Some(ptr_dist)) => {
-                            self.subscriber_connections.release_sample(ptr_dist);
-                        }
-                        Ok(None) => break,
-                        Err(e) => {
-                            warn!(from self, "Unable to reclaim samples from connection {:?} due to {:?}. This may lead to a situation where no more samples will be delivered to this connection.", connection, e)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
         self.subscriber_connections
             .release_sample(distance_to_chunk);
@@ -328,7 +271,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
             None => (),
             Some(history) => {
                 let history = unsafe { &mut *history.get() };
-                self.borrow_sample(offset);
+                self.subscriber_connections.borrow_sample(offset);
                 match history.push_with_overflow(OffsetAndSize {
                     offset: offset.as_value(),
                     size: sample_size,
@@ -347,7 +290,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
         offset: PointerOffset,
         sample_size: usize,
     ) -> Result<usize, PublisherSendError> {
-        self.retrieve_returned_samples();
+        self.subscriber_connections.retrieve_returned_samples();
         let deliver_call = match self.config.unable_to_deliver_strategy {
             UnableToDeliverStrategy::Block => {
                 <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
@@ -395,7 +338,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
                         }
                     }
                     Ok(overflow) => {
-                        self.borrow_sample(offset);
+                        self.subscriber_connections.borrow_sample(offset);
                         number_of_recipients += 1;
 
                         if let Some(old) = overflow {
@@ -464,12 +407,12 @@ impl<Service: service::Service> PublisherBackend<Service> {
 
                 for i in history_start..history.len() {
                     let old_sample = unsafe { history.get_unchecked(i) };
-                    self.retrieve_returned_samples();
+                    self.subscriber_connections.retrieve_returned_samples();
 
                     let offset = PointerOffset::from_value(old_sample.offset);
                     match connection.sender.try_send(offset, old_sample.size) {
                         Ok(overflow) => {
-                            self.borrow_sample(offset);
+                            self.subscriber_connections.borrow_sample(offset);
 
                             if let Some(old) = overflow {
                                 self.subscriber_connections.release_sample(old);
@@ -706,7 +649,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 msg, layout, self.backend.loan_counter.load(Ordering::Relaxed), self.backend.config.max_loaned_samples);
         }
 
-        match self.backend.allocate(layout) {
+        match self.backend.subscriber_connections.allocate(layout) {
             Ok(chunk) => {
                 self.backend.loan_counter.fetch_add(1, Ordering::Relaxed);
                 Ok(chunk)
