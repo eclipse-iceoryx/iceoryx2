@@ -102,6 +102,7 @@
 //! ```
 
 use super::details::data_segment::{DataSegment, DataSegmentType};
+use super::details::segment_state::SegmentState;
 use super::port_identifiers::UniquePublisherId;
 use super::UniqueSubscriberId;
 use crate::port::details::outgoing_connections::*;
@@ -142,7 +143,7 @@ use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopyPortRemoveError,
     ZeroCopySendError, ZeroCopySender,
 };
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -239,49 +240,6 @@ pub(crate) enum RemovePubSubPortFromAllConnectionsError {
     InternalError,
 }
 
-#[derive(Debug)]
-struct SegmentState {
-    sample_reference_counter: Vec<IoxAtomicU64>,
-    payload_size: IoxAtomicUsize,
-}
-
-impl SegmentState {
-    fn new(number_of_samples: usize) -> Self {
-        let mut sample_reference_counter = Vec::with_capacity(number_of_samples);
-        for _ in 0..number_of_samples {
-            sample_reference_counter.push(IoxAtomicU64::new(0));
-        }
-
-        Self {
-            sample_reference_counter,
-            payload_size: IoxAtomicUsize::new(0),
-        }
-    }
-
-    fn set_payload_size(&self, value: usize) {
-        self.payload_size.store(value, Ordering::Relaxed);
-    }
-
-    fn payload_size(&self) -> usize {
-        self.payload_size.load(Ordering::Relaxed)
-    }
-
-    fn sample_index(&self, distance_to_chunk: usize) -> usize {
-        debug_assert!(distance_to_chunk % self.payload_size() == 0);
-        distance_to_chunk / self.payload_size()
-    }
-
-    fn borrow_sample(&self, distance_to_chunk: usize) -> u64 {
-        self.sample_reference_counter[self.sample_index(distance_to_chunk)]
-            .fetch_add(1, Ordering::Relaxed)
-    }
-
-    fn release_sample(&self, distance_to_chunk: usize) -> u64 {
-        self.sample_reference_counter[self.sample_index(distance_to_chunk)]
-            .fetch_sub(1, Ordering::Relaxed)
-    }
-}
-
 #[derive(Debug, Clone, Copy)]
 struct OffsetAndSize {
     offset: u64,
@@ -296,8 +254,6 @@ struct AllocationPair {
 
 #[derive(Debug)]
 pub(crate) struct PublisherBackend<Service: service::Service> {
-    segment_states: Vec<SegmentState>,
-    data_segment: DataSegment<Service>,
     port_id: UniquePublisherId,
     config: LocalPublisherConfig,
     service_state: Arc<ServiceState<Service>>,
@@ -315,7 +271,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
         self.retrieve_returned_samples();
 
         let msg = "Unable to allocate Sample";
-        let shm_pointer = self.data_segment.allocate(layout)?;
+        let shm_pointer = self.subscriber_connections.data_segment.allocate(layout)?;
         let (ref_count, sample_size) = self.borrow_sample(shm_pointer.offset);
         if ref_count != 0 {
             fatal_panic!(from self,
@@ -330,23 +286,17 @@ impl<Service: service::Service> PublisherBackend<Service> {
 
     fn borrow_sample(&self, offset: PointerOffset) -> (u64, usize) {
         let segment_id = offset.segment_id();
-        let segment_state = &self.segment_states[segment_id.value() as usize];
+        let segment_state =
+            &self.subscriber_connections.segment_states[segment_id.value() as usize];
         let mut payload_size = segment_state.payload_size();
         if segment_state.payload_size() == 0 {
-            payload_size = self.data_segment.bucket_size(segment_id);
+            payload_size = self
+                .subscriber_connections
+                .data_segment
+                .bucket_size(segment_id);
             segment_state.set_payload_size(payload_size);
         }
         (segment_state.borrow_sample(offset.offset()), payload_size)
-    }
-
-    fn release_sample(&self, offset: PointerOffset) {
-        if self.segment_states[offset.segment_id().value() as usize].release_sample(offset.offset())
-            == 1
-        {
-            unsafe {
-                self.data_segment.deallocate_bucket(offset);
-            }
-        }
     }
 
     fn retrieve_returned_samples(&self) {
@@ -355,7 +305,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
                 loop {
                     match connection.sender.reclaim() {
                         Ok(Some(ptr_dist)) => {
-                            self.release_sample(ptr_dist);
+                            self.subscriber_connections.release_sample(ptr_dist);
                         }
                         Ok(None) => break,
                         Err(e) => {
@@ -368,7 +318,8 @@ impl<Service: service::Service> PublisherBackend<Service> {
     }
 
     pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
-        self.release_sample(distance_to_chunk);
+        self.subscriber_connections
+            .release_sample(distance_to_chunk);
         self.loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 
@@ -383,7 +334,9 @@ impl<Service: service::Service> PublisherBackend<Service> {
                     size: sample_size,
                 }) {
                     None => (),
-                    Some(old) => self.release_sample(PointerOffset::from_value(old.offset)),
+                    Some(old) => self
+                        .subscriber_connections
+                        .release_sample(PointerOffset::from_value(old.offset)),
                 }
             }
         }
@@ -446,7 +399,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
                         number_of_recipients += 1;
 
                         if let Some(old) = overflow {
-                            self.release_sample(old)
+                            self.subscriber_connections.release_sample(old)
                         }
                     }
                 }
@@ -478,7 +431,9 @@ impl<Service: service::Service> PublisherBackend<Service> {
         };
 
         self.subscriber_connections
-            .finish_update_connection_cycle(|offset| self.release_sample(offset));
+            .finish_update_connection_cycle(|offset| {
+                self.subscriber_connections.release_sample(offset)
+            });
 
         result
     }
@@ -517,7 +472,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
                             self.borrow_sample(offset);
 
                             if let Some(old) = overflow {
-                                self.release_sample(old);
+                                self.subscriber_connections.release_sample(old);
                             }
                         }
                         Err(e) => {
@@ -649,17 +604,18 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
         let backend = Arc::new(PublisherBackend {
             is_active: IoxAtomicBool::new(true),
-            data_segment,
-            segment_states: {
-                let mut v: Vec<SegmentState> = Vec::with_capacity(max_number_of_segments as usize);
-                for _ in 0..max_number_of_segments {
-                    v.push(SegmentState::new(number_of_samples))
-                }
-                v
-            },
             service_state: service.__internal_state().clone(),
             port_id,
             subscriber_connections: OutgoingConnections {
+                data_segment,
+                segment_states: {
+                    let mut v: Vec<SegmentState> =
+                        Vec::with_capacity(max_number_of_segments as usize);
+                    for _ in 0..max_number_of_segments {
+                        v.push(SegmentState::new(number_of_samples))
+                    }
+                    v
+                },
                 connections: (0..subscriber_list.capacity())
                     .map(|_| UnsafeCell::new(None))
                     .collect(),

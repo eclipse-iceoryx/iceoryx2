@@ -29,6 +29,9 @@ use crate::service::config_scheme::connection_config;
 use crate::service::ServiceState;
 use crate::{service, service::naming_scheme::connection_name};
 
+use super::data_segment::DataSegment;
+use super::segment_state::SegmentState;
+
 #[derive(Clone, Copy)]
 pub(crate) struct ReceiverDetails {
     pub(crate) port_id: u128,
@@ -88,6 +91,8 @@ impl<Service: service::Service> Connection<Service> {
 
 #[derive(Debug)]
 pub(crate) struct OutgoingConnections<Service: service::Service> {
+    pub(crate) segment_states: Vec<SegmentState>,
+    pub(crate) data_segment: DataSegment<Service>,
     pub(crate) connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
     pub(crate) sender_port_id: u128,
     pub(crate) shared_node: Arc<SharedNode<Service>>,
@@ -137,6 +142,16 @@ impl<Service: service::Service> OutgoingConnections<Service> {
 
     pub(crate) fn len(&self) -> usize {
         self.connections.len()
+    }
+
+    pub(crate) fn release_sample(&self, offset: PointerOffset) {
+        if self.segment_states[offset.segment_id().value() as usize].release_sample(offset.offset())
+            == 1
+        {
+            unsafe {
+                self.data_segment.deallocate_bucket(offset);
+            }
+        }
     }
 
     fn remove_connection<R: Fn(PointerOffset)>(&self, i: usize, release_pointer_offset_call: &R) {

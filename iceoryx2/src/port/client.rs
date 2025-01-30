@@ -31,7 +31,10 @@ use crate::{
 };
 
 use super::{
-    details::{data_segment::DataSegmentType, outgoing_connections::OutgoingConnections},
+    details::{
+        data_segment::DataSegmentType, outgoing_connections::OutgoingConnections,
+        segment_state::SegmentState,
+    },
     update_connections::UpdateConnections,
 };
 
@@ -42,7 +45,6 @@ pub struct Client<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    data_segment: DataSegment<Service>,
     client_handle: ContainerHandle,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     server_connections: OutgoingConnections<Service>,
@@ -135,10 +137,11 @@ impl<
         };
 
         Ok(Self {
-            data_segment,
             client_handle,
             server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
             server_connections: OutgoingConnections {
+                data_segment,
+                segment_states: vec![SegmentState::new(number_of_requests)],
                 sender_port_id: client_port_id.value(),
                 shared_node: service.__internal_state().shared_node.clone(),
                 connections: (0..server_list.capacity())
