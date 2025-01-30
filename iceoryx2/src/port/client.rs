@@ -158,6 +158,7 @@ impl<
                 visitor: Visitor::new(),
                 loan_counter: IoxAtomicUsize::new(0),
                 sender_max_borrowed_samples: static_config.max_active_requests,
+                unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
             },
             client_port_id,
             service_state: service.__internal_state().clone(),

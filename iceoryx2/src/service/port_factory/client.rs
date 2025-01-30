@@ -14,7 +14,7 @@ use core::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
 
-use crate::{port::client::Client, service};
+use crate::{port::client::Client, prelude::UnableToDeliverStrategy, service};
 
 use super::request_response::PortFactory;
 
@@ -49,6 +49,7 @@ pub struct PortFactoryClient<
         ResponseHeader,
     >,
     pub(crate) max_loaned_requests: usize,
+    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
 }
 
 impl<
@@ -77,16 +78,18 @@ impl<
             ResponseHeader,
         >,
     ) -> Self {
+        let defs = &factory
+            .service
+            .__internal_state()
+            .shared_node
+            .config()
+            .defaults
+            .request_response;
+
         Self {
             factory,
-            max_loaned_requests: factory
-                .service
-                .__internal_state()
-                .shared_node
-                .config()
-                .defaults
-                .request_response
-                .client_max_loaned_requests,
+            unable_to_deliver_strategy: defs.client_unable_to_deliver_strategy,
+            max_loaned_requests: defs.client_max_loaned_requests,
         }
     }
 

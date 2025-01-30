@@ -13,6 +13,7 @@
 use core::fmt::Debug;
 
 use tiny_fn::tiny_fn;
+use update_connections::ConnectionFailure;
 
 pub(crate) mod details;
 
@@ -91,3 +92,36 @@ impl core::fmt::Display for LoanError {
 }
 
 impl std::error::Error for LoanError {}
+
+/// Failure that can be emitted when data is sent.
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum SendError {
+    /// Send was called but the corresponding port went already out of scope.
+    ConnectionBrokenSincePublisherNoLongerExists,
+    /// A connection between two ports has been corrupted.
+    ConnectionCorrupted,
+    /// A failure occurred while acquiring memory for the payload
+    LoanError(LoanError),
+    /// A failure occurred while establishing a connection to the ports counterpart port.
+    ConnectionError(ConnectionFailure),
+}
+
+impl From<LoanError> for SendError {
+    fn from(value: LoanError) -> Self {
+        SendError::LoanError(value)
+    }
+}
+
+impl From<ConnectionFailure> for SendError {
+    fn from(value: ConnectionFailure) -> Self {
+        SendError::ConnectionError(value)
+    }
+}
+
+impl core::fmt::Display for SendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "SendError::{:?}", self)
+    }
+}
+
+impl std::error::Error for SendError {}

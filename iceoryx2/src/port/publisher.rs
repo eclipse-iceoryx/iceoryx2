@@ -104,10 +104,9 @@
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::details::segment_state::SegmentState;
 use super::port_identifiers::UniquePublisherId;
-use super::{LoanError, UniqueSubscriberId};
+use super::{LoanError, SendError, UniqueSubscriberId};
 use crate::port::details::outgoing_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
-use crate::port::DegrationAction;
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
 use crate::service::builder::publish_subscribe::CustomPayloadMarker;
@@ -131,7 +130,7 @@ use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::visitor::Visitor;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{debug, error, fail, warn};
+use iceoryx2_bb_log::{debug, fail, warn};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
@@ -139,7 +138,7 @@ use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopyPortRemoveError,
-    ZeroCopySendError, ZeroCopySender,
+    ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
@@ -166,42 +165,6 @@ impl core::fmt::Display for PublisherCreateError {
 }
 
 impl core::error::Error for PublisherCreateError {}
-
-/// Failure that can be emitted when a [`SampleMut`] is sent via [`SampleMut::send()`].
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub enum PublisherSendError {
-    /// [`SampleMut::send()`] was called but the corresponding [`Publisher`] went already out of
-    /// scope.
-    ConnectionBrokenSincePublisherNoLongerExists,
-    /// A connection between a [`Subscriber`](crate::port::subscriber::Subscriber) and a
-    /// [`Publisher`] is corrupted.
-    ConnectionCorrupted,
-    /// A failure occurred while acquiring memory for the payload
-    LoanError(LoanError),
-    /// A failure occurred while establishing a connection to a
-    /// [`Subscriber`](crate::port::subscriber::Subscriber)
-    ConnectionError(ConnectionFailure),
-}
-
-impl From<LoanError> for PublisherSendError {
-    fn from(value: LoanError) -> Self {
-        PublisherSendError::LoanError(value)
-    }
-}
-
-impl From<ConnectionFailure> for PublisherSendError {
-    fn from(value: ConnectionFailure) -> Self {
-        PublisherSendError::ConnectionError(value)
-    }
-}
-
-impl core::fmt::Display for PublisherSendError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "PublisherSendError::{:?}", self)
-    }
-}
-
-impl core::error::Error for PublisherSendError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum RemovePubSubPortFromAllConnectionsError {
@@ -250,72 +213,6 @@ impl<Service: service::Service> PublisherBackend<Service> {
         }
     }
 
-    fn deliver_sample(
-        &self,
-        offset: PointerOffset,
-        sample_size: usize,
-    ) -> Result<usize, PublisherSendError> {
-        self.subscriber_connections.retrieve_returned_samples();
-        let deliver_call = match self.config.unable_to_deliver_strategy {
-            UnableToDeliverStrategy::Block => {
-                <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
-            }
-            UnableToDeliverStrategy::DiscardSample => {
-                <Service::Connection as ZeroCopyConnection>::Sender::try_send
-            }
-        };
-
-        let mut number_of_recipients = 0;
-        for i in 0..self.subscriber_connections.len() {
-            if let Some(ref connection) = self.subscriber_connections.get(i) {
-                match deliver_call(&connection.sender, offset, sample_size) {
-                    Err(ZeroCopySendError::ReceiveBufferFull)
-                    | Err(ZeroCopySendError::UsedChunkListFull) => {
-                        /* causes no problem
-                         *   blocking_send => can never happen
-                         *   try_send => we tried and expect that the buffer is full
-                         * */
-                    }
-                    Err(ZeroCopySendError::ConnectionCorrupted) => {
-                        match &self.config.degration_callback {
-                            Some(c) => match c.call(
-                                &self.static_config,
-                                self.port_id.value(),
-                                connection.receiver_port_id,
-                            ) {
-                                DegrationAction::Ignore => (),
-                                DegrationAction::Warn => {
-                                    error!(from self,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                        offset, connection.receiver_port_id);
-                                }
-                                DegrationAction::Fail => {
-                                    fail!(from self, with PublisherSendError::ConnectionCorrupted,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                        offset, connection.receiver_port_id);
-                                }
-                            },
-                            None => {
-                                error!(from self,
-                                    "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                    offset, connection.receiver_port_id);
-                            }
-                        }
-                    }
-                    Ok(overflow) => {
-                        self.subscriber_connections.borrow_sample(offset);
-                        number_of_recipients += 1;
-
-                        if let Some(old) = overflow {
-                            self.subscriber_connections.release_sample(old)
-                        }
-                    }
-                }
-            }
-        }
-        Ok(number_of_recipients)
-    }
-
     fn force_update_connections(&self) -> Result<(), ZeroCopyCreationError> {
         let mut result = Ok(());
         self.subscriber_connections.start_update_connection_cycle();
@@ -338,10 +235,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
             })
         };
 
-        self.subscriber_connections
-            .finish_update_connection_cycle(|offset| {
-                self.subscriber_connections.release_sample(offset)
-            });
+        self.subscriber_connections.finish_update_connection_cycle();
 
         result
     }
@@ -396,10 +290,10 @@ impl<Service: service::Service> PublisherBackend<Service> {
         &self,
         offset: PointerOffset,
         sample_size: usize,
-    ) -> Result<usize, PublisherSendError> {
+    ) -> Result<usize, SendError> {
         let msg = "Unable to send sample";
         if !self.is_active.load(Ordering::Relaxed) {
-            fail!(from self, with PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists,
+            fail!(from self, with SendError::ConnectionBrokenSincePublisherNoLongerExists,
                 "{} since the connections could not be updated.", msg);
         }
 
@@ -407,7 +301,8 @@ impl<Service: service::Service> PublisherBackend<Service> {
             "{} since the connections could not be updated.", msg);
 
         self.add_sample_to_history(offset, sample_size);
-        self.deliver_sample(offset, sample_size)
+        self.subscriber_connections
+            .deliver_offset(offset, sample_size)
     }
 }
 
@@ -539,6 +434,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 visitor: Visitor::new(),
                 loan_counter: IoxAtomicUsize::new(0),
                 sender_max_borrowed_samples: config.max_loaned_samples,
+                unable_to_deliver_strategy: config.unable_to_deliver_strategy,
             },
             config,
             subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
@@ -596,7 +492,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered
     /// since the [`Subscriber`](crate::port::subscriber::Subscriber)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
-        self.backend.config.unable_to_deliver_strategy
+        self.backend
+            .subscriber_connections
+            .unable_to_deliver_strategy
     }
 
     /// Returns the maximum slice length configured for this [`Publisher`].
@@ -657,7 +555,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     /// # Ok(())
     /// # }
     /// ```
-    pub fn send_copy(&self, value: Payload) -> Result<usize, PublisherSendError> {
+    pub fn send_copy(&self, value: Payload) -> Result<usize, SendError> {
         let msg = "Unable to send copy of payload";
         let sample = fail!(from self, when self.loan_uninit(),
                                     "{} since the loan of a sample failed.", msg);
