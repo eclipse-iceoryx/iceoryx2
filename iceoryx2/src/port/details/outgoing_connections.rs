@@ -104,11 +104,11 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         }
     }
 
-    pub(crate) fn remove(&self, index: usize) {
+    fn remove(&self, index: usize) {
         *self.get_mut(index) = None
     }
 
-    pub(crate) fn create(
+    fn create(
         &self,
         index: usize,
         receiver_details: ReceiverDetails,
