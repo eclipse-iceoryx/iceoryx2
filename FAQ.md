@@ -209,3 +209,28 @@ let publisher = service
 
 All these parameters can also be set globally by using the
 [iceoryx2 config file](config).
+
+## `Error: Resource Creation Failed`
+
+### You May Exceeded The Maximum File-Descriptor Limit
+
+When you increase the number of services or ports beyond a certain limit for
+one process, the process may exceed the per-user file descriptor limit. This
+limit can be increased by adjusting the `nofile` setting in the
+`/etc/security/limits.conf` file:
+
+```ascii
+*     soft    nofile      4096
+*     hard    nofile      8192
+```
+
+* `*` – Applies to all users
+* `soft` | `hard` – The soft and hard limits
+* The soft limit is set to 4096, while the hard limit is set to 8192
+
+After making these changes, you can use the following command to increase the
+soft file descriptor limit up to the hard limit:
+
+```bash
+ulimit -n <new_limit>
+```
