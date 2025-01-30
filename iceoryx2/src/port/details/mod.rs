@@ -13,3 +13,4 @@
 pub(crate) mod data_segment;
 pub(crate) mod incoming_connections;
 pub(crate) mod outgoing_connections;
+pub(crate) mod segment_state;
