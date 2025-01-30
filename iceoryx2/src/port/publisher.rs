@@ -103,7 +103,7 @@
 
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::port_identifiers::UniquePublisherId;
-use super::{UniquePortId, UniqueSubscriberId};
+use super::UniqueSubscriberId;
 use crate::port::details::outgoing_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::port::DegrationAction;
@@ -131,7 +131,6 @@ use iceoryx2_bb_elementary::allocator::AllocationError;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, error, fail, fatal_panic, warn};
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
@@ -367,20 +366,6 @@ impl<Service: service::Service> PublisherBackend<Service> {
         }
     }
 
-    fn remove_connection(&self, i: usize) {
-        if let Some(connection) = self.subscriber_connections.get(i) {
-            // # SAFETY: the receiver no longer exist, therefore we can
-            //           reacquire all delivered samples
-            unsafe {
-                connection
-                    .sender
-                    .acquire_used_offsets(|offset| self.release_sample(offset))
-            };
-
-            self.subscriber_connections.remove(i);
-        }
-    }
-
     pub(crate) fn return_loaned_sample(&self, distance_to_chunk: PointerOffset) {
         self.release_sample(distance_to_chunk);
         self.loan_counter.fetch_sub(1, Ordering::Relaxed);
@@ -470,77 +455,27 @@ impl<Service: service::Service> PublisherBackend<Service> {
     }
 
     fn populate_subscriber_channels(&self) -> Result<(), ZeroCopyCreationError> {
-        let mut visited_indices = vec![];
-        visited_indices.resize(self.subscriber_connections.capacity(), None);
+        let mut receiver_list = Vec::new();
+        receiver_list.reserve(self.subscriber_connections.capacity());
 
         unsafe {
-            (*self.subscriber_list_state.get()).for_each(|h, subscriber_id| {
-                visited_indices[h.index() as usize] = Some(*subscriber_id);
+            (*self.subscriber_list_state.get()).for_each(|h, port| {
+                receiver_list.push((
+                    h.index() as usize,
+                    ReceiverDetails {
+                        port_id: port.subscriber_id.value(),
+                        buffer_size: port.buffer_size,
+                    },
+                ));
                 CallbackProgression::Continue
             })
         };
 
-        for (i, index) in visited_indices.iter().enumerate() {
-            match index {
-                Some(subscriber_details) => {
-                    let create_connection = match self.subscriber_connections.get(i) {
-                        None => true,
-                        Some(connection) => {
-                            let is_connected = connection.receiver_port_id
-                                != subscriber_details.subscriber_id.value();
-                            if is_connected {
-                                self.remove_connection(i);
-                            }
-                            is_connected
-                        }
-                    };
-
-                    if create_connection {
-                        match self.subscriber_connections.create(
-                            i,
-                            ReceiverDetails {
-                                port_id: subscriber_details.subscriber_id.value(),
-                                buffer_size: subscriber_details.buffer_size,
-                            },
-                        ) {
-                            Ok(()) => match &self.subscriber_connections.get(i) {
-                                Some(connection) => self.deliver_sample_history(connection),
-                                None => {
-                                    fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
-                                }
-                            },
-                            Err(e) => match &self.config.degration_callback {
-                                Some(c) => match c.call(
-                                    &self.static_config,
-                                    self.port_id.value(),
-                                    subscriber_details.subscriber_id.value(),
-                                ) {
-                                    DegrationAction::Ignore => (),
-                                    DegrationAction::Warn => {
-                                        warn!(from self,
-                                            "Unable to establish connection to new subscriber {:?}.",
-                                            subscriber_details.subscriber_id )
-                                    }
-                                    DegrationAction::Fail => {
-                                        fail!(from self, with e,
-                                           "Unable to establish connection to new subscriber {:?}.",
-                                           subscriber_details.subscriber_id );
-                                    }
-                                },
-                                None => {
-                                    warn!(from self,
-                                        "Unable to establish connection to new subscriber {:?}.",
-                                        subscriber_details.subscriber_id )
-                                }
-                            },
-                        }
-                    }
-                }
-                None => self.remove_connection(i),
-            }
-        }
-
-        Ok(())
+        self.subscriber_connections.update_connections(
+            &receiver_list,
+            |offset| self.release_sample(offset),
+            |connection| self.deliver_sample_history(connection),
+        )
     }
 
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
