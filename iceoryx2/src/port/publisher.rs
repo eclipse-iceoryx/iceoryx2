@@ -131,6 +131,7 @@ use iceoryx2_bb_elementary::visitor::Visitor;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, fail, warn};
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
@@ -182,7 +183,6 @@ struct OffsetAndSize {
 
 #[derive(Debug)]
 pub(crate) struct PublisherBackend<Service: service::Service> {
-    port_id: UniquePublisherId,
     config: LocalPublisherConfig,
     service_state: Arc<ServiceState<Service>>,
 
@@ -408,7 +408,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         let backend = Arc::new(PublisherBackend {
             is_active: IoxAtomicBool::new(true),
             service_state: service.__internal_state().clone(),
-            port_id,
             subscriber_connections: OutgoingConnections {
                 data_segment,
                 segment_states: {
@@ -486,7 +485,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`]
     pub fn id(&self) -> UniquePublisherId {
-        self.backend.port_id
+        UniquePublisherId(UniqueSystemId::from(
+            self.backend.subscriber_connections.sender_port_id,
+        ))
     }
 
     /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered
@@ -600,7 +601,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
         let header_ptr = chunk.shm_pointer.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
-        unsafe { header_ptr.write(Header::new(self.backend.port_id, 1)) };
+        unsafe { header_ptr.write(Header::new(self.id(), 1)) };
 
         let sample =
             unsafe { RawSampleMut::new_unchecked(header_ptr, user_header_ptr, payload_ptr) };
@@ -761,7 +762,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         let header_ptr = chunk.shm_pointer.data_ptr as *mut Header;
         let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
         let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
-        unsafe { header_ptr.write(Header::new(self.backend.port_id, slice_len as _)) };
+        unsafe { header_ptr.write(Header::new(self.id(), slice_len as _)) };
 
         let sample = unsafe {
             RawSampleMut::new_unchecked(
