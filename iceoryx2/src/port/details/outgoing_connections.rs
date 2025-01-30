@@ -15,6 +15,7 @@ use core::cell::UnsafeCell;
 extern crate alloc;
 use alloc::sync::Arc;
 
+use iceoryx2_bb_elementary::visitor::{Visitable, Visitor, VisitorMarker};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::PointerOffset;
@@ -38,6 +39,13 @@ pub(crate) struct ReceiverDetails {
 pub(crate) struct Connection<Service: service::Service> {
     pub(crate) sender: <Service::Connection as ZeroCopyConnection>::Sender,
     pub(crate) receiver_port_id: u128,
+    visitor_marker: VisitorMarker,
+}
+
+impl<Service: service::Service> Visitable for Connection<Service> {
+    fn visitor_marker(&self) -> &VisitorMarker {
+        &self.visitor_marker
+    }
 }
 
 impl<Service: service::Service> Connection<Service> {
@@ -46,6 +54,7 @@ impl<Service: service::Service> Connection<Service> {
         receiver_port_id: u128,
         buffer_size: usize,
         number_of_samples: usize,
+        visitor_marker: VisitorMarker,
     ) -> Result<Self, ZeroCopyCreationError> {
         let msg = format!(
             "Unable to establish connection to receiver port {:?} from sender port {:?}",
@@ -72,6 +81,7 @@ impl<Service: service::Service> Connection<Service> {
         Ok(Self {
             sender,
             receiver_port_id,
+            visitor_marker,
         })
     }
 }
@@ -88,6 +98,7 @@ pub(crate) struct OutgoingConnections<Service: service::Service> {
     pub(crate) max_number_of_segments: u8,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
     pub(crate) service_state: Arc<ServiceState<Service>>,
+    pub(crate) visitor: Visitor,
 }
 
 impl<Service: service::Service> OutgoingConnections<Service> {
@@ -118,6 +129,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
             receiver_details.port_id,
             receiver_details.buffer_size,
             self.number_of_samples,
+            self.visitor.create_visited_marker(),
         )?);
 
         Ok(())
@@ -125,10 +137,6 @@ impl<Service: service::Service> OutgoingConnections<Service> {
 
     pub(crate) fn len(&self) -> usize {
         self.connections.len()
-    }
-
-    pub(crate) fn capacity(&self) -> usize {
-        self.connections.capacity()
     }
 
     fn remove_connection<R: Fn(PointerOffset)>(&self, i: usize, release_pointer_offset_call: &R) {
@@ -145,73 +153,75 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         }
     }
 
-    pub(crate) fn update_connections<R: Fn(PointerOffset), E: Fn(&Connection<Service>)>(
+    pub(crate) fn start_update_connection_cycle(&self) {
+        self.visitor.next_cycle();
+    }
+
+    pub(crate) fn update_connection<E: Fn(&Connection<Service>)>(
         &self,
-        receiver_list: &[(usize, ReceiverDetails)],
-        release_pointer_offset_call: R,
+        index: usize,
+        receiver_details: ReceiverDetails,
         establish_new_connection_call: E,
     ) -> Result<(), ZeroCopyCreationError> {
-        let mut visited_indices = vec![];
-        visited_indices.resize(self.connections.capacity(), None);
+        let create_connection = match self.get(index) {
+            None => true,
+            Some(connection) => {
+                let is_connected = connection.receiver_port_id == receiver_details.port_id;
+                if is_connected {
+                    self.visitor.visit(connection);
+                }
+                !is_connected
+            }
+        };
 
-        for (index, details) in receiver_list {
-            visited_indices[*index] = Some(details);
-        }
-
-        for (i, index) in visited_indices.iter().enumerate() {
-            match index {
-                Some(receiver_details) => {
-                    let create_connection = match self.get(i) {
-                        None => true,
-                        Some(connection) => {
-                            let is_connected =
-                                connection.receiver_port_id != receiver_details.port_id;
-                            if is_connected {
-                                self.remove_connection(i, &release_pointer_offset_call);
-                            }
-                            is_connected
-                        }
-                    };
-
-                    if create_connection {
-                        match self.create(i, **receiver_details) {
-                            Ok(()) => match &self.get(i) {
-                                Some(connection) => establish_new_connection_call(connection),
-                                None => {
-                                    fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
-                                }
-                            },
-                            Err(e) => match &self.degration_callback {
-                                Some(c) => match c.call(
-                                    &self.service_state.static_config,
-                                    self.sender_port_id,
-                                    receiver_details.port_id,
-                                ) {
-                                    DegrationAction::Ignore => (),
-                                    DegrationAction::Warn => {
-                                        warn!(from self,
+        if create_connection {
+            match self.create(index, receiver_details) {
+                Ok(()) => match &self.get(index) {
+                    Some(connection) => establish_new_connection_call(connection),
+                    None => {
+                        fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
+                    }
+                },
+                Err(e) => match &self.degration_callback {
+                    Some(c) => match c.call(
+                        &self.service_state.static_config,
+                        self.sender_port_id,
+                        receiver_details.port_id,
+                    ) {
+                        DegrationAction::Ignore => (),
+                        DegrationAction::Warn => {
+                            warn!(from self,
                                             "Unable to establish connection to new receiver {:?}.",
                                             receiver_details.port_id )
-                                    }
-                                    DegrationAction::Fail => {
-                                        fail!(from self, with e,
+                        }
+                        DegrationAction::Fail => {
+                            fail!(from self, with e,
                                            "Unable to establish connection to new receiver {:?}.",
                                            receiver_details.port_id );
-                                    }
-                                },
-                                None => {
-                                    warn!(from self,
+                        }
+                    },
+                    None => {
+                        warn!(from self,
                                         "Unable to establish connection to new receiver {:?}.",
                                         receiver_details.port_id )
-                                }
-                            },
-                        }
                     }
-                }
-                None => self.remove_connection(i, &release_pointer_offset_call),
+                },
             }
         }
 
         Ok(())
+    }
+
+    pub(crate) fn finish_update_connection_cycle<R: Fn(PointerOffset)>(
+        &self,
+        release_pointer_offset_call: R,
+    ) {
+        for n in 0..self.len() {
+            if let Some(connection) = self.get(n) {
+                if !connection.was_visited_by(&self.visitor) {
+                    self.remove_connection(n, &release_pointer_offset_call);
+                }
+            }
+        }
     }
 }

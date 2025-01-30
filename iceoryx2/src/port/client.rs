@@ -13,6 +13,7 @@
 use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData, sync::atomic::Ordering};
 use std::sync::Arc;
 
+use iceoryx2_bb_elementary::visitor::Visitor;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -150,6 +151,7 @@ impl<
                 number_of_samples: number_of_requests,
                 max_number_of_segments,
                 service_state: service.__internal_state().clone(),
+                visitor: Visitor::new(),
             },
             client_port_id,
             service_state: service.__internal_state().clone(),
