@@ -128,6 +128,7 @@ use core::sync::atomic::Ordering;
 use core::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::allocator::AllocationError;
+use iceoryx2_bb_elementary::visitor::Visitor;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, error, fail, fatal_panic, warn};
@@ -454,28 +455,32 @@ impl<Service: service::Service> PublisherBackend<Service> {
         Ok(number_of_recipients)
     }
 
-    fn populate_subscriber_channels(&self) -> Result<(), ZeroCopyCreationError> {
-        let mut receiver_list = Vec::new();
-        receiver_list.reserve(self.subscriber_connections.capacity());
-
+    fn force_update_connections(&self) -> Result<(), ZeroCopyCreationError> {
+        let mut result = Ok(());
+        self.subscriber_connections.start_update_connection_cycle();
         unsafe {
             (*self.subscriber_list_state.get()).for_each(|h, port| {
-                receiver_list.push((
+                let inner_result = self.subscriber_connections.update_connection(
                     h.index() as usize,
                     ReceiverDetails {
                         port_id: port.subscriber_id.value(),
                         buffer_size: port.buffer_size,
                     },
-                ));
+                    |connection| self.deliver_sample_history(connection),
+                );
+
+                if result.is_ok() {
+                    result = inner_result;
+                }
+
                 CallbackProgression::Continue
             })
         };
 
-        self.subscriber_connections.update_connections(
-            &receiver_list,
-            |offset| self.release_sample(offset),
-            |connection| self.deliver_sample_history(connection),
-        )
+        self.subscriber_connections
+            .finish_update_connection_cycle(|offset| self.release_sample(offset));
+
+        result
     }
 
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
@@ -487,7 +492,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
                 .subscribers
                 .update_state(&mut *self.subscriber_list_state.get())
         } {
-            fail!(from self, when self.populate_subscriber_channels(),
+            fail!(from self, when self.force_update_connections(),
                 "Connections were updated only partially since at least one connection to a Subscriber port failed.");
         }
 
@@ -667,6 +672,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 max_number_of_segments,
                 degration_callback: None,
                 service_state: service.__internal_state().clone(),
+                visitor: Visitor::new(),
             },
             config,
             subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
@@ -689,7 +695,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             _user_header: PhantomData,
         };
 
-        if let Err(e) = new_self.backend.populate_subscriber_channels() {
+        if let Err(e) = new_self.backend.force_update_connections() {
             warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
         }
 
