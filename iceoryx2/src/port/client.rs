@@ -40,6 +40,8 @@ use super::{
     update_connections::UpdateConnections,
 };
 
+/// Sends requests to a [`Server`](crate::port::server::Server) in a request-response based
+/// communication.
 #[derive(Debug)]
 pub struct Client<
     Service: service::Service,
@@ -57,6 +59,25 @@ pub struct Client<
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
     _response_header: PhantomData<ResponseHeader>,
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Drop for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn drop(&mut self) {
+        if let Some(handle) = self.client_handle {
+            self.service_state
+                .dynamic_storage
+                .get()
+                .request_response()
+                .release_client_handle(handle)
+        }
+    }
 }
 
 impl<
@@ -179,6 +200,7 @@ impl<
         Ok(new_self)
     }
 
+    /// Returns the [`UniqueClientId`] of the [`Client`]
     pub fn id(&self) -> UniqueClientId {
         self.client_port_id
     }

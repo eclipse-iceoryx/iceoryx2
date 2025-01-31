@@ -10,14 +10,32 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::fmt::Debug;
-
-use iceoryx2_bb_log::fail;
-
-use crate::{port::server::Server, service};
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let request_response = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .request_response::<u64, u64>()
+//!     .open_or_create()?;
+//!
+//! let server = request_response
+//!                     .server_builder()
+//!                     .create()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
 use super::request_response::PortFactory;
+use crate::{port::server::Server, service};
+use core::fmt::Debug;
+use iceoryx2_bb_log::fail;
 
+/// Defines a failure that can occur when a [`Server`] is created with
+/// [`crate::service::port_factory::server::PortFactoryServer`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ServerCreateError {}
 
@@ -29,6 +47,9 @@ impl core::fmt::Display for ServerCreateError {
 
 impl std::error::Error for ServerCreateError {}
 
+/// Factory to create a new [`Server`] port/endpoint for
+/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
+/// based communication.
 #[derive(Debug)]
 pub struct PortFactoryServer<
     'factory,
@@ -38,7 +59,7 @@ pub struct PortFactoryServer<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    factory: &'factory PortFactory<
+    _factory: &'factory PortFactory<
         Service,
         RequestPayload,
         RequestHeader,
@@ -73,9 +94,10 @@ impl<
             ResponseHeader,
         >,
     ) -> Self {
-        Self { factory }
+        Self { _factory: factory }
     }
 
+    /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
     pub fn create(
         self,
     ) -> Result<

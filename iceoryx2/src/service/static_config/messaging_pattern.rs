@@ -70,18 +70,6 @@ impl MessagingPattern {
     /// # Safety
     ///
     ///  * User must ensure that event is stored inside
-    pub(crate) unsafe fn event(&self) -> &event::StaticConfig {
-        if let MessagingPattern::Event(v) = self {
-            v
-        } else {
-            fatal_panic!(from self,
-                "This should never happen! Trying to access event messaging pattern that is not stored.");
-        }
-    }
-
-    /// # Safety
-    ///
-    ///  * User must ensure that event is stored inside
     pub(crate) unsafe fn request_response(&self) -> &request_response::StaticConfig {
         if let MessagingPattern::RequestResponse(v) = self {
             v

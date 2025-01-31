@@ -14,6 +14,7 @@ use core::{fmt::Debug, marker::PhantomData};
 
 use crate::service::{self, port_factory::server::ServerCreateError};
 
+/// todo
 pub struct Server<
     Service: service::Service,
     RequestPayload: Debug,

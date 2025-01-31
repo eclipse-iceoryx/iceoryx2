@@ -242,7 +242,7 @@ unsafe fn send_slice_copy<S: Service>(
 
 // BEGIN C API
 
-/// Returns a string literal describing the provided [`iox2_publisher_send_error_e`].
+/// Returns a string literal describing the provided [`iox2_send_error_e`].
 ///
 /// # Arguments
 ///
@@ -257,13 +257,11 @@ unsafe fn send_slice_copy<S: Service>(
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_publisher_send_error_string(
-    error: iox2_send_error_e,
-) -> *const c_char {
+pub unsafe extern "C" fn iox2_send_error_string(error: iox2_send_error_e) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
 
-/// Returns a string literal describing the provided [`iox2_publisher_loan_error_e`].
+/// Returns a string literal describing the provided [`iox2_loan_error_e`].
 ///
 /// # Arguments
 ///
@@ -278,9 +276,7 @@ pub unsafe extern "C" fn iox2_publisher_send_error_string(
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_publisher_loan_error_string(
-    error: iox2_loan_error_e,
-) -> *const c_char {
+pub unsafe extern "C" fn iox2_loan_error_string(error: iox2_loan_error_e) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
 
@@ -401,7 +397,7 @@ pub unsafe extern "C" fn iox2_publisher_id(
 ///
 /// # Returns
 ///
-/// Returns `IOX2_OK` on success, otherwise an error code from `iox2_publisher_send_error_e`
+/// Returns `IOX2_OK` on success, otherwise an error code from `iox2_send_error_e`
 ///
 /// # Safety
 ///
@@ -451,7 +447,7 @@ pub unsafe extern "C" fn iox2_publisher_send_slice_copy(
 /// * `data_len` the size of the payload in bytes
 /// * `number_of_recipients` (optional) used to store the number of subscriber that received the data
 ///
-/// Return [`IOX2_OK`] on success, otherwise [`iox2_publisher_send_error_e`].
+/// Return [`IOX2_OK`] on success, otherwise [`iox2_send_error_e`].
 ///
 /// # Safety
 ///
@@ -498,7 +494,7 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 /// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
 /// * `number_of_bytes` - The number of bytes to loan from the publisher's payload segment
 ///
-/// Return [`IOX2_OK`] on success, otherwise [`iox2_publisher_loan_error_e`].
+/// Return [`IOX2_OK`] on success, otherwise [`iox2_loan_error_e`].
 ///
 /// # Safety
 ///

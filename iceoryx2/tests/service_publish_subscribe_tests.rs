@@ -26,7 +26,6 @@ mod service_publish_subscribe {
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
     use iceoryx2::service::builder::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::messaging_pattern::MessagingPattern;
-    use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2::testing::*;

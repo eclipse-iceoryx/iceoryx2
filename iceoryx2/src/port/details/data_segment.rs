@@ -32,8 +32,6 @@ use crate::{
     service::{
         self,
         config_scheme::{data_segment_config, resizable_data_segment_config},
-        dynamic_config::publish_subscribe::PublisherDetails,
-        naming_scheme::data_segment_name,
     },
 };
 
@@ -189,46 +187,6 @@ pub(crate) struct DataSegmentView<Service: service::Service> {
 }
 
 impl<Service: service::Service> DataSegmentView<Service> {
-    pub(crate) fn open(
-        details: &PublisherDetails,
-        global_config: &config::Config,
-    ) -> Result<Self, SharedMemoryOpenError> {
-        let segment_name = data_segment_name(details.publisher_id.value());
-        let origin = "DataSegment::open()";
-        let msg =
-            "Unable to open data segment since the underlying shared memory could not be opened.";
-
-        let memory = match details.data_segment_type {
-            DataSegmentType::Static => {
-                let segment_config = data_segment_config::<Service>(global_config);
-                let memory = fail!(from origin,
-                            when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
-                                Builder::new(&segment_name)
-                                .config(&segment_config)
-                                .timeout(global_config.global.service.creation_timeout)
-                                .open(),
-                            "{msg}");
-                MemoryViewType::Static(memory)
-            }
-            DataSegmentType::Dynamic => {
-                let segment_config = resizable_data_segment_config::<Service>(global_config);
-                let memory = fail!(from origin,
-                    when <<Service::ResizableSharedMemory as ResizableSharedMemory<
-                        PoolAllocator,
-                        Service::SharedMemory,
-                    >>::ViewBuilder as NamedConceptBuilder<Service::ResizableSharedMemory>>::new(
-                        &segment_name,
-                    )
-                    .config(&segment_config)
-                    .open(),
-                    "{msg}");
-                MemoryViewType::Dynamic(memory)
-            }
-        };
-
-        Ok(Self { memory })
-    }
-
     pub(crate) fn open_static_segment(
         segment_name: &FileName,
         global_config: &config::Config,
