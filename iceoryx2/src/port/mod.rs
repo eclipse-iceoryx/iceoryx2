@@ -37,6 +37,10 @@ pub mod subscriber;
 /// participants or to perform other management tasks.
 pub mod update_connections;
 
+/// Defines the strategy a sender shall pursue when the buffer of a
+/// receiver is full and the service does not overflow.
+pub mod unable_to_deliver_strategy;
+
 use crate::port::port_identifiers::*;
 use crate::service;
 

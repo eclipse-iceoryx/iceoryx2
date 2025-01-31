@@ -12,12 +12,11 @@
 
 pub use crate::config::Config;
 pub use crate::node::{node_name::NodeName, Node, NodeBuilder, NodeState};
-pub use crate::port::event_id::EventId;
+pub use crate::port::{event_id::EventId, unable_to_deliver_strategy::UnableToDeliverStrategy};
 pub use crate::service::messaging_pattern::MessagingPattern;
 pub use crate::service::{
     attribute::AttributeSet, attribute::AttributeSpecifier, attribute::AttributeVerifier, ipc,
-    local, port_factory::publisher::UnableToDeliverStrategy, port_factory::PortFactory,
-    service_name::ServiceName, Service, ServiceDetails,
+    local, port_factory::PortFactory, service_name::ServiceName, Service, ServiceDetails,
 };
 pub use crate::signal_handling_mode::SignalHandlingMode;
 pub use crate::waitset::{WaitSet, WaitSetAttachmentId, WaitSetBuilder, WaitSetGuard};

@@ -10,9 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::port::port_identifiers::{
-    UniqueClientId, UniqueListenerId, UniquePublisherId, UniqueSubscriberId,
-};
+use crate::port::port_identifiers::{UniqueListenerId, UniquePublisherId, UniqueSubscriberId};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::FileName;

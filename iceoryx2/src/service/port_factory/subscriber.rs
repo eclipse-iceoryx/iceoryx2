@@ -35,7 +35,6 @@ use iceoryx2_bb_log::fail;
 
 use crate::{
     port::{
-        port_identifiers::{UniquePublisherId, UniqueSubscriberId},
         subscriber::{Subscriber, SubscriberCreateError},
         DegrationAction, DegrationCallback,
     },

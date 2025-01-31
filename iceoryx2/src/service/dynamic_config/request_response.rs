@@ -99,19 +99,11 @@ impl DynamicConfig {
         todo!()
     }
 
-    pub(crate) fn add_server_id(&self, details: ServerDetails) -> Option<ContainerHandle> {
-        unsafe { self.servers.add(details).ok() }
-    }
-
-    pub(crate) fn release_server_handle(&self, handle: ContainerHandle) {
-        unsafe { self.servers.remove(handle, ReleaseMode::Default) };
-    }
-
     pub(crate) fn add_client_id(&self, details: ClientDetails) -> Option<ContainerHandle> {
         unsafe { self.clients.add(details).ok() }
     }
 
-    pub(crate) fn release_publisher_handle(&self, handle: ContainerHandle) {
+    pub(crate) fn release_client_handle(&self, handle: ContainerHandle) {
         unsafe { self.clients.remove(handle, ReleaseMode::Default) };
     }
 

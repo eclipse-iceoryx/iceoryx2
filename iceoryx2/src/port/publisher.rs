@@ -107,6 +107,7 @@ use super::port_identifiers::UniquePublisherId;
 use super::{LoanError, SendError, UniqueSubscriberId};
 use crate::port::details::outgoing_connections::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
+use crate::prelude::UnableToDeliverStrategy;
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
 use crate::service::builder::publish_subscribe::CustomPayloadMarker;
@@ -116,7 +117,7 @@ use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::{
     data_segment_name, extract_publisher_id_from_connection, extract_subscriber_id_from_connection,
 };
-use crate::service::port_factory::publisher::{LocalPublisherConfig, UnableToDeliverStrategy};
+use crate::service::port_factory::publisher::LocalPublisherConfig;
 use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::static_config::publish_subscribe::{self};
 use crate::service::{self, ServiceState};
