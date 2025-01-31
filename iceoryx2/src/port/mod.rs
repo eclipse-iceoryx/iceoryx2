@@ -101,7 +101,7 @@ impl std::error::Error for LoanError {}
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum SendError {
     /// Send was called but the corresponding port went already out of scope.
-    ConnectionBrokenSincePublisherNoLongerExists,
+    ConnectionBrokenSinceSenderNoLongerExists,
     /// A connection between two ports has been corrupted.
     ConnectionCorrupted,
     /// A failure occurred while acquiring memory for the payload

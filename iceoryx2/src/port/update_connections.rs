@@ -21,7 +21,7 @@ pub enum ConnectionFailure {
     /// Failures when creating the connection
     FailedToEstablishConnection(ZeroCopyCreationError),
     /// Failures when mapping the corresponding data segment
-    UnableToMapPublishersDataSegment(SharedMemoryOpenError),
+    UnableToMapSendersDataSegment(SharedMemoryOpenError),
 }
 
 impl From<ZeroCopyCreationError> for ConnectionFailure {
@@ -32,7 +32,7 @@ impl From<ZeroCopyCreationError> for ConnectionFailure {
 
 impl From<SharedMemoryOpenError> for ConnectionFailure {
     fn from(value: SharedMemoryOpenError) -> Self {
-        ConnectionFailure::UnableToMapPublishersDataSegment(value)
+        ConnectionFailure::UnableToMapSendersDataSegment(value)
     }
 }
 

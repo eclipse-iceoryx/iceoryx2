@@ -99,7 +99,7 @@ class SampleMut {
     friend class SampleMutUninit;
 
     template <ServiceType ST, typename PayloadT, typename UserHeaderT>
-    friend auto send(SampleMut<ST, PayloadT, UserHeaderT>&& sample) -> iox::expected<size_t, PublisherSendError>;
+    friend auto send(SampleMut<ST, PayloadT, UserHeaderT>&& sample) -> iox::expected<size_t, SendError>;
 
     // The sample is defaulted since both members are initialized in Publisher::loan() or
     // Publisher::loan_slice()
@@ -239,7 +239,7 @@ inline auto SampleMut<S, Payload, UserHeader>::payload_mut() -> iox::MutableSlic
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto send(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<size_t, PublisherSendError> {
+inline auto send(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<size_t, SendError> {
     size_t number_of_recipients = 0;
     auto result = iox2_sample_mut_send(sample.m_handle, &number_of_recipients);
     sample.m_handle = nullptr;
@@ -248,7 +248,7 @@ inline auto send(SampleMut<S, Payload, UserHeader>&& sample) -> iox::expected<si
         return iox::ok(number_of_recipients);
     }
 
-    return iox::err(iox::into<PublisherSendError>(result));
+    return iox::err(iox::into<SendError>(result));
 }
 
 } // namespace iox2

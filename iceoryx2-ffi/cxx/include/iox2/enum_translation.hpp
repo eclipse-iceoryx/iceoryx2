@@ -26,6 +26,7 @@
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/node_wait_failure.hpp"
 #include "iox2/notifier_error.hpp"
+#include "iox2/port_error.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/semantic_string.hpp"
 #include "iox2/service_builder_event_error.hpp"
@@ -1006,132 +1007,126 @@ inline auto from<iox2::SubscriberCreateError, const char*>(const iox2::Subscribe
 }
 
 template <>
-constexpr auto from<int, iox2::PublisherSendError>(const int value) noexcept -> iox2::PublisherSendError {
-    const auto error = static_cast<iox2_publisher_send_error_e>(value);
+constexpr auto from<int, iox2::SendError>(const int value) noexcept -> iox2::SendError {
+    const auto error = static_cast<iox2_send_error_e>(value);
     switch (error) {
-    case iox2_publisher_send_error_e_CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS:
-        return iox2::PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists;
-    case iox2_publisher_send_error_e_CONNECTION_CORRUPTED:
-        return iox2::PublisherSendError::ConnectionCorrupted;
-    case iox2_publisher_send_error_e_LOAN_ERROR_OUT_OF_MEMORY:
-        return iox2::PublisherSendError::LoanErrorOutOfMemory;
-    case iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES:
-        return iox2::PublisherSendError::LoanErrorExceedsMaxLoanedSamples;
-    case iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE:
-        return iox2::PublisherSendError::LoanErrorExceedsMaxLoanSize;
-    case iox2_publisher_send_error_e_LOAN_ERROR_INTERNAL_FAILURE:
-        return iox2::PublisherSendError::LoanErrorInternalFailure;
-    case iox2_publisher_send_error_e_CONNECTION_ERROR:
-        return iox2::PublisherSendError::ConnectionError;
+    case iox2_send_error_e_CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS:
+        return iox2::SendError::ConnectionBrokenSinceSenderNoLongerExists;
+    case iox2_send_error_e_CONNECTION_CORRUPTED:
+        return iox2::SendError::ConnectionCorrupted;
+    case iox2_send_error_e_LOAN_ERROR_OUT_OF_MEMORY:
+        return iox2::SendError::LoanErrorOutOfMemory;
+    case iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES:
+        return iox2::SendError::LoanErrorExceedsMaxLoanedSamples;
+    case iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE:
+        return iox2::SendError::LoanErrorExceedsMaxLoanSize;
+    case iox2_send_error_e_LOAN_ERROR_INTERNAL_FAILURE:
+        return iox2::SendError::LoanErrorInternalFailure;
+    case iox2_send_error_e_CONNECTION_ERROR:
+        return iox2::SendError::ConnectionError;
     }
 
     IOX_UNREACHABLE();
 }
 
 template <>
-constexpr auto
-from<iox2::PublisherSendError, iox2_publisher_send_error_e>(const iox2::PublisherSendError value) noexcept
-    -> iox2_publisher_send_error_e {
+constexpr auto from<iox2::SendError, iox2_send_error_e>(const iox2::SendError value) noexcept -> iox2_send_error_e {
     switch (value) {
-    case iox2::PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists:
-        return iox2_publisher_send_error_e_CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS;
-    case iox2::PublisherSendError::ConnectionCorrupted:
-        return iox2_publisher_send_error_e_CONNECTION_CORRUPTED;
-    case iox2::PublisherSendError::LoanErrorOutOfMemory:
-        return iox2_publisher_send_error_e_LOAN_ERROR_OUT_OF_MEMORY;
-    case iox2::PublisherSendError::LoanErrorExceedsMaxLoanedSamples:
-        return iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES;
-    case iox2::PublisherSendError::LoanErrorExceedsMaxLoanSize:
-        return iox2_publisher_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE;
-    case iox2::PublisherSendError::LoanErrorInternalFailure:
-        return iox2_publisher_send_error_e_LOAN_ERROR_INTERNAL_FAILURE;
-    case iox2::PublisherSendError::ConnectionError:
-        return iox2_publisher_send_error_e_CONNECTION_ERROR;
+    case iox2::SendError::ConnectionBrokenSinceSenderNoLongerExists:
+        return iox2_send_error_e_CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS;
+    case iox2::SendError::ConnectionCorrupted:
+        return iox2_send_error_e_CONNECTION_CORRUPTED;
+    case iox2::SendError::LoanErrorOutOfMemory:
+        return iox2_send_error_e_LOAN_ERROR_OUT_OF_MEMORY;
+    case iox2::SendError::LoanErrorExceedsMaxLoanedSamples:
+        return iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES;
+    case iox2::SendError::LoanErrorExceedsMaxLoanSize:
+        return iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE;
+    case iox2::SendError::LoanErrorInternalFailure:
+        return iox2_send_error_e_LOAN_ERROR_INTERNAL_FAILURE;
+    case iox2::SendError::ConnectionError:
+        return iox2_send_error_e_CONNECTION_ERROR;
     }
 
     IOX_UNREACHABLE();
 }
 
 template <>
-inline auto from<iox2::PublisherSendError, const char*>(const iox2::PublisherSendError value) noexcept -> const char* {
-    return iox2_publisher_send_error_string(iox::into<iox2_publisher_send_error_e>(value));
+inline auto from<iox2::SendError, const char*>(const iox2::SendError value) noexcept -> const char* {
+    return iox2_send_error_string(iox::into<iox2_send_error_e>(value));
 }
 
 template <>
-constexpr auto from<int, iox2::SubscriberReceiveError>(const int value) noexcept -> iox2::SubscriberReceiveError {
-    const auto error = static_cast<iox2_subscriber_receive_error_e>(value);
+constexpr auto from<int, iox2::ReceiveError>(const int value) noexcept -> iox2::ReceiveError {
+    const auto error = static_cast<iox2_receive_error_e>(value);
     switch (error) {
-    case iox2_subscriber_receive_error_e_FAILED_TO_ESTABLISH_CONNECTION:
-        return iox2::SubscriberReceiveError::FailedToEstablishConnection;
-    case iox2_subscriber_receive_error_e_UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT:
-        return iox2::SubscriberReceiveError::UnableToMapPublishersDataSegment;
-    case iox2_subscriber_receive_error_e_EXCEEDS_MAX_BORROWED_SAMPLES:
-        return iox2::SubscriberReceiveError::ExceedsMaxBorrowedSamples;
+    case iox2_receive_error_e_FAILED_TO_ESTABLISH_CONNECTION:
+        return iox2::ReceiveError::FailedToEstablishConnection;
+    case iox2_receive_error_e_UNABLE_TO_MAP_SENDERS_DATA_SEGMENT:
+        return iox2::ReceiveError::UnableToMapSendersDataSegment;
+    case iox2_receive_error_e_EXCEEDS_MAX_BORROWED_SAMPLES:
+        return iox2::ReceiveError::ExceedsMaxBorrowedSamples;
     }
 
     IOX_UNREACHABLE();
 }
 
 template <>
-constexpr auto
-from<iox2::SubscriberReceiveError, iox2_subscriber_receive_error_e>(const iox2::SubscriberReceiveError value) noexcept
-    -> iox2_subscriber_receive_error_e {
+constexpr auto from<iox2::ReceiveError, iox2_receive_error_e>(const iox2::ReceiveError value) noexcept
+    -> iox2_receive_error_e {
     switch (value) {
-    case iox2::SubscriberReceiveError::FailedToEstablishConnection:
-        return iox2_subscriber_receive_error_e_FAILED_TO_ESTABLISH_CONNECTION;
-    case iox2::SubscriberReceiveError::UnableToMapPublishersDataSegment:
-        return iox2_subscriber_receive_error_e_UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT;
-    case iox2::SubscriberReceiveError::ExceedsMaxBorrowedSamples:
-        return iox2_subscriber_receive_error_e_EXCEEDS_MAX_BORROWED_SAMPLES;
+    case iox2::ReceiveError::FailedToEstablishConnection:
+        return iox2_receive_error_e_FAILED_TO_ESTABLISH_CONNECTION;
+    case iox2::ReceiveError::UnableToMapSendersDataSegment:
+        return iox2_receive_error_e_UNABLE_TO_MAP_SENDERS_DATA_SEGMENT;
+    case iox2::ReceiveError::ExceedsMaxBorrowedSamples:
+        return iox2_receive_error_e_EXCEEDS_MAX_BORROWED_SAMPLES;
     }
 
     IOX_UNREACHABLE();
 }
 
 template <>
-inline auto from<iox2::SubscriberReceiveError, const char*>(const iox2::SubscriberReceiveError value) noexcept -> const
-    char* {
-    return iox2_subscriber_receive_error_string(iox::into<iox2_subscriber_receive_error_e>(value));
+inline auto from<iox2::ReceiveError, const char*>(const iox2::ReceiveError value) noexcept -> const char* {
+    return iox2_receive_error_string(iox::into<iox2_receive_error_e>(value));
 }
 
 template <>
-constexpr auto from<int, iox2::PublisherLoanError>(const int value) noexcept -> iox2::PublisherLoanError {
-    const auto error = static_cast<iox2_publisher_loan_error_e>(value);
+constexpr auto from<int, iox2::LoanError>(const int value) noexcept -> iox2::LoanError {
+    const auto error = static_cast<iox2_loan_error_e>(value);
     switch (error) {
-    case iox2_publisher_loan_error_e_EXCEEDS_MAX_LOANED_SAMPLES:
-        return iox2::PublisherLoanError::ExceedsMaxLoanedSamples;
-    case iox2_publisher_loan_error_e_OUT_OF_MEMORY:
-        return iox2::PublisherLoanError::OutOfMemory;
-    case iox2_publisher_loan_error_e_EXCEEDS_MAX_LOAN_SIZE:
-        return iox2::PublisherLoanError::ExceedsMaxLoanSize;
-    case iox2_publisher_loan_error_e_INTERNAL_FAILURE:
-        return iox2::PublisherLoanError::InternalFailure;
+    case iox2_loan_error_e_EXCEEDS_MAX_LOANED_SAMPLES:
+        return iox2::LoanError::ExceedsMaxLoanedSamples;
+    case iox2_loan_error_e_OUT_OF_MEMORY:
+        return iox2::LoanError::OutOfMemory;
+    case iox2_loan_error_e_EXCEEDS_MAX_LOAN_SIZE:
+        return iox2::LoanError::ExceedsMaxLoanSize;
+    case iox2_loan_error_e_INTERNAL_FAILURE:
+        return iox2::LoanError::InternalFailure;
     }
 
     IOX_UNREACHABLE();
 }
 
 template <>
-constexpr auto
-from<iox2::PublisherLoanError, iox2_publisher_loan_error_e>(const iox2::PublisherLoanError value) noexcept
-    -> iox2_publisher_loan_error_e {
+constexpr auto from<iox2::LoanError, iox2_loan_error_e>(const iox2::LoanError value) noexcept -> iox2_loan_error_e {
     switch (value) {
-    case iox2::PublisherLoanError::ExceedsMaxLoanedSamples:
-        return iox2_publisher_loan_error_e_EXCEEDS_MAX_LOANED_SAMPLES;
-    case iox2::PublisherLoanError::OutOfMemory:
-        return iox2_publisher_loan_error_e_OUT_OF_MEMORY;
-    case iox2::PublisherLoanError::ExceedsMaxLoanSize:
-        return iox2_publisher_loan_error_e_EXCEEDS_MAX_LOAN_SIZE;
-    case iox2::PublisherLoanError::InternalFailure:
-        return iox2_publisher_loan_error_e_INTERNAL_FAILURE;
+    case iox2::LoanError::ExceedsMaxLoanedSamples:
+        return iox2_loan_error_e_EXCEEDS_MAX_LOANED_SAMPLES;
+    case iox2::LoanError::OutOfMemory:
+        return iox2_loan_error_e_OUT_OF_MEMORY;
+    case iox2::LoanError::ExceedsMaxLoanSize:
+        return iox2_loan_error_e_EXCEEDS_MAX_LOAN_SIZE;
+    case iox2::LoanError::InternalFailure:
+        return iox2_loan_error_e_INTERNAL_FAILURE;
     }
 
     IOX_UNREACHABLE();
 }
 
 template <>
-inline auto from<iox2::PublisherLoanError, const char*>(const iox2::PublisherLoanError value) noexcept -> const char* {
-    return iox2_publisher_loan_error_string(iox::into<iox2_publisher_loan_error_e>(value));
+inline auto from<iox2::LoanError, const char*>(const iox2::LoanError value) noexcept -> const char* {
+    return iox2_loan_error_string(iox::into<iox2_loan_error_e>(value));
 }
 
 template <>
@@ -1222,8 +1217,8 @@ constexpr auto from<int, iox2::ConnectionFailure>(const int value) noexcept -> i
     switch (variant) {
     case iox2_connection_failure_e_FAILED_TO_ESTABLISH_CONNECTION:
         return iox2::ConnectionFailure::FailedToEstablishConnection;
-    case iox2_connection_failure_e_UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT:
-        return iox2::ConnectionFailure::UnableToMapPublishersDataSegment;
+    case iox2_connection_failure_e_UNABLE_TO_MAP_SENDERS_DATA_SEGMENT:
+        return iox2::ConnectionFailure::UnableToMapSendersDataSegment;
     }
 
     IOX_UNREACHABLE();
@@ -1235,8 +1230,8 @@ constexpr auto from<iox2::ConnectionFailure, iox2_connection_failure_e>(const io
     switch (value) {
     case iox2::ConnectionFailure::FailedToEstablishConnection:
         return iox2_connection_failure_e_FAILED_TO_ESTABLISH_CONNECTION;
-    case iox2::ConnectionFailure::UnableToMapPublishersDataSegment:
-        return iox2_connection_failure_e_UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT;
+    case iox2::ConnectionFailure::UnableToMapSendersDataSegment:
+        return iox2_connection_failure_e_UNABLE_TO_MAP_SENDERS_DATA_SEGMENT;
     }
 
     IOX_UNREACHABLE();
