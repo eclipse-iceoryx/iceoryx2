@@ -19,10 +19,9 @@ use super::data_segment::{DataSegmentType, DataSegmentView};
 use crate::port::update_connections::ConnectionFailure;
 use crate::port::{DegrationAction, DegrationCallback, ReceiveError};
 use crate::service::naming_scheme::data_segment_name;
-use crate::service::{
-    self, config_scheme::connection_config, naming_scheme::connection_name,
-    static_config::publish_subscribe::StaticConfig, ServiceState,
-};
+use crate::service::static_config::message_type_details::MessageTypeDetails;
+use crate::service::ServiceState;
+use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
 use alloc::sync::Arc;
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::visitor::{Visitable, Visitor, VisitorMarker};
@@ -72,8 +71,8 @@ impl<Service: service::Service> Connection<Service> {
                             Builder::new( &connection_name(sender_port_id, this.receiver_port_id))
                                     .config(&connection_config::<Service>(global_config))
                                     .buffer_size(this.buffer_size)
-                                    .receiver_max_borrowed_samples(this.static_config.subscriber_max_borrowed_samples)
-                                    .enable_safe_overflow(this.static_config.enable_safe_overflow)
+                                    .receiver_max_borrowed_samples(this.receiver_max_borrowed_samples)
+                                    .enable_safe_overflow(this.enable_safe_overflow)
                                     .number_of_samples_per_segment(number_of_samples)
                                     .max_supported_shared_memory_segments(max_number_of_segments)
                                     .timeout(global_config.global.service.creation_timeout)
@@ -108,11 +107,13 @@ pub(crate) struct IncomingConnections<Service: service::Service> {
     pub(crate) connections: Vec<UnsafeCell<Option<Arc<Connection<Service>>>>>,
     pub(crate) receiver_port_id: u128,
     pub(crate) service_state: Arc<ServiceState<Service>>,
-    pub(crate) static_config: StaticConfig,
     pub(crate) buffer_size: usize,
     pub(crate) visitor: Visitor,
     pub(crate) to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
+    pub(crate) message_type_details: MessageTypeDetails,
+    pub(crate) receiver_max_borrowed_samples: usize,
+    pub(crate) enable_safe_overflow: bool,
 }
 
 impl<Service: service::Service> IncomingConnections<Service> {
@@ -211,7 +212,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
 
                     Ok(Some((
                         details,
-                        Chunk::new(&self.static_config.message_type_details, offset),
+                        Chunk::new(&self.message_type_details, offset),
                     )))
                 }
             },
@@ -315,6 +316,6 @@ impl<Service: service::Service> IncomingConnections<Service> {
     }
 
     pub(crate) fn payload_size(&self) -> usize {
-        self.static_config.message_type_details.payload.size
+        self.message_type_details.payload.size
     }
 }

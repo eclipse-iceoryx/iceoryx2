@@ -150,7 +150,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 .collect(),
             receiver_port_id: subscriber_id.value(),
             service_state: service.__internal_state().clone(),
-            static_config: static_config.clone(),
+            message_type_details: static_config.message_type_details.clone(),
+            receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
+            enable_safe_overflow: static_config.enable_safe_overflow,
             buffer_size,
             visitor: Visitor::new(),
             to_be_removed_connections: UnsafeCell::new(Queue::new(
