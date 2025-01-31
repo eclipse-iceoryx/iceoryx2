@@ -32,7 +32,7 @@ pub unsafe fn closedir(dirp: *mut DIR) -> int {
 }
 
 pub unsafe fn dirfd(dirp: *mut DIR) -> int {
-    internal::iox2_dirfd(dirp)
+    internal::dirfd(dirp)
 }
 
 pub unsafe fn readdir_r(dirp: *mut DIR, entry: *mut dirent, result: *mut *mut dirent) -> int {
@@ -43,6 +43,6 @@ mod internal {
     use super::*;
 
     extern "C" {
-        pub(super) fn iox2_dirfd(dir: *mut DIR) -> int;
+        pub(super) fn dirfd(dirp: *mut DIR) -> int;
     }
 }

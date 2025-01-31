@@ -25,7 +25,6 @@ filegroup(
 cc_library(
     name = "iceoryx2-pal-posix-c-lib",
     srcs = [
-        "src/c/dirent.c",
         "src/c/sigaction.c",
         "src/c/socket_macros.c",
     ],
