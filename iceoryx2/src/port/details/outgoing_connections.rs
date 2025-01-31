@@ -204,10 +204,6 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         self.loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 
-    fn remove(&self, index: usize) {
-        *self.get_mut(index) = None
-    }
-
     fn create(
         &self,
         index: usize,
@@ -316,7 +312,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
                     .acquire_used_offsets(|offset| self.release_sample(offset))
             };
 
-            self.remove(i);
+            *self.get_mut(i) = None;
         }
     }
 

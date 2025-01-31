@@ -41,6 +41,7 @@ extern crate alloc;
 use alloc::sync::Arc;
 
 use iceoryx2_bb_container::queue::Queue;
+use iceoryx2_bb_elementary::visitor::{Visitable, Visitor};
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
@@ -114,9 +115,7 @@ pub struct Subscriber<
 > {
     dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: IncomingConnections<Service>,
-    to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
     static_config: crate::service::static_config::StaticConfig,
-    degration_callback: Option<DegrationCallback<'static>>,
 
     publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
     _payload: PhantomData<Payload>,
@@ -169,15 +168,15 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             None => static_config.subscriber_max_buffer_size,
         };
 
-        let publisher_connections = IncomingConnections::new(
-            publisher_list.capacity(),
-            subscriber_id.value(),
-            service.__internal_state().clone(),
-            static_config,
+        let publisher_connections = IncomingConnections {
+            connections: (0..publisher_list.capacity())
+                .map(|_| UnsafeCell::new(None))
+                .collect(),
+            receiver_port_id: subscriber_id.value(),
+            service_state: service.__internal_state().clone(),
+            static_config: static_config.clone(),
             buffer_size,
-        );
-
-        let mut new_self = Self {
+            visitor: Visitor::new(),
             to_be_removed_connections: UnsafeCell::new(Queue::new(
                 service
                     .__internal_state()
@@ -188,6 +187,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                     .subscriber_expired_connection_buffer,
             )),
             degration_callback: config.degration_callback,
+        };
+
+        let mut new_self = Self {
             publisher_connections,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle: None,
@@ -196,7 +198,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             _user_header: PhantomData,
         };
 
-        if let Err(e) = new_self.populate_publisher_channels() {
+        if let Err(e) = new_self.force_update_connections() {
             warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
         }
 
@@ -227,84 +229,32 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         Ok(new_self)
     }
 
-    fn populate_publisher_channels(&self) -> Result<(), ConnectionFailure> {
-        let mut visited_indices = vec![];
-        visited_indices.resize(self.publisher_connections.capacity(), None);
+    fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
+        self.publisher_connections.start_update_connection_cycle();
 
+        let mut result = Ok(());
         unsafe {
             (*self.publisher_list_state.get()).for_each(|h, details| {
-                visited_indices[h.index() as usize] = Some(*details);
+                let inner_result = self.publisher_connections.update_connection(
+                    h.index() as usize,
+                    SenderDetails {
+                        port_id: details.publisher_id.value(),
+                        number_of_samples: details.number_of_samples,
+                        max_number_of_segments: details.max_number_of_segments,
+                        data_segment_type: details.data_segment_type,
+                    },
+                );
+
+                if result.is_ok() {
+                    result = inner_result;
+                }
                 CallbackProgression::Continue
             })
         };
 
-        let prepare_connection_removal = |i| {
-            if let Some(connection) = self.publisher_connections.get(i) {
-                if connection.receiver.has_data()
-                    && !unsafe { &mut *self.to_be_removed_connections.get() }
-                        .push(connection.clone())
-                {
-                    warn!(from self, "Expired connection buffer exceeded. A publisher disconnected with undelivered samples that will be discarded. Increase the config entry `defaults.publish-subscribe.subscriber-expired-connection-buffer` to mitigate the problem.");
-                }
-            }
-        };
+        self.publisher_connections.finish_update_connection_cycle();
 
-        // update all connections
-        for (i, index) in visited_indices.iter().enumerate() {
-            match index {
-                Some(details) => {
-                    let create_connection = match self.publisher_connections.get(i) {
-                        None => true,
-                        Some(connection) => {
-                            connection.sender_port_id != details.publisher_id.value()
-                        }
-                    };
-
-                    if create_connection {
-                        prepare_connection_removal(i);
-
-                        match self.publisher_connections.create(
-                            i,
-                            details.data_segment_type,
-                            details.publisher_id.value(),
-                            details.number_of_samples,
-                            details.max_number_of_segments,
-                        ) {
-                            Ok(()) => (),
-                            Err(e) => match &self.degration_callback {
-                                None => {
-                                    warn!(from self, "Unable to establish connection to new publisher {:?}.", details.publisher_id)
-                                }
-                                Some(c) => {
-                                    match c.call(
-                                        &self.static_config,
-                                        details.publisher_id.value(),
-                                        self.publisher_connections.receiver_port_id(),
-                                    ) {
-                                        DegrationAction::Ignore => (),
-                                        DegrationAction::Warn => {
-                                            warn!(from self, "Unable to establish connection to new publisher {:?}.",
-                                        details.publisher_id)
-                                        }
-                                        DegrationAction::Fail => {
-                                            fail!(from self, with e, "Unable to establish connection to new publisher {:?}.",
-                                        details.publisher_id);
-                                        }
-                                    }
-                                }
-                            },
-                        }
-                    }
-                }
-                None => {
-                    prepare_connection_removal(i);
-
-                    self.publisher_connections.remove(i)
-                }
-            }
-        }
-
-        Ok(())
+        result
     }
 
     fn receive_from_connection(
@@ -382,7 +332,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 "Some samples are not being received since not all connections to publishers could be established.");
         }
 
-        let to_be_removed_connections = unsafe { &mut *self.to_be_removed_connections.get() };
+        let to_be_removed_connections =
+            unsafe { &mut *self.publisher_connections.to_be_removed_connections.get() };
 
         if let Some(connection) = to_be_removed_connections.peek() {
             if let Some((details, absolute_address)) = self.receive_from_connection(connection)? {
@@ -435,7 +386,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Upda
                 .publishers
                 .update_state(&mut *self.publisher_list_state.get())
         } {
-            fail!(from self, when self.populate_publisher_channels(),
+            fail!(from self, when self.force_update_connections(),
                 "Connections were updated only partially since at least one connection to a publisher failed.");
         }
 
