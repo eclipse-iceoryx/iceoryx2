@@ -53,12 +53,4 @@
 #include <sys/types.h>
 #include <time.h>
 
-#if !(defined(_WIN64) || defined(_WIN32))
-struct iox2_sigaction {
-    size_t iox2_sa_handler;
-    sigset_t iox2_sa_mask;
-    int iox2_sa_flags;
-};
-#endif
-
 #endif // IOX2_PAL_POSIX_H

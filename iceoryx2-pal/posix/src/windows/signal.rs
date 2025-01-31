@@ -32,9 +32,42 @@ use core::cell::UnsafeCell;
 use crate::{
     posix::getpid,
     posix::types::*,
+    posix::{sighandler_t, Struct},
     posix::{Errno, SIGKILL, SIGSTOP, SIGTERM, SIGUSR1},
     win32call,
 };
+
+#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+pub struct sigaction_t {
+    sa_handler: sighandler_t,
+    sa_mask: sigset_t,
+    sa_flags: int,
+}
+
+impl Struct for sigaction_t {
+    fn new() -> Self {
+        Self {
+            sa_handler: 0,
+            sa_mask: sigset_t::new(),
+            sa_flags: 0,
+        }
+    }
+}
+
+impl sigaction_t {
+    pub fn set_handler(&mut self, handler: sighandler_t) {
+        self.sa_handler = handler;
+    }
+
+    pub fn flags(&self) -> int {
+        self.sa_flags
+    }
+
+    pub fn set_flags(&mut self, flags: int) {
+        self.sa_flags = flags;
+    }
+}
 
 struct SigAction {
     action: UnsafeCell<sigaction_t>,
@@ -45,9 +78,9 @@ impl SigAction {
     const fn new() -> Self {
         Self {
             action: UnsafeCell::new(sigaction_t {
-                iox2_sa_handler: 0,
-                iox2_sa_mask: sigset_t {},
-                iox2_sa_flags: 0,
+                sa_handler: 0,
+                sa_mask: sigset_t {},
+                sa_flags: 0,
             }),
             mtx: Mutex::new(),
         }
@@ -76,7 +109,7 @@ static SIG_ACTION: SigAction = SigAction::new();
 
 unsafe extern "system" fn ctrl_handler(value: u32) -> i32 {
     let action =
-        core::mem::transmute::<sighandler_t, extern "C" fn(int)>(SIG_ACTION.get().iox2_sa_handler);
+        core::mem::transmute::<sighandler_t, extern "C" fn(int)>(SIG_ACTION.get().sa_handler);
 
     let sigval = win32_event_to_signal(value);
 
@@ -102,11 +135,11 @@ fn win32_event_to_signal(event: u32) -> int {
     }
 }
 
-pub unsafe fn sigaction(sig: int, act: *const sigaction_t, oact: *mut sigaction_t) -> int {
-    (*oact) = SIG_ACTION.set(*act);
+pub unsafe fn sigaction(sig: int, act: &sigaction_t, oact: &mut sigaction_t) -> int {
+    *oact = SIG_ACTION.set(*act);
 
     if sig == SIGTERM {
-        if (*act).iox2_sa_handler == 0 {
+        if act.sa_handler == 0 {
             SetConsoleCtrlHandler(None, FALSE);
         } else {
             SetConsoleCtrlHandler(Some(ctrl_handler), TRUE);

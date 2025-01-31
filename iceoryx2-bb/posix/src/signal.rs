@@ -561,15 +561,11 @@ impl SignalHandler {
     }
 
     fn register_signal_from_state(&mut self, details: SignalDetail) -> posix::sigaction_t {
-        let adjusted_state = posix::sigaction_t {
-            iox2_sa_handler: details.state.iox2_sa_handler,
-            iox2_sa_flags: if self.do_repeat_eintr_call {
-                posix::SA_RESTART
-            } else {
-                0
-            },
-            iox2_sa_mask: details.state.iox2_sa_mask,
-        };
+        let mut adjusted_state = details.state;
+        if self.do_repeat_eintr_call {
+            adjusted_state.set_flags(adjusted_state.flags() | posix::SA_RESTART);
+        }
+
         let mut previous_action = posix::sigaction_t::new();
 
         let sigaction_return = unsafe {
@@ -590,7 +586,7 @@ impl SignalHandler {
         callback: posix::sighandler_t,
     ) -> posix::sigaction_t {
         let mut action = posix::sigaction_t::new();
-        action.iox2_sa_handler = callback;
+        action.set_handler(callback);
         self.register_signal_from_state(SignalDetail::new(signal, action))
     }
 

@@ -52,11 +52,6 @@ fn main() {
         .write_to_file(out_path.join("posix_generated.rs"))
         .expect("Couldn't write bindings!");
 
-    println!("cargo:rerun-if-changed=src/c/sigaction.c");
-    cc::Build::new()
-        .file("src/c/sigaction.c")
-        .compile("libsigaction.a");
-
     println!("cargo:rerun-if-changed=src/c/socket_macros.c");
     cc::Build::new()
         .file("src/c/socket_macros.c")

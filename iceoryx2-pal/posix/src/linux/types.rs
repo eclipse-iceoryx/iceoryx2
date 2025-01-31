@@ -98,9 +98,6 @@ impl Struct for rlimit {}
 pub type sched_param = crate::internal::sched_param;
 impl Struct for sched_param {}
 
-pub type sigaction_t = crate::internal::iox2_sigaction;
-impl Struct for sigaction_t {}
-
 #[repr(C)]
 pub struct stat_t {
     pub st_dev: dev_t,
