@@ -18,8 +18,10 @@ use crate::api::{
     SampleMutUninitUnion, UserHeaderFfi, IOX2_OK,
 };
 
-use iceoryx2::port::publisher::{Publisher, PublisherLoanError, PublisherSendError};
+use iceoryx2::port::publisher::Publisher;
 use iceoryx2::port::update_connections::UpdateConnections;
+use iceoryx2::port::LoanError;
+use iceoryx2::port::SendError;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::AsCStr;
@@ -35,7 +37,7 @@ use core::mem::ManuallyDrop;
 
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
-pub enum iox2_publisher_send_error_e {
+pub enum iox2_send_error_e {
     CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS = IOX2_OK as isize + 1,
     CONNECTION_CORRUPTED,
     LOAN_ERROR_OUT_OF_MEMORY,
@@ -45,50 +47,44 @@ pub enum iox2_publisher_send_error_e {
     CONNECTION_ERROR,
 }
 
-impl IntoCInt for PublisherSendError {
+impl IntoCInt for SendError {
     fn into_c_int(self) -> c_int {
         (match self {
-            PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists => {
-                iox2_publisher_send_error_e::CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS
+            SendError::ConnectionBrokenSincePublisherNoLongerExists => {
+                iox2_send_error_e::CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS
             }
-            PublisherSendError::ConnectionCorrupted => {
-                iox2_publisher_send_error_e::CONNECTION_CORRUPTED
+            SendError::ConnectionCorrupted => iox2_send_error_e::CONNECTION_CORRUPTED,
+            SendError::LoanError(LoanError::OutOfMemory) => {
+                iox2_send_error_e::LOAN_ERROR_OUT_OF_MEMORY
             }
-            PublisherSendError::LoanError(PublisherLoanError::OutOfMemory) => {
-                iox2_publisher_send_error_e::LOAN_ERROR_OUT_OF_MEMORY
+            SendError::LoanError(LoanError::ExceedsMaxLoanedSamples) => {
+                iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES
             }
-            PublisherSendError::LoanError(PublisherLoanError::ExceedsMaxLoanedSamples) => {
-                iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES
+            SendError::LoanError(LoanError::ExceedsMaxLoanSize) => {
+                iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE
             }
-            PublisherSendError::LoanError(PublisherLoanError::ExceedsMaxLoanSize) => {
-                iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE
+            SendError::LoanError(LoanError::InternalFailure) => {
+                iox2_send_error_e::LOAN_ERROR_INTERNAL_FAILURE
             }
-            PublisherSendError::LoanError(PublisherLoanError::InternalFailure) => {
-                iox2_publisher_send_error_e::LOAN_ERROR_INTERNAL_FAILURE
-            }
-            PublisherSendError::ConnectionError(_) => iox2_publisher_send_error_e::CONNECTION_ERROR,
+            SendError::ConnectionError(_) => iox2_send_error_e::CONNECTION_ERROR,
         }) as c_int
     }
 }
 
-impl IntoCInt for PublisherLoanError {
+impl IntoCInt for LoanError {
     fn into_c_int(self) -> c_int {
         (match self {
-            PublisherLoanError::OutOfMemory => iox2_publisher_loan_error_e::OUT_OF_MEMORY,
-            PublisherLoanError::ExceedsMaxLoanedSamples => {
-                iox2_publisher_loan_error_e::EXCEEDS_MAX_LOANED_SAMPLES
-            }
-            PublisherLoanError::ExceedsMaxLoanSize => {
-                iox2_publisher_loan_error_e::EXCEEDS_MAX_LOAN_SIZE
-            }
-            PublisherLoanError::InternalFailure => iox2_publisher_loan_error_e::INTERNAL_FAILURE,
+            LoanError::OutOfMemory => iox2_loan_error_e::OUT_OF_MEMORY,
+            LoanError::ExceedsMaxLoanedSamples => iox2_loan_error_e::EXCEEDS_MAX_LOANED_SAMPLES,
+            LoanError::ExceedsMaxLoanSize => iox2_loan_error_e::EXCEEDS_MAX_LOAN_SIZE,
+            LoanError::InternalFailure => iox2_loan_error_e::INTERNAL_FAILURE,
         }) as c_int
     }
 }
 
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
-pub enum iox2_publisher_loan_error_e {
+pub enum iox2_loan_error_e {
     OUT_OF_MEMORY = IOX2_OK as isize + 1,
     EXCEEDS_MAX_LOANED_SAMPLES,
     EXCEEDS_MAX_LOAN_SIZE,
@@ -196,7 +192,7 @@ unsafe fn send_copy<S: Service>(
     };
 
     if sample.payload().len() < size_of_element {
-        return iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int;
+        return iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int;
     }
 
     let sample_ptr = sample.payload_mut().as_mut_ptr();
@@ -227,7 +223,7 @@ unsafe fn send_slice_copy<S: Service>(
 
     let data_len = size_of_element * number_of_elements;
     if sample.payload().len() < data_len {
-        return iox2_publisher_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int;
+        return iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int;
     }
 
     let sample_ptr = sample.payload_mut().as_mut_ptr();
@@ -262,7 +258,7 @@ unsafe fn send_slice_copy<S: Service>(
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_send_error_string(
-    error: iox2_publisher_send_error_e,
+    error: iox2_send_error_e,
 ) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
@@ -283,7 +279,7 @@ pub unsafe extern "C" fn iox2_publisher_send_error_string(
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_publisher_loan_error_string(
-    error: iox2_publisher_loan_error_e,
+    error: iox2_loan_error_e,
 ) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }

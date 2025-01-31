@@ -46,7 +46,7 @@ impl SampleUnion {
 }
 
 #[repr(C)]
-#[repr(align(8))] // alignment of Option<SampleUnion>
+#[repr(align(16))] // alignment of Option<SampleUnion>
 pub struct iox2_sample_storage_t {
     internal: [u8; 80], // magic number obtained with size_of::<Option<SampleUnion>>()
 }
