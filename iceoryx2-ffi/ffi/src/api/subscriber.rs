@@ -18,8 +18,9 @@ use crate::api::{
     SampleUnion, UserHeaderFfi, IOX2_OK,
 };
 
-use iceoryx2::port::subscriber::{Subscriber, SubscriberReceiveError};
+use iceoryx2::port::subscriber::Subscriber;
 use iceoryx2::port::update_connections::{ConnectionFailure, UpdateConnections};
+use iceoryx2::port::ReceiveError;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::AsCStr;
@@ -33,24 +34,24 @@ use core::mem::ManuallyDrop;
 
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
-pub enum iox2_subscriber_receive_error_e {
+pub enum iox2_receive_error_e {
     EXCEEDS_MAX_BORROWED_SAMPLES = IOX2_OK as isize + 1,
     FAILED_TO_ESTABLISH_CONNECTION,
     UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT,
 }
 
-impl IntoCInt for SubscriberReceiveError {
+impl IntoCInt for ReceiveError {
     fn into_c_int(self) -> c_int {
         (match self {
-            SubscriberReceiveError::ExceedsMaxBorrowedSamples => {
-                iox2_subscriber_receive_error_e::EXCEEDS_MAX_BORROWED_SAMPLES
+            ReceiveError::ExceedsMaxBorrowedSamples => {
+                iox2_receive_error_e::EXCEEDS_MAX_BORROWED_SAMPLES
             }
-            SubscriberReceiveError::ConnectionFailure(
-                ConnectionFailure::FailedToEstablishConnection(_),
-            ) => iox2_subscriber_receive_error_e::FAILED_TO_ESTABLISH_CONNECTION,
-            SubscriberReceiveError::ConnectionFailure(
+            ReceiveError::ConnectionFailure(ConnectionFailure::FailedToEstablishConnection(_)) => {
+                iox2_receive_error_e::FAILED_TO_ESTABLISH_CONNECTION
+            }
+            ReceiveError::ConnectionFailure(
                 ConnectionFailure::UnableToMapPublishersDataSegment(_),
-            ) => iox2_subscriber_receive_error_e::UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT,
+            ) => iox2_receive_error_e::UNABLE_TO_MAP_PUBLISHERS_DATA_SEGMENT,
         }) as c_int
     }
 }
@@ -178,9 +179,7 @@ impl HandleToType for iox2_subscriber_h_ref {
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_subscriber_receive_error_string(
-    error: iox2_subscriber_receive_error_e,
-) -> *const c_char {
+pub unsafe extern "C" fn iox2_receive_error_string(error: iox2_receive_error_e) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
 
