@@ -38,6 +38,12 @@ impl<
     > Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new() -> Result<Self, ServerCreateError> {
-        todo!()
+        Ok(Self {
+            _service: PhantomData,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        })
     }
 }

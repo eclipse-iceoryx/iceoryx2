@@ -51,13 +51,13 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
 
 /// The [`Visitor`] can visit any object that implements [`Visitable`]. When visiting element
 /// cyclicly the cycle shall always start with [`Visitor::next_cycle()`].
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Visitor(IoxAtomicU8);
 
 impl Visitor {
     /// Creates a new [`Visitor`] object.
     pub fn new() -> Self {
-        Self(IoxAtomicU8::new(0))
+        Visitor::default()
     }
 
     /// Creates a new [`VisitorMarker`] so that it is identified as [`Visitable::was_visited_by()`]
