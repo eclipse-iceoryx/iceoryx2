@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub(crate) mod chunk;
 pub(crate) mod chunk_details;
 pub(crate) mod data_segment;
 pub(crate) mod incoming_connections;

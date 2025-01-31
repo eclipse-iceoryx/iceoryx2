@@ -54,6 +54,7 @@ use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{raw_sample::RawSample, sample::Sample, service};
 
+use super::details::chunk::Chunk;
 use super::details::chunk_details::ChunkDetails;
 use super::details::incoming_connections::*;
 use super::port_identifiers::UniqueSubscriberId;
@@ -250,7 +251,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         self.publisher_connections.has_samples()
     }
 
-    fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, usize)>, ReceiveError> {
+    fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
         if let Err(e) = self.update_connections() {
             fail!(from self,
                 with ReceiveError::ConnectionFailure(e),
@@ -288,20 +289,15 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
     pub fn receive(&self) -> Result<Option<Sample<Service, Payload, UserHeader>>, ReceiveError> {
-        Ok(self.receive_impl()?.map(|(details, absolute_address)| {
-            let header_ptr = absolute_address as *const Header;
-            let user_header_ptr = self
-                .publisher_connections
-                .user_header_ptr_from_header(header_ptr.cast())
-                .cast();
-            let payload_ptr = self
-                .publisher_connections
-                .payload_ptr_from_header(header_ptr.cast())
-                .cast();
-            Sample {
-                details,
-                ptr: unsafe { RawSample::new_unchecked(header_ptr, user_header_ptr, payload_ptr) },
-            }
+        Ok(self.receive_impl()?.map(|(details, chunk)| Sample {
+            details,
+            ptr: unsafe {
+                RawSample::new_unchecked(
+                    chunk.header.cast(),
+                    chunk.user_header.cast(),
+                    chunk.payload.cast(),
+                )
+            },
         }))
     }
 }
@@ -314,16 +310,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     pub fn receive(&self) -> Result<Option<Sample<Service, [Payload], UserHeader>>, ReceiveError> {
         debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
 
-        Ok(self.receive_impl()?.map(|(details, absolute_address)| {
-            let header_ptr = absolute_address as *const Header;
-            let user_header_ptr = self
-                .publisher_connections
-                .user_header_ptr_from_header(header_ptr.cast())
-                .cast();
-            let payload_ptr = self
-                .publisher_connections
-                .payload_ptr_from_header(header_ptr.cast())
-                .cast();
+        Ok(self.receive_impl()?.map(|(details, chunk)| {
+            let header_ptr = chunk.header as *const Header;
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
 
             Sample {
@@ -331,8 +319,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
                 ptr: unsafe {
                     RawSample::<Header, UserHeader, [Payload]>::new_slice_unchecked(
                         header_ptr,
-                        user_header_ptr,
-                        core::slice::from_raw_parts(payload_ptr, number_of_elements as _),
+                        chunk.user_header.cast(),
+                        core::slice::from_raw_parts(chunk.payload.cast(), number_of_elements as _),
                     )
                 },
             }
@@ -356,16 +344,8 @@ impl<Service: service::Service, UserHeader: Debug>
     pub unsafe fn receive_custom_payload(
         &self,
     ) -> Result<Option<Sample<Service, [CustomPayloadMarker], UserHeader>>, ReceiveError> {
-        Ok(self.receive_impl()?.map(|(details, absolute_address)| {
-            let header_ptr = absolute_address as *const Header;
-            let user_header_ptr = self
-                .publisher_connections
-                .user_header_ptr_from_header(header_ptr.cast())
-                .cast();
-            let payload_ptr = self
-                .publisher_connections
-                .payload_ptr_from_header(header_ptr.cast())
-                .cast();
+        Ok(self.receive_impl()?.map(|(details, chunk)| {
+            let header_ptr = chunk.header as *const Header;
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
             let number_of_bytes =
                 number_of_elements as usize * self.publisher_connections.payload_size();
@@ -375,8 +355,8 @@ impl<Service: service::Service, UserHeader: Debug>
                 ptr: unsafe {
                     RawSample::<Header, UserHeader, [CustomPayloadMarker]>::new_slice_unchecked(
                         header_ptr,
-                        user_header_ptr,
-                        core::slice::from_raw_parts(payload_ptr, number_of_bytes),
+                        chunk.user_header.cast(),
+                        core::slice::from_raw_parts(chunk.payload.cast(), number_of_bytes),
                     )
                 },
             }
