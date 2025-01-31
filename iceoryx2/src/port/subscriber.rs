@@ -311,16 +311,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
-
-        for id in 0..self.publisher_connections.len() {
-            if let Some(ref connection) = &self.publisher_connections.get(id) {
-                if connection.receiver.has_data() {
-                    return Ok(true);
-                }
-            }
-        }
-
-        Ok(false)
+        self.publisher_connections.has_samples()
     }
 
     fn receive_impl(

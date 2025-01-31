@@ -167,8 +167,16 @@ impl<Service: service::Service> IncomingConnections<Service> {
         self.connections.len()
     }
 
-    pub(crate) fn capacity(&self) -> usize {
-        self.connections.capacity()
+    pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
+        for id in 0..self.len() {
+            if let Some(ref connection) = &self.get(id) {
+                if connection.receiver.has_data() {
+                    return Ok(true);
+                }
+            }
+        }
+
+        Ok(false)
     }
 
     pub(crate) fn start_update_connection_cycle(&self) {
