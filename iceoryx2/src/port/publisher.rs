@@ -189,7 +189,6 @@ pub(crate) struct PublisherBackend<Service: service::Service> {
     pub(crate) subscriber_connections: OutgoingConnections<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
-    static_config: crate::service::static_config::StaticConfig,
     is_active: IoxAtomicBool,
 }
 
@@ -441,7 +440,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 true => None,
                 false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
             },
-            static_config: service.__internal_state().static_config.clone(),
         });
 
         let payload_size = static_config.message_type_details.payload.size;
