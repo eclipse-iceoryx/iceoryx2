@@ -101,6 +101,7 @@ impl<Service: service::Service> Connection<Service> {
         })
     }
 }
+
 #[derive(Debug)]
 pub(crate) struct IncomingConnections<Service: service::Service> {
     pub(crate) connections: Vec<UnsafeCell<Option<Arc<Connection<Service>>>>>,
@@ -307,5 +308,17 @@ impl<Service: service::Service> IncomingConnections<Service> {
                 }
             }
         }
+    }
+
+    pub(crate) fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
+        self.static_config
+            .message_type_details
+            .payload_ptr_from_header(header)
+    }
+
+    pub(crate) fn user_header_ptr_from_header(&self, header: *const u8) -> *const u8 {
+        self.static_config
+            .message_type_details
+            .user_header_ptr_from_header(header)
     }
 }
