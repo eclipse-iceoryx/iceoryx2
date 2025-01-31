@@ -17,7 +17,7 @@ use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::{
     active_request::ActiveRequest,
-    port::{details::outgoing_connections::OutgoingConnections, SendError},
+    port::{client::ClientBackend, details::outgoing_connections::OutgoingConnections, SendError},
     raw_sample::RawSampleMut,
     service,
 };
@@ -29,8 +29,6 @@ pub struct RequestMut<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    pub(crate) _response_payload: PhantomData<ResponsePayload>,
-    pub(crate) _response_header: PhantomData<ResponseHeader>,
     pub(crate) ptr: RawSampleMut<
         service::header::request_response::RequestHeader,
         RequestHeader,
@@ -38,7 +36,24 @@ pub struct RequestMut<
     >,
     pub(crate) sample_size: usize,
     pub(crate) offset_to_chunk: PointerOffset,
-    pub(crate) server_connections: Arc<OutgoingConnections<Service>>,
+    pub(crate) client_backend: Arc<ClientBackend<Service>>,
+    pub(crate) _response_payload: PhantomData<ResponsePayload>,
+    pub(crate) _response_header: PhantomData<ResponseHeader>,
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn drop(&mut self) {
+        self.client_backend
+            .server_connections
+            .return_loaned_sample(self.offset_to_chunk);
+    }
 }
 
 impl<
@@ -92,11 +107,26 @@ impl<
     }
 
     pub fn send(
-        &self,
+        self,
     ) -> Result<
         ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         SendError,
     > {
-        todo!()
+        match self
+            .client_backend
+            .send_request(self.offset_to_chunk, self.sample_size)
+        {
+            Ok(number_of_server_connections) => {
+                let active_request = ActiveRequest {
+                    number_of_server_connections,
+                    request: self,
+                    _service: PhantomData,
+                    _response_payload: PhantomData,
+                    _response_header: PhantomData,
+                };
+                Ok(active_request)
+            }
+            Err(e) => Err(e),
+        }
     }
 }

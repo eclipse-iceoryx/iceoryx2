@@ -28,7 +28,8 @@ pub struct RequestMutUninit<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    request: RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+    pub(crate) request:
+        RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
 }
 
 impl<
@@ -61,28 +62,6 @@ impl<
         ResponseHeader: Debug,
     > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    pub(crate) fn new(
-        raw_sample: RawSampleMut<
-            service::header::request_response::RequestHeader,
-            RequestHeader,
-            RequestPayload,
-        >,
-        offset_to_chunk: PointerOffset,
-        sample_size: usize,
-        server_connections: Arc<OutgoingConnections<Service>>,
-    ) -> Self {
-        Self {
-            request: RequestMut {
-                ptr: raw_sample,
-                _response_payload: PhantomData,
-                _response_header: PhantomData,
-                offset_to_chunk,
-                sample_size,
-                server_connections,
-            },
-        }
-    }
-
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
         self.request.header()
     }

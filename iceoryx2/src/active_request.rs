@@ -12,7 +12,7 @@
 
 use core::{fmt::Debug, marker::PhantomData};
 
-use crate::{port::ReceiveError, response::Response, service};
+use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
 
 pub struct ActiveRequest<
     Service: crate::service::Service,
@@ -21,11 +21,12 @@ pub struct ActiveRequest<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    _service: PhantomData<Service>,
-    _request_payload: PhantomData<RequestPayload>,
-    _request_header: PhantomData<RequestHeader>,
-    _response_payload: PhantomData<ResponsePayload>,
-    _response_header: PhantomData<ResponseHeader>,
+    pub(crate) request:
+        RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+    pub(crate) number_of_server_connections: usize,
+    pub(crate) _service: PhantomData<Service>,
+    pub(crate) _response_payload: PhantomData<ResponsePayload>,
+    pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
 
 impl<
@@ -59,15 +60,19 @@ impl<
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
-        todo!()
+        self.request.header()
     }
 
     pub fn user_header(&self) -> &RequestHeader {
-        todo!()
+        self.request.user_header()
     }
 
     pub fn payload(&self) -> &RequestPayload {
-        todo!()
+        self.request.payload()
+    }
+
+    pub fn number_of_server_connections(&self) -> usize {
+        self.number_of_server_connections
     }
 
     pub fn receive(
