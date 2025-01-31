@@ -13,7 +13,9 @@
 extern crate alloc;
 
 use alloc::sync::Arc;
-use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData, sync::atomic::Ordering};
+use core::{
+    cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit, sync::atomic::Ordering,
+};
 
 use iceoryx2_bb_elementary::{visitor::Visitor, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -23,7 +25,9 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::{
     port::{details::data_segment::DataSegment, UniqueClientId},
-    prelude::PortFactory,
+    prelude::{PortFactory, UnableToDeliverStrategy},
+    request_mut::RequestMut,
+    request_mut_uninit::RequestMutUninit,
     service::{
         self,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
@@ -40,6 +44,7 @@ use super::{
         segment_state::SegmentState,
     },
     update_connections::UpdateConnections,
+    LoanError,
 };
 
 /// Sends requests to a [`Server`](crate::port::server::Server) in a request-response based
@@ -207,6 +212,37 @@ impl<
         self.client_port_id
     }
 
+    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+        self.server_connections.unable_to_deliver_strategy
+    }
+
+    pub fn loan_uninit(
+        &self,
+    ) -> Result<
+        RequestMutUninit<
+            Service,
+            MaybeUninit<RequestPayload>,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        LoanError,
+    > {
+        let chunk = self
+            .server_connections
+            .allocate(self.server_connections.sample_layout(1))?;
+
+        unsafe {
+            (chunk.header as *mut service::header::request_response::RequestHeader).write(
+                service::header::request_response::RequestHeader {
+                    client_port_id: self.id(),
+                },
+            )
+        };
+
+        todo!()
+    }
+
     fn force_update_connections(&self) -> Result<(), ZeroCopyCreationError> {
         let mut result = Ok(());
         self.server_connections.start_update_connection_cycle();
@@ -232,6 +268,24 @@ impl<
         self.server_connections.finish_update_connection_cycle();
 
         result
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + Default,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    pub fn loan(
+        &self,
+    ) -> Result<
+        RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        LoanError,
+    > {
+        Ok(self.loan_uninit()?.write_payload(RequestPayload::default()))
     }
 }
 

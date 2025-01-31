@@ -100,9 +100,9 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debu
         write!(
             f,
             "SampleMut<{}, {}, {}> {{ publisher_backend: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",
+            core::any::type_name::<Service>(),
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
-            core::any::type_name::<Service>(),
             self.publisher_backend,
             self.offset_to_chunk,
             self.sample_size
