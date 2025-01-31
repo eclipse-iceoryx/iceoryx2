@@ -261,22 +261,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
         self.publisher_connections.receive()
     }
-
-    fn payload_ptr(&self, header: *const Header) -> *const u8 {
-        self.publisher_connections
-            .static_config
-            .message_type_details
-            .payload_ptr_from_header(header.cast())
-            .cast()
-    }
-
-    fn user_header_ptr(&self, header: *const Header) -> *const u8 {
-        self.publisher_connections
-            .static_config
-            .message_type_details
-            .user_header_ptr_from_header(header.cast())
-            .cast()
-    }
 }
 
 impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> UpdateConnections
@@ -308,8 +292,14 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     pub fn receive(&self) -> Result<Option<Sample<Service, Payload, UserHeader>>, ReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
-            let user_header_ptr = self.user_header_ptr(header_ptr).cast();
-            let payload_ptr = self.payload_ptr(header_ptr).cast();
+            let user_header_ptr = self
+                .publisher_connections
+                .user_header_ptr_from_header(header_ptr.cast())
+                .cast();
+            let payload_ptr = self
+                .publisher_connections
+                .payload_ptr_from_header(header_ptr.cast())
+                .cast();
             Sample {
                 details,
                 ptr: unsafe { RawSample::new_unchecked(header_ptr, user_header_ptr, payload_ptr) },
@@ -328,8 +318,14 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
 
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
-            let user_header_ptr = self.user_header_ptr(header_ptr).cast();
-            let payload_ptr = self.payload_ptr(header_ptr).cast();
+            let user_header_ptr = self
+                .publisher_connections
+                .user_header_ptr_from_header(header_ptr.cast())
+                .cast();
+            let payload_ptr = self
+                .publisher_connections
+                .payload_ptr_from_header(header_ptr.cast())
+                .cast();
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
 
             Sample {
@@ -364,8 +360,14 @@ impl<Service: service::Service, UserHeader: Debug>
     ) -> Result<Option<Sample<Service, [CustomPayloadMarker], UserHeader>>, ReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
-            let user_header_ptr = self.user_header_ptr(header_ptr).cast();
-            let payload_ptr = self.payload_ptr(header_ptr).cast();
+            let user_header_ptr = self
+                .publisher_connections
+                .user_header_ptr_from_header(header_ptr.cast())
+                .cast();
+            let payload_ptr = self
+                .publisher_connections
+                .payload_ptr_from_header(header_ptr.cast())
+                .cast();
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
             let number_of_bytes = number_of_elements as usize
                 * self
