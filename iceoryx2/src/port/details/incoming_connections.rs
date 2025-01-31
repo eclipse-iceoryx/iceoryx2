@@ -13,6 +13,7 @@
 use core::cell::UnsafeCell;
 
 extern crate alloc;
+use super::chunk::Chunk;
 use super::chunk_details::ChunkDetails;
 use super::data_segment::{DataSegmentType, DataSegmentView};
 use crate::port::update_connections::ConnectionFailure;
@@ -184,7 +185,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
     fn receive_from_connection(
         &self,
         connection: &Arc<Connection<Service>>,
-    ) -> Result<Option<(ChunkDetails<Service>, usize)>, ReceiveError> {
+    ) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
         let msg = "Unable to receive another sample";
         match connection.receiver.receive() {
             Ok(data) => match data {
@@ -208,7 +209,10 @@ impl<Service: service::Service> IncomingConnections<Service> {
                         }
                     };
 
-                    Ok(Some((details, offset)))
+                    Ok(Some((
+                        details,
+                        Chunk::new(&self.static_config.message_type_details, offset),
+                    )))
                 }
             },
             Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
@@ -219,7 +223,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
         }
     }
 
-    pub(crate) fn receive(&self) -> Result<Option<(ChunkDetails<Service>, usize)>, ReceiveError> {
+    pub(crate) fn receive(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
         let to_be_removed_connections = unsafe { &mut *self.to_be_removed_connections.get() };
 
         if let Some(connection) = to_be_removed_connections.peek() {
@@ -308,18 +312,6 @@ impl<Service: service::Service> IncomingConnections<Service> {
                 }
             }
         }
-    }
-
-    pub(crate) fn payload_ptr_from_header(&self, header: *const u8) -> *const u8 {
-        self.static_config
-            .message_type_details
-            .payload_ptr_from_header(header)
-    }
-
-    pub(crate) fn user_header_ptr_from_header(&self, header: *const u8) -> *const u8 {
-        self.static_config
-            .message_type_details
-            .user_header_ptr_from_header(header)
     }
 
     pub(crate) fn payload_size(&self) -> usize {
