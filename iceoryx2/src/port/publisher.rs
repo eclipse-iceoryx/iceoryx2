@@ -125,7 +125,7 @@ use core::any::TypeId;
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::sync::atomic::Ordering;
-use core::{alloc::Layout, marker::PhantomData, mem::MaybeUninit};
+use core::{marker::PhantomData, mem::MaybeUninit};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::visitor::Visitor;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -314,8 +314,6 @@ pub struct Publisher<
 > {
     pub(crate) backend: Arc<PublisherBackend<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
-    payload_size: usize,
-    static_config: publish_subscribe::StaticConfig,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -433,6 +431,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 loan_counter: IoxAtomicUsize::new(0),
                 sender_max_borrowed_samples: config.max_loaned_samples,
                 unable_to_deliver_strategy: config.unable_to_deliver_strategy,
+                message_type_details: static_config.message_type_details.clone(),
             },
             config,
             subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
@@ -442,13 +441,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             },
         });
 
-        let payload_size = static_config.message_type_details.payload.size;
-
         let mut new_self = Self {
             backend,
             dynamic_publisher_handle: None,
-            payload_size,
-            static_config: static_config.clone(),
             _payload: PhantomData,
             _user_header: PhantomData,
         };
@@ -496,33 +491,9 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             .unable_to_deliver_strategy
     }
 
-    /// Returns the maximum slice length configured for this [`Publisher`].
+    /// Returns the maximum initial slice length configured for this [`Publisher`].
     pub fn initial_max_slice_len(&self) -> usize {
         self.backend.config.initial_max_slice_len
-    }
-
-    fn sample_layout(&self, number_of_elements: usize) -> Layout {
-        self.static_config
-            .message_type_details
-            .sample_layout(number_of_elements)
-    }
-
-    fn user_header_ptr(&self, header: *const Header) -> *const u8 {
-        self.static_config
-            .message_type_details
-            .user_header_ptr_from_header(header.cast())
-            .cast()
-    }
-
-    fn payload_ptr(&self, header: *const Header) -> *const u8 {
-        self.static_config
-            .message_type_details
-            .payload_ptr_from_header(header.cast())
-            .cast()
-    }
-
-    fn payload_type_variant(&self) -> TypeVariant {
-        self.static_config.message_type_details.payload.variant
     }
 }
 
@@ -595,20 +566,19 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
         let chunk = self
             .backend
             .subscriber_connections
-            .allocate(self.sample_layout(1))?;
-        let header_ptr = chunk.shm_pointer.data_ptr as *mut Header;
-        let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
-        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
+            .allocate(self.backend.subscriber_connections.sample_layout(1))?;
+        let header_ptr = chunk.header as *mut Header;
         unsafe { header_ptr.write(Header::new(self.id(), 1)) };
 
-        let sample =
-            unsafe { RawSampleMut::new_unchecked(header_ptr, user_header_ptr, payload_ptr) };
+        let sample = unsafe {
+            RawSampleMut::new_unchecked(header_ptr, chunk.user_header.cast(), chunk.payload.cast())
+        };
         Ok(
             SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
                 &self.backend,
                 sample,
-                chunk.shm_pointer.offset,
-                chunk.sample_size,
+                chunk.offset,
+                chunk.size,
             ),
         )
     }
@@ -752,21 +722,22 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
                 slice_len, max_slice_len);
         }
 
-        let sample_layout = self.sample_layout(slice_len);
+        let sample_layout = self.backend.subscriber_connections.sample_layout(slice_len);
         let chunk = self
             .backend
             .subscriber_connections
             .allocate(sample_layout)?;
-        let header_ptr = chunk.shm_pointer.data_ptr as *mut Header;
-        let user_header_ptr = self.user_header_ptr(header_ptr) as *mut UserHeader;
-        let payload_ptr = self.payload_ptr(header_ptr) as *mut MaybeUninit<Payload>;
+        let header_ptr = chunk.header as *mut Header;
         unsafe { header_ptr.write(Header::new(self.id(), slice_len as _)) };
 
         let sample = unsafe {
             RawSampleMut::new_unchecked(
                 header_ptr,
-                user_header_ptr,
-                core::slice::from_raw_parts_mut(payload_ptr, underlying_number_of_slice_elements),
+                chunk.user_header.cast(),
+                core::slice::from_raw_parts_mut(
+                    chunk.payload.cast(),
+                    underlying_number_of_slice_elements,
+                ),
             )
         };
 
@@ -774,8 +745,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
             SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
                 &self.backend,
                 sample,
-                chunk.shm_pointer.offset,
-                chunk.sample_size,
+                chunk.offset,
+                chunk.size,
             ),
         )
     }
@@ -798,9 +769,16 @@ impl<Service: service::Service, UserHeader: Debug>
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], UserHeader>, LoanError>
     {
         // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
-        debug_assert!(slice_len == 1 || self.payload_type_variant() == TypeVariant::Dynamic);
+        debug_assert!(
+            slice_len == 1
+                || self.backend.subscriber_connections.payload_type_variant()
+                    == TypeVariant::Dynamic
+        );
 
-        self.loan_slice_uninit_impl(slice_len, self.payload_size * slice_len)
+        self.loan_slice_uninit_impl(
+            slice_len,
+            self.backend.subscriber_connections.payload_size() * slice_len,
+        )
     }
 }
 ////////////////////////

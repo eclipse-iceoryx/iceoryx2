@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::PointerOffset};
+
 use crate::service::static_config::message_type_details::MessageTypeDetails;
 
 pub(crate) struct Chunk {
@@ -19,12 +21,40 @@ pub(crate) struct Chunk {
 }
 
 impl Chunk {
-    pub(crate) fn new(message_type_details: &MessageTypeDetails, offset: usize) -> Chunk {
+    pub(crate) fn new(message_type_details: &MessageTypeDetails, offset: usize) -> Self {
         let header = offset as *const u8;
         Self {
             user_header: message_type_details.user_header_ptr_from_header(header),
             payload: message_type_details.payload_ptr_from_header(header),
             header: offset as *const u8,
+        }
+    }
+}
+
+pub(crate) struct ChunkMut {
+    pub(crate) offset: PointerOffset,
+    pub(crate) header: *mut u8,
+    pub(crate) user_header: *mut u8,
+    pub(crate) payload: *mut u8,
+    pub(crate) size: usize,
+}
+
+impl ChunkMut {
+    pub(crate) fn new(
+        message_type_details: &MessageTypeDetails,
+        shm_pointer: ShmPointer,
+        size: usize,
+    ) -> Self {
+        Self {
+            user_header: message_type_details
+                .user_header_ptr_from_header(shm_pointer.data_ptr)
+                .cast_mut(),
+            payload: message_type_details
+                .payload_ptr_from_header(shm_pointer.data_ptr)
+                .cast_mut(),
+            header: shm_pointer.data_ptr,
+            offset: shm_pointer.offset,
+            size,
         }
     }
 }
