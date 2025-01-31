@@ -26,6 +26,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use crate::{
     port::{details::data_segment::DataSegment, UniqueClientId},
     prelude::{PortFactory, UnableToDeliverStrategy},
+    raw_sample::RawSampleMut,
     request_mut::RequestMut,
     request_mut_uninit::RequestMutUninit,
     service::{
@@ -59,7 +60,7 @@ pub struct Client<
 > {
     client_handle: Option<ContainerHandle>,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
-    server_connections: OutgoingConnections<Service>,
+    server_connections: Arc<OutgoingConnections<Service>>,
     service_state: Arc<ServiceState<Service>>,
     client_port_id: UniqueClientId,
     _request_payload: PhantomData<RequestPayload>,
@@ -150,7 +151,7 @@ impl<
         let mut new_self = Self {
             client_handle: None,
             server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
-            server_connections: OutgoingConnections {
+            server_connections: Arc::new(OutgoingConnections {
                 data_segment,
                 segment_states: vec![SegmentState::new(number_of_requests)],
                 sender_port_id: client_port_id.value(),
@@ -170,7 +171,7 @@ impl<
                 sender_max_borrowed_samples: client_factory.max_loaned_requests,
                 unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
                 message_type_details: static_config.request_message_type_details.clone(),
-            },
+            }),
             client_port_id,
             service_state: service.__internal_state().clone(),
             _request_payload: PhantomData,
@@ -240,7 +241,20 @@ impl<
             )
         };
 
-        todo!()
+        let sample = unsafe {
+            RawSampleMut::new_unchecked(
+                chunk.header.cast(),
+                chunk.user_header.cast(),
+                chunk.payload.cast(),
+            )
+        };
+
+        Ok(RequestMutUninit::new(
+            sample,
+            chunk.offset,
+            chunk.size,
+            self.server_connections.clone(),
+        ))
     }
 
     fn force_update_connections(&self) -> Result<(), ZeroCopyCreationError> {

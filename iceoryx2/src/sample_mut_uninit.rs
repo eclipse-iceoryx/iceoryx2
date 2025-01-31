@@ -116,6 +116,7 @@ use crate::{
 /// [`crate::port::publisher::Publisher`] is not thread-safe!
 ///
 /// The generic parameter `Payload` is actually [`core::mem::MaybeUninit<Payload>`].
+#[repr(transparent)]
 pub struct SampleMutUninit<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> {
     sample: SampleMut<Service, Payload, UserHeader>,
 }

@@ -11,9 +11,16 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit};
+use std::sync::Arc;
 
-use crate::{request_mut::RequestMut, service};
+use iceoryx2_cal::shm_allocator::PointerOffset;
 
+use crate::{
+    port::details::outgoing_connections::OutgoingConnections, raw_sample::RawSampleMut,
+    request_mut::RequestMut, service,
+};
+
+#[repr(transparent)]
 pub struct RequestMutUninit<
     Service: crate::service::Service,
     RequestPayload: Debug,
@@ -21,11 +28,7 @@ pub struct RequestMutUninit<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    _service: PhantomData<Service>,
-    _request_payload: PhantomData<RequestPayload>,
-    _request_header: PhantomData<RequestHeader>,
-    _response_payload: PhantomData<ResponsePayload>,
-    _response_header: PhantomData<ResponseHeader>,
+    request: RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
 }
 
 impl<
@@ -58,24 +61,46 @@ impl<
         ResponseHeader: Debug,
     > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    pub(crate) fn new(
+        raw_sample: RawSampleMut<
+            service::header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >,
+        offset_to_chunk: PointerOffset,
+        sample_size: usize,
+        server_connections: Arc<OutgoingConnections<Service>>,
+    ) -> Self {
+        Self {
+            request: RequestMut {
+                ptr: raw_sample,
+                _response_payload: PhantomData,
+                _response_header: PhantomData,
+                offset_to_chunk,
+                sample_size,
+                server_connections,
+            },
+        }
+    }
+
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
-        todo!()
+        self.request.header()
     }
 
     pub fn user_header(&self) -> &RequestHeader {
-        todo!()
+        self.request.user_header()
     }
 
-    pub fn user_header_mut(&self) -> &mut RequestHeader {
-        todo!()
+    pub fn user_header_mut(&mut self) -> &mut RequestHeader {
+        self.request.user_header_mut()
     }
 
     pub fn payload(&self) -> &RequestPayload {
-        todo!()
+        self.request.payload()
     }
 
-    pub fn payload_mut(&self) -> &mut RequestPayload {
-        todo!()
+    pub fn payload_mut(&mut self) -> &mut RequestPayload {
+        self.request.payload_mut()
     }
 }
 
@@ -98,12 +123,14 @@ impl<
         mut self,
         value: RequestPayload,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-        todo!()
+        self.payload_mut().write(value);
+        unsafe { self.assume_init() }
     }
 
-    pub fn assume_init(
+    pub unsafe fn assume_init(
         self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-        todo!()
+        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
+        core::mem::transmute(self.request)
     }
 }

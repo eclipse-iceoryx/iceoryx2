@@ -11,8 +11,16 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::{fmt::Debug, marker::PhantomData};
+use std::sync::Arc;
 
-use crate::{active_request::ActiveRequest, port::SendError, service};
+use iceoryx2_cal::shm_allocator::PointerOffset;
+
+use crate::{
+    active_request::ActiveRequest,
+    port::{details::outgoing_connections::OutgoingConnections, SendError},
+    raw_sample::RawSampleMut,
+    service,
+};
 
 pub struct RequestMut<
     Service: crate::service::Service,
@@ -21,11 +29,16 @@ pub struct RequestMut<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    _service: PhantomData<Service>,
-    _request_payload: PhantomData<RequestPayload>,
-    _request_header: PhantomData<RequestHeader>,
-    _response_payload: PhantomData<ResponsePayload>,
-    _response_header: PhantomData<ResponseHeader>,
+    pub(crate) _response_payload: PhantomData<ResponsePayload>,
+    pub(crate) _response_header: PhantomData<ResponseHeader>,
+    pub(crate) ptr: RawSampleMut<
+        service::header::request_response::RequestHeader,
+        RequestHeader,
+        RequestPayload,
+    >,
+    pub(crate) sample_size: usize,
+    pub(crate) offset_to_chunk: PointerOffset,
+    pub(crate) server_connections: Arc<OutgoingConnections<Service>>,
 }
 
 impl<
@@ -59,23 +72,23 @@ impl<
     > RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
-        todo!()
+        self.ptr.as_header_ref()
     }
 
     pub fn user_header(&self) -> &RequestHeader {
-        todo!()
+        self.ptr.as_user_header_ref()
     }
 
-    pub fn user_header_mut(&self) -> &mut RequestHeader {
-        todo!()
+    pub fn user_header_mut(&mut self) -> &mut RequestHeader {
+        self.ptr.as_user_header_mut()
     }
 
     pub fn payload(&self) -> &RequestPayload {
-        todo!()
+        self.ptr.as_payload_ref()
     }
 
-    pub fn payload_mut(&self) -> &mut RequestPayload {
-        todo!()
+    pub fn payload_mut(&mut self) -> &mut RequestPayload {
+        self.ptr.as_payload_mut()
     }
 
     pub fn send(
