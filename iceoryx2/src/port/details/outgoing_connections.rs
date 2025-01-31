@@ -20,7 +20,6 @@ use alloc::sync::Arc;
 use iceoryx2_bb_elementary::visitor::{Visitable, Visitor, VisitorMarker};
 use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
-use iceoryx2_cal::shared_memory::ShmPointer;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
     ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopySendError,
@@ -32,9 +31,11 @@ use crate::node::SharedNode;
 use crate::port::{DegrationAction, DegrationCallback, LoanError, SendError};
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::config_scheme::connection_config;
+use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
 use crate::service::ServiceState;
 use crate::{service, service::naming_scheme::connection_name};
 
+use super::chunk::ChunkMut;
 use super::data_segment::DataSegment;
 use super::segment_state::SegmentState;
 
@@ -42,12 +43,6 @@ use super::segment_state::SegmentState;
 pub(crate) struct ReceiverDetails {
     pub(crate) port_id: u128,
     pub(crate) buffer_size: usize,
-}
-
-#[derive(Debug)]
-pub(crate) struct AllocationPair {
-    pub(crate) shm_pointer: ShmPointer,
-    pub(crate) sample_size: usize,
 }
 
 #[derive(Debug)]
@@ -119,6 +114,7 @@ pub(crate) struct OutgoingConnections<Service: service::Service> {
     pub(crate) visitor: Visitor,
     pub(crate) loan_counter: IoxAtomicUsize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) message_type_details: MessageTypeDetails,
 }
 
 impl<Service: service::Service> OutgoingConnections<Service> {
@@ -224,7 +220,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         self.connections.len()
     }
 
-    pub(crate) fn allocate(&self, layout: Layout) -> Result<AllocationPair, LoanError> {
+    pub(crate) fn allocate(&self, layout: Layout) -> Result<ChunkMut, LoanError> {
         self.retrieve_returned_samples();
         let msg = "Unable to allocate data";
 
@@ -257,10 +253,11 @@ impl<Service: service::Service> OutgoingConnections<Service> {
         }
 
         self.loan_counter.fetch_add(1, Ordering::Relaxed);
-        Ok(AllocationPair {
+        Ok(ChunkMut::new(
+            &self.message_type_details,
             shm_pointer,
             sample_size,
-        })
+        ))
     }
 
     pub(crate) fn borrow_sample(&self, offset: PointerOffset) -> (u64, usize) {
@@ -383,5 +380,17 @@ impl<Service: service::Service> OutgoingConnections<Service> {
                 }
             }
         }
+    }
+
+    pub(crate) fn payload_size(&self) -> usize {
+        self.message_type_details.payload.size
+    }
+
+    pub(crate) fn sample_layout(&self, number_of_elements: usize) -> Layout {
+        self.message_type_details.sample_layout(number_of_elements)
+    }
+
+    pub(crate) fn payload_type_variant(&self) -> TypeVariant {
+        self.message_type_details.payload.variant
     }
 }

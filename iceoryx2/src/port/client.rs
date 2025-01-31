@@ -141,6 +141,7 @@ impl<
                 loan_counter: IoxAtomicUsize::new(0),
                 sender_max_borrowed_samples: client_factory.max_loaned_requests,
                 unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
+                message_type_details: static_config.request_message_type_details.clone(),
             },
             client_port_id,
             service_state: service.__internal_state().clone(),
