@@ -321,4 +321,8 @@ impl<Service: service::Service> IncomingConnections<Service> {
             .message_type_details
             .user_header_ptr_from_header(header)
     }
+
+    pub(crate) fn payload_size(&self) -> usize {
+        self.static_config.message_type_details.payload.size
+    }
 }

@@ -91,7 +91,6 @@ pub struct Subscriber<
 > {
     dynamic_subscriber_handle: Option<ContainerHandle>,
     publisher_connections: IncomingConnections<Service>,
-    static_config: crate::service::static_config::StaticConfig,
 
     publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
     _payload: PhantomData<Payload>,
@@ -169,7 +168,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             publisher_connections,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle: None,
-            static_config: service.__internal_state().static_config.clone(),
             _payload: PhantomData,
             _user_header: PhantomData,
         };
@@ -369,13 +367,8 @@ impl<Service: service::Service, UserHeader: Debug>
                 .payload_ptr_from_header(header_ptr.cast())
                 .cast();
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
-            let number_of_bytes = number_of_elements as usize
-                * self
-                    .static_config
-                    .publish_subscribe()
-                    .message_type_details
-                    .payload
-                    .size;
+            let number_of_bytes =
+                number_of_elements as usize * self.publisher_connections.payload_size();
 
             Sample {
                 details,
