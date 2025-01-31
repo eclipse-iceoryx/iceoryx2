@@ -811,11 +811,11 @@ TYPED_TEST(ServicePublishSubscribeTest, publisher_does_not_reallocate_when_alloc
 
     auto sample_2 = publisher.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
     ASSERT_THAT(sample_2.has_value(), Eq(false));
-    ASSERT_THAT(sample_2.error(), Eq(PublisherLoanError::ExceedsMaxLoanSize));
+    ASSERT_THAT(sample_2.error(), Eq(LoanError::ExceedsMaxLoanSize));
 
     auto sample_3 = publisher.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
     ASSERT_THAT(sample_3.has_value(), Eq(false));
-    ASSERT_THAT(sample_3.error(), Eq(PublisherLoanError::ExceedsMaxLoanSize));
+    ASSERT_THAT(sample_3.error(), Eq(LoanError::ExceedsMaxLoanSize));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, create_with_attributes_sets_attributes) {

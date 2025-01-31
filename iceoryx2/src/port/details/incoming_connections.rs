@@ -204,7 +204,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
                     {
                         Ok(offset) => offset,
                         Err(e) => {
-                            fail!(from self, with ReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapPublishersDataSegment(e)),
+                            fail!(from self, with ReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapSendersDataSegment(e)),
                                 "Unable to register and translate offset from publisher {:?} since the received offset {:?} could not be registered and translated.",
                                 connection.sender_port_id, offset);
                         }

@@ -293,7 +293,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
     ) -> Result<usize, SendError> {
         let msg = "Unable to send sample";
         if !self.is_active.load(Ordering::Relaxed) {
-            fail!(from self, with SendError::ConnectionBrokenSincePublisherNoLongerExists,
+            fail!(from self, with SendError::ConnectionBrokenSinceSenderNoLongerExists,
                 "{} since the connections could not be updated.", msg);
         }
 

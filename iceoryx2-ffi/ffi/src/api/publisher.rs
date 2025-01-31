@@ -38,7 +38,7 @@ use core::mem::ManuallyDrop;
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_send_error_e {
-    CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS = IOX2_OK as isize + 1,
+    CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS = IOX2_OK as isize + 1,
     CONNECTION_CORRUPTED,
     LOAN_ERROR_OUT_OF_MEMORY,
     LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES,
@@ -50,8 +50,8 @@ pub enum iox2_send_error_e {
 impl IntoCInt for SendError {
     fn into_c_int(self) -> c_int {
         (match self {
-            SendError::ConnectionBrokenSincePublisherNoLongerExists => {
-                iox2_send_error_e::CONNECTION_BROKEN_SINCE_PUBLISHER_NO_LONGER_EXISTS
+            SendError::ConnectionBrokenSinceSenderNoLongerExists => {
+                iox2_send_error_e::CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS
             }
             SendError::ConnectionCorrupted => iox2_send_error_e::CONNECTION_CORRUPTED,
             SendError::LoanError(LoanError::OutOfMemory) => {
