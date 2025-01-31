@@ -33,29 +33,22 @@
 use core::{fmt::Debug, ops::Deref};
 
 extern crate alloc;
-use alloc::sync::Arc;
 
 use iceoryx2_bb_log::fatal_panic;
-use iceoryx2_cal::zero_copy_connection::{PointerOffset, ZeroCopyReceiver, ZeroCopyReleaseError};
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_cal::zero_copy_connection::{ZeroCopyReceiver, ZeroCopyReleaseError};
 
-use crate::port::details::incoming_connections::Connection;
+use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::port_identifiers::UniquePublisherId;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
-
-#[derive(Debug)]
-pub(crate) struct SampleDetails<Service: crate::service::Service> {
-    pub(crate) publisher_connection: Arc<Connection<Service>>,
-    pub(crate) offset: PointerOffset,
-    pub(crate) origin: UniquePublisherId,
-}
 
 /// It stores the payload and is acquired by the [`Subscriber`](crate::port::subscriber::Subscriber) whenever
 /// it receives new data from a [`Publisher`](crate::port::publisher::Publisher) via
 /// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
 pub struct Sample<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> {
     pub(crate) ptr: RawSample<Header, UserHeader, Payload>,
-    pub(crate) details: SampleDetails<Service>,
+    pub(crate) details: ChunkDetails<Service>,
 }
 
 impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debug
@@ -88,14 +81,14 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
     fn drop(&mut self) {
         unsafe {
             self.details
-                .publisher_connection
+                .connection
                 .data_segment
                 .unregister_offset(self.details.offset)
         };
 
         match self
             .details
-            .publisher_connection
+            .connection
             .receiver
             .release(self.details.offset)
         {
@@ -127,6 +120,6 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader>
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     pub fn origin(&self) -> UniquePublisherId {
-        self.details.origin
+        UniquePublisherId(UniqueSystemId::from(self.details.origin))
     }
 }

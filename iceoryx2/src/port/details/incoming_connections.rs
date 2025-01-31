@@ -13,9 +13,10 @@
 use core::cell::UnsafeCell;
 
 extern crate alloc;
+use super::chunk_details::ChunkDetails;
 use super::data_segment::{DataSegmentType, DataSegmentView};
 use crate::port::update_connections::ConnectionFailure;
-use crate::port::{DegrationAction, DegrationCallback};
+use crate::port::{DegrationAction, DegrationCallback, ReceiveError};
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::{
     self, config_scheme::connection_config, naming_scheme::connection_name,
@@ -167,7 +168,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
         self.connections.len()
     }
 
-    pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
+    pub(crate) fn has_samples(&self) -> Result<bool, ConnectionFailure> {
         for id in 0..self.len() {
             if let Some(ref connection) = &self.get(id) {
                 if connection.receiver.has_data() {
@@ -177,6 +178,68 @@ impl<Service: service::Service> IncomingConnections<Service> {
         }
 
         Ok(false)
+    }
+
+    fn receive_from_connection(
+        &self,
+        connection: &Arc<Connection<Service>>,
+    ) -> Result<Option<(ChunkDetails<Service>, usize)>, ReceiveError> {
+        let msg = "Unable to receive another sample";
+        match connection.receiver.receive() {
+            Ok(data) => match data {
+                None => Ok(None),
+                Some(offset) => {
+                    let details = ChunkDetails {
+                        connection: connection.clone(),
+                        offset,
+                        origin: connection.sender_port_id,
+                    };
+
+                    let offset = match connection
+                        .data_segment
+                        .register_and_translate_offset(offset)
+                    {
+                        Ok(offset) => offset,
+                        Err(e) => {
+                            fail!(from self, with ReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapPublishersDataSegment(e)),
+                                "Unable to register and translate offset from publisher {:?} since the received offset {:?} could not be registered and translated.",
+                                connection.sender_port_id, offset);
+                        }
+                    };
+
+                    Ok(Some((details, offset)))
+                }
+            },
+            Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
+                fail!(from self, with ReceiveError::ExceedsMaxBorrowedSamples,
+                    "{} since it would exceed the maximum {} of borrowed samples.",
+                    msg, connection.receiver.max_borrowed_samples());
+            }
+        }
+    }
+
+    pub(crate) fn receive(&self) -> Result<Option<(ChunkDetails<Service>, usize)>, ReceiveError> {
+        let to_be_removed_connections = unsafe { &mut *self.to_be_removed_connections.get() };
+
+        if let Some(connection) = to_be_removed_connections.peek() {
+            if let Some((details, absolute_address)) = self.receive_from_connection(connection)? {
+                return Ok(Some((details, absolute_address)));
+            } else {
+                to_be_removed_connections.pop();
+            }
+        }
+
+        for id in 0..self.len() {
+            if let Some(ref mut connection) = &mut self.get_mut(id) {
+                if let Some((details, absolute_address)) =
+                    self.receive_from_connection(connection)?
+                {
+                    return Ok(Some((details, absolute_address)));
+                }
+            }
+        }
+
+        Ok(None)
     }
 
     pub(crate) fn start_update_connection_cycle(&self) {

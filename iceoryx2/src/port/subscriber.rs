@@ -38,19 +38,15 @@ use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 
 extern crate alloc;
-use alloc::sync::Arc;
 
 use iceoryx2_bb_container::queue::Queue;
-use iceoryx2_bb_elementary::visitor::{Visitable, Visitor};
+use iceoryx2_bb_elementary::visitor::Visitor;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::zero_copy_connection::*;
 
-use crate::port::DegrationAction;
-use crate::sample::SampleDetails;
 use crate::service::builder::publish_subscribe::CustomPayloadMarker;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
@@ -58,31 +54,11 @@ use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{raw_sample::RawSample, sample::Sample, service};
 
+use super::details::chunk_details::ChunkDetails;
 use super::details::incoming_connections::*;
 use super::port_identifiers::UniqueSubscriberId;
 use super::update_connections::{ConnectionFailure, UpdateConnections};
-use super::{DegrationCallback, UniquePublisherId};
-
-/// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum SubscriberReceiveError {
-    /// The maximum amount of [`Sample`]s a user can borrow with [`Subscriber::receive()`] is
-    /// defined in [`crate::config::Config`]. When this is exceeded [`Subscriber::receive()`]
-    /// fails.
-    ExceedsMaxBorrowedSamples,
-
-    /// Occurs when a [`Subscriber`] is unable to connect to a corresponding
-    /// [`Publisher`](crate::port::publisher::Publisher).
-    ConnectionFailure(ConnectionFailure),
-}
-
-impl core::fmt::Display for SubscriberReceiveError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "SubscriberReceiveError::{:?}", self)
-    }
-}
-
-impl core::error::Error for SubscriberReceiveError {}
+use super::ReceiveError;
 
 /// Describes the failures when a new [`Subscriber`] is created via the
 /// [`crate::service::port_factory::subscriber::PortFactorySubscriber`].
@@ -257,44 +233,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         result
     }
 
-    fn receive_from_connection(
-        &self,
-        connection: &Arc<Connection<Service>>,
-    ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
-        let msg = "Unable to receive another sample";
-        match connection.receiver.receive() {
-            Ok(data) => match data {
-                None => Ok(None),
-                Some(offset) => {
-                    let details = SampleDetails {
-                        publisher_connection: connection.clone(),
-                        offset,
-                        origin: UniquePublisherId(UniqueSystemId::from(connection.sender_port_id)),
-                    };
-
-                    let offset = match connection
-                        .data_segment
-                        .register_and_translate_offset(offset)
-                    {
-                        Ok(offset) => offset,
-                        Err(e) => {
-                            fail!(from self, with SubscriberReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapPublishersDataSegment(e)),
-                                "Unable to register and translate offset from publisher {:?} since the received offset {:?} could not be registered and translated.",
-                                connection.sender_port_id, offset);
-                        }
-                    };
-
-                    Ok(Some((details, offset)))
-                }
-            },
-            Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
-                fail!(from self, with SubscriberReceiveError::ExceedsMaxBorrowedSamples,
-                    "{} since it would exceed the maximum {} of borrowed samples.",
-                    msg, connection.receiver.max_borrowed_samples());
-            }
-        }
-    }
-
     /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
     pub fn id(&self) -> UniqueSubscriberId {
         UniqueSubscriberId(UniqueSystemId::from(
@@ -314,37 +252,14 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         self.publisher_connections.has_samples()
     }
 
-    fn receive_impl(
-        &self,
-    ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
+    fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, usize)>, ReceiveError> {
         if let Err(e) = self.update_connections() {
             fail!(from self,
-                with SubscriberReceiveError::ConnectionFailure(e),
+                with ReceiveError::ConnectionFailure(e),
                 "Some samples are not being received since not all connections to publishers could be established.");
         }
 
-        let to_be_removed_connections =
-            unsafe { &mut *self.publisher_connections.to_be_removed_connections.get() };
-
-        if let Some(connection) = to_be_removed_connections.peek() {
-            if let Some((details, absolute_address)) = self.receive_from_connection(connection)? {
-                return Ok(Some((details, absolute_address)));
-            } else {
-                to_be_removed_connections.pop();
-            }
-        }
-
-        for id in 0..self.publisher_connections.len() {
-            if let Some(ref mut connection) = &mut self.publisher_connections.get_mut(id) {
-                if let Some((details, absolute_address)) =
-                    self.receive_from_connection(connection)?
-                {
-                    return Ok(Some((details, absolute_address)));
-                }
-            }
-        }
-
-        Ok(None)
+        self.publisher_connections.receive()
     }
 
     fn payload_ptr(&self, header: *const Header) -> *const u8 {
@@ -389,10 +304,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     Subscriber<Service, Payload, UserHeader>
 {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
-    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    pub fn receive(
-        &self,
-    ) -> Result<Option<Sample<Service, Payload, UserHeader>>, SubscriberReceiveError> {
+    /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
+    pub fn receive(&self) -> Result<Option<Sample<Service, Payload, UserHeader>>, ReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
             let user_header_ptr = self.user_header_ptr(header_ptr).cast();
@@ -409,10 +322,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     Subscriber<Service, [Payload], UserHeader>
 {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
-    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    pub fn receive(
-        &self,
-    ) -> Result<Option<Sample<Service, [Payload], UserHeader>>, SubscriberReceiveError> {
+    /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
+    pub fn receive(&self) -> Result<Option<Sample<Service, [Payload], UserHeader>>, ReceiveError> {
         debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
 
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
@@ -450,8 +361,7 @@ impl<Service: service::Service, UserHeader: Debug>
     #[doc(hidden)]
     pub unsafe fn receive_custom_payload(
         &self,
-    ) -> Result<Option<Sample<Service, [CustomPayloadMarker], UserHeader>>, SubscriberReceiveError>
-    {
+    ) -> Result<Option<Sample<Service, [CustomPayloadMarker], UserHeader>>, ReceiveError> {
         Ok(self.receive_impl()?.map(|(details, absolute_address)| {
             let header_ptr = absolute_address as *const Header;
             let user_header_ptr = self.user_header_ptr(header_ptr).cast();
