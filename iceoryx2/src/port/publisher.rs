@@ -505,7 +505,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
 {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
-    /// the data, otherwise a [`PublisherSendError`] describing the failure.
+    /// the data, otherwise a [`SendError`] describing the failure.
     ///
     /// # Example
     ///

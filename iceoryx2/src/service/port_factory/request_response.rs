@@ -167,6 +167,28 @@ impl<
         }
     }
 
+    /// Returns a [`PortFactoryClient`] to create a new
+    /// [`crate::port::client::Client`] port.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// let request_response = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///     .request_response::<u64, u64>()
+    ///     .open_or_create()?;
+    ///
+    /// let client = request_response
+    ///         .client_builder()
+    ///         .max_loaned_requests(5)
+    ///         .create()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn client_builder(
         &self,
     ) -> PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -174,6 +196,27 @@ impl<
         PortFactoryClient::new(self)
     }
 
+    /// Returns a [`PortFactoryClient`] to create a new
+    /// [`crate::port::client::Client`] port.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// let request_response = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///     .request_response::<u64, u64>()
+    ///     .open_or_create()?;
+    ///
+    /// let client = request_response
+    ///         .server_builder()
+    ///         .create()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn server_builder(
         &self,
     ) -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
