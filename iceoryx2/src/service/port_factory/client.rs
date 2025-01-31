@@ -22,7 +22,7 @@
 //!     .open_or_create()?;
 //!
 //! let client = request_response.client_builder()
-//!                     .max_loaned_samples(6)
+//!                     .max_loaned_requests(6)
 //!                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
 //!                     .create()?;
 //!

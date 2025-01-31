@@ -80,7 +80,7 @@ impl<Service: service::Service> DataSegment<Service> {
         let memory = fail!(from origin,
                                 when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
                                 Service::SharedMemory,
-                                    >>::new(&segment_name)
+                                    >>::new(segment_name)
                                     .config(&segment_config)
                                     .size(chunk_layout.size() * number_of_chunks + chunk_layout.align() - 1)
                                     .create(&allocator_config),
@@ -107,7 +107,7 @@ impl<Service: service::Service> DataSegment<Service> {
                         PoolAllocator,
                         Service::SharedMemory,
                     >>::MemoryBuilder as NamedConceptBuilder<Service::ResizableSharedMemory>>::new(
-                        &segment_name,
+                        segment_name,
                     )
                     .config(&segment_config)
                     .max_number_of_chunks_hint(number_of_chunks)
@@ -198,7 +198,7 @@ impl<Service: service::Service> DataSegmentView<Service> {
         let segment_config = data_segment_config::<Service>(global_config);
         let memory = fail!(from origin,
                             when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
-                                Builder::new(&segment_name)
+                                Builder::new(segment_name)
                                 .config(&segment_config)
                                 .timeout(global_config.global.service.creation_timeout)
                                 .open(),
@@ -223,7 +223,7 @@ impl<Service: service::Service> DataSegmentView<Service> {
                         PoolAllocator,
                         Service::SharedMemory,
                     >>::ViewBuilder as NamedConceptBuilder<Service::ResizableSharedMemory>>::new(
-                        &segment_name,
+                        segment_name,
                     )
                     .config(&segment_config)
                     .open(),

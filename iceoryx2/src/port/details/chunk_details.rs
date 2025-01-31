@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+
+use alloc::sync::Arc;
 use iceoryx2_cal::shm_allocator::PointerOffset;
-use std::sync::Arc;
 
 #[derive(Debug)]
 pub(crate) struct ChunkDetails<Service: crate::service::Service> {
