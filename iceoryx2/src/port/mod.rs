@@ -67,7 +67,7 @@ impl Debug for DegrationCallback<'_> {
 /// Defines a failure that can occur in
 /// [`Publisher::loan()`](crate::port::publisher::Publisher::loan()) and
 /// [`Publisher::loan_uninit()`](crate::port::publisher::Publisher::loan_uninit())
-/// or is part of [`PublisherSendError`](crate::port::publisher::PublisherSendError) emitted in
+/// or is part of [`SendError`] emitted in
 /// [`Publisher::send_copy()`](crate::port::publisher::Publisher::send_copy()).
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Hash)]
 pub enum LoanError {
@@ -125,3 +125,24 @@ impl core::fmt::Display for SendError {
 }
 
 impl std::error::Error for SendError {}
+
+/// Defines the failure that can occur when receiving data with
+/// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum ReceiveError {
+    /// The maximum amount of data a user can borrow with is
+    /// defined in [`crate::config::Config`]. When this is exceeded no more data can be received
+    /// until the user has released older data.
+    ExceedsMaxBorrowedSamples,
+
+    /// Occurs when a receiver is unable to connect to a corresponding sender.
+    ConnectionFailure(ConnectionFailure),
+}
+
+impl core::fmt::Display for ReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "ReceiveError::{:?}", self)
+    }
+}
+
+impl std::error::Error for ReceiveError {}
