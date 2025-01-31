@@ -13,26 +13,41 @@
 use core::cell::UnsafeCell;
 
 extern crate alloc;
-use alloc::sync::Arc;
-
+use super::data_segment::{DataSegmentType, DataSegmentView};
+use crate::port::update_connections::ConnectionFailure;
+use crate::port::{DegrationAction, DegrationCallback};
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::{
     self, config_scheme::connection_config, naming_scheme::connection_name,
     static_config::publish_subscribe::StaticConfig, ServiceState,
 };
-
-use crate::port::update_connections::ConnectionFailure;
-use iceoryx2_bb_log::fail;
+use alloc::sync::Arc;
+use iceoryx2_bb_container::queue::Queue;
+use iceoryx2_bb_elementary::visitor::{Visitable, Visitor, VisitorMarker};
+use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
 
-use super::data_segment::{DataSegmentType, DataSegmentView};
+#[derive(Clone, Copy)]
+pub(crate) struct SenderDetails {
+    pub(crate) port_id: u128,
+    pub(crate) number_of_samples: usize,
+    pub(crate) max_number_of_segments: u8,
+    pub(crate) data_segment_type: DataSegmentType,
+}
 
 #[derive(Debug)]
 pub(crate) struct Connection<Service: service::Service> {
     pub(crate) receiver: <Service::Connection as ZeroCopyConnection>::Receiver,
     pub(crate) data_segment: DataSegmentView<Service>,
     pub(crate) sender_port_id: u128,
+    visitor_marker: VisitorMarker,
+}
+
+impl<Service: service::Service> Visitable for Connection<Service> {
+    fn visitor_marker(&self) -> &VisitorMarker {
+        &self.visitor_marker
+    }
 }
 
 impl<Service: service::Service> Connection<Service> {
@@ -42,6 +57,7 @@ impl<Service: service::Service> Connection<Service> {
         sender_port_id: u128,
         number_of_samples: usize,
         max_number_of_segments: u8,
+        visitor: &Visitor,
     ) -> Result<Self, ConnectionFailure> {
         let msg = format!(
             "Unable to establish connection to sender port {:?} from receiver port {:?}.",
@@ -80,35 +96,23 @@ impl<Service: service::Service> Connection<Service> {
             receiver,
             data_segment,
             sender_port_id,
+            visitor_marker: visitor.create_visited_marker(),
         })
     }
 }
 #[derive(Debug)]
 pub(crate) struct IncomingConnections<Service: service::Service> {
-    connections: Vec<UnsafeCell<Option<Arc<Connection<Service>>>>>,
-    receiver_port_id: u128,
+    pub(crate) connections: Vec<UnsafeCell<Option<Arc<Connection<Service>>>>>,
+    pub(crate) receiver_port_id: u128,
     pub(crate) service_state: Arc<ServiceState<Service>>,
     pub(crate) static_config: StaticConfig,
     pub(crate) buffer_size: usize,
+    pub(crate) visitor: Visitor,
+    pub(crate) to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
+    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
 }
 
 impl<Service: service::Service> IncomingConnections<Service> {
-    pub(crate) fn new(
-        capacity: usize,
-        receiver_port_id: u128,
-        service_state: Arc<ServiceState<Service>>,
-        static_config: &StaticConfig,
-        buffer_size: usize,
-    ) -> Self {
-        Self {
-            connections: (0..capacity).map(|_| UnsafeCell::new(None)).collect(),
-            receiver_port_id,
-            service_state,
-            static_config: static_config.clone(),
-            buffer_size,
-        }
-    }
-
     pub(crate) fn receiver_port_id(&self) -> u128 {
         self.receiver_port_id
     }
@@ -129,23 +133,33 @@ impl<Service: service::Service> IncomingConnections<Service> {
     pub(crate) fn create(
         &self,
         index: usize,
-        data_segment_type: DataSegmentType,
-        sender_port_id: u128,
-        number_of_samples: usize,
-        max_number_of_segments: u8,
+        sender_details: &SenderDetails,
     ) -> Result<(), ConnectionFailure> {
         *self.get_mut(index) = Some(Arc::new(Connection::new(
             self,
-            data_segment_type,
-            sender_port_id,
-            number_of_samples,
-            max_number_of_segments,
+            sender_details.data_segment_type,
+            sender_details.port_id,
+            sender_details.number_of_samples,
+            sender_details.max_number_of_segments,
+            &self.visitor,
         )?));
 
         Ok(())
     }
 
-    pub(crate) fn remove(&self, index: usize) {
+    pub(crate) fn prepare_connection_removal(&self, index: usize) {
+        if let Some(connection) = self.get(index) {
+            if connection.receiver.has_data()
+                && !unsafe { &mut *self.to_be_removed_connections.get() }.push(connection.clone())
+            {
+                warn!(from self,
+                    "Expired connection buffer exceeded. A publisher disconnected with undelivered samples that will be discarded. Increase the config entry `defaults.publish-subscribe.subscriber-expired-connection-buffer` to mitigate the problem.");
+            }
+        }
+    }
+
+    pub(crate) fn remove_connection(&self, index: usize) {
+        self.prepare_connection_removal(index);
         *self.get_mut(index) = None;
     }
 
@@ -155,5 +169,72 @@ impl<Service: service::Service> IncomingConnections<Service> {
 
     pub(crate) fn capacity(&self) -> usize {
         self.connections.capacity()
+    }
+
+    pub(crate) fn start_update_connection_cycle(&self) {
+        self.visitor.next_cycle();
+    }
+
+    pub(crate) fn update_connection(
+        &self,
+        index: usize,
+        sender_details: SenderDetails,
+    ) -> Result<(), ConnectionFailure> {
+        let create_connection = match self.get(index) {
+            None => true,
+            Some(connection) => {
+                let is_connected = connection.sender_port_id == sender_details.port_id;
+                if is_connected {
+                    self.visitor.visit(connection.as_ref());
+                }
+                !is_connected
+            }
+        };
+
+        if create_connection {
+            self.prepare_connection_removal(index);
+
+            match self.create(index, &sender_details) {
+                Ok(()) => Ok(()),
+                Err(e) => match &self.degration_callback {
+                    None => {
+                        warn!(from self,
+                                "Unable to establish connection to new sender {:?}.",
+                                sender_details.port_id);
+                        Ok(())
+                    }
+                    Some(c) => {
+                        match c.call(
+                            &self.service_state.static_config,
+                            sender_details.port_id,
+                            self.receiver_port_id(),
+                        ) {
+                            DegrationAction::Ignore => Ok(()),
+                            DegrationAction::Warn => {
+                                warn!(from self, "Unable to establish connection to new sender {:?}.",
+                                        sender_details.port_id);
+                                Ok(())
+                            }
+                            DegrationAction::Fail => {
+                                fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
+                                        sender_details.port_id);
+                            }
+                        }
+                    }
+                },
+            }
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) fn finish_update_connection_cycle(&self) {
+        for n in 0..self.len() {
+            if let Some(connection) = self.get(n) {
+                if !connection.was_visited_by(&self.visitor) {
+                    self.remove_connection(n);
+                }
+            }
+        }
     }
 }
