@@ -89,6 +89,11 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macOS-latest]
+        cargo-features-flag: [""]
+        include:
+          - os: ubuntu-latest
+            cargo-features-flag: "--features libc_platform"
+
     timeout-minutes: 10
     runs-on: ${{ matrix.os }}
     steps:
@@ -105,13 +110,13 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run cargo clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy ${{ matrix.cargo-features-flag }} -- -D warnings
 
       - name: Run code examples in documentation
-        run: cargo test --workspace --doc
+        run: cargo test --workspace --doc ${{ matrix.cargo-features-flag }}
 
       - name: Build documentation
-        run: cargo doc
+        run: cargo doc ${{ matrix.cargo-features-flag }}
 
   static-code-analysis-cpp:
     needs: preflight-check
@@ -272,6 +277,7 @@ jobs:
             arg: ""
             cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
             cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
+        cargo-features-flag: ["", "--features libc_platform"]
         include:
           # NOTE: enable for MinGW
           # - toolchain: stable-gnu
@@ -279,12 +285,18 @@ jobs:
           - os: windows-latest
             toolchain: stable
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
-        # NOTE: enable for MinGW
-        # exclude:
-        #  - os: ubuntu-latest
-        #    toolchain: stable-gnu
-        #  - os: macos-latest
-        #    toolchain: stable-gnu
+          - os: ubuntu-latest
+            toolchain: stable
+        exclude:
+          # NOTE: enable for MinGW
+          # - os: ubuntu-latest
+          #   toolchain: stable-gnu
+          # - os: macos-latest
+          #   toolchain: stable-gnu
+          - os: windows-latest
+            cargo-features-flag: "--features libc_platform"
+          - os: macos-latest
+            cargo-features-flag: "--features libc_platform"
     timeout-minutes: 60
     runs-on: ${{ matrix.os }}
     steps:
@@ -313,10 +325,10 @@ jobs:
           uname -a
 
       - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
+        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }}
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
 
       - name: Build iceoryx_hoofs on Windows
         if: ${{ matrix.os == 'windows-latest' }}
