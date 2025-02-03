@@ -85,6 +85,7 @@ colored = { version = "2.1" }
 generic-tests = { version = "0.1.2" }
 human-panic = { version = "1.2.3" }
 lazy_static = { version = "1.4.0" }
+libc = { version = "0.2.169" }
 log = { version = "0.4.21" }
 once_cell = { version = "1.19.0" }
 ouroboros = { version = "0.18.4" }

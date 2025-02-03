@@ -10,6 +10,14 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 version = { workspace = true }
 
+[features]
+# Use https://crates.io/crates/libc for the platform abstraction. This simplifies
+# cross-compilation since bindgen is not required anymore. Unfortunately, the libc crate
+# does not offer all the functionality iceoryx2 requires on all of the supported
+# platforms. Therefore, only a subset of the supported platforms will work with this
+# feature flag.
+libc_platform = []
+
 [build-dependencies]
 cc = { workspace = true }
 bindgen = { workspace = true }
@@ -18,6 +26,7 @@ bindgen = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
 lazy_static = { workspace = true }
+libc = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { workspace = true }

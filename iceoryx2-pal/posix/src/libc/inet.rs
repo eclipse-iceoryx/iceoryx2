@@ -14,17 +14,17 @@
 #![allow(clippy::missing_safety_doc)]
 
 pub unsafe fn htonl(hostlong: u32) -> u32 {
-    crate::internal::htonl(hostlong)
+    libc::htonl(hostlong)
 }
 
 pub unsafe fn htons(hostshort: u16) -> u16 {
-    crate::internal::htons(hostshort)
+    libc::htons(hostshort)
 }
 
 pub unsafe fn ntohl(netlong: u32) -> u32 {
-    crate::internal::ntohl(netlong)
+    libc::ntohl(netlong)
 }
 
 pub unsafe fn ntohs(netshort: u16) -> u16 {
-    crate::internal::ntohs(netshort)
+    libc::ntohs(netshort)
 }

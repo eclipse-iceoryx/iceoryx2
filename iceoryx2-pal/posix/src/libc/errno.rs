@@ -21,7 +21,7 @@ macro_rules! ErrnoEnumGenerator {
         #[repr(i32)]
         pub enum Errno {
             $($entry = $value),*,
-            $($map_entry = crate::internal::$map_entry as _),*,
+            $($map_entry = libc::$map_entry as _),*,
             NOTIMPLEMENTED = i32::MAX
         }
 
@@ -30,9 +30,9 @@ macro_rules! ErrnoEnumGenerator {
         impl Into<Errno> for u32 {
         #[deny(clippy::from_over_into)]
             fn into(self) -> Errno {
-                match self {
+                match self as i32 {
                     $($value => Errno::$entry),*,
-                    $($crate::internal::$map_entry => Errno::$map_entry),*,
+                    $(libc::$map_entry => Errno::$map_entry),*,
                     _ => Errno::NOTIMPLEMENTED
                 }
             }
@@ -198,15 +198,15 @@ ErrnoEnumGenerator!(
 
 impl Errno {
     pub fn get() -> Errno {
-        unsafe { *crate::internal::__errno_location() }.into()
+        unsafe { *libc::__errno_location() }.into()
     }
 
     pub fn set(value: Errno) {
-        unsafe { *crate::internal::__errno_location() = value as i32 };
+        unsafe { *libc::__errno_location() = value as i32 };
     }
 
     pub fn reset() {
-        unsafe { *crate::internal::__errno_location() = 0 };
+        unsafe { *libc::__errno_location() = 0 };
     }
 }
 
@@ -229,5 +229,5 @@ pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
 }
 
 pub unsafe fn strerror(errnum: int) -> *const c_char {
-    crate::internal::strerror(errnum)
+    libc::strerror(errnum)
 }

@@ -10,14 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate bindgen;
-extern crate cc;
+#[cfg(feature = "libc_platform")]
+fn main() {}
 
-use bindgen::*;
-use std::env;
-use std::path::PathBuf;
-
+#[cfg(not(feature = "libc_platform"))]
 fn main() {
+    extern crate bindgen;
+    extern crate cc;
+
+    use bindgen::*;
+    use std::env;
+    use std::path::PathBuf;
+
     #[cfg(any(target_os = "linux", target_os = "freebsd"))]
     println!("cargo:rustc-link-lib=pthread");
 
@@ -52,18 +56,8 @@ fn main() {
         .write_to_file(out_path.join("posix_generated.rs"))
         .expect("Couldn't write bindings!");
 
-    println!("cargo:rerun-if-changed=src/c/sigaction.c");
-    cc::Build::new()
-        .file("src/c/sigaction.c")
-        .compile("libsigaction.a");
-
     println!("cargo:rerun-if-changed=src/c/socket_macros.c");
     cc::Build::new()
         .file("src/c/socket_macros.c")
         .compile("libsocket_macros.a");
-
-    println!("cargo:rerun-if-changed=src/c/dirent.c");
-    cc::Build::new()
-        .file("src/c/dirent.c")
-        .compile("libdirent.a");
 }

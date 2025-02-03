@@ -197,24 +197,6 @@ pub struct sched_param {
 }
 impl Struct for sched_param {}
 
-#[derive(Clone, Copy, Debug)]
-#[repr(C)]
-pub struct sigaction_t {
-    pub iox2_sa_handler: sighandler_t,
-    pub iox2_sa_mask: sigset_t,
-    pub iox2_sa_flags: int,
-}
-
-impl Struct for sigaction_t {
-    fn new() -> Self {
-        Self {
-            iox2_sa_handler: 0,
-            iox2_sa_mask: sigset_t::new(),
-            iox2_sa_flags: 0,
-        }
-    }
-}
-
 #[repr(C)]
 pub struct stat_t {
     pub st_dev: dev_t,
@@ -231,13 +213,7 @@ pub struct stat_t {
     pub st_blksize: blksize_t,
     pub st_blocks: blkcnt_t,
 }
-impl From<crate::internal::stat> for stat_t {
-    fn from(value: crate::internal::stat) -> Self {
-        stat_t::new()
-    }
-}
 impl Struct for stat_t {}
-impl Struct for crate::internal::stat {}
 
 pub type timespec = crate::internal::timespec;
 impl Struct for timespec {}

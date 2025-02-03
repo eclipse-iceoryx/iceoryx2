@@ -59,11 +59,6 @@ pub const SO_PASSCRED: int = crate::internal::SO_PASSCRED as _;
 pub const SO_PEERCRED: int = crate::internal::SO_PEERCRED as _;
 pub const SCM_CREDENTIALS: int = 0x02;
 
-pub const PTHREAD_PREFER_READER_NP: int = crate::internal::PTHREAD_RWLOCK_PREFER_READER_NP as _;
-pub const PTHREAD_PREFER_WRITER_NP: int = crate::internal::PTHREAD_RWLOCK_PREFER_WRITER_NP as _;
-pub const PTHREAD_PREFER_WRITER_NONRECURSIVE_NP: int =
-    crate::internal::PTHREAD_RWLOCK_PREFER_WRITER_NONRECURSIVE_NP as _;
-
 pub const PTHREAD_MUTEX_NORMAL: int = crate::internal::PTHREAD_MUTEX_NORMAL as _;
 pub const PTHREAD_MUTEX_RECURSIVE: int = crate::internal::PTHREAD_MUTEX_RECURSIVE as _;
 pub const PTHREAD_MUTEX_ERRORCHECK: int = crate::internal::PTHREAD_MUTEX_ERRORCHECK as _;
@@ -104,8 +99,6 @@ pub const PTHREAD_PROCESS_SHARED: int = crate::internal::PTHREAD_PROCESS_SHARED 
 pub const PTHREAD_PRIO_NONE: int = crate::internal::PTHREAD_PRIO_NONE as _;
 pub const PTHREAD_PRIO_INHERIT: int = crate::internal::PTHREAD_PRIO_INHERIT as _;
 pub const PTHREAD_PRIO_PROTECT: int = crate::internal::PTHREAD_PRIO_PROTECT as _;
-pub const PTHREAD_SCOPE_SYSTEM: int = crate::internal::PTHREAD_SCOPE_SYSTEM as _;
-pub const PTHREAD_SCOPE_PROCESS: int = crate::internal::PTHREAD_SCOPE_PROCESS as _;
 
 pub const RLIMIT_CPU: __rlim_t = 0;
 pub const RLIMIT_FSIZE: __rlim_t = 1;

@@ -86,7 +86,9 @@ pub unsafe fn pthread_attr_setaffinity_np(
     cpusetsize: size_t,
     cpuset: *const cpu_set_t,
 ) -> int {
-    internal::pthread_attr_setaffinity_np(attr, cpusetsize, cpuset)
+    let cpuset = core::mem::transmute::<cpu_set_t, native_cpu_set_t>(*cpuset);
+
+    internal::pthread_attr_setaffinity_np(attr, cpusetsize, &cpuset)
 }
 
 pub unsafe fn pthread_create(
@@ -123,7 +125,9 @@ pub unsafe fn pthread_setaffinity_np(
     cpusetsize: size_t,
     cpuset: *const cpu_set_t,
 ) -> int {
-    internal::pthread_setaffinity_np(thread, cpusetsize, cpuset)
+    let cpuset = core::mem::transmute::<cpu_set_t, native_cpu_set_t>(*cpuset);
+
+    internal::pthread_setaffinity_np(thread, cpusetsize, &cpuset)
 }
 
 pub unsafe fn pthread_getaffinity_np(
@@ -131,7 +135,13 @@ pub unsafe fn pthread_getaffinity_np(
     cpusetsize: size_t,
     cpuset: *mut cpu_set_t,
 ) -> int {
-    internal::pthread_getaffinity_np(thread, cpusetsize, cpuset)
+    let mut native_cpuset = native_cpu_set_t::new();
+
+    let ret_val = internal::pthread_getaffinity_np(thread, cpusetsize, &mut native_cpuset);
+
+    *cpuset = core::mem::transmute::<native_cpu_set_t, cpu_set_t>(native_cpuset);
+
+    ret_val
 }
 
 pub unsafe fn pthread_rwlockattr_init(attr: *mut pthread_rwlockattr_t) -> int {
@@ -243,7 +253,7 @@ mod internal {
         pub(super) fn pthread_attr_setaffinity_np(
             attr: *mut pthread_attr_t,
             cpusetsize: size_t,
-            cpuset: *const cpu_set_t,
+            cpuset: *const native_cpu_set_t,
         ) -> int;
 
         pub(super) fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int;
@@ -252,12 +262,12 @@ mod internal {
         pub(super) fn pthread_setaffinity_np(
             thread: pthread_t,
             cpusetsize: size_t,
-            cpuset: *const cpu_set_t,
+            cpuset: *const native_cpu_set_t,
         ) -> int;
         pub(super) fn pthread_getaffinity_np(
             thread: pthread_t,
             cpusetsize: size_t,
-            cpuset: *mut cpu_set_t,
+            cpuset: *mut native_cpu_set_t,
         ) -> int;
     }
 }

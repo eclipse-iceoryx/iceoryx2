@@ -23,7 +23,7 @@ pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) 
 }
 
 pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
-    let mut os_specific_buffer = crate::internal::stat::new();
+    let mut os_specific_buffer = native_stat_t::new();
     match crate::internal::fstat(fd, &mut os_specific_buffer) {
         0 => {
             *buf = os_specific_buffer.into();

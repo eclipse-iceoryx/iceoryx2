@@ -59,6 +59,9 @@ pub type uint = crate::internal::uint;
 pub type ushort = crate::internal::ushort;
 pub type void = core::ffi::c_void;
 
+pub(crate) type native_cpu_set_t = crate::internal::cpu_set_t;
+impl Struct for native_cpu_set_t {}
+
 pub type sigset_t = crate::internal::sigset_t;
 impl Struct for sigset_t {}
 
@@ -98,8 +101,8 @@ impl Struct for rlimit {}
 pub type sched_param = crate::internal::sched_param;
 impl Struct for sched_param {}
 
-pub type sigaction_t = crate::internal::iox2_sigaction;
-impl Struct for sigaction_t {}
+pub(crate) type native_stat_t = crate::internal::stat;
+impl Struct for native_stat_t {}
 
 #[repr(C)]
 pub struct stat_t {
@@ -117,8 +120,8 @@ pub struct stat_t {
     pub st_blksize: blksize_t,
     pub st_blocks: blkcnt_t,
 }
-impl From<crate::internal::stat> for stat_t {
-    fn from(value: crate::internal::stat) -> Self {
+impl From<native_stat_t> for stat_t {
+    fn from(value: native_stat_t) -> Self {
         stat_t {
             st_dev: value.st_dev,
             st_ino: value.st_ino,
@@ -137,7 +140,6 @@ impl From<crate::internal::stat> for stat_t {
     }
 }
 impl Struct for stat_t {}
-impl Struct for crate::internal::stat {}
 
 pub type timespec = crate::internal::timespec;
 impl Struct for timespec {}
