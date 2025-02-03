@@ -31,7 +31,11 @@
 //! ```
 
 use super::request_response::PortFactory;
-use crate::{port::client::Client, prelude::UnableToDeliverStrategy, service};
+use crate::{
+    port::{client::Client, DegrationAction, DegrationCallback},
+    prelude::UnableToDeliverStrategy,
+    service,
+};
 use core::fmt::Debug;
 use iceoryx2_bb_log::fail;
 
@@ -77,6 +81,7 @@ pub struct PortFactoryClient<
     >,
     pub(crate) max_loaned_requests: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
 }
 
 impl<
@@ -132,6 +137,20 @@ impl<
         self
     }
 
+    pub fn set_degration_callback<
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
+    >(
+        mut self,
+        callback: Option<F>,
+    ) -> Self {
+        match callback {
+            Some(c) => self.degration_callback = Some(DegrationCallback::new(c)),
+            None => self.degration_callback = None,
+        }
+
+        self
+    }
+
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.
     pub fn create(
         self,
@@ -139,8 +158,9 @@ impl<
         Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         ClientCreateError,
     > {
-        Ok(fail!(from self,
-              when Client::new(&self),
+        let origin = format!("{:?}", self);
+        Ok(fail!(from origin,
+              when Client::new(self),
               "Failed to create new Client port."))
     }
 }

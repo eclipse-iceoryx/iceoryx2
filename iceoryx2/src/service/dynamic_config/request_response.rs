@@ -107,6 +107,14 @@ impl DynamicConfig {
         unsafe { self.clients.remove(handle, ReleaseMode::Default) };
     }
 
+    pub(crate) fn add_server_id(&self, details: ServerDetails) -> Option<ContainerHandle> {
+        unsafe { self.servers.add(details).ok() }
+    }
+
+    pub(crate) fn release_server_handle(&self, handle: ContainerHandle) {
+        unsafe { self.servers.remove(handle, ReleaseMode::Default) };
+    }
+
     #[doc(hidden)]
     pub fn __internal_list_servers<F: FnMut(&ServerDetails)>(&self, mut callback: F) {
         let state = unsafe { self.servers.get_state() };

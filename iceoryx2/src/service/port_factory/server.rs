@@ -30,14 +30,21 @@
 //! ```
 
 use super::request_response::PortFactory;
-use crate::{port::server::Server, service};
+use crate::{
+    port::{server::Server, DegrationAction, DegrationCallback},
+    prelude::UnableToDeliverStrategy,
+    service,
+};
 use core::fmt::Debug;
 use iceoryx2_bb_log::fail;
 
 /// Defines a failure that can occur when a [`Server`] is created with
 /// [`crate::service::port_factory::server::PortFactoryServer`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum ServerCreateError {}
+pub enum ServerCreateError {
+    BufferSizeExceedsMaxSupportedBufferSizeOfService,
+    ExceedsMaxSupportedServers,
+}
 
 impl core::fmt::Display for ServerCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -59,13 +66,18 @@ pub struct PortFactoryServer<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    _factory: &'factory PortFactory<
+    pub(crate) factory: &'factory PortFactory<
         Service,
         RequestPayload,
         RequestHeader,
         ResponsePayload,
         ResponseHeader,
     >,
+
+    pub(crate) buffer_size: usize,
+    pub(crate) max_loaned_responses_per_request: usize,
+    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
 }
 
 impl<
@@ -94,7 +106,50 @@ impl<
             ResponseHeader,
         >,
     ) -> Self {
-        Self { _factory: factory }
+        let defs = &factory
+            .service
+            .__internal_state()
+            .shared_node
+            .config()
+            .defaults
+            .request_response;
+
+        Self {
+            factory,
+            buffer_size: defs.max_request_buffer_size,
+            max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
+            unable_to_deliver_strategy: defs.server_unable_to_deliver_strategy,
+            degration_callback: None,
+        }
+    }
+
+    pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
+        self.unable_to_deliver_strategy = value;
+        self
+    }
+
+    pub fn buffer_size(mut self, value: usize) -> Self {
+        self.buffer_size = value;
+        self
+    }
+
+    pub fn max_loaned_responses_per_request(mut self, value: usize) -> Self {
+        self.max_loaned_responses_per_request = value;
+        self
+    }
+
+    pub fn set_degration_callback<
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
+    >(
+        mut self,
+        callback: Option<F>,
+    ) -> Self {
+        match callback {
+            Some(c) => self.degration_callback = Some(DegrationCallback::new(c)),
+            None => self.degration_callback = None,
+        }
+
+        self
     }
 
     /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
@@ -104,8 +159,9 @@ impl<
         Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         ServerCreateError,
     > {
-        Ok(fail!(from self,
-              when Server::new(),
+        let origin = format!("{:?}", self);
+        Ok(fail!(from origin,
+              when Server::new(self),
               "Failed to create new Server port."))
     }
 }

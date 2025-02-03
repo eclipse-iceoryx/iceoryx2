@@ -170,7 +170,7 @@ impl<
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new(
-        client_factory: &PortFactoryClient<
+        client_factory: PortFactoryClient<
             Service,
             RequestPayload,
             RequestHeader,
@@ -235,7 +235,7 @@ impl<
                     receiver_max_buffer_size: static_config.max_request_buffer_size,
                     receiver_max_borrowed_samples: static_config.max_borrowed_requests,
                     enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
-                    degration_callback: None,
+                    degration_callback: client_factory.degration_callback,
                     number_of_samples: number_of_requests,
                     max_number_of_segments,
                     service_state: service.__internal_state().clone(),
