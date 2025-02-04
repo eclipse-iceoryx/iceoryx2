@@ -15,8 +15,8 @@
 
 use crate::posix::types::*;
 
-pub const GLOBAL_PATH: &str = "C:/";
-pub const USER_PATH: &str = ".config";
+pub const GLOBAL_CONFIG_PATH: &str = "C:/";
+pub const USER_CONFIG_PATH: &str = ".config";
 
 pub const CPU_SETSIZE: usize = core::mem::size_of::<usize>() * 8;
 pub const MAX_NUMBER_OF_THREADS: usize = 1024;

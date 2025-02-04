@@ -37,6 +37,7 @@ use iceoryx2_bb_log::fail;
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::user_name::UserName;
+use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
@@ -102,6 +103,7 @@ pub struct User {
     name: UserName,
     info: String,
     home_dir: String,
+    config_dir: String,
     shell: String,
     password: String,
 }
@@ -153,6 +155,11 @@ impl User {
     /// Return the users home directory.
     pub fn home_dir(&self) -> &str {
         self.home_dir.as_str()
+    }
+
+    /// Returns the users config directory.
+    pub fn config_dir(&self) -> &str {
+        self.config_dir.as_str()
     }
 
     /// Return the users default shell.
@@ -232,6 +239,7 @@ impl User {
                             msg, UserName::max_len());
         let info = Self::extract_entry(&origin, passwd.pw_gecos, "gecos entry")?;
         let home_dir = Self::extract_entry(&origin, passwd.pw_dir, "home directory")?;
+        let config_dir = home_dir.clone() + &PATH_SEPARATOR.to_string() + posix::USER_CONFIG_PATH;
         let shell = Self::extract_entry(&origin, passwd.pw_shell, "shell")?;
         let password = Self::extract_entry(&origin, passwd.pw_passwd, "password")?;
 
@@ -241,6 +249,7 @@ impl User {
             name,
             info,
             home_dir,
+            config_dir,
             shell,
             password,
         })
