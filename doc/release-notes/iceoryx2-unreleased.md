@@ -11,6 +11,8 @@
     conflicts when merging.
 -->
 
+* Lookup config file in default locations
+    [#442](https://github.com/eclipse-iceoryx/iceoryx2/issues/442)
 * Introduce `socket_pair` abstraction in POSIX wrapper
     [#508](https://github.com/eclipse-iceoryx/iceoryx2/issues/508)
 * Introduce `socket_pair` event concept

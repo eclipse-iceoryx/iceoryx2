@@ -248,7 +248,7 @@ impl User {
                         when Path::new(home_dir_raw.as_bytes()),
                         with UserError::InvalidSymbolsInPathEntry,
                         "{} since the user home dir path \"{}\" contains invalid path symbols.", msg, home_dir_raw);
-        let mut config_dir = home_dir.clone();
+        let mut config_dir = home_dir;
         fail!(from origin,
               when config_dir.add_path_entry(&get_user_config_path()),
               with UserError::ConfigPathIsTooLong,

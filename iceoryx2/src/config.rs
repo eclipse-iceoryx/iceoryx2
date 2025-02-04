@@ -406,7 +406,7 @@ impl Config {
                          when iceoryx2_bb_posix::user::User::from_self(),
                          with ConfigIterationFailure::UnableToAcquireCurrentUserDetails,
                          "{} since the current user details could not be acquired.", msg);
-        let mut user_config = user.config_dir().clone();
+        let mut user_config = *user.config_dir();
         fail!(from origin,
                 when user_config.add_path_entry(&Self::relative_config_path()),
                 with ConfigIterationFailure::TooLongUserConfigDirectory,
