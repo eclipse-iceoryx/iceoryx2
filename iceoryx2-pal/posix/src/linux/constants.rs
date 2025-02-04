@@ -15,6 +15,9 @@
 
 use crate::posix::types::*;
 
+pub const GLOBAL_PATH: &str = "/etc";
+pub const USER_PATH: &str = ".config";
+
 pub const CPU_SETSIZE: usize = crate::internal::__CPU_SETSIZE as _;
 pub const FD_SETSIZE: usize = crate::internal::FD_SETSIZE as _;
 pub const NULL_TERMINATOR: c_char = 0;
