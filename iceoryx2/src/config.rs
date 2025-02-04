@@ -90,6 +90,7 @@ const RELATIVE_CONFIG_FILE_PATH: &[u8] = b"iceoryx2";
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ConfigIterationFailure {
+    #[allow(dead_code)] // TODO: #617
     UnableToAcquireCurrentUserDetails,
     TooLongUserConfigDirectory,
 }
@@ -402,22 +403,25 @@ impl Config {
         }
 
         // prio 2: lookup user config file
-        let user = fail!(from origin,
+        #[cfg(not(target_os = "windows"))] // TODO: #617
+        {
+            let user = fail!(from origin,
                          when iceoryx2_bb_posix::user::User::from_self(),
                          with ConfigIterationFailure::UnableToAcquireCurrentUserDetails,
                          "{} since the current user details could not be acquired.", msg);
-        let mut user_config = *user.config_dir();
-        fail!(from origin,
+            let mut user_config = *user.config_dir();
+            fail!(from origin,
                 when user_config.add_path_entry(&Self::relative_config_path()),
                 with ConfigIterationFailure::TooLongUserConfigDirectory,
                 "{} since the resulting user config directory would be too long.", msg);
-        let user_config = fail!(from origin,
+            let user_config = fail!(from origin,
                 when FilePath::from_path_and_file(&user_config, &Self::default_config_file_name()),
                 with ConfigIterationFailure::TooLongUserConfigDirectory,
                 "{} since the resulting user config directory would be too long.", msg);
 
-        if callback(user_config) == CallbackProgression::Stop {
-            return Ok(());
+            if callback(user_config) == CallbackProgression::Stop {
+                return Ok(());
+            }
         }
 
         // prio 3: lookup global config file

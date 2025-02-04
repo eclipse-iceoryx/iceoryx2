@@ -127,6 +127,7 @@ mod node {
 
     #[test]
     fn without_custom_config_global_config_is_used<S: Service>() {
+        set_log_level(LogLevel::Trace);
         let sut = NodeBuilder::new().create::<S>().unwrap();
 
         assert_that!(*sut.config(), eq * Config::global_config());
