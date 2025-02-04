@@ -36,12 +36,16 @@ use super::{HandleToType, IntoCInt};
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_config_creation_error_e {
-    /// The config file could not be opened.
-    FAILED_TO_OPEN_CONFIG_FILE = IOX2_OK as isize + 1,
     /// The config file could not be read.
-    FAILED_TO_READ_CONFIG_FILE_CONTENTS,
+    FAILED_TO_READ_CONFIG_FILE_CONTENTS = IOX2_OK as isize + 1,
     /// Parts of the config file could not be deserialized. Indicates some kind of syntax error.
     UNABLE_TO_DESERIALIZE_CONTENTS,
+    /// Insufficient permissions to open the config file.
+    INSUFFICIENT_PERMISSIONS,
+    /// The provided config file does not exist
+    CONFIG_FILE_DOES_NOT_EXIST,
+    /// Since the config file could not be opened
+    UNABLE_TO_OPEN_CONFIG_FILE,
     /// The provided string is not a valid file path
     INVALID_FILE_PATH,
 }
@@ -49,14 +53,20 @@ pub enum iox2_config_creation_error_e {
 impl IntoCInt for ConfigCreationError {
     fn into_c_int(self) -> c_int {
         (match self {
-            ConfigCreationError::FailedToOpenConfigFile => {
-                iox2_config_creation_error_e::FAILED_TO_OPEN_CONFIG_FILE
-            }
             ConfigCreationError::FailedToReadConfigFileContents => {
                 iox2_config_creation_error_e::FAILED_TO_READ_CONFIG_FILE_CONTENTS
             }
             ConfigCreationError::UnableToDeserializeContents => {
                 iox2_config_creation_error_e::UNABLE_TO_DESERIALIZE_CONTENTS
+            }
+            ConfigCreationError::InsufficientPermissions => {
+                iox2_config_creation_error_e::INSUFFICIENT_PERMISSIONS
+            }
+            ConfigCreationError::ConfigFileDoesNotExist => {
+                iox2_config_creation_error_e::CONFIG_FILE_DOES_NOT_EXIST
+            }
+            ConfigCreationError::UnableToOpenConfigFile => {
+                iox2_config_creation_error_e::UNABLE_TO_OPEN_CONFIG_FILE
             }
         }) as c_int
     }

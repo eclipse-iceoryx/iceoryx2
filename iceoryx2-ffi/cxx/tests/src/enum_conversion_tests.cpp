@@ -29,9 +29,11 @@ namespace {
 
 TEST(EnumConversionTest, config_creation_into_c_str) {
     using Sut = iox2::ConfigCreationError;
-    ASSERT_GT(strlen(iox::into<const char*>(Sut::FailedToOpenConfigFile)), 1U);
     ASSERT_GT(strlen(iox::into<const char*>(Sut::UnableToDeserializeContents)), 1U);
     ASSERT_GT(strlen(iox::into<const char*>(Sut::FailedToReadConfigFileContents)), 1U);
+    ASSERT_GT(strlen(iox::into<const char*>(Sut::InsufficientPermissions)), 1U);
+    ASSERT_GT(strlen(iox::into<const char*>(Sut::ConfigFileDoesNotExist)), 1U);
+    ASSERT_GT(strlen(iox::into<const char*>(Sut::UnableToOpenConfigFile)), 1U);
 }
 
 TEST(EnumConversionTest, connection_failure_into_c_str) {

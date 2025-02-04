@@ -73,7 +73,9 @@ use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::{lazy_singleton::*, CallbackProgression};
 use iceoryx2_bb_posix::{
-    file::FileBuilder, shared_memory::AccessMode, system_configuration::get_global_config_path,
+    file::{FileBuilder, FileOpenError},
+    shared_memory::AccessMode,
+    system_configuration::get_global_config_path,
 };
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -99,12 +101,16 @@ enum ConfigIterationFailure {
 /// [`Config::setup_global_config_from_file()`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ConfigCreationError {
-    /// The config file could not be opened.
-    FailedToOpenConfigFile,
     /// The config file could not be read.
     FailedToReadConfigFileContents,
     /// Parts of the config file could not be deserialized. Indicates some kind of syntax error.
     UnableToDeserializeContents,
+    /// Insufficient permissions to open the config file.
+    InsufficientPermissions,
+    /// The provided config file does not exist
+    ConfigFileDoesNotExist,
+    /// Since the config file could not be opened
+    UnableToOpenConfigFile,
 }
 
 impl core::fmt::Display for ConfigCreationError {
@@ -367,7 +373,7 @@ impl Config {
     fn relative_local_config_path() -> Path {
         fatal_panic!(from "Config::default_config_path",
             when Path::new(RELATIVE_LOCAL_CONFIG_PATH),
-            "This should never happen! The default config path contains invalid symbols.")
+            "This should never happen! The relative local config path contains invalid symbols.")
     }
 
     /// The name of the default iceoryx2 config file
@@ -446,9 +452,27 @@ impl Config {
         let msg = "Failed to create config";
         let mut new_config = Self::default();
 
-        let file = fail!(from new_config, when FileBuilder::new(config_file).open_existing(AccessMode::Read),
-                with ConfigCreationError::FailedToOpenConfigFile,
-                "{} since the config file could not be opened.", msg);
+        let file = match FileBuilder::new(config_file).open_existing(AccessMode::Read) {
+            Ok(file) => file,
+            Err(FileOpenError::InsufficientPermissions) => {
+                fail!(from new_config,
+                      with ConfigCreationError::InsufficientPermissions,
+                      "{} since the config file \"{}\" could not be opened due to insufficient permissions.",
+                      msg, config_file);
+            }
+            Err(FileOpenError::FileDoesNotExist) => {
+                fail!(from new_config,
+                      with ConfigCreationError::ConfigFileDoesNotExist,
+                      "{} since the config file \"{}\" does not exist.",
+                      msg, config_file);
+            }
+            Err(e) => {
+                fail!(from new_config,
+                      with ConfigCreationError::UnableToOpenConfigFile,
+                      "{} since the config file \"{}\" could not be open due to an internal error ({:?}).",
+                      msg, config_file, e);
+            }
+        };
 
         let mut contents = String::new();
         fail!(from new_config, when file.read_to_string(&mut contents),
@@ -505,7 +529,8 @@ impl Config {
                         is_config_file_set = true;
                         CallbackProgression::Stop
                     }
-                    Err(ConfigCreationError::FailedToOpenConfigFile) => {
+                    Err(ConfigCreationError::ConfigFileDoesNotExist)
+                    | Err(ConfigCreationError::InsufficientPermissions) => {
                         CallbackProgression::Continue
                     }
                     Err(e) => {
