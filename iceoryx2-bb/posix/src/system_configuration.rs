@@ -18,6 +18,9 @@ use iceoryx2_bb_log::{fatal_panic, warn};
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 
+/// The global config path of the system, where all config files shall be stored.
+pub const GLOBAL_CONFIG_PATH: &str = posix::GLOBAL_CONFIG_PATH;
+
 /// Generic information about the POSIX system.
 /// ```
 /// use iceoryx2_bb_posix::system_configuration::*;
