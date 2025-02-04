@@ -18,12 +18,16 @@
 namespace iox2 {
 /// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`].
 enum class ConfigCreationError : uint8_t {
-    /// The config file could not be opened.
-    FailedToOpenConfigFile,
     /// The config file could not be read.
     FailedToReadConfigFileContents,
     /// Parts of the config file could not be deserialized. Indicates some kind of syntax error.
-    UnableToDeserializeContents
+    UnableToDeserializeContents,
+    /// Insufficient permissions to open the config file.
+    InsufficientPermissions,
+    /// The provided config file does not exist
+    ConfigFileDoesNotExist,
+    /// The config file could not be opened due to an internal error
+    UnableToOpenConfigFile,
 };
 
 } // namespace iox2

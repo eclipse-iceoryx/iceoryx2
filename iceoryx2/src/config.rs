@@ -71,30 +71,46 @@
 
 use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
-use iceoryx2_bb_elementary::lazy_singleton::*;
-use iceoryx2_bb_posix::{file::FileBuilder, shared_memory::AccessMode};
+use iceoryx2_bb_elementary::{lazy_singleton::*, CallbackProgression};
+use iceoryx2_bb_posix::{
+    file::{FileBuilder, FileOpenError},
+    shared_memory::AccessMode,
+    system_configuration::get_global_config_path,
+};
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
 
-use iceoryx2_bb_log::{debug, fail, trace, warn};
+use iceoryx2_bb_log::{fail, fatal_panic, trace, warn};
 
 use crate::service::port_factory::publisher::UnableToDeliverStrategy;
 
-/// Path to the default config file
-pub const DEFAULT_CONFIG_FILE: &[u8] = b"config/iceoryx2.toml";
+const DEFAULT_CONFIG_FILE_NAME: &[u8] = b"iceoryx2.toml";
+const RELATIVE_LOCAL_CONFIG_PATH: &[u8] = b"config";
+const RELATIVE_CONFIG_FILE_PATH: &[u8] = b"iceoryx2";
+
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+enum ConfigIterationFailure {
+    #[allow(dead_code)] // TODO: #617
+    UnableToAcquireCurrentUserDetails,
+    TooLongUserConfigDirectory,
+}
 
 /// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`] or
 /// [`Config::setup_global_config_from_file()`]
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ConfigCreationError {
-    /// The config file could not be opened.
-    FailedToOpenConfigFile,
     /// The config file could not be read.
     FailedToReadConfigFileContents,
     /// Parts of the config file could not be deserialized. Indicates some kind of syntax error.
     UnableToDeserializeContents,
+    /// Insufficient permissions to open the config file.
+    InsufficientPermissions,
+    /// The provided config file does not exist
+    ConfigFileDoesNotExist,
+    /// Since the config file could not be opened
+    UnableToOpenConfigFile,
 }
 
 impl core::fmt::Display for ConfigCreationError {
@@ -354,15 +370,109 @@ impl Default for Config {
 }
 
 impl Config {
+    fn relative_local_config_path() -> Path {
+        fatal_panic!(from "Config::default_config_path",
+            when Path::new(RELATIVE_LOCAL_CONFIG_PATH),
+            "This should never happen! The relative local config path contains invalid symbols.")
+    }
+
+    /// The name of the default iceoryx2 config file
+    pub fn default_config_file_name() -> FileName {
+        fatal_panic!(from "Config::default_config_file",
+            when FileName::new(DEFAULT_CONFIG_FILE_NAME),
+            "This should never happen! The default config file name contains invalid symbols.")
+    }
+
+    /// Path to the default config file
+    pub fn default_config_file_path() -> FilePath {
+        fatal_panic!(from "Config::default_config_file_path",
+            when FilePath::from_path_and_file(&Self::relative_local_config_path(), &Self::default_config_file_name()),
+            "This should never happen! The default config file path contains invalid symbols.")
+    }
+
+    fn relative_config_path() -> Path {
+        fatal_panic!(from "Config::relative_config_path",
+            when Path::new(RELATIVE_CONFIG_FILE_PATH),
+            "This should never happen! The relative config path contains invalid symbols.")
+    }
+
+    fn iterate_over_config_files<F: FnMut(FilePath) -> CallbackProgression>(
+        mut callback: F,
+    ) -> Result<(), ConfigIterationFailure> {
+        let msg = "Unable to consider all possible config file paths";
+        let origin = "Config::iterate_over_config_files";
+
+        // prio 1: handle project local config file first
+        let local_project_config = Self::default_config_file_path();
+        if callback(local_project_config) == CallbackProgression::Stop {
+            return Ok(());
+        }
+
+        // prio 2: lookup user config file
+        #[cfg(not(target_os = "windows"))] // TODO: #617
+        {
+            let user = fail!(from origin,
+                         when iceoryx2_bb_posix::user::User::from_self(),
+                         with ConfigIterationFailure::UnableToAcquireCurrentUserDetails,
+                         "{} since the current user details could not be acquired.", msg);
+            let mut user_config = *user.config_dir();
+            fail!(from origin,
+                when user_config.add_path_entry(&Self::relative_config_path()),
+                with ConfigIterationFailure::TooLongUserConfigDirectory,
+                "{} since the resulting user config directory would be too long.", msg);
+            let user_config = fail!(from origin,
+                when FilePath::from_path_and_file(&user_config, &Self::default_config_file_name()),
+                with ConfigIterationFailure::TooLongUserConfigDirectory,
+                "{} since the resulting user config directory would be too long.", msg);
+
+            if callback(user_config) == CallbackProgression::Stop {
+                return Ok(());
+            }
+        }
+
+        // prio 3: lookup global config file
+        let mut global_config = get_global_config_path();
+        fail!(from origin,
+                when global_config.add_path_entry(&Self::relative_config_path()),
+                with ConfigIterationFailure::TooLongUserConfigDirectory,
+                "{} since the resulting global config directory would be too long.", msg);
+        let global_config = fail!(from origin,
+                when FilePath::from_path_and_file(&global_config, &Self::default_config_file_name()),
+                with ConfigIterationFailure::TooLongUserConfigDirectory,
+                "{} since the resulting global config directory would be too long.", msg);
+
+        callback(global_config);
+
+        Ok(())
+    }
+
     /// Loads a configuration from a file. On success it returns a [`Config`] object otherwise a
     /// [`ConfigCreationError`] describing the failure.
     pub fn from_file(config_file: &FilePath) -> Result<Config, ConfigCreationError> {
         let msg = "Failed to create config";
         let mut new_config = Self::default();
 
-        let file = fail!(from new_config, when FileBuilder::new(config_file).open_existing(AccessMode::Read),
-                with ConfigCreationError::FailedToOpenConfigFile,
-                "{} since the config file could not be opened.", msg);
+        let file = match FileBuilder::new(config_file).open_existing(AccessMode::Read) {
+            Ok(file) => file,
+            Err(FileOpenError::InsufficientPermissions) => {
+                fail!(from new_config,
+                      with ConfigCreationError::InsufficientPermissions,
+                      "{} since the config file \"{}\" could not be opened due to insufficient permissions.",
+                      msg, config_file);
+            }
+            Err(FileOpenError::FileDoesNotExist) => {
+                fail!(from new_config,
+                      with ConfigCreationError::ConfigFileDoesNotExist,
+                      "{} since the config file \"{}\" does not exist.",
+                      msg, config_file);
+            }
+            Err(e) => {
+                fail!(from new_config,
+                      with ConfigCreationError::UnableToOpenConfigFile,
+                      "{} since the config file \"{}\" could not be open due to an internal error ({:?}).",
+                      msg, config_file, e);
+            }
+        };
 
         let mut contents = String::new();
         fail!(from new_config, when file.read_to_string(&mut contents),
@@ -403,29 +513,40 @@ impl Config {
         Ok(ICEORYX2_CONFIG.get())
     }
 
-    /// Returns the global configuration. If the global configuration was not
-    /// [`Config::setup_global_config_from_file()`] it will load a default config. If
+    /// Returns the global configuration. If the global configuration was not yet loaded it will
+    /// load a default config by looking it up in the system. First it checks if a project local config file
+    /// exists, then if a config file in the user directory exist and then if a global config file exist. If
     /// [`Config::setup_global_config_from_file()`]
     /// is called after this function was called, no file will be loaded since the global default
     /// config was already populated.
     pub fn global_config() -> &'static Config {
+        let origin = "Config::global_config()";
         if !ICEORYX2_CONFIG.is_initialized() {
-            match Config::setup_global_config_from_file(unsafe {
-                &FilePath::new_unchecked(DEFAULT_CONFIG_FILE)
+            let mut is_config_file_set = false;
+            if let Err(e) = Self::iterate_over_config_files(|config_file_path| {
+                match Config::setup_global_config_from_file(&config_file_path) {
+                    Ok(_) => {
+                        is_config_file_set = true;
+                        CallbackProgression::Stop
+                    }
+                    Err(ConfigCreationError::ConfigFileDoesNotExist) => {
+                        CallbackProgression::Continue
+                    }
+                    Err(e) => {
+                        fatal_panic!(from origin,
+                            "Config file found \"{}\" but a failure occurred ({:?}) while reading the content.",
+                            config_file_path, e);
+                    }
+                }
             }) {
-                Ok(_) => (),
-                Err(ConfigCreationError::FailedToOpenConfigFile) => {
-                    debug!(from "Config::global_config()", "Default config file not found, populate config with default values.");
-                    ICEORYX2_CONFIG.set_value(Config::default());
-                }
-                Err(ConfigCreationError::FailedToReadConfigFileContents) => {
-                    warn!(from "Config::global_config()", "Default config file found but unable to read content, populate config with default values.");
-                    ICEORYX2_CONFIG.set_value(Config::default());
-                }
-                Err(ConfigCreationError::UnableToDeserializeContents) => {
-                    warn!(from "Config::global_config()", "Default config file found but unable to load data, populate config with default values.");
-                    ICEORYX2_CONFIG.set_value(Config::default());
-                }
+                fatal_panic!(from origin,
+                    "A failure occurred ({:?}) while looking up the available config files.", e);
+            }
+
+            if !is_config_file_set {
+                warn!(from origin,
+                    "No config file was loaded, a config with default values will be used.");
+                ICEORYX2_CONFIG.set_value(Config::default());
             }
         }
 

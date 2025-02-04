@@ -1247,12 +1247,16 @@ template <>
 constexpr auto from<int, iox2::ConfigCreationError>(const int value) noexcept -> iox2::ConfigCreationError {
     const auto variant = static_cast<iox2_config_creation_error_e>(value);
     switch (variant) {
-    case iox2_config_creation_error_e_FAILED_TO_OPEN_CONFIG_FILE:
-        return iox2::ConfigCreationError::FailedToOpenConfigFile;
     case iox2_config_creation_error_e_FAILED_TO_READ_CONFIG_FILE_CONTENTS:
         return iox2::ConfigCreationError::FailedToReadConfigFileContents;
     case iox2_config_creation_error_e_UNABLE_TO_DESERIALIZE_CONTENTS:
         return iox2::ConfigCreationError::UnableToDeserializeContents;
+    case iox2_config_creation_error_e_INSUFFICIENT_PERMISSIONS:
+        return iox2::ConfigCreationError::InsufficientPermissions;
+    case iox2_config_creation_error_e_CONFIG_FILE_DOES_NOT_EXIST:
+        return iox2::ConfigCreationError::ConfigFileDoesNotExist;
+    case iox2_config_creation_error_e_UNABLE_TO_OPEN_CONFIG_FILE:
+        return iox2::ConfigCreationError::UnableToOpenConfigFile;
     case iox2_config_creation_error_e_INVALID_FILE_PATH:
         // unreachable since this error case is excluded by using the strong type iox::FilePath
         IOX_UNREACHABLE();
@@ -1266,12 +1270,16 @@ constexpr auto
 from<iox2::ConfigCreationError, iox2_config_creation_error_e>(const iox2::ConfigCreationError value) noexcept
     -> iox2_config_creation_error_e {
     switch (value) {
-    case iox2::ConfigCreationError::FailedToOpenConfigFile:
-        return iox2_config_creation_error_e_FAILED_TO_OPEN_CONFIG_FILE;
     case iox2::ConfigCreationError::FailedToReadConfigFileContents:
         return iox2_config_creation_error_e_FAILED_TO_READ_CONFIG_FILE_CONTENTS;
     case iox2::ConfigCreationError::UnableToDeserializeContents:
         return iox2_config_creation_error_e_UNABLE_TO_DESERIALIZE_CONTENTS;
+    case iox2::ConfigCreationError::InsufficientPermissions:
+        return iox2_config_creation_error_e_INSUFFICIENT_PERMISSIONS;
+    case iox2::ConfigCreationError::ConfigFileDoesNotExist:
+        return iox2_config_creation_error_e_CONFIG_FILE_DOES_NOT_EXIST;
+    case iox2::ConfigCreationError::UnableToOpenConfigFile:
+        return iox2_config_creation_error_e_UNABLE_TO_OPEN_CONFIG_FILE;
     }
 
     IOX_UNREACHABLE();

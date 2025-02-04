@@ -5,6 +5,28 @@ iceoryx2 introduces global configuration settings. It enables the concurrent
 execution of multiple iceoryx2 setups on the same machine or within a single
 process by employing distinct configurations.
 
+When **iceoryx2** is started without an explicitly loaded configuration,
+such as:
+
+```rust
+use iceoryx2::config::Config;
+use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_bb_container::semantic_string::SemanticString;
+
+Config::setup_global_config_from_file(
+    &FilePath::new(b"my/custom/config/file.toml")?)?;
+```
+
+it will automatically search for a configuration file in the following
+locations, in order:
+
+1. `$PWD/config/iceoryx2.toml`
+2. `$HOME/.config/iceoryx2/iceoryx2.toml`
+3. `/etc/iceoryx2/iceoryx2.toml`
+
+If no configuration file is found in these locations, **iceoryx2** will use
+its default settings.
+
 ## Sections
 
 The configuration is organized into two main sections:
