@@ -85,7 +85,7 @@ use iceoryx2_bb_log::{fail, fatal_panic, trace, warn};
 use crate::service::port_factory::publisher::UnableToDeliverStrategy;
 
 const DEFAULT_CONFIG_FILE_NAME: &[u8] = b"iceoryx2.toml";
-const DEFAULT_CONFIG_PATH: &[u8] = b"config";
+const RELATIVE_LOCAL_CONFIG_PATH: &[u8] = b"config";
 const RELATIVE_CONFIG_FILE_PATH: &[u8] = b"iceoryx2";
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -363,9 +363,9 @@ impl Default for Config {
 }
 
 impl Config {
-    fn default_config_path() -> Path {
+    fn relative_local_config_path() -> Path {
         fatal_panic!(from "Config::default_config_path",
-            when Path::new(DEFAULT_CONFIG_PATH),
+            when Path::new(RELATIVE_LOCAL_CONFIG_PATH),
             "This should never happen! The default config path contains invalid symbols.")
     }
 
@@ -379,7 +379,7 @@ impl Config {
     /// Path to the default config file
     pub fn default_config_file_path() -> FilePath {
         fatal_panic!(from "Config::default_config_file_path",
-            when FilePath::from_path_and_file(&Self::default_config_path(), &Self::default_config_file_name()),
+            when FilePath::from_path_and_file(&Self::relative_local_config_path(), &Self::default_config_file_name()),
             "This should never happen! The default config file path contains invalid symbols.")
     }
 
@@ -505,20 +505,19 @@ impl Config {
                         CallbackProgression::Continue
                     }
                     Err(e) => {
-                        warn!(from origin,
-                                "Config file found \"{}\" but a failure occurred ({:?}) while reading the content.",
-                                config_file_path, e);
-                        CallbackProgression::Continue
+                        fatal_panic!(from origin,
+                            "Config file found \"{}\" but a failure occurred ({:?}) while reading the content.",
+                            config_file_path, e);
                     }
                 }
             }) {
-                warn!(from origin,
-                    "A failure occurred ({:?}) while looking up all available config files.", e);
+                fatal_panic!(from origin,
+                    "A failure occurred ({:?}) while looking up the available config files.", e);
             }
 
             if !is_config_file_set {
                 warn!(from origin,
-                    "Since no config file could be loaded, a config with internal default values will be set.");
+                    "No config file was loaded, a config with default values will be used.");
                 ICEORYX2_CONFIG.set_value(Config::default());
             }
         }
