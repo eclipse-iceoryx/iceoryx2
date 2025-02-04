@@ -10,9 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{fmt::Debug, marker::PhantomData};
+use std::{fmt::Debug, marker::PhantomData, ops::Deref};
 
-use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
+use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_cal::zero_copy_connection::{ZeroCopyReceiver, ZeroCopyReleaseError};
+
+use crate::{
+    port::{details::chunk_details::ChunkDetails, port_identifiers::UniqueClientId},
+    raw_sample::RawSample,
+};
 
 pub struct ActiveRequest<
     Service: crate::service::Service,
@@ -21,10 +28,12 @@ pub struct ActiveRequest<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    pub(crate) request:
-        RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-    pub(crate) number_of_server_connections: usize,
-    pub(crate) _service: PhantomData<Service>,
+    pub(crate) ptr: RawSample<
+        crate::service::header::request_response::RequestHeader,
+        RequestHeader,
+        RequestPayload,
+    >,
+    pub(crate) details: ChunkDetails<Service>,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
@@ -38,16 +47,63 @@ impl<
     > Debug
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "ActiveRequest<{}, {}, {}, {}, {}> {{ }}",
+            "ActiveRequest<{}, {}, {}, {}, {}> {{ details: {:?} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<RequestPayload>(),
             core::any::type_name::<RequestHeader>(),
             core::any::type_name::<ResponsePayload>(),
-            core::any::type_name::<ResponseHeader>()
+            core::any::type_name::<ResponseHeader>(),
+            self.details
         )
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Deref
+    for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    type Target = RequestPayload;
+    fn deref(&self) -> &Self::Target {
+        self.ptr.as_payload_ref()
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Drop
+    for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn drop(&mut self) {
+        unsafe {
+            self.details
+                .connection
+                .data_segment
+                .unregister_offset(self.details.offset)
+        };
+
+        match self
+            .details
+            .connection
+            .receiver
+            .release(self.details.offset)
+        {
+            Ok(()) => (),
+            Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
+                fatal_panic!(from self, "This should never happen! The clients retrieve channel is full and the request cannot be returned.");
+            }
+        }
     }
 }
 
@@ -59,25 +115,27 @@ impl<
         ResponseHeader: Debug,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    pub fn header(&self) -> &service::header::request_response::RequestHeader {
-        self.request.header()
-    }
-
-    pub fn user_header(&self) -> &RequestHeader {
-        self.request.user_header()
-    }
-
+    /// Returns a reference to the payload of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
     pub fn payload(&self) -> &RequestPayload {
-        self.request.payload()
+        self.ptr.as_payload_ref()
     }
 
-    pub fn number_of_server_connections(&self) -> usize {
-        self.number_of_server_connections
+    /// Returns a reference to the user_header of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn user_header(&self) -> &RequestHeader {
+        self.ptr.as_user_header_ref()
     }
 
-    pub fn receive(
-        &self,
-    ) -> Result<Option<Response<Service, ResponsePayload, ResponseHeader>>, ReceiveError> {
-        todo!()
+    /// Returns a reference to the
+    /// [`crate::service::header::request_response::RequestHeader`] of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn header(&self) -> &crate::service::header::request_response::RequestHeader {
+        self.ptr.as_header_ref()
+    }
+
+    /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
+    pub fn origin(&self) -> UniqueClientId {
+        UniqueClientId(UniqueSystemId::from(self.details.origin))
     }
 }

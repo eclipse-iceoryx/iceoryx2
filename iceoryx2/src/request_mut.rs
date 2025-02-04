@@ -16,7 +16,7 @@ use std::sync::Arc;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::{
-    active_request::ActiveRequest,
+    pending_response::PendingResponse,
     port::{client::ClientBackend, details::outgoing_connections::OutgoingConnections, SendError},
     raw_sample::RawSampleMut,
     service,
@@ -109,7 +109,7 @@ impl<
     pub fn send(
         self,
     ) -> Result<
-        ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         SendError,
     > {
         match self
@@ -117,7 +117,7 @@ impl<
             .send_request(self.offset_to_chunk, self.sample_size)
         {
             Ok(number_of_server_connections) => {
-                let active_request = ActiveRequest {
+                let active_request = PendingResponse {
                     number_of_server_connections,
                     request: self,
                     _service: PhantomData,

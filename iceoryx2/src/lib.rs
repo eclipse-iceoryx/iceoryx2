@@ -298,9 +298,13 @@ pub mod port;
 
 pub(crate) mod raw_sample;
 
+/// Represents a "connection" to a [`Client`](crate::port::client::Client) that corresponds to a
+/// previously received [`RequestMut`](crate::request_mut::RequestMut).
+pub mod active_request;
+
 /// Represents a "connection" to a [`Server`](crate::port::server::Server) that corresponds to a
 /// previously sent [`RequestMut`](crate::request_mut::RequestMut).
-pub mod active_request;
+pub mod pending_response;
 
 /// The payload that is sent by a [`Client`](crate::port::client::Client) to a
 /// [`Server`](crate::port::server::Server).

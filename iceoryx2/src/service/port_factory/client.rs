@@ -122,6 +122,7 @@ impl<
             factory,
             unable_to_deliver_strategy: defs.client_unable_to_deliver_strategy,
             max_loaned_requests: defs.client_max_loaned_requests,
+            degration_callback: None,
         }
     }
 

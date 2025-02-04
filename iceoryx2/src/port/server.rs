@@ -21,7 +21,9 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::{
+    active_request::ActiveRequest,
     prelude::PortFactory,
+    raw_sample::RawSample,
     service::{
         self,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
@@ -31,11 +33,13 @@ use crate::{
 
 use super::{
     details::{
+        chunk::Chunk,
+        chunk_details::ChunkDetails,
         data_segment::DataSegmentType,
         incoming_connections::{IncomingConnections, SenderDetails},
     },
     update_connections::{ConnectionFailure, UpdateConnections},
-    UniqueServerId,
+    ReceiveError, UniqueServerId,
 };
 
 #[derive(Debug)]
@@ -185,6 +189,38 @@ impl<
         self.client_connections.finish_update_connection_cycle();
 
         result
+    }
+
+    fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
+        if let Err(e) = self.update_connections() {
+            fail!(from self,
+                  with ReceiveError::ConnectionFailure(e),
+                  "Some requests are not being received since not all connections to the clients could be established.");
+        }
+
+        self.client_connections.receive()
+    }
+
+    pub fn receive(
+        &self,
+    ) -> Result<
+        Option<
+            ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        >,
+        ReceiveError,
+    > {
+        Ok(self.receive_impl()?.map(|(details, chunk)| ActiveRequest {
+            details,
+            ptr: unsafe {
+                RawSample::new_unchecked(
+                    chunk.header.cast(),
+                    chunk.user_header.cast(),
+                    chunk.payload.cast(),
+                )
+            },
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }))
     }
 }
 
