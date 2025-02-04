@@ -529,8 +529,7 @@ impl Config {
                         is_config_file_set = true;
                         CallbackProgression::Stop
                     }
-                    Err(ConfigCreationError::ConfigFileDoesNotExist)
-                    | Err(ConfigCreationError::InsufficientPermissions) => {
+                    Err(ConfigCreationError::ConfigFileDoesNotExist) => {
                         CallbackProgression::Continue
                     }
                     Err(e) => {
