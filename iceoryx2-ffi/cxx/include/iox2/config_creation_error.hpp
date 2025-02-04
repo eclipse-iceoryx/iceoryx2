@@ -26,7 +26,7 @@ enum class ConfigCreationError : uint8_t {
     InsufficientPermissions,
     /// The provided config file does not exist
     ConfigFileDoesNotExist,
-    /// Since the config file could not be opened
+    /// The config file could not be opened due to an internal error
     UnableToOpenConfigFile,
 };
 
