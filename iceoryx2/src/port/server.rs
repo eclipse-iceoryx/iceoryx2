@@ -78,7 +78,7 @@ impl<
     ) -> Result<Self, ServerCreateError> {
         let msg = "Failed to create Server port";
         let origin = "Server::new()";
-        let port_id = UniqueServerId::new();
+        let server_port_id = UniqueServerId::new();
         let service = &server_factory.factory.service;
 
         let client_list = &service
@@ -101,10 +101,10 @@ impl<
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
-            receiver_port_id: port_id.value(),
+            receiver_port_id: server_port_id.value(),
             service_state: service.__internal_state().clone(),
             message_type_details: static_config.request_message_type_details.clone(),
-            receiver_max_borrowed_samples: static_config.max_active_responses(),
+            receiver_max_borrowed_samples: static_config.max_borrowed_requests,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             buffer_size,
             visitor: Visitor::new(),
@@ -132,7 +132,7 @@ impl<
             .get()
             .request_response()
             .add_server_id(ServerDetails {
-                server_port_id: port_id,
+                server_port_id,
                 buffer_size,
             }) {
             Some(v) => Some(v),
