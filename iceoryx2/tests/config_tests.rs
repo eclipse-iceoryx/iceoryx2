@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod node_name {
-    use iceoryx2::{config::DEFAULT_CONFIG_FILE, prelude::*};
+    use iceoryx2::prelude::*;
     use iceoryx2_bb_system_types::file_path::*;
     use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::{assert_that, test_requires};
@@ -33,7 +33,7 @@ mod node_name {
             Path::new(&top_level_dir.stdout.as_slice()[..top_level_dir.stdout.len() - 1]).unwrap();
 
         config_file_path
-            .add_path_entry(&Path::new(DEFAULT_CONFIG_FILE).unwrap())
+            .add_path_entry(&Config::default_config_file_path().into())
             .unwrap();
 
         let file_config =

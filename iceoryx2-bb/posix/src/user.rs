@@ -36,8 +36,9 @@ use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_log::fail;
 
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_system_types::user_name::UserName;
-use iceoryx2_pal_configuration::PATH_SEPARATOR;
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
@@ -51,6 +52,9 @@ enum_gen! { UserError
     SystemWideFileHandleLimitReached,
     InsufficientBufferSize,
     InvalidUTF8SymbolsInEntry,
+    InvalidSymbolsInPathEntry,
+    InvalidSymbolsInShellPath,
+    ConfigPathIsTooLong,
     SystemUserNameLengthLongerThanSupportedLength,
     UnknownError(i32)
 }
@@ -102,9 +106,9 @@ pub struct User {
     gid: u32,
     name: UserName,
     info: String,
-    home_dir: String,
-    config_dir: String,
-    shell: String,
+    home_dir: Path,
+    config_dir: Path,
+    shell: FilePath,
     password: String,
 }
 
@@ -153,18 +157,18 @@ impl User {
     }
 
     /// Return the users home directory.
-    pub fn home_dir(&self) -> &str {
-        self.home_dir.as_str()
+    pub fn home_dir(&self) -> &Path {
+        &self.home_dir
     }
 
     /// Returns the users config directory.
-    pub fn config_dir(&self) -> &str {
-        self.config_dir.as_str()
+    pub fn config_dir(&self) -> &Path {
+        &self.config_dir
     }
 
     /// Return the users default shell.
-    pub fn shell(&self) -> &str {
-        self.shell.as_str()
+    pub fn shell(&self) -> &FilePath {
+        &self.shell
     }
 
     /// Old entry, should contain only 'x'. Returns the password of the user but on modern systems
@@ -176,12 +180,13 @@ impl User {
     fn extract_entry(
         error_origin: &str,
         field: *mut posix::c_char,
+        error_msg: &str,
         name: &str,
     ) -> Result<String, UserError> {
         Ok(
             fail!(from error_origin, when unsafe { CStr::from_ptr(field) }.to_str(),
                 with UserError::InvalidUTF8SymbolsInEntry,
-                "The {} contains invalid UTF-8 symbols.", name)
+                "{} since the {} contains invalid UTF-8 symbols.", error_msg, name)
             .to_string(),
         )
     }
@@ -237,11 +242,24 @@ impl User {
                             with UserError::SystemUserNameLengthLongerThanSupportedLength,
                             "{} since the user name on the system is longer than the supported length of {}.",
                             msg, UserName::max_len());
-        let info = Self::extract_entry(&origin, passwd.pw_gecos, "gecos entry")?;
-        let home_dir = Self::extract_entry(&origin, passwd.pw_dir, "home directory")?;
-        let config_dir = home_dir.clone() + &PATH_SEPARATOR.to_string() + posix::USER_CONFIG_PATH;
-        let shell = Self::extract_entry(&origin, passwd.pw_shell, "shell")?;
-        let password = Self::extract_entry(&origin, passwd.pw_passwd, "password")?;
+        let info = Self::extract_entry(&origin, passwd.pw_gecos, msg, "gecos entry")?;
+        let home_dir_raw = Self::extract_entry(&origin, passwd.pw_dir, msg, "home directory")?;
+        let home_dir = fail!(from origin,
+                        when Path::new(home_dir_raw.as_bytes()),
+                        with UserError::InvalidSymbolsInPathEntry,
+                        "{} since the user home dir path \"{}\" contains invalid path symbols.", msg, home_dir_raw);
+        let mut config_dir = home_dir.clone();
+        fail!(from origin,
+              when config_dir.add_path_entry(&get_user_config_path()),
+              with UserError::ConfigPathIsTooLong,
+              "{} since the user config directory path is too long.", msg);
+
+        let shell_raw = Self::extract_entry(&origin, passwd.pw_shell, msg, "shell")?;
+        let shell = fail!(from origin,
+            when FilePath::new(shell_raw.as_bytes()),
+            with UserError::InvalidSymbolsInShellPath,
+            "{} since the user shell path \"{}\" contains invalid path symbols", msg, shell_raw);
+        let password = Self::extract_entry(&origin, passwd.pw_passwd, msg, "password")?;
 
         Ok(User {
             uid,
