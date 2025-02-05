@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let request = client.loan_uninit()?;
         let request = request.write_payload(counter);
 
-        let pending_response = request.send()?;
+        let _pending_response = request.send()?;
 
         println!("Send request {} ...", counter);
     }

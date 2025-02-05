@@ -14,6 +14,7 @@ use core::{fmt::Debug, marker::PhantomData};
 
 use crate::service;
 
+/// todo
 pub struct Response<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
 {
     _service: PhantomData<Service>,
@@ -38,14 +39,17 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
 impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
     Response<Service, ResponsePayload, ResponseHeader>
 {
+    /// todo
     pub fn header(&self) -> &service::header::request_response::ResponseHeader {
         todo!()
     }
 
+    /// todo
     pub fn user_header(&self) -> &ResponseHeader {
         todo!()
     }
 
+    /// todo
     pub fn payload(&self) -> &ResponsePayload {
         todo!()
     }

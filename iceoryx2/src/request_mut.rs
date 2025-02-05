@@ -10,6 +10,33 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ## Typed API
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! #
+//! # let service = node
+//! #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+//! #    .request_response::<u64, u64>()
+//! #    .open_or_create()?;
+//! #
+//! # let client = service.client_builder().create()?;
+//!
+//! let request = client.loan_uninit()?;
+//! let request = request.write_payload(counter);
+//!
+//! println!("client port id: {:?}", request.header().client_id());
+//! let pending_response = request.send()?;
+//!
+//! Ok(())
+//! }
+//! ```
+
 use core::{fmt::Debug, marker::PhantomData};
 use std::sync::Arc;
 
@@ -17,11 +44,14 @@ use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::{
     pending_response::PendingResponse,
-    port::{client::ClientBackend, details::outgoing_connections::OutgoingConnections, SendError},
+    port::{client::ClientBackend, SendError},
     raw_sample::RawSampleMut,
     service,
 };
 
+/// The [`RequestMut`] represents the object that contains the payload that the
+/// [`Client`](crate::port::client::Client) to the
+/// [`Server`](crate::port::server::Server).
 pub struct RequestMut<
     Service: crate::service::Service,
     RequestPayload: Debug,
@@ -86,26 +116,35 @@ impl<
         ResponseHeader: Debug,
     > RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    /// Returns a reference to the iceoryx2 internal
+    /// [`service::header::request_response::RequestHeader`]
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
         self.ptr.as_header_ref()
     }
 
+    /// Returns a reference to the user defined request header.
     pub fn user_header(&self) -> &RequestHeader {
         self.ptr.as_user_header_ref()
     }
 
+    /// Returns a mutable reference to the user defined request header.
     pub fn user_header_mut(&mut self) -> &mut RequestHeader {
         self.ptr.as_user_header_mut()
     }
 
+    /// Returns a reference to the user defined request payload.
     pub fn payload(&self) -> &RequestPayload {
         self.ptr.as_payload_ref()
     }
 
+    /// Returns a mutable reference to the user defined request payload.
     pub fn payload_mut(&mut self) -> &mut RequestPayload {
         self.ptr.as_payload_mut()
     }
 
+    /// Sends the [`RequestMut`] to all connected
+    /// [`Server`](crate::port::server::Server)s of the
+    /// [`Service`](crate::service::Service).
     pub fn send(
         self,
     ) -> Result<
