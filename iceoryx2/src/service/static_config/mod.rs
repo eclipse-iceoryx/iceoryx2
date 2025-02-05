@@ -24,6 +24,8 @@ pub mod publish_subscribe;
 /// and the type variant
 pub mod message_type_details;
 
+pub mod request_response;
+
 pub mod messaging_pattern;
 
 use iceoryx2_bb_log::fatal_panic;
@@ -46,6 +48,23 @@ pub struct StaticConfig {
 }
 
 impl StaticConfig {
+    pub(crate) fn new_request_response<Hasher: Hash>(
+        service_name: &ServiceName,
+        config: &config::Config,
+    ) -> Self {
+        let messaging_pattern =
+            MessagingPattern::RequestResponse(request_response::StaticConfig::new(config));
+        Self {
+            service_id: ServiceId::new::<Hasher>(
+                service_name,
+                crate::service::messaging_pattern::MessagingPattern::RequestResponse,
+            ),
+            service_name: service_name.clone(),
+            messaging_pattern,
+            attributes: AttributeSet::new(),
+        }
+    }
+
     pub(crate) fn new_event<Hasher: Hash>(
         service_name: &ServiceName,
         config: &config::Config,
@@ -104,11 +123,30 @@ impl StaticConfig {
             .is_same_pattern(&rhs.messaging_pattern)
     }
 
+    pub(crate) fn request_response(&self) -> &request_response::StaticConfig {
+        match &self.messaging_pattern {
+            MessagingPattern::RequestResponse(ref v) => v,
+            m => {
+                fatal_panic!(from self, "This should never happen! Trying to access request_response::StaticConfig when the messaging pattern is actually {:?}!", m)
+            }
+        }
+    }
+
+    pub(crate) fn request_response_mut(&mut self) -> &mut request_response::StaticConfig {
+        let origin = format!("{:?}", self);
+        match &mut self.messaging_pattern {
+            MessagingPattern::RequestResponse(ref mut v) => v,
+            m => {
+                fatal_panic!(from origin, "This should never happen! Trying to access request_response::StaticConfig when the messaging pattern is actually {:?}!", m)
+            }
+        }
+    }
+
     pub(crate) fn event(&self) -> &event::StaticConfig {
         match &self.messaging_pattern {
             MessagingPattern::Event(ref v) => v,
             m => {
-                fatal_panic!(from self, "This should never happen. Trying to access event::StaticConfig when the messaging pattern is actually {:?}!", m)
+                fatal_panic!(from self, "This should never happen! Trying to access event::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
         }
     }
@@ -118,7 +156,7 @@ impl StaticConfig {
         match &mut self.messaging_pattern {
             MessagingPattern::Event(ref mut v) => v,
             m => {
-                fatal_panic!(from origin, "This should never happen. Trying to access event::StaticConfig when the messaging pattern is actually {:?}!", m)
+                fatal_panic!(from origin, "This should never happen! Trying to access event::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
         }
     }
@@ -127,7 +165,7 @@ impl StaticConfig {
         match &self.messaging_pattern {
             MessagingPattern::PublishSubscribe(ref v) => v,
             m => {
-                fatal_panic!(from self, "This should never happen. Trying to access publish_subscribe::StaticConfig when the messaging pattern is actually {:?}!", m)
+                fatal_panic!(from self, "This should never happen! Trying to access publish_subscribe::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
         }
     }
@@ -137,7 +175,7 @@ impl StaticConfig {
         match &mut self.messaging_pattern {
             MessagingPattern::PublishSubscribe(ref mut v) => v,
             m => {
-                fatal_panic!(from origin, "This should never happen. Trying to access publish_subscribe::StaticConfig when the messaging pattern is actually {:?}!", m)
+                fatal_panic!(from origin, "This should never happen! Trying to access publish_subscribe::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
         }
     }

@@ -92,6 +92,8 @@ pub enum iox2_pub_sub_open_or_create_error_e {
     C_OLD_CONNECTION_STILL_ACTIVE,
     #[CStr = "hangs in creation"]
     C_HANGS_IN_CREATION,
+    #[CStr = "same service is created and removed repeatedly"]
+    SYSTEM_IN_FLUX,
 }
 
 impl IntoCInt for PublishSubscribeOpenError {
@@ -185,6 +187,7 @@ impl IntoCInt for PublishSubscribeOpenOrCreateError {
             PublishSubscribeOpenOrCreateError::PublishSubscribeCreateError(error) => {
                 error.into_c_int()
             }
+            e => e.into_c_int(),
         }
     }
 }

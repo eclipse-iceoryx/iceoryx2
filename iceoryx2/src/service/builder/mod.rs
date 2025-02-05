@@ -20,6 +20,9 @@ pub mod event;
 /// Builder for [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 pub mod publish_subscribe;
 
+/// Builder for [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
+pub mod request_response;
+
 use crate::node::SharedNode;
 use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
@@ -48,6 +51,8 @@ use super::config_scheme::service_tag_config;
 use super::config_scheme::static_config_storage_config;
 use super::service_name::ServiceName;
 use super::Service;
+
+const RETRY_LIMIT: usize = 5;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceState {
@@ -113,6 +118,21 @@ impl<S: Service> Builder<S> {
     }
 
     /// Create a new builder to create a
+    /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse) [`Service`].
+    pub fn request_response<RequestPayload: Debug, ResponsePayload: Debug>(
+        self,
+    ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), S> {
+        BuilderWithServiceType::new(
+            StaticConfig::new_request_response::<S::ServiceNameHasher>(
+                &self.name,
+                self.shared_node.config(),
+            ),
+            self.shared_node,
+        )
+        .request_response::<RequestPayload, ResponsePayload>()
+    }
+
+    /// Create a new builder to create a
     /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
     pub fn publish_subscribe<PayloadType: Debug + ?Sized>(
         self,
@@ -153,6 +173,12 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             shared_node,
             _phantom_data: PhantomData,
         }
+    }
+
+    fn request_response<RequestPayload: Debug, ResponsePayload: Debug>(
+        self,
+    ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), ServiceType> {
+        request_response::Builder::new(self)
     }
 
     fn publish_subscribe<PayloadType: Debug + ?Sized>(

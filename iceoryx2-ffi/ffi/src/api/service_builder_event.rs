@@ -85,6 +85,8 @@ pub enum iox2_event_open_or_create_error_e {
     C_INSUFFICIENT_PERMISSIONS,
     #[CStr = "old connection still active"]
     C_OLD_CONNECTION_STILL_ACTIVE,
+    #[CStr = "same service is created and removed repeatedly"]
+    SYSTEM_IN_FLUX,
 }
 
 impl IntoCInt for EventOpenError {
@@ -172,6 +174,7 @@ impl IntoCInt for EventOpenOrCreateError {
         match self {
             EventOpenOrCreateError::EventOpenError(error) => error.into_c_int(),
             EventOpenOrCreateError::EventCreateError(error) => error.into_c_int(),
+            e => e.into_c_int(),
         }
     }
 }

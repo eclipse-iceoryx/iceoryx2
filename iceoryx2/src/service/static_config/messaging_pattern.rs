@@ -17,12 +17,18 @@ use crate::service::static_config::event;
 use crate::service::static_config::publish_subscribe;
 use serde::{Deserialize, Serialize};
 
+use super::request_response;
+
 /// Contains the static config of the corresponding
 /// [`service::MessagingPattern`](crate::service::messaging_pattern::MessagingPattern).
 #[non_exhaustive]
 #[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "messaging_pattern")]
 pub enum MessagingPattern {
+    /// Stores the static config of the
+    /// [`service::MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
+    RequestResponse(request_response::StaticConfig),
+
     /// Stores the static config of the
     /// [`service::MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
     PublishSubscribe(publish_subscribe::StaticConfig),
@@ -35,6 +41,7 @@ pub enum MessagingPattern {
 impl Display for MessagingPattern {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
+            MessagingPattern::RequestResponse(_) => write!(f, "RequestResponse"),
             MessagingPattern::Event(_) => write!(f, "Event"),
             MessagingPattern::PublishSubscribe(_) => write!(f, "PublishSubscribe"),
         }
@@ -81,6 +88,7 @@ mod tests {
         assert_that!(p2.is_same_pattern(&p1), eq true);
 
         let mut new_defaults = config::Defaults {
+            request_response: cfg.defaults.request_response.clone(),
             publish_subscribe: cfg.defaults.publish_subscribe.clone(),
             event: cfg.defaults.event.clone(),
         };

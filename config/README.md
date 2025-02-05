@@ -116,3 +116,32 @@ Adjusting `global` settings ensures a non-interfering setup.
   Expired connection buffer size of the subscriber. Connections to publishers
   are expired when the publisher disconnected from the service and the
   connection contains unconsumed samples.
+
+### Service: Request Response Messaging Pattern
+
+* `defaults.request-response.enable-safe-overflow-for-requests` -
+  [`true`|`false`]: Defines if the request buffer of the service safely
+  overflows.
+* `defaults.request-response.enable-safe-overflow-for-responses` -
+  [`true`|`false`]: Defines if the request buffer of the service safely
+  overflows.
+* `defaults.request-response.max-active-responses` - [int]:
+  The maximum of active responses a [`crate::port::server::Server`] can hold in
+  parallel.
+* `defaults.request-response.max-active-requests` - [int]:
+  The maximum of active requests a client can hold in parallel.
+* `defaults.request-response.max-borrowed-responses` - [int]:
+  The maximum number of responses a client can borrow from an active request.
+* `defaults.request-response.max-borrowed-requests` - [int]:
+  The maximum number of requests a server can borrow.
+* `defaults.request-response.max-response-buffer-size` - [int]:
+  The maximum buffer size for responses for an active request.
+* `defaults.request-response.max-request-buffer-size` - [int]:
+  The maximum buffer size for requests for a server.
+* `defaults.request-response.max-servers` - [int]:
+  The maximum amount of supported servers.
+* `defaults.request-response.max-clients` - [int]:
+  The maximum amount of supported clients.
+* `defaults.request-response.max-nodes` - [int]:
+  The maximum amount of supported nodes. Defines indirectly how many
+  processes can open the service at the same time.

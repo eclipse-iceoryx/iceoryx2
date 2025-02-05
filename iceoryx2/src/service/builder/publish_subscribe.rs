@@ -22,6 +22,7 @@ use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::publish_subscribe;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
+use builder::RETRY_LIMIT;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
@@ -181,6 +182,9 @@ pub enum PublishSubscribeOpenOrCreateError {
     PublishSubscribeOpenError(PublishSubscribeOpenError),
     /// Failures that can occur when a [`Service`] could not be created.
     PublishSubscribeCreateError(PublishSubscribeCreateError),
+    /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
+    /// high frequency.
+    SystemInFlux,
 }
 
 impl From<ServiceAvailabilityState> for PublishSubscribeOpenOrCreateError {
@@ -377,7 +381,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
     }
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
-    fn adjust_attributes_to_meaningful_values(&mut self) {
+    fn adjust_configuration_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.publish_subscribe_mut();
 
@@ -412,7 +416,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         }
     }
 
-    fn verify_service_attributes(
+    fn verify_service_configuration(
         &self,
         existing_settings: &static_config::StaticConfig,
         required_attributes: &AttributeVerifier,
@@ -502,7 +506,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeCreateError,
     > {
-        self.adjust_attributes_to_meaningful_values();
+        self.adjust_configuration_to_meaningful_values();
 
         let msg = "Unable to create publish subscribe service";
 
@@ -610,7 +614,6 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenError,
     > {
-        const OPEN_RETRY_LIMIT: usize = 5;
         let msg = "Unable to open publish subscribe service";
 
         let mut service_open_retry_count = 0;
@@ -622,7 +625,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
                 }
                 Some((static_config, static_storage)) => {
                     let pub_sub_static_config =
-                        self.verify_service_attributes(&static_config, attributes)?;
+                        self.verify_service_configuration(&static_config, attributes)?;
 
                     let service_tag = self
                         .base
@@ -652,7 +655,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
 
                             service_open_retry_count += 1;
 
-                            if OPEN_RETRY_LIMIT < service_open_retry_count {
+                            if RETRY_LIMIT < service_open_retry_count {
                                 fail!(from self, with PublishSubscribeOpenError::ServiceInCorruptedState,
                                 "{} since the dynamic service information could not be opened ({:?}). This could indicate a corrupted system or a misconfigured system where services are created/removed with a high frequency.",
                                 msg, e);
@@ -691,7 +694,16 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
     > {
         let msg = "Unable to open or create publish subscribe service";
 
+        let mut retry_count = 0;
         loop {
+            if RETRY_LIMIT < retry_count {
+                fail!(from self,
+                      with PublishSubscribeOpenOrCreateError::SystemInFlux,
+                      "{} since an instance is creating and removing the same service repeatedly.",
+                      msg);
+            }
+            retry_count += 1;
+
             match self.is_service_available(msg)? {
                 Some(_) => match self.open_impl(attributes) {
                     Ok(factory) => return Ok(factory),

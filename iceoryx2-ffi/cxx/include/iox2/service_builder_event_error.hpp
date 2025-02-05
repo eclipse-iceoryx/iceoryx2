@@ -167,6 +167,9 @@ enum class EventOpenOrCreateError : uint8_t {
     /// [`Sample`] or
     /// [`SampleMut`] in use.
     CreateOldConnectionsStillActive,
+    /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
+    /// high frequency.
+    SystemInFlux,
 };
 
 } // namespace iox2

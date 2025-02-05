@@ -231,6 +231,8 @@ pub struct Defaults {
     pub publish_subscribe: PublishSubscribe,
     /// Default settings for the messaging pattern event
     pub event: Event,
+    /// Default settings for the messaging pattern request-response
+    pub request_response: RequestResonse,
 }
 
 /// Default settings for the publish-subscribe messaging pattern. These settings are used unless
@@ -300,6 +302,38 @@ pub struct Event {
     pub notifier_dead_event: Option<usize>,
 }
 
+/// Default settings for the request response messaging pattern. These settings are used unless
+/// the user specifies custom QoS or port settings.
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct RequestResonse {
+    /// Defines if the request buffer of the [`Service`] safely overflows.
+    pub enable_safe_overflow_for_requests: bool,
+    /// Defines if the response buffer of the [`Service`] safely overflows.
+    pub enable_safe_overflow_for_responses: bool,
+    /// The maximum of active responses a [`crate::port::server::Server`] can hold in parallel.
+    pub max_active_responses: usize,
+    /// The maximum of active requests a [`crate::port::client::Client`] can hold in parallel.
+    pub max_active_requests: usize,
+    /// The maximum number of responses a [`crate::port::client::Client`] can borrow from
+    /// an active request.
+    pub max_borrowed_responses: usize,
+    /// The maximum number of requests a [`crate::port::server::Server`] can borrow.
+    pub max_borrowed_requests: usize,
+    /// The maximum buffer size for responses for an active request.
+    pub max_response_buffer_size: usize,
+    /// The maximum buffer size for requests for a [`crate::port::server::Server`].
+    pub max_request_buffer_size: usize,
+    /// The maximum amount of supported [`crate::port::server::Server`]
+    pub max_servers: usize,
+    /// The maximum amount of supported [`crate::port::client::Client`]
+    pub max_clients: usize,
+    /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
+    /// processes can open the service at the same time.
+    pub max_nodes: usize,
+}
+
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
 /// the [Global] settings, which must align with the iceoryx2 instance the application intends to
 /// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
@@ -342,6 +376,19 @@ impl Default for Config {
                 },
             },
             defaults: Defaults {
+                request_response: RequestResonse {
+                    enable_safe_overflow_for_requests: true,
+                    enable_safe_overflow_for_responses: true,
+                    max_active_responses: 4,
+                    max_active_requests: 2,
+                    max_borrowed_responses: 4,
+                    max_borrowed_requests: 2,
+                    max_response_buffer_size: 2,
+                    max_request_buffer_size: 4,
+                    max_servers: 2,
+                    max_clients: 8,
+                    max_nodes: 20,
+                },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,
                     max_publishers: 2,

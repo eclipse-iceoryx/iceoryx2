@@ -21,6 +21,19 @@ connection-suffix                           = '.connection'
 creation-timeout.secs                       = 0
 creation-timeout.nanos                      = 500000000
 
+[defaults.request-response]
+enable-safe-overflow-for-requests           = true
+enable-safe-overflow-for-responses          = true
+max-active-responses                        = 4
+max-active-requests                         = 2
+max-borrowed-responses                      = 4
+max-borrowed-requests                       = 2
+max-response-buffer-size                    = 2
+max-request-buffer-size                     = 4
+max-servers                                 = 2
+max-clients                                 = 8
+max-nodes                                   = 20
+
 [defaults.publish-subscribe]
 max-subscribers                             = 8
 max-publishers                              = 2

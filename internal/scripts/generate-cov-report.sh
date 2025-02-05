@@ -19,9 +19,18 @@ COLOR_RED='\033[1;31m'
 COLOR_GREEN='\033[1;32m'
 COLOR_YELLOW='\033[1;33m'
 
+LLVM_PATH=$(dirname $(which llvm-profdata))
 LLVM_PROFILE_PATH="target/debug/llvm-profile-files"
 export LLVM_PROFILE_FILE="${LLVM_PROFILE_PATH}/iceoryx2-%p-%m.profraw"
-export RUSTFLAGS="-Cinstrument-coverage"
+
+if [[ "$(rustc --version | grep nightly | wc -l)" == "1" ]]
+then
+    echo -e "${COLOR_GREEN}rust nightly compiler found, activating MC/DC coverage check${COLOR_OFF}"
+    export RUSTFLAGS="-C instrument-coverage -Z coverage-options=mcdc"
+else
+    echo -e "${COLOR_YELLOW}no rust nightly compiler found, MC/DC coverage is not available only line coverage${COLOR_OFF}"
+    export RUSTFLAGS="-C instrument-coverage"
+fi
 
 COVERAGE_DIR="target/debug/coverage"
 
@@ -132,6 +141,7 @@ generate_html_report() {
           --ignore "**/benchmarks/*" \
           --ignore "**/target/*" \
           --ignore "**/.cargo/*" \
+          --llvm-path ${LLVM_PATH} \
           --output-path ./${COVERAGE_DIR}/html
     sed -i 's/coverage/grcov/' ${COVERAGE_DIR}/html/coverage.json
     sed -i 's/coverage/grcov/' ${COVERAGE_DIR}/html/badges/*.svg
@@ -157,6 +167,7 @@ generate_lcov_report() {
           --ignore "**/benchmarks/*" \
           --ignore "**/target/*" \
           --ignore "**/.cargo/*" \
+          --llvm-path ${LLVM_PATH} \
           --output-path ./${COVERAGE_DIR}/lcov.info
 }
 
