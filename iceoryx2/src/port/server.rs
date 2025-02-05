@@ -33,7 +33,10 @@
 //! ```
 
 use core::{fmt::Debug, marker::PhantomData};
-use std::{cell::UnsafeCell, sync::atomic::Ordering};
+use std::{
+    cell::UnsafeCell,
+    sync::{atomic::Ordering, Arc},
+};
 
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::{visitor::Visitor, CallbackProgression};
@@ -50,6 +53,7 @@ use crate::{
         self,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
         port_factory::server::{PortFactoryServer, ServerCreateError},
+        ServiceState,
     },
 };
 
@@ -78,10 +82,30 @@ pub struct Server<
     client_connections: IncomingConnections<Service>,
     server_handle: Option<ContainerHandle>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
+    service_state: Arc<ServiceState<Service>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
     _response_header: PhantomData<ResponseHeader>,
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Drop for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn drop(&mut self) {
+        if let Some(handle) = self.server_handle {
+            self.service_state
+                .dynamic_storage
+                .get()
+                .request_response()
+                .release_server_handle(handle);
+        }
+    }
 }
 
 impl<
@@ -141,6 +165,7 @@ impl<
             client_connections,
             server_handle: None,
             client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
+            service_state: service.__internal_state().clone(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,

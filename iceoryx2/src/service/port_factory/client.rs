@@ -126,7 +126,9 @@ impl<
         }
     }
 
-    /// Sets the [`UnableToDeliverStrategy`].
+    /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Client`] shall behave
+    /// when a [`Server`](crate::port::server::Server) cannot receive a [`RequestMut`] since
+    /// its internal buffer is full.
     pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
         self.unable_to_deliver_strategy = value;
         self
@@ -138,6 +140,9 @@ impl<
         self
     }
 
+    /// Sets the [`DegrationCallback`] of the [`Client`]. Whenever a connection to a
+    /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
+    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
     pub fn set_degration_callback<
         F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
     >(

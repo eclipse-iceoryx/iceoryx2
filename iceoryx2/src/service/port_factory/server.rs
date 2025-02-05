@@ -42,7 +42,11 @@ use iceoryx2_bb_log::fail;
 /// [`crate::service::port_factory::server::PortFactoryServer`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ServerCreateError {
+    /// The configured buffer size is larger than the max buffer size supported by the
+    /// [`Service`](crate::service::Service).
     BufferSizeExceedsMaxSupportedBufferSizeOfService,
+    /// The maximum amount of [`Server`]s supported by the [`Service`](crate::service::Service)
+    /// is already connected.
     ExceedsMaxSupportedServers,
 }
 
@@ -123,21 +127,30 @@ impl<
         }
     }
 
+    /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Server`] shall behave
+    /// when a [`Client`](crate::port::client::Client) cannot receive a [`Response`] since
+    /// its internal buffer is full.
     pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
         self.unable_to_deliver_strategy = value;
         self
     }
 
+    /// Defines the buffer size of the [`Server`]. Smallest possible value is `1`.
     pub fn buffer_size(mut self, value: usize) -> Self {
         self.buffer_size = value;
         self
     }
 
+    /// Defines how many [`ResponseMut`] the [`Server`] can loan in parallel per
+    /// [`ActiveRequest`].
     pub fn max_loaned_responses_per_request(mut self, value: usize) -> Self {
         self.max_loaned_responses_per_request = value;
         self
     }
 
+    /// Sets the [`DegrationCallback`] of the [`Server`]. Whenever a connection to a
+    /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
+    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
     pub fn set_degration_callback<
         F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
     >(
