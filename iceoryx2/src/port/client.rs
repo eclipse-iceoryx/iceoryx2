@@ -146,8 +146,8 @@ impl<Service: service::Service> ClientBackend<Service> {
     }
 }
 
-/// Sends requests to a [`Server`](crate::port::server::Server) in a request-response based
-/// communication.
+/// Sends [`RequestMut`]s to a [`Server`](crate::port::server::Server) in a
+/// request-response based communication.
 #[derive(Debug)]
 pub struct Client<
     Service: service::Service,

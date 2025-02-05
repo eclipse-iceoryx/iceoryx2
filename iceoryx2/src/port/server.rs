@@ -10,6 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! #
+//! let service = node
+//!     .service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .request_response::<u64, u64>()
+//!     .open_or_create()?;
+//!
+//! let server = service.server_builder().create()?;
+//!
+//! while let Some(active_request) = server.receive()? {
+//!     println!("received request: {:?}", *active_request);
+//! }
+//! # Ok(())
+//! # }
+//! ```
+
 use core::{fmt::Debug, marker::PhantomData};
 use std::{cell::UnsafeCell, sync::atomic::Ordering};
 
@@ -42,6 +64,9 @@ use super::{
     ReceiveError, UniqueServerId,
 };
 
+/// Receives [`RequestMut`] from a [`Client`](crate::port::client::Client) and
+/// responds with [`Response`](crate::response::Response) by using an
+/// [`ActiveRequest`].
 #[derive(Debug)]
 pub struct Server<
     Service: service::Service,
@@ -147,16 +172,19 @@ impl<
         Ok(new_self)
     }
 
+    /// Returns the [`UniqueServerId`] of the [`Server`]
     pub fn id(&self) -> UniqueServerId {
         UniqueServerId(UniqueSystemId::from(
             self.client_connections.receiver_port_id,
         ))
     }
 
+    /// Returns the buffer size of the [`Server`].
     pub fn buffer_size(&self) -> usize {
         self.client_connections.buffer_size
     }
 
+    /// Returns true if the [`Server`] has [`RequestMut`]s in its buffer.
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
@@ -201,6 +229,32 @@ impl<
         self.client_connections.receive()
     }
 
+    /// Receives a [`RequestMut`] that was sent by a [`Client`]
+    /// (crate::port::client::Client) and returns an [`ActiveRequest`] which can be
+    /// used to respond.
+    /// If no [`RequestMut`]s were received it returns [`None`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///     .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///     .request_response::<u64, u64>()
+    ///     .open_or_create()?;
+    ///
+    /// let server = service.server_builder().create()?;
+    ///
+    /// while let Some(active_request) = server.receive()? {
+    ///     println!("received request: {:?}", *active_request);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn receive(
         &self,
     ) -> Result<
