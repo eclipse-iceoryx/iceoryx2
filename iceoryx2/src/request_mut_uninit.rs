@@ -10,16 +10,39 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit};
-use std::sync::Arc;
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! #
+//! # let service = node
+//! #   .service_builder(&"My/Funk/ServiceName".try_into()?)
+//! #   .request_response::<u64, u64>()
+//! #   .open_or_create()?;
+//! #
+//! # let client = service.client_builder().create()?;
+//! #
+//!
+//! // acquire uninitialized request
+//! let request = client.loan_uninit()?;
+//! // write payload and acquire an initialized request that can be send
+//! let request = request.write_payload(counter);
+//!
+//! let pending_response = request.send()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
-use iceoryx2_cal::shm_allocator::PointerOffset;
+use crate::{request_mut::RequestMut, service};
+use core::{fmt::Debug, mem::MaybeUninit};
 
-use crate::{
-    port::details::outgoing_connections::OutgoingConnections, raw_sample::RawSampleMut,
-    request_mut::RequestMut, service,
-};
-
+/// A version of the [`RequestMut`] where the payload is not initialized which allows
+/// true zero copy usage. To send a [`RequestMutUninit`] it must be first initialized
+/// and converted into [`RequestMut`] with [`RequestMutUninit::assume_init()`].
 #[repr(transparent)]
 pub struct RequestMutUninit<
     Service: crate::service::Service,
@@ -62,22 +85,28 @@ impl<
         ResponseHeader: Debug,
     > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    /// Returns a reference to the iceoryx2 internal
+    /// [`service::header::request_response::RequestHeader`]
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
         self.request.header()
     }
 
+    /// Returns a reference to the user defined request header.
     pub fn user_header(&self) -> &RequestHeader {
         self.request.user_header()
     }
 
+    /// Returns a mutable reference to the user defined request header.
     pub fn user_header_mut(&mut self) -> &mut RequestHeader {
         self.request.user_header_mut()
     }
 
+    /// Returns a reference to the user defined request payload.
     pub fn payload(&self) -> &RequestPayload {
         self.request.payload()
     }
 
+    /// Returns a mutable reference to the user defined request payload.
     pub fn payload_mut(&mut self) -> &mut RequestPayload {
         self.request.payload_mut()
     }
@@ -98,6 +127,8 @@ impl<
         ResponseHeader,
     >
 {
+    /// Copies the provided payload into the uninitialized request and returns
+    /// an initialized [`RequestMut`].
     pub fn write_payload(
         mut self,
         value: RequestPayload,
@@ -106,6 +137,36 @@ impl<
         unsafe { self.assume_init() }
     }
 
+    /// When the payload is manually populated by using
+    /// [`RequestMutUninit::payload_mut()`], then this function can be used
+    /// to convert it into the initialized [`RequestMut`] version.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, u64>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// let mut request = client.loan_uninit()?;
+    /// // use the MaybeUninit API to initialize the payload
+    /// request.payload_mut().write(8283);
+    /// // we have written the payload, initialize the request
+    /// let request = unsafe { request.assume_init() };
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub unsafe fn assume_init(
         self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
