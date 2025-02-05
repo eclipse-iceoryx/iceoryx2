@@ -301,7 +301,7 @@ mod service_request_response {
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .request_payload_alignment(Alignment::new(512).unwrap())
+            .response_payload_alignment(Alignment::new(512).unwrap())
             .create();
 
         assert_that!(sut_create, is_ok);
@@ -309,7 +309,7 @@ mod service_request_response {
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .request_payload_alignment(Alignment::new(128).unwrap())
+            .response_payload_alignment(Alignment::new(128).unwrap())
             .open();
 
         assert_that!(sut_open, is_ok);
@@ -348,7 +348,8 @@ mod service_request_response {
         let config = generate_isolated_config();
         let attribute_key = "there is a muffin";
         let attribute_value = "with molten chocolate";
-        let attribute_incompatible_value = "its delicious";
+        let attribute_incompatible_key = "its delicious";
+        let attribute_incompatible_value = "I wanna eat it";
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
@@ -372,7 +373,7 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .open_with_attributes(
-                &AttributeVerifier::new().require_key(&attribute_incompatible_value),
+                &AttributeVerifier::new().require_key(&attribute_incompatible_key),
             );
 
         assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleAttributes));
@@ -426,7 +427,7 @@ mod service_request_response {
 
         let sut2 = node
             .service_builder(&service_name)
-            .request_response::<u64, u64>()
+            .request_response::<f32, f64>()
             .create();
         assert_that!(sut2, is_ok);
     }
@@ -493,7 +494,7 @@ mod service_request_response {
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_responses(9)
+            .max_active_responses(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -520,7 +521,7 @@ mod service_request_response {
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_requests(9)
+            .max_active_requests(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -547,7 +548,7 @@ mod service_request_response {
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_borrowed_responses(9)
+            .max_borrowed_responses(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -574,7 +575,7 @@ mod service_request_response {
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_borrowed_requests(9)
+            .max_borrowed_requests(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -601,7 +602,7 @@ mod service_request_response {
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_response_buffer_size(9)
+            .max_response_buffer_size(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -901,15 +902,14 @@ mod service_request_response {
             assert_that!(Sut::does_exist(name, &config, MessagingPattern::RequestResponse).unwrap(), eq true);
         }
 
-        let mut number_of_listed_services = 0;
         Sut::list(&config, |service| {
             assert_that!(service_names, contains * service.static_details.name());
-            number_of_listed_services += 1;
+            service_names.retain(|v| v != service.static_details.name());
             CallbackProgression::Continue
         })
         .unwrap();
 
-        assert_that!(number_of_listed_services, eq service_names.len());
+        assert_that!(service_names, len 0);
     }
 
     #[test]

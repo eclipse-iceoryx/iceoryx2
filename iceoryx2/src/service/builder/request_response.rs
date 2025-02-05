@@ -876,21 +876,20 @@ impl<
             }
             retry_count += 1;
 
-            match self.is_service_available(msg)? {
-                Some(_) => match self.open_impl(attributes) {
+            if let Some(_) = self.is_service_available(msg)? {
+                match self.open_impl(attributes) {
                     Ok(factory) => return Ok(factory),
                     Err(RequestResponseOpenError::DoesNotExist) => continue,
                     Err(e) => return Err(e.into()),
-                },
-                None => {
-                    match self.create_impl(&AttributeSpecifier(attributes.attributes().clone())) {
-                        Ok(factory) => return Ok(factory),
-                        Err(RequestResponseCreateError::AlreadyExists)
-                        | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
-                            continue;
-                        }
-                        Err(e) => return Err(e.into()),
+                }
+            } else {
+                match self.create_impl(&AttributeSpecifier(attributes.attributes().clone())) {
+                    Ok(factory) => return Ok(factory),
+                    Err(RequestResponseCreateError::AlreadyExists)
+                    | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
+                        continue;
                     }
+                    Err(e) => return Err(e.into()),
                 }
             }
         }
