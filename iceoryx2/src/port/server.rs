@@ -68,8 +68,9 @@ use super::{
     ReceiveError, UniqueServerId,
 };
 
-/// Receives [`RequestMut`] from a [`Client`](crate::port::client::Client) and
-/// responds with [`Response`](crate::response::Response) by using an
+/// Receives [`RequestMut`](crate::request_mut::RequestMut) from a
+/// [`Client`](crate::port::client::Client) and responds with
+/// [`Response`](crate::response::Response) by using an
 /// [`ActiveRequest`].
 #[derive(Debug)]
 pub struct Server<
@@ -209,7 +210,7 @@ impl<
         self.client_connections.buffer_size
     }
 
-    /// Returns true if the [`Server`] has [`RequestMut`]s in its buffer.
+    /// Returns true if the [`Server`] has [`RequestMut`](crate::request_mut::RequestMut)s in its buffer.
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
@@ -254,10 +255,11 @@ impl<
         self.client_connections.receive()
     }
 
-    /// Receives a [`RequestMut`] that was sent by a [`Client`]
-    /// (crate::port::client::Client) and returns an [`ActiveRequest`] which can be
-    /// used to respond.
-    /// If no [`RequestMut`]s were received it returns [`None`].
+    /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
+    /// [`Client`](crate::port::client::Client) and returns an [`ActiveRequest`] which
+    /// can be used to respond.
+    /// If no [`RequestMut`](crate::request_mut::RequestMut)s were received it
+    /// returns [`None`].
     ///
     /// # Example
     ///

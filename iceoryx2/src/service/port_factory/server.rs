@@ -128,7 +128,8 @@ impl<
     }
 
     /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Server`] shall behave
-    /// when a [`Client`](crate::port::client::Client) cannot receive a [`Response`] since
+    /// when a [`Client`](crate::port::client::Client) cannot receive a
+    /// [`Response`](crate::response::Response) since
     /// its internal buffer is full.
     pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
         self.unable_to_deliver_strategy = value;
@@ -141,8 +142,9 @@ impl<
         self
     }
 
-    /// Defines how many [`ResponseMut`] the [`Server`] can loan in parallel per
-    /// [`ActiveRequest`].
+    /// Defines the maximum number of [`ResponseMut`](crate::response_mut::ResponseMut) that
+    /// the [`Server`] can loan in parallel per
+    /// [`ActiveRequest`](crate::active_request::ActiveRequest).
     pub fn max_loaned_responses_per_request(mut self, value: usize) -> Self {
         self.max_loaned_responses_per_request = value;
         self

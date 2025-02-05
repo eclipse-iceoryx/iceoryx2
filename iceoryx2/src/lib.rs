@@ -318,6 +318,11 @@ pub mod request_mut_uninit;
 /// [`Server`](crate::port::server::Server) on a [`RequestMut`](crate::request_mut::RequestMut).
 pub mod response;
 
+/// The answer a [`Server`](crate::port::server::Server) allocates to respond to
+/// a received [`RequestMut`](crate::request_mut::RequestMut) from a
+/// [`Client`](crate::port::client::Client)
+pub mod response_mut;
+
 /// The payload that is received by a [`Subscriber`](crate::port::subscriber::Subscriber).
 pub mod sample;
 

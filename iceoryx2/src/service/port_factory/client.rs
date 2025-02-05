@@ -127,7 +127,8 @@ impl<
     }
 
     /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Client`] shall behave
-    /// when a [`Server`](crate::port::server::Server) cannot receive a [`RequestMut`] since
+    /// when a [`Server`](crate::port::server::Server) cannot receive a
+    /// [`RequestMut`](crate::request_mut::RequestMut) since
     /// its internal buffer is full.
     pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
         self.unable_to_deliver_strategy = value;
