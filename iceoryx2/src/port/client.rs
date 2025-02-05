@@ -10,6 +10,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! let service = node
+//!    .service_builder(&"My/Funk/ServiceName".try_into()?)
+//!    .request_response::<u64, u64>()
+//!    .open_or_create()?;
+//!
+//! let client = service.client_builder().create()?;
+//!
+//! let request = client.loan_uninit()?;
+//! let request = request.write_payload(counter);
+//!
+//! let pending_response = request.send()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 extern crate alloc;
 
 use alloc::sync::Arc;
@@ -27,6 +51,7 @@ use iceoryx2_cal::{
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
 use crate::{
+    pending_response::PendingResponse,
     port::{details::data_segment::DataSegment, UniqueClientId},
     prelude::{PortFactory, UnableToDeliverStrategy},
     raw_sample::RawSampleMut,
@@ -289,10 +314,70 @@ impl<
         self.client_port_id
     }
 
+    /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
+    /// if the [`Server`](crate::port::server::Server)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
         self.backend.server_connections.unable_to_deliver_strategy
     }
 
+    /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
+    /// by default to avoid unnecessary copies.
+    ///
+    /// # Example
+    ///
+    /// ## True Zero Copy
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, u64>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// let request = client.loan_uninit()?;
+    ///
+    /// // Use MaybeUninit API to populate the underlying payload
+    /// request.payload_mut().write(1234);
+    /// // Promise that we have initialized everything and initialize request
+    /// let request = unsafe { request.assume_init() };
+    /// // Send request
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## Copy Payload
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, u64>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// let request = client.loan_uninit()?;
+    /// // we write the payload by copying the data into the request and retrieve
+    /// // an initialized RequestMut that can be sent
+    /// let request = request.write_payload(123);
+    /// // Send request
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn loan_uninit(
         &self,
     ) -> Result<
@@ -341,6 +426,25 @@ impl<
             },
         })
     }
+
+    /// Copies the input value into a [`RequestMut`] and sends it. On success it
+    /// returns a [`PendingResponse`] that can be used to receive a stream of
+    /// [`Response`](crate::response::Response)s from the
+    /// [`Server`](crate::port::server::Server).
+    pub fn send_copy(
+        &self,
+        value: RequestPayload,
+    ) -> Result<
+        PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        SendError,
+    > {
+        let msg = "Unable to send copy of request";
+        let request = fail!(from self,
+                            when self.loan_uninit(),
+                            "{} since the loan of the request failed.", msg);
+
+        request.write_payload(value).send()
+    }
 }
 
 impl<
@@ -351,6 +455,35 @@ impl<
         ResponseHeader: Debug,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    /// Acquires the payload for the request and initializes the underlying memory
+    /// with default. This can be very expensive when the payload is large, therefore
+    /// prefer [`Client::loan_uninit()`] when possible.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, u64>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// // Acquire request that is initialized with by `Default::default()`.
+    /// let mut request = client.loan()?;
+    /// // Assign a value to the request
+    /// *request = 456;
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn loan(
         &self,
     ) -> Result<

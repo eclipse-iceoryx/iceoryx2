@@ -12,8 +12,6 @@
 
 //! # Example
 //!
-//! ## Typed API
-//!
 //! ```
 //! use iceoryx2::prelude::*;
 //!
@@ -33,8 +31,8 @@
 //! println!("client port id: {:?}", request.header().client_id());
 //! let pending_response = request.send()?;
 //!
-//! Ok(())
-//! }
+//! # Ok(())
+//! # }
 //! ```
 
 use core::{fmt::Debug, marker::PhantomData};

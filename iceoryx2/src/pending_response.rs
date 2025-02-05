@@ -10,10 +10,50 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! #
+//! # let service = node
+//! #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+//! #    .request_response::<u64, u64>()
+//! #    .open_or_create()?;
+//! #
+//! # let client = service.client_builder().create()?;
+//!
+//! # let request = client.loan_uninit()?;
+//! # let request = request.write_payload(counter);
+//!
+//! let pending_response = request.send()?;
+//!
+//! println!("send request to {} server",
+//!           pending_response.number_of_server_connections());
+//!
+//! // We are no longer interested in the responses from the server and
+//! // drop the object. This informs the corresponding servers, that hold
+//! // an ActiveRequest that the connection was terminated from the client
+//! // side so that they can stop sending responses.
+//! drop(pending_response);
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use core::{fmt::Debug, marker::PhantomData};
 
 use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
 
+/// Represents an active connection to all [`Server`](crate::port::server::Server)
+/// that received the [`RequestMut`](crate::request_mut::RequestMut). The
+/// [`Client`] can use it to receive the corresponding
+/// [`Response`](crate::response::Response)s.
+///
+/// As soon as it goes out of scope, the connections are closed and the [`Server`]
+/// is informed.
 pub struct PendingResponse<
     Service: crate::service::Service,
     RequestPayload: Debug,
@@ -59,22 +99,32 @@ impl<
         ResponseHeader: Debug,
     > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    /// Returns a reference to the iceoryx2 internal
+    /// [`service::header::request_response::RequestHeader`] of the corresponding
+    /// [`RequestMut`](crate::request_mut::RequestMut)
     pub fn header(&self) -> &service::header::request_response::RequestHeader {
         self.request.header()
     }
 
+    /// Returns a reference to the user defined request header of the corresponding
+    /// [`RequestMut`](crate::request_mut::RequestMut)
     pub fn user_header(&self) -> &RequestHeader {
         self.request.user_header()
     }
 
+    /// Returns a reference to the request payload of the corresponding
+    /// [`RequestMut`](crate::request_mut::RequestMut)
     pub fn payload(&self) -> &RequestPayload {
         self.request.payload()
     }
 
+    /// Returns how many server received the corresponding
+    /// [`RequestMut`](crate::port::request_mut::RequestMut) initially.
     pub fn number_of_server_connections(&self) -> usize {
         self.number_of_server_connections
     }
 
+    /// todo
     pub fn receive(
         &self,
     ) -> Result<Option<Response<Service, ResponsePayload, ResponseHeader>>, ReceiveError> {
