@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::{fmt::Debug, marker::PhantomData};
+use std::ops::Deref;
 
 use crate::service;
 
@@ -33,6 +34,15 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
             core::any::type_name::<ResponsePayload>(),
             core::any::type_name::<ResponseHeader>()
         )
+    }
+}
+
+impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Deref
+    for Response<Service, ResponsePayload, ResponseHeader>
+{
+    type Target = ResponsePayload;
+    fn deref(&self) -> &Self::Target {
+        todo!()
     }
 }
 

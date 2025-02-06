@@ -10,5 +10,34 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::{
+    fmt::Debug,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+};
+
+use crate::service;
+
 /// todo
-pub struct ResponseMut {}
+pub struct ResponseMut<Service: service::Service, ResponsePayload: Debug, ResponseHeader: Debug> {
+    _service: PhantomData<Service>,
+    _response_payload: PhantomData<ResponsePayload>,
+    _response_header: PhantomData<ResponseHeader>,
+}
+
+impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Deref
+    for ResponseMut<Service, ResponsePayload, ResponseHeader>
+{
+    type Target = ResponsePayload;
+    fn deref(&self) -> &Self::Target {
+        todo!()
+    }
+}
+
+impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> DerefMut
+    for ResponseMut<Service, ResponsePayload, ResponseHeader>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        todo!()
+    }
+}

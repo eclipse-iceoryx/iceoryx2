@@ -26,9 +26,9 @@
 //! # let client = service.client_builder().create()?;
 //!
 //! let request = client.loan_uninit()?;
-//! let request = request.write_payload(counter);
+//! let request = request.write_payload(9219);
 //!
-//! println!("client port id: {:?}", request.header().client_id());
+//! println!("client port id: {:?}", request.header().client_port_id());
 //! let pending_response = request.send()?;
 //!
 //! # Ok(())
@@ -36,7 +36,10 @@
 //! ```
 
 use core::{fmt::Debug, marker::PhantomData};
-use std::sync::Arc;
+use std::{
+    ops::{Deref, DerefMut},
+    sync::Arc,
+};
 
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
@@ -103,6 +106,35 @@ impl<
             core::any::type_name::<ResponsePayload>(),
             core::any::type_name::<ResponseHeader>()
         )
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Deref
+    for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    type Target = RequestPayload;
+    fn deref(&self) -> &Self::Target {
+        self.ptr.as_payload_ref()
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > DerefMut
+    for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.ptr.as_payload_mut()
     }
 }
 

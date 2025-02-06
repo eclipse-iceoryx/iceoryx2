@@ -26,7 +26,7 @@
 //! # let client = service.client_builder().create()?;
 //!
 //! # let request = client.loan_uninit()?;
-//! # let request = request.write_payload(counter);
+//! # let request = request.write_payload(0);
 //!
 //! let pending_response = request.send()?;
 //!

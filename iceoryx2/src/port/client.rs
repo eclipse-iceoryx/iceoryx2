@@ -26,7 +26,7 @@
 //! let client = service.client_builder().create()?;
 //!
 //! let request = client.loan_uninit()?;
-//! let request = request.write_payload(counter);
+//! let request = request.write_payload(1829);
 //!
 //! let pending_response = request.send()?;
 //!
@@ -340,7 +340,7 @@ impl<
     /// #
     /// # let client = service.client_builder().create()?;
     ///
-    /// let request = client.loan_uninit()?;
+    /// let mut request = client.loan_uninit()?;
     ///
     /// // Use MaybeUninit API to populate the underlying payload
     /// request.payload_mut().write(1234);

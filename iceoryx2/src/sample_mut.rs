@@ -70,6 +70,7 @@ use crate::{
 use iceoryx2_cal::shared_memory::*;
 
 use core::fmt::{Debug, Formatter};
+use std::ops::{Deref, DerefMut};
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -91,6 +92,23 @@ pub struct SampleMut<Service: crate::service::Service, Payload: Debug + ?Sized, 
     pub(crate) ptr: RawSampleMut<Header, UserHeader, Payload>,
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
+}
+
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Deref
+    for SampleMut<Service, Payload, UserHeader>
+{
+    type Target = Payload;
+    fn deref(&self) -> &Self::Target {
+        self.ptr.as_payload_ref()
+    }
+}
+
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> DerefMut
+    for SampleMut<Service, Payload, UserHeader>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.ptr.as_payload_mut()
+    }
 }
 
 impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debug

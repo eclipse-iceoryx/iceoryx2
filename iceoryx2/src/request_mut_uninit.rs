@@ -29,7 +29,7 @@
 //! // acquire uninitialized request
 //! let request = client.loan_uninit()?;
 //! // write payload and acquire an initialized request that can be send
-//! let request = request.write_payload(counter);
+//! let request = request.write_payload(55712);
 //!
 //! let pending_response = request.send()?;
 //!
