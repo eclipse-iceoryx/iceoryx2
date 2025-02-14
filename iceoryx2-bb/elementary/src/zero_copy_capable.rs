@@ -23,6 +23,6 @@ use crate::{identifiable::Identifiable, relocatable::Relocatable};
 ///  * the types have the same type layout independent of the compilation unit, e.g. are
 ///    annotated with `#[repr(C)]`
 ///
-pub unsafe trait Transferable {}
+pub unsafe trait ZeroCopyCapable {}
 
-unsafe impl<T: Relocatable + Identifiable> Transferable for T {}
+unsafe impl<T: Relocatable + Identifiable> ZeroCopyCapable for T {}
