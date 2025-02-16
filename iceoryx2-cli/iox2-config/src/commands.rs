@@ -158,10 +158,7 @@ pub fn generate_global() -> Result<()> {
     file.write(toml_string.as_bytes())
         .expect("Failed to write to file");
 
-    println!(
-        "Default configuration is generated at {}",
-        filepath.to_string()
-    );
+    println!("Default configuration is generated at {}", filepath);
 
     Ok(())
 }
@@ -204,10 +201,7 @@ pub fn generate_local() -> Result<()> {
     file.write(toml_string.as_bytes())
         .expect("Failed to write to file");
 
-    println!(
-        "Default configuration is generated at {}",
-        filepath.to_string()
-    );
+    println!("Default configuration is generated at {}", filepath);
 
     Ok(())
 }
