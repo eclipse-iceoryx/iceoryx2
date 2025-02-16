@@ -95,5 +95,7 @@
 
    iox2 config show current
 
-   iox2 config generate
+   iox2 config generate global
+
+   iox2 config generate local
    ```
