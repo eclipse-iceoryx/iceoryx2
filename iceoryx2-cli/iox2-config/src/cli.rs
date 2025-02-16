@@ -72,7 +72,7 @@ pub enum ShowSubcommand {
 pub enum GenerateSubcommand {
     #[clap(about = "Generate a default configuration file for the local user")]
     Local,
-    #[clap(about = "Generate a default configuration file for global system")]
+    #[clap(about = "Generate a default configuration file for the global system")]
     Global,
 }
 
