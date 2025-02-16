@@ -17,9 +17,10 @@ use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use cli::Config;
+use cli::ConfigGenerate;
+use cli::ConfigShow;
+use cli::GenerateSubcommand;
 use cli::ShowSubcommand;
-use iceoryx2_bb_log::{set_log_level, LogLevel};
 
 #[cfg(not(debug_assertions))]
 use human_panic::setup_panic;
@@ -40,8 +41,6 @@ fn main() {
             .install();
     }
 
-    set_log_level(LogLevel::Warn);
-
     match Cli::try_parse() {
         Ok(cli) => {
             if let Some(action) = cli.action {
@@ -58,16 +57,28 @@ fn main() {
                             }
                         }
                         None => {
-                            Config::command()
+                            ConfigShow::command()
                                 .print_help()
                                 .expect("Failed to print help");
                         }
                     },
-                    Action::Generate => {
-                        if let Err(e) = commands::generate() {
-                            eprintln!("Failed to generate default configuration: {}", e);
+                    Action::Generate { subcommand } => match subcommand {
+                        Some(GenerateSubcommand::Local) => {
+                            if let Err(e) = commands::generate_local() {
+                                eprintln!("Failed to generate configuration file: {}", e);
+                            }
                         }
-                    }
+                        Some(GenerateSubcommand::Global) => {
+                            if let Err(e) = commands::generate_global() {
+                                eprintln!("Failed to generate configuration file: {}", e);
+                            }
+                        }
+                        None => {
+                            ConfigGenerate::command()
+                                .print_help()
+                                .expect("Failed to print help");
+                        }
+                    },
                 }
             } else {
                 Cli::command().print_help().expect("Failed to print help");

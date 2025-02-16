@@ -71,6 +71,7 @@ enum_gen! { FileAccessError
   entry:
     LoopInSymbolicLinks,
     MaxSupportedPathLengthExceeded,
+    InsufficientPermissions,
     UnknownError(i32)
 }
 
@@ -710,6 +711,8 @@ impl File {
             success Errno::ENOENT => false,
             Errno::ELOOP => (LoopInSymbolicLinks, "{} \"{}\" exists since a loop exists in the symbolic links.", msg, path),
             Errno::ENAMETOOLONG => (MaxSupportedPathLengthExceeded, "{} \"{}\" exists since it is longer than the maximum path name length", msg, path),
+            Errno::EACCES => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),
+            Errno::EPERM => (InsufficientPermissions, "{} \"{}\" due to insufficient permissions.", msg, path),
             v => (UnknownError(v as i32), "{} \"{}\" exists caused by an unknown error ({}).", msg, path, v)
         );
     }
