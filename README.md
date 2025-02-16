@@ -380,6 +380,10 @@ The support levels can be adjusted when required.
           <a href="https://github.com/xieyuschen">
           <img src="https://avatars.githubusercontent.com/u/52945328" width="120px;" alt="xieyuschen"/><br />
           <sub><b>»xieyuschen«</b></sub></a></td>                   
+      <td align="center" valign="top" width="14.28%">
+          <a href="https://github.com/brosier01">
+          <img src="https://avatars.githubusercontent.com/u/71630425?v=4" width="120px;" alt="Bruce »brosier01« Rosier"/><br />
+          <sub><b>Bruce »brosier01« Rosier</b></sub></a></td>
     </tr>
   </tbody>
 </table>

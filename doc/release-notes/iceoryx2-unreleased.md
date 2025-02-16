@@ -6,11 +6,6 @@
 
 ### Features
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
-
 * Lookup config file in default locations
     [#442](https://github.com/eclipse-iceoryx/iceoryx2/issues/442)
 * Introduce `socket_pair` abstraction in POSIX wrapper
@@ -58,22 +53,21 @@
 
 ### Refactoring
 
-<!--
-    NOTE: Add new entries sorted by issue number to minimize the possibility of
-    conflicts when merging.
--->
+* Remove the `print_system_configuration()` function in
+`iceoryx2-bb/posix/src/system_configuration.rs` file and move it into the CLI `iox2-config`
+[#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 * Remove obsolete POSIX wrapper
     [#594](https://github.com/eclipse-iceoryx/iceoryx2/issues/594)
-
-### Workflow
+### New CLI features
 
 <!--
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add CLI to display complete system configuration
+    [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 ### New API features
 
@@ -95,4 +89,13 @@
 
    // new
    let fuu = hypnotoad().all_glory_to_the_hypnotoad()
+   ```
+   ```sh
+   iox2 config show system
+
+   iox2 config show current
+
+   iox2 config generate global
+
+   iox2 config generate local
    ```
