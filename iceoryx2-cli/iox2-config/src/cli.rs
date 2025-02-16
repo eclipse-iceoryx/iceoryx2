@@ -40,9 +40,24 @@ pub struct Cli {
     arg_required_else_help = false,
     help_template = help_template("iox2 config show", false),
 )]
-pub struct Config {
+pub struct ConfigShow {
     #[clap(subcommand)]
     pub action: Option<ShowSubcommand>,
+}
+
+#[derive(Parser)]
+#[command(
+    name = "iox2-config",
+    about = "Query information about iceoryx2 configuration",
+    long_about = None,
+    version = env!("CARGO_PKG_VERSION"),
+    disable_help_subcommand = true,
+    arg_required_else_help = false,
+    help_template = help_template("iox2 config generate", false),
+)]
+pub struct ConfigGenerate {
+    #[clap(subcommand)]
+    pub action: Option<GenerateSubcommand>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -53,6 +68,14 @@ pub enum ShowSubcommand {
     Current,
 }
 
+#[derive(Subcommand, Debug)]
+pub enum GenerateSubcommand {
+    #[clap(about = "Generate a default configuration file for the local user")]
+    Local,
+    #[clap(about = "Generate a default configuration file for global system")]
+    Global,
+}
+
 #[derive(Subcommand)]
 pub enum Action {
     #[clap(about = "Show the currently used configuration")]
@@ -61,5 +84,8 @@ pub enum Action {
         subcommand: Option<ShowSubcommand>,
     },
     #[clap(about = "Generate a default configuration file")]
-    Generate,
+    Generate {
+        #[clap(subcommand)]
+        subcommand: Option<GenerateSubcommand>,
+    },
 }
