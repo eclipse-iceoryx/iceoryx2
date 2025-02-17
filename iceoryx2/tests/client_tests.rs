@@ -12,11 +12,19 @@
 
 #[generic_tests::define]
 mod client {
+    use std::sync::atomic::Ordering;
+    use std::sync::Barrier;
+    use std::time::Duration;
+
     use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
+    use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+
+    const TIMEOUT: Duration = Duration::from_millis(50);
 
     fn create_node<Sut: Service>() -> Node<Sut> {
         let config = generate_isolated_config();
@@ -72,6 +80,77 @@ mod client {
             let request = sut.loan_uninit();
             assert_that!(request.err(), eq Some(LoanError::ExceedsMaxLoanedSamples));
         }
+    }
+
+    #[test]
+    fn unable_to_deliver_strategy_block_blocks_when_server_buffer_is_full<Sut: Service>() {
+        let _watchdog = Watchdog::new();
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .enable_safe_overflow_for_requests(false)
+            .create()
+            .unwrap();
+        let server = service.server_builder().buffer_size(1).create().unwrap();
+        let has_sent_request = IoxAtomicBool::new(false);
+        let barrier = Barrier::new(2);
+
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                let sut = service
+                    .client_builder()
+                    .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                    .create()
+                    .unwrap();
+
+                let request = sut.send_copy(123);
+                assert_that!(request, is_ok);
+                barrier.wait();
+
+                let request = sut.send_copy(123);
+                has_sent_request.store(true, Ordering::Relaxed);
+                assert_that!(request, is_ok);
+            });
+
+            barrier.wait();
+            std::thread::sleep(TIMEOUT);
+            assert_that!(has_sent_request.load(Ordering::Relaxed), eq false);
+            let data = server.receive();
+            assert_that!(data, is_ok);
+            assert_that!(|| has_sent_request.load(Ordering::Relaxed), block_until true);
+        });
+    }
+
+    #[test]
+    fn unable_to_deliver_strategy_discard_discards_sample<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .enable_safe_overflow_for_requests(false)
+            .create()
+            .unwrap();
+        let server = service.server_builder().buffer_size(1).create().unwrap();
+
+        let sut = service
+            .client_builder()
+            .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+            .create()
+            .unwrap();
+
+        let request = sut.send_copy(123);
+        assert_that!(request, is_ok);
+        let _request = sut.send_copy(456);
+
+        let data = server.receive();
+        assert_that!(data, is_ok);
+        let data = data.ok().unwrap();
+        assert_that!(data, is_some);
+        let data = data.unwrap();
+        assert_that!(*data, eq 123);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
