@@ -20,15 +20,15 @@ use cli::Action;
 use cli::Cli;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
 
-#[cfg(not(debug_assertions))]
-use human_panic::setup_panic;
 #[cfg(debug_assertions)]
 extern crate better_panic;
 
 fn main() {
     #[cfg(not(debug_assertions))]
     {
-        setup_panic!();
+        std::panic::set_hook(Box::new(|info| {
+            eprintln!("Panic occurred: {:?}", info);
+        }));
     }
     #[cfg(debug_assertions)]
     {
