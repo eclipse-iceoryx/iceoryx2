@@ -54,7 +54,7 @@ impl PointerOffset {
 
     /// Creates a new [`PointerOffset`] from an offset and a [`SegmentId`]
     pub const fn from_offset_and_segment_id(offset: usize, segment_id: SegmentId) -> PointerOffset {
-        Self((offset as u64) << (SegmentIdUnderlyingType::BITS) | segment_id.value() as u64)
+        Self(((offset as u64) << (SegmentIdUnderlyingType::BITS)) | segment_id.value() as u64)
     }
 
     /// Creates a new [`PointerOffset`] from a provided raw value.

@@ -14,7 +14,10 @@
 #![allow(clippy::missing_safety_doc)]
 
 unsafe fn swap_endianess_32(v: u32) -> u32 {
-    (v & 0xff000000) >> 24 | (v & 0x00ff0000) >> 8 | (v & 0x0000ff00) << 8 | (v & 0x000000ff) << 24
+    ((v & 0xff000000) >> 24)
+        | ((v & 0x00ff0000) >> 8)
+        | ((v & 0x0000ff00) << 8)
+        | ((v & 0x000000ff) << 24)
 }
 
 unsafe fn swap_endianess_16(v: u16) -> u16 {
