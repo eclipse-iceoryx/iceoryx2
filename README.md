@@ -379,7 +379,11 @@ The support levels can be adjusted when required.
       <td align="center" valign="top" width="14.28%">
           <a href="https://github.com/xieyuschen">
           <img src="https://avatars.githubusercontent.com/u/52945328" width="120px;" alt="xieyuschen"/><br />
-          <sub><b>»xieyuschen«</b></sub></a></td>                   
+          <sub><b>»xieyuschen«</b></sub></a></td>
+      <td align="center" valign="top" width="14.28%">
+          <a href="https://github.com/FerdinandSpitzschnueffler">
+          <img src="https://avatars.githubusercontent.com/u/61289993" width="120px;" alt="»FerdinandSpitzschnueffler«"/><br />
+          <sub><b>»FerdinandSpitzschnueffler«</b></sub></a></td>
     </tr>
   </tbody>
 </table>
