@@ -226,7 +226,7 @@ pub unsafe fn getsockopt(
 unsafe fn create_uds_address(port: u16) -> sockaddr_in {
     let mut udp_address = sockaddr_in::new();
     udp_address.sin_family = AF_INET as _;
-    let localhost: u32 = 127 << 24 | 1;
+    let localhost: u32 = (127 << 24) | 1;
     udp_address.set_s_addr(htonl(localhost));
     udp_address.sin_port = htons(port);
     udp_address

@@ -259,7 +259,7 @@ impl HeadDetails {
 
     fn value(&self) -> u64 {
         (((self.head & 0x00ffffff) as u64) << 40)
-            | (self.aba as u64) << 24
+            | ((self.aba as u64) << 24)
             | ((self.borrowed_indices & 0x00ffffff) as u64)
     }
 }
