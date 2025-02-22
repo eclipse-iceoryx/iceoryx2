@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-
 #[cfg(debug_assertions)]
 extern crate better_panic;
 
