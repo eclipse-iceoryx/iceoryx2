@@ -102,6 +102,7 @@ maybe(
         "@iceoryx2//:Cargo.toml",
         "@iceoryx2//:benchmarks/event/Cargo.toml",
         "@iceoryx2//:benchmarks/publish-subscribe/Cargo.toml",
+        "@iceoryx2//:benchmarks/queue/Cargo.toml",
         "@iceoryx2//:examples/Cargo.toml",
         "@iceoryx2//:iceoryx2/Cargo.toml",
         "@iceoryx2//:iceoryx2-bb/container/Cargo.toml",
