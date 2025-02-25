@@ -12,8 +12,9 @@
 
 #[generic_tests::define]
 mod sample_mut {
-    use iceoryx2::port::publisher::{Publisher, PublisherLoanError};
+    use iceoryx2::port::publisher::Publisher;
     use iceoryx2::port::subscriber::Subscriber;
+    use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
@@ -85,7 +86,7 @@ mod sample_mut {
 
             let loan_result = test_context.publisher.loan();
             assert_that!(loan_result, is_err);
-            assert_that!(loan_result.err().unwrap(), eq PublisherLoanError::ExceedsMaxLoanedSamples);
+            assert_that!(loan_result.err().unwrap(), eq LoanError::ExceedsMaxLoanedSamples);
 
             sample_vec.clear();
 

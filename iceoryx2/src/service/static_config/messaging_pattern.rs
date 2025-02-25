@@ -15,6 +15,7 @@ use core::fmt::Display;
 
 use crate::service::static_config::event;
 use crate::service::static_config::publish_subscribe;
+use iceoryx2_bb_log::fatal_panic;
 use serde::{Deserialize, Serialize};
 
 use super::request_response;
@@ -54,18 +55,27 @@ impl MessagingPattern {
         core::mem::discriminant(self) == core::mem::discriminant(rhs)
     }
 
-    pub(crate) fn required_amount_of_samples_per_data_segment(
-        &self,
-        publisher_max_loaned_samples: usize,
-    ) -> usize {
-        match self {
-            MessagingPattern::PublishSubscribe(v) => {
-                v.max_subscribers
-                    * (v.subscriber_max_buffer_size + v.subscriber_max_borrowed_samples)
-                    + v.history_size
-                    + publisher_max_loaned_samples
-            }
-            _ => 0,
+    /// # Safety
+    ///
+    ///  * User must ensure that publish subscribe is stored inside
+    pub(crate) unsafe fn publish_subscribe(&self) -> &publish_subscribe::StaticConfig {
+        if let MessagingPattern::PublishSubscribe(v) = self {
+            v
+        } else {
+            fatal_panic!(from self,
+                "This should never happen! Trying to access publish subscribe messaging pattern that is not stored.");
+        }
+    }
+
+    /// # Safety
+    ///
+    ///  * User must ensure that event is stored inside
+    pub(crate) unsafe fn request_response(&self) -> &request_response::StaticConfig {
+        if let MessagingPattern::RequestResponse(v) = self {
+            v
+        } else {
+            fatal_panic!(from self,
+                "This should never happen! Trying to access request response messaging pattern that is not stored.");
         }
     }
 }
@@ -117,19 +127,5 @@ mod tests {
 
         assert_that!(p1.is_same_pattern(&e1), eq false);
         assert_that!(p3.is_same_pattern(&e3), eq false);
-    }
-
-    #[test]
-    fn test_required_amount_of_samples_per_data_segment() {
-        let cfg = config::Config::default();
-        let p1 = MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(&cfg));
-        let sut = p1.required_amount_of_samples_per_data_segment(0);
-        assert_that!(sut, eq 32);
-        let sut = p1.required_amount_of_samples_per_data_segment(1);
-        assert_that!(sut, eq 33);
-
-        let e1 = MessagingPattern::Event(event::StaticConfig::new(&cfg));
-        let sut = e1.required_amount_of_samples_per_data_segment(1);
-        assert_that!(sut, eq 0);
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,9 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub(crate) mod chunk;
-pub(crate) mod chunk_details;
-pub(crate) mod data_segment;
-pub(crate) mod incoming_connections;
-pub(crate) mod outgoing_connections;
-pub(crate) mod segment_state;
+extern crate alloc;
+
+use alloc::sync::Arc;
+use iceoryx2_cal::shm_allocator::PointerOffset;
+
+#[derive(Debug)]
+pub(crate) struct ChunkDetails<Service: crate::service::Service> {
+    pub(crate) connection: Arc<super::incoming_connections::Connection<Service>>,
+    pub(crate) offset: PointerOffset,
+    pub(crate) origin: u128,
+}

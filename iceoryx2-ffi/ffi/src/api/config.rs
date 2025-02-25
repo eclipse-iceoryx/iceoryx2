@@ -86,7 +86,7 @@ pub(super) struct ConfigOwner {
 #[repr(C)]
 #[repr(align(8))] // align_of<ConfigOwner>()
 pub struct iox2_config_storage_t {
-    internal: [u8; 3704], // size_of<ConfigOwner>()
+    internal: [u8; 3720], // size_of<ConfigOwner>()
 }
 
 /// Contains the iceoryx2 config
