@@ -557,7 +557,6 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-pal-concurrency-sync",
- "tiny-fn",
 ]
 
 [[package]]

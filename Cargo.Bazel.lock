@@ -1,5 +1,5 @@
 {
-  "checksum": "47ec3f62fecf7a079a11879b45142d46f42c7932557c8d2af7df6a8ecaec3682",
+  "checksum": "f89f4b71271b6b87ee32ccadadaee4686ba971fe0ae16e3ced4fc4c1393ccc42",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -2649,15 +2649,6 @@
         "compile_data_glob": [
           "**"
         ],
-        "deps": {
-          "common": [
-            {
-              "id": "tiny-fn 0.1.7",
-              "target": "tiny_fn"
-            }
-          ],
-          "selects": {}
-        },
         "edition": "2021",
         "proc_macro_deps_dev": {
           "common": [
