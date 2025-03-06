@@ -87,7 +87,6 @@ lazy_static = { version = "1.4.0" }
 libc = { version = "0.2.169" }
 log = { version = "0.4.21" }
 once_cell = { version = "1.19.0" }
-ouroboros = { version = "0.18.4" }
 proc-macro2 = { version = "1.0.84" }
 quote = { version = "1.0.36" }
 ron = { version = "0.8" }
