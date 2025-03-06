@@ -27,6 +27,8 @@
     [#604](https://github.com/eclipse-iceoryx/iceoryx2/issues/604)
 * Extend benchmarks to test setups with multiple sending/receiving ports
     [#610](https://github.com/eclipse-iceoryx/iceoryx2/issues/610)
+* Reduce iceoryx2 dependencies
+    [#640](https://github.com/eclipse-iceoryx/iceoryx2/issues/640)
 
 ### Bugfixes
 
