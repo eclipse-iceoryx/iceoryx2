@@ -70,7 +70,6 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_posix::posix::{Errno, Struct};
 use iceoryx2_pal_posix::*;
 use lazy_static::lazy_static;
-use tiny_fn::tiny_fn;
 
 macro_rules! define_signals {
     {fetchable: $($entry:ident = $nn:ident::$value:ident),*
@@ -238,11 +237,6 @@ enum_gen! {
     FailedToWait <= SignalWaitError
 }
 
-tiny_fn! {
-    /// A callable which is called inside a signal handler. Only signal safe calls are allowed.
-    pub struct SignalCallback = Fn(signal: FetchableSignal);
-}
-
 #[derive(Debug)]
 struct SignalDetail {
     signal: FetchableSignal,
@@ -280,8 +274,7 @@ static LAST_SIGNAL: IoxAtomicUsize = IoxAtomicUsize::new(posix::MAX_SIGNAL_VALUE
 /// This class must be a singleton class otherwise one could register multiple signal handlers
 /// for the same signal.
 pub struct SignalHandler {
-    registered_signals: [Option<SignalCallback<'static>>; posix::MAX_SIGNAL_VALUE],
-    empty_callback: Option<SignalCallback<'static>>,
+    registered_signals: [Option<&'static dyn Fn(FetchableSignal)>; posix::MAX_SIGNAL_VALUE],
     do_repeat_eintr_call: bool,
 }
 unsafe impl Send for SignalHandler {}
@@ -310,8 +303,8 @@ impl Display for SignalHandler {
 
 extern "C" fn handler(signal: posix::int) {
     capture_signal(signal);
-    if let Some(c) = SignalHandler::instance().get_callback_for_signal(signal) {
-        c.call(signal.into());
+    if let Some(callback) = SignalHandler::instance().get_callback_for_signal(signal) {
+        callback(signal.into());
     }
 }
 
@@ -529,7 +522,6 @@ impl SignalHandler {
     fn new() -> Self {
         let mut sighandle = SignalHandler {
             registered_signals: core::array::from_fn(|_| None),
-            empty_callback: None,
             do_repeat_eintr_call: false,
         };
 
@@ -552,9 +544,12 @@ impl SignalHandler {
             "Unable to acquire global SignalHandler")
     }
 
-    fn get_callback_for_signal(&self, signal: posix::int) -> &Option<SignalCallback<'static>> {
+    fn get_callback_for_signal(
+        &self,
+        signal: posix::int,
+    ) -> &Option<&'static dyn Fn(FetchableSignal)> {
         if signal as usize >= posix::MAX_SIGNAL_VALUE {
-            return &self.empty_callback;
+            return &None;
         }
 
         &self.registered_signals[signal as usize]
@@ -600,7 +595,7 @@ impl SignalHandler {
         }
 
         let previous_action = self.register_raw_signal(signal, handler as posix::sighandler_t);
-        self.registered_signals[signal as usize] = Some(SignalCallback::new(callback));
+        self.registered_signals[signal as usize] = Some(callback);
 
         Ok(previous_action)
     }

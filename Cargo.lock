@@ -586,7 +586,6 @@ dependencies = [
 name = "iceoryx2-bb-posix"
 version = "0.5.0"
 dependencies = [
- "bitflags",
  "enum-iterator",
  "generic-tests",
  "iceoryx2-bb-container",

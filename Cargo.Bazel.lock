@@ -1,5 +1,5 @@
 {
-  "checksum": "6ed0221ffd8ff37ebe1e8d6add78c7c739bbbad0660bc2baa1f466de5a870454",
+  "checksum": "47ec3f62fecf7a079a11879b45142d46f42c7932557c8d2af7df6a8ecaec3682",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -2753,10 +2753,6 @@
         ],
         "deps": {
           "common": [
-            {
-              "id": "bitflags 2.6.0",
-              "target": "bitflags"
-            },
             {
               "id": "enum-iterator 2.1.0",
               "target": "enum_iterator"

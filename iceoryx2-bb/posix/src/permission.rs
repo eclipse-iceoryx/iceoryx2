@@ -15,8 +15,8 @@
 //! combination with [`crate::file_descriptor::FileDescriptorManagement`] to set the
 //! credentials of [`crate::file::File`], [`crate::shared_memory::SharedMemory`] and others.
 
-use bitflags::bitflags;
 use core::fmt::Display;
+use core::ops::{BitOr, BitOrAssign, Not};
 use iceoryx2_pal_posix::*;
 
 type ModeType = posix::mode_t;
@@ -25,38 +25,59 @@ type ModeType = posix::mode_t;
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Permission(ModeType);
 
-bitflags! {
-    impl Permission: ModeType {
-        const OWNER_READ = 0o0400;
-        const OWNER_WRITE = 0o0200;
-        const OWNER_EXEC = 0o0100;
-        const OWNER_ALL = 0o0700;
+impl Permission {
+    pub const OWNER_READ: Self = Self(0o0400);
+    pub const OWNER_WRITE: Self = Self(0o0200);
+    pub const OWNER_EXEC: Self = Self(0o0100);
+    pub const OWNER_ALL: Self = Self(0o0700);
 
-        const GROUP_READ = 0o0040;
-        const GROUP_WRITE = 0o0020;
-        const GROUP_EXEC = 0o0010;
-        const GROUP_ALL = 0o0070;
+    pub const GROUP_READ: Self = Self(0o0040);
+    pub const GROUP_WRITE: Self = Self(0o0020);
+    pub const GROUP_EXEC: Self = Self(0o0010);
+    pub const GROUP_ALL: Self = Self(0o0070);
 
-        const OTHERS_READ = 0o0004;
-        const OTHERS_WRITE = 0o0002;
-        const OTHERS_EXEC = 0o0001;
-        const OTHERS_ALL = 0o0007;
+    pub const OTHERS_READ: Self = Self(0o0004);
+    pub const OTHERS_WRITE: Self = Self(0o0002);
+    pub const OTHERS_EXEC: Self = Self(0o0001);
+    pub const OTHERS_ALL: Self = Self(0o0007);
 
-        const ALL = 0o0777;
+    pub const ALL: Self = Self(0o0777);
 
-        const SET_UID = 0o4000;
-        const SET_GID= 0o2000;
-        const STICKY_BIT = 0o1000;
+    pub const SET_UID: Self = Self(0o4000);
+    pub const SET_GID: Self = Self(0o2000);
+    pub const STICKY_BIT: Self = Self(0o1000);
 
-        const MASK = 0o7777;
-        const UNKNOWN = 0xFFFF;
-        const _ = !0;
+    pub const MASK: Self = Self(0o7777);
+    pub const UNKNOWN: Self = Self(0xFFFF);
+
+    pub fn none() -> Self {
+        Self(0)
+    }
+
+    pub fn bits(&self) -> ModeType {
+        self.0
     }
 }
 
-impl Permission {
-    pub fn none() -> Self {
-        Self(0)
+impl BitOrAssign for Permission {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0;
+    }
+}
+
+impl BitOr for Permission {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl Not for Permission {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Permission(!self.0)
     }
 }
 
