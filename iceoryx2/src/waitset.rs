@@ -46,7 +46,7 @@
 //! ```no_run
 //! use iceoryx2::prelude::*;
 //! # use core::time::Duration;
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! # let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let event = node.service_builder(&"MyEventName_1".try_into()?)
 //! #     .event()
@@ -77,7 +77,7 @@
 //! ```no_run
 //! use iceoryx2::prelude::*;
 //! # use core::time::Duration;
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! # let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let event = node.service_builder(&"MyEventName_1".try_into()?)
 //! #     .event()
@@ -111,7 +111,7 @@
 //! ```no_run
 //! use iceoryx2::prelude::*;
 //! # use core::time::Duration;
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! # let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let pubsub = node.service_builder(&"MyServiceName".try_into()?)
 //! #     .publish_subscribe::<u64>()
@@ -149,7 +149,7 @@
 //! use std::collections::HashMap;
 //! use iceoryx2::port::listener::Listener;
 //! # use core::time::Duration;
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! # let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let event_1 = node.service_builder(&"MyEventName_1".try_into()?)
 //! #     .event()
@@ -197,7 +197,7 @@
 //! ```no_run
 //! use iceoryx2::prelude::*;
 //! # use core::time::Duration;
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //!
 //! let waitset = WaitSetBuilder::new()
 //!                 .signal_handling_mode(SignalHandlingMode::Disabled)
@@ -263,7 +263,7 @@ impl core::fmt::Display for WaitSetAttachmentError {
     }
 }
 
-impl std::error::Error for WaitSetAttachmentError {}
+impl core::error::Error for WaitSetAttachmentError {}
 
 /// Defines the failures that can occur when calling [`WaitSet::wait_and_process()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -282,7 +282,7 @@ impl core::fmt::Display for WaitSetRunError {
     }
 }
 
-impl std::error::Error for WaitSetRunError {}
+impl core::error::Error for WaitSetRunError {}
 
 /// Defines the failures that can occur when calling [`WaitSetBuilder::create()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -297,7 +297,7 @@ impl core::fmt::Display for WaitSetCreateError {
     }
 }
 
-impl std::error::Error for WaitSetCreateError {}
+impl core::error::Error for WaitSetCreateError {}
 
 #[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, PartialOrd, Ord)]
 enum AttachmentIdType {
@@ -716,7 +716,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// ```no_run
     /// use iceoryx2::prelude::*;
     /// # use core::time::Duration;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
     /// #     .event()
@@ -781,7 +781,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// ```no_run
     /// use iceoryx2::prelude::*;
     /// # use core::time::Duration;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
     /// #     .event()
@@ -835,7 +835,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     /// ```no_run
     /// use iceoryx2::prelude::*;
     /// # use core::time::Duration;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let event = node.service_builder(&"MyEventName_1".try_into()?)
     /// #     .event()

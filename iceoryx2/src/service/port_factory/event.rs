@@ -15,7 +15,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
@@ -112,7 +112,7 @@ impl<Service: service::Service> PortFactory<Service> {
     /// ```
     /// use iceoryx2::prelude::*;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// let event = node.service_builder(&"MyEventName".try_into()?)
     ///     .event()
@@ -133,7 +133,7 @@ impl<Service: service::Service> PortFactory<Service> {
     /// ```
     /// use iceoryx2::prelude::*;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// let event = node.service_builder(&"MyEventName".try_into()?)
     ///     .event()

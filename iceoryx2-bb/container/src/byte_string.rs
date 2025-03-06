@@ -73,7 +73,7 @@ impl core::fmt::Display for FixedSizeByteStringModificationError {
     }
 }
 
-impl std::error::Error for FixedSizeByteStringModificationError {}
+impl core::error::Error for FixedSizeByteStringModificationError {}
 
 /// Relocatable string with compile time fixed size capacity.
 #[derive(Clone, Copy, PlacementDefault)]

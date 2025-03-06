@@ -23,7 +23,7 @@ use iceoryx2::{
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 const HISTORY_SIZE: usize = 20;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
     let publisher = CustomPublisher::new(&node, &"My/Funk/ServiceName".try_into()?)?;
 
@@ -81,7 +81,7 @@ impl CustomPublisher {
     fn new(
         node: &Node<ipc::Service>,
         service_name: &ServiceName,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, Box<dyn core::error::Error>> {
         let pubsub_service = node
             .service_builder(service_name)
             .publish_subscribe::<TransmissionData>()
@@ -106,7 +106,7 @@ impl CustomPublisher {
         })
     }
 
-    fn handle_event(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle_event(&self) -> Result<(), Box<dyn core::error::Error>> {
         while let Some(event) = self.listener.try_wait_one()? {
             let event: PubSubEvent = event.into();
             match event {
@@ -130,7 +130,7 @@ impl CustomPublisher {
         Ok(())
     }
 
-    fn send(&self, counter: u64) -> Result<(), Box<dyn std::error::Error>> {
+    fn send(&self, counter: u64) -> Result<(), Box<dyn core::error::Error>> {
         let sample = self.publisher.loan_uninit()?;
 
         let sample = sample.write_payload(TransmissionData {

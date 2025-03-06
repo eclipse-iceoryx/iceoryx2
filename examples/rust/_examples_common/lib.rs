@@ -31,7 +31,7 @@ pub type ServiceTuple = (
 pub fn open_service(
     node: &Node<ipc::Service>,
     service_name: &ServiceName,
-) -> Result<ServiceTuple, Box<dyn std::error::Error>> {
+) -> Result<ServiceTuple, Box<dyn core::error::Error>> {
     let service_pubsub = node
         .service_builder(service_name)
         .publish_subscribe::<u64>()

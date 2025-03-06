@@ -82,7 +82,7 @@ impl core::fmt::Display for EventOpenError {
     }
 }
 
-impl std::error::Error for EventOpenError {}
+impl core::error::Error for EventOpenError {}
 
 impl From<ServiceState> for EventOpenError {
     fn from(value: ServiceState) -> Self {
@@ -121,7 +121,7 @@ impl core::fmt::Display for EventCreateError {
     }
 }
 
-impl std::error::Error for EventCreateError {}
+impl core::error::Error for EventCreateError {}
 
 impl From<ServiceState> for EventCreateError {
     fn from(value: ServiceState) -> Self {
@@ -165,7 +165,7 @@ impl core::fmt::Display for EventOpenOrCreateError {
     }
 }
 
-impl std::error::Error for EventOpenOrCreateError {}
+impl core::error::Error for EventOpenOrCreateError {}
 
 impl From<ServiceState> for EventOpenOrCreateError {
     fn from(value: ServiceState) -> Self {

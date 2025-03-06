@@ -59,7 +59,7 @@ fn perform_benchmark<Q: PushPop>(
     args: &Args,
     queue_a2b: Q,
     queue_b2a: Q,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Box<dyn core::error::Error>> {
     let start_benchmark_barrier_handle = BarrierHandle::new();
     let startup_barrier_handle = BarrierHandle::new();
     let startup_barrier = BarrierBuilder::new(3)
@@ -129,7 +129,7 @@ struct Args {
     cpu_core_participant_2: usize,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn core::error::Error>> {
     let args = Args::parse();
 
     perform_benchmark(&args, Queue::<usize, 1>::new(), Queue::<usize, 1>::new())?;

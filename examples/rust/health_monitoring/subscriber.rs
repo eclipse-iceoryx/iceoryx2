@@ -22,7 +22,7 @@ const REACTION_BUFFER_MS: u64 = 500;
 const CYCLE_TIME_1: Duration = Duration::from_millis(1000 + REACTION_BUFFER_MS);
 const CYCLE_TIME_2: Duration = Duration::from_millis(1500 + REACTION_BUFFER_MS);
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service_name_1 = ServiceName::new("service_1")?;
     let service_name_2 = ServiceName::new("service_2")?;
 

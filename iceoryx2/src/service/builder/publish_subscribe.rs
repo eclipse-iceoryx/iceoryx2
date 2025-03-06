@@ -94,7 +94,7 @@ impl core::fmt::Display for PublishSubscribeOpenError {
     }
 }
 
-impl std::error::Error for PublishSubscribeOpenError {}
+impl core::error::Error for PublishSubscribeOpenError {}
 
 impl From<ServiceAvailabilityState> for PublishSubscribeOpenError {
     fn from(value: ServiceAvailabilityState) -> Self {
@@ -146,7 +146,7 @@ impl core::fmt::Display for PublishSubscribeCreateError {
     }
 }
 
-impl std::error::Error for PublishSubscribeCreateError {}
+impl core::error::Error for PublishSubscribeCreateError {}
 
 impl From<ServiceAvailabilityState> for PublishSubscribeCreateError {
     fn from(value: ServiceAvailabilityState) -> Self {
@@ -211,7 +211,7 @@ impl core::fmt::Display for PublishSubscribeOpenOrCreateError {
     }
 }
 
-impl std::error::Error for PublishSubscribeOpenOrCreateError {}
+impl core::error::Error for PublishSubscribeOpenOrCreateError {}
 
 /// Builder to create new [`MessagingPattern::PublishSubscribe`] based [`Service`]s
 ///

@@ -17,7 +17,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -44,7 +44,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let event = node.service_builder(&"MyEventName".try_into()?)
@@ -70,7 +70,7 @@
 //! use iceoryx2::prelude::*;
 //! use iceoryx2_bb_system_types::path::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let mut custom_config = Config::default();
 //! // adjust the global root path under which every file/directory is stored
 //! custom_config.global.service.directory = "custom_path".try_into()?;
@@ -93,7 +93,7 @@
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::config::Config;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service_creator = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -242,7 +242,7 @@ impl core::fmt::Display for ServiceDetailsError {
     }
 }
 
-impl std::error::Error for ServiceDetailsError {}
+impl core::error::Error for ServiceDetailsError {}
 
 /// Failure that can be reported by [`Service::list()`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -259,7 +259,7 @@ impl core::fmt::Display for ServiceListError {
     }
 }
 
-impl std::error::Error for ServiceListError {}
+impl core::error::Error for ServiceListError {}
 
 /// Represents all the [`Service`] information that one can acquire with [`Service::list()`]
 /// when the [`Service`] is accessible by the current process.
@@ -578,7 +578,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     /// use iceoryx2::prelude::*;
     /// use iceoryx2::config::Config;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// let name = ServiceName::new("Some/Name")?;
     /// let does_name_exist =
     ///     ipc::Service::does_exist(
@@ -604,7 +604,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     /// use iceoryx2::prelude::*;
     /// use iceoryx2::config::Config;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// let name = ServiceName::new("Some/Name")?;
     /// let details =
     ///     ipc::Service::details(
@@ -635,7 +635,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> {
     /// use iceoryx2::prelude::*;
     /// use iceoryx2::config::Config;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// ipc::Service::list(Config::global_config(), |service| {
     ///     println!("\n{:#?}", &service);
     ///     CallbackProgression::Continue

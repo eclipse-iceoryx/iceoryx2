@@ -16,7 +16,7 @@
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let pubsub = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
