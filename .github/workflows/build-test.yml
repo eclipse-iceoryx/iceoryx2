@@ -176,7 +176,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
-        toolchain: [stable] # [stable, 1.75.0, beta, nightly]
+        toolchain: [stable] # [stable, 1.81.0, beta, nightly]
         mode:
           - name: "release"
             arg: "--release"
@@ -266,8 +266,8 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         # NOTE: enable for MinGW
-        # toolchain: [stable, stable-gnu, 1.75.0]
-        toolchain: [stable, 1.75.0]
+        # toolchain: [stable, stable-gnu, 1.81.0]
+        toolchain: [stable, 1.81.0]
         mode:
           - name: "release"
             arg: "--release"
@@ -429,7 +429,7 @@ jobs:
   #   strategy:
   #     matrix:
   #       architecture: ["aarch64"] # ["aarch64", "armv7"]
-  #       toolchain: [ stable ] # [stable, 1.75.0, beta, nightly]
+  #       toolchain: [ stable ] # [stable, 1.81.0, beta, nightly]
   #       mode: ["--release", ""]
   #   timeout-minutes: 30
   #   steps:
@@ -455,7 +455,7 @@ jobs:
     strategy:
       matrix:
         freebsd_version: [ "14.0" ] 
-        toolchain: [ "stable", "1.75.0" ] # [stable, 1.75.0, beta, nightly]
+        toolchain: [ "stable", "1.81.0" ] # [stable, 1.81.0, beta, nightly]
         mode: ["debug"] # ["release", "debug"]
     steps:
       - uses: actions/checkout@v4
