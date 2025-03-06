@@ -13,11 +13,13 @@
 #ifndef IOX2_CXX_TESTS_TEST_HPP
 #define IOX2_CXX_TESTS_TEST_HPP
 
+#include "iox2/service_name.hpp"
+#include "iox2/service_type.hpp"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "iox2/service_name.hpp"
-#include "iox2/service_type.hpp"
+#include <chrono>
 
 using namespace ::testing;
 

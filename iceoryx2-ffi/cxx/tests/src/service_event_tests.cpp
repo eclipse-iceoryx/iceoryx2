@@ -10,13 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include <cstdlib>
-
 #include "iox2/node.hpp"
 #include "iox2/node_name.hpp"
 #include "iox2/service.hpp"
 
 #include "test.hpp"
+
+#include <chrono>
+#include <cstdlib>
 
 namespace {
 using namespace iox2;
