@@ -83,7 +83,6 @@ enum-iterator = { version = "2.1.0" }
 better-panic = { version = "0.3.0" }
 colored = { version = "2.1" }
 generic-tests = { version = "0.1.2" }
-human-panic = { version = "1.2.3" }
 lazy_static = { version = "1.4.0" }
 libc = { version = "0.2.169" }
 log = { version = "0.4.21" }

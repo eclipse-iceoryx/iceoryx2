@@ -47,7 +47,6 @@ rust_binary(
         "@crate_index//:cargo_metadata",
         "@crate_index//:clap",
         "@crate_index//:colored",
-        "@crate_index//:human-panic",
     ],
 )
 
@@ -61,7 +60,6 @@ rust_binary(
         "@crate_index//:anyhow",
         "@crate_index//:better-panic",
         "@crate_index//:clap",
-        "@crate_index//:human-panic",
     ],
 )
 
@@ -75,7 +73,6 @@ rust_binary(
         "@crate_index//:anyhow",
         "@crate_index//:better-panic",
         "@crate_index//:clap",
-        "@crate_index//:human-panic",
     ],
 )
 
