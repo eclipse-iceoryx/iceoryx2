@@ -26,7 +26,6 @@ rust_library(
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
-        "@crate_index//:tiny-fn",
     ],
 )
 

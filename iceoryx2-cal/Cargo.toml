@@ -32,7 +32,6 @@ cdr = { workspace = true }
 toml = { workspace = true }
 sha1_smol = { workspace = true }
 tiny-fn = { workspace = true }
-ouroboros = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
