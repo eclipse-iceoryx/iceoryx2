@@ -14,6 +14,8 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
+extern crate alloc;
+use alloc::ffi::CString;
 use core::cell::OnceCell;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
@@ -98,12 +100,11 @@ pub unsafe fn socketpair(
     };
 
     let counter = COUNTER.fetch_add(1, Ordering::Relaxed);
-    let socket_path =
-        String::from("uds_stream_socket_") + &pid.to_string() + "_" + &counter.to_string() + "\0";
+    let socket_path = CString::new(format!("uds_stream_socket_{}_{}", pid, counter)).unwrap();
     core::ptr::copy_nonoverlapping(
         socket_path.as_ptr(),
         address.sun_path.as_mut_ptr().cast(),
-        socket_path.len(),
+        socket_path.to_bytes().len(),
     );
 
     if bind(
