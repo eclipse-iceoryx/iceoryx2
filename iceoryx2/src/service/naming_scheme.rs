@@ -23,13 +23,10 @@ pub(crate) fn event_concept_name(listener_id: &UniqueListenerId) -> FileName {
                  "{}", msg)
 }
 
-pub(crate) fn connection_name(
-    publisher_id: UniquePublisherId,
-    subscriber_id: UniqueSubscriberId,
-) -> FileName {
-    let mut file = FileName::new(publisher_id.0.value().to_string().as_bytes()).unwrap();
+pub(crate) fn connection_name(sender_port_id: u128, receiver_port_id: u128) -> FileName {
+    let mut file = FileName::new(sender_port_id.to_string().as_bytes()).unwrap();
     file.push(b'_').unwrap();
-    file.push_bytes(subscriber_id.0.value().to_string().as_bytes())
+    file.push_bytes(receiver_port_id.to_string().as_bytes())
         .unwrap();
     file
 }
@@ -50,11 +47,11 @@ pub(crate) fn extract_subscriber_id_from_connection(connection: &FileName) -> Un
     unsafe { core::mem::transmute::<u128, UniqueSubscriberId>(value) }
 }
 
-pub(crate) fn data_segment_name(publisher_id: &UniquePublisherId) -> FileName {
-    let msg = "The system does not support the required file name length for the publishers data segment.";
+pub(crate) fn data_segment_name(port_id_value: u128) -> FileName {
+    let msg = "The system does not support the required file name length for the data segment.";
     let origin = "data_segment_name()";
 
     fatal_panic!(from origin,
-                 when FileName::new(publisher_id.0.value().to_string().as_bytes()),
+                 when FileName::new(port_id_value.to_string().as_bytes()),
                  "{}", msg)
 }

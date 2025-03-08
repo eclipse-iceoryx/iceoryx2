@@ -23,7 +23,7 @@ enum class ConnectionFailure : uint8_t {
     FailedToEstablishConnection,
 
     /// Failures when mapping the corresponding data segment
-    UnableToMapPublishersDataSegment
+    UnableToMapSendersDataSegment
 };
 
 } // namespace iox2

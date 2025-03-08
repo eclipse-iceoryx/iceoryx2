@@ -84,7 +84,7 @@ use serde::{Deserialize, Serialize};
 
 use iceoryx2_bb_log::{fail, fatal_panic, trace, warn};
 
-use crate::service::port_factory::publisher::UnableToDeliverStrategy;
+use crate::port::unable_to_deliver_strategy::UnableToDeliverStrategy;
 
 const DEFAULT_CONFIG_FILE_NAME: &[u8] = b"iceoryx2.toml";
 const RELATIVE_LOCAL_CONFIG_PATH: &[u8] = b"config";
@@ -332,6 +332,16 @@ pub struct RequestResonse {
     /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub max_nodes: usize,
+    /// Defines how many requests a client can loan in parallel.
+    pub client_max_loaned_requests: usize,
+    /// Defines how many responses a server can loan in parallel for a request.
+    pub server_max_loaned_responses_per_request: usize,
+    /// Defines the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
+    /// could not deliver the request to the [`Server`](crate::port::server::Server).
+    pub client_unable_to_deliver_strategy: UnableToDeliverStrategy,
+    /// Defines the [`UnableToDeliverStrategy`] when a [`Server`](crate::port::server::Server)
+    /// could not deliver the response to the [`Client`](crate::port::client::Client).
+    pub server_unable_to_deliver_strategy: UnableToDeliverStrategy,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -388,6 +398,10 @@ impl Default for Config {
                     max_servers: 2,
                     max_clients: 8,
                     max_nodes: 20,
+                    client_max_loaned_requests: 2,
+                    server_max_loaned_responses_per_request: 2,
+                    client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+                    server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                 },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,

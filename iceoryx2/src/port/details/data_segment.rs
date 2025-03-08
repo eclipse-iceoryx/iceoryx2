@@ -13,6 +13,7 @@
 use core::alloc::Layout;
 
 use iceoryx2_bb_log::fail;
+use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::{
     event::NamedConceptBuilder,
     resizable_shared_memory::*,
@@ -31,8 +32,6 @@ use crate::{
     service::{
         self,
         config_scheme::{data_segment_config, resizable_data_segment_config},
-        dynamic_config::publish_subscribe::PublisherDetails,
-        naming_scheme::data_segment_name,
     },
 };
 
@@ -65,52 +64,61 @@ pub(crate) struct DataSegment<Service: service::Service> {
 }
 
 impl<Service: service::Service> DataSegment<Service> {
-    pub(crate) fn create(
-        details: &PublisherDetails,
+    pub(crate) fn create_static_segment(
+        segment_name: &FileName,
+        chunk_layout: Layout,
         global_config: &config::Config,
-        sample_layout: Layout,
-        allocation_strategy: AllocationStrategy,
+        number_of_chunks: usize,
     ) -> Result<Self, SharedMemoryCreateError> {
         let allocator_config = shm_allocator::pool_allocator::Config {
-            bucket_layout: sample_layout,
+            bucket_layout: chunk_layout,
         };
-        let msg = "Unable to create the data segment since the underlying shared memory could not be created.";
-        let origin = "DataSegment::create()";
+        let msg = "Unable to create the static data segment since the underlying shared memory could not be created.";
+        let origin = "DataSegment::create_static_segment()";
 
-        let segment_name = data_segment_name(&details.publisher_id);
-        let memory = match details.data_segment_type {
-            DataSegmentType::Static => {
-                let segment_config = data_segment_config::<Service>(global_config);
-                let memory = fail!(from origin,
+        let segment_config = data_segment_config::<Service>(global_config);
+        let memory = fail!(from origin,
                                 when <<Service::SharedMemory as SharedMemory<PoolAllocator>>::Builder as NamedConceptBuilder<
                                 Service::SharedMemory,
-                                    >>::new(&segment_name)
+                                    >>::new(segment_name)
                                     .config(&segment_config)
-                                    .size(sample_layout.size() * details.number_of_samples + sample_layout.align() - 1)
+                                    .size(chunk_layout.size() * number_of_chunks + chunk_layout.align() - 1)
                                     .create(&allocator_config),
                                 "{msg}");
-                MemoryType::Static(memory)
-            }
-            DataSegmentType::Dynamic => {
-                let segment_config = resizable_data_segment_config::<Service>(global_config);
-                let memory = fail!(from origin,
+
+        Ok(Self {
+            memory: MemoryType::Static(memory),
+        })
+    }
+
+    pub(crate) fn create_dynamic_segment(
+        segment_name: &FileName,
+        chunk_layout: Layout,
+        global_config: &config::Config,
+        number_of_chunks: usize,
+        allocation_strategy: AllocationStrategy,
+    ) -> Result<Self, SharedMemoryCreateError> {
+        let msg = "Unable to create the dynamic data segment since the underlying shared memory could not be created.";
+        let origin = "DataSegment::create_dynamic_segment()";
+
+        let segment_config = resizable_data_segment_config::<Service>(global_config);
+        let memory = fail!(from origin,
                     when <<Service::ResizableSharedMemory as ResizableSharedMemory<
                         PoolAllocator,
                         Service::SharedMemory,
                     >>::MemoryBuilder as NamedConceptBuilder<Service::ResizableSharedMemory>>::new(
-                        &segment_name,
+                        segment_name,
                     )
                     .config(&segment_config)
-                    .max_number_of_chunks_hint(details.number_of_samples)
-                    .max_chunk_layout_hint(sample_layout)
+                    .max_number_of_chunks_hint(number_of_chunks)
+                    .max_chunk_layout_hint(chunk_layout)
                     .allocation_strategy(allocation_strategy)
                     .create(),
                     "{msg}");
-                MemoryType::Dynamic(memory)
-            }
-        };
 
-        Ok(Self { memory })
+        Ok(Self {
+            memory: MemoryType::Dynamic(memory),
+        })
     }
 
     pub(crate) fn allocate(&self, layout: Layout) -> Result<ShmPointer, ShmAllocationError> {
@@ -179,44 +187,51 @@ pub(crate) struct DataSegmentView<Service: service::Service> {
 }
 
 impl<Service: service::Service> DataSegmentView<Service> {
-    pub(crate) fn open(
-        details: &PublisherDetails,
+    pub(crate) fn open_static_segment(
+        segment_name: &FileName,
         global_config: &config::Config,
     ) -> Result<Self, SharedMemoryOpenError> {
-        let segment_name = data_segment_name(&details.publisher_id);
         let origin = "DataSegment::open()";
         let msg =
             "Unable to open data segment since the underlying shared memory could not be opened.";
 
-        let memory = match details.data_segment_type {
-            DataSegmentType::Static => {
-                let segment_config = data_segment_config::<Service>(global_config);
-                let memory = fail!(from origin,
+        let segment_config = data_segment_config::<Service>(global_config);
+        let memory = fail!(from origin,
                             when <Service::SharedMemory as SharedMemory<PoolAllocator>>::
-                                Builder::new(&segment_name)
+                                Builder::new(segment_name)
                                 .config(&segment_config)
                                 .timeout(global_config.global.service.creation_timeout)
                                 .open(),
                             "{msg}");
-                MemoryViewType::Static(memory)
-            }
-            DataSegmentType::Dynamic => {
-                let segment_config = resizable_data_segment_config::<Service>(global_config);
-                let memory = fail!(from origin,
+
+        Ok(Self {
+            memory: MemoryViewType::Static(memory),
+        })
+    }
+
+    pub(crate) fn open_dynamic_segment(
+        segment_name: &FileName,
+        global_config: &config::Config,
+    ) -> Result<Self, SharedMemoryOpenError> {
+        let origin = "DataSegment::open()";
+        let msg =
+            "Unable to open data segment since the underlying shared memory could not be opened.";
+
+        let segment_config = resizable_data_segment_config::<Service>(global_config);
+        let memory = fail!(from origin,
                     when <<Service::ResizableSharedMemory as ResizableSharedMemory<
                         PoolAllocator,
                         Service::SharedMemory,
                     >>::ViewBuilder as NamedConceptBuilder<Service::ResizableSharedMemory>>::new(
-                        &segment_name,
+                        segment_name,
                     )
                     .config(&segment_config)
                     .open(),
                     "{msg}");
-                MemoryViewType::Dynamic(memory)
-            }
-        };
 
-        Ok(Self { memory })
+        Ok(Self {
+            memory: MemoryViewType::Dynamic(memory),
+        })
     }
 
     pub(crate) fn register_and_translate_offset(
