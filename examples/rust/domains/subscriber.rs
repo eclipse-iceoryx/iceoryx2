@@ -19,7 +19,7 @@ use iceoryx2_bb_system_types::file_name::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn core::error::Error>> {
     let args = parse_args();
 
     // create a new config based on the global config

@@ -17,7 +17,7 @@
 //! use iceoryx2::config::Config;
 //! use iceoryx2_bb_system_types::path::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //!
 //! // create a default config and override some entries
 //! let mut custom_config = Config::default();
@@ -48,7 +48,7 @@
 //! use iceoryx2_bb_system_types::file_path::FilePath;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! Config::setup_global_config_from_file(
 //!     &FilePath::new(b"my/custom/config/file.toml")?)?;
 //! # Ok(())
@@ -62,7 +62,7 @@
 //! use iceoryx2_bb_system_types::file_path::FilePath;
 //! use iceoryx2_bb_container::semantic_string::SemanticString;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let custom_config = Config::from_file(
 //!     &FilePath::new(b"my/custom/config/file.toml")?)?;
 //! # Ok(())
@@ -119,7 +119,7 @@ impl core::fmt::Display for ConfigCreationError {
     }
 }
 
-impl std::error::Error for ConfigCreationError {}
+impl core::error::Error for ConfigCreationError {}
 
 /// All configurable settings of a [`crate::service::Service`].
 #[non_exhaustive]

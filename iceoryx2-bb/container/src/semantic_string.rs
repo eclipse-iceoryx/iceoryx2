@@ -88,7 +88,7 @@ impl core::fmt::Display for SemanticStringError {
     }
 }
 
-impl std::error::Error for SemanticStringError {}
+impl core::error::Error for SemanticStringError {}
 
 #[doc(hidden)]
 pub mod internal {

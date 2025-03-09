@@ -39,7 +39,7 @@ impl core::fmt::Display for NotifierNotifyError {
     }
 }
 
-impl std::error::Error for NotifierNotifyError {}
+impl core::error::Error for NotifierNotifyError {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum NotifierCreateError {
@@ -57,7 +57,7 @@ impl core::fmt::Display for NotifierCreateError {
     }
 }
 
-impl std::error::Error for NotifierCreateError {}
+impl core::error::Error for NotifierCreateError {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ListenerWaitError {
@@ -72,7 +72,7 @@ impl core::fmt::Display for ListenerWaitError {
     }
 }
 
-impl std::error::Error for ListenerWaitError {}
+impl core::error::Error for ListenerWaitError {}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ListenerCreateError {
@@ -87,7 +87,7 @@ impl core::fmt::Display for ListenerCreateError {
     }
 }
 
-impl std::error::Error for ListenerCreateError {}
+impl core::error::Error for ListenerCreateError {}
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TriggerId(usize);

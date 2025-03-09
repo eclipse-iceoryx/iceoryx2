@@ -229,16 +229,14 @@ pub unsafe fn strerror_r(errnum: int, buf: *mut c_char, buflen: size_t) -> int {
 pub unsafe fn strerror(errnum: int) -> *const c_char {
     let errno: Errno = errnum.into();
     match errno {
-        Errno::EINVAL => "Invalid input argument value.\0".as_ptr() as *const c_char,
-        Errno::ENOSYS => "The feature is not defined and supported.\0".as_ptr() as *const c_char,
-        Errno::ETIMEDOUT => "A user-provided timeout was hit.\0".as_ptr() as *const c_char,
-        Errno::ENOENT => "A required system-resource does not exist.\0".as_ptr() as *const c_char,
-        Errno::ENOTSUP => {
-            "The feature is not supported on this system.\0".as_ptr() as *const c_char
-        }
+        Errno::EINVAL => c"Invalid input argument value.".as_ptr() as *const c_char,
+        Errno::ENOSYS => c"The feature is not defined and supported.".as_ptr() as *const c_char,
+        Errno::ETIMEDOUT => c"A user-provided timeout was hit.".as_ptr() as *const c_char,
+        Errno::ENOENT => c"A required system-resource does not exist.".as_ptr() as *const c_char,
+        Errno::ENOTSUP => c"The feature is not supported on this system.".as_ptr() as *const c_char,
         Errno::EBUSY => {
-            "The resource is currently busy and unaccessable.\0".as_ptr() as *const c_char
+            c"The resource is currently busy and unaccessable.".as_ptr() as *const c_char
         }
-        _ => "Unknown error has occurred.\0".as_ptr() as *const c_char,
+        _ => c"Unknown error has occurred.".as_ptr() as *const c_char,
     }
 }

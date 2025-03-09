@@ -14,14 +14,14 @@ use clap::Parser;
 use iceoryx2::{port::listener::Listener, prelude::*};
 use std::collections::HashMap;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn core::error::Error>> {
     let args = Args::parse();
 
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     // factory lambda to create a listener with a given service name
     let create_listener =
-        |service: &String| -> Result<Listener<ipc::Service>, Box<dyn std::error::Error>> {
+        |service: &String| -> Result<Listener<ipc::Service>, Box<dyn core::error::Error>> {
             let event = node
                 .service_builder(&service.as_str().try_into()?)
                 .event()

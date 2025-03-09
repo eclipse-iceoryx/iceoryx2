@@ -16,6 +16,6 @@ set -e
 
 pacman -Syu --noconfirm clang cmake gcc git rustup
 pacman -Scc --noconfirm
-rustup toolchain add beta nightly stable 1.75.0
+rustup toolchain add beta nightly stable 1.81.0
 rustup component add clippy llvm-tools-preview rustfmt
 rustup default stable

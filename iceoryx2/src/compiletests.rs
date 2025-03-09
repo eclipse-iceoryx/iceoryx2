@@ -12,7 +12,7 @@
 
 /// ```compile_fail
 /// use iceoryx2::prelude::*;
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// fn main() -> Result<(), Box<dyn core::error::Error>> {
 /// let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
 ///
 /// let service = zero_copy::Service::new(&service_name)
@@ -37,7 +37,7 @@ fn sending_uninitialized_sample_fails_to_compile() {}
 ///
 /// struct Wrapper(u64);
 ///
-/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// fn main() -> Result<(), Box<dyn core::error::Error>> {
 /// let service_name = ServiceName::new("My/Funk/ServiceName").unwrap();
 ///
 /// let service = zero_copy::Service::new(&service_name)

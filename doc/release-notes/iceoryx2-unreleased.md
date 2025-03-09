@@ -67,6 +67,8 @@
 
 * Remove obsolete POSIX wrapper
     [#594](https://github.com/eclipse-iceoryx/iceoryx2/issues/594)
+* Updated all dependencies and increased MSRV to 1.81
+    [#638](https://github.com/eclipse-iceoryx/iceoryx2/issues/638)
 
 ### Workflow
 
