@@ -66,7 +66,7 @@
 //! use core::time::Duration;
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //!
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -93,7 +93,7 @@
 //! use core::time::Duration;
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //!
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -127,7 +127,7 @@
 //! use core::time::Duration;
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //!
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -154,7 +154,7 @@
 //! use core::time::Duration;
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //!
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -191,7 +191,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service = node.service_builder(&"PubSubQos".try_into()?)
@@ -218,7 +218,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let event = node.service_builder(&"EventQos".try_into()?)
@@ -248,7 +248,7 @@
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)

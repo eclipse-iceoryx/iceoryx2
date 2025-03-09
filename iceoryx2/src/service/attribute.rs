@@ -20,7 +20,7 @@
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::config::Config;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service_creator = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -44,7 +44,7 @@
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::config::Config;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! let service_open = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -69,7 +69,7 @@
 //! use iceoryx2::prelude::*;
 //! use iceoryx2::config::Config;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
@@ -88,7 +88,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let services = ipc::Service::list(Config::global_config(), |service| {
 //!     println!("\n{:#?}", &service.static_details.attributes());
 //!     CallbackProgression::Continue

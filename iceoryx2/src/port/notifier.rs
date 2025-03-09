@@ -14,7 +14,7 @@
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
@@ -74,7 +74,7 @@ impl core::fmt::Display for NotifierCreateError {
     }
 }
 
-impl std::error::Error for NotifierCreateError {}
+impl core::error::Error for NotifierCreateError {}
 
 /// Defines the failures that can occur while a [`Notifier::notify()`] call.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -98,7 +98,7 @@ impl core::fmt::Display for NotifierNotifyError {
     }
 }
 
-impl std::error::Error for NotifierNotifyError {}
+impl core::error::Error for NotifierNotifyError {}
 
 #[derive(Debug)]
 struct Connection<Service: service::Service> {

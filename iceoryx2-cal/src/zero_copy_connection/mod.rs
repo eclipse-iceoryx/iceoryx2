@@ -53,7 +53,7 @@ impl core::fmt::Display for ZeroCopyCreationError {
     }
 }
 
-impl std::error::Error for ZeroCopyCreationError {}
+impl core::error::Error for ZeroCopyCreationError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopySendError {
@@ -68,7 +68,7 @@ impl core::fmt::Display for ZeroCopySendError {
     }
 }
 
-impl std::error::Error for ZeroCopySendError {}
+impl core::error::Error for ZeroCopySendError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopyReceiveError {
@@ -81,7 +81,7 @@ impl core::fmt::Display for ZeroCopyReceiveError {
     }
 }
 
-impl std::error::Error for ZeroCopyReceiveError {}
+impl core::error::Error for ZeroCopyReceiveError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopyReclaimError {
@@ -94,7 +94,7 @@ impl core::fmt::Display for ZeroCopyReclaimError {
     }
 }
 
-impl std::error::Error for ZeroCopyReclaimError {}
+impl core::error::Error for ZeroCopyReclaimError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ZeroCopyReleaseError {
@@ -107,7 +107,7 @@ impl core::fmt::Display for ZeroCopyReleaseError {
     }
 }
 
-impl std::error::Error for ZeroCopyReleaseError {}
+impl core::error::Error for ZeroCopyReleaseError {}
 
 pub const DEFAULT_BUFFER_SIZE: usize = 4;
 pub const DEFAULT_ENABLE_SAFE_OVERFLOW: bool = false;

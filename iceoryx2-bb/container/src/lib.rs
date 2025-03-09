@@ -50,7 +50,7 @@
 //!     some_data: FixedSizeVec<u64, DATA_CAPACITY>,
 //! }
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let my_message = MyMessageType {
 //!     some_text: FixedSizeByteString::from_bytes(b"Hello World")?,
 //!     some_data: FixedSizeVec::new(),
@@ -80,7 +80,7 @@
 //!     some_queue: Queue<u64>,
 //! }
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let my_thing = MyType {
 //!     some_queue: Queue::new(QUEUE_CAPACITY),
 //! };

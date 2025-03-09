@@ -22,7 +22,7 @@
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
@@ -42,7 +42,7 @@
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let event = node.service_builder(&"MyEventName".try_into()?)
 //!     .event()
@@ -99,7 +99,7 @@ impl core::fmt::Display for ListenerCreateError {
     }
 }
 
-impl std::error::Error for ListenerCreateError {}
+impl core::error::Error for ListenerCreateError {}
 
 /// Represents the receiving endpoint of an event based communication.
 #[derive(Debug)]

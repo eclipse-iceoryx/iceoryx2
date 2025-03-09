@@ -42,7 +42,7 @@ impl core::fmt::Display for ConnectionFailure {
     }
 }
 
-impl std::error::Error for ConnectionFailure {}
+impl core::error::Error for ConnectionFailure {}
 
 /// Explicitly triggers and update of all connections and performs underlying management work.
 pub trait UpdateConnections {
@@ -59,7 +59,7 @@ pub trait UpdateConnections {
     /// use iceoryx2::prelude::*;
     /// use iceoryx2::port::update_connections::UpdateConnections;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)

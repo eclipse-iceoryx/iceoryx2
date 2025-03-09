@@ -15,7 +15,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
@@ -80,7 +80,7 @@ impl core::fmt::Display for SubscriberReceiveError {
     }
 }
 
-impl std::error::Error for SubscriberReceiveError {}
+impl core::error::Error for SubscriberReceiveError {}
 
 /// Describes the failures when a new [`Subscriber`] is created via the
 /// [`crate::service::port_factory::subscriber::PortFactorySubscriber`].
@@ -102,7 +102,7 @@ impl core::fmt::Display for SubscriberCreateError {
     }
 }
 
-impl std::error::Error for SubscriberCreateError {}
+impl core::error::Error for SubscriberCreateError {}
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]

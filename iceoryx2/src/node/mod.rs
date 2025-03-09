@@ -22,7 +22,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new()
 //!                 .name(&"my_little_node".try_into()?)
 //!                 .create::<ipc::Service>()?;
@@ -48,7 +48,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! Node::<ipc::Service>::list(Config::global_config(), |node_state| {
 //!     if let NodeState::<ipc::Service>::Dead(view) = node_state {
 //!         println!("cleanup resources of dead node {:?}", view);
@@ -68,7 +68,7 @@
 //! use core::time::Duration;
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //! let node = NodeBuilder::new()
 //!                 .name(&"my_little_node".try_into()?)
@@ -93,7 +93,7 @@
 //! use core::time::Duration;
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //! let node = NodeBuilder::new()
 //!                 .name(&"my_little_node".try_into()?)
@@ -115,7 +115,7 @@
 //! use iceoryx2::node::NodeWaitFailure;
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! const CYCLE_TIME: Duration = Duration::from_secs(1);
 //! let node = NodeBuilder::new()
 //!                 .name(&"my_little_node".try_into()?)
@@ -225,7 +225,7 @@ impl core::fmt::Display for NodeCreationFailure {
     }
 }
 
-impl std::error::Error for NodeCreationFailure {}
+impl core::error::Error for NodeCreationFailure {}
 
 /// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -242,7 +242,7 @@ impl core::fmt::Display for NodeWaitFailure {
     }
 }
 
-impl std::error::Error for NodeWaitFailure {}
+impl core::error::Error for NodeWaitFailure {}
 
 /// The failures that can occur when a list of [`NodeState`]s is created with [`Node::list()`].
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -261,7 +261,7 @@ impl core::fmt::Display for NodeListFailure {
     }
 }
 
-impl std::error::Error for NodeListFailure {}
+impl core::error::Error for NodeListFailure {}
 
 /// Failures of [`DeadNodeView::remove_stale_resources()`] that occur when the stale resources of
 /// a dead [`Node`] are removed.
@@ -283,7 +283,7 @@ impl core::fmt::Display for NodeCleanupFailure {
     }
 }
 
-impl std::error::Error for NodeCleanupFailure {}
+impl core::error::Error for NodeCleanupFailure {}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum NodeReadStorageFailure {
@@ -1181,7 +1181,7 @@ impl<Service: service::Service> Node<Service> {
 /// ```
 /// use iceoryx2::prelude::*;
 ///
-/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// # fn main() -> Result<(), Box<dyn core::error::Error>> {
 /// let node = NodeBuilder::new()
 ///                 .name(&"my_little_node".try_into()?)
 ///                 .create::<ipc::Service>()?;

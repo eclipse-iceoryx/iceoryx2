@@ -23,16 +23,16 @@ pub mod tracing;
 
 /// Sets the [`console::Logger`] as default logger
 pub fn use_console_logger() -> bool {
-    // LazyLock is only available from 1.80 but currently iceoryx2 has the minimum version 1.75.
-    // But since static values are never dropped in Rust, we can also use Box::leak
+    // LazyLock is only available in 'std' but since static values are never dropped in Rust,
+    // we can also use Box::leak
     let logger = Box::leak(Box::new(console::Logger::new()));
     crate::set_logger(&*logger)
 }
 
 /// Sets the [`file::Logger`] as default logger
 pub fn use_file_logger(log_file_name: &str) -> bool {
-    // we cannot capture non const parameters in a LazyLock and since static values are not
-    // dropped in Rust we can also use Box::leak
+    // LazyLock is only available in 'std' but since static values are never dropped in Rust,
+    // we can also use Box::leak
     let logger = Box::leak(Box::new(file::Logger::new(log_file_name)));
 
     crate::set_logger(logger)

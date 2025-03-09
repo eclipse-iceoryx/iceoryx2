@@ -21,7 +21,7 @@ use iceoryx2_bb_posix::thread::ThreadBuilder;
 
 const ITERATIONS: u64 = 10000000;
 
-fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn std::error::Error>> {
+fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core::error::Error>> {
     let service_name_a2b = ServiceName::new("a2b")?;
     let service_name_b2a = ServiceName::new("b2a")?;
     let node = NodeBuilder::new().create::<T>()?;
@@ -200,7 +200,7 @@ struct Args {
     number_of_additional_subscribers: usize,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn core::error::Error>> {
     let args = Args::parse();
 
     if args.debug_mode {

@@ -16,7 +16,7 @@ use iceoryx2::prelude::*;
 
 const CYCLE_TIME: Duration = Duration::from_millis(1000);
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service_name = ServiceName::new("service_1")?;
     let node = NodeBuilder::new()
         .name(&"publisher 1".try_into()?)

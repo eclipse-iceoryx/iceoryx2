@@ -22,7 +22,7 @@ use iceoryx2::{
 const HISTORY_SIZE: usize = 20;
 const DEADLINE: Duration = Duration::from_secs(2);
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let subscriber = CustomSubscriber::new(&node, &"My/Funk/ServiceName".try_into()?)?;
@@ -81,7 +81,7 @@ impl CustomSubscriber {
     fn new(
         node: &Node<ipc::Service>,
         service_name: &ServiceName,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
+    ) -> Result<Self, Box<dyn core::error::Error>> {
         let pubsub_service = node
             .service_builder(service_name)
             .publish_subscribe::<TransmissionData>()
@@ -106,7 +106,7 @@ impl CustomSubscriber {
         })
     }
 
-    fn handle_event(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn handle_event(&self) -> Result<(), Box<dyn core::error::Error>> {
         while let Some(event) = self.listener.try_wait_one()? {
             let event: PubSubEvent = event.into();
             match event {
@@ -132,7 +132,7 @@ impl CustomSubscriber {
 
     fn receive(
         &self,
-    ) -> Result<Option<Sample<ipc::Service, TransmissionData, ()>>, Box<dyn std::error::Error>>
+    ) -> Result<Option<Sample<ipc::Service, TransmissionData, ()>>, Box<dyn core::error::Error>>
     {
         match self.subscriber.receive()? {
             Some(sample) => {

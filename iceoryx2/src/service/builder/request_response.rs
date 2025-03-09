@@ -88,7 +88,7 @@ impl core::fmt::Display for RequestResponseOpenError {
     }
 }
 
-impl std::error::Error for RequestResponseOpenError {}
+impl core::error::Error for RequestResponseOpenError {}
 
 impl From<ServiceAvailabilityState> for RequestResponseOpenError {
     fn from(value: ServiceAvailabilityState) -> Self {
@@ -139,7 +139,7 @@ impl core::fmt::Display for RequestResponseCreateError {
     }
 }
 
-impl std::error::Error for RequestResponseCreateError {}
+impl core::error::Error for RequestResponseCreateError {}
 
 impl From<ServiceAvailabilityState> for RequestResponseCreateError {
     fn from(value: ServiceAvailabilityState) -> Self {
@@ -199,7 +199,7 @@ impl core::fmt::Display for RequestResponseOpenOrCreateError {
     }
 }
 
-impl std::error::Error for RequestResponseOpenOrCreateError {}
+impl core::error::Error for RequestResponseOpenOrCreateError {}
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceAvailabilityState {

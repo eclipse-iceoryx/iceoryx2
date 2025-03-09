@@ -78,7 +78,7 @@ impl core::fmt::Display for OpenDynamicStorageFailure {
     }
 }
 
-impl std::error::Error for OpenDynamicStorageFailure {}
+impl core::error::Error for OpenDynamicStorageFailure {}
 
 enum_gen! {
 #[doc(hidden)]
@@ -94,7 +94,7 @@ impl core::fmt::Display for ReadStaticStorageFailure {
     }
 }
 
-impl std::error::Error for ReadStaticStorageFailure {}
+impl core::error::Error for ReadStaticStorageFailure {}
 
 /// Builder to create or open [`Service`]s
 ///

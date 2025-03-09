@@ -21,12 +21,13 @@ use windows_sys::Win32::{
 };
 
 use crate::posix::{c_string_length, types::*};
+use core::ffi::CStr;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 const IS_INITIALIZED: u64 = 0xaffedeadbeef;
 const INITIALIZATION_IN_PROGRESS: u64 = 0xbebebebebebebebe;
-const SHM_SEGMENT_NAME: &[u8] = b"/port_to_uds_name_map\0";
+const SHM_SEGMENT_NAME: &CStr = c"/port_to_uds_name_map";
 const SHM_SIZE: usize = core::mem::size_of::<PortToUdsNameMap>();
 const UNINITIALIZED_ENTRY: u64 = 1;
 
@@ -200,7 +201,7 @@ impl PortToUds {
     pub fn new() -> Option<Self> {
         let handle: HANDLE = 0;
         let (shm_handle, last_error) = unsafe {
-            win32call! { CreateFileMappingA(handle, core::ptr::null::<SECURITY_ATTRIBUTES>(), PAGE_READWRITE | SEC_RESERVE, 0, SHM_SIZE as _, SHM_SEGMENT_NAME.as_ptr()), ignore ERROR_ALREADY_EXISTS}
+            win32call! { CreateFileMappingA(handle, core::ptr::null::<SECURITY_ATTRIBUTES>(), PAGE_READWRITE | SEC_RESERVE, 0, SHM_SIZE as _, SHM_SEGMENT_NAME.as_ptr() as *const u8), ignore ERROR_ALREADY_EXISTS}
         };
 
         if shm_handle == 0 {

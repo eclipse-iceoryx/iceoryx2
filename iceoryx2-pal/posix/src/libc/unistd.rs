@@ -14,12 +14,14 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::posix::types::*;
+extern crate alloc;
+use alloc::ffi::CString;
 
 pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
     let path = if pid == libc::getpid() {
-        "/proc/self/exe\0".to_owned()
+        c"/proc/self/exe".to_owned()
     } else {
-        "/proc/".to_owned() + &pid.to_string() + "/exe\0"
+        CString::new(format!("/proc/{}/exe", pid)).expect("String without 0 bytes")
     };
     libc::readlink(path.as_bytes().as_ptr().cast(), buffer.cast(), buffer_len)
 }

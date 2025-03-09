@@ -17,7 +17,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
@@ -60,7 +60,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<[usize]>()
@@ -165,7 +165,7 @@ impl core::fmt::Display for PublisherCreateError {
     }
 }
 
-impl std::error::Error for PublisherCreateError {}
+impl core::error::Error for PublisherCreateError {}
 
 /// Defines a failure that can occur in [`Publisher::loan()`] and [`Publisher::loan_uninit()`]
 /// or is part of [`PublisherSendError`] emitted in [`Publisher::send_copy()`].
@@ -192,7 +192,7 @@ impl core::fmt::Display for PublisherLoanError {
     }
 }
 
-impl std::error::Error for PublisherLoanError {}
+impl core::error::Error for PublisherLoanError {}
 
 /// Failure that can be emitted when a [`SampleMut`] is sent via [`SampleMut::send()`].
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
@@ -228,7 +228,7 @@ impl core::fmt::Display for PublisherSendError {
     }
 }
 
-impl std::error::Error for PublisherSendError {}
+impl core::error::Error for PublisherSendError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub(crate) enum RemovePubSubPortFromAllConnectionsError {
@@ -849,7 +849,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     ///
     /// ```
     /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -880,7 +880,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     ///
     /// ```
     /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -934,7 +934,7 @@ impl<Service: service::Service, Payload: Default + Debug + Sized, UserHeader: De
     ///
     /// ```
     /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -976,7 +976,7 @@ impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
     ///
     /// ```
     /// use iceoryx2::prelude::*;
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -1033,7 +1033,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     /// let sample = sample.write_from_fn(|n| n * 2); // alternatively `sample.payload_mut()` can be use to access the `[MaybeUninit<Payload>]`
     ///
     /// sample.send()?;
-    /// # Ok::<_, Box<dyn std::error::Error>>(())
+    /// # Ok::<_, Box<dyn core::error::Error>>(())
     /// ```
     pub fn loan_slice_uninit(
         &self,
