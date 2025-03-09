@@ -151,7 +151,9 @@ pub mod logger;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
 
 use core::{fmt::Arguments, sync::atomic::Ordering};
-use std::sync::Once;
+use std::sync::{Once, OnceLock};
+
+use std::env;
 
 #[cfg(feature = "logger_tracing")]
 static DEFAULT_LOGGER: logger::tracing::Logger = logger::tracing::Logger::new();
@@ -162,10 +164,11 @@ static DEFAULT_LOGGER: logger::log::Logger = logger::log::Logger::new();
 #[cfg(not(any(feature = "logger_log", feature = "logger_tracing")))]
 static DEFAULT_LOGGER: logger::console::Logger = logger::console::Logger::new();
 
-const DEFAULT_LOG_LEVEL: u8 = LogLevel::Info as u8;
+const DEFAULT_LOG_LEVEL: LogLevel = LogLevel::Info;
+pub static ENV_LOG_LEVEL: OnceLock<LogLevel> = OnceLock::new();
 
 static mut LOGGER: Option<&'static dyn Log> = None;
-static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL);
+static LOG_LEVEL: IoxAtomicU8 = IoxAtomicU8::new(DEFAULT_LOG_LEVEL as u8);
 static INIT: Once = Once::new();
 
 pub trait Log: Send + Sync {
@@ -183,6 +186,45 @@ pub enum LogLevel {
     Warn = 3,
     Error = 4,
     Fatal = 5,
+}
+
+impl LogLevel {
+    fn from_str_fuzzy(s: &str) -> LogLevel {
+        match s.to_lowercase().as_str() {
+            "trace" => LogLevel::Trace,
+            "debug" => LogLevel::Debug,
+            "info" => LogLevel::Info,
+            "warn" => LogLevel::Warn,
+            "error" => LogLevel::Error,
+            "fatal" => LogLevel::Fatal,
+            _ => {
+                println!("Error: unknown logging level {:?}", s);
+                println!("Warning: setting log level as : {:?}", DEFAULT_LOG_LEVEL);
+                DEFAULT_LOG_LEVEL
+            }
+        }
+    }
+}
+
+/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it wiht LogLevel::INFO
+pub fn set_log_level_from_env_or_default() {
+    let log_level = env::var("IOX2_LOG_LEVEL")
+        .ok()
+        .map(|s| LogLevel::from_str_fuzzy(&s))
+        .unwrap_or(DEFAULT_LOG_LEVEL);
+    ENV_LOG_LEVEL.set(log_level).unwrap();
+    set_log_level(*ENV_LOG_LEVEL.get().unwrap());
+}
+
+/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL", and if the environment variable
+/// doesn't exits it sets it with a user-defined logging level
+pub fn set_log_level_from_env_or(v: LogLevel) {
+    let log_level = env::var("IOX2_LOG_LEVEL")
+        .ok()
+        .map(|s| LogLevel::from_str_fuzzy(&s))
+        .unwrap_or(v);
+    ENV_LOG_LEVEL.set(log_level).unwrap();
+    set_log_level(*ENV_LOG_LEVEL.get().unwrap());
 }
 
 /// Sets the current log level. This is ignored for external frameworks like `log` or `tracing`.
@@ -204,7 +246,6 @@ pub fn set_logger<T: Log + 'static>(value: &'static T) -> bool {
         unsafe { LOGGER = Some(value) };
         set_logger_success = true;
     });
-
     set_logger_success
 }
 
