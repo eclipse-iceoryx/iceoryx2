@@ -53,7 +53,7 @@ impl<Service: service::Service> Taggable for Connection<Service> {
 
 impl<Service: service::Service> Connection<Service> {
     fn new(
-        this: &IncomingConnections<Service>,
+        this: &Receiver<Service>,
         data_segment_type: DataSegmentType,
         sender_port_id: u128,
         number_of_samples: usize,
@@ -103,7 +103,7 @@ impl<Service: service::Service> Connection<Service> {
 }
 
 #[derive(Debug)]
-pub(crate) struct IncomingConnections<Service: service::Service> {
+pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) connections: Vec<UnsafeCell<Option<Arc<Connection<Service>>>>>,
     pub(crate) receiver_port_id: u128,
     pub(crate) service_state: Arc<ServiceState<Service>>,
@@ -116,7 +116,7 @@ pub(crate) struct IncomingConnections<Service: service::Service> {
     pub(crate) enable_safe_overflow: bool,
 }
 
-impl<Service: service::Service> IncomingConnections<Service> {
+impl<Service: service::Service> Receiver<Service> {
     pub(crate) fn receiver_port_id(&self) -> u128 {
         self.receiver_port_id
     }

@@ -82,7 +82,7 @@ impl<
 {
     fn drop(&mut self) {
         self.client_backend
-            .server_connections
+            .sender
             .return_loaned_sample(self.offset_to_chunk);
     }
 }

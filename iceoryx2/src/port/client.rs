@@ -69,8 +69,8 @@ use crate::{
 use super::{
     details::{
         data_segment::DataSegmentType,
-        outgoing_connections::{OutgoingConnections, ReceiverDetails},
         segment_state::SegmentState,
+        sender::{ReceiverDetails, Sender},
     },
     update_connections::UpdateConnections,
     LoanError, SendError,
@@ -78,7 +78,7 @@ use super::{
 
 #[derive(Debug)]
 pub(crate) struct ClientBackend<Service: service::Service> {
-    pub(crate) server_connections: OutgoingConnections<Service>,
+    pub(crate) sender: Sender<Service>,
     is_active: IoxAtomicBool,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     service_state: Arc<ServiceState<Service>>,
@@ -99,7 +99,7 @@ impl<Service: service::Service> ClientBackend<Service> {
         fail!(from self, when self.update_connections(),
             "{} since the connections could not be updated.", msg);
 
-        self.server_connections.deliver_offset(offset, sample_size)
+        self.sender.deliver_offset(offset, sample_size)
     }
 
     fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
@@ -120,10 +120,10 @@ impl<Service: service::Service> ClientBackend<Service> {
 
     fn force_update_connections(&self) -> Result<(), ZeroCopyCreationError> {
         let mut result = Ok(());
-        self.server_connections.start_update_connection_cycle();
+        self.sender.start_update_connection_cycle();
         unsafe {
             (*self.server_list_state.get()).for_each(|h, port| {
-                let inner_result = self.server_connections.update_connection(
+                let inner_result = self.sender.update_connection(
                     h.index() as usize,
                     ReceiverDetails {
                         port_id: port.server_port_id.value(),
@@ -137,7 +137,7 @@ impl<Service: service::Service> ClientBackend<Service> {
             })
         };
 
-        self.server_connections.finish_update_connection_cycle();
+        self.sender.finish_update_connection_cycle();
 
         result
     }
@@ -246,7 +246,7 @@ impl<
         let mut new_self = Self {
             client_handle: None,
             backend: Arc::new(ClientBackend {
-                server_connections: OutgoingConnections {
+                sender: Sender {
                     data_segment,
                     segment_states: vec![SegmentState::new(number_of_requests)],
                     sender_port_id: client_port_id.value(),
@@ -314,7 +314,7 @@ impl<
     /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
     /// if the [`Server`](crate::port::server::Server)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
-        self.backend.server_connections.unable_to_deliver_strategy
+        self.backend.sender.unable_to_deliver_strategy
     }
 
     /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
@@ -389,8 +389,8 @@ impl<
     > {
         let chunk = self
             .backend
-            .server_connections
-            .allocate(self.backend.server_connections.sample_layout(1))?;
+            .sender
+            .allocate(self.backend.sender.sample_layout(1))?;
 
         unsafe {
             (chunk.header as *mut service::header::request_response::RequestHeader).write(

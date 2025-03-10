@@ -26,6 +26,25 @@ mod client {
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 
+    // TODO:
+    //   - request is initialized with default
+    //   - borrow multiple requests at once
+    //   - sending request reduces loan counter
+    //   - dropping request reduces loan counter
+    //   - client id is unique
+    //   - request is correctly aligned
+    //     - introduce request and response alignment in builder
+    //   - never goes out of memory
+    //     - vary all possibilities
+    //   - completion channel capacity is never exceeded
+    //     - vary all possibilities
+    //   - custom request header
+    //
+    //   - service builder
+    //     - ports of dropped service block new service creation
+    //     - service can be opened when there is a port
+    //     - ?server decrease buffer size? (increase with failure)
+
     fn create_node<Sut: Service>() -> Node<Sut> {
         let config = generate_isolated_config();
         NodeBuilder::new().config(&config).create::<Sut>().unwrap()

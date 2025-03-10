@@ -60,7 +60,7 @@ impl<Service: service::Service> Taggable for Connection<Service> {
 
 impl<Service: service::Service> Connection<Service> {
     fn new(
-        this: &OutgoingConnections<Service>,
+        this: &Sender<Service>,
         receiver_port_id: u128,
         buffer_size: usize,
         number_of_samples: usize,
@@ -97,7 +97,7 @@ impl<Service: service::Service> Connection<Service> {
 }
 
 #[derive(Debug)]
-pub(crate) struct OutgoingConnections<Service: service::Service> {
+pub(crate) struct Sender<Service: service::Service> {
     pub(crate) segment_states: Vec<SegmentState>,
     pub(crate) data_segment: DataSegment<Service>,
     pub(crate) connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
@@ -117,7 +117,7 @@ pub(crate) struct OutgoingConnections<Service: service::Service> {
     pub(crate) message_type_details: MessageTypeDetails,
 }
 
-impl<Service: service::Service> OutgoingConnections<Service> {
+impl<Service: service::Service> Sender<Service> {
     fn get(&self, index: usize) -> &Option<Connection<Service>> {
         unsafe { &(*self.connections[index].get()) }
     }
