@@ -54,7 +54,7 @@ impl core::fmt::Display for ClientCreateError {
     }
 }
 
-impl std::error::Error for ClientCreateError {}
+impl core::error::Error for ClientCreateError {}
 
 /// Factory to create a new [`Client`] port/endpoint for
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)

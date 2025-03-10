@@ -45,7 +45,7 @@ impl core::fmt::Display for ServerCreateError {
     }
 }
 
-impl std::error::Error for ServerCreateError {}
+impl core::error::Error for ServerCreateError {}
 
 /// Factory to create a new [`Server`] port/endpoint for
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)

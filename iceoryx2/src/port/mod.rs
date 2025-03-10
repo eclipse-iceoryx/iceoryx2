@@ -95,7 +95,7 @@ impl core::fmt::Display for LoanError {
     }
 }
 
-impl std::error::Error for LoanError {}
+impl core::error::Error for LoanError {}
 
 /// Failure that can be emitted when data is sent.
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
@@ -128,7 +128,7 @@ impl core::fmt::Display for SendError {
     }
 }
 
-impl std::error::Error for SendError {}
+impl core::error::Error for SendError {}
 
 /// Defines the failure that can occur when receiving data with
 /// [`Subscriber::receive()`](crate::port::subscriber::Subscriber::receive()).
@@ -149,4 +149,4 @@ impl core::fmt::Display for ReceiveError {
     }
 }
 
-impl std::error::Error for ReceiveError {}
+impl core::error::Error for ReceiveError {}
