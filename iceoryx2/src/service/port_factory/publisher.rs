@@ -58,73 +58,16 @@ use core::fmt::Debug;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::shm_allocator::AllocationStrategy;
-use serde::{de::Visitor, Deserialize, Serialize};
 
 use super::publish_subscribe::PortFactory;
 use crate::{
     port::{
-        port_identifiers::{UniquePublisherId, UniqueSubscriberId},
-        publisher::Publisher,
-        publisher::PublisherCreateError,
+        publisher::{Publisher, PublisherCreateError},
+        unable_to_deliver_strategy::UnableToDeliverStrategy,
         DegrationAction, DegrationCallback,
     },
     service,
 };
-
-/// Defines the strategy the [`Publisher`] shall pursue in
-/// [`crate::sample_mut::SampleMut::send()`] or
-/// [`Publisher::send_copy()`] when the buffer of a
-/// [`crate::port::subscriber::Subscriber`] is full and the service does not overflow.
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum UnableToDeliverStrategy {
-    /// Blocks until the [`crate::port::subscriber::Subscriber`] has consumed the
-    /// [`crate::sample::Sample`] from the buffer and there is space again
-    Block,
-    /// Do not deliver the [`crate::sample::Sample`].
-    DiscardSample,
-}
-
-impl Serialize for UnableToDeliverStrategy {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&std::format!("{:?}", self))
-    }
-}
-
-struct UnableToDeliverStrategyVisitor;
-
-impl Visitor<'_> for UnableToDeliverStrategyVisitor {
-    type Value = UnableToDeliverStrategy;
-
-    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-        formatter.write_str("a string containing either 'Block' or 'DiscardSample'")
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        match v {
-            "Block" => Ok(UnableToDeliverStrategy::Block),
-            "DiscardSample" => Ok(UnableToDeliverStrategy::DiscardSample),
-            v => Err(E::custom(format!(
-                "Invalid UnableToDeliverStrategy provided: \"{:?}\".",
-                v
-            ))),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for UnableToDeliverStrategy {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_str(UnableToDeliverStrategyVisitor)
-    }
-}
 
 #[derive(Debug)]
 pub(crate) struct LocalPublisherConfig {
@@ -197,12 +140,7 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegrationAction`] measures will be taken.
     pub fn set_degration_callback<
-        F: Fn(
-                service::static_config::StaticConfig,
-                UniquePublisherId,
-                UniqueSubscriberId,
-            ) -> DegrationAction
-            + 'static,
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
     >(
         mut self,
         callback: Option<F>,

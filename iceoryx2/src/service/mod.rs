@@ -494,6 +494,8 @@ pub(crate) mod internal {
                             return PortCleanupAction::SkipPort;
                         }
                     }
+                    UniquePortId::Client(_) => todo!(),
+                    UniquePortId::Server(_) => todo!(),
                 };
 
                 debug!(from origin, "Remove port {:?} from service.", port_id);

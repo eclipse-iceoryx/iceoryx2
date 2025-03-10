@@ -16,20 +16,6 @@
 #include <cstdint>
 
 namespace iox2 {
-/// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
-enum class SubscriberReceiveError : uint8_t {
-    /// The maximum amount of [`Sample`]s a user can borrow with [`Subscriber::receive()`] is
-    /// defined in [`Config`]. When this is exceeded [`Subscriber::receive()`]
-    /// fails.
-    ExceedsMaxBorrowedSamples,
-
-    /// Failures when creating the connection
-    FailedToEstablishConnection,
-
-    /// Failures when mapping the corresponding data segment
-    UnableToMapPublishersDataSegment
-};
-
 /// Describes the failures when a new [`Subscriber`] is created via the
 /// [`PortFactorySubscriber`].
 enum class SubscriberCreateError : uint8_t {

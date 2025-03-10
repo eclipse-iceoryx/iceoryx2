@@ -12,11 +12,14 @@
 
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_lock_free::mpmc::container::Container;
+use iceoryx2_bb_lock_free::mpmc::container::{Container, ContainerHandle, ReleaseMode};
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
-use crate::{node::NodeId, port::port_identifiers::UniquePortId};
+use crate::{
+    node::NodeId,
+    port::port_identifiers::{UniqueClientId, UniquePortId, UniqueServerId},
+};
 
 use super::PortCleanupAction;
 
@@ -24,14 +27,17 @@ use super::PortCleanupAction;
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ServerDetails {
-    _stub: usize,
+    pub server_port_id: UniqueServerId,
+    pub buffer_size: usize,
 }
 
 #[doc(hidden)]
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ClientDetails {
-    _stub: usize,
+    pub client_port_id: UniqueClientId,
+    pub node_id: NodeId,
+    pub number_of_requests: usize,
 }
 
 #[repr(C)]
@@ -91,6 +97,14 @@ impl DynamicConfig {
         mut _port_cleanup_callback: PortCleanup,
     ) {
         todo!()
+    }
+
+    pub(crate) fn add_client_id(&self, details: ClientDetails) -> Option<ContainerHandle> {
+        unsafe { self.clients.add(details).ok() }
+    }
+
+    pub(crate) fn release_client_handle(&self, handle: ContainerHandle) {
+        unsafe { self.clients.remove(handle, ReleaseMode::Default) };
     }
 
     #[doc(hidden)]

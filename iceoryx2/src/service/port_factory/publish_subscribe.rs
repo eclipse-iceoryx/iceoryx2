@@ -162,7 +162,6 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     ///
     /// ```
     /// use iceoryx2::prelude::*;
-    /// use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
     ///
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// let node = NodeBuilder::new().create::<ipc::Service>()?;

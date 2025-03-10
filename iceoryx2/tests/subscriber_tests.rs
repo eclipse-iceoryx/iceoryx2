@@ -12,13 +12,14 @@
 
 #[generic_tests::define]
 mod subscriber {
+    use iceoryx2::port::ReceiveError;
     use iceoryx2::service::builder::publish_subscribe::CustomPayloadMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use std::collections::HashSet;
 
     use iceoryx2::{
         node::NodeBuilder,
-        port::subscriber::{SubscriberCreateError, SubscriberReceiveError},
+        port::subscriber::SubscriberCreateError,
         service::{service_name::ServiceName, Service},
         testing::*,
     };
@@ -36,7 +37,7 @@ mod subscriber {
     #[test]
     fn receive_error_display_works<S: Service>() {
         assert_that!(
-            format!("{}", SubscriberReceiveError::ExceedsMaxBorrowedSamples), eq "SubscriberReceiveError::ExceedsMaxBorrowedSamples");
+            format!("{}", ReceiveError::ExceedsMaxBorrowedSamples), eq "ReceiveError::ExceedsMaxBorrowedSamples");
     }
 
     #[test]

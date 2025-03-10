@@ -38,17 +38,15 @@ use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 
 extern crate alloc;
-use alloc::sync::Arc;
 
 use iceoryx2_bb_container::queue::Queue;
+use iceoryx2_bb_elementary::visitor::Visitor;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::zero_copy_connection::*;
 
-use crate::port::DegrationAction;
-use crate::sample::SampleDetails;
 use crate::service::builder::publish_subscribe::CustomPayloadMarker;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
@@ -56,31 +54,12 @@ use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
 use crate::{raw_sample::RawSample, sample::Sample, service};
 
-use super::details::publisher_connections::{Connection, PublisherConnections};
+use super::details::chunk::Chunk;
+use super::details::chunk_details::ChunkDetails;
+use super::details::incoming_connections::*;
 use super::port_identifiers::UniqueSubscriberId;
 use super::update_connections::{ConnectionFailure, UpdateConnections};
-use super::DegrationCallback;
-
-/// Defines the failure that can occur when receiving data with [`Subscriber::receive()`].
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum SubscriberReceiveError {
-    /// The maximum amount of [`Sample`]s a user can borrow with [`Subscriber::receive()`] is
-    /// defined in [`crate::config::Config`]. When this is exceeded [`Subscriber::receive()`]
-    /// fails.
-    ExceedsMaxBorrowedSamples,
-
-    /// Occurs when a [`Subscriber`] is unable to connect to a corresponding
-    /// [`Publisher`](crate::port::publisher::Publisher).
-    ConnectionFailure(ConnectionFailure),
-}
-
-impl core::fmt::Display for SubscriberReceiveError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "SubscriberReceiveError::{:?}", self)
-    }
-}
-
-impl core::error::Error for SubscriberReceiveError {}
+use super::ReceiveError;
 
 /// Describes the failures when a new [`Subscriber`] is created via the
 /// [`crate::service::port_factory::subscriber::PortFactorySubscriber`].
@@ -112,10 +91,7 @@ pub struct Subscriber<
     UserHeader: Debug,
 > {
     dynamic_subscriber_handle: Option<ContainerHandle>,
-    publisher_connections: PublisherConnections<Service>,
-    to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
-    static_config: crate::service::static_config::StaticConfig,
-    degration_callback: Option<DegrationCallback<'static>>,
+    publisher_connections: IncomingConnections<Service>,
 
     publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
     _payload: PhantomData<Payload>,
@@ -168,15 +144,17 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             None => static_config.subscriber_max_buffer_size,
         };
 
-        let publisher_connections = PublisherConnections::new(
-            publisher_list.capacity(),
-            subscriber_id,
-            service.__internal_state().clone(),
-            static_config,
+        let publisher_connections = IncomingConnections {
+            connections: (0..publisher_list.capacity())
+                .map(|_| UnsafeCell::new(None))
+                .collect(),
+            receiver_port_id: subscriber_id.value(),
+            service_state: service.__internal_state().clone(),
+            message_type_details: static_config.message_type_details.clone(),
+            receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
+            enable_safe_overflow: static_config.enable_safe_overflow,
             buffer_size,
-        );
-
-        let mut new_self = Self {
+            visitor: Visitor::new(),
             to_be_removed_connections: UnsafeCell::new(Queue::new(
                 service
                     .__internal_state()
@@ -187,15 +165,17 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                     .subscriber_expired_connection_buffer,
             )),
             degration_callback: config.degration_callback,
+        };
+
+        let mut new_self = Self {
             publisher_connections,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle: None,
-            static_config: service.__internal_state().static_config.clone(),
             _payload: PhantomData,
             _user_header: PhantomData,
         };
 
-        if let Err(e) = new_self.populate_publisher_channels() {
+        if let Err(e) = new_self.force_update_connections() {
             warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
         }
 
@@ -226,119 +206,39 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         Ok(new_self)
     }
 
-    fn populate_publisher_channels(&self) -> Result<(), ConnectionFailure> {
-        let mut visited_indices = vec![];
-        visited_indices.resize(self.publisher_connections.capacity(), None);
+    fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
+        self.publisher_connections.start_update_connection_cycle();
 
+        let mut result = Ok(());
         unsafe {
             (*self.publisher_list_state.get()).for_each(|h, details| {
-                visited_indices[h.index() as usize] = Some(*details);
+                let inner_result = self.publisher_connections.update_connection(
+                    h.index() as usize,
+                    SenderDetails {
+                        port_id: details.publisher_id.value(),
+                        number_of_samples: details.number_of_samples,
+                        max_number_of_segments: details.max_number_of_segments,
+                        data_segment_type: details.data_segment_type,
+                    },
+                );
+
+                if result.is_ok() {
+                    result = inner_result;
+                }
                 CallbackProgression::Continue
             })
         };
 
-        let prepare_connection_removal = |i| {
-            if let Some(connection) = self.publisher_connections.get(i) {
-                if connection.receiver.has_data()
-                    && !unsafe { &mut *self.to_be_removed_connections.get() }
-                        .push(connection.clone())
-                {
-                    warn!(from self, "Expired connection buffer exceeded. A publisher disconnected with undelivered samples that will be discarded. Increase the config entry `defaults.publish-subscribe.subscriber-expired-connection-buffer` to mitigate the problem.");
-                }
-            }
-        };
+        self.publisher_connections.finish_update_connection_cycle();
 
-        // update all connections
-        for (i, index) in visited_indices.iter().enumerate() {
-            match index {
-                Some(details) => {
-                    let create_connection = match self.publisher_connections.get(i) {
-                        None => true,
-                        Some(connection) => connection.publisher_id != details.publisher_id,
-                    };
-
-                    if create_connection {
-                        prepare_connection_removal(i);
-
-                        match self.publisher_connections.create(i, details) {
-                            Ok(()) => (),
-                            Err(e) => match &self.degration_callback {
-                                None => {
-                                    warn!(from self, "Unable to establish connection to new publisher {:?}.", details.publisher_id)
-                                }
-                                Some(c) => {
-                                    match c.call(
-                                        self.static_config.clone(),
-                                        details.publisher_id,
-                                        self.publisher_connections.subscriber_id(),
-                                    ) {
-                                        DegrationAction::Ignore => (),
-                                        DegrationAction::Warn => {
-                                            warn!(from self, "Unable to establish connection to new publisher {:?}.",
-                                        details.publisher_id)
-                                        }
-                                        DegrationAction::Fail => {
-                                            fail!(from self, with e, "Unable to establish connection to new publisher {:?}.",
-                                        details.publisher_id);
-                                        }
-                                    }
-                                }
-                            },
-                        }
-                    }
-                }
-                None => {
-                    prepare_connection_removal(i);
-
-                    self.publisher_connections.remove(i)
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    fn receive_from_connection(
-        &self,
-        connection: &Arc<Connection<Service>>,
-    ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
-        let msg = "Unable to receive another sample";
-        match connection.receiver.receive() {
-            Ok(data) => match data {
-                None => Ok(None),
-                Some(offset) => {
-                    let details = SampleDetails {
-                        publisher_connection: connection.clone(),
-                        offset,
-                        origin: connection.publisher_id,
-                    };
-
-                    let offset = match connection
-                        .data_segment
-                        .register_and_translate_offset(offset)
-                    {
-                        Ok(offset) => offset,
-                        Err(e) => {
-                            fail!(from self, with SubscriberReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapPublishersDataSegment(e)),
-                                "Unable to register and translate offset from publisher {:?} since the received offset {:?} could not be registered and translated.",
-                                connection.publisher_id, offset);
-                        }
-                    };
-
-                    Ok(Some((details, offset)))
-                }
-            },
-            Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
-                fail!(from self, with SubscriberReceiveError::ExceedsMaxBorrowedSamples,
-                    "{} since it would exceed the maximum {} of borrowed samples.",
-                    msg, connection.receiver.max_borrowed_samples());
-            }
-        }
+        result
     }
 
     /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
     pub fn id(&self) -> UniqueSubscriberId {
-        self.publisher_connections.subscriber_id()
+        UniqueSubscriberId(UniqueSystemId::from(
+            self.publisher_connections.receiver_port_id(),
+        ))
     }
 
     /// Returns the internal buffer size of the [`Subscriber`].
@@ -350,64 +250,17 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
-
-        for id in 0..self.publisher_connections.len() {
-            if let Some(ref connection) = &self.publisher_connections.get(id) {
-                if connection.receiver.has_data() {
-                    return Ok(true);
-                }
-            }
-        }
-
-        Ok(false)
+        self.publisher_connections.has_samples()
     }
 
-    fn receive_impl(
-        &self,
-    ) -> Result<Option<(SampleDetails<Service>, usize)>, SubscriberReceiveError> {
+    fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
         if let Err(e) = self.update_connections() {
             fail!(from self,
-                with SubscriberReceiveError::ConnectionFailure(e),
+                with ReceiveError::ConnectionFailure(e),
                 "Some samples are not being received since not all connections to publishers could be established.");
         }
 
-        let to_be_removed_connections = unsafe { &mut *self.to_be_removed_connections.get() };
-
-        if let Some(connection) = to_be_removed_connections.peek() {
-            if let Some((details, absolute_address)) = self.receive_from_connection(connection)? {
-                return Ok(Some((details, absolute_address)));
-            } else {
-                to_be_removed_connections.pop();
-            }
-        }
-
-        for id in 0..self.publisher_connections.len() {
-            if let Some(ref mut connection) = &mut self.publisher_connections.get_mut(id) {
-                if let Some((details, absolute_address)) =
-                    self.receive_from_connection(connection)?
-                {
-                    return Ok(Some((details, absolute_address)));
-                }
-            }
-        }
-
-        Ok(None)
-    }
-
-    fn payload_ptr(&self, header: *const Header) -> *const u8 {
-        self.publisher_connections
-            .static_config
-            .message_type_details
-            .payload_ptr_from_header(header.cast())
-            .cast()
-    }
-
-    fn user_header_ptr(&self, header: *const Header) -> *const u8 {
-        self.publisher_connections
-            .static_config
-            .message_type_details
-            .user_header_ptr_from_header(header.cast())
-            .cast()
+        self.publisher_connections.receive()
     }
 }
 
@@ -424,7 +277,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Upda
                 .publishers
                 .update_state(&mut *self.publisher_list_state.get())
         } {
-            fail!(from self, when self.populate_publisher_channels(),
+            fail!(from self, when self.force_update_connections(),
                 "Connections were updated only partially since at least one connection to a publisher failed.");
         }
 
@@ -436,18 +289,17 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     Subscriber<Service, Payload, UserHeader>
 {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
-    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    pub fn receive(
-        &self,
-    ) -> Result<Option<Sample<Service, Payload, UserHeader>>, SubscriberReceiveError> {
-        Ok(self.receive_impl()?.map(|(details, absolute_address)| {
-            let header_ptr = absolute_address as *const Header;
-            let user_header_ptr = self.user_header_ptr(header_ptr).cast();
-            let payload_ptr = self.payload_ptr(header_ptr).cast();
-            Sample {
-                details,
-                ptr: unsafe { RawSample::new_unchecked(header_ptr, user_header_ptr, payload_ptr) },
-            }
+    /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
+    pub fn receive(&self) -> Result<Option<Sample<Service, Payload, UserHeader>>, ReceiveError> {
+        Ok(self.receive_impl()?.map(|(details, chunk)| Sample {
+            details,
+            ptr: unsafe {
+                RawSample::new_unchecked(
+                    chunk.header.cast(),
+                    chunk.user_header.cast(),
+                    chunk.payload.cast(),
+                )
+            },
         }))
     }
 }
@@ -456,16 +308,12 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     Subscriber<Service, [Payload], UserHeader>
 {
     /// Receives a [`crate::sample::Sample`] from [`crate::port::publisher::Publisher`]. If no sample could be
-    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    pub fn receive(
-        &self,
-    ) -> Result<Option<Sample<Service, [Payload], UserHeader>>, SubscriberReceiveError> {
+    /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
+    pub fn receive(&self) -> Result<Option<Sample<Service, [Payload], UserHeader>>, ReceiveError> {
         debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
 
-        Ok(self.receive_impl()?.map(|(details, absolute_address)| {
-            let header_ptr = absolute_address as *const Header;
-            let user_header_ptr = self.user_header_ptr(header_ptr).cast();
-            let payload_ptr = self.payload_ptr(header_ptr).cast();
+        Ok(self.receive_impl()?.map(|(details, chunk)| {
+            let header_ptr = chunk.header as *const Header;
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
 
             Sample {
@@ -473,8 +321,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
                 ptr: unsafe {
                     RawSample::<Header, UserHeader, [Payload]>::new_slice_unchecked(
                         header_ptr,
-                        user_header_ptr,
-                        core::slice::from_raw_parts(payload_ptr, number_of_elements as _),
+                        chunk.user_header.cast(),
+                        core::slice::from_raw_parts(chunk.payload.cast(), number_of_elements as _),
                     )
                 },
             }
@@ -497,28 +345,20 @@ impl<Service: service::Service, UserHeader: Debug>
     #[doc(hidden)]
     pub unsafe fn receive_custom_payload(
         &self,
-    ) -> Result<Option<Sample<Service, [CustomPayloadMarker], UserHeader>>, SubscriberReceiveError>
-    {
-        Ok(self.receive_impl()?.map(|(details, absolute_address)| {
-            let header_ptr = absolute_address as *const Header;
-            let user_header_ptr = self.user_header_ptr(header_ptr).cast();
-            let payload_ptr = self.payload_ptr(header_ptr).cast();
+    ) -> Result<Option<Sample<Service, [CustomPayloadMarker], UserHeader>>, ReceiveError> {
+        Ok(self.receive_impl()?.map(|(details, chunk)| {
+            let header_ptr = chunk.header as *const Header;
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
-            let number_of_bytes = number_of_elements as usize
-                * self
-                    .static_config
-                    .publish_subscribe()
-                    .message_type_details
-                    .payload
-                    .size;
+            let number_of_bytes =
+                number_of_elements as usize * self.publisher_connections.payload_size();
 
             Sample {
                 details,
                 ptr: unsafe {
                     RawSample::<Header, UserHeader, [CustomPayloadMarker]>::new_slice_unchecked(
                         header_ptr,
-                        user_header_ptr,
-                        core::slice::from_raw_parts(payload_ptr, number_of_bytes),
+                        chunk.user_header.cast(),
+                        core::slice::from_raw_parts(chunk.payload.cast(), number_of_bytes),
                     )
                 },
             }

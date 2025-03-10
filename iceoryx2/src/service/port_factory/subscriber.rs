@@ -14,7 +14,6 @@
 //!
 //! ```
 //! use iceoryx2::prelude::*;
-//! use iceoryx2::service::port_factory::publisher::UnableToDeliverStrategy;
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -35,7 +34,6 @@ use iceoryx2_bb_log::fail;
 
 use crate::{
     port::{
-        port_identifiers::{UniquePublisherId, UniqueSubscriberId},
         subscriber::{Subscriber, SubscriberCreateError},
         DegrationAction, DegrationCallback,
     },
@@ -87,12 +85,7 @@ impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized, UserHeade
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegrationAction`] measures will be taken.
     pub fn set_degration_callback<
-        F: Fn(
-                service::static_config::StaticConfig,
-                UniquePublisherId,
-                UniqueSubscriberId,
-            ) -> DegrationAction
-            + 'static,
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
     >(
         mut self,
         callback: Option<F>,

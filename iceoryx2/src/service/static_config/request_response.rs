@@ -91,6 +91,14 @@ impl StaticConfig {
         }
     }
 
+    pub(crate) fn required_amount_of_chunks_per_client_data_segment(
+        &self,
+        client_max_loaned_data: usize,
+    ) -> usize {
+        self.max_servers * (self.max_request_buffer_size + self.max_active_requests)
+            + client_max_loaned_data
+    }
+
     /// Returns the request type details of the [`crate::service::Service`].
     pub fn request_message_type_details(&self) -> &MessageTypeDetails {
         &self.request_message_type_details

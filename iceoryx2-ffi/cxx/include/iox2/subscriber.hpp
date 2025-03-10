@@ -43,8 +43,8 @@ class Subscriber {
     auto buffer_size() const -> uint64_t;
 
     /// Receives a [`Sample`] from [`Publisher`]. If no sample could be
-    /// received [`None`] is returned. If a failure occurs [`SubscriberReceiveError`] is returned.
-    auto receive() const -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError>;
+    /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
+    auto receive() const -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, ReceiveError>;
 
     /// Explicitly updates all connections to the [`Subscriber`]s. This is
     /// required to be called whenever a new [`Subscriber`] connected to
@@ -128,7 +128,7 @@ inline auto Subscriber<S, Payload, UserHeader>::buffer_size() const -> uint64_t 
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::receive() const
-    -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, SubscriberReceiveError> {
+    -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, ReceiveError> {
     Sample<S, Payload, UserHeader> sample;
     auto result = iox2_subscriber_receive(&m_handle, &sample.m_sample, &sample.m_handle);
 
@@ -139,7 +139,7 @@ inline auto Subscriber<S, Payload, UserHeader>::receive() const
         return iox::ok(iox::optional<Sample<S, Payload, UserHeader>>(iox::nullopt));
     }
 
-    return iox::err(iox::into<SubscriberReceiveError>(result));
+    return iox::err(iox::into<ReceiveError>(result));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
