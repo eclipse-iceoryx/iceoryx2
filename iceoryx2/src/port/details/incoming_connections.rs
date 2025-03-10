@@ -257,7 +257,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
         index: usize,
         sender_details: SenderDetails,
     ) -> Result<(), ConnectionFailure> {
-        let create_connection = match self.get(index) {
+        let is_connected = match self.get(index) {
             None => true,
             Some(connection) => {
                 let is_connected = connection.sender_port_id == sender_details.port_id;
@@ -268,7 +268,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
             }
         };
 
-        if create_connection {
+        if is_connected {
             self.prepare_connection_removal(index);
 
             match self.create(index, &sender_details) {

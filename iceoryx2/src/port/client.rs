@@ -132,10 +132,7 @@ impl<Service: service::Service> ClientBackend<Service> {
                     |_| {},
                 );
 
-                if result.is_ok() {
-                    result = inner_result;
-                }
-
+                result = result.and(inner_result);
                 CallbackProgression::Continue
             })
         };
