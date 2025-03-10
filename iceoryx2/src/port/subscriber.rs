@@ -40,7 +40,7 @@ use core::sync::atomic::Ordering;
 extern crate alloc;
 
 use iceoryx2_bb_container::queue::Queue;
-use iceoryx2_bb_elementary::visitor::Visitor;
+use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
@@ -154,7 +154,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
             enable_safe_overflow: static_config.enable_safe_overflow,
             buffer_size,
-            visitor: Visitor::new(),
+            tagger: CyclicTagger::new(),
             to_be_removed_connections: UnsafeCell::new(Queue::new(
                 service
                     .__internal_state()

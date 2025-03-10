@@ -41,7 +41,7 @@ use core::{
     cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit, sync::atomic::Ordering,
 };
 
-use iceoryx2_bb_elementary::{visitor::Visitor, CallbackProgression};
+use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::{
@@ -261,7 +261,7 @@ impl<
                     number_of_samples: number_of_requests,
                     max_number_of_segments,
                     service_state: service.__internal_state().clone(),
-                    visitor: Visitor::new(),
+                    tagger: CyclicTagger::new(),
                     loan_counter: IoxAtomicUsize::new(0),
                     sender_max_borrowed_samples: client_factory.max_loaned_requests,
                     unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,

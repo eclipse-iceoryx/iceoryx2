@@ -17,7 +17,7 @@ use core::sync::atomic::Ordering;
 extern crate alloc;
 use alloc::sync::Arc;
 
-use iceoryx2_bb_elementary::visitor::{Visitable, Visitor, VisitorMarker};
+use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
@@ -49,12 +49,12 @@ pub(crate) struct ReceiverDetails {
 pub(crate) struct Connection<Service: service::Service> {
     pub(crate) sender: <Service::Connection as ZeroCopyConnection>::Sender,
     pub(crate) receiver_port_id: u128,
-    visitor_marker: VisitorMarker,
+    tag: Tag,
 }
 
-impl<Service: service::Service> Visitable for Connection<Service> {
-    fn visitor_marker(&self) -> &VisitorMarker {
-        &self.visitor_marker
+impl<Service: service::Service> Taggable for Connection<Service> {
+    fn tag(&self) -> &Tag {
+        &self.tag
     }
 }
 
@@ -64,7 +64,7 @@ impl<Service: service::Service> Connection<Service> {
         receiver_port_id: u128,
         buffer_size: usize,
         number_of_samples: usize,
-        visitor_marker: VisitorMarker,
+        tag: Tag,
     ) -> Result<Self, ZeroCopyCreationError> {
         let msg = format!(
             "Unable to establish connection to receiver port {:?} from sender port {:?}",
@@ -91,7 +91,7 @@ impl<Service: service::Service> Connection<Service> {
         Ok(Self {
             sender,
             receiver_port_id,
-            visitor_marker,
+            tag,
         })
     }
 }
@@ -111,7 +111,7 @@ pub(crate) struct OutgoingConnections<Service: service::Service> {
     pub(crate) max_number_of_segments: u8,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
     pub(crate) service_state: Arc<ServiceState<Service>>,
-    pub(crate) visitor: Visitor,
+    pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: IoxAtomicUsize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) message_type_details: MessageTypeDetails,
@@ -210,7 +210,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
             receiver_details.port_id,
             receiver_details.buffer_size,
             self.number_of_samples,
-            self.visitor.create_visited_marker(),
+            self.tagger.create_tag(),
         )?);
 
         Ok(())
@@ -314,7 +314,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
     }
 
     pub(crate) fn start_update_connection_cycle(&self) {
-        self.visitor.next_cycle();
+        self.tagger.next_cycle();
     }
 
     pub(crate) fn update_connection<E: Fn(&Connection<Service>)>(
@@ -328,7 +328,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
             Some(connection) => {
                 let is_connected = connection.receiver_port_id == receiver_details.port_id;
                 if is_connected {
-                    self.visitor.visit(connection);
+                    self.tagger.tag(connection);
                 }
                 !is_connected
             }
@@ -375,7 +375,7 @@ impl<Service: service::Service> OutgoingConnections<Service> {
     pub(crate) fn finish_update_connection_cycle(&self) {
         for n in 0..self.len() {
             if let Some(connection) = self.get(n) {
-                if !connection.was_visited_by(&self.visitor) {
+                if !connection.was_tagged_by(&self.tagger) {
                     self.remove_connection(n);
                 }
             }

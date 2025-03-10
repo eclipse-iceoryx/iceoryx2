@@ -128,7 +128,7 @@ use core::fmt::Debug;
 use core::sync::atomic::Ordering;
 use core::{marker::PhantomData, mem::MaybeUninit};
 use iceoryx2_bb_container::queue::Queue;
-use iceoryx2_bb_elementary::visitor::Visitor;
+use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, fail, warn};
@@ -428,7 +428,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 max_number_of_segments,
                 degration_callback: None,
                 service_state: service.__internal_state().clone(),
-                visitor: Visitor::new(),
+                tagger: CyclicTagger::new(),
                 loan_counter: IoxAtomicUsize::new(0),
                 sender_max_borrowed_samples: config.max_loaned_samples,
                 unable_to_deliver_strategy: config.unable_to_deliver_strategy,
