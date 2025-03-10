@@ -127,7 +127,7 @@ be set with one of the supported levels.
 
 `export IOX2_LOG_LEVEL=Trace`
 
-then in the `main.rs` call the function to read the environment variable
+then in the `main.rs` call one of the functions to set the log level
 
 ```rust
 use iceoryx2::prelude::*
@@ -135,15 +135,15 @@ use iceoryx2::prelude::*
 // ...
 
 // Reads LogLevel from env and defaults to LogLevel INFO
-// if the environemnt variable has an unsupported value
+// if the environment variable has an unsupported value
 set_log_level_from_env_or_default();
 
 // Reads LogLevel from env and sets it with a user-given value
-// if the environemnt variable has an unsupported value 
+// if the environment variable is not set or has an unsupported value  
 set_log_level_from_env_or(LogLevel::DEBUG);
 
 // sets LogLevel programmatically with a supported user-given value
-// this will take precedence over LogLevel defined by an environment variable
+// and does not try to read the environment variable
 set_log_level(LogLevel::Trace);
 ```
 

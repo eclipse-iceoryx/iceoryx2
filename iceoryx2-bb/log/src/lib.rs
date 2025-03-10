@@ -188,7 +188,7 @@ pub enum LogLevel {
 }
 
 impl LogLevel {
-    fn from_str_fuzzy(s: &str) -> LogLevel {
+    fn from_str_fuzzy(s: &str, v: LogLevel) -> LogLevel {
         match s.to_lowercase().as_str() {
             "trace" => LogLevel::Trace,
             "debug" => LogLevel::Debug,
@@ -198,13 +198,13 @@ impl LogLevel {
             "fatal" => LogLevel::Fatal,
             _ => {
                 println!(
-                    "Invalid value for 'IOX_LOG_LEVEL' environment variable!\
+                    "Invalid value for 'IOX2_LOG_LEVEL' environment variable!\
                 \nFound: {:?}\
                 \nAllowed is one of: fatal, error, warn, info, debug, trace\
                 \nSetting log level as : {:?}",
-                    s, DEFAULT_LOG_LEVEL
+                    s, v
                 );
-                DEFAULT_LOG_LEVEL
+                v
             }
         }
     }
@@ -220,7 +220,7 @@ pub fn set_log_level_from_env_or_default() {
 pub fn set_log_level_from_env_or(v: LogLevel) {
     let log_level = env::var("IOX2_LOG_LEVEL")
         .ok()
-        .map(|s| LogLevel::from_str_fuzzy(&s))
+        .map(|s| LogLevel::from_str_fuzzy(&s, v))
         .unwrap_or(v);
     set_log_level(log_level);
 }
