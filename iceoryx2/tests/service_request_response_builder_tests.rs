@@ -480,21 +480,21 @@ mod service_request_response {
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_responses(10)
+            .max_pending_responses(10)
             .create();
         assert_that!(sut_create, is_ok);
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_responses(11)
+            .max_pending_responses(11)
             .open();
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveResponses));
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfPendingResponses));
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_responses(10)
+            .max_pending_responses(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -522,60 +522,6 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .max_active_requests(10)
-            .open();
-        assert_that!(sut_open, is_ok);
-    }
-
-    #[test]
-    fn open_verifies_max_borrowed_responses_correctly<Sut: Service>() {
-        let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let sut_create = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_responses(10)
-            .create();
-        assert_that!(sut_create, is_ok);
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_responses(11)
-            .open();
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponses));
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_responses(10)
-            .open();
-        assert_that!(sut_open, is_ok);
-    }
-
-    #[test]
-    fn open_verifies_max_borrowed_requests_correctly<Sut: Service>() {
-        let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let sut_create = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_requests(10)
-            .create();
-        assert_that!(sut_create, is_ok);
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_requests(11)
-            .open();
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedRequests));
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_requests(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -725,9 +671,7 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .max_active_requests(0)
-            .max_active_responses(0)
-            .max_borrowed_requests(0)
-            .max_borrowed_responses(0)
+            .max_pending_responses(0)
             .max_request_buffer_size(0)
             .max_response_buffer_size(0)
             .max_servers(0)
@@ -738,9 +682,7 @@ mod service_request_response {
         let sut_create = sut_create.unwrap();
 
         assert_that!(sut_create.static_config().max_active_requests(), eq 1);
-        assert_that!(sut_create.static_config().max_active_responses(), eq 1);
-        assert_that!(sut_create.static_config().max_borrowed_requests(), eq 1);
-        assert_that!(sut_create.static_config().max_borrowed_responses(), eq 1);
+        assert_that!(sut_create.static_config().max_pending_responses(), eq 1);
         assert_that!(sut_create.static_config().max_request_buffer_size(), eq 1);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 1);
         assert_that!(sut_create.static_config().max_servers(), eq 1);
@@ -756,9 +698,7 @@ mod service_request_response {
         rpc_config.enable_safe_overflow_for_requests = true;
         rpc_config.enable_safe_overflow_for_responses = true;
         rpc_config.max_active_requests = 100;
-        rpc_config.max_active_responses = 100;
-        rpc_config.max_borrowed_requests = 100;
-        rpc_config.max_borrowed_responses = 100;
+        rpc_config.max_pending_responses = 100;
         rpc_config.max_request_buffer_size = 100;
         rpc_config.max_response_buffer_size = 100;
         rpc_config.max_servers = 100;
@@ -773,9 +713,7 @@ mod service_request_response {
             .enable_safe_overflow_for_requests(false)
             .enable_safe_overflow_for_responses(false)
             .max_active_requests(1)
-            .max_active_responses(2)
-            .max_borrowed_requests(3)
-            .max_borrowed_responses(4)
+            .max_pending_responses(2)
             .max_request_buffer_size(5)
             .max_response_buffer_size(6)
             .max_servers(7)
@@ -788,9 +726,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq false);
         assert_that!(sut_create.static_config().max_active_requests(), eq 1);
-        assert_that!(sut_create.static_config().max_active_responses(), eq 2);
-        assert_that!(sut_create.static_config().max_borrowed_requests(), eq 3);
-        assert_that!(sut_create.static_config().max_borrowed_responses(), eq 4);
+        assert_that!(sut_create.static_config().max_pending_responses(), eq 2);
         assert_that!(sut_create.static_config().max_request_buffer_size(), eq 5);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 6);
         assert_that!(sut_create.static_config().max_servers(), eq 7);
@@ -806,9 +742,7 @@ mod service_request_response {
         rpc_config.enable_safe_overflow_for_requests = true;
         rpc_config.enable_safe_overflow_for_responses = true;
         rpc_config.max_active_requests = 11;
-        rpc_config.max_active_responses = 12;
-        rpc_config.max_borrowed_requests = 13;
-        rpc_config.max_borrowed_responses = 14;
+        rpc_config.max_pending_responses = 12;
         rpc_config.max_request_buffer_size = 15;
         rpc_config.max_response_buffer_size = 16;
         rpc_config.max_servers = 17;
@@ -827,9 +761,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq true);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq true);
         assert_that!(sut_create.static_config().max_active_requests(), eq 11);
-        assert_that!(sut_create.static_config().max_active_responses(), eq 12);
-        assert_that!(sut_create.static_config().max_borrowed_requests(), eq 13);
-        assert_that!(sut_create.static_config().max_borrowed_responses(), eq 14);
+        assert_that!(sut_create.static_config().max_pending_responses(), eq 12);
         assert_that!(sut_create.static_config().max_request_buffer_size(), eq 15);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 16);
         assert_that!(sut_create.static_config().max_servers(), eq 17);
@@ -849,9 +781,7 @@ mod service_request_response {
             .enable_safe_overflow_for_requests(false)
             .enable_safe_overflow_for_responses(false)
             .max_active_requests(1)
-            .max_active_responses(2)
-            .max_borrowed_requests(3)
-            .max_borrowed_responses(4)
+            .max_pending_responses(2)
             .max_request_buffer_size(5)
             .max_response_buffer_size(6)
             .max_servers(7)
@@ -869,9 +799,7 @@ mod service_request_response {
         assert_that!(sut_open.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_open.static_config().has_safe_overflow_for_responses(), eq false);
         assert_that!(sut_open.static_config().max_active_requests(), eq 1);
-        assert_that!(sut_open.static_config().max_active_responses(), eq 2);
-        assert_that!(sut_open.static_config().max_borrowed_requests(), eq 3);
-        assert_that!(sut_open.static_config().max_borrowed_responses(), eq 4);
+        assert_that!(sut_open.static_config().max_pending_responses(), eq 2);
         assert_that!(sut_open.static_config().max_request_buffer_size(), eq 5);
         assert_that!(sut_open.static_config().max_response_buffer_size(), eq 6);
         assert_that!(sut_open.static_config().max_servers(), eq 7);

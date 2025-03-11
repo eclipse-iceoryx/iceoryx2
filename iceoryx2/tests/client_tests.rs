@@ -29,11 +29,14 @@ mod client {
     const TIMEOUT: Duration = Duration::from_millis(50);
 
     // TODO:
+    //   - config: add max_borrows_per_pending_response
+    //     - add tests for config adjustments etc.
     //   - never goes out of memory
     //     - vary all possibilities
     //   - completion channel capacity is never exceeded
     //     - vary all possibilities
     //   - disconnected server does not block new server
+    //   - test max_active_requests
     //   - requests of disconnected client are not received
     //   - reclaims all requests after disconnect
     //  fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock
@@ -285,6 +288,45 @@ mod client {
             let request_addr = (request.deref() as *const u64) as usize;
             assert_that!(request_addr % ALIGNMENT, eq 0);
             requests.push(request);
+        }
+    }
+
+    fn client_never_goes_out_of_memory_impl<Sut: Service>(
+        max_loaned_requests: usize,
+        max_servers: usize,
+        max_active_requests: usize,
+        max_pending_responses: usize,
+        max_request_buffer_size: usize,
+    ) {
+        const ITERATIONS: usize = 5;
+
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(1)
+            .max_servers(max_servers)
+            .max_pending_responses(max_pending_responses)
+            .max_active_requests(max_active_requests)
+            .max_request_buffer_size(max_request_buffer_size)
+            .create()
+            .unwrap();
+
+        let sut = service
+            .client_builder()
+            .max_loaned_requests(max_loaned_requests)
+            .create()
+            .unwrap();
+
+        let mut servers = vec![];
+        for _ in 0..max_servers {
+            let sut_server = service.server_builder().create().unwrap();
+            servers.push(sut_server);
+        }
+
+        for _ in 0..ITERATIONS {
+            // max out borrow samples
         }
     }
 

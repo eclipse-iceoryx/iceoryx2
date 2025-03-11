@@ -53,10 +53,8 @@ use super::message_type_details::MessageTypeDetails;
 pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_requests: bool,
     pub(crate) enable_safe_overflow_for_responses: bool,
-    pub(crate) max_active_responses: usize,
+    pub(crate) max_pending_responses: usize,
     pub(crate) max_active_requests: usize,
-    pub(crate) max_borrowed_responses: usize,
-    pub(crate) max_borrowed_requests: usize,
     pub(crate) max_response_buffer_size: usize,
     pub(crate) max_request_buffer_size: usize,
     pub(crate) max_servers: usize,
@@ -77,10 +75,8 @@ impl StaticConfig {
                 .defaults
                 .request_response
                 .enable_safe_overflow_for_responses,
-            max_active_responses: config.defaults.request_response.max_active_responses,
+            max_pending_responses: config.defaults.request_response.max_pending_responses,
             max_active_requests: config.defaults.request_response.max_active_requests,
-            max_borrowed_responses: config.defaults.request_response.max_borrowed_responses,
-            max_borrowed_requests: config.defaults.request_response.max_borrowed_requests,
             max_response_buffer_size: config.defaults.request_response.max_response_buffer_size,
             max_request_buffer_size: config.defaults.request_response.max_request_buffer_size,
             max_servers: config.defaults.request_response.max_servers,
@@ -127,25 +123,14 @@ impl StaticConfig {
 
     /// Returns the maximum of active responses a [`crate::port::server::Server`] can hold in
     /// parallel.
-    pub fn max_active_responses(&self) -> usize {
-        self.max_active_responses
+    pub fn max_pending_responses(&self) -> usize {
+        self.max_pending_responses
     }
 
     /// Returns the maximum of active requests a [`crate::port::client::Client`] can hold in
     /// parallel.
     pub fn max_active_requests(&self) -> usize {
         self.max_active_requests
-    }
-
-    /// Returns the maximum number of responses a [`crate::port::client::Client`] can borrow from
-    /// an active request.
-    pub fn max_borrowed_responses(&self) -> usize {
-        self.max_borrowed_responses
-    }
-
-    /// Returns the maximum number of requests a [`crate::port::server::Server`] can borrow.
-    pub fn max_borrowed_requests(&self) -> usize {
-        self.max_borrowed_requests
     }
 
     /// Returns the maximum buffer size for responses for an active request.

@@ -10,8 +10,10 @@ classDiagram
     Server "1" --> "1" DataSegment: stores response payload
     Client "1" --> "1..*" PendingResponse
     Server "1" --> "1..*" ActiveRequest
-    PendingResponse "1" --> "1" ZeroCopyConnection: receive response
-    ActiveRequest "1" --> "1" ZeroCopyConnection: send response
+    ActiveRequest "1" --> "1..*" ResponseMut: loan and send
+    PendingResponse "1" --> "1..*" Response: receive
+    PendingResponse "1" --> "1" ZeroCopyConnection: receive Response
+    ActiveRequest "1" --> "1" ZeroCopyConnection: send ResponseMut
 ```
 
 ## Sending Request: Client View

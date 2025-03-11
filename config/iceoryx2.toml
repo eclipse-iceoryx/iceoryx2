@@ -1,60 +1,58 @@
 [global]
-root-path-unix                              = '/tmp/iceoryx2/'
-root-path-windows                           = 'c:\Temp\iceoryx2\'
-prefix                                      = 'iox2_'
+root-path-unix = '/tmp/iceoryx2/'
+root-path-windows = 'c:\Temp\iceoryx2\'
+prefix = 'iox2_'
 
 [global.node]
-directory                                   = 'nodes'
-monitor-suffix                              = '.node_monitor'
-static-config-suffix                        = '.details'
-service-tag-suffix                          = '.service_tag'
-cleanup-dead-nodes-on-creation              = true
-cleanup-dead-nodes-on-destruction           = true
+directory = 'nodes'
+monitor-suffix = '.node_monitor'
+static-config-suffix = '.details'
+service-tag-suffix = '.service_tag'
+cleanup-dead-nodes-on-creation = true
+cleanup-dead-nodes-on-destruction = true
 
 [global.service]
-directory                                   = 'services'
-publisher-data-segment-suffix               = '.publisher_data'
-static-config-storage-suffix                = '.service'
-dynamic-config-storage-suffix               = '.dynamic'
-event-connection-suffix                     = '.event'
-connection-suffix                           = '.connection'
-creation-timeout.secs                       = 0
-creation-timeout.nanos                      = 500000000
+directory = 'services'
+publisher-data-segment-suffix = '.publisher_data'
+static-config-storage-suffix = '.service'
+dynamic-config-storage-suffix = '.dynamic'
+event-connection-suffix = '.event'
+connection-suffix = '.connection'
+creation-timeout.secs = 0
+creation-timeout.nanos = 500000000
 
 [defaults.request-response]
-enable-safe-overflow-for-requests           = true
-enable-safe-overflow-for-responses          = true
-max-active-responses                        = 4
-max-active-requests                         = 2
-max-borrowed-responses                      = 4
-max-borrowed-requests                       = 2
-max-response-buffer-size                    = 2
-max-request-buffer-size                     = 4
-max-servers                                 = 2
-max-clients                                 = 8
-max-nodes                                   = 20
-client-max-loaned-requests                  = 2
-server-max-loaned-responses-per-request     = 2
-client-unable-to-deliver-strategy           = 'Block' # or 'DiscardSample'
-server-unable-to-deliver-strategy           = 'Block' # or 'DiscardSample'
+enable-safe-overflow-for-requests = true
+enable-safe-overflow-for-responses = true
+max-pending-responses = 4
+max-active-requests = 4
+max-response-buffer-size = 2
+max-request-buffer-size = 4
+max-servers = 2
+max-clients = 8
+max-nodes = 20
+client-max-loaned-requests = 2
+server-max-loaned-responses-per-request = 2
+client-unable-to-deliver-strategy = 'Block' # or 'DiscardSample'
+server-unable-to-deliver-strategy = 'Block' # or 'DiscardSample'
 
 [defaults.publish-subscribe]
-max-subscribers                             = 8
-max-publishers                              = 2
-max-nodes                                   = 20
-publisher-history-size                      = 0
-subscriber-max-buffer-size                  = 2
-subscriber-max-borrowed-samples             = 2
-publisher-max-loaned-samples                = 2
-enable-safe-overflow                        = true
-unable-to-deliver-strategy                  = 'Block' # or 'DiscardSample'
-subscriber-expired-connection-buffer        = 128
+max-subscribers = 8
+max-publishers = 2
+max-nodes = 20
+publisher-history-size = 0
+subscriber-max-buffer-size = 2
+subscriber-max-borrowed-samples = 2
+publisher-max-loaned-samples = 2
+enable-safe-overflow = true
+unable-to-deliver-strategy = 'Block'       # or 'DiscardSample'
+subscriber-expired-connection-buffer = 128
 
 [defaults.event]
-max-listeners                               = 16
-max-notifiers                               = 16
-max-nodes                                   = 36
-event-id-max-value                          = 4294967295
+max-listeners = 16
+max-notifiers = 16
+max-nodes = 36
+event-id-max-value = 4294967295
 # deadline.secs                               = 1 # uncomment to enable deadline
 # deadline.nanos                              = 0 # uncomment to enable deadline
 # notifier-created-event                      = 1 # uncomment to enable setting

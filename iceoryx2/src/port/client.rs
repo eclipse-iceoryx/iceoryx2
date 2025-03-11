@@ -255,7 +255,7 @@ impl<
                         .map(|_| UnsafeCell::new(None))
                         .collect(),
                     receiver_max_buffer_size: static_config.max_request_buffer_size,
-                    receiver_max_borrowed_samples: static_config.max_borrowed_requests,
+                    receiver_max_borrowed_samples: static_config.max_active_requests,
                     enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
                     degration_callback: client_factory.degration_callback,
                     number_of_samples: number_of_requests,
