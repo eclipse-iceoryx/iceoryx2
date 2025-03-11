@@ -26,6 +26,7 @@ mod publisher {
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
     type TestResult<T> = core::result::Result<T, Box<dyn std::error::Error>>;
@@ -37,22 +38,6 @@ mod publisher {
             "service_tests_{}",
             UniqueSystemId::new().unwrap().value()
         ))?)
-    }
-
-    const COMPLEX_TYPE_DEFAULT_VALUE: u64 = 872379237;
-
-    #[derive(Debug)]
-    #[repr(C)]
-    struct ComplexType {
-        data: u64,
-    }
-
-    impl Default for ComplexType {
-        fn default() -> Self {
-            ComplexType {
-                data: COMPLEX_TYPE_DEFAULT_VALUE,
-            }
-        }
     }
 
     #[test]
@@ -75,19 +60,42 @@ mod publisher {
     }
 
     #[test]
-    fn publisher_loan_initializes_sample_with_default<Sut: Service>() -> TestResult<()> {
+    fn loan_initializes_sample_with_default<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
-            .publish_subscribe::<ComplexType>()
+            .publish_subscribe::<LifetimeTracker>()
             .create()?;
 
         let publisher = service.publisher_builder().create()?;
-        let sut = publisher.loan()?;
 
-        assert_that!(sut.payload().data, eq COMPLEX_TYPE_DEFAULT_VALUE);
+        let tracker = LifetimeTracker::start_tracking();
+        let sut = publisher.loan()?;
+        assert_that!(tracker.number_of_living_instances(), eq 1);
+
+        drop(sut);
+        assert_that!(tracker.number_of_living_instances(), eq 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn loan_uninit_does_not_initialize_sample<Sut: Service>() -> TestResult<()> {
+        let service_name = generate_name()?;
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<LifetimeTracker>()
+            .create()?;
+
+        let publisher = service.publisher_builder().create()?;
+
+        let tracker = LifetimeTracker::start_tracking();
+        let _sut = publisher.loan_uninit()?;
+        assert_that!(tracker.number_of_living_instances(), eq 0);
 
         Ok(())
     }
@@ -100,18 +108,20 @@ mod publisher {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
-            .publish_subscribe::<[ComplexType]>()
+            .publish_subscribe::<[LifetimeTracker]>()
             .create()?;
 
         let publisher = service
             .publisher_builder()
             .initial_max_slice_len(NUMBER_OF_ELEMENTS)
             .create()?;
-        let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS)?;
 
-        for i in 0..NUMBER_OF_ELEMENTS {
-            assert_that!(sut.payload()[i].data, eq COMPLEX_TYPE_DEFAULT_VALUE);
-        }
+        let tracker = LifetimeTracker::start_tracking();
+        let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS)?;
+        assert_that!(tracker.number_of_living_instances(), eq NUMBER_OF_ELEMENTS);
+
+        drop(sut);
+        assert_that!(tracker.number_of_living_instances(), eq 0);
 
         Ok(())
     }
@@ -124,7 +134,7 @@ mod publisher {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
-            .publish_subscribe::<[ComplexType]>()
+            .publish_subscribe::<[u64]>()
             .create()?;
 
         let publisher = service
@@ -148,7 +158,7 @@ mod publisher {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
-            .publish_subscribe::<[ComplexType]>()
+            .publish_subscribe::<[u64]>()
             .create()?;
 
         let publisher = service

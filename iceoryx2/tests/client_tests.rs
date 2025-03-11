@@ -21,13 +21,13 @@ mod client {
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 
     // TODO:
-    //   - request is initialized with default
     //   - borrow multiple requests at once
     //   - sending request reduces loan counter
     //   - dropping request reduces loan counter
@@ -38,12 +38,23 @@ mod client {
     //     - vary all possibilities
     //   - completion channel capacity is never exceeded
     //     - vary all possibilities
-    //   - custom request header
+    //   - has response
+    //   - disconnected server does not block new server
+    //   - requests of disconnected client are not received
+    //   - reclaims all requests after disconnect
+    //  fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock
+    //   - comm with max clients/server
+    //   - dropping service keeps established comm
+    //   - service can be open when there is a server/client
     //
+    //   - server
+    //     - has requests
     //   - service builder
     //     - ports of dropped service block new service creation
     //     - service can be opened when there is a port
     //     - ?server decrease buffer size? (increase with failure)
+    //     - create max amount of ports
+    //     - create max amount of nodes
 
     fn create_node<Sut: Service>() -> Node<Sut> {
         let config = generate_isolated_config();
@@ -170,6 +181,46 @@ mod client {
         assert_that!(data, is_some);
         let data = data.unwrap();
         assert_that!(*data, eq 123);
+    }
+
+    #[test]
+    fn loan_request_is_initialized_with_default_value<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<LifetimeTracker, u64>()
+            .create()
+            .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
+
+        let tracker = LifetimeTracker::start_tracking();
+        let request = sut.loan();
+        assert_that!(tracker.number_of_living_instances(), eq 1);
+
+        drop(request);
+        assert_that!(tracker.number_of_living_instances(), eq 0);
+    }
+
+    #[test]
+    fn loan_uninit_request_is_not_initialized<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<LifetimeTracker, u64>()
+            .create()
+            .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
+
+        let tracker = LifetimeTracker::start_tracking();
+        let request = sut.loan_uninit();
+        assert_that!(tracker.number_of_living_instances(), eq 0);
+
+        drop(request);
+        assert_that!(tracker.number_of_living_instances(), eq 0);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
