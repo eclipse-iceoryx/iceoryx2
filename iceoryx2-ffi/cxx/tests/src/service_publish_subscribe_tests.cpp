@@ -875,4 +875,77 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_when_attributes_are_incompati
     ASSERT_THAT(service_open.has_error(), Eq(true));
     ASSERT_THAT(service_open.error(), Eq(PublishSubscribeOpenError::IncompatibleAttributes));
 }
+
+struct TransmissionData {
+    static constexpr const char* PAYLOAD_TYPE_NAME = "TransmissionData";
+    std::int32_t x;
+    std::int32_t y;
+    double funky;
+};
+
+struct DifferentPayloadWithSameTypeName {
+    static constexpr const char* PAYLOAD_TYPE_NAME = "TransmissionData";
+    std::int32_t x;
+    std::int32_t y;
+    double funky;
+};
+
+namespace other {
+struct TransmissionData {
+    static constexpr const char* PAYLOAD_TYPE_NAME = "DifferentTransmissionData";
+    std::int32_t x;
+    std::int32_t y;
+    double funky;
+};
+} // namespace other
+
+TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_payload_type_name_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<TransmissionData>().create();
+    auto sut_open = node.service_builder(service_name).template publish_subscribe<TransmissionData>().open();
+    ASSERT_FALSE(sut_open.has_error());
+}
+
+TYPED_TEST(ServicePublishSubscribeTest,
+           opening_existing_service_with_different_payload_but_same_set_payload_type_name_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<TransmissionData>().create();
+    auto sut_open =
+        node.service_builder(service_name).template publish_subscribe<DifferentPayloadWithSameTypeName>().open();
+    ASSERT_FALSE(sut_open.has_error());
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_payload_type_name_fails) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<TransmissionData>().create();
+
+    struct TransmissionData {
+        std::int32_t x;
+        std::int32_t y;
+        double funky;
+    };
+    auto sut_open = node.service_builder(service_name).template publish_subscribe<TransmissionData>().open();
+    ASSERT_TRUE(sut_open.has_error());
+}
+
+TYPED_TEST(ServicePublishSubscribeTest,
+           opening_existing_service_with_same_payload_but_different_payload_type_name_fails) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<TransmissionData>().create();
+
+    auto sut_open = node.service_builder(service_name).template publish_subscribe<other::TransmissionData>().open();
+    ASSERT_TRUE(sut_open.has_error());
+}
 } // namespace
