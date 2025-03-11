@@ -12,6 +12,7 @@
 
 #[generic_tests::define]
 mod client {
+    use std::ops::Deref;
     use std::sync::atomic::Ordering;
     use std::sync::Barrier;
     use std::time::Duration;
@@ -28,17 +29,10 @@ mod client {
     const TIMEOUT: Duration = Duration::from_millis(50);
 
     // TODO:
-    //   - borrow multiple requests at once
-    //   - sending request reduces loan counter
-    //   - dropping request reduces loan counter
-    //   - client id is unique
-    //   - request is correctly aligned
-    //     - introduce request and response alignment in builder
     //   - never goes out of memory
     //     - vary all possibilities
     //   - completion channel capacity is never exceeded
     //     - vary all possibilities
-    //   - has response
     //   - disconnected server does not block new server
     //   - requests of disconnected client are not received
     //   - reclaims all requests after disconnect
@@ -221,6 +215,77 @@ mod client {
 
         drop(request);
         assert_that!(tracker.number_of_living_instances(), eq 0);
+    }
+
+    #[test]
+    fn sending_requests_reduces_loan_counter<Sut: Service>() {
+        let (_node, service) = create_node_and_service::<Sut>();
+
+        let sut = service
+            .client_builder()
+            .max_loaned_requests(1)
+            .create()
+            .unwrap();
+
+        let request = sut.loan().unwrap();
+
+        let request2 = sut.loan();
+        assert_that!(request2.err(), eq Some(LoanError::ExceedsMaxLoanedSamples));
+
+        request.send().unwrap();
+
+        let request2 = sut.loan();
+        assert_that!(request2, is_ok);
+    }
+
+    #[test]
+    fn dropping_requests_reduces_loan_counter<Sut: Service>() {
+        let (_node, service) = create_node_and_service::<Sut>();
+
+        let sut = service
+            .client_builder()
+            .max_loaned_requests(1)
+            .create()
+            .unwrap();
+
+        let request = sut.loan().unwrap();
+
+        let request2 = sut.loan();
+        assert_that!(request2.err(), eq Some(LoanError::ExceedsMaxLoanedSamples));
+
+        drop(request);
+
+        let request2 = sut.loan();
+        assert_that!(request2, is_ok);
+    }
+
+    #[test]
+    fn request_is_correctly_aligned<Sut: Service>() {
+        const MAX_LOAN: usize = 9;
+        const ALIGNMENT: usize = 512;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .request_payload_alignment(Alignment::new(ALIGNMENT).unwrap())
+            .create()
+            .unwrap();
+
+        let sut = service
+            .client_builder()
+            .max_loaned_requests(MAX_LOAN)
+            .create()
+            .unwrap();
+
+        let mut requests = vec![];
+
+        for _ in 0..MAX_LOAN {
+            let request = sut.loan().unwrap();
+            let request_addr = (request.deref() as *const u64) as usize;
+            assert_that!(request_addr % ALIGNMENT, eq 0);
+            requests.push(request);
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
