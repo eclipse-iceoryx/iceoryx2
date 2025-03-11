@@ -129,10 +129,8 @@ Adjusting `global` settings ensures a non-interfering setup.
   The maximum of active responses a [`crate::port::server::Server`] can hold in
   parallel.
 * `defaults.request-response.max-active-requests` - [int]:
-  The maximum of active requests a client can hold in parallel.
-* `defaults.request-response.max-borrowed-responses` - [int]:
-  The maximum number of responses a client can borrow from an active request.
-* `defaults.request-response.max-borrowed-requests` - [int]:
+  The maximum of number of borrowed response a client can hold in parallel per pending response.
+* `defaults.request-response.max-borrowed-responses-per-pending-response` - [int]:
   The maximum number of requests a server can borrow.
 * `defaults.request-response.max-response-buffer-size` - [int]:
   The maximum buffer size for responses for an active request.

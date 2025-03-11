@@ -49,6 +49,8 @@ pub enum RequestResponseOpenError {
     DoesNotSupportRequestedAmountOfClients,
     /// The [`Service`] has a lower maximum number of nodes than requested.
     DoesNotSupportRequestedAmountOfNodes,
+    /// The [`Service`] has a lower maximum number of [`Response`](crate::response::Response) borrows than requested.
+    DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse,
     /// The maximum number of [`Node`](crate::node::Node)s have already opened the [`Service`].
     ExceedsMaxNumberOfNodes,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
@@ -229,6 +231,7 @@ pub struct Builder<
     verify_max_servers: bool,
     verify_max_clients: bool,
     verify_max_nodes: bool,
+    verify_max_borrowed_responses_per_pending_response: bool,
 
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -258,6 +261,7 @@ impl<
             verify_max_servers: false,
             verify_max_clients: false,
             verify_max_nodes: false,
+            verify_max_borrowed_responses_per_pending_response: false,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -406,6 +410,16 @@ impl<
         self
     }
 
+    /// If the [`Service`] is created it defines how many [`Response`](crate::response::Response)s shall
+    /// be able to be borrowed it in parallel per [`PendingResponse`](crate::pending_response::PendingResponse). If an existing [`Service`] is opened it defines how many
+    /// borrows must be at least supported.
+    pub fn max_borrowed_responses_per_pending_response(mut self, value: usize) -> Self {
+        self.config_details_mut()
+            .max_borrowed_responses_per_pending_response = value;
+        self.verify_max_borrowed_responses_per_pending_response = true;
+        self
+    }
+
     fn adjust_configuration_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.request_response_mut();
@@ -450,6 +464,12 @@ impl<
             warn!(from origin,
                 "Setting the maximum number of nodes to 0 is not supported. Adjust it to 1, the smallest supported value.");
             settings.max_nodes = 1;
+        }
+
+        if settings.max_borrowed_responses_per_pending_response == 0 {
+            warn!(from origin,
+                "Setting the maximum number of borrowed responses per pending response to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_borrowed_responses_per_pending_response = 1;
         }
     }
 
@@ -512,6 +532,15 @@ impl<
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequests,
                 "{} since the service supports only {} active requests but {} are required.",
                 msg, existing_configuration.max_active_requests, required_configuration.max_active_requests);
+        }
+
+        if self.verify_max_borrowed_responses_per_pending_response
+            && existing_configuration.max_borrowed_responses_per_pending_response
+                < required_configuration.max_borrowed_responses_per_pending_response
+        {
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse,
+                "{} since the service supports only {} borrowed responses per pending response but {} are required.",
+                msg, existing_configuration.max_borrowed_responses_per_pending_response, required_configuration.max_borrowed_responses_per_pending_response);
         }
 
         if self.verify_max_response_buffer_size

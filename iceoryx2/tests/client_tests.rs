@@ -29,8 +29,6 @@ mod client {
     const TIMEOUT: Duration = Duration::from_millis(50);
 
     // TODO:
-    //   - config: add max_borrows_per_pending_response
-    //     - add tests for config adjustments etc.
     //   - never goes out of memory
     //     - vary all possibilities
     //   - completion channel capacity is never exceeded

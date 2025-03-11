@@ -60,6 +60,7 @@ pub struct StaticConfig {
     pub(crate) max_servers: usize,
     pub(crate) max_clients: usize,
     pub(crate) max_nodes: usize,
+    pub(crate) max_borrowed_responses_per_pending_response: usize,
     pub(crate) request_message_type_details: MessageTypeDetails,
     pub(crate) response_message_type_details: MessageTypeDetails,
 }
@@ -82,6 +83,10 @@ impl StaticConfig {
             max_servers: config.defaults.request_response.max_servers,
             max_clients: config.defaults.request_response.max_clients,
             max_nodes: config.defaults.request_response.max_nodes,
+            max_borrowed_responses_per_pending_response: config
+                .defaults
+                .request_response
+                .max_borrowed_responses_per_pending_response,
             request_message_type_details: MessageTypeDetails::default(),
             response_message_type_details: MessageTypeDetails::default(),
         }
@@ -119,6 +124,13 @@ impl StaticConfig {
     /// is full.
     pub fn has_safe_overflow_for_responses(&self) -> bool {
         self.enable_safe_overflow_for_responses
+    }
+
+    /// Returns the maximum of number of borrowed [`Response`](crate::response::Response)s a
+    /// [`Client`](`crate::port::client::Client`) can hold in
+    /// parallel per [`PendingResponse`](crate::pending_response::PendingResponse)
+    pub fn max_borrowed_responses_per_pending_responses(&self) -> usize {
+        self.max_borrowed_responses_per_pending_response
     }
 
     /// Returns the maximum of active responses a [`crate::port::server::Server`] can hold in

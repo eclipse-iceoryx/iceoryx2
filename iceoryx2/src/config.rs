@@ -327,6 +327,8 @@ pub struct RequestResonse {
     /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub max_nodes: usize,
+    /// The maximum amount of borrowed [`crate::response::Response`] per [`crate::pending_response::PendingResponse`] on the [`crate::port::client::Client`] side.
+    pub max_borrowed_responses_per_pending_response: usize,
     /// Defines how many [`crate::request_mut::RequestMut`] a [`crate::port::client::Client`] can loan in parallel.
     pub client_max_loaned_requests: usize,
     /// Defines how many [`crate::response_mut::ResponseMut`] a [`crate::port::server::Server`] can loan in parallel per [`crate::active_request::ActiveRequest`].
@@ -391,6 +393,7 @@ impl Default for Config {
                     max_servers: 2,
                     max_clients: 8,
                     max_nodes: 20,
+                    max_borrowed_responses_per_pending_response: 2,
                     client_max_loaned_requests: 2,
                     server_max_loaned_responses_per_request: 2,
                     client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
