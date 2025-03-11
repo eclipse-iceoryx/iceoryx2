@@ -225,7 +225,7 @@ impl<Service: service::Service> Sender<Service> {
         let msg = "Unable to allocate data";
 
         if self.loan_counter.load(Ordering::Relaxed) >= self.sender_max_borrowed_samples {
-            fail!(from self, with LoanError::ExceedsMaxLoanedSamples,
+            fail!(from self, with LoanError::ExceedsMaxLoans,
                 "{} {:?} since already {} samples were loaned and it would exceed the maximum of parallel loans of {}. Release or send a loaned sample to loan another sample.",
                 msg, layout, self.loan_counter.load(Ordering::Relaxed), self.sender_max_borrowed_samples);
         }

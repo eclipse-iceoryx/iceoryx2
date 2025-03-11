@@ -242,7 +242,7 @@ mod publisher {
 
         let sample3 = sut.loan_uninit();
         assert_that!(sample3, is_err);
-        assert_that!(sample3.err().unwrap(), eq LoanError::ExceedsMaxLoanedSamples);
+        assert_that!(sample3.err().unwrap(), eq LoanError::ExceedsMaxLoans);
 
         Ok(())
     }
@@ -267,7 +267,7 @@ mod publisher {
         let _sample3 = sut.loan_uninit();
         let sample4 = sut.loan_uninit();
         assert_that!(sample4, is_err);
-        assert_that!(sample4.err().unwrap(), eq LoanError::ExceedsMaxLoanedSamples);
+        assert_that!(sample4.err().unwrap(), eq LoanError::ExceedsMaxLoans);
 
         Ok(())
     }
@@ -292,7 +292,7 @@ mod publisher {
         let _sample3 = sut.loan_uninit();
         let sample4 = sut.loan_uninit();
         assert_that!(sample4, is_err);
-        assert_that!(sample4.err().unwrap(), eq LoanError::ExceedsMaxLoanedSamples);
+        assert_that!(sample4.err().unwrap(), eq LoanError::ExceedsMaxLoans);
 
         Ok(())
     }
@@ -372,7 +372,7 @@ mod publisher {
         assert_that!(
             format!("{}", LoanError::OutOfMemory), eq "LoanError::OutOfMemory");
         assert_that!(
-            format!("{}", LoanError::ExceedsMaxLoanedSamples), eq "LoanError::ExceedsMaxLoanedSamples");
+            format!("{}", LoanError::ExceedsMaxLoans), eq "LoanError::ExceedsMaxLoans");
         assert_that!(
             format!("{}", LoanError::ExceedsMaxLoanSize), eq "LoanError::ExceedsMaxLoanSize");
         assert_that!(

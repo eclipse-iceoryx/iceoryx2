@@ -103,7 +103,7 @@ mod client {
                 requests.push(request);
             }
             let request = sut.loan_uninit();
-            assert_that!(request.err(), eq Some(LoanError::ExceedsMaxLoanedSamples));
+            assert_that!(request.err(), eq Some(LoanError::ExceedsMaxLoans));
         }
     }
 
@@ -231,7 +231,7 @@ mod client {
         let request = sut.loan().unwrap();
 
         let request2 = sut.loan();
-        assert_that!(request2.err(), eq Some(LoanError::ExceedsMaxLoanedSamples));
+        assert_that!(request2.err(), eq Some(LoanError::ExceedsMaxLoans));
 
         request.send().unwrap();
 
@@ -252,7 +252,7 @@ mod client {
         let request = sut.loan().unwrap();
 
         let request2 = sut.loan();
-        assert_that!(request2.err(), eq Some(LoanError::ExceedsMaxLoanedSamples));
+        assert_that!(request2.err(), eq Some(LoanError::ExceedsMaxLoans));
 
         drop(request);
 
@@ -293,7 +293,6 @@ mod client {
         max_loaned_requests: usize,
         max_servers: usize,
         max_active_requests: usize,
-        max_pending_responses: usize,
         max_request_buffer_size: usize,
     ) {
         const ITERATIONS: usize = 5;
@@ -305,7 +304,6 @@ mod client {
             .request_response::<u64, u64>()
             .max_clients(1)
             .max_servers(max_servers)
-            .max_pending_responses(max_pending_responses)
             .max_active_requests(max_active_requests)
             .max_request_buffer_size(max_request_buffer_size)
             .create()
@@ -324,8 +322,56 @@ mod client {
         }
 
         for _ in 0..ITERATIONS {
-            // max out borrow samples
+            // max out active_requests
+            let mut borrowed_requests = vec![];
+            for _ in 0..max_active_requests {
+                assert_that!(sut.send_copy(123), is_ok);
+
+                for server in &servers {
+                    let active_request = server.receive().unwrap();
+                    assert_that!(active_request, is_some);
+                    borrowed_requests.push(active_request);
+                }
+            }
+
+            // max out request buffer size
+            for _ in 0..max_request_buffer_size {
+                assert_that!(sut.send_copy(456), is_ok);
+            }
+
+            // max out loaned requests
+            let mut loaned_requests = vec![];
+            for _ in 0..max_loaned_requests {
+                let request = sut.loan();
+                assert_that!(request, is_ok);
+                loaned_requests.push(request);
+            }
+
+            let request = sut.loan();
+            assert_that!(request.err(), eq Some(LoanError::ExceedsMaxLoans));
+
+            // cleanup
+            borrowed_requests.clear();
+            loaned_requests.clear();
+            for server in &servers {
+                while let Ok(Some(_)) = server.receive() {}
+            }
         }
+    }
+
+    #[test]
+    fn client_never_goes_out_of_memory_with_huge_max_loaned_requests<Sut: Service>() {
+        const MAX_LOANED_REQUESTS: usize = 100;
+        const MAX_SERVERS: usize = 1;
+        const MAX_ACTIVE_REQUESTS: usize = 1;
+        const MAX_REQUEST_BUFFER_SIZE: usize = 1;
+
+        client_never_goes_out_of_memory_impl::<Sut>(
+            MAX_LOANED_REQUESTS,
+            MAX_SERVERS,
+            MAX_ACTIVE_REQUESTS,
+            MAX_REQUEST_BUFFER_SIZE,
+        );
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

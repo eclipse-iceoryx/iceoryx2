@@ -79,7 +79,7 @@ pub enum LoanError {
     OutOfMemory,
     /// The maximum amount of data a user can borrow is
     /// defined in [`crate::config::Config`]. When this is exceeded those calls will fail.
-    ExceedsMaxLoanedSamples,
+    ExceedsMaxLoans,
     /// The provided slice size exceeds the configured max slice size.
     /// To send data with this size a new port has to be created with as a larger slice size or the
     /// port must be configured with an
