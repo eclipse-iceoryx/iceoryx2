@@ -877,18 +877,31 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_when_attributes_are_incompati
 }
 
 // BEGIN tests for customizable payload and user header type name
+constexpr uint8_t CAPACITY = 100;
+constexpr uint8_t ALIGNMENT = 16;
 struct Payload {
     static constexpr const char* PAYLOAD_TYPE_NAME = "Payload";
-    std::int32_t x;
-    std::int32_t y;
-    double funky;
+    int32_t x;
+    double y;
 };
 
 struct DifferentPayloadWithSameTypeName {
     static constexpr const char* PAYLOAD_TYPE_NAME = "Payload";
-    std::int32_t x;
-    std::int32_t y;
-    double funky;
+    int32_t x;
+    double y;
+};
+
+struct PayloadWithSameTypeNameButDifferentSize {
+    static constexpr const char* PAYLOAD_TYPE_NAME = "Payload";
+    int32_t x;
+    double y;
+    std::array<int32_t, CAPACITY> z;
+};
+
+struct alignas(ALIGNMENT) PayloadWithSameTypeNameButDifferentAlignment {
+    static constexpr const char* PAYLOAD_TYPE_NAME = "Payload";
+    int32_t x;
+    double y;
 };
 
 struct CustomHeader {
@@ -903,12 +916,24 @@ struct DifferentCustomHeaderWithSameTypeName {
     uint8_t b;
 };
 
+struct CustomHeaderWithSameTypeNameButDifferentSize {
+    static constexpr const char* USER_HEADER_TYPE_NAME = "CustomHeader";
+    uint64_t a;
+    uint8_t b;
+    std::array<uint8_t, CAPACITY> c;
+};
+
+struct alignas(ALIGNMENT) CustomHeaderWithSameTypeNameButDifferentAlignment {
+    static constexpr const char* USER_HEADER_TYPE_NAME = "CustomHeader";
+    uint64_t a;
+    uint8_t b;
+};
+
 namespace other {
 struct Payload {
     static constexpr const char* PAYLOAD_TYPE_NAME = "DifferentPayload";
-    std::int32_t x;
-    std::int32_t y;
-    double funky;
+    int32_t x;
+    double y;
 };
 
 struct CustomHeader {
@@ -948,12 +973,12 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_payload
     auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create();
 
     struct Payload {
-        std::int32_t x;
-        std::int32_t y;
-        double funky;
+        int32_t x;
+        double y;
     };
     auto sut_open = node.service_builder(service_name).template publish_subscribe<Payload>().open();
     ASSERT_TRUE(sut_open.has_error());
+    EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
 TYPED_TEST(ServicePublishSubscribeTest,
@@ -966,6 +991,35 @@ TYPED_TEST(ServicePublishSubscribeTest,
 
     auto sut_open = node.service_builder(service_name).template publish_subscribe<other::Payload>().open();
     ASSERT_TRUE(sut_open.has_error());
+    EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_payload_type_name_but_different_size_fails) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create();
+
+    auto sut_open =
+        node.service_builder(service_name).template publish_subscribe<PayloadWithSameTypeNameButDifferentSize>().open();
+    ASSERT_TRUE(sut_open.has_error());
+    EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
+}
+
+TYPED_TEST(ServicePublishSubscribeTest,
+           opening_existing_service_with_same_payload_type_name_but_different_alignment_fails) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create();
+
+    auto sut_open = node.service_builder(service_name)
+                        .template publish_subscribe<PayloadWithSameTypeNameButDifferentAlignment>()
+                        .open();
+    ASSERT_TRUE(sut_open.has_error());
+    EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_user_header_type_name_works) {
@@ -1020,6 +1074,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_user_he
                         .template user_header<CustomHeader>()
                         .open();
     ASSERT_TRUE(sut_open.has_error());
+    EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 
 TYPED_TEST(ServicePublishSubscribeTest,
@@ -1038,6 +1093,43 @@ TYPED_TEST(ServicePublishSubscribeTest,
                         .template user_header<other::CustomHeader>()
                         .open();
     ASSERT_TRUE(sut_open.has_error());
+    EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_header_type_but_different_size_fails) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut_create = node.service_builder(service_name)
+                          .template publish_subscribe<uint8_t>()
+                          .template user_header<CustomHeader>()
+                          .create();
+
+    auto sut_open = node.service_builder(service_name)
+                        .template publish_subscribe<uint8_t>()
+                        .template user_header<CustomHeaderWithSameTypeNameButDifferentSize>()
+                        .open();
+    ASSERT_TRUE(sut_open.has_error());
+    EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_header_type_but_different_alignment_fails) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut_create = node.service_builder(service_name)
+                          .template publish_subscribe<uint8_t>()
+                          .template user_header<CustomHeader>()
+                          .create();
+
+    auto sut_open = node.service_builder(service_name)
+                        .template publish_subscribe<uint8_t>()
+                        .template user_header<CustomHeaderWithSameTypeNameButDifferentAlignment>()
+                        .open();
+    ASSERT_TRUE(sut_open.has_error());
+    EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
 }
 // END tests for customizable payload and user header type name
 } // namespace
