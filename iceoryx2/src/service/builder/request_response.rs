@@ -224,7 +224,7 @@ pub struct Builder<
     override_response_alignment: Option<usize>,
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
-    verify_max_active_responses: bool,
+    verify_max_pending_responses: bool,
     verify_max_active_requests: bool,
     verify_max_response_buffer_size: bool,
     verify_max_request_buffer_size: bool,
@@ -254,7 +254,7 @@ impl<
             override_response_alignment: None,
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
-            verify_max_active_responses: false,
+            verify_max_pending_responses: false,
             verify_max_active_requests: false,
             verify_max_response_buffer_size: false,
             verify_max_request_buffer_size: false,
@@ -352,7 +352,7 @@ impl<
     /// to a [`Server`](crate::port::server::Server)
     pub fn max_pending_responses(mut self, value: usize) -> Self {
         self.config_details_mut().max_pending_responses = value;
-        self.verify_max_active_responses = true;
+        self.verify_max_pending_responses = true;
         self
     }
 
@@ -516,7 +516,7 @@ impl<
                 msg);
         }
 
-        if self.verify_max_active_responses
+        if self.verify_max_pending_responses
             && existing_configuration.max_pending_responses
                 < required_configuration.max_pending_responses
         {

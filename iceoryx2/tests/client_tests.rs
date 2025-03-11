@@ -30,7 +30,10 @@ mod client {
 
     // TODO:
     //   - never goes out of memory
-    //     - vary all possibilities
+    //     - vary all possibilities, add huge values
+    //     - client.rs, sender_max_borrowed_samples add max_pending_responses
+    //       - reduce loan_counter when request is moved into pending response
+    //   - fail to send request when already max_pending_responses are hold
     //   - completion channel capacity is never exceeded
     //     - vary all possibilities
     //   - disconnected server does not block new server
@@ -294,9 +297,9 @@ mod client {
     }
 
     fn client_never_goes_out_of_memory_impl<Sut: Service>(
-        max_loaned_requests: usize,
+        max_pending_responses: usize,
         max_servers: usize,
-        max_active_requests: usize,
+        max_loaned_requests: usize,
         max_request_buffer_size: usize,
     ) {
         const ITERATIONS: usize = 5;
@@ -308,7 +311,7 @@ mod client {
             .request_response::<u64, u64>()
             .max_clients(1)
             .max_servers(max_servers)
-            .max_active_requests(max_active_requests)
+            .max_pending_responses(max_pending_responses)
             .max_request_buffer_size(max_request_buffer_size)
             .create()
             .unwrap();
@@ -330,15 +333,15 @@ mod client {
         }
 
         for _ in 0..ITERATIONS {
-            // max out active_requests
-            let mut borrowed_requests = vec![];
-            for _ in 0..max_active_requests {
+            // max out pending responses
+            let mut pending_responses = vec![];
+            for _ in 0..max_pending_responses {
                 assert_that!(sut.send_copy(123), is_ok);
 
                 for server in &servers {
-                    let active_request = server.receive().unwrap();
-                    assert_that!(active_request, is_some);
-                    borrowed_requests.push(active_request);
+                    let pending_response = server.receive().unwrap();
+                    assert_that!(pending_response, is_some);
+                    pending_responses.push(pending_response);
                 }
             }
 
@@ -359,7 +362,7 @@ mod client {
             assert_that!(request.err(), eq Some(LoanError::ExceedsMaxLoans));
 
             // cleanup
-            borrowed_requests.clear();
+            pending_responses.clear();
             loaned_requests.clear();
             for server in &servers {
                 while let Ok(Some(_)) = server.receive() {}
@@ -368,16 +371,61 @@ mod client {
     }
 
     #[test]
-    fn client_never_goes_out_of_memory_with_huge_max_loaned_requests<Sut: Service>() {
-        const MAX_LOANED_REQUESTS: usize = 100;
+    fn client_never_goes_out_of_memory_with_huge_max_pending_responses<Sut: Service>() {
+        const MAX_PENDING_RESPONSES: usize = 100;
         const MAX_SERVERS: usize = 1;
-        const MAX_ACTIVE_REQUESTS: usize = 1;
+        const MAX_LOANED_REQUESTS: usize = 1;
         const MAX_REQUEST_BUFFER_SIZE: usize = 1;
 
         client_never_goes_out_of_memory_impl::<Sut>(
-            MAX_LOANED_REQUESTS,
+            MAX_PENDING_RESPONSES,
             MAX_SERVERS,
-            MAX_ACTIVE_REQUESTS,
+            MAX_LOANED_REQUESTS,
+            MAX_REQUEST_BUFFER_SIZE,
+        );
+    }
+
+    #[test]
+    fn client_never_goes_out_of_memory_with_huge_max_servers<Sut: Service>() {
+        const MAX_PENDING_RESPONSES: usize = 1;
+        const MAX_SERVERS: usize = 100;
+        const MAX_LOANED_REQUESTS: usize = 1;
+        const MAX_REQUEST_BUFFER_SIZE: usize = 1;
+
+        client_never_goes_out_of_memory_impl::<Sut>(
+            MAX_PENDING_RESPONSES,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
+            MAX_REQUEST_BUFFER_SIZE,
+        );
+    }
+
+    #[test]
+    fn client_never_goes_out_of_memory_with_huge_max_loaned_requests<Sut: Service>() {
+        const MAX_PENDING_RESPONSES: usize = 1;
+        const MAX_SERVERS: usize = 1;
+        const MAX_LOANED_REQUESTS: usize = 100;
+        const MAX_REQUEST_BUFFER_SIZE: usize = 1;
+
+        client_never_goes_out_of_memory_impl::<Sut>(
+            MAX_PENDING_RESPONSES,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
+            MAX_REQUEST_BUFFER_SIZE,
+        );
+    }
+
+    #[test]
+    fn client_never_goes_out_of_memory_with_huge_max_request_buffer_size<Sut: Service>() {
+        const MAX_PENDING_RESPONSES: usize = 1;
+        const MAX_SERVERS: usize = 1;
+        const MAX_LOANED_REQUESTS: usize = 1;
+        const MAX_REQUEST_BUFFER_SIZE: usize = 100;
+
+        client_never_goes_out_of_memory_impl::<Sut>(
+            MAX_PENDING_RESPONSES,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
             MAX_REQUEST_BUFFER_SIZE,
         );
     }

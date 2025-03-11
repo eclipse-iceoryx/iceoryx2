@@ -96,7 +96,7 @@ impl StaticConfig {
         &self,
         client_max_loaned_data: usize,
     ) -> usize {
-        self.max_servers * (self.max_request_buffer_size + self.max_active_requests)
+        self.max_servers * (self.max_request_buffer_size + self.max_pending_responses)
             + client_max_loaned_data
     }
 
