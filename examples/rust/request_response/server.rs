@@ -14,7 +14,7 @@ use core::time::Duration;
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
 
-const CYCLE_TIME: Duration = Duration::from_secs(1);
+const CYCLE_TIME: Duration = Duration::from_millis(10);
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;

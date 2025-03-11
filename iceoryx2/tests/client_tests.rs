@@ -50,6 +50,10 @@ mod client {
     //     - ?server decrease buffer size? (increase with failure)
     //     - create max amount of ports
     //     - create max amount of nodes
+    //
+    //   - service
+    //     - receive requests client created first
+    //       - server created first
 
     fn create_node<Sut: Service>() -> Node<Sut> {
         let config = generate_isolated_config();
@@ -317,7 +321,11 @@ mod client {
 
         let mut servers = vec![];
         for _ in 0..max_servers {
-            let sut_server = service.server_builder().create().unwrap();
+            let sut_server = service
+                .server_builder()
+                .buffer_size(max_request_buffer_size)
+                .create()
+                .unwrap();
             servers.push(sut_server);
         }
 

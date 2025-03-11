@@ -41,7 +41,7 @@ use std::{
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
@@ -172,6 +172,10 @@ impl<
             _response_payload: PhantomData,
             _response_header: PhantomData,
         };
+
+        if let Err(e) = new_self.force_update_connections() {
+            warn!(from new_self, "The new server is unable to connect to every client, caused by {:?}.", e);
+        }
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
 
