@@ -29,20 +29,14 @@ mod client {
     const TIMEOUT: Duration = Duration::from_millis(50);
 
     // TODO:
-    //   - completion channel capacity is never exceeded
-    //     - vary all possibilities
-    //   - disconnected server does not block new server
     //   - test max_active_requests
-    //   - requests of disconnected client are not received
     //   - reclaims all requests after disconnect
-    //  fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock
-    //   - comm with max clients/server
-    //   - dropping service keeps established comm
-    //   - service can be open when there is a server/client
     //
     //   - server
     //     - has requests
+    //     - requests of disconnected client are not received
     //     - test that it can hold X active requests per client (for one and many clients)
+    //
     //   - service builder
     //     - ports of dropped service block new service creation
     //     - service can be opened when there is a port
@@ -51,6 +45,11 @@ mod client {
     //     - create max amount of nodes
     //
     //   - service
+    //    -fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock
+    //    - service can be open when there is a server/client
+    //    - dropping service keeps established comm
+    //    - comm with max clients/server
+    //     - disconnected server does not block new server
     //     - receive requests client created first
     //       - server created first
 
@@ -493,6 +492,129 @@ mod client {
         const MAX_LOANED_REQUESTS: usize = 19;
 
         client_never_goes_out_of_memory_impl::<Sut>(
+            MAX_ACTIVE_REQUEST_PER_CLIENT,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
+        );
+    }
+
+    fn retrieve_channel_capacity_is_never_exceeded_impl<Sut: Service>(
+        max_active_requests_per_client: usize,
+        max_servers: usize,
+        max_loaned_requests: usize,
+    ) {
+        const ITERATIONS: usize = 5;
+
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(1)
+            .max_servers(max_servers)
+            .max_active_requests_per_client(max_active_requests_per_client)
+            .create()
+            .unwrap();
+
+        let sut = service
+            .client_builder()
+            .max_loaned_requests(max_loaned_requests)
+            .create()
+            .unwrap();
+
+        let mut servers = vec![];
+        for _ in 0..max_servers {
+            let sut_server = service.server_builder().create().unwrap();
+            servers.push(sut_server);
+        }
+
+        for _ in 0..ITERATIONS {
+            // max out pending responses
+            let mut pending_responses = vec![];
+            let mut active_requests = vec![];
+            for _ in 0..max_active_requests_per_client {
+                pending_responses.push(sut.send_copy(123).unwrap());
+
+                for server in &servers {
+                    let active_request = server.receive().unwrap();
+                    assert_that!(active_request, is_some);
+                    active_requests.push(active_request);
+                }
+            }
+
+            pending_responses.clear();
+            // max out request buffer on server side
+            for _ in 0..max_active_requests_per_client {
+                pending_responses.push(sut.send_copy(456).unwrap());
+            }
+
+            // receive and return everything
+            active_requests.clear();
+            for server in &servers {
+                while let Ok(Some(_)) = server.receive() {}
+            }
+        }
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_huge_active_requests<Sut: Service>() {
+        const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 100;
+        const MAX_SERVERS: usize = 1;
+        const MAX_LOANED_REQUESTS: usize = 1;
+
+        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+            MAX_ACTIVE_REQUEST_PER_CLIENT,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
+        );
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_huge_max_servers<Sut: Service>() {
+        const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
+        const MAX_SERVERS: usize = 100;
+        const MAX_LOANED_REQUESTS: usize = 1;
+
+        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+            MAX_ACTIVE_REQUEST_PER_CLIENT,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
+        );
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_huge_max_loaned_requests<Sut: Service>() {
+        const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
+        const MAX_SERVERS: usize = 1;
+        const MAX_LOANED_REQUESTS: usize = 100;
+
+        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+            MAX_ACTIVE_REQUEST_PER_CLIENT,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
+        );
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
+        const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 23;
+        const MAX_SERVERS: usize = 12;
+        const MAX_LOANED_REQUESTS: usize = 10;
+
+        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+            MAX_ACTIVE_REQUEST_PER_CLIENT,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
+        );
+    }
+
+    #[test]
+    fn retrieve_channel_capacity_is_never_exceeded_with_smallest_possible_values<Sut: Service>() {
+        const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
+        const MAX_SERVERS: usize = 1;
+        const MAX_LOANED_REQUESTS: usize = 1;
+
+        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
