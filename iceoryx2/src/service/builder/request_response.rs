@@ -35,8 +35,6 @@ use super::{ServiceState, RETRY_LIMIT};
 pub enum RequestResponseOpenError {
     /// Service could not be openen since it does not exist
     DoesNotExist,
-    /// The [`Service`] has a lower maximum amount of [`PendingResponse`]s than requested.
-    DoesNotSupportRequestedAmountOfPendingResponses,
     /// The [`Service`] has a lower maximum amount of [`ActiveRequest`]s than requested.
     DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
     /// The [`Service`] has a lower maximum response buffer size than requested.
@@ -224,7 +222,6 @@ pub struct Builder<
     override_response_alignment: Option<usize>,
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
-    verify_max_pending_responses: bool,
     verify_max_active_requests_per_client: bool,
     verify_max_response_buffer_size: bool,
     verify_max_request_buffer_size: bool,
@@ -254,7 +251,6 @@ impl<
             override_response_alignment: None,
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
-            verify_max_pending_responses: false,
             verify_max_active_requests_per_client: false,
             verify_max_response_buffer_size: false,
             verify_max_request_buffer_size: false,
@@ -347,15 +343,6 @@ impl<
         self
     }
 
-    /// Defines how many [`PendingResponse`](crate::pending_response::PendingResponse)s a [`Client`](crate::port::client::Client) can hold in
-    /// parallel. The objects are used to receive the samples to a [`RequestMut`](crate::request_mut::RequestMut) that was sent earlier
-    /// to a [`Server`](crate::port::server::Server)
-    pub fn max_pending_responses(mut self, value: usize) -> Self {
-        self.config_details_mut().max_pending_responses = value;
-        self.verify_max_pending_responses = true;
-        self
-    }
-
     /// Defines how many active requests a [`Server`](crate::port::server::Server) can hold in
     /// parallel per [`Client`](crate::port::client::Client). The objects are used to send answers to a request that was received earlier
     /// from a [`Client`](crate::port::client::Client)
@@ -442,12 +429,6 @@ impl<
             settings.max_active_requests_per_client = 1;
         }
 
-        if settings.max_pending_responses == 0 {
-            warn!(from origin,
-                "Setting the maximum number of pending responses to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_pending_responses = 1;
-        }
-
         if settings.max_servers == 0 {
             warn!(from origin,
                 "Setting the maximum number of servers to 0 is not supported. Adjust it to 1, the smallest supported value.");
@@ -514,15 +495,6 @@ impl<
             fail!(from self, with RequestResponseOpenError::IncompatibleOverflowBehaviorForResponses,
                 "{} since the service has an incompatible safe overflow behavior for responses.",
                 msg);
-        }
-
-        if self.verify_max_pending_responses
-            && existing_configuration.max_pending_responses
-                < required_configuration.max_pending_responses
-        {
-            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfPendingResponses,
-                "{} since the service supports only {} pending responses but {} are required.",
-                msg, existing_configuration.max_pending_responses, required_configuration.max_pending_responses);
         }
 
         if self.verify_max_active_requests_per_client

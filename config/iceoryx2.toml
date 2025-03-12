@@ -24,7 +24,6 @@ creation-timeout.nanos = 500000000
 [defaults.request-response]
 enable-safe-overflow-for-requests = true
 enable-safe-overflow-for-responses = true
-max-pending-responses = 4
 max-active-requests-per-client = 4
 max-response-buffer-size = 2
 max-request-buffer-size = 4
