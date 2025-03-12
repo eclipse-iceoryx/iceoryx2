@@ -46,7 +46,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use crate::{
     pending_response::PendingResponse,
-    port::{client::ClientBackend, SendError},
+    port::client::{ClientBackend, RequestSendError},
     raw_sample::RawSampleMut,
     service,
 };
@@ -188,7 +188,7 @@ impl<
         self,
     ) -> Result<
         PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-        SendError,
+        RequestSendError,
     > {
         match self
             .client_backend

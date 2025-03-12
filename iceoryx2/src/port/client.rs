@@ -72,9 +72,47 @@ use super::{
         segment_state::SegmentState,
         sender::{ReceiverDetails, Sender},
     },
-    update_connections::UpdateConnections,
+    update_connections::{ConnectionFailure, UpdateConnections},
     LoanError, SendError,
 };
+
+/// Failure that can be emitted when a [`RequestMut`] is sent.
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum RequestSendError {
+    /// Sending this [`RequestMut`] exceeds the maximum supported amount of active
+    /// requests. When a [`PendingResponse`] object is released another [`RequestMut`]
+    /// can be sent.
+    ExceedsMaxActiveRequests,
+
+    /// Underlying [`SendError`]s.
+    SendError(SendError),
+}
+
+impl From<SendError> for RequestSendError {
+    fn from(value: SendError) -> Self {
+        RequestSendError::SendError(value)
+    }
+}
+
+impl From<LoanError> for RequestSendError {
+    fn from(value: LoanError) -> Self {
+        RequestSendError::SendError(SendError::LoanError(value))
+    }
+}
+
+impl From<ConnectionFailure> for RequestSendError {
+    fn from(value: ConnectionFailure) -> Self {
+        RequestSendError::SendError(SendError::ConnectionError(value))
+    }
+}
+
+impl core::fmt::Display for RequestSendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "RequestSendError::{:?}", self)
+    }
+}
+
+impl core::error::Error for RequestSendError {}
 
 #[derive(Debug)]
 pub(crate) struct ClientBackend<Service: service::Service> {
@@ -90,7 +128,7 @@ impl<Service: service::Service> ClientBackend<Service> {
         &self,
         offset: PointerOffset,
         sample_size: usize,
-    ) -> Result<usize, SendError> {
+    ) -> Result<usize, RequestSendError> {
         let msg = "Unable to send request";
 
         let active_request_counter = self.active_request_counter.load(Ordering::Relaxed);
@@ -102,12 +140,12 @@ impl<Service: service::Service> ClientBackend<Service> {
             .max_active_requests_per_client
             <= active_request_counter
         {
-            fail!(from self, with SendError::ConnectionCorrupted,
+            fail!(from self, with RequestSendError::ExceedsMaxActiveRequests,
                     "{} since the number of active requests is limited to {} and sending this request would exceed the limit.", msg, active_request_counter);
         }
 
         if !self.is_active.load(Ordering::Relaxed) {
-            fail!(from self, with SendError::ConnectionCorrupted,
+            fail!(from self, with RequestSendError::ExceedsMaxActiveRequests,
                 "{} since the connections could not be updated.", msg);
         }
 
@@ -115,7 +153,7 @@ impl<Service: service::Service> ClientBackend<Service> {
             "{} since the connections could not be updated.", msg);
 
         self.active_request_counter.fetch_add(1, Ordering::Relaxed);
-        self.sender.deliver_offset(offset, sample_size)
+        Ok(self.sender.deliver_offset(offset, sample_size)?)
     }
 
     fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
@@ -451,7 +489,7 @@ impl<
         value: RequestPayload,
     ) -> Result<
         PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-        SendError,
+        RequestSendError,
     > {
         let msg = "Unable to send copy of request";
         let request = fail!(from self,

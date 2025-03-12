@@ -17,7 +17,8 @@ mod client {
     use std::sync::Barrier;
     use std::time::Duration;
 
-    use iceoryx2::port::{LoanError, SendError};
+    use iceoryx2::port::client::RequestSendError;
+    use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
@@ -29,9 +30,6 @@ mod client {
     const TIMEOUT: Duration = Duration::from_millis(50);
 
     // TODO:
-    //   - test max_active_requests
-    //   - reclaims all requests after disconnect
-    //
     //   - server
     //     - has requests
     //     - requests of disconnected client are not received
@@ -356,10 +354,10 @@ mod client {
                 requests.push(sut.send_copy(123).unwrap());
             }
 
-            assert_that!(sut.send_copy(123).err(), eq Some(SendError::ConnectionCorrupted));
+            assert_that!(sut.send_copy(123).err(), eq Some(RequestSendError::ExceedsMaxActiveRequests));
 
             let request = sut.loan().unwrap();
-            assert_that!(request.send().err(), eq Some(SendError::ConnectionCorrupted));
+            assert_that!(request.send().err(), eq Some(RequestSendError::ExceedsMaxActiveRequests));
         }
     }
 
@@ -619,6 +617,40 @@ mod client {
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
         );
+    }
+
+    #[test]
+    fn reclaims_all_requests_after_disconnect<Sut: Service>() {
+        const MAX_ACTIVE_REQUESTS: usize = 4;
+        const ITERATIONS: usize = 5;
+        const MAX_SERVER: usize = 4;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+            .max_servers(MAX_SERVER)
+            .create()
+            .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
+
+        for n in 0..MAX_SERVER {
+            for _ in 0..ITERATIONS {
+                let mut requests = vec![];
+                let mut servers = vec![];
+                for _ in 0..n {
+                    servers.push(service.client_builder().create().unwrap());
+                }
+
+                for _ in 0..MAX_ACTIVE_REQUESTS {
+                    requests.push(sut.send_copy(123).unwrap());
+                }
+
+                assert_that!(sut.send_copy(123).err(), eq Some(RequestSendError::ExceedsMaxActiveRequests));
+            }
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
