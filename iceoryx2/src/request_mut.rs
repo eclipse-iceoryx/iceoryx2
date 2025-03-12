@@ -38,10 +38,11 @@
 use core::{fmt::Debug, marker::PhantomData};
 use std::{
     ops::{Deref, DerefMut},
-    sync::Arc,
+    sync::{atomic::Ordering, Arc},
 };
 
 use iceoryx2_cal::shm_allocator::PointerOffset;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use crate::{
     pending_response::PendingResponse,
@@ -70,6 +71,7 @@ pub struct RequestMut<
     pub(crate) client_backend: Arc<ClientBackend<Service>>,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
+    pub(crate) was_sample_sent: IoxAtomicBool,
 }
 
 impl<
@@ -84,7 +86,13 @@ impl<
         unsafe { core::ptr::drop_in_place(self.deref_mut()) };
         self.client_backend
             .sender
-            .return_loaned_sample(self.offset_to_chunk);
+            .release_sample(self.offset_to_chunk);
+        if !self.was_sample_sent.load(Ordering::Relaxed) {
+            self.client_backend
+                .sender
+                .loan_counter
+                .fetch_sub(1, Ordering::Relaxed);
+        }
     }
 }
 
@@ -187,6 +195,11 @@ impl<
             .send_request(self.offset_to_chunk, self.sample_size)
         {
             Ok(number_of_server_connections) => {
+                self.was_sample_sent.store(true, Ordering::Relaxed);
+                self.client_backend
+                    .sender
+                    .loan_counter
+                    .fetch_sub(1, Ordering::Relaxed);
                 let active_request = PendingResponse {
                     number_of_server_connections,
                     request: self,

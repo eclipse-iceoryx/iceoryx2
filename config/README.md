@@ -125,13 +125,13 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.request-response.enable-safe-overflow-for-responses` -
   [`true`|`false`]: Defines if the request buffer of the service safely
   overflows.
-* `defaults.request-response.max-active-responses` - [int]:
-  The maximum of active responses a [`crate::port::server::Server`] can hold in
+* `defaults.request-response.max-pending-responses` - [int]:
+  The maximum of pending responses a client can hold in
   parallel.
-* `defaults.request-response.max-active-requests` - [int]:
-  The maximum of number of borrowed response a client can hold in parallel per pending response.
+* `defaults.request-response.max-active-requests-per-client` - [int]:
+  The maximum af active requests a server can hold per client
 * `defaults.request-response.max-borrowed-responses-per-pending-response` - [int]:
-  The maximum number of requests a server can borrow.
+  The maximum of number of borrowed response a client can hold in parallel per pending response.
 * `defaults.request-response.max-response-buffer-size` - [int]:
   The maximum buffer size for responses for an active request.
 * `defaults.request-response.max-request-buffer-size` - [int]:

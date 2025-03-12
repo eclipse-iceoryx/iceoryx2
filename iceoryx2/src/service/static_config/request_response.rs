@@ -54,7 +54,7 @@ pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_requests: bool,
     pub(crate) enable_safe_overflow_for_responses: bool,
     pub(crate) max_pending_responses: usize,
-    pub(crate) max_active_requests: usize,
+    pub(crate) max_active_requests_per_client: usize,
     pub(crate) max_response_buffer_size: usize,
     pub(crate) max_request_buffer_size: usize,
     pub(crate) max_servers: usize,
@@ -77,7 +77,10 @@ impl StaticConfig {
                 .request_response
                 .enable_safe_overflow_for_responses,
             max_pending_responses: config.defaults.request_response.max_pending_responses,
-            max_active_requests: config.defaults.request_response.max_active_requests,
+            max_active_requests_per_client: config
+                .defaults
+                .request_response
+                .max_active_requests_per_client,
             max_response_buffer_size: config.defaults.request_response.max_response_buffer_size,
             max_request_buffer_size: config.defaults.request_response.max_request_buffer_size,
             max_servers: config.defaults.request_response.max_servers,
@@ -139,10 +142,10 @@ impl StaticConfig {
         self.max_pending_responses
     }
 
-    /// Returns the maximum of active requests a [`crate::port::client::Client`] can hold in
-    /// parallel.
-    pub fn max_active_requests(&self) -> usize {
-        self.max_active_requests
+    /// Returns the maximum of active requests a [`crate::port::server::Server`] can hold in
+    /// parallel per [`crate::port::client::Client`].
+    pub fn max_active_requests_per_client(&self) -> usize {
+        self.max_active_requests_per_client
     }
 
     /// Returns the maximum buffer size for responses for an active request.

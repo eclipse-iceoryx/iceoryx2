@@ -47,6 +47,7 @@ mod client {
     //
     //   - server
     //     - has requests
+    //     - test that it can hold X active requests per client (for one and many clients)
     //   - service builder
     //     - ports of dropped service block new service creation
     //     - service can be opened when there is a port
@@ -335,13 +336,14 @@ mod client {
         for _ in 0..ITERATIONS {
             // max out pending responses
             let mut pending_responses = vec![];
+            let mut active_requests = vec![];
             for _ in 0..max_pending_responses {
-                assert_that!(sut.send_copy(123), is_ok);
+                pending_responses.push(sut.send_copy(123).unwrap());
 
                 for server in &servers {
-                    let pending_response = server.receive().unwrap();
-                    assert_that!(pending_response, is_some);
-                    pending_responses.push(pending_response);
+                    let active_request = server.receive().unwrap();
+                    assert_that!(active_request, is_some);
+                    active_requests.push(active_request);
                 }
             }
 

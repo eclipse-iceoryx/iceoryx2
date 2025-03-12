@@ -255,7 +255,7 @@ impl<
                         .map(|_| UnsafeCell::new(None))
                         .collect(),
                     receiver_max_buffer_size: static_config.max_request_buffer_size,
-                    receiver_max_borrowed_samples: static_config.max_active_requests,
+                    receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
                     enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
                     degration_callback: client_factory.degration_callback,
                     number_of_samples: number_of_requests,
@@ -263,7 +263,7 @@ impl<
                     service_state: service.__internal_state().clone(),
                     tagger: CyclicTagger::new(),
                     loan_counter: IoxAtomicUsize::new(0),
-                    sender_max_borrowed_samples: client_factory.max_loaned_requests, /*  + static_config.max_pending_responses */
+                    sender_max_borrowed_samples: client_factory.max_loaned_requests,
                     unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
                     message_type_details: static_config.request_message_type_details.clone(),
                 },
@@ -420,6 +420,7 @@ impl<
                 client_backend: self.backend.clone(),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
+                was_sample_sent: IoxAtomicBool::new(false),
             },
         })
     }

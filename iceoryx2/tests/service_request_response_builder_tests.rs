@@ -534,21 +534,21 @@ mod service_request_response {
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_requests(10)
+            .max_active_requests_per_client(10)
             .create();
         assert_that!(sut_create, is_ok);
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_requests(11)
+            .max_active_requests_per_client(11)
             .open();
         assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequests));
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_requests(10)
+            .max_active_requests_per_client(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -697,7 +697,7 @@ mod service_request_response {
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_requests(0)
+            .max_active_requests_per_client(0)
             .max_pending_responses(0)
             .max_request_buffer_size(0)
             .max_response_buffer_size(0)
@@ -709,7 +709,7 @@ mod service_request_response {
         assert_that!(sut_create, is_ok);
         let sut_create = sut_create.unwrap();
 
-        assert_that!(sut_create.static_config().max_active_requests(), eq 1);
+        assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 1);
         assert_that!(sut_create.static_config().max_pending_responses(), eq 1);
         assert_that!(sut_create.static_config().max_request_buffer_size(), eq 1);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 1);
@@ -726,7 +726,7 @@ mod service_request_response {
         let rpc_config = &mut config.defaults.request_response;
         rpc_config.enable_safe_overflow_for_requests = true;
         rpc_config.enable_safe_overflow_for_responses = true;
-        rpc_config.max_active_requests = 100;
+        rpc_config.max_active_requests_per_client = 100;
         rpc_config.max_pending_responses = 100;
         rpc_config.max_request_buffer_size = 100;
         rpc_config.max_response_buffer_size = 100;
@@ -742,7 +742,7 @@ mod service_request_response {
             .request_response::<u64, u64>()
             .enable_safe_overflow_for_requests(false)
             .enable_safe_overflow_for_responses(false)
-            .max_active_requests(1)
+            .max_active_requests_per_client(1)
             .max_pending_responses(2)
             .max_request_buffer_size(5)
             .max_response_buffer_size(6)
@@ -756,7 +756,7 @@ mod service_request_response {
 
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq false);
-        assert_that!(sut_create.static_config().max_active_requests(), eq 1);
+        assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 1);
         assert_that!(sut_create.static_config().max_pending_responses(), eq 2);
         assert_that!(sut_create.static_config().max_request_buffer_size(), eq 5);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 6);
@@ -773,7 +773,7 @@ mod service_request_response {
         let rpc_config = &mut config.defaults.request_response;
         rpc_config.enable_safe_overflow_for_requests = true;
         rpc_config.enable_safe_overflow_for_responses = true;
-        rpc_config.max_active_requests = 11;
+        rpc_config.max_active_requests_per_client = 11;
         rpc_config.max_pending_responses = 12;
         rpc_config.max_request_buffer_size = 15;
         rpc_config.max_response_buffer_size = 16;
@@ -793,7 +793,7 @@ mod service_request_response {
 
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq true);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq true);
-        assert_that!(sut_create.static_config().max_active_requests(), eq 11);
+        assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 11);
         assert_that!(sut_create.static_config().max_pending_responses(), eq 12);
         assert_that!(sut_create.static_config().max_request_buffer_size(), eq 15);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 16);
@@ -814,7 +814,7 @@ mod service_request_response {
             .request_response::<u64, u64>()
             .enable_safe_overflow_for_requests(false)
             .enable_safe_overflow_for_responses(false)
-            .max_active_requests(1)
+            .max_active_requests_per_client(1)
             .max_pending_responses(2)
             .max_request_buffer_size(5)
             .max_response_buffer_size(6)
@@ -833,7 +833,7 @@ mod service_request_response {
 
         assert_that!(sut_open.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_open.static_config().has_safe_overflow_for_responses(), eq false);
-        assert_that!(sut_open.static_config().max_active_requests(), eq 1);
+        assert_that!(sut_open.static_config().max_active_requests_per_client(), eq 1);
         assert_that!(sut_open.static_config().max_pending_responses(), eq 2);
         assert_that!(sut_open.static_config().max_request_buffer_size(), eq 5);
         assert_that!(sut_open.static_config().max_response_buffer_size(), eq 6);

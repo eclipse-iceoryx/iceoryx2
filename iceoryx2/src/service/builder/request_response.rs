@@ -38,7 +38,7 @@ pub enum RequestResponseOpenError {
     /// The [`Service`] has a lower maximum amount of [`PendingResponse`]s than requested.
     DoesNotSupportRequestedAmountOfPendingResponses,
     /// The [`Service`] has a lower maximum amount of [`ActiveRequest`]s than requested.
-    DoesNotSupportRequestedAmountOfActiveRequests,
+    DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
     /// The [`Service`] has a lower maximum response buffer size than requested.
     DoesNotSupportRequestedResponseBufferSize,
     /// The [`Service`] has a lower maximum request buffer size than requested.
@@ -225,7 +225,7 @@ pub struct Builder<
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
     verify_max_pending_responses: bool,
-    verify_max_active_requests: bool,
+    verify_max_active_requests_per_client: bool,
     verify_max_response_buffer_size: bool,
     verify_max_request_buffer_size: bool,
     verify_max_servers: bool,
@@ -255,7 +255,7 @@ impl<
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
             verify_max_pending_responses: false,
-            verify_max_active_requests: false,
+            verify_max_active_requests_per_client: false,
             verify_max_response_buffer_size: false,
             verify_max_request_buffer_size: false,
             verify_max_servers: false,
@@ -357,11 +357,11 @@ impl<
     }
 
     /// Defines how many active requests a [`Server`](crate::port::server::Server) can hold in
-    /// parallel. The objects are used to send answers to a request that was received earlier
+    /// parallel per [`Client`](crate::port::client::Client). The objects are used to send answers to a request that was received earlier
     /// from a [`Client`](crate::port::client::Client)
-    pub fn max_active_requests(mut self, value: usize) -> Self {
-        self.config_details_mut().max_active_requests = value;
-        self.verify_max_active_requests = true;
+    pub fn max_active_requests_per_client(mut self, value: usize) -> Self {
+        self.config_details_mut().max_active_requests_per_client = value;
+        self.verify_max_active_requests_per_client = true;
         self
     }
 
@@ -436,10 +436,10 @@ impl<
             settings.max_response_buffer_size = 1;
         }
 
-        if settings.max_active_requests == 0 {
+        if settings.max_active_requests_per_client == 0 {
             warn!(from origin,
                 "Setting the maximum number of active requests to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_active_requests = 1;
+            settings.max_active_requests_per_client = 1;
         }
 
         if settings.max_pending_responses == 0 {
@@ -525,13 +525,13 @@ impl<
                 msg, existing_configuration.max_pending_responses, required_configuration.max_pending_responses);
         }
 
-        if self.verify_max_active_requests
-            && existing_configuration.max_active_requests
-                < required_configuration.max_active_requests
+        if self.verify_max_active_requests_per_client
+            && existing_configuration.max_active_requests_per_client
+                < required_configuration.max_active_requests_per_client
         {
-            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequests,
-                "{} since the service supports only {} active requests but {} are required.",
-                msg, existing_configuration.max_active_requests, required_configuration.max_active_requests);
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
+                "{} since the service supports only {} active requests per client but {} are required.",
+                msg, existing_configuration.max_active_requests_per_client, required_configuration.max_active_requests_per_client);
         }
 
         if self.verify_max_borrowed_responses_per_pending_response

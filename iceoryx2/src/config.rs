@@ -314,8 +314,8 @@ pub struct RequestResonse {
     pub enable_safe_overflow_for_responses: bool,
     /// The maximum of [`crate::pending_response::PendingResponse`] a [`crate::port::client::Client`] can hold in parallel.
     pub max_pending_responses: usize,
-    /// The maximum of [`crate::active_request::ActiveRequest`] a [`crate::port::server::Server`] can hold in parallel.
-    pub max_active_requests: usize,
+    /// The maximum of [`crate::active_request::ActiveRequest`] a [`crate::port::server::Server`] can hold in parallel per [`crate::port::client::Client`].
+    pub max_active_requests_per_client: usize,
     /// The maximum buffer size for [`crate::response::Response`]s for an [`crate::pending_response::PendingResponse`].
     pub max_response_buffer_size: usize,
     /// The maximum buffer size for [`crate::active_request::ActiveRequest`]s for a [`crate::port::server::Server`].
@@ -387,7 +387,7 @@ impl Default for Config {
                     enable_safe_overflow_for_requests: true,
                     enable_safe_overflow_for_responses: true,
                     max_pending_responses: 4,
-                    max_active_requests: 4,
+                    max_active_requests_per_client: 4,
                     max_response_buffer_size: 2,
                     max_request_buffer_size: 4,
                     max_servers: 2,
