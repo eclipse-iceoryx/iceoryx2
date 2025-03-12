@@ -116,6 +116,38 @@ mod client {
     }
 
     #[test]
+    fn can_loan_at_most_max_supported_amount_of_requests_when_holding_max_pending_responses<
+        Sut: Service,
+    >() {
+        const MAX_LOANED_REQUESTS: usize = 29;
+        const MAX_PENDING_RESPONSES: usize = 7;
+        const ITERATIONS: usize = 3;
+        let (_node, service) = create_node_and_service::<Sut>();
+
+        let sut = service
+            .client_builder()
+            .max_loaned_requests(MAX_LOANED_REQUESTS)
+            .create()
+            .unwrap();
+
+        for _ in 0..ITERATIONS {
+            let mut pending_responses = vec![];
+            for _ in 0..MAX_PENDING_RESPONSES {
+                pending_responses.push(sut.send_copy(123).unwrap());
+            }
+
+            let mut requests = vec![];
+            for _ in 0..MAX_LOANED_REQUESTS {
+                let request = sut.loan_uninit();
+                assert_that!(request, is_ok);
+                requests.push(request);
+            }
+            let request = sut.loan_uninit();
+            assert_that!(request.err(), eq Some(LoanError::ExceedsMaxLoans));
+        }
+    }
+
+    #[test]
     fn unable_to_deliver_strategy_block_blocks_when_server_buffer_is_full<Sut: Service>() {
         let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
