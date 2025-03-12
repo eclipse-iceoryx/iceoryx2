@@ -138,15 +138,7 @@ impl<
             .request_response()
             .clients;
 
-        let buffer_size = server_factory.buffer_size;
         let static_config = server_factory.factory.static_config();
-        if static_config.max_request_buffer_size() < buffer_size {
-            fail!(from origin,
-                  with ServerCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService,
-                  "{} since the requested request buffer size {} exceeds the maximum supported buffer size of {} of the service.",
-                  msg, buffer_size, static_config.max_request_buffer_size());
-        }
-
         let receiver = Receiver {
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))
@@ -156,7 +148,7 @@ impl<
             message_type_details: static_config.request_message_type_details.clone(),
             receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
-            buffer_size,
+            buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
             to_be_removed_connections: UnsafeCell::new(Queue::new(0)),
             degration_callback: server_factory.degration_callback,
@@ -188,7 +180,7 @@ impl<
             .request_response()
             .add_server_id(ServerDetails {
                 server_port_id,
-                buffer_size,
+                buffer_size: static_config.max_active_requests_per_client,
             }) {
             Some(v) => Some(v),
             None => {

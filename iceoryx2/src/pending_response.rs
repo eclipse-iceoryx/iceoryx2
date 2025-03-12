@@ -44,6 +44,7 @@
 //! ```
 
 use core::{fmt::Debug, marker::PhantomData};
+use std::sync::atomic::Ordering;
 
 use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
 
@@ -67,6 +68,23 @@ pub struct PendingResponse<
     pub(crate) _service: PhantomData<Service>,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Drop
+    for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn drop(&mut self) {
+        self.request
+            .client_backend
+            .active_request_counter
+            .fetch_sub(1, Ordering::Relaxed);
+    }
 }
 
 impl<

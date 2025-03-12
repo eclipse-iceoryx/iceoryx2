@@ -42,9 +42,6 @@ use iceoryx2_bb_log::fail;
 /// [`crate::service::port_factory::server::PortFactoryServer`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum ServerCreateError {
-    /// The configured buffer size is larger than the max buffer size supported by the
-    /// [`Service`](crate::service::Service).
-    BufferSizeExceedsMaxSupportedBufferSizeOfService,
     /// The maximum amount of [`Server`]s supported by the [`Service`](crate::service::Service)
     /// is already connected.
     ExceedsMaxSupportedServers,
@@ -78,7 +75,6 @@ pub struct PortFactoryServer<
         ResponseHeader,
     >,
 
-    pub(crate) buffer_size: usize,
     pub(crate) max_loaned_responses_per_request: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
@@ -120,7 +116,6 @@ impl<
 
         Self {
             factory,
-            buffer_size: defs.max_request_buffer_size,
             max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
             unable_to_deliver_strategy: defs.server_unable_to_deliver_strategy,
             degration_callback: None,
@@ -133,12 +128,6 @@ impl<
     /// its internal buffer is full.
     pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
         self.unable_to_deliver_strategy = value;
-        self
-    }
-
-    /// Defines the buffer size of the [`Server`]. Smallest possible value is `1`.
-    pub fn buffer_size(mut self, value: usize) -> Self {
-        self.buffer_size = value;
         self
     }
 

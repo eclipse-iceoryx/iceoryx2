@@ -82,6 +82,7 @@ pub(crate) struct ClientBackend<Service: service::Service> {
     is_active: IoxAtomicBool,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     service_state: Arc<ServiceState<Service>>,
+    pub(crate) active_request_counter: IoxAtomicUsize,
 }
 
 impl<Service: service::Service> ClientBackend<Service> {
@@ -91,14 +92,29 @@ impl<Service: service::Service> ClientBackend<Service> {
         sample_size: usize,
     ) -> Result<usize, SendError> {
         let msg = "Unable to send request";
+
+        let active_request_counter = self.active_request_counter.load(Ordering::Relaxed);
+        if self
+            .sender
+            .service_state
+            .static_config
+            .request_response()
+            .max_active_requests_per_client
+            <= active_request_counter
+        {
+            fail!(from self, with SendError::ConnectionCorrupted,
+                    "{} since the number of active requests is limited to {} and sending this request would exceed the limit.", msg, active_request_counter);
+        }
+
         if !self.is_active.load(Ordering::Relaxed) {
-            fail!(from self, with SendError::ConnectionBrokenSinceSenderNoLongerExists,
+            fail!(from self, with SendError::ConnectionCorrupted,
                 "{} since the connections could not be updated.", msg);
         }
 
         fail!(from self, when self.update_connections(),
             "{} since the connections could not be updated.", msg);
 
+        self.active_request_counter.fetch_add(1, Ordering::Relaxed);
         self.sender.deliver_offset(offset, sample_size)
     }
 
@@ -254,7 +270,7 @@ impl<
                     connections: (0..server_list.capacity())
                         .map(|_| UnsafeCell::new(None))
                         .collect(),
-                    receiver_max_buffer_size: static_config.max_request_buffer_size,
+                    receiver_max_buffer_size: static_config.max_active_requests_per_client,
                     receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
                     enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
                     degration_callback: client_factory.degration_callback,
@@ -270,6 +286,7 @@ impl<
                 is_active: IoxAtomicBool::new(true),
                 server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
                 service_state: service.__internal_state().clone(),
+                active_request_counter: IoxAtomicUsize::new(0),
             }),
             client_port_id,
             _request_payload: PhantomData,

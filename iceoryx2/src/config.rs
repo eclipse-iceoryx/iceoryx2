@@ -316,8 +316,6 @@ pub struct RequestResonse {
     pub max_active_requests_per_client: usize,
     /// The maximum buffer size for [`crate::response::Response`]s for an [`crate::pending_response::PendingResponse`].
     pub max_response_buffer_size: usize,
-    /// The maximum buffer size for [`crate::active_request::ActiveRequest`]s for a [`crate::port::server::Server`].
-    pub max_request_buffer_size: usize,
     /// The maximum amount of supported [`crate::port::server::Server`]
     pub max_servers: usize,
     /// The maximum amount of supported [`crate::port::client::Client`]
@@ -386,7 +384,6 @@ impl Default for Config {
                     enable_safe_overflow_for_responses: true,
                     max_active_requests_per_client: 4,
                     max_response_buffer_size: 2,
-                    max_request_buffer_size: 4,
                     max_servers: 2,
                     max_clients: 8,
                     max_nodes: 20,

@@ -55,7 +55,6 @@ pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_responses: bool,
     pub(crate) max_active_requests_per_client: usize,
     pub(crate) max_response_buffer_size: usize,
-    pub(crate) max_request_buffer_size: usize,
     pub(crate) max_servers: usize,
     pub(crate) max_clients: usize,
     pub(crate) max_nodes: usize,
@@ -80,7 +79,6 @@ impl StaticConfig {
                 .request_response
                 .max_active_requests_per_client,
             max_response_buffer_size: config.defaults.request_response.max_response_buffer_size,
-            max_request_buffer_size: config.defaults.request_response.max_request_buffer_size,
             max_servers: config.defaults.request_response.max_servers,
             max_clients: config.defaults.request_response.max_clients,
             max_nodes: config.defaults.request_response.max_nodes,
@@ -97,8 +95,12 @@ impl StaticConfig {
         &self,
         client_max_loaned_data: usize,
     ) -> usize {
-        self.max_servers * (self.max_request_buffer_size + self.max_active_requests_per_client)
+        // all chunks a server can hold
+        self.max_servers * ( 2 * self.max_active_requests_per_client)
+        // all chunks a client can hold
             + client_max_loaned_data
+            // every active request has a pending response on the client side that can contain another request
+            + self.max_active_requests_per_client
     }
 
     /// Returns the request type details of the [`crate::service::Service`].
@@ -143,11 +145,6 @@ impl StaticConfig {
     /// Returns the maximum buffer size for responses for an active request.
     pub fn max_response_buffer_size(&self) -> usize {
         self.max_response_buffer_size
-    }
-
-    /// Returns the maximum buffer size for requests for a [`crate::port::server::Server`].
-    pub fn max_request_buffer_size(&self) -> usize {
-        self.max_request_buffer_size
     }
 
     /// Returns the maximum number of supported [`crate::port::server::Server`] ports for the

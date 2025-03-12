@@ -39,8 +39,6 @@ pub enum RequestResponseOpenError {
     DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
     /// The [`Service`] has a lower maximum response buffer size than requested.
     DoesNotSupportRequestedResponseBufferSize,
-    /// The [`Service`] has a lower maximum request buffer size than requested.
-    DoesNotSupportRequestedRequestBufferSize,
     /// The [`Service`] has a lower maximum number of servers than requested.
     DoesNotSupportRequestedAmountOfServers,
     /// The [`Service`] has a lower maximum number of clients than requested.
@@ -224,7 +222,6 @@ pub struct Builder<
     verify_enable_safe_overflow_for_responses: bool,
     verify_max_active_requests_per_client: bool,
     verify_max_response_buffer_size: bool,
-    verify_max_request_buffer_size: bool,
     verify_max_servers: bool,
     verify_max_clients: bool,
     verify_max_nodes: bool,
@@ -253,7 +250,6 @@ impl<
             verify_enable_safe_overflow_for_responses: false,
             verify_max_active_requests_per_client: false,
             verify_max_response_buffer_size: false,
-            verify_max_request_buffer_size: false,
             verify_max_servers: false,
             verify_max_clients: false,
             verify_max_nodes: false,
@@ -361,15 +357,6 @@ impl<
         self
     }
 
-    /// If the [`Service`] is created it defines how many requests fit in the
-    /// [`Server`](crate::port::server::Server)s buffer. If an existing
-    /// [`Service`] is opened it defines the minimum required.
-    pub fn max_request_buffer_size(mut self, value: usize) -> Self {
-        self.config_details_mut().max_request_buffer_size = value;
-        self.verify_max_request_buffer_size = true;
-        self
-    }
-
     /// If the [`Service`] is created it defines how many [`crate::port::server::Server`]s shall
     /// be supported at most. If an existing [`Service`] is opened it defines how many
     /// [`crate::port::server::Server`]s must be at least supported.
@@ -410,12 +397,6 @@ impl<
     fn adjust_configuration_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.request_response_mut();
-
-        if settings.max_request_buffer_size == 0 {
-            warn!(from origin,
-                "Setting the maximum size of the request buffer to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_request_buffer_size = 1;
-        }
 
         if settings.max_response_buffer_size == 0 {
             warn!(from origin,
@@ -522,15 +503,6 @@ impl<
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedResponseBufferSize,
                 "{} since the service supports a maximum response buffer size of {} but a size of {} is required.",
                 msg, existing_configuration.max_response_buffer_size, required_configuration.max_response_buffer_size);
-        }
-
-        if self.verify_max_request_buffer_size
-            && existing_configuration.max_request_buffer_size
-                < required_configuration.max_request_buffer_size
-        {
-            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedRequestBufferSize,
-                "{} since the service supports a maximum request buffer size of {} but a size of {} is required.",
-                msg, existing_configuration.max_request_buffer_size, required_configuration.max_request_buffer_size);
         }
 
         if self.verify_max_servers

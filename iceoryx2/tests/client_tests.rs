@@ -17,7 +17,7 @@ mod client {
     use std::sync::Barrier;
     use std::time::Duration;
 
-    use iceoryx2::port::LoanError;
+    use iceoryx2::port::{LoanError, SendError};
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
@@ -29,11 +29,6 @@ mod client {
     const TIMEOUT: Duration = Duration::from_millis(50);
 
     // TODO:
-    //   - never goes out of memory
-    //     - vary all possibilities, add huge values
-    //     - client.rs, sender_max_borrowed_samples add max_pending_responses
-    //       - reduce loan_counter when request is moved into pending response
-    //   - fail to send request when already max_pending_responses are hold
     //   - completion channel capacity is never exceeded
     //     - vary all possibilities
     //   - disconnected server does not block new server
@@ -122,7 +117,15 @@ mod client {
         const MAX_LOANED_REQUESTS: usize = 29;
         const MAX_PENDING_RESPONSES: usize = 7;
         const ITERATIONS: usize = 3;
-        let (_node, service) = create_node_and_service::<Sut>();
+
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_active_requests_per_client(MAX_PENDING_RESPONSES)
+            .create()
+            .unwrap();
 
         let sut = service
             .client_builder()
@@ -156,9 +159,10 @@ mod client {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .enable_safe_overflow_for_requests(false)
+            .max_active_requests_per_client(1)
             .create()
             .unwrap();
-        let server = service.server_builder().buffer_size(1).create().unwrap();
+        let server = service.server_builder().create().unwrap();
         let has_sent_request = IoxAtomicBool::new(false);
         let barrier = Barrier::new(2);
 
@@ -172,6 +176,7 @@ mod client {
 
                 let request = sut.send_copy(123);
                 assert_that!(request, is_ok);
+                drop(request);
                 barrier.wait();
 
                 let request = sut.send_copy(123);
@@ -196,9 +201,10 @@ mod client {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .enable_safe_overflow_for_requests(false)
+            .max_active_requests_per_client(1)
             .create()
             .unwrap();
-        let server = service.server_builder().buffer_size(1).create().unwrap();
+        let server = service.server_builder().create().unwrap();
 
         let sut = service
             .client_builder()
@@ -329,11 +335,39 @@ mod client {
         }
     }
 
+    #[test]
+    fn send_request_fails_when_already_active_requests_is_at_max<Sut: Service>() {
+        const MAX_ACTIVE_REQUESTS: usize = 9;
+        const ITERATIONS: usize = 5;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+            .create()
+            .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
+
+        for _ in 0..ITERATIONS {
+            let mut requests = vec![];
+
+            for _ in 0..MAX_ACTIVE_REQUESTS {
+                requests.push(sut.send_copy(123).unwrap());
+            }
+
+            assert_that!(sut.send_copy(123).err(), eq Some(SendError::ConnectionCorrupted));
+
+            let request = sut.loan().unwrap();
+            assert_that!(request.send().err(), eq Some(SendError::ConnectionCorrupted));
+        }
+    }
+
     fn client_never_goes_out_of_memory_impl<Sut: Service>(
         max_active_requests_per_client: usize,
         max_servers: usize,
         max_loaned_requests: usize,
-        max_request_buffer_size: usize,
     ) {
         const ITERATIONS: usize = 5;
 
@@ -345,7 +379,6 @@ mod client {
             .max_clients(1)
             .max_servers(max_servers)
             .max_active_requests_per_client(max_active_requests_per_client)
-            .max_request_buffer_size(max_request_buffer_size)
             .create()
             .unwrap();
 
@@ -357,11 +390,7 @@ mod client {
 
         let mut servers = vec![];
         for _ in 0..max_servers {
-            let sut_server = service
-                .server_builder()
-                .buffer_size(max_request_buffer_size)
-                .create()
-                .unwrap();
+            let sut_server = service.server_builder().create().unwrap();
             servers.push(sut_server);
         }
 
@@ -379,9 +408,10 @@ mod client {
                 }
             }
 
-            // max out request buffer size
-            for _ in 0..max_request_buffer_size {
-                assert_that!(sut.send_copy(456), is_ok);
+            pending_responses.clear();
+            // max out request buffer on server side
+            for _ in 0..max_active_requests_per_client {
+                pending_responses.push(sut.send_copy(456).unwrap());
             }
 
             // max out loaned requests
@@ -409,13 +439,11 @@ mod client {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 100;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
-        const MAX_REQUEST_BUFFER_SIZE: usize = 1;
 
         client_never_goes_out_of_memory_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
-            MAX_REQUEST_BUFFER_SIZE,
         );
     }
 
@@ -424,13 +452,11 @@ mod client {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 100;
         const MAX_LOANED_REQUESTS: usize = 1;
-        const MAX_REQUEST_BUFFER_SIZE: usize = 1;
 
         client_never_goes_out_of_memory_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
-            MAX_REQUEST_BUFFER_SIZE,
         );
     }
 
@@ -439,28 +465,11 @@ mod client {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 100;
-        const MAX_REQUEST_BUFFER_SIZE: usize = 1;
 
         client_never_goes_out_of_memory_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
-            MAX_REQUEST_BUFFER_SIZE,
-        );
-    }
-
-    #[test]
-    fn client_never_goes_out_of_memory_with_huge_max_request_buffer_size<Sut: Service>() {
-        const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
-        const MAX_SERVERS: usize = 1;
-        const MAX_LOANED_REQUESTS: usize = 1;
-        const MAX_REQUEST_BUFFER_SIZE: usize = 100;
-
-        client_never_goes_out_of_memory_impl::<Sut>(
-            MAX_ACTIVE_REQUEST_PER_CLIENT,
-            MAX_SERVERS,
-            MAX_LOANED_REQUESTS,
-            MAX_REQUEST_BUFFER_SIZE,
         );
     }
 
@@ -469,13 +478,11 @@ mod client {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
-        const MAX_REQUEST_BUFFER_SIZE: usize = 1;
 
         client_never_goes_out_of_memory_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
-            MAX_REQUEST_BUFFER_SIZE,
         );
     }
 
@@ -484,13 +491,11 @@ mod client {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 12;
         const MAX_SERVERS: usize = 15;
         const MAX_LOANED_REQUESTS: usize = 19;
-        const MAX_REQUEST_BUFFER_SIZE: usize = 23;
 
         client_never_goes_out_of_memory_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
-            MAX_REQUEST_BUFFER_SIZE,
         );
     }
 
