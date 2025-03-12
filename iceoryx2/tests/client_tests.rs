@@ -29,6 +29,8 @@ mod client {
     const TIMEOUT: Duration = Duration::from_millis(50);
 
     // TODO:
+    //   - remove: max_active_requests_per_client
+    //     - must be equal to pending_responses
     //   - never goes out of memory
     //     - vary all possibilities, add huge values
     //     - client.rs, sender_max_borrowed_samples add max_pending_responses
@@ -344,6 +346,7 @@ mod client {
             .request_response::<u64, u64>()
             .max_clients(1)
             .max_servers(max_servers)
+            .max_active_requests_per_client(max_pending_responses)
             .max_pending_responses(max_pending_responses)
             .max_request_buffer_size(max_request_buffer_size)
             .create()
@@ -455,6 +458,36 @@ mod client {
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
         const MAX_REQUEST_BUFFER_SIZE: usize = 100;
+
+        client_never_goes_out_of_memory_impl::<Sut>(
+            MAX_PENDING_RESPONSES,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
+            MAX_REQUEST_BUFFER_SIZE,
+        );
+    }
+
+    #[test]
+    fn client_never_goes_out_of_memory_with_smallest_possible_values<Sut: Service>() {
+        const MAX_PENDING_RESPONSES: usize = 1;
+        const MAX_SERVERS: usize = 1;
+        const MAX_LOANED_REQUESTS: usize = 1;
+        const MAX_REQUEST_BUFFER_SIZE: usize = 1;
+
+        client_never_goes_out_of_memory_impl::<Sut>(
+            MAX_PENDING_RESPONSES,
+            MAX_SERVERS,
+            MAX_LOANED_REQUESTS,
+            MAX_REQUEST_BUFFER_SIZE,
+        );
+    }
+
+    #[test]
+    fn client_never_goes_out_of_memory_with_huge_values<Sut: Service>() {
+        const MAX_PENDING_RESPONSES: usize = 12;
+        const MAX_SERVERS: usize = 15;
+        const MAX_LOANED_REQUESTS: usize = 19;
+        const MAX_REQUEST_BUFFER_SIZE: usize = 23;
 
         client_never_goes_out_of_memory_impl::<Sut>(
             MAX_PENDING_RESPONSES,
