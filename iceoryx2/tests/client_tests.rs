@@ -29,28 +29,6 @@ mod client {
 
     const TIMEOUT: Duration = Duration::from_millis(50);
 
-    // TODO:
-    //   - server
-    //     - has requests
-    //     - requests of disconnected client are not received
-    //     - test that it can hold X active requests per client (for one and many clients)
-    //
-    //   - service builder
-    //     - ports of dropped service block new service creation
-    //     - service can be opened when there is a port
-    //     - ?server decrease buffer size? (increase with failure)
-    //     - create max amount of ports
-    //     - create max amount of nodes
-    //
-    //   - service
-    //    -fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock
-    //    - service can be open when there is a server/client
-    //    - dropping service keeps established comm
-    //    - comm with max clients/server
-    //     - disconnected server does not block new server
-    //     - receive requests client created first
-    //       - server created first
-
     fn create_node<Sut: Service>() -> Node<Sut> {
         let config = generate_isolated_config();
         NodeBuilder::new().config(&config).create::<Sut>().unwrap()

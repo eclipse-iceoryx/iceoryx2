@@ -199,11 +199,6 @@ impl<
         UniqueServerId(UniqueSystemId::from(self.receiver.receiver_port_id))
     }
 
-    /// Returns the buffer size of the [`Server`].
-    pub fn buffer_size(&self) -> usize {
-        self.receiver.buffer_size
-    }
-
     /// Returns true if the [`Server`] has [`RequestMut`](crate::request_mut::RequestMut)s in its buffer.
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
