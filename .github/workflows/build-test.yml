@@ -73,7 +73,7 @@ jobs:
           node-version: '20'
 
       - name: Install linters
-        run: npm install -g markdownlint-cli prettier
+        run: npm install -g markdownlint-cli
 
       - name: Check linting
         env:
@@ -81,7 +81,7 @@ jobs:
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_BEFORE: ${{ github.event.before }}
           GITHUB_AFTER: ${{ github.event.after }}
-        run: ./internal/scripts/check_markdown_linting.sh
+        run: ./internal/scripts/ci_check_markdown_linting.sh
 
   static-code-analysis-rust:
     needs: preflight-check

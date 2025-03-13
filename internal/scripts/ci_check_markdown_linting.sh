@@ -75,12 +75,6 @@ if ! command -v markdownlint &> /dev/null; then
     exit 1
 fi
 
-if ! command -v prettier &> /dev/null; then
-    echo "Error: prettier is not installed. Please install it using npm:"
-    echo "npm install -g prettier"
-    exit 1
-fi
-
 # Check for markdownlint config existence
 if [ ! -f "$MARKDOWNLINT_CONFIG" ]; then
     echo "Error: .markdownlint.yaml file not found at $MARKDOWNLINT_CONFIG"
@@ -120,9 +114,6 @@ print_file_list "$MODE" "$md_files"
 
 # Execute
 if [ "$MODE" = "fix" ]; then
-    echo "\nRunning Prettier to format line length..."
-    echo "$md_files" | xargs prettier --write --embedded-language-formatting off --parser markdown --prose-wrap always --print-width 80
-    
     echo "\nRunning markdownlint to fix other issues..."
     echo "$md_files" | xargs markdownlint -c "$MARKDOWNLINT_CONFIG" --fix
     
