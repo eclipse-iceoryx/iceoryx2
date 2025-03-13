@@ -32,6 +32,12 @@ struct HasPayloadTypeNameMember : std::false_type { };
 template <typename Payload>
 struct HasPayloadTypeNameMember<Payload, decltype((void) Payload::PAYLOAD_TYPE_NAME)> : std::true_type { };
 
+template <typename UserHeader, typename = void>
+struct HasUserHeaderTypeNameMember : std::false_type { };
+
+template <typename UserHeader>
+struct HasUserHeaderTypeNameMember<UserHeader, decltype((void) UserHeader::USER_HEADER_TYPE_NAME)> : std::true_type { };
+
 /// Builder to create new [`MessagingPattern::PublishSubscribe`] based [`Service`]s
 template <typename Payload, typename UserHeader, ServiceType S>
 class ServiceBuilderPublishSubscribe {
@@ -124,6 +130,14 @@ class ServiceBuilderPublishSubscribe {
     auto get_payload_type_name() ->
         typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value, const char*>;
 
+    template <typename UserHeaderType>
+    auto get_user_header_type_name() ->
+        typename std::enable_if_t<HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
+
+    template <typename UserHeaderType>
+    auto get_user_header_type_name() ->
+        typename std::enable_if_t<!HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
+
     iox2_service_builder_pub_sub_h m_handle = nullptr;
 };
 
@@ -145,6 +159,20 @@ template <typename PayloadType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name() ->
     typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value, const char*> {
     return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename UserHeaderType>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_user_header_type_name() ->
+    typename std::enable_if_t<HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
+    return UserHeaderType::USER_HEADER_TYPE_NAME;
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename UserHeaderType>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_user_header_type_name() ->
+    typename std::enable_if_t<!HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
+    return typeid(UserHeader).name();
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -180,7 +208,7 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
 
     // user header type details
     const auto header_layout = iox::Layout::from<UserHeader>();
-    const auto* user_header_type_name = typeid(UserHeader).name();
+    const auto* user_header_type_name = get_user_header_type_name<UserHeader>();
     const auto user_header_type_name_len = strlen(user_header_type_name);
     const auto user_header_type_size = header_layout.size();
     const auto user_header_type_align = header_layout.alignment();
