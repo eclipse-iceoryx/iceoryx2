@@ -32,6 +32,25 @@ struct HasPayloadTypeNameMember : std::false_type { };
 template <typename Payload>
 struct HasPayloadTypeNameMember<Payload, decltype((void) Payload::PAYLOAD_TYPE_NAME)> : std::true_type { };
 
+template <typename Payload>
+using FromCustomizedPayloadTypeName = std::enable_if_t<HasPayloadTypeNameMember<Payload>::value, const char*>;
+
+template <typename Payload>
+using FromNonSlice =
+    std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && !iox::IsSlice<Payload>::VALUE, const char*>;
+
+template <typename Payload>
+using FromSliceWithCustomizedInnerPayloadTypeName =
+    std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && iox::IsSlice<Payload>::VALUE
+                         && HasPayloadTypeNameMember<typename Payload::ValueType>::value,
+                     const char*>;
+
+template <typename Payload>
+using FromSliceWithoutCustomizedInnerPayloadTypeName =
+    std::enable_if_t<!HasPayloadTypeNameMember<Payload>::value && iox::IsSlice<Payload>::VALUE
+                         && !HasPayloadTypeNameMember<typename Payload::ValueType>::value,
+                     const char*>;
+
 template <typename UserHeader, typename = void>
 struct HasUserHeaderTypeNameMember : std::false_type { };
 
@@ -123,18 +142,16 @@ class ServiceBuilderPublishSubscribe {
     void set_parameters();
 
     template <typename PayloadType>
-    auto get_payload_type_name() ->
-        typename std::enable_if_t<HasPayloadTypeNameMember<PayloadType>::value, const char*>;
+    auto get_payload_type_name() -> FromCustomizedPayloadTypeName<PayloadType>;
 
     template <typename PayloadType>
-    auto get_payload_type_name() ->
-        typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value && iox::IsSlice<PayloadType>::VALUE,
-                                  const char*>;
+    auto get_payload_type_name() -> FromNonSlice<PayloadType>;
 
     template <typename PayloadType>
-    auto get_payload_type_name() ->
-        typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value && !iox::IsSlice<PayloadType>::VALUE,
-                                  const char*>;
+    auto get_payload_type_name() -> FromSliceWithCustomizedInnerPayloadTypeName<PayloadType>;
+
+    template <typename PayloadType>
+    auto get_payload_type_name() -> FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType>;
 
     template <typename UserHeaderType>
     auto get_user_header_type_name() ->
@@ -155,30 +172,49 @@ inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPub
 
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename PayloadType>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name() ->
-    typename std::enable_if_t<HasPayloadTypeNameMember<PayloadType>::value, const char*> {
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
+    -> FromCustomizedPayloadTypeName<PayloadType> {
     return PayloadType::PAYLOAD_TYPE_NAME;
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename PayloadType>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name() ->
-    typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value && iox::IsSlice<PayloadType>::VALUE,
-                              const char*> {
-    std::cout << typeid(typename PayloadInfo<PayloadType>::ValueType).name() << std::endl;
-    std::cout << iox::IsSlice<PayloadType>::VALUE << std::endl;
-    std::cout << typeid(typename PayloadType::ValueType).name() << std::endl;
-    if (std::is_same<typename PayloadType::ValueType, uint8_t>::value) {
-        return "u8";
-    }
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
+    -> FromNonSlice<PayloadType> {
     return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename PayloadType>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name() ->
-    typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value && !iox::IsSlice<PayloadType>::VALUE,
-                              const char*> {
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
+    -> FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
+    return PayloadType::ValueType::PAYLOAD_TYPE_NAME;
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename PayloadType>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
+    -> FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
+    if constexpr (std::is_same<typename PayloadType::ValueType, uint8_t>::value) {
+        return "u8";
+    } else if constexpr (std::is_same<typename PayloadType::ValueType, uint16_t>::value) {
+        return "u16";
+    } else if constexpr (std::is_same<typename PayloadType::ValueType, uint32_t>::value) {
+        return "u32";
+    } else if constexpr (std::is_same<typename PayloadType::ValueType, uint64_t>::value) {
+        return "u64";
+    } else if constexpr (std::is_same<typename PayloadType::ValueType, int8_t>::value) {
+        return "i8";
+    } else if constexpr (std::is_same<typename PayloadType::ValueType, int16_t>::value) {
+        return "i16";
+    } else if constexpr (std::is_same<typename PayloadType::ValueType, int32_t>::value) {
+        return "i32";
+    } else if constexpr (std::is_same<typename PayloadType::ValueType, int64_t>::value) {
+        return "i64";
+    } else if constexpr (std::is_same<typename PayloadType::ValueType, bool>::value) {
+        return "bool";
+    }
+    // TODO: char? different size and alignment
     return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
 }
 
@@ -193,9 +229,8 @@ template <typename Payload, typename UserHeader, ServiceType S>
 template <typename UserHeaderType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_user_header_type_name() ->
     typename std::enable_if_t<!HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    std::cout << "user header = " << std::is_same<UserHeader, void>::value << std::endl;
-    if (std::is_same<UserHeader, void>::value) {
-        return "()";
+    if constexpr (std::is_void<UserHeader>::value) {
+        return "()"; // no user header provided
     }
     return typeid(UserHeader).name();
 }
