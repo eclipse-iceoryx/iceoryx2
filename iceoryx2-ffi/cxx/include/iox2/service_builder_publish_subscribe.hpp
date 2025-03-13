@@ -128,7 +128,13 @@ class ServiceBuilderPublishSubscribe {
 
     template <typename PayloadType>
     auto get_payload_type_name() ->
-        typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value, const char*>;
+        typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value && iox::IsSlice<PayloadType>::VALUE,
+                                  const char*>;
+
+    template <typename PayloadType>
+    auto get_payload_type_name() ->
+        typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value && !iox::IsSlice<PayloadType>::VALUE,
+                                  const char*>;
 
     template <typename UserHeaderType>
     auto get_user_header_type_name() ->
@@ -157,7 +163,22 @@ inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename PayloadType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name() ->
-    typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value, const char*> {
+    typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value && iox::IsSlice<PayloadType>::VALUE,
+                              const char*> {
+    std::cout << typeid(typename PayloadInfo<PayloadType>::ValueType).name() << std::endl;
+    std::cout << iox::IsSlice<PayloadType>::VALUE << std::endl;
+    std::cout << typeid(typename PayloadType::ValueType).name() << std::endl;
+    if (std::is_same<typename PayloadType::ValueType, uint8_t>::value) {
+        return "u8";
+    }
+    return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
+}
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename PayloadType>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name() ->
+    typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value && !iox::IsSlice<PayloadType>::VALUE,
+                              const char*> {
     return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
 }
 
@@ -172,6 +193,10 @@ template <typename Payload, typename UserHeader, ServiceType S>
 template <typename UserHeaderType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_user_header_type_name() ->
     typename std::enable_if_t<!HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
+    std::cout << "user header = " << std::is_same<UserHeader, void>::value << std::endl;
+    if (std::is_same<UserHeader, void>::value) {
+        return "()";
+    }
     return typeid(UserHeader).name();
 }
 
@@ -213,12 +238,14 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     const auto user_header_type_size = header_layout.size();
     const auto user_header_type_align = header_layout.alignment();
 
-    const auto user_header_result = iox2_service_builder_pub_sub_set_user_header_type_details(&m_handle,
-                                                                                              type_variant,
-                                                                                              user_header_type_name,
-                                                                                              user_header_type_name_len,
-                                                                                              user_header_type_size,
-                                                                                              user_header_type_align);
+    // TODO: do we need the type_variant for the user header?
+    const auto user_header_result =
+        iox2_service_builder_pub_sub_set_user_header_type_details(&m_handle,
+                                                                  iox2_type_variant_e_FIXED_SIZE,
+                                                                  user_header_type_name,
+                                                                  user_header_type_name_len,
+                                                                  user_header_type_size,
+                                                                  user_header_type_align);
 
     if (user_header_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the User-Header-Type.");
