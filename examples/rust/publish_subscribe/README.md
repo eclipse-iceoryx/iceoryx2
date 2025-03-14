@@ -17,7 +17,7 @@
 > use them.
 
 This example illustrates a robust publisher-subscriber communication pattern
-between two separate processes. The publisher sends two messages every second,
+between two separate processes. The publisher sends a message every second,
 each containing [`TransmissionData`]. On the receiving end, the subscriber
 checks for new data every second.
 

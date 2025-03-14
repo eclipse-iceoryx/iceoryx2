@@ -14,17 +14,16 @@
 #define IOX2_EXAMPLES_TRANSMISSION_DATA_HPP
 
 // TODOs:
-// - bazel
 // - cmake executable names
 // - example name
-// - readme
-// - copyright year
-// - custom user header in same example?
-// - both, cxx pub/sub and rust sub/pub?
+// - copyright years
+// - custom user header in same example? adapt rust user header example to use transmission data
 #include <cstdint>
 #include <iostream>
 
 struct TransmissionData {
+    // PAYLOAD_TYPE_NAME is equivalent to the payload type name used on the Rust side and was determined with
+    // `core::any::type_name::<TransmissionData>()`
     static constexpr const char* PAYLOAD_TYPE_NAME = "examples_common::transmission_data::TransmissionData";
     std::int32_t x;
     std::int32_t y;
