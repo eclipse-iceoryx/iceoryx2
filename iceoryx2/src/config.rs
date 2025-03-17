@@ -432,7 +432,7 @@ impl Default for Config {
 
 impl Config {
     fn relative_local_config_path() -> Path {
-        fatal_panic!(from "Config::default_config_path",
+        fatal_panic!(from "Config::relative_local_config_path",
             when Path::new(RELATIVE_LOCAL_CONFIG_PATH),
             "This should never happen! The relative local config path contains invalid symbols.")
     }
@@ -451,10 +451,18 @@ impl Config {
             "This should never happen! The default config file path contains invalid symbols.")
     }
 
-    fn relative_config_path() -> Path {
+    /// Relative path to the config file
+    pub fn relative_config_path() -> Path {
         fatal_panic!(from "Config::relative_config_path",
             when Path::new(RELATIVE_CONFIG_FILE_PATH),
             "This should never happen! The relative config path contains invalid symbols.")
+    }
+
+    /// Path to the default user config file
+    pub fn default_user_config_file_path() -> FilePath {
+        fatal_panic!(from "Config::default_config_file_path",
+            when FilePath::from_path_and_file(&Self::relative_config_path(), &Self::default_config_file_name()),
+            "This should never happen! The default config file path contains invalid symbols.")
     }
 
     fn iterate_over_config_files<F: FnMut(FilePath) -> CallbackProgression>(
@@ -610,7 +618,6 @@ impl Config {
                 ICEORYX2_CONFIG.set_value(Config::default());
             }
         }
-
         ICEORYX2_CONFIG.get()
     }
 }
