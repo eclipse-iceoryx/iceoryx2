@@ -37,6 +37,14 @@ void log(LogLevel log_level, const char* origin, const char* message) {
     iox2_log(iox::into<iox2_log_level_e>(log_level), origin, message);
 }
 
+auto set_log_level_from_env_or_default() -> void {
+    iox2_set_log_level_from_env_or_default();
+}
+
+auto set_log_level_from_env_or(LogLevel level) -> void {
+    iox2_set_log_level_from_env_or(iox::into<iox2_log_level_e>(level));
+}
+
 auto set_log_level(LogLevel level) -> void {
     iox2_set_log_level(iox::into<iox2_log_level_e>(level));
 }
