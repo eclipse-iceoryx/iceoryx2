@@ -13,6 +13,7 @@
 use clap::Parser;
 use clap::Subcommand;
 
+use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_cli::help_template;
 
 #[derive(Parser)]
@@ -20,7 +21,7 @@ use iceoryx2_cli::help_template;
     name = "iox2-config",
     about = "Query information about iceoryx2 configuration",
     long_about = None,
-    version = env!("CARGO_PKG_VERSION"),
+    version = PackageVersion::get_str(),
     disable_help_subcommand = true,
     arg_required_else_help = false,
     help_template = help_template("iox2 config", false),
@@ -35,7 +36,7 @@ pub struct Cli {
     name = "iox2-config",
     about = "Query information about iceoryx2 configuration",
     long_about = None,
-    version = env!("CARGO_PKG_VERSION"),
+    version = PackageVersion::get_str(),
     disable_help_subcommand = true,
     arg_required_else_help = false,
     help_template = help_template("iox2 config show", false),
@@ -50,7 +51,7 @@ pub struct ConfigShow {
     name = "iox2-config",
     about = "Query information about iceoryx2 configuration",
     long_about = None,
-    version = env!("CARGO_PKG_VERSION"),
+    version = PackageVersion::get_str(),
     disable_help_subcommand = true,
     arg_required_else_help = false,
     help_template = help_template("iox2 config generate", false),

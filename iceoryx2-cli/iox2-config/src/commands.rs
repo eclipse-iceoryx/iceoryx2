@@ -29,13 +29,13 @@ pub fn print_system_configuration() {
     );
     println!();
     println!(" {}", "system info".underline().bright_green());
-    for i in all::<SystemInfo>().collect::<Vec<_>>() {
+    all::<SystemInfo>().for_each(|i| {
         println!(
             "  {:<50} {}",
             format!("{:?}", i).white(),
             format!("{}", i.value()).bright_blue(),
         );
-    }
+    });
 
     println!();
     println!(" {}", "limit".underline().bright_green());
