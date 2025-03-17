@@ -11,15 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 // TODO:
-//
-//   - service builder
-//     - ports of dropped service block new service creation
-//     - service can be opened when there is a port
-//     - ?server decrease buffer size? (increase with failure)
-//     - create max amount of ports
-//     - create max amount of nodes
-//
-//   - service
+//  service
 //    -fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock
 //    - service can be open when there is a server/client
 //    - dropping service keeps established comm
@@ -35,6 +27,8 @@ mod service_request_response {
     use iceoryx2::service::builder::request_response::{
         RequestResponseCreateError, RequestResponseOpenError,
     };
+    use iceoryx2::service::port_factory::client::ClientCreateError;
+    use iceoryx2::service::port_factory::server::ServerCreateError;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
 
@@ -856,6 +850,118 @@ mod service_request_response {
             .request_response::<u64, u64>()
             .open();
         assert_that!(sut_3, is_ok);
+    }
+
+    #[test]
+    fn server_port_of_dropped_service_blocks_new_service_creation<Sut: Service>() {
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let _server = sut.server_builder().create().unwrap();
+        drop(sut);
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create();
+        assert_that!(result.err(), eq Some(RequestResponseCreateError::AlreadyExists));
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(result, is_ok);
+    }
+
+    #[test]
+    fn client_port_of_dropped_service_blocks_new_service_creation<Sut: Service>() {
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let _client = sut.client_builder().create().unwrap();
+        drop(sut);
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create();
+        assert_that!(result.err(), eq Some(RequestResponseCreateError::AlreadyExists));
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(result, is_ok);
+    }
+
+    #[test]
+    fn service_cannot_be_opened_by_more_clients_than_specified<Sut: Service>() {
+        const MAX_CLIENTS: usize = 8;
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        for max_clients in 1..MAX_CLIENTS {
+            let sut = node
+                .service_builder(&service_name)
+                .request_response::<u64, u64>()
+                .max_clients(max_clients)
+                .create()
+                .unwrap();
+
+            let mut clients = vec![];
+
+            for _ in 0..max_clients {
+                let client = sut.client_builder().create();
+                assert_that!(client, is_ok);
+                clients.push(client);
+            }
+
+            let client = sut.client_builder().create();
+            assert_that!(client.err(), eq Some(ClientCreateError::ExceedsMaxSupportedClients));
+        }
+    }
+
+    #[test]
+    fn service_cannot_be_opened_by_more_servers_than_specified<Sut: Service>() {
+        const MAX_SERVERS: usize = 8;
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        for max_servers in 1..MAX_SERVERS {
+            let sut = node
+                .service_builder(&service_name)
+                .request_response::<u64, u64>()
+                .max_servers(max_servers)
+                .create()
+                .unwrap();
+
+            let mut servers = vec![];
+
+            for _ in 0..max_servers {
+                let server = sut.server_builder().create();
+                assert_that!(server, is_ok);
+                servers.push(server);
+            }
+
+            let server = sut.server_builder().create();
+            assert_that!(server.err(), eq Some(ServerCreateError::ExceedsMaxSupportedServers));
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
