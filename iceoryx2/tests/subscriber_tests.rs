@@ -37,7 +37,7 @@ mod subscriber {
     #[test]
     fn receive_error_display_works<S: Service>() {
         assert_that!(
-            format!("{}", ReceiveError::ExceedsMaxBorrowedSamples), eq "ReceiveError::ExceedsMaxBorrowedSamples");
+            format!("{}", ReceiveError::ExceedsMaxBorrows), eq "ReceiveError::ExceedsMaxBorrows");
     }
 
     #[test]

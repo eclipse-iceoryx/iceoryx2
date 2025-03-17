@@ -217,7 +217,7 @@ impl<Service: service::Service> Receiver<Service> {
                 }
             },
             Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
-                fail!(from self, with ReceiveError::ExceedsMaxBorrowedSamples,
+                fail!(from self, with ReceiveError::ExceedsMaxBorrows,
                     "{} since it would exceed the maximum {} of borrowed samples.",
                     msg, connection.receiver.max_borrowed_samples());
             }

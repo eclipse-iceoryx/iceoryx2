@@ -12,33 +12,11 @@
 
 #[generic_tests::define]
 mod server {
-
+    use iceoryx2::port::ReceiveError;
     use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
-
-    // TODO:
-    //   - server
-    //     - test that it can hold X active requests per client (for one and many clients)
-    //       - holding more requests leads to failure
-    //
-    //   - service builder
-    //     - ports of dropped service block new service creation
-    //     - service can be opened when there is a port
-    //     - ?server decrease buffer size? (increase with failure)
-    //     - create max amount of ports
-    //     - create max amount of nodes
-    //
-    //   - service
-    //    -fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock
-    //    - service can be open when there is a server/client
-    //    - dropping service keeps established comm
-    //    - comm with max clients/server
-    //     - disconnected server does not block new server
-    //     - receive requests client created first
-    //       - server created first
 
     fn create_node<Sut: Service>() -> Node<Sut> {
         let config = generate_isolated_config();
@@ -113,6 +91,90 @@ mod server {
 
         let active_request = sut.receive().unwrap();
         assert_that!(active_request, is_none);
+    }
+
+    fn server_can_hold_specified_amount_of_active_requests<Sut: Service>(
+        max_active_requests: usize,
+        max_clients: usize,
+    ) {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(max_clients)
+            .max_servers(1)
+            .max_active_requests_per_client(max_active_requests)
+            .create()
+            .unwrap();
+
+        let sut = service.server_builder().create().unwrap();
+        let mut clients = vec![];
+
+        for _ in 0..max_clients {
+            clients.push(service.client_builder().create().unwrap());
+        }
+
+        let mut active_requests = vec![];
+
+        for client in clients {
+            for n in 0..max_active_requests {
+                assert_that!(client.send_copy(n as u64 * 5 + 7), is_ok);
+                let active_request = sut.receive().unwrap().unwrap();
+                assert_that!(*active_request, eq n as u64 * 5 + 7);
+                active_requests.push(active_request);
+            }
+
+            assert_that!(client.send_copy(99), is_ok);
+            let active_request = sut.receive();
+            assert_that!(active_request.err(), eq Some(ReceiveError::ExceedsMaxBorrows));
+        }
+    }
+
+    #[test]
+    fn server_can_hold_specified_amount_of_active_requests_one_client_one_request<Sut: Service>() {
+        const MAX_CLIENTS: usize = 1;
+        const MAX_ACTIVE_REQUESTS: usize = 1;
+        server_can_hold_specified_amount_of_active_requests::<Sut>(
+            MAX_ACTIVE_REQUESTS,
+            MAX_CLIENTS,
+        );
+    }
+
+    #[test]
+    fn server_can_hold_specified_amount_of_active_requests_one_client_many_requests<
+        Sut: Service,
+    >() {
+        const MAX_CLIENTS: usize = 1;
+        const MAX_ACTIVE_REQUESTS: usize = 9;
+        server_can_hold_specified_amount_of_active_requests::<Sut>(
+            MAX_ACTIVE_REQUESTS,
+            MAX_CLIENTS,
+        );
+    }
+
+    #[test]
+    fn server_can_hold_specified_amount_of_active_requests_many_clients_one_request<
+        Sut: Service,
+    >() {
+        const MAX_CLIENTS: usize = 7;
+        const MAX_ACTIVE_REQUESTS: usize = 1;
+        server_can_hold_specified_amount_of_active_requests::<Sut>(
+            MAX_ACTIVE_REQUESTS,
+            MAX_CLIENTS,
+        );
+    }
+
+    #[test]
+    fn server_can_hold_specified_amount_of_active_requests_many_clients_many_requests<
+        Sut: Service,
+    >() {
+        const MAX_CLIENTS: usize = 8;
+        const MAX_ACTIVE_REQUESTS: usize = 9;
+        server_can_hold_specified_amount_of_active_requests::<Sut>(
+            MAX_ACTIVE_REQUESTS,
+            MAX_CLIENTS,
+        );
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

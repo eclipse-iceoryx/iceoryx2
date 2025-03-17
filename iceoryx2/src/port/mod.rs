@@ -137,7 +137,7 @@ pub enum ReceiveError {
     /// The maximum amount of data a user can borrow with is
     /// defined in [`crate::config::Config`]. When this is exceeded no more data can be received
     /// until the user has released older data.
-    ExceedsMaxBorrowedSamples,
+    ExceedsMaxBorrows,
 
     /// Occurs when a receiver is unable to connect to a corresponding sender.
     ConnectionFailure(ConnectionFailure),
