@@ -195,26 +195,33 @@ template <typename Payload, typename UserHeader, ServiceType S>
 template <typename PayloadType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
     -> FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
-    if constexpr (std::is_same<typename PayloadType::ValueType, uint8_t>::value) {
+    if (std::is_same_v<typename PayloadType::ValueType, uint8_t>) {
         return "u8";
-    } else if constexpr (std::is_same<typename PayloadType::ValueType, uint16_t>::value) {
+    }
+    if (std::is_same_v<typename PayloadType::ValueType, uint16_t>) {
         return "u16";
-    } else if constexpr (std::is_same<typename PayloadType::ValueType, uint32_t>::value) {
+    }
+    if (std::is_same_v<typename PayloadType::ValueType, uint32_t>) {
         return "u32";
-    } else if constexpr (std::is_same<typename PayloadType::ValueType, uint64_t>::value) {
+    }
+    if (std::is_same_v<typename PayloadType::ValueType, uint64_t>) {
         return "u64";
-    } else if constexpr (std::is_same<typename PayloadType::ValueType, int8_t>::value) {
+    }
+    if (std::is_same_v<typename PayloadType::ValueType, int8_t>) {
         return "i8";
-    } else if constexpr (std::is_same<typename PayloadType::ValueType, int16_t>::value) {
+    }
+    if (std::is_same_v<typename PayloadType::ValueType, int16_t>) {
         return "i16";
-    } else if constexpr (std::is_same<typename PayloadType::ValueType, int32_t>::value) {
+    }
+    if (std::is_same_v<typename PayloadType::ValueType, int32_t>) {
         return "i32";
-    } else if constexpr (std::is_same<typename PayloadType::ValueType, int64_t>::value) {
+    }
+    if (std::is_same_v<typename PayloadType::ValueType, int64_t>) {
         return "i64";
-    } else if constexpr (std::is_same<typename PayloadType::ValueType, bool>::value) {
+    }
+    if (std::is_same_v<typename PayloadType::ValueType, bool>) {
         return "bool";
     }
-    // TODO: char? different size and alignment
     return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
 }
 
@@ -229,7 +236,7 @@ template <typename Payload, typename UserHeader, ServiceType S>
 template <typename UserHeaderType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_user_header_type_name() ->
     typename std::enable_if_t<!HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    if constexpr (std::is_void<UserHeader>::value) {
+    if (std::is_void_v<UserHeader>) {
         return "()"; // no user header provided
     }
     return typeid(UserHeader).name();
