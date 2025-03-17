@@ -6,7 +6,10 @@
 
 ### Features
 
-Create a new CLI for iceoryx2 `iox2-config`
+<!--
+    NOTE: Add new entries sorted by issue number to minimize the possibility of
+    conflicts when merging.
+-->
 
 * Read LogLevel from environment variable
     [#396](https://github.com/eclipse-iceoryx/iceoryx2/issues/396)
@@ -59,9 +62,14 @@ Create a new CLI for iceoryx2 `iox2-config`
 
 ### Refactoring
 
+<!--
+    NOTE: Add new entries sorted by issue number to minimize the possibility of
+    conflicts when merging.
+-->
+
 * Remove the `print_system_configuration()` function in
 `iceoryx2-bb/posix/src/system_configuration.rs` file and move it into the CLI `iox2-config`
-[#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
+    [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 * Remove obsolete POSIX wrapper
     [#594](https://github.com/eclipse-iceoryx/iceoryx2/issues/594)
@@ -75,15 +83,15 @@ Create a new CLI for iceoryx2 `iox2-config`
     conflicts when merging.
 -->
 
-* Add CLI to display complete system configuration
-    [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
-
 ### New API features
 
 <!--
     NOTE: Add new entries sorted by issue number to minimize the possibility of
     conflicts when merging.
 -->
+
+* Add CLI to display complete system configuration
+    [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
 
 * Add simplified attribute value accessors
     [#590](https://github.com/eclipse-iceoryx/iceoryx2/issues/590)
