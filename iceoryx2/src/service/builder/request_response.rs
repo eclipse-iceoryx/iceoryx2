@@ -35,7 +35,7 @@ use super::{ServiceState, RETRY_LIMIT};
 pub enum RequestResponseOpenError {
     /// Service could not be openen since it does not exist
     DoesNotExist,
-    /// The [`Service`] has a lower maximum amount of [`ActiveRequest`]s than requested.
+    /// The [`Service`] has a lower maximum amount of [`ActiveRequest`](crate::active_request::ActiveRequest)s than requested.
     DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
     /// The [`Service`] has a lower maximum response buffer size than requested.
     DoesNotSupportRequestedResponseBufferSize,
@@ -793,7 +793,7 @@ impl<
             }
             retry_count += 1;
 
-            if let Some(_) = self.is_service_available(msg)? {
+            if self.is_service_available(msg)?.is_some() {
                 match self.open_impl(attributes) {
                     Ok(factory) => return Ok(factory),
                     Err(RequestResponseOpenError::DoesNotExist) => continue,

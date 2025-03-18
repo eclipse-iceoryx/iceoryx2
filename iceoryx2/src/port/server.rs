@@ -32,11 +32,11 @@
 //! # }
 //! ```
 
+extern crate alloc;
+
+use alloc::sync::Arc;
+use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
-use std::{
-    cell::UnsafeCell,
-    sync::{atomic::Ordering, Arc},
-};
 
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
@@ -271,6 +271,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn receive(
         &self,
     ) -> Result<

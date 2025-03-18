@@ -70,7 +70,7 @@ use crate::{
 use iceoryx2_cal::shared_memory::*;
 
 use core::fmt::{Debug, Formatter};
-use std::ops::{Deref, DerefMut};
+use core::ops::{Deref, DerefMut};
 
 extern crate alloc;
 use alloc::sync::Arc;

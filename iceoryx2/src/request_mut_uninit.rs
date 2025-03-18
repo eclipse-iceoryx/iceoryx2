@@ -64,7 +64,7 @@ impl<
     > Debug
     for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "RequestMutUninit<{}, {}, {}, {}, {}> {{ }}",
@@ -167,6 +167,12 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
+    /// # Safety
+    ///
+    /// The caller must ensure that [`core::mem::MaybeUninit<Payload>`] really is initialized.
+    /// Calling this when
+    /// the content is not fully initialized causes immediate undefined behavior.
+    ///
     pub unsafe fn assume_init(
         self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {

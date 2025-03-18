@@ -43,8 +43,8 @@
 //! # }
 //! ```
 
+use core::sync::atomic::Ordering;
 use core::{fmt::Debug, marker::PhantomData};
-use std::sync::atomic::Ordering;
 
 use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
 
@@ -96,7 +96,7 @@ impl<
     > Debug
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "ActiveRequest<{}, {}, {}, {}, {}> {{ }}",

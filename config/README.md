@@ -127,8 +127,9 @@ Adjusting `global` settings ensures a non-interfering setup.
   overflows.
 * `defaults.request-response.max-active-requests-per-client` - [int]:
   The maximum af active requests a server can hold per client
-* `defaults.request-response.max-borrowed-responses-per-pending-response` - [int]:
-  The maximum of number of borrowed response a client can hold in parallel per pending response.
+* `defaults.request-response.max-borrowed-responses-per-pending-response` -
+  [int]: The maximum of number of borrowed response a client can hold in
+  parallel per pending response.
 * `defaults.request-response.max-response-buffer-size` - [int]:
   The maximum buffer size for responses for an active request.
 * `defaults.request-response.max-request-buffer-size` - [int]:

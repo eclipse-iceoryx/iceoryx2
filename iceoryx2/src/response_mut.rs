@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
+use core::{
     fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},

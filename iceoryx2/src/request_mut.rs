@@ -35,10 +35,13 @@
 //! # }
 //! ```
 
+extern crate alloc;
+
+use alloc::sync::Arc;
 use core::{fmt::Debug, marker::PhantomData};
-use std::{
+use core::{
     ops::{Deref, DerefMut},
-    sync::{atomic::Ordering, Arc},
+    sync::atomic::Ordering,
 };
 
 use iceoryx2_cal::shm_allocator::PointerOffset;
@@ -105,7 +108,7 @@ impl<
     > Debug
     for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "RequestMut<{}, {}, {}, {}, {}> {{ }}",

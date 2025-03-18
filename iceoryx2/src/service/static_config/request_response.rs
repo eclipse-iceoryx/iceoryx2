@@ -23,12 +23,8 @@
 //!
 //! println!("request type details:      {:?}", req_res.static_config().request_message_type_details());
 //! println!("response type details:     {:?}", req_res.static_config().response_message_type_details());
-//! println!("max active requests:       {:?}", req_res.static_config().max_active_requests());
-//! println!("max active responses:      {:?}", req_res.static_config().max_active_responses());
-//! println!("max borrowed responses:    {:?}", req_res.static_config().max_borrowed_responses());
-//! println!("max borrowed requests:     {:?}", req_res.static_config().max_borrowed_requests());
+//! println!("max active requests:       {:?}", req_res.static_config().max_active_requests_per_client());
 //! println!("max response buffer size:  {:?}", req_res.static_config().max_response_buffer_size());
-//! println!("max request buffer size:   {:?}", req_res.static_config().max_request_buffer_size());
 //! println!("max servers:               {:?}", req_res.static_config().max_clients());
 //! println!("max clients:               {:?}", req_res.static_config().max_servers());
 //! println!("max nodes:                 {:?}", req_res.static_config().max_nodes());

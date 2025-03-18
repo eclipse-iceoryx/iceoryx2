@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::ops::Deref;
 use core::{fmt::Debug, marker::PhantomData};
-use std::ops::Deref;
 
 use crate::service;
 
@@ -26,7 +26,7 @@ pub struct Response<Service: crate::service::Service, ResponsePayload: Debug, Re
 impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Debug
     for Response<Service, ResponsePayload, ResponseHeader>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "Response<{}, {}, {}> {{ }}",

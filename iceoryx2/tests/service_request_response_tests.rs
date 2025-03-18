@@ -10,10 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// TODO:
-//  service
-//    -fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock
-
 #[generic_tests::define]
 mod service_request_response {
     use iceoryx2::node::NodeBuilder;
