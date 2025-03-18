@@ -36,6 +36,26 @@ mod server {
     }
 
     #[test]
+    fn disconnected_server_does_not_block_new_servers<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_servers(1)
+            .create()
+            .unwrap();
+
+        let sut = service.server_builder().create();
+        assert_that!(sut, is_ok);
+
+        drop(sut);
+
+        let sut = service.server_builder().create();
+        assert_that!(sut, is_ok);
+    }
+
+    #[test]
     fn receiving_requests_works_with_server_created_first<Sut: Service>() {
         let (_node, service) = create_node_and_service::<Sut>();
         let sut = service.server_builder().create().unwrap();

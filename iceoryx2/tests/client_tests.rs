@@ -47,18 +47,23 @@ mod client {
     }
 
     #[test]
-    fn loan_and_send_request_works<Sut: Service>() {
-        const PAYLOAD: u64 = 2873421;
-        let (_node, service) = create_node_and_service::<Sut>();
+    fn disconnected_client_does_not_block_new_clients<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(1)
+            .create()
+            .unwrap();
 
-        let sut = service.client_builder().create().unwrap();
-        let mut request = sut.loan().unwrap();
-        *request = PAYLOAD;
+        let sut = service.client_builder().create();
+        assert_that!(sut, is_ok);
 
-        let pending_response = request.send();
-        assert_that!(pending_response, is_ok);
-        let pending_response = pending_response.unwrap();
-        assert_that!(*pending_response.payload(), eq PAYLOAD);
+        drop(sut);
+
+        let sut = service.client_builder().create();
+        assert_that!(sut, is_ok);
     }
 
     #[test]

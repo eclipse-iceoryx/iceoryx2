@@ -10,16 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// TODO:
-//  service
-//    -fn concurrent_communication_with_subscriber_reconnects_does_not_deadlock
-//    - service can be open when there is a server/client
-//    - dropping service keeps established comm
-//    - comm with max clients/server
-//     - disconnected server does not block new server
-//     - receive requests client created first
-//       - server created first
-
 #[generic_tests::define]
 mod service_request_response {
     use iceoryx2::node::NodeBuilder;
