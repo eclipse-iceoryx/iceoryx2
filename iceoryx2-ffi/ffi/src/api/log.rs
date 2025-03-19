@@ -16,7 +16,8 @@
 // BEGIN type definition
 
 use iceoryx2_bb_log::{
-    get_log_level, set_log_level, set_logger, Log, LogLevel, __internal_print_log_msg,
+    get_log_level, set_log_level, set_log_level_from_env_or, set_log_level_from_env_or_default,
+    set_logger, Log, LogLevel, __internal_print_log_msg,
     logger::{use_console_logger, use_file_logger},
 };
 
@@ -165,6 +166,18 @@ pub unsafe extern "C" fn iox2_use_file_logger(log_file: *const c_char) -> bool {
 
     let log_file = CStr::from_ptr(log_file).to_string_lossy();
     use_file_logger(&log_file)
+}
+
+/// Sets the log level from environment variable or defaults it if variable does not exist
+#[no_mangle]
+pub unsafe extern "C" fn iox2_set_log_level_from_env_or_default() {
+    set_log_level_from_env_or_default();
+}
+
+/// Sets the log level from environment variable or to a user given value if variable does not exist
+#[no_mangle]
+pub unsafe extern "C" fn iox2_set_log_level_from_env_or(v: iox2_log_level_e) {
+    set_log_level_from_env_or(v.into());
 }
 
 /// Sets the log level.
