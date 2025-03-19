@@ -23,13 +23,13 @@ use iceoryx2_pal_posix::*;
 /// The global config path of the system, where all config files shall be stored.
 pub fn get_global_config_path() -> Path {
     fatal_panic!(from "get_global_config_path",
-        when Path::new(posix::GLOBAL_CONFIG_PATH.as_bytes()),
+        when Path::new(iceoryx2_pal_configuration::GLOBAL_CONFIG_PATH),
         "This should never happen! The underlying platform GLOBAL_CONFIG_PATH variable contains a path with invalid characters.")
 }
 
 pub fn get_user_config_path() -> Path {
     fatal_panic!(from "get_user_config_path",
-        when Path::new(posix::USER_CONFIG_PATH.as_bytes()),
+        when Path::new(iceoryx2_pal_configuration::USER_CONFIG_PATH),
         "This should never happen! The underlying platform USER_CONFIG_PATH variable contains a path with invalid characters.")
 }
 
