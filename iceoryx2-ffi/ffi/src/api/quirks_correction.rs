@@ -154,7 +154,7 @@ pub unsafe extern "C" fn __iox2_internal_loan_error_stub() -> iox2_loan_error_e 
 #[no_mangle]
 // TODO: enums are only exported when they are actually used by some function
 pub unsafe extern "C" fn __iox2_internal_receive_error_stub() -> iox2_receive_error_e {
-    iox2_receive_error_e::EXCEEDS_MAX_BORROWED_SAMPLES
+    iox2_receive_error_e::EXCEEDS_MAX_BORROWS
 }
 
 #[doc(hidden)]

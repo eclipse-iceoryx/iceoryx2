@@ -13,6 +13,6 @@
 pub(crate) mod chunk;
 pub(crate) mod chunk_details;
 pub(crate) mod data_segment;
-pub(crate) mod incoming_connections;
-pub(crate) mod outgoing_connections;
+pub(crate) mod receiver;
 pub(crate) mod segment_state;
+pub(crate) mod sender;

@@ -298,12 +298,38 @@ pub mod port;
 
 pub(crate) mod raw_sample;
 
+/// Represents a "connection" to a [`Client`](crate::port::client::Client) that corresponds to a
+/// previously received [`RequestMut`](crate::request_mut::RequestMut).
+pub mod active_request;
+
+/// Represents a "connection" to a [`Server`](crate::port::server::Server) that corresponds to a
+/// previously sent [`RequestMut`](crate::request_mut::RequestMut).
+pub mod pending_response;
+
+/// The payload that is sent by a [`Client`](crate::port::client::Client) to a
+/// [`Server`](crate::port::server::Server).
+pub mod request_mut;
+
+/// The uninitialized payload that is sent by a [`Client`](crate::port::client::Client) to a
+/// [`Server`](crate::port::server::Server).
+pub mod request_mut_uninit;
+
+/// The answer a [`Client`](crate::port::client::Client) receives from a
+/// [`Server`](crate::port::server::Server) on a [`RequestMut`](crate::request_mut::RequestMut).
+pub mod response;
+
+/// The answer a [`Server`](crate::port::server::Server) allocates to respond to
+/// a received [`RequestMut`](crate::request_mut::RequestMut) from a
+/// [`Client`](crate::port::client::Client)
+pub mod response_mut;
+
 /// The payload that is received by a [`Subscriber`](crate::port::subscriber::Subscriber).
 pub mod sample;
 
 /// The payload that is sent by a [`Publisher`](crate::port::publisher::Publisher).
 pub mod sample_mut;
 
+/// The uninitialized payload that is sent by a [`Publisher`](crate::port::publisher::Publisher).
 pub mod sample_mut_uninit;
 
 /// The foundation of communication the service with its

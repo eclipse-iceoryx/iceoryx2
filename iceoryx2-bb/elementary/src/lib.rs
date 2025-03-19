@@ -29,6 +29,7 @@ pub mod alignment;
 pub mod allocator;
 /// A strong type that represents the alignment part of [`core::alloc::Layout`]
 pub mod bump_allocator;
+pub mod cyclic_tagger;
 pub mod generic_pointer;
 pub mod lazy_singleton;
 pub mod math;
@@ -41,7 +42,6 @@ pub mod relocatable_ptr;
 pub mod scope_guard;
 pub mod static_assert;
 pub mod unique_id;
-pub mod visitor;
 
 /// Defines how a callback based iteration shall progress after the calling the callback. Either
 /// stop the iteration with [`CallbackProgression::Stop`] or continue with

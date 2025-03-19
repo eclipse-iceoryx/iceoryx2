@@ -10,10 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
 
-fn main() -> Result<(), Box<dyn core::error::Error>> {
+const CYCLE_TIME: Duration = Duration::from_millis(10);
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
@@ -21,7 +24,14 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .request_response::<u64, TransmissionData>()
         .open_or_create()?;
 
-    drop(service);
+    let server = service.server_builder().create()?;
+
+    while node.wait(CYCLE_TIME).is_ok() {
+        while let Some(active_request) = server.receive()? {
+            println!("received request: {:?}", *active_request);
+        }
+    }
+
     println!("exit");
 
     Ok(())

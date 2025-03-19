@@ -23,12 +23,8 @@
 //!
 //! println!("request type details:      {:?}", req_res.static_config().request_message_type_details());
 //! println!("response type details:     {:?}", req_res.static_config().response_message_type_details());
-//! println!("max active requests:       {:?}", req_res.static_config().max_active_requests());
-//! println!("max active responses:      {:?}", req_res.static_config().max_active_responses());
-//! println!("max borrowed responses:    {:?}", req_res.static_config().max_borrowed_responses());
-//! println!("max borrowed requests:     {:?}", req_res.static_config().max_borrowed_requests());
+//! println!("max active requests:       {:?}", req_res.static_config().max_active_requests_per_client());
 //! println!("max response buffer size:  {:?}", req_res.static_config().max_response_buffer_size());
-//! println!("max request buffer size:   {:?}", req_res.static_config().max_request_buffer_size());
 //! println!("max servers:               {:?}", req_res.static_config().max_clients());
 //! println!("max clients:               {:?}", req_res.static_config().max_servers());
 //! println!("max nodes:                 {:?}", req_res.static_config().max_nodes());
@@ -53,15 +49,12 @@ use super::message_type_details::MessageTypeDetails;
 pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_requests: bool,
     pub(crate) enable_safe_overflow_for_responses: bool,
-    pub(crate) max_active_responses: usize,
-    pub(crate) max_active_requests: usize,
-    pub(crate) max_borrowed_responses: usize,
-    pub(crate) max_borrowed_requests: usize,
+    pub(crate) max_active_requests_per_client: usize,
     pub(crate) max_response_buffer_size: usize,
-    pub(crate) max_request_buffer_size: usize,
     pub(crate) max_servers: usize,
     pub(crate) max_clients: usize,
     pub(crate) max_nodes: usize,
+    pub(crate) max_borrowed_responses_per_pending_response: usize,
     pub(crate) request_message_type_details: MessageTypeDetails,
     pub(crate) response_message_type_details: MessageTypeDetails,
 }
@@ -77,15 +70,18 @@ impl StaticConfig {
                 .defaults
                 .request_response
                 .enable_safe_overflow_for_responses,
-            max_active_responses: config.defaults.request_response.max_active_responses,
-            max_active_requests: config.defaults.request_response.max_active_requests,
-            max_borrowed_responses: config.defaults.request_response.max_borrowed_responses,
-            max_borrowed_requests: config.defaults.request_response.max_borrowed_requests,
+            max_active_requests_per_client: config
+                .defaults
+                .request_response
+                .max_active_requests_per_client,
             max_response_buffer_size: config.defaults.request_response.max_response_buffer_size,
-            max_request_buffer_size: config.defaults.request_response.max_request_buffer_size,
             max_servers: config.defaults.request_response.max_servers,
             max_clients: config.defaults.request_response.max_clients,
             max_nodes: config.defaults.request_response.max_nodes,
+            max_borrowed_responses_per_pending_response: config
+                .defaults
+                .request_response
+                .max_borrowed_responses_per_pending_response,
             request_message_type_details: MessageTypeDetails::default(),
             response_message_type_details: MessageTypeDetails::default(),
         }
@@ -95,8 +91,12 @@ impl StaticConfig {
         &self,
         client_max_loaned_data: usize,
     ) -> usize {
-        self.max_servers * (self.max_request_buffer_size + self.max_active_requests)
+        // all chunks a server can hold
+        self.max_servers * ( 2 * self.max_active_requests_per_client)
+        // all chunks a client can hold
             + client_max_loaned_data
+            // every active request has a pending response on the client side that can contain another request
+            + self.max_active_requests_per_client
     }
 
     /// Returns the request type details of the [`crate::service::Service`].
@@ -125,37 +125,22 @@ impl StaticConfig {
         self.enable_safe_overflow_for_responses
     }
 
-    /// Returns the maximum of active responses a [`crate::port::server::Server`] can hold in
-    /// parallel.
-    pub fn max_active_responses(&self) -> usize {
-        self.max_active_responses
+    /// Returns the maximum of number of borrowed [`Response`](crate::response::Response)s a
+    /// [`Client`](`crate::port::client::Client`) can hold in
+    /// parallel per [`PendingResponse`](crate::pending_response::PendingResponse)
+    pub fn max_borrowed_responses_per_pending_responses(&self) -> usize {
+        self.max_borrowed_responses_per_pending_response
     }
 
-    /// Returns the maximum of active requests a [`crate::port::client::Client`] can hold in
-    /// parallel.
-    pub fn max_active_requests(&self) -> usize {
-        self.max_active_requests
-    }
-
-    /// Returns the maximum number of responses a [`crate::port::client::Client`] can borrow from
-    /// an active request.
-    pub fn max_borrowed_responses(&self) -> usize {
-        self.max_borrowed_responses
-    }
-
-    /// Returns the maximum number of requests a [`crate::port::server::Server`] can borrow.
-    pub fn max_borrowed_requests(&self) -> usize {
-        self.max_borrowed_requests
+    /// Returns the maximum of active requests a [`crate::port::server::Server`] can hold in
+    /// parallel per [`crate::port::client::Client`].
+    pub fn max_active_requests_per_client(&self) -> usize {
+        self.max_active_requests_per_client
     }
 
     /// Returns the maximum buffer size for responses for an active request.
     pub fn max_response_buffer_size(&self) -> usize {
         self.max_response_buffer_size
-    }
-
-    /// Returns the maximum buffer size for requests for a [`crate::port::server::Server`].
-    pub fn max_request_buffer_size(&self) -> usize {
-        self.max_request_buffer_size
     }
 
     /// Returns the maximum number of supported [`crate::port::server::Server`] ports for the

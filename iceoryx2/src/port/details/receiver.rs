@@ -24,7 +24,7 @@ use crate::service::ServiceState;
 use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
 use alloc::sync::Arc;
 use iceoryx2_bb_container::queue::Queue;
-use iceoryx2_bb_elementary::visitor::{Visitable, Visitor, VisitorMarker};
+use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
@@ -42,23 +42,23 @@ pub(crate) struct Connection<Service: service::Service> {
     pub(crate) receiver: <Service::Connection as ZeroCopyConnection>::Receiver,
     pub(crate) data_segment: DataSegmentView<Service>,
     pub(crate) sender_port_id: u128,
-    visitor_marker: VisitorMarker,
+    tag: Tag,
 }
 
-impl<Service: service::Service> Visitable for Connection<Service> {
-    fn visitor_marker(&self) -> &VisitorMarker {
-        &self.visitor_marker
+impl<Service: service::Service> Taggable for Connection<Service> {
+    fn tag(&self) -> &Tag {
+        &self.tag
     }
 }
 
 impl<Service: service::Service> Connection<Service> {
     fn new(
-        this: &IncomingConnections<Service>,
+        this: &Receiver<Service>,
         data_segment_type: DataSegmentType,
         sender_port_id: u128,
         number_of_samples: usize,
         max_number_of_segments: u8,
-        visitor: &Visitor,
+        cyclic_tagger: &CyclicTagger,
     ) -> Result<Self, ConnectionFailure> {
         let msg = format!(
             "Unable to establish connection to sender port {:?} from receiver port {:?}.",
@@ -97,18 +97,18 @@ impl<Service: service::Service> Connection<Service> {
             receiver,
             data_segment,
             sender_port_id,
-            visitor_marker: visitor.create_visited_marker(),
+            tag: cyclic_tagger.create_tag(),
         })
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct IncomingConnections<Service: service::Service> {
+pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) connections: Vec<UnsafeCell<Option<Arc<Connection<Service>>>>>,
     pub(crate) receiver_port_id: u128,
     pub(crate) service_state: Arc<ServiceState<Service>>,
     pub(crate) buffer_size: usize,
-    pub(crate) visitor: Visitor,
+    pub(crate) tagger: CyclicTagger,
     pub(crate) to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
     pub(crate) degration_callback: Option<DegrationCallback<'static>>,
     pub(crate) message_type_details: MessageTypeDetails,
@@ -116,7 +116,7 @@ pub(crate) struct IncomingConnections<Service: service::Service> {
     pub(crate) enable_safe_overflow: bool,
 }
 
-impl<Service: service::Service> IncomingConnections<Service> {
+impl<Service: service::Service> Receiver<Service> {
     pub(crate) fn receiver_port_id(&self) -> u128 {
         self.receiver_port_id
     }
@@ -145,7 +145,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
             sender_details.port_id,
             sender_details.number_of_samples,
             sender_details.max_number_of_segments,
-            &self.visitor,
+            &self.tagger,
         )?));
 
         Ok(())
@@ -217,7 +217,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
                 }
             },
             Err(ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue) => {
-                fail!(from self, with ReceiveError::ExceedsMaxBorrowedSamples,
+                fail!(from self, with ReceiveError::ExceedsMaxBorrows,
                     "{} since it would exceed the maximum {} of borrowed samples.",
                     msg, connection.receiver.max_borrowed_samples());
             }
@@ -249,7 +249,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
     }
 
     pub(crate) fn start_update_connection_cycle(&self) {
-        self.visitor.next_cycle();
+        self.tagger.next_cycle();
     }
 
     pub(crate) fn update_connection(
@@ -257,18 +257,18 @@ impl<Service: service::Service> IncomingConnections<Service> {
         index: usize,
         sender_details: SenderDetails,
     ) -> Result<(), ConnectionFailure> {
-        let create_connection = match self.get(index) {
+        let is_connected = match self.get(index) {
             None => true,
             Some(connection) => {
                 let is_connected = connection.sender_port_id == sender_details.port_id;
                 if is_connected {
-                    self.visitor.visit(connection.as_ref());
+                    self.tagger.tag(connection.as_ref());
                 }
                 !is_connected
             }
         };
 
-        if create_connection {
+        if is_connected {
             self.prepare_connection_removal(index);
 
             match self.create(index, &sender_details) {
@@ -308,7 +308,7 @@ impl<Service: service::Service> IncomingConnections<Service> {
     pub(crate) fn finish_update_connection_cycle(&self) {
         for n in 0..self.len() {
             if let Some(connection) = self.get(n) {
-                if !connection.was_visited_by(&self.visitor) {
+                if !connection.was_tagged_by(&self.tagger) {
                     self.remove_connection(n);
                 }
             }

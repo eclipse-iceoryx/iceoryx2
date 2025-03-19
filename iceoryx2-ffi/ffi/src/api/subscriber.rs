@@ -35,7 +35,7 @@ use core::mem::ManuallyDrop;
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_receive_error_e {
-    EXCEEDS_MAX_BORROWED_SAMPLES = IOX2_OK as isize + 1,
+    EXCEEDS_MAX_BORROWS = IOX2_OK as isize + 1,
     FAILED_TO_ESTABLISH_CONNECTION,
     UNABLE_TO_MAP_SENDERS_DATA_SEGMENT,
 }
@@ -43,9 +43,7 @@ pub enum iox2_receive_error_e {
 impl IntoCInt for ReceiveError {
     fn into_c_int(self) -> c_int {
         (match self {
-            ReceiveError::ExceedsMaxBorrowedSamples => {
-                iox2_receive_error_e::EXCEEDS_MAX_BORROWED_SAMPLES
-            }
+            ReceiveError::ExceedsMaxBorrows => iox2_receive_error_e::EXCEEDS_MAX_BORROWS,
             ReceiveError::ConnectionFailure(ConnectionFailure::FailedToEstablishConnection(_)) => {
                 iox2_receive_error_e::FAILED_TO_ESTABLISH_CONNECTION
             }

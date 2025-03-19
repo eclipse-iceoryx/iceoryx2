@@ -17,7 +17,7 @@ use iceoryx2_cal::shm_allocator::PointerOffset;
 
 #[derive(Debug)]
 pub(crate) struct ChunkDetails<Service: crate::service::Service> {
-    pub(crate) connection: Arc<super::incoming_connections::Connection<Service>>,
+    pub(crate) connection: Arc<super::receiver::Connection<Service>>,
     pub(crate) offset: PointerOffset,
     pub(crate) origin: u128,
 }
