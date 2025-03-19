@@ -14,6 +14,8 @@
 
 #[cfg(not(target_os = "windows"))]
 pub mod settings {
+    pub const GLOBAL_CONFIG_PATH: &[u8] = b"/etc";
+    pub const USER_CONFIG_PATH: &[u8] = b".config";
     pub const TEMP_DIRECTORY: &[u8] = b"/tmp/";
     pub const TEST_DIRECTORY: &[u8] = b"/tmp/iceoryx2/tests/";
     pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"/dev/shm/";
@@ -31,6 +33,8 @@ pub mod settings {
 
 #[cfg(target_os = "windows")]
 pub mod settings {
+    pub const GLOBAL_CONFIG_PATH: &[u8] = b"C:\\ProgramData";
+    pub const USER_CONFIG_PATH: &[u8] = b".config";
     pub const TEMP_DIRECTORY: &[u8] = b"C:\\Temp\\";
     pub const TEST_DIRECTORY: &[u8] = b"C:\\Temp\\iceoryx2\\tests\\";
     pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"C:\\Temp\\iceoryx2\\shm\\";
