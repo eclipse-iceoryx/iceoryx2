@@ -113,6 +113,16 @@ path = "rust/publish_subscribe_with_user_header/publisher.rs"
 name = "publish_subscribe_user_header_subscriber"
 path = "rust/publish_subscribe_with_user_header/subscriber.rs"
 
+# TODO
+
+[[example]]
+name = "publish_subscribe_cxx2rust_publisher"
+path = "rust/publish_subscribe_cxx2rust/publisher.rs"
+
+[[example]]
+name = "publish_subscribe_cxx2rust_subscriber"
+path = "rust/publish_subscribe_cxx2rust/subscriber.rs"
+
 # request_response
 
 [[example]]

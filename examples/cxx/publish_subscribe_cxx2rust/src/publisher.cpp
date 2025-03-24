@@ -15,7 +15,7 @@
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
-#include "transmission_data.hpp"
+#include "message_data.hpp"
 
 #include <iostream>
 #include <utility>
@@ -28,6 +28,7 @@ auto main() -> int {
 
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
                        .publish_subscribe<TransmissionData>()
+                       .user_header<CustomHeader>()
                        .open_or_create()
                        .expect("successful service creation/opening");
 
@@ -38,6 +39,8 @@ auto main() -> int {
         counter += 1;
 
         auto sample = publisher.loan_uninit().expect("acquire sample");
+        sample.user_header_mut().version = 123;               // NOLINT
+        sample.user_header_mut().timestamp = 80337 + counter; // NOLINT
 
         sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
         auto initialized_sample = assume_init(std::move(sample));

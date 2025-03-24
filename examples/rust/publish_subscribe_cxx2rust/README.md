@@ -1,7 +1,4 @@
-# Publish-Subscribe Between C++ and Rust applications
-
-Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C++ Examples Readme](../README.md).
+# Publish-Subscribe
 
 ## Running The Example
 
@@ -10,13 +7,12 @@ instructions in the [C++ Examples Readme](../README.md).
 > memory. Specifically, it must:
 >
 > * be self contained, no heap, no pointers to external sources
-> * have a uniform memory representation, ensuring that shared structs have the
->     same data layout
+> * have a uniform memory representation -> `#[repr(C)]`
 > * not use pointers to manage their internal structure
 >
-> Data types like `std::string` or `std::vector` will cause undefined behavior
-> and may result in segmentation faults. We provide alternative data types
-> that are compatible with shared memory. See the
+> Data types like `String` or `Vec` will cause undefined behavior and may
+> result in segmentation faults. We provide alternative data types that are
+> compatible with shared memory. See the
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
 
@@ -39,8 +35,7 @@ execute the following commands:
 
 ### Terminal 1
 
-Run the Rust subscriber application from the
-[publish_subscribe cxx2rust_example](../../rust/publish_subscribe_cxx2rust):
+Run the Rust subscriber application:
 
 ```sh
 cargo run --example publish_subscribe_cxx2rust_subscriber
@@ -48,7 +43,8 @@ cargo run --example publish_subscribe_cxx2rust_subscriber
 
 ### Terminal 2
 
-Run the C++ publisher application:
+Run the C++ publisher application from the
+[publish_subscribe cxx2rust_example](../../cxx/publish_subscribe_cxx2rust):
 
 ```sh
 ./target/ffi/build/examples/cxx/publish_subscribe_cxx2rust/example_cxx_publish_subscribe_cxx2rust_publisher
@@ -60,7 +56,8 @@ publisher-subscriber communication efficiently.
 
 ### Terminal 3
 
-Run the C++ subscriber application:
+Run the C++ subscriber application from the
+[publish_subcribe_cxx2rust_example](../../cxx/publish_subscribe_cxx2rust):
 
 ```sh
 ./target/ffi/build/examples/cxx/publish_subscribe_cxx2rust/example_cxx_publish_subscribe_cxx2rust_subscriber
@@ -68,8 +65,7 @@ Run the C++ subscriber application:
 
 ### Terminal 4
 
-Run the Rust publisher application from the
-[publish_subscribe cxx2rust_example](../../rust/publish_subscribe_cxx2rust):
+Run the Rust publisher application:
 
 ```sh
 cargo run --example publish_subscribe_cxx2rust_publisher

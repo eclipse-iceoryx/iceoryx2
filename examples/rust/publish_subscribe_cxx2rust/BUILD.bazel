@@ -10,28 +10,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary")
 
-cc_binary(
-    name = "example_cxx_publish_subscribe_cxx2rust_publisher",
+rust_binary(
+    name = "publisher",
     srcs = [
-        "src/publisher.cpp",
-        "src/message_data.hpp",
+        "publisher.rs",
     ],
     deps = [
-        "@iceoryx//:iceoryx_hoofs",
-        "//:iceoryx2-cxx-static",
+        "//iceoryx2:iceoryx2",
+        "//examples/rust:examples-common",
     ],
 )
 
-cc_binary(
-    name = "example_cxx_publish_subscribe_cxx2rust_subscriber",
+rust_binary(
+    name = "subscriber",
     srcs = [
-        "src/subscriber.cpp",
-        "src/message_data.hpp",
+        "subscriber.rs",
     ],
     deps = [
-        "@iceoryx//:iceoryx_hoofs",
-        "//:iceoryx2-cxx-static",
+        "//iceoryx2:iceoryx2",
+        "//examples/rust:examples-common",
     ],
 )

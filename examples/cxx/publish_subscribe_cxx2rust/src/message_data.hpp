@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_EXAMPLES_TRANSMISSION_DATA_HPP
-#define IOX2_EXAMPLES_TRANSMISSION_DATA_HPP
+#ifndef IOX2_EXAMPLES_MESSAGE_DATA_HPP
+#define IOX2_EXAMPLES_MESSAGE_DATA_HPP
 
 // TODOs:
 // - cmake executable names
 // - example name
 // - copyright years
-// - custom user header in same example? adapt rust user header example to use transmission data
+// - rust bazel, TODO
 #include <cstdint>
 #include <iostream>
 
@@ -32,6 +32,19 @@ struct TransmissionData {
 
 inline auto operator<<(std::ostream& stream, const TransmissionData& value) -> std::ostream& {
     stream << "TransmissionData { x: " << value.x << ", y: " << value.y << ", funky: " << value.funky << " }";
+    return stream;
+}
+
+struct CustomHeader {
+    // USER_HEADER_TYPE_NAME is equivalent to the user header type name used on the Rust side and was determined with
+    // `core::any::type_name::<CustomHeader>()`
+    static constexpr const char* USER_HEADER_TYPE_NAME = "examples_common::custom_header::CustomHeader";
+    int32_t version;
+    uint64_t timestamp;
+};
+
+inline auto operator<<(std::ostream& stream, const CustomHeader& value) -> std::ostream& {
+    stream << "CustomHeader { version: " << value.version << ", timestamp: " << value.timestamp << "}";
     return stream;
 }
 

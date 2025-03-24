@@ -16,7 +16,7 @@
 #include "iox2/node.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
-#include "transmission_data.hpp"
+#include "message_data.hpp"
 
 constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1);
 
@@ -26,6 +26,7 @@ auto main() -> int {
 
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
                        .publish_subscribe<TransmissionData>()
+                       .user_header<CustomHeader>()
                        .open_or_create()
                        .expect("successful service creation/opening");
 
@@ -34,7 +35,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().expect("receive succeeds");
         while (sample.has_value()) {
-            std::cout << "received: " << sample->payload() << std::endl;
+            std::cout << "received: " << sample->payload() << ", user_header: " << sample->user_header() << std::endl;
             sample = subscriber.receive().expect("receive succeeds");
         }
     }
