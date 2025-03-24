@@ -144,7 +144,7 @@ template <typename Payload, typename UserHeader, ServiceType S>
 template <typename PayloadType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
     -> internal::FromCustomizedPayloadTypeName<PayloadType> {
-    return PayloadType::PAYLOAD_TYPE_NAME;
+    return PayloadType::TYPE_NAME;
 }
 
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
@@ -193,7 +193,7 @@ template <typename Payload, typename UserHeader, ServiceType S>
 template <typename PayloadType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
     -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
-    return PayloadType::ValueType::PAYLOAD_TYPE_NAME;
+    return PayloadType::ValueType::TYPE_NAME;
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
@@ -207,7 +207,7 @@ template <typename Payload, typename UserHeader, ServiceType S>
 template <typename UserHeaderType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_user_header_type_name() ->
     typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    return UserHeaderType::USER_HEADER_TYPE_NAME;
+    return UserHeaderType::TYPE_NAME;
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>

@@ -1,4 +1,4 @@
-# Publish-Subscribe
+# Publish-Subscribe Between C++ and Rust applications
 
 ## Running The Example
 
@@ -75,44 +75,42 @@ cargo run --example publish_subscribe_cxx2rust_publisher
 
 To communicate with each other, publisher and subscriber applications must share
 the same service configuration, including the payload and the user header type
-name. Usually, the internally derived type name depends on the used programming
+name. Usually, the internally derived type names depend on the used programming
 language. To allow communication between C++ and Rust, iceoryx2 provides the
-possibility to customize the paylad and the user header type name by setting
-`PAYLOAD_TYPE_NAME` and `USER_HEADER_TYPE_NAME` respectively in the sent data
-struct/user header, e.g.
+possibility to customize the payload and the user header type name by setting
+`TYPE_NAME` in the sent data struct and user header, e.g.
 
 ```cxx
 struct TransmissionData {
-    static constexpr const char* PAYLOAD_TYPE_NAME = "examples_common::transmission_data::TransmissionData";
+    static constexpr const char* TYPE_NAME = "examples_common::transmission_data::TransmissionData";
     std::int32_t x;
     std::int32_t y;
     double funky;
 };
 
 struct CustomHeader {
-    static constexpr const char* USER_HEADER_TYPE_NAME = "examples_common::custom_header::CustomHeader";
+    static constexpr const char* TYPE_NAME = "examples_common::custom_header::CustomHeader";
     int32_t version;
     uint64_t timestamp;
 };
 ```
 
-*Note:* `PAYLOAD_TYPE_NAME` and `USER_HEADER_TYPE_NAME` are currently only taken
-into account on the C++ side.
+*Note:* `TYPE_NAME` is currently only taken into account on the C++ side.
 
-When `PAYLOAD_TYPE_NAME` is set to the same type name set in the Rust
-application, and the structure has the same memory layout, the C++ and the Rust
-application can communicate. The same applies to the user header.
+When `TYPE_NAME` is set to the same type name used in the Rust application, and
+the structure has the same memory layout, the C++ and the Rust applications can
+communicate.
 
 *Hint:* You can determine the type names on the Rust side with
 `core::any::type_name()`.
 
-For {u}int{8|16|32|64}_t, float, double and bool, you don't need to provide the
-`PAYLOAD_TYPE_NAME` as these types are automatically translated into the Rust
-pendants.
+For {u}int{8|16|32|64}_t, float, double and bool, you don't need to provide
+`TYPE_NAME` for the payload as these types are automatically translated into the
+Rust pendants.
 
 You can also send dynamic data between C++ and Rust applications (see 
 [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
-you send `iox::Slice`s of {u}int{8|16|32|64}_t or bool, the payload type name
-is automatically translated to the Rust pendant. For other slice types, you
-have to set `PAYLOAD_TYPE_NAME` for the inner type to the Rust pendant to enable
-the communication.
+you send `iox::Slice`s of {u}int{8|16|32|64}_t, float, double or bool, the
+payload type name is automatically translated to the Rust pendant. For other
+slice types, you have to set `TYPE_NAME` for the inner type to the Rust pendant
+to enable the communication.

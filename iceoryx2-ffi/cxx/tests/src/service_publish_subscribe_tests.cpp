@@ -880,64 +880,64 @@ TYPED_TEST(ServicePublishSubscribeTest, open_fails_when_attributes_are_incompati
 constexpr uint8_t CAPACITY = 100;
 constexpr uint8_t ALIGNMENT = 16;
 struct Payload {
-    static constexpr const char* PAYLOAD_TYPE_NAME = "Payload";
+    static constexpr const char* TYPE_NAME = "Payload";
     int32_t x;
     double y;
 };
 
 struct DifferentPayloadWithSameTypeName {
-    static constexpr const char* PAYLOAD_TYPE_NAME = "Payload";
+    static constexpr const char* TYPE_NAME = "Payload";
     int32_t x;
     double y;
 };
 
 struct PayloadWithSameTypeNameButDifferentSize {
-    static constexpr const char* PAYLOAD_TYPE_NAME = "Payload";
+    static constexpr const char* TYPE_NAME = "Payload";
     int32_t x;
     double y;
     std::array<int32_t, CAPACITY> z;
 };
 
 struct alignas(ALIGNMENT) PayloadWithSameTypeNameButDifferentAlignment {
-    static constexpr const char* PAYLOAD_TYPE_NAME = "Payload";
+    static constexpr const char* TYPE_NAME = "Payload";
     int32_t x;
     double y;
 };
 
 struct CustomHeader {
-    static constexpr const char* USER_HEADER_TYPE_NAME = "CustomHeader";
+    static constexpr const char* TYPE_NAME = "CustomHeader";
     uint64_t a;
     uint8_t b;
 };
 
 struct DifferentCustomHeaderWithSameTypeName {
-    static constexpr const char* USER_HEADER_TYPE_NAME = "CustomHeader";
+    static constexpr const char* TYPE_NAME = "CustomHeader";
     uint64_t a;
     uint8_t b;
 };
 
 struct CustomHeaderWithSameTypeNameButDifferentSize {
-    static constexpr const char* USER_HEADER_TYPE_NAME = "CustomHeader";
+    static constexpr const char* TYPE_NAME = "CustomHeader";
     uint64_t a;
     uint8_t b;
     std::array<uint8_t, CAPACITY> c;
 };
 
 struct alignas(ALIGNMENT) CustomHeaderWithSameTypeNameButDifferentAlignment {
-    static constexpr const char* USER_HEADER_TYPE_NAME = "CustomHeader";
+    static constexpr const char* TYPE_NAME = "CustomHeader";
     uint64_t a;
     uint8_t b;
 };
 
 namespace other {
 struct Payload {
-    static constexpr const char* PAYLOAD_TYPE_NAME = "DifferentPayload";
+    static constexpr const char* TYPE_NAME = "DifferentPayload";
     int32_t x;
     double y;
 };
 
 struct CustomHeader {
-    static constexpr const char* USER_HEADER_TYPE_NAME = "DifferentCustomHeader";
+    static constexpr const char* TYPE_NAME = "DifferentCustomHeader";
     uint64_t a;
     uint8_t b;
 };
