@@ -44,7 +44,7 @@ cargo run --example publish_subscribe_cxx2rust_subscriber
 ### Terminal 2
 
 Run the C++ publisher application from the
-[publish_subscribe cxx2rust_example](../../cxx/publish_subscribe_cxx2rust):
+[publish_subscribe_cxx2rust example](../../cxx/publish_subscribe_cxx2rust):
 
 ```sh
 ./target/ffi/build/examples/cxx/publish_subscribe_cxx2rust/example_cxx_publish_subscribe_cxx2rust_publisher
@@ -57,7 +57,7 @@ publisher-subscriber communication efficiently.
 ### Terminal 3
 
 Run the C++ subscriber application from the
-[publish_subcribe_cxx2rust_example](../../cxx/publish_subscribe_cxx2rust):
+[publish_subcribe_cxx2rust example](../../cxx/publish_subscribe_cxx2rust):
 
 ```sh
 ./target/ffi/build/examples/cxx/publish_subscribe_cxx2rust/example_cxx_publish_subscribe_cxx2rust_subscriber
@@ -95,20 +95,20 @@ struct CustomHeader {
 };
 ```
 
-*Note:* `TYPE_NAME` is currently only taken into account on the C++ side.
+_Note:_ `TYPE_NAME` is currently only taken into account on the C++ side.
 
 When `TYPE_NAME` is set to the same type name used in the Rust application, and
 the structure has the same memory layout, the C++ and the Rust applications can
 communicate.
 
-*Hint:* You can determine the type names on the Rust side with
+_Hint:_ You can determine the type names on the Rust side with
 `core::any::type_name()`.
 
 For {u}int{8|16|32|64}_t, float, double and bool, you don't need to provide
 `TYPE_NAME` for the payload as these types are automatically translated into the
 Rust pendants.
 
-You can also send dynamic data between C++ and Rust applications (see 
+You can also send dynamic data between C++ and Rust applications (see
 [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
 you send `iox::Slice`s of {u}int{8|16|32|64}_t, float, double or bool, the
 payload type name is automatically translated to the Rust pendant. For other

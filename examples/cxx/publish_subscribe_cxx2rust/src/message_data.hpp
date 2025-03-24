@@ -13,12 +13,6 @@
 #ifndef IOX2_EXAMPLES_MESSAGE_DATA_HPP
 #define IOX2_EXAMPLES_MESSAGE_DATA_HPP
 
-// TODOs:
-// - cmake executable names
-// - example name
-// - copyright years
-// - rust bazel, TODO
-// - add readme to overall example readme
 #include <cstdint>
 #include <iostream>
 
