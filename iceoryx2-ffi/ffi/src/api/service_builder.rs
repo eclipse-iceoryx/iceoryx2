@@ -13,6 +13,7 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, AssertNonNullHandle, HandleToType};
+use crate::{iox2_service_builder_pub_sub_set_user_header_type_details, iox2_type_variant_e};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
@@ -309,6 +310,17 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
             ));
         }
     }
+
+    // set default user header type to ()
+    let user_header_type_name = "()";
+    iox2_service_builder_pub_sub_set_user_header_type_details(
+        &(service_builder_handle as *mut _ as _),
+        iox2_type_variant_e::FIXED_SIZE,
+        user_header_type_name.as_ptr() as *const core::ffi::c_char,
+        user_header_type_name.len(),
+        0,
+        1,
+    );
 
     service_builder_handle as *mut _ as _
 }

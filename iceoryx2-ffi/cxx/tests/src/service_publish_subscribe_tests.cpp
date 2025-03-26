@@ -1183,6 +1183,16 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToRustPendantForFixe
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i64"));
     }
     {
+        auto service = node.service_builder(service_name).template publish_subscribe<float>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f32"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<double>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f64"));
+    }
+    {
         auto service = node.service_builder(service_name).template publish_subscribe<bool>().create().expect("");
         auto static_config = service.static_config();
         ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("bool"));
