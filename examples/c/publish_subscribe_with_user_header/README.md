@@ -12,7 +12,7 @@ incrementing number and the `CustomHeader`, which includes an additional version
 number and a timestamp. On the receiving end, the subscriber checks for new data
 every second and prints out the received payload and the user header.
 
-First you have to build the C++ examples:
+First you have to build the C examples:
 
 ```sh
 cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
@@ -25,13 +25,13 @@ execute the following commands:
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_with_user_header/example_cxx_publish_subscribe_user_header_subscriber
+./target/ffi/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_with_user_header/example_cxx_publish_subscribe_user_header_publisher
+./target/ffi/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_publisher
 ```
 
 Feel free to run multiple instances of the publisher or subscriber processes
