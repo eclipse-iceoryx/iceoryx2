@@ -158,7 +158,7 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
     - name: Build and cache cargo-nextest
       uses: ./.github/actions/build-and-cache-rust-tool
       with:
@@ -513,7 +513,7 @@ jobs:
     timeout-minutes: 10
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
     - name: Build and cache grcov
       uses: ./.github/actions/build-and-cache-rust-tool
       with:
@@ -530,7 +530,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
     - name: Install dependencies
       run: sudo apt-get -y install libacl1-dev llvm
@@ -543,7 +543,7 @@ jobs:
         sudo groupadd testgroup2
 
     - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+      uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
       with:
         toolchain: stable
         components: llvm-tools-preview
@@ -561,7 +561,7 @@ jobs:
       run: ./internal/scripts/generate-cov-report.sh --html
 
     - name: Archive coverage-html artifacts
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # ratchet:actions/upload-artifact@v4
+      uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # ratchet:actions/upload-artifact@v4
       with:
         name: coverage-html
         path: target/debug/coverage/html/*
@@ -571,7 +571,7 @@ jobs:
       run: ./internal/scripts/generate-cov-report.sh --lcov
 
     - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
+      uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
       with:
         file: target/debug/coverage/lcov.info
         fail_ci_if_error: false
