@@ -18,6 +18,7 @@
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/internal/service_builder_publish_subscribe_internal.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
@@ -26,18 +27,6 @@
 #include <typeinfo>
 
 namespace iox2 {
-template <typename Payload, typename = void>
-struct HasPayloadTypeNameMember : std::false_type { };
-
-template <typename Payload>
-struct HasPayloadTypeNameMember<Payload, decltype((void) Payload::PAYLOAD_TYPE_NAME)> : std::true_type { };
-
-template <typename UserHeader, typename = void>
-struct HasUserHeaderTypeNameMember : std::false_type { };
-
-template <typename UserHeader>
-struct HasUserHeaderTypeNameMember<UserHeader, decltype((void) UserHeader::USER_HEADER_TYPE_NAME)> : std::true_type { };
-
 /// Builder to create new [`MessagingPattern::PublishSubscribe`] based [`Service`]s
 template <typename Payload, typename UserHeader, ServiceType S>
 class ServiceBuilderPublishSubscribe {
@@ -123,20 +112,24 @@ class ServiceBuilderPublishSubscribe {
     void set_parameters();
 
     template <typename PayloadType>
-    auto get_payload_type_name() ->
-        typename std::enable_if_t<HasPayloadTypeNameMember<PayloadType>::value, const char*>;
+    auto get_payload_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType>;
 
     template <typename PayloadType>
-    auto get_payload_type_name() ->
-        typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value, const char*>;
+    auto get_payload_type_name() -> internal::FromNonSlice<PayloadType>;
+
+    template <typename PayloadType>
+    auto get_payload_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType>;
+
+    template <typename PayloadType>
+    auto get_payload_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType>;
 
     template <typename UserHeaderType>
     auto get_user_header_type_name() ->
-        typename std::enable_if_t<HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
+        typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
 
     template <typename UserHeaderType>
     auto get_user_header_type_name() ->
-        typename std::enable_if_t<!HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
+        typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
 
     iox2_service_builder_pub_sub_h m_handle = nullptr;
 };
@@ -149,29 +142,81 @@ inline ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::ServiceBuilderPub
 
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename PayloadType>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name() ->
-    typename std::enable_if_t<HasPayloadTypeNameMember<PayloadType>::value, const char*> {
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
+    -> internal::FromCustomizedPayloadTypeName<PayloadType> {
     return PayloadType::PAYLOAD_TYPE_NAME;
+}
+
+// NOLINTBEGIN(readability-function-size) : template alternative is less readable
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename PayloadType>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
+    -> internal::FromNonSlice<PayloadType> {
+    if (std::is_same_v<PayloadType, uint8_t>) {
+        return "u8";
+    }
+    if (std::is_same_v<PayloadType, uint16_t>) {
+        return "u16";
+    }
+    if (std::is_same_v<PayloadType, uint32_t>) {
+        return "u32";
+    }
+    if (std::is_same_v<PayloadType, uint64_t>) {
+        return "u64";
+    }
+    if (std::is_same_v<PayloadType, int8_t>) {
+        return "i8";
+    }
+    if (std::is_same_v<PayloadType, int16_t>) {
+        return "i16";
+    }
+    if (std::is_same_v<PayloadType, int32_t>) {
+        return "i32";
+    }
+    if (std::is_same_v<PayloadType, int64_t>) {
+        return "i64";
+    }
+    if (std::is_same_v<PayloadType, float>) {
+        return "f32";
+    }
+    if (std::is_same_v<PayloadType, double>) {
+        return "f64";
+    }
+    if (std::is_same_v<PayloadType, bool>) {
+        return "bool";
+    }
+    return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
+}
+// NOLINTEND(readability-function-size)
+
+template <typename Payload, typename UserHeader, ServiceType S>
+template <typename PayloadType>
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
+    -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
+    return PayloadType::ValueType::PAYLOAD_TYPE_NAME;
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename PayloadType>
-inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name() ->
-    typename std::enable_if_t<!HasPayloadTypeNameMember<PayloadType>::value, const char*> {
-    return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
+inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_payload_type_name()
+    -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
+    return get_payload_type_name<typename PayloadType::ValueType>();
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename UserHeaderType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_user_header_type_name() ->
-    typename std::enable_if_t<HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
+    typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
     return UserHeaderType::USER_HEADER_TYPE_NAME;
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>
 template <typename UserHeaderType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_user_header_type_name() ->
-    typename std::enable_if_t<!HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
+    typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
+    if (std::is_void_v<UserHeader>) {
+        return "()"; // no user header provided
+    }
     return typeid(UserHeader).name();
 }
 
@@ -213,12 +258,13 @@ inline void ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::set_paramete
     const auto user_header_type_size = header_layout.size();
     const auto user_header_type_align = header_layout.alignment();
 
-    const auto user_header_result = iox2_service_builder_pub_sub_set_user_header_type_details(&m_handle,
-                                                                                              type_variant,
-                                                                                              user_header_type_name,
-                                                                                              user_header_type_name_len,
-                                                                                              user_header_type_size,
-                                                                                              user_header_type_align);
+    const auto user_header_result =
+        iox2_service_builder_pub_sub_set_user_header_type_details(&m_handle,
+                                                                  iox2_type_variant_e_FIXED_SIZE,
+                                                                  user_header_type_name,
+                                                                  user_header_type_name_len,
+                                                                  user_header_type_size,
+                                                                  user_header_type_align);
 
     if (user_header_result != IOX2_OK) {
         IOX_PANIC("This should never happen! Implementation failure while setting the User-Header-Type.");

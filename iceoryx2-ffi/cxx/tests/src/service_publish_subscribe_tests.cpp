@@ -130,7 +130,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_works) {
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
     auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().open();
     ASSERT_TRUE(sut.has_value());
 }
@@ -141,7 +141,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_wrong_payl
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
     auto sut = node.service_builder(service_name).template publish_subscribe<double>().open();
     ASSERT_TRUE(sut.has_error());
     ASSERT_THAT(sut.error(), Eq(PublishSubscribeOpenError::IncompatibleTypes));
@@ -153,7 +153,7 @@ TYPED_TEST(ServicePublishSubscribeTest, open_or_create_existing_service_with_wro
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create();
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
     auto sut = node.service_builder(service_name).template publish_subscribe<double>().open_or_create();
     ASSERT_TRUE(sut.has_error());
     ASSERT_THAT(sut.error(), Eq(PublishSubscribeOpenOrCreateError::OpenIncompatibleTypes));
@@ -509,7 +509,7 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     ASSERT_THAT(static_config.subscriber_max_borrowed_samples(), Eq(SUBSCRIBER_MAX_BORROWED_SAMPLES));
     ASSERT_THAT(static_config.message_type_details().payload().size(), Eq(sizeof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
-    ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq(typeid(uint64_t).name()));
+    ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u64"));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, safe_overflow_can_be_set) {
@@ -948,7 +948,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_payloa
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create();
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().expect("");
     auto sut_open = node.service_builder(service_name).template publish_subscribe<Payload>().open();
     ASSERT_FALSE(sut_open.has_error());
 }
@@ -959,7 +959,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create();
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().expect("");
     auto sut_open =
         node.service_builder(service_name).template publish_subscribe<DifferentPayloadWithSameTypeName>().open();
     ASSERT_FALSE(sut_open.has_error());
@@ -970,7 +970,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_payload
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create();
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().expect("");
 
     struct Payload {
         int32_t x;
@@ -987,7 +987,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create();
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().expect("");
 
     auto sut_open = node.service_builder(service_name).template publish_subscribe<other::Payload>().open();
     ASSERT_TRUE(sut_open.has_error());
@@ -999,7 +999,7 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_paylo
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create();
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().expect("");
 
     auto sut_open =
         node.service_builder(service_name).template publish_subscribe<PayloadWithSameTypeNameButDifferentSize>().open();
@@ -1013,7 +1013,7 @@ TYPED_TEST(ServicePublishSubscribeTest,
     const auto service_name = iox2_testing::generate_service_name();
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create();
+    auto sut_create = node.service_builder(service_name).template publish_subscribe<Payload>().create().expect("");
 
     auto sut_open = node.service_builder(service_name)
                         .template publish_subscribe<PayloadWithSameTypeNameButDifferentAlignment>()
@@ -1030,7 +1030,8 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_set_user_h
     auto sut_create = node.service_builder(service_name)
                           .template publish_subscribe<uint8_t>()
                           .template user_header<CustomHeader>()
-                          .create();
+                          .create()
+                          .expect("");
     auto sut_open = node.service_builder(service_name)
                         .template publish_subscribe<uint8_t>()
                         .template user_header<CustomHeader>()
@@ -1047,7 +1048,8 @@ TYPED_TEST(ServicePublishSubscribeTest,
     auto sut_create = node.service_builder(service_name)
                           .template publish_subscribe<uint8_t>()
                           .template user_header<CustomHeader>()
-                          .create();
+                          .create()
+                          .expect("");
     auto sut_open = node.service_builder(service_name)
                         .template publish_subscribe<uint8_t>()
                         .template user_header<DifferentCustomHeaderWithSameTypeName>()
@@ -1063,7 +1065,8 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_without_user_he
     auto sut_create = node.service_builder(service_name)
                           .template publish_subscribe<uint8_t>()
                           .template user_header<CustomHeader>()
-                          .create();
+                          .create()
+                          .expect("");
 
     struct CustomHeader {
         uint64_t a;
@@ -1086,7 +1089,8 @@ TYPED_TEST(ServicePublishSubscribeTest,
     auto sut_create = node.service_builder(service_name)
                           .template publish_subscribe<uint8_t>()
                           .template user_header<CustomHeader>()
-                          .create();
+                          .create()
+                          .expect("");
 
     auto sut_open = node.service_builder(service_name)
                         .template publish_subscribe<uint8_t>()
@@ -1104,7 +1108,8 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_heade
     auto sut_create = node.service_builder(service_name)
                           .template publish_subscribe<uint8_t>()
                           .template user_header<CustomHeader>()
-                          .create();
+                          .create()
+                          .expect("");
 
     auto sut_open = node.service_builder(service_name)
                         .template publish_subscribe<uint8_t>()
@@ -1122,7 +1127,8 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_heade
     auto sut_create = node.service_builder(service_name)
                           .template publish_subscribe<uint8_t>()
                           .template user_header<CustomHeader>()
-                          .create();
+                          .create()
+                          .expect("");
 
     auto sut_open = node.service_builder(service_name)
                         .template publish_subscribe<uint8_t>()
@@ -1130,6 +1136,144 @@ TYPED_TEST(ServicePublishSubscribeTest, opening_existing_service_with_same_heade
                         .open();
     ASSERT_TRUE(sut_open.has_error());
     EXPECT_EQ(sut_open.error(), PublishSubscribeOpenError::IncompatibleTypes);
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToRustPendantForFixedSizeIntegersAndBoolAndSlicesOfThem) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<uint8_t>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u8"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<uint16_t>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u16"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<uint32_t>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u32"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u64"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<int8_t>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i8"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<int16_t>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i16"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<int32_t>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i32"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<int64_t>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i64"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<float>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f32"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<double>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f64"));
+    }
+    {
+        auto service = node.service_builder(service_name).template publish_subscribe<bool>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("bool"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<uint8_t>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u8"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<uint16_t>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u16"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<uint32_t>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u32"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<uint64_t>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u64"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<int8_t>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i8"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<int16_t>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i16"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<int32_t>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i32"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<int64_t>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("i64"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<float>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f32"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<double>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("f64"));
+    }
+    {
+        auto service =
+            node.service_builder(service_name).template publish_subscribe<iox::Slice<bool>>().create().expect("");
+        auto static_config = service.static_config();
+        ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("bool"));
+    }
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToInnerTypeNameIfProvided) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template publish_subscribe<iox::Slice<Payload>>().create().expect("");
+
+    auto static_config = service.static_config();
+    ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("Payload"));
 }
 // END tests for customizable payload and user header type name
 } // namespace
