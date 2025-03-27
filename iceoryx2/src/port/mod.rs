@@ -46,7 +46,7 @@ use crate::service;
 
 /// Defines the action a port shall take when an internal failure occurs. Can happen when the
 /// system is corrupted and files are modified by non-iceoryx2 instances. Is used as return value of
-/// the [`degradationCallback`] to define a custom behavior.
+/// the [`DegradationCallback`] to define a custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum DegradationAction {
     /// Ignore the degradation completely

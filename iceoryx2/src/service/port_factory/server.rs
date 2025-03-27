@@ -139,9 +139,9 @@ impl<
         self
     }
 
-    /// Sets the [`degradationCallback`] of the [`Server`]. Whenever a connection to a
+    /// Sets the [`DegradationCallback`] of the [`Server`]. Whenever a connection to a
     /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
-    /// is called and depending on the returned [`degradationAction`] measures will be taken.
+    /// is called and depending on the returned [`DegradationAction`] measures will be taken.
     pub fn set_degradation_callback<
         F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
     >(
