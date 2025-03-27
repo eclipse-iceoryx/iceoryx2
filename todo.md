@@ -1,7 +1,5 @@
 # TODO
 
-* make to_be_removed_connections optional in IncomingConnections
-
 ## POSIX
 
 * Windows stat.rs, allowed to fail if file no longer exists

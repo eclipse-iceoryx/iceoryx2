@@ -109,7 +109,7 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) service_state: Arc<ServiceState<Service>>,
     pub(crate) buffer_size: usize,
     pub(crate) tagger: CyclicTagger,
-    pub(crate) to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
+    pub(crate) to_be_removed_connections: Option<UnsafeCell<Queue<Arc<Connection<Service>>>>>,
     pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) receiver_max_borrowed_samples: usize,
@@ -152,12 +152,14 @@ impl<Service: service::Service> Receiver<Service> {
     }
 
     pub(crate) fn prepare_connection_removal(&self, index: usize) {
-        if let Some(connection) = self.get(index) {
-            if connection.receiver.has_data()
-                && !unsafe { &mut *self.to_be_removed_connections.get() }.push(connection.clone())
-            {
-                warn!(from self,
+        if let Some(to_be_removed_connections) = &self.to_be_removed_connections {
+            if let Some(connection) = self.get(index) {
+                if connection.receiver.has_data()
+                    && !unsafe { &mut *to_be_removed_connections.get() }.push(connection.clone())
+                {
+                    warn!(from self,
                     "Expired connection buffer exceeded. A publisher disconnected with undelivered samples that will be discarded. Increase the config entry `defaults.publish-subscribe.subscriber-expired-connection-buffer` to mitigate the problem.");
+                }
             }
         }
     }
@@ -225,13 +227,17 @@ impl<Service: service::Service> Receiver<Service> {
     }
 
     pub(crate) fn receive(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
-        let to_be_removed_connections = unsafe { &mut *self.to_be_removed_connections.get() };
+        if let Some(to_be_removed_connections) = &self.to_be_removed_connections {
+            let to_be_removed_connections = unsafe { &mut *to_be_removed_connections.get() };
 
-        if let Some(connection) = to_be_removed_connections.peek() {
-            if let Some((details, absolute_address)) = self.receive_from_connection(connection)? {
-                return Ok(Some((details, absolute_address)));
-            } else {
-                to_be_removed_connections.pop();
+            if let Some(connection) = to_be_removed_connections.peek() {
+                if let Some((details, absolute_address)) =
+                    self.receive_from_connection(connection)?
+                {
+                    return Ok(Some((details, absolute_address)));
+                } else {
+                    to_be_removed_connections.pop();
+                }
             }
         }
 

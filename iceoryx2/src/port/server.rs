@@ -38,7 +38,6 @@ use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
 
-use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
@@ -150,7 +149,7 @@ impl<
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
-            to_be_removed_connections: UnsafeCell::new(Queue::new(0)),
+            to_be_removed_connections: None,
             degradation_callback: server_factory.degradation_callback,
         };
 

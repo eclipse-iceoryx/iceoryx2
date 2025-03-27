@@ -155,7 +155,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             enable_safe_overflow: static_config.enable_safe_overflow,
             buffer_size,
             tagger: CyclicTagger::new(),
-            to_be_removed_connections: UnsafeCell::new(Queue::new(
+            to_be_removed_connections: Some(UnsafeCell::new(Queue::new(
                 service
                     .__internal_state()
                     .shared_node
@@ -163,7 +163,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                     .defaults
                     .publish_subscribe
                     .subscriber_expired_connection_buffer,
-            )),
+            ))),
             degradation_callback: config.degradation_callback,
         };
 
