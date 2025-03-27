@@ -75,8 +75,26 @@ mod publisher {
         let sut = publisher.loan()?;
         assert_that!(tracker.number_of_living_instances(), eq 1);
 
+        Ok(())
+    }
+
+    #[test]
+    fn drop_is_not_called_for_underlying_type_of_sample<Sut: Service>() -> TestResult<()> {
+        let service_name = generate_name()?;
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<LifetimeTracker>()
+            .create()?;
+
+        let publisher = service.publisher_builder().create()?;
+
+        let tracker = LifetimeTracker::start_tracking();
+        let sut = publisher.loan()?;
+        assert_that!(tracker.number_of_living_instances(), eq 1);
         drop(sut);
-        assert_that!(tracker.number_of_living_instances(), eq 0);
+        assert_that!(tracker.number_of_living_instances(), eq 1);
 
         Ok(())
     }
@@ -117,11 +135,33 @@ mod publisher {
             .create()?;
 
         let tracker = LifetimeTracker::start_tracking();
-        let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS)?;
+        let _sut = publisher.loan_slice(NUMBER_OF_ELEMENTS)?;
         assert_that!(tracker.number_of_living_instances(), eq NUMBER_OF_ELEMENTS);
 
+        Ok(())
+    }
+
+    #[test]
+    fn slice_sample_does_not_call_drop_for_underlying_value<Sut: Service>() -> TestResult<()> {
+        const NUMBER_OF_ELEMENTS: usize = 120;
+        let service_name = generate_name()?;
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[LifetimeTracker]>()
+            .create()?;
+
+        let publisher = service
+            .publisher_builder()
+            .initial_max_slice_len(NUMBER_OF_ELEMENTS)
+            .create()?;
+
+        let tracker = LifetimeTracker::start_tracking();
+        let sut = publisher.loan_slice(NUMBER_OF_ELEMENTS)?;
+        assert_that!(tracker.number_of_living_instances(), eq NUMBER_OF_ELEMENTS);
         drop(sut);
-        assert_that!(tracker.number_of_living_instances(), eq 0);
+        assert_that!(tracker.number_of_living_instances(), eq NUMBER_OF_ELEMENTS);
 
         Ok(())
     }

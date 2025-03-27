@@ -36,6 +36,11 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
 
 3. **Do not use pointers, or data types that are not self-contained or use
    pointers for their internal management!**
+4. The type and all of its members shall not implement `Drop`. The sender
+   always owns the data and is responsible to cleanup everything. When it
+   goes out of scope, the corresponding receivers must be able to still
+   consume the sent data - therefore, iceoryx2 cannot call drop on maybe
+   still in use data even when the process terminates.
 
 ## How To Define Custom Data Types (C++)
 
@@ -45,6 +50,12 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
    `iceoryx-hoofs`.
 2. **Do not use pointers, or data types that are not self-contained or use
    pointers for their internal management!**
+3. The type must be trivially destructible
+   (see `std::is_trivially_destructible`). The sender always owns the data and
+   is responsible to cleanup everything. When
+   it goes out of scope, the corresponding receivers must be able to still
+   consume the sent data - therefore, iceoryx2 cannot call drop on maybe
+   still in use data even when the process terminates.
 
 ## How To Send Data Where The Size Is Unknown At Compilation-Time?
 

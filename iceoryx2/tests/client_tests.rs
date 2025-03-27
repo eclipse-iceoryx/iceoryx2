@@ -236,11 +236,27 @@ mod client {
         let sut = service.client_builder().create().unwrap();
 
         let tracker = LifetimeTracker::start_tracking();
+        let _request = sut.loan();
+        assert_that!(tracker.number_of_living_instances(), eq 1);
+    }
+
+    #[test]
+    fn drop_is_not_called_for_underlying_type_of_requests<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<LifetimeTracker, u64>()
+            .create()
+            .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
+
+        let tracker = LifetimeTracker::start_tracking();
         let request = sut.loan();
         assert_that!(tracker.number_of_living_instances(), eq 1);
-
         drop(request);
-        assert_that!(tracker.number_of_living_instances(), eq 0);
+        assert_that!(tracker.number_of_living_instances(), eq 1);
     }
 
     #[test]

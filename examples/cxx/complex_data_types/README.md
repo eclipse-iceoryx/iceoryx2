@@ -11,6 +11,7 @@ instructions in the [C++ Examples Readme](../README.md).
 >
 > * be self contained, no heap, no pointers to external sources
 > * not use pointers to manage their internal structure
+> * must be trivially destructible, see `std::is_trivially_destructible`
 
 This example demonstrates how the zero-copy compatible versions of
 `std::vector` or `std::string` can be sent.

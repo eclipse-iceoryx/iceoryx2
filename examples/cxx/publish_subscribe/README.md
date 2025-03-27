@@ -13,6 +13,7 @@ instructions in the [C++ Examples Readme](../README.md).
 > * have a uniform memory representation, ensuring that shared structs have the
 >     same data layout
 > * not use pointers to manage their internal structure
+> * must be trivially destructible, see `std::is_trivially_destructible`
 >
 > Data types like `std::string` or `std::vector` will cause undefined behavior
 > and may result in segmentation faults. We provide alternative data types

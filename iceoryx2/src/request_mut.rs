@@ -86,7 +86,6 @@ impl<
     > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        unsafe { core::ptr::drop_in_place(self.deref_mut()) };
         self.client_backend
             .sender
             .release_sample(self.offset_to_chunk);
