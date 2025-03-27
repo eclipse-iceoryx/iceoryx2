@@ -20,7 +20,7 @@ node.service_builder(&service_name)
 When the service is created, the attributes are set. When the service is opened,
 these attributes are interpreted as requirements. If a required attribute is not
 set, or if its value differs, the service will not be opened. For example, the
-following service can be opened because it matches a attribute defined in the
+following service can be opened because it matches an attribute defined in the
 previous example:
 
 ```rust
@@ -29,7 +29,7 @@ node.service_builder(&service_name)
     .open_with_attributes(
         AttributeVerifier::new()
             .require("my_custom_key", "some_funky_value")
-            // dont care for the value but the key must be present
+            // don't care for the value but the key must be present
             .require_key("another_key")
     )?;
 ```

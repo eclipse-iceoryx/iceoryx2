@@ -94,10 +94,10 @@ impl StaticConfig {
     ) -> usize {
         // all chunks a server can hold
         self.max_servers * (
-            // a client send so many active requests to a server in parallel
+            // a client sent so many active requests to a server in parallel
             self.max_active_requests_per_client +
-            // the server can still hold old requests that the client as already dropped. in this case
-            // the client can fill up the servers buffer with at most max_active_requests_per_client again
+            // the server can still hold old requests that the client has already dropped. in this case
+            // the client can fill up the server's buffer with at most max_active_requests_per_client again
             self.max_active_requests_per_client
         )
         // all chunks a client can loan in parallel

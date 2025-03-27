@@ -41,6 +41,9 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
    goes out of scope, the corresponding receivers must be able to still
    consume the sent data - therefore, iceoryx2 cannot call drop on maybe
    still in use data even when the process terminates.
+   The internal iceoryx2 cleanup logic removes always all unused resources
+   but when the last user is a receiver it is not able to mutate the
+   memory and therefore cannot call drop on it.
 
 ## How To Define Custom Data Types (C++)
 
@@ -54,8 +57,11 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
    (see `std::is_trivially_destructible`). The sender always owns the data and
    is responsible to cleanup everything. When
    it goes out of scope, the corresponding receivers must be able to still
-   consume the sent data - therefore, iceoryx2 cannot call drop on maybe
-   still in use data even when the process terminates.
+   consume the sent data - therefore, iceoryx2 cannot call the destructor on
+   maybe still in use data even when the process terminates.
+   The internal iceoryx2 cleanup logic removes always all unused resources
+   but when the last user is a receiver it is not able to mutate the
+   memory and therefore cannot call drop on it.
 
 ## How To Send Data Where The Size Is Unknown At Compilation-Time?
 

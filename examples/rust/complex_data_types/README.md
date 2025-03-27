@@ -9,7 +9,7 @@
 > * be self contained, no heap, no pointers to external sources
 > * have a uniform memory representation -> `#[repr(C)]`
 > * not use pointers to manage their internal structure
-> * the type and no member implements `Drop` explicitly
+> * the type and its members don't implement `Drop` explicitly
 
 This example demonstrates how the zero-copy compatible versions of `Vec` or
 `String` can be sent.
