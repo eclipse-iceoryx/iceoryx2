@@ -62,7 +62,6 @@ use crate::{
         dynamic_config::request_response::{ClientDetails, ServerDetails},
         naming_scheme::data_segment_name,
         port_factory::client::{ClientCreateError, PortFactoryClient},
-        ServiceState,
     },
 };
 
@@ -119,7 +118,6 @@ pub(crate) struct ClientBackend<Service: service::Service> {
     pub(crate) sender: Sender<Service>,
     is_active: IoxAtomicBool,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
-    service_state: Arc<ServiceState<Service>>,
     pub(crate) active_request_counter: IoxAtomicUsize,
 }
 
@@ -145,8 +143,8 @@ impl<Service: service::Service> ClientBackend<Service> {
         }
 
         if !self.is_active.load(Ordering::Relaxed) {
-            fail!(from self, with RequestSendError::ExceedsMaxActiveRequests,
-                "{} since the connections could not be updated.", msg);
+            fail!(from self, with RequestSendError::SendError(SendError::ConnectionBrokenSinceSenderNoLongerExists),
+                "{} since corresponding client is already disconnected.", msg);
         }
 
         fail!(from self, when self.update_connections(),
@@ -158,7 +156,8 @@ impl<Service: service::Service> ClientBackend<Service> {
 
     fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
         if unsafe {
-            self.service_state
+            self.sender
+                .service_state
                 .dynamic_storage
                 .get()
                 .request_response()
@@ -227,6 +226,7 @@ impl<
     fn drop(&mut self) {
         if let Some(handle) = self.client_handle {
             self.backend
+                .sender
                 .service_state
                 .dynamic_storage
                 .get()
@@ -323,7 +323,6 @@ impl<
                 },
                 is_active: IoxAtomicBool::new(true),
                 server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
-                service_state: service.__internal_state().clone(),
                 active_request_counter: IoxAtomicUsize::new(0),
             }),
             client_port_id,
@@ -527,7 +526,7 @@ impl<
     /// #
     /// # let client = service.client_builder().create()?;
     ///
-    /// // Acquire request that is initialized with by `Default::default()`.
+    /// // Acquire request that is initialized with `Default::default()`.
     /// let mut request = client.loan()?;
     /// // Assign a value to the request
     /// *request = 456;

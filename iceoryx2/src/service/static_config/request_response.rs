@@ -21,15 +21,16 @@
 //!     .request_response::<u64, u64>()
 //!     .open_or_create()?;
 //!
-//! println!("request type details:      {:?}", req_res.static_config().request_message_type_details());
-//! println!("response type details:     {:?}", req_res.static_config().response_message_type_details());
-//! println!("max active requests:       {:?}", req_res.static_config().max_active_requests_per_client());
-//! println!("max response buffer size:  {:?}", req_res.static_config().max_response_buffer_size());
-//! println!("max servers:               {:?}", req_res.static_config().max_clients());
-//! println!("max clients:               {:?}", req_res.static_config().max_servers());
-//! println!("max nodes:                 {:?}", req_res.static_config().max_nodes());
-//! println!("request safe overflow:     {:?}", req_res.static_config().has_safe_overflow_for_requests());
-//! println!("response safe overflow:    {:?}", req_res.static_config().has_safe_overflow_for_responses());
+//! println!("request type details: {:?}", req_res.static_config().request_message_type_details());
+//! println!("response type details: {:?}", req_res.static_config().response_message_type_details());
+//! println!("max active requests per client: {:?}", req_res.static_config().max_active_requests_per_client());
+//! println!("max response buffer size: {:?}", req_res.static_config().max_response_buffer_size());
+//! println!("max servers: {:?}", req_res.static_config().max_clients());
+//! println!("max clients: {:?}", req_res.static_config().max_servers());
+//! println!("max nodes: {:?}", req_res.static_config().max_nodes());
+//! println!("request safe overflow: {:?}", req_res.static_config().has_safe_overflow_for_requests());
+//! println!("response safe overflow: {:?}", req_res.static_config().has_safe_overflow_for_responses());
+//! println!("max borrowed responses per pending response: {:?}", req_res.static_config().max_borrowed_responses_per_pending_responses());
 //!
 //! # Ok(())
 //! # }
@@ -92,11 +93,15 @@ impl StaticConfig {
         client_max_loaned_data: usize,
     ) -> usize {
         // all chunks a server can hold
-        self.max_servers * ( 2 * self.max_active_requests_per_client)
-        // all chunks a client can hold
+        self.max_servers * (
+            // a client send so many active requests to a server in parallel
+            self.max_active_requests_per_client +
+            // the server can still hold old requests that the client as already dropped. in this case
+            // the client can fill up the servers buffer with at most max_active_requests_per_client again
+            self.max_active_requests_per_client
+        )
+        // all chunks a client can loan in parallel
             + client_max_loaned_data
-            // every active request has a pending response on the client side that can contain another request
-            + self.max_active_requests_per_client
     }
 
     /// Returns the request type details of the [`crate::service::Service`].
@@ -125,7 +130,7 @@ impl StaticConfig {
         self.enable_safe_overflow_for_responses
     }
 
-    /// Returns the maximum of number of borrowed [`Response`](crate::response::Response)s a
+    /// Returns the maximum number of borrowed [`Response`](crate::response::Response)s a
     /// [`Client`](`crate::port::client::Client`) can hold in
     /// parallel per [`PendingResponse`](crate::pending_response::PendingResponse)
     pub fn max_borrowed_responses_per_pending_responses(&self) -> usize {

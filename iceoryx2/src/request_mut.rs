@@ -55,7 +55,7 @@ use crate::{
 };
 
 /// The [`RequestMut`] represents the object that contains the payload that the
-/// [`Client`](crate::port::client::Client) to the
+/// [`Client`](crate::port::client::Client) sends to the
 /// [`Server`](crate::port::server::Server).
 pub struct RequestMut<
     Service: crate::service::Service,

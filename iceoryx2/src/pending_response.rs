@@ -54,7 +54,7 @@ use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, ser
 /// [`Response`]s.
 ///
 /// As soon as it goes out of scope, the connections are closed and the
-/// [`Server`](crate::port::server::Server) is informed.
+/// [`Server`](crate::port::server::Server)s are informed.
 pub struct PendingResponse<
     Service: crate::service::Service,
     RequestPayload: Debug,
@@ -136,7 +136,7 @@ impl<
         self.request.payload()
     }
 
-    /// Returns how many server received the corresponding
+    /// Returns how many [`Server`](crate::port::server::Server)s received the corresponding
     /// [`RequestMut`] initially.
     pub fn number_of_server_connections(&self) -> usize {
         self.number_of_server_connections

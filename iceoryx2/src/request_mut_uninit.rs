@@ -28,7 +28,7 @@
 //!
 //! // acquire uninitialized request
 //! let request = client.loan_uninit()?;
-//! // write payload and acquire an initialized request that can be send
+//! // write payload and acquire an initialized request that can be sent
 //! let request = request.write_payload(55712);
 //!
 //! let pending_response = request.send()?;
@@ -170,9 +170,7 @@ impl<
     /// # Safety
     ///
     /// The caller must ensure that [`core::mem::MaybeUninit<Payload>`] really is initialized.
-    /// Calling this when
-    /// the content is not fully initialized causes immediate undefined behavior.
-    ///
+    /// Sending the content when it is not fully initialized causes immediate undefined behavior.
     pub unsafe fn assume_init(
         self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {

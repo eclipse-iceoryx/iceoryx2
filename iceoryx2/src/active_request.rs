@@ -25,7 +25,7 @@ use crate::{
 /// holding the corresponding
 /// [`PendingResponse`](crate::pending_response::PendingResponse) that is coupled
 /// with the [`RequestMut`](crate::request_mut::RequestMut) the
-/// [`Client`](crate::port::client::Client) send to the
+/// [`Client`](crate::port::client::Client) sent to the
 /// [`Server`](crate::port::server::Server).
 /// The [`Server`](crate::port::server::Server) will use it to send arbitrary many
 /// [`Response`](crate::response::Response)s.

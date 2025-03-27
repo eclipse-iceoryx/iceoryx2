@@ -67,6 +67,25 @@ mod client {
     }
 
     #[test]
+    fn send_request_via_disconnected_client_fails<Sut: Service>() {
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
+
+        let request = sut.loan().unwrap();
+        drop(sut);
+
+        let result = request.send();
+        assert_that!(result.err(), eq Some(RequestSendError::SendError(iceoryx2::port::SendError::ConnectionBrokenSinceSenderNoLongerExists)));
+    }
+
+    #[test]
     fn can_loan_at_most_max_supported_amount_of_requests<Sut: Service>() {
         const MAX_LOANED_REQUESTS: usize = 29;
         const ITERATIONS: usize = 3;
@@ -91,7 +110,7 @@ mod client {
     }
 
     #[test]
-    fn can_loan_at_most_max_supported_amount_of_requests_when_holding_max_pending_responses<
+    fn can_loan_max_supported_amount_of_requests_when_holding_max_pending_responses<
         Sut: Service,
     >() {
         const MAX_LOANED_REQUESTS: usize = 29;
@@ -603,7 +622,7 @@ mod client {
     }
 
     #[test]
-    fn reclaims_all_requests_after_disconnect<Sut: Service>() {
+    fn reclaims_all_requests_delivered_to_server_after_a_server_disconnect<Sut: Service>() {
         const MAX_ACTIVE_REQUESTS: usize = 4;
         const ITERATIONS: usize = 5;
         const MAX_SERVER: usize = 4;
@@ -630,8 +649,10 @@ mod client {
                 for _ in 0..MAX_ACTIVE_REQUESTS {
                     requests.push(sut.send_copy(123).unwrap());
                 }
-
                 assert_that!(sut.send_copy(123).err(), eq Some(RequestSendError::ExceedsMaxActiveRequests));
+
+                // disconnect all servers by dropping them
+                drop(servers);
             }
         }
     }

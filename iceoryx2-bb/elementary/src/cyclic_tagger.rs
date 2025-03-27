@@ -49,7 +49,7 @@
 use core::sync::atomic::Ordering;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
 
-/// The [`CyclicTagger`] can tag any object that implements [`Taggable`]. When taging element
+/// The [`CyclicTagger`] can tag any object that implements [`Taggable`]. When tagging elements
 /// cyclicly the cycle shall always start with [`CyclicTagger::next_cycle()`].
 #[derive(Debug, Default)]
 pub struct CyclicTagger(IoxAtomicU8);
@@ -79,7 +79,7 @@ impl CyclicTagger {
         self.0.fetch_add(1, Ordering::Relaxed);
     }
 
-    /// Visit a [`Taggable`] object. After this call the method [`Taggable::was_tagged_by()`]
+    /// Tag a [`Taggable`] object. After this call the method [`Taggable::was_tagged_by()`]
     /// returns true for this [`CyclicTagger`].
     pub fn tag<T: Taggable>(&self, rhs: &T) {
         rhs.tag()
@@ -88,7 +88,7 @@ impl CyclicTagger {
     }
 }
 
-/// This tracks the mark of the [`CyclicTagger`] when it is taged.
+/// This tracks the mark of the [`CyclicTagger`] when it is tagged.
 #[derive(Debug)]
 pub struct Tag(IoxAtomicU8);
 
@@ -98,12 +98,12 @@ impl Taggable for Tag {
     }
 }
 
-/// Identifies structs that can be taged by the [`CyclicTagger`].
+/// Identifies structs that can be tagged by the [`CyclicTagger`].
 pub trait Taggable {
     /// Returns a reference to the underlying [`Tag`] of the [`Taggable`] struct.
     fn tag(&self) -> &Tag;
 
-    /// Returns true if it was taged by the [`CyclicTagger`] with [`CyclicTagger::tag()`] in the current
+    /// Returns true if it was tagged by the [`CyclicTagger`] with [`CyclicTagger::tag()`] in the current
     /// cycle.
     fn was_tagged_by(&self, rhs: &CyclicTagger) -> bool {
         self.tag().0.load(Ordering::Relaxed) == rhs.0.load(Ordering::Relaxed)

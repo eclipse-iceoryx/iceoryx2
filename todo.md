@@ -1,7 +1,6 @@
 # TODO
 
 * make to_be_removed_connections optional in IncomingConnections
-* max_borrowed_requests and max_active_requests are the same, remove max_borrowed_requests
 
 ## POSIX
 

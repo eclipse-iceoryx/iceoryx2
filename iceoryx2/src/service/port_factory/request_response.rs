@@ -21,17 +21,18 @@
 //!     .request_response::<u64, u64>()
 //!     .open_or_create()?;
 //!
-//! println!("name:                             {:?}", req_res.name());
-//! println!("service id:                       {:?}", req_res.service_id());
-//! println!("request type details:             {:?}", req_res.static_config().request_message_type_details());
-//! println!("response type details:            {:?}", req_res.static_config().response_message_type_details());
-//! println!("max active requests:              {:?}", req_res.static_config().max_active_requests_per_client());
-//! println!("max response buffer size:         {:?}", req_res.static_config().max_response_buffer_size());
-//! println!("max servers:                      {:?}", req_res.static_config().max_clients());
-//! println!("max clients:                      {:?}", req_res.static_config().max_servers());
-//! println!("max nodes:                        {:?}", req_res.static_config().max_nodes());
-//! println!("request safe overflow:            {:?}", req_res.static_config().has_safe_overflow_for_requests());
-//! println!("response safe overflow:           {:?}", req_res.static_config().has_safe_overflow_for_responses());
+//! println!("name: {:?}", req_res.name());
+//! println!("service id: {:?}", req_res.service_id());
+//! println!("request type details: {:?}", req_res.static_config().request_message_type_details());
+//! println!("response type details: {:?}", req_res.static_config().response_message_type_details());
+//! println!("max active requests per client: {:?}", req_res.static_config().max_active_requests_per_client());
+//! println!("max response buffer size: {:?}", req_res.static_config().max_response_buffer_size());
+//! println!("max borrowed responses per pending response: {:?}", req_res.static_config().max_borrowed_responses_per_pending_response());
+//! println!("max servers: {:?}", req_res.static_config().max_clients());
+//! println!("max clients: {:?}", req_res.static_config().max_servers());
+//! println!("max nodes: {:?}", req_res.static_config().max_nodes());
+//! println!("request safe overflow: {:?}", req_res.static_config().has_safe_overflow_for_requests());
+//! println!("response safe overflow: {:?}", req_res.static_config().has_safe_overflow_for_responses());
 //!
 //! # Ok(())
 //! # }

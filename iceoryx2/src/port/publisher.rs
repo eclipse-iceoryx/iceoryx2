@@ -294,7 +294,7 @@ impl<Service: service::Service> PublisherBackend<Service> {
         let msg = "Unable to send sample";
         if !self.is_active.load(Ordering::Relaxed) {
             fail!(from self, with SendError::ConnectionBrokenSinceSenderNoLongerExists,
-                "{} since the connections could not be updated.", msg);
+                "{} since the corresponding publisher is already disconnected.", msg);
         }
 
         fail!(from self, when self.update_connections(),

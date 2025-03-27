@@ -16,17 +16,17 @@ use iceoryx2_bb_testing::assert_that;
 #[test]
 fn create_tag_works() {
     let sut = CyclicTagger::new();
-    let sut_marker = sut.create_tag();
+    let sut_tag = sut.create_tag();
 
-    assert_that!(sut_marker.was_tagged_by(&sut), eq true);
+    assert_that!(sut_tag.was_tagged_by(&sut), eq true);
 }
 
 #[test]
 fn create_untagged_tag_works() {
     let sut = CyclicTagger::new();
-    let sut_marker = sut.create_untagged_tag();
+    let sut_tag = sut.create_untagged_tag();
 
-    assert_that!(sut_marker.was_tagged_by(&sut), eq false);
+    assert_that!(sut_tag.was_tagged_by(&sut), eq false);
 }
 
 #[test]

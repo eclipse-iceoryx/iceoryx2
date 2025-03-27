@@ -385,7 +385,7 @@ impl<
     }
 
     /// If the [`Service`] is created it defines how many [`Response`](crate::response::Response)s shall
-    /// be able to be borrowed it in parallel per [`PendingResponse`](crate::pending_response::PendingResponse). If an existing [`Service`] is opened it defines how many
+    /// be able to be borrowed in parallel per [`PendingResponse`](crate::pending_response::PendingResponse). If an existing [`Service`] is opened it defines how many
     /// borrows must be at least supported.
     pub fn max_borrowed_responses_per_pending_response(mut self, value: usize) -> Self {
         self.config_details_mut()
