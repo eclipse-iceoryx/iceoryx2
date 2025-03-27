@@ -27,7 +27,7 @@
 //! println!("response type details: {:?}", req_res.static_config().response_message_type_details());
 //! println!("max active requests per client: {:?}", req_res.static_config().max_active_requests_per_client());
 //! println!("max response buffer size: {:?}", req_res.static_config().max_response_buffer_size());
-//! println!("max borrowed responses per pending response: {:?}", req_res.static_config().max_borrowed_responses_per_pending_response());
+//! println!("max borrowed responses per pending responses: {:?}", req_res.static_config().max_borrowed_responses_per_pending_responses());
 //! println!("max servers: {:?}", req_res.static_config().max_clients());
 //! println!("max clients: {:?}", req_res.static_config().max_servers());
 //! println!("max nodes: {:?}", req_res.static_config().max_nodes());
