@@ -10,7 +10,7 @@ on:
 jobs:
   miri:
     name: "Miri"
-    if: false # github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
