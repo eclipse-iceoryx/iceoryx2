@@ -654,12 +654,12 @@ mod client {
 
         let sut = service.client_builder().create().unwrap();
 
-        for n in 0..MAX_SERVER {
+        for n in 1..MAX_SERVER {
             for _ in 0..ITERATIONS {
                 let mut requests = vec![];
                 let mut servers = vec![];
                 for _ in 0..n {
-                    servers.push(service.client_builder().create().unwrap());
+                    servers.push(service.server_builder().create().unwrap());
                 }
 
                 for _ in 0..MAX_ACTIVE_REQUESTS {

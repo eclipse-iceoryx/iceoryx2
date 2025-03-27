@@ -330,6 +330,8 @@ impl<Service: service::Service> Sender<Service> {
                 let is_connected = connection.receiver_port_id == receiver_details.port_id;
                 if is_connected {
                     self.tagger.tag(connection);
+                } else {
+                    self.remove_connection(index);
                 }
                 !is_connected
             }
