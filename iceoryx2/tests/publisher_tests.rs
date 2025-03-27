@@ -72,7 +72,7 @@ mod publisher {
         let publisher = service.publisher_builder().create()?;
 
         let tracker = LifetimeTracker::start_tracking();
-        let sut = publisher.loan()?;
+        let _sut = publisher.loan()?;
         assert_that!(tracker.number_of_living_instances(), eq 1);
 
         Ok(())
@@ -514,6 +514,49 @@ mod publisher {
         let sut = service.publisher_builder().create().unwrap();
 
         let _sample = unsafe { sut.loan_custom_payload(2) };
+    }
+
+    #[test]
+    fn reclaims_all_samples_when_subscriber_is_disconnected_and_never_received_them<
+        Sut: Service,
+    >() -> TestResult<()> {
+        const MAX_SUBSCRIBERS: usize = 4;
+        const ITERATIONS: usize = 20;
+        const SUBSCRIBER_BUFFER_SIZE: usize = 7;
+        let service_name = generate_name()?;
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .max_subscribers(MAX_SUBSCRIBERS)
+            .subscriber_max_buffer_size(SUBSCRIBER_BUFFER_SIZE)
+            .create()?;
+
+        let sut = service.publisher_builder().max_loaned_samples(2).create()?;
+
+        for n in 0..MAX_SUBSCRIBERS {
+            for _ in 0..ITERATIONS {
+                let mut subscribers = vec![];
+
+                for _ in 0..n {
+                    subscribers.push(service.subscriber_builder().create()?);
+                }
+
+                for _ in 0..SUBSCRIBER_BUFFER_SIZE {
+                    sut.send_copy(1293)?;
+                }
+
+                // disconnect all subscribers
+                drop(subscribers);
+            }
+        }
+
+        let sample = sut.loan()?;
+
+        assert_that!(sample.send(), is_ok);
+
+        Ok(())
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

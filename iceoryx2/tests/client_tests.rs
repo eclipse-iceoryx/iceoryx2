@@ -640,7 +640,7 @@ mod client {
     #[test]
     fn reclaims_all_requests_delivered_to_server_after_a_server_disconnect<Sut: Service>() {
         const MAX_ACTIVE_REQUESTS: usize = 4;
-        const ITERATIONS: usize = 5;
+        const ITERATIONS: usize = 20;
         const MAX_SERVER: usize = 4;
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
@@ -654,7 +654,7 @@ mod client {
 
         let sut = service.client_builder().create().unwrap();
 
-        for n in 1..MAX_SERVER {
+        for n in 0..MAX_SERVER {
             for _ in 0..ITERATIONS {
                 let mut requests = vec![];
                 let mut servers = vec![];
