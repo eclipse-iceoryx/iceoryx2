@@ -151,7 +151,7 @@ impl<
             buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
             to_be_removed_connections: UnsafeCell::new(Queue::new(0)),
-            degration_callback: server_factory.degration_callback,
+            degradation_callback: server_factory.degradation_callback,
         };
 
         let mut new_self = Self {

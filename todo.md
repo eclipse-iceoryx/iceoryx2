@@ -63,7 +63,7 @@
     for some time and retry to create the service, only if open or create was
     used
 * Event Messaging Pattern
-    * Introduce degration callback for notifier, used when a connection to a
+    * Introduce degradation callback for notifier, used when a connection to a
     listener could not be Established
     * Make `Publisher::update_connections` private
 * Rename PortFactory<...> into Service<...> and make it easier to access by the

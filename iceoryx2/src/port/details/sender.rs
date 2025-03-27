@@ -28,7 +28,7 @@ use iceoryx2_cal::zero_copy_connection::{
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::node::SharedNode;
-use crate::port::{DegrationAction, DegrationCallback, LoanError, SendError};
+use crate::port::{DegradationAction, DegradationCallback, LoanError, SendError};
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::config_scheme::connection_config;
 use crate::service::static_config::message_type_details::{MessageTypeDetails, TypeVariant};
@@ -109,7 +109,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) enable_safe_overflow: bool,
     pub(crate) number_of_samples: usize,
     pub(crate) max_number_of_segments: u8,
-    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
+    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) service_state: Arc<ServiceState<Service>>,
     pub(crate) tagger: CyclicTagger,
     pub(crate) loan_counter: IoxAtomicUsize,
@@ -157,19 +157,20 @@ impl<Service: service::Service> Sender<Service> {
                          *   try_send => we tried and expect that the buffer is full
                          * */
                     }
-                    Err(ZeroCopySendError::ConnectionCorrupted) => match &self.degration_callback {
+                    Err(ZeroCopySendError::ConnectionCorrupted) => match &self.degradation_callback
+                    {
                         Some(c) => match c.call(
                             &self.service_state.static_config,
                             self.sender_port_id,
                             connection.receiver_port_id,
                         ) {
-                            DegrationAction::Ignore => (),
-                            DegrationAction::Warn => {
+                            DegradationAction::Ignore => (),
+                            DegradationAction::Warn => {
                                 error!(from self,
                                         "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
                                         offset, connection.receiver_port_id);
                             }
-                            DegrationAction::Fail => {
+                            DegradationAction::Fail => {
                                 fail!(from self, with SendError::ConnectionCorrupted,
                                         "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
                                         offset, connection.receiver_port_id);
@@ -342,19 +343,19 @@ impl<Service: service::Service> Sender<Service> {
                         fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
                     }
                 },
-                Err(e) => match &self.degration_callback {
+                Err(e) => match &self.degradation_callback {
                     Some(c) => match c.call(
                         &self.service_state.static_config,
                         self.sender_port_id,
                         receiver_details.port_id,
                     ) {
-                        DegrationAction::Ignore => (),
-                        DegrationAction::Warn => {
+                        DegradationAction::Ignore => (),
+                        DegradationAction::Warn => {
                             warn!(from self,
                                             "Unable to establish connection to new receiver {:?}.",
                                             receiver_details.port_id )
                         }
-                        DegrationAction::Fail => {
+                        DegradationAction::Fail => {
                             fail!(from self, with e,
                                            "Unable to establish connection to new receiver {:?}.",
                                            receiver_details.port_id );

@@ -31,7 +31,7 @@
 
 use super::request_response::PortFactory;
 use crate::{
-    port::{server::Server, DegrationAction, DegrationCallback},
+    port::{server::Server, DegradationAction, DegradationCallback},
     prelude::UnableToDeliverStrategy,
     service,
 };
@@ -77,7 +77,7 @@ pub struct PortFactoryServer<
 
     pub(crate) max_loaned_responses_per_request: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
-    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
+    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
 }
 
 impl<
@@ -118,7 +118,7 @@ impl<
             factory,
             max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
             unable_to_deliver_strategy: defs.server_unable_to_deliver_strategy,
-            degration_callback: None,
+            degradation_callback: None,
         }
     }
 
@@ -139,18 +139,18 @@ impl<
         self
     }
 
-    /// Sets the [`DegrationCallback`] of the [`Server`]. Whenever a connection to a
+    /// Sets the [`degradationCallback`] of the [`Server`]. Whenever a connection to a
     /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
-    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
-    pub fn set_degration_callback<
-        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
+    /// is called and depending on the returned [`degradationAction`] measures will be taken.
+    pub fn set_degradation_callback<
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
     >(
         mut self,
         callback: Option<F>,
     ) -> Self {
         match callback {
-            Some(c) => self.degration_callback = Some(DegrationCallback::new(c)),
-            None => self.degration_callback = None,
+            Some(c) => self.degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.degradation_callback = None,
         }
 
         self

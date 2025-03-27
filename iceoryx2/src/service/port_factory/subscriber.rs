@@ -35,7 +35,7 @@ use iceoryx2_bb_log::fail;
 use crate::{
     port::{
         subscriber::{Subscriber, SubscriberCreateError},
-        DegrationAction, DegrationCallback,
+        DegradationAction, DegradationCallback,
     },
     service,
 };
@@ -45,7 +45,7 @@ use super::publish_subscribe::PortFactory;
 #[derive(Debug)]
 pub(crate) struct SubscriberConfig {
     pub(crate) buffer_size: Option<usize>,
-    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
+    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
 }
 
 /// Factory to create a new [`Subscriber`] port/endpoint for
@@ -69,7 +69,7 @@ impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized, UserHeade
         Self {
             config: SubscriberConfig {
                 buffer_size: None,
-                degration_callback: None,
+                degradation_callback: None,
             },
             factory,
         }
@@ -81,18 +81,18 @@ impl<'factory, Service: service::Service, PayloadType: Debug + ?Sized, UserHeade
         self
     }
 
-    /// Sets the [`DegrationCallback`] of the [`Subscriber`]. Whenever a connection to a
+    /// Sets the [`DegradationCallback`] of the [`Subscriber`]. Whenever a connection to a
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
-    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
-    pub fn set_degration_callback<
-        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
+    /// is called and depending on the returned [`DegradationAction`] measures will be taken.
+    pub fn set_degradation_callback<
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
     >(
         mut self,
         callback: Option<F>,
     ) -> Self {
         match callback {
-            Some(c) => self.config.degration_callback = Some(DegrationCallback::new(c)),
-            None => self.config.degration_callback = None,
+            Some(c) => self.config.degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.config.degradation_callback = None,
         }
 
         self

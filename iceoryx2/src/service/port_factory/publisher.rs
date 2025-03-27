@@ -64,7 +64,7 @@ use crate::{
     port::{
         publisher::{Publisher, PublisherCreateError},
         unable_to_deliver_strategy::UnableToDeliverStrategy,
-        DegrationAction, DegrationCallback,
+        DegradationAction, DegradationCallback,
     },
     service,
 };
@@ -73,7 +73,7 @@ use crate::{
 pub(crate) struct LocalPublisherConfig {
     pub(crate) max_loaned_samples: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
-    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
+    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) initial_max_slice_len: usize,
     pub(crate) allocation_strategy: AllocationStrategy,
 }
@@ -99,7 +99,7 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
         Self {
             config: LocalPublisherConfig {
                 allocation_strategy: AllocationStrategy::Static,
-                degration_callback: None,
+                degradation_callback: None,
                 initial_max_slice_len: 1,
                 max_loaned_samples: factory
                     .service
@@ -136,18 +136,18 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
         self
     }
 
-    /// Sets the [`DegrationCallback`] of the [`Publisher`]. Whenever a connection to a
+    /// Sets the [`degradationCallback`] of the [`Publisher`]. Whenever a connection to a
     /// [`crate::port::subscriber::Subscriber`] is corrupted or it seems to be dead, this callback
-    /// is called and depending on the returned [`DegrationAction`] measures will be taken.
-    pub fn set_degration_callback<
-        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegrationAction + 'static,
+    /// is called and depending on the returned [`degradationAction`] measures will be taken.
+    pub fn set_degradation_callback<
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
     >(
         mut self,
         callback: Option<F>,
     ) -> Self {
         match callback {
-            Some(c) => self.config.degration_callback = Some(DegrationCallback::new(c)),
-            None => self.config.degration_callback = None,
+            Some(c) => self.config.degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.config.degradation_callback = None,
         }
 
         self

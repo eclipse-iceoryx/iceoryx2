@@ -46,23 +46,23 @@ use crate::service;
 
 /// Defines the action a port shall take when an internal failure occurs. Can happen when the
 /// system is corrupted and files are modified by non-iceoryx2 instances. Is used as return value of
-/// the [`DegrationCallback`] to define a custom behavior.
+/// the [`degradationCallback`] to define a custom behavior.
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
-pub enum DegrationAction {
-    /// Ignore the degration completely
+pub enum DegradationAction {
+    /// Ignore the degradation completely
     Ignore,
-    /// Print out a warning as soon as the degration is detected
+    /// Print out a warning as soon as the degradation is detected
     Warn,
-    /// Returns a failure in the function the degration was detected
+    /// Returns a failure in the function the degradation was detected
     Fail,
 }
 
 tiny_fn! {
     /// Defines a custom behavior whenever a port detects a degregation.
-    pub struct DegrationCallback = Fn(service: &service::static_config::StaticConfig, sender_port_id: u128, receiver_port_id: u128) -> DegrationAction;
+    pub struct DegradationCallback = Fn(service: &service::static_config::StaticConfig, sender_port_id: u128, receiver_port_id: u128) -> DegradationAction;
 }
 
-impl Debug for DegrationCallback<'_> {
+impl Debug for DegradationCallback<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
     }

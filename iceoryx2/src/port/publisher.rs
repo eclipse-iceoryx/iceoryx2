@@ -425,7 +425,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 enable_safe_overflow: static_config.enable_safe_overflow,
                 number_of_samples,
                 max_number_of_segments,
-                degration_callback: None,
+                degradation_callback: None,
                 service_state: service.__internal_state().clone(),
                 tagger: CyclicTagger::new(),
                 loan_counter: IoxAtomicUsize::new(0),

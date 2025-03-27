@@ -164,7 +164,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                     .publish_subscribe
                     .subscriber_expired_connection_buffer,
             )),
-            degration_callback: config.degration_callback,
+            degradation_callback: config.degradation_callback,
         };
 
         let mut new_self = Self {

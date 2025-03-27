@@ -311,7 +311,7 @@ impl<
                     receiver_max_buffer_size: static_config.max_active_requests_per_client,
                     receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
                     enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
-                    degration_callback: client_factory.degration_callback,
+                    degradation_callback: client_factory.degradation_callback,
                     number_of_samples: number_of_requests,
                     max_number_of_segments,
                     service_state: service.__internal_state().clone(),

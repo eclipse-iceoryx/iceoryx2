@@ -17,7 +17,7 @@ use super::chunk::Chunk;
 use super::chunk_details::ChunkDetails;
 use super::data_segment::{DataSegmentType, DataSegmentView};
 use crate::port::update_connections::ConnectionFailure;
-use crate::port::{DegrationAction, DegrationCallback, ReceiveError};
+use crate::port::{DegradationAction, DegradationCallback, ReceiveError};
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::service::ServiceState;
@@ -110,7 +110,7 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) buffer_size: usize,
     pub(crate) tagger: CyclicTagger,
     pub(crate) to_be_removed_connections: UnsafeCell<Queue<Arc<Connection<Service>>>>,
-    pub(crate) degration_callback: Option<DegrationCallback<'static>>,
+    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) receiver_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
@@ -273,7 +273,7 @@ impl<Service: service::Service> Receiver<Service> {
 
             match self.create(index, &sender_details) {
                 Ok(()) => Ok(()),
-                Err(e) => match &self.degration_callback {
+                Err(e) => match &self.degradation_callback {
                     None => {
                         warn!(from self,
                                 "Unable to establish connection to new sender {:?}.",
@@ -286,13 +286,13 @@ impl<Service: service::Service> Receiver<Service> {
                             sender_details.port_id,
                             self.receiver_port_id(),
                         ) {
-                            DegrationAction::Ignore => Ok(()),
-                            DegrationAction::Warn => {
+                            DegradationAction::Ignore => Ok(()),
+                            DegradationAction::Warn => {
                                 warn!(from self, "Unable to establish connection to new sender {:?}.",
                                         sender_details.port_id);
                                 Ok(())
                             }
-                            DegrationAction::Fail => {
+                            DegradationAction::Fail => {
                                 fail!(from self, with e, "Unable to establish connection to new sender {:?}.",
                                         sender_details.port_id);
                             }
