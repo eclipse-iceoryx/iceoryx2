@@ -14,6 +14,7 @@ use iceoryx2_cal::{shared_memory::ShmPointer, shm_allocator::PointerOffset};
 
 use crate::service::static_config::message_type_details::MessageTypeDetails;
 
+#[derive(Debug)]
 pub(crate) struct Chunk {
     pub(crate) header: *const u8,
     pub(crate) user_header: *const u8,
@@ -31,6 +32,7 @@ impl Chunk {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct ChunkMut {
     pub(crate) offset: PointerOffset,
     pub(crate) header: *mut u8,

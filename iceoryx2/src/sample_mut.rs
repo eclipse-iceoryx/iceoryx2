@@ -70,6 +70,7 @@ use crate::{
 use iceoryx2_cal::shared_memory::*;
 
 use core::fmt::{Debug, Formatter};
+use core::ops::{Deref, DerefMut};
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -93,6 +94,23 @@ pub struct SampleMut<Service: crate::service::Service, Payload: Debug + ?Sized, 
     pub(crate) sample_size: usize,
 }
 
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Deref
+    for SampleMut<Service, Payload, UserHeader>
+{
+    type Target = Payload;
+    fn deref(&self) -> &Self::Target {
+        self.ptr.as_payload_ref()
+    }
+}
+
+impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> DerefMut
+    for SampleMut<Service, Payload, UserHeader>
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.ptr.as_payload_mut()
+    }
+}
+
 impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debug
     for SampleMut<Service, Payload, UserHeader>
 {
@@ -100,9 +118,9 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debu
         write!(
             f,
             "SampleMut<{}, {}, {}> {{ publisher_backend: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",
+            core::any::type_name::<Service>(),
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
-            core::any::type_name::<Service>(),
             self.publisher_backend,
             self.offset_to_chunk,
             self.sample_size
@@ -115,7 +133,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
 {
     fn drop(&mut self) {
         self.publisher_backend
-            .subscriber_connections
+            .sender
             .return_loaned_sample(self.offset_to_chunk);
     }
 }

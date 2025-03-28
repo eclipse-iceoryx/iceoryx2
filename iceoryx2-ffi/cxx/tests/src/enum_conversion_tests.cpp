@@ -103,7 +103,7 @@ TEST(EnumConversionTest, publisher_send_into_c_str) {
     ASSERT_GT(strlen(iox::into<const char*>(Sut::ConnectionBrokenSinceSenderNoLongerExists)), 1U);
     ASSERT_GT(strlen(iox::into<const char*>(Sut::ConnectionCorrupted)), 1U);
     ASSERT_GT(strlen(iox::into<const char*>(Sut::LoanErrorOutOfMemory)), 1U);
-    ASSERT_GT(strlen(iox::into<const char*>(Sut::LoanErrorExceedsMaxLoanedSamples)), 1U);
+    ASSERT_GT(strlen(iox::into<const char*>(Sut::LoanErrorExceedsMaxLoans)), 1U);
     ASSERT_GT(strlen(iox::into<const char*>(Sut::LoanErrorExceedsMaxLoanSize)), 1U);
     ASSERT_GT(strlen(iox::into<const char*>(Sut::LoanErrorInternalFailure)), 1U);
     ASSERT_GT(strlen(iox::into<const char*>(Sut::ConnectionError)), 1U);
@@ -241,7 +241,7 @@ TEST(EnumConversionTest, service_list_into_c_str) {
 
 TEST(EnumConversionTest, subscriber_receive_into_c_str) {
     using Sut = iox2::ReceiveError;
-    ASSERT_GT(strlen(iox::into<const char*>(Sut::ExceedsMaxBorrowedSamples)), 1U);
+    ASSERT_GT(strlen(iox::into<const char*>(Sut::ExceedsMaxBorrows)), 1U);
     ASSERT_GT(strlen(iox::into<const char*>(Sut::FailedToEstablishConnection)), 1U);
     ASSERT_GT(strlen(iox::into<const char*>(Sut::UnableToMapSendersDataSegment)), 1U);
 }

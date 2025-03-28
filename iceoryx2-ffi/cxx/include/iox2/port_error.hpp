@@ -45,7 +45,7 @@ enum class SendError : uint8_t {
     LoanErrorOutOfMemory,
     /// The maximum amount of data a user can borrow is
     /// defined in [`crate::config::Config`]. When this is exceeded those calls will fail.
-    LoanErrorExceedsMaxLoanedSamples,
+    LoanErrorExceedsMaxLoans,
     /// The provided slice size exceeds the configured max slice size.
     /// To send data with this size a new port has to be created with as a larger slice size or the
     /// port must be configured with an
@@ -63,7 +63,7 @@ enum class ReceiveError : uint8_t {
     /// The maximum amount of data a user can borrow with is
     /// defined in [`crate::config::Config`]. When this is exceeded no more data can be received
     /// until the user has released older data.
-    ExceedsMaxBorrowedSamples,
+    ExceedsMaxBorrows,
 
     /// Occurs when a receiver is unable to connect to a corresponding sender.
     FailedToEstablishConnection,

@@ -1,9 +1,5 @@
 # TODO
 
-* use update_connections from OutgoingConnections in publisher (populate_subscriber_channels)
-* extract all details in OutgoingConnection from service_state.static_config
-* max_borrowed_requests and max_active_requests are the same, remove max_borrowed_requests
-
 ## POSIX
 
 * Windows stat.rs, allowed to fail if file no longer exists
@@ -64,7 +60,7 @@
     for some time and retry to create the service, only if open or create was
     used
 * Event Messaging Pattern
-    * Introduce degration callback for notifier, used when a connection to a
+    * Introduce degradation callback for notifier, used when a connection to a
     listener could not be Established
     * Make `Publisher::update_connections` private
 * Rename PortFactory<...> into Service<...> and make it easier to access by the

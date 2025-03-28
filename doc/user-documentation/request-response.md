@@ -1,6 +1,6 @@
 # Request-Response
 
-## Classes Involved In ActiveRequest to ActiveResponse Stream Communication
+## Classes Involved In PendingResponse to ActiveRequest Stream Communication
 
 User has send request to the server and receives a stream of responses.
 
@@ -8,10 +8,12 @@ User has send request to the server and receives a stream of responses.
 classDiagram
     Client "1" --> "1" DataSegment: stores request payload
     Server "1" --> "1" DataSegment: stores response payload
-    Client "1" --> "1..*" ActiveRequest
-    Server "1" --> "1..*" ActiveResponse
-    ActiveRequest "1" --> "1" ZeroCopyConnection: receive response
-    ActiveResponse "1" --> "1" ZeroCopyConnection: send response
+    Client "1" --> "1..*" PendingResponse
+    Server "1" --> "1..*" ActiveRequest
+    ActiveRequest "1" --> "1..*" ResponseMut: loan and send
+    PendingResponse "1" --> "1..*" Response: receive
+    PendingResponse "1" --> "1" ZeroCopyConnection: receive Response
+    ActiveRequest "1" --> "1" ZeroCopyConnection: send ResponseMut
 ```
 
 ## Sending Request: Client View
@@ -24,14 +26,14 @@ sequenceDiagram
     User->>RequestMut: write_payload
     destroy RequestMut
     User->>+RequestMut: send
-    RequestMut-->>-User: ActiveRequest
-    create participant ActiveRequest
-    User->>+ActiveRequest: receive
-    ActiveRequest-->>-User: Response
+    RequestMut-->>-User: PendingResponse
+    create participant PendingResponse
+    User->>+PendingResponse: receive
+    PendingResponse-->>-User: Response
     create participant Response
     User->>Response: read_payload
-    destroy ActiveRequest
-    User->>ActiveRequest: drop
+    destroy PendingResponse
+    User->>PendingResponse: drop
 ```
 
 ## Responding: Server View
@@ -39,15 +41,15 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     User->>+Server: receive
-    Server-->>-User: ActiveResponse
-    create participant ActiveResponse
-    User->ActiveResponse: read_payload
-    User->>+ActiveResponse: loan
-    ActiveResponse-->>-User: ResponseMut
+    Server-->>-User: ActiveRequest
+    create participant ActiveRequest
+    User->ActiveRequest: read_payload
+    User->>+ActiveRequest: loan
+    ActiveRequest-->>-User: ResponseMut
     create participant ResponseMut
     User->>ResponseMut: write_payload
     destroy ResponseMut
     User->>ResponseMut: send
-    destroy ActiveResponse
-    User->>ActiveResponse: drop
+    destroy ActiveRequest
+    User->>ActiveRequest: drop
 ```

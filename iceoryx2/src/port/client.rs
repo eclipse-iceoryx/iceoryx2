@@ -10,40 +10,194 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! let service = node
+//!    .service_builder(&"My/Funk/ServiceName".try_into()?)
+//!    .request_response::<u64, u64>()
+//!    .open_or_create()?;
+//!
+//! let client = service.client_builder().create()?;
+//!
+//! let request = client.loan_uninit()?;
+//! let request = request.write_payload(1829);
+//!
+//! let pending_response = request.send()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 extern crate alloc;
 
 use alloc::sync::Arc;
-use core::{cell::UnsafeCell, fmt::Debug, marker::PhantomData, sync::atomic::Ordering};
+use core::{
+    cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit, sync::atomic::Ordering,
+};
 
-use iceoryx2_bb_elementary::{visitor::Visitor, CallbackProgression};
+use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
-use iceoryx2_cal::{dynamic_storage::DynamicStorage, zero_copy_connection::ZeroCopyCreationError};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
+use iceoryx2_cal::{
+    dynamic_storage::DynamicStorage, shm_allocator::PointerOffset,
+    zero_copy_connection::ZeroCopyCreationError,
+};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
 use crate::{
+    pending_response::PendingResponse,
     port::{details::data_segment::DataSegment, UniqueClientId},
-    prelude::PortFactory,
+    prelude::{PortFactory, UnableToDeliverStrategy},
+    raw_sample::RawSampleMut,
+    request_mut::RequestMut,
+    request_mut_uninit::RequestMutUninit,
     service::{
         self,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
         naming_scheme::data_segment_name,
         port_factory::client::{ClientCreateError, PortFactoryClient},
-        ServiceState,
     },
 };
 
 use super::{
     details::{
         data_segment::DataSegmentType,
-        outgoing_connections::{OutgoingConnections, ReceiverDetails},
         segment_state::SegmentState,
+        sender::{ReceiverDetails, Sender},
     },
-    update_connections::UpdateConnections,
+    update_connections::{ConnectionFailure, UpdateConnections},
+    LoanError, SendError,
 };
 
-/// Sends requests to a [`Server`](crate::port::server::Server) in a request-response based
-/// communication.
+/// Failure that can be emitted when a [`RequestMut`] is sent.
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum RequestSendError {
+    /// Sending this [`RequestMut`] exceeds the maximum supported amount of active
+    /// requests. When a [`PendingResponse`] object is released another [`RequestMut`]
+    /// can be sent.
+    ExceedsMaxActiveRequests,
+
+    /// Underlying [`SendError`]s.
+    SendError(SendError),
+}
+
+impl From<SendError> for RequestSendError {
+    fn from(value: SendError) -> Self {
+        RequestSendError::SendError(value)
+    }
+}
+
+impl From<LoanError> for RequestSendError {
+    fn from(value: LoanError) -> Self {
+        RequestSendError::SendError(SendError::LoanError(value))
+    }
+}
+
+impl From<ConnectionFailure> for RequestSendError {
+    fn from(value: ConnectionFailure) -> Self {
+        RequestSendError::SendError(SendError::ConnectionError(value))
+    }
+}
+
+impl core::fmt::Display for RequestSendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "RequestSendError::{:?}", self)
+    }
+}
+
+impl core::error::Error for RequestSendError {}
+
+#[derive(Debug)]
+pub(crate) struct ClientBackend<Service: service::Service> {
+    pub(crate) sender: Sender<Service>,
+    is_active: IoxAtomicBool,
+    server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
+    pub(crate) active_request_counter: IoxAtomicUsize,
+}
+
+impl<Service: service::Service> ClientBackend<Service> {
+    pub(crate) fn send_request(
+        &self,
+        offset: PointerOffset,
+        sample_size: usize,
+    ) -> Result<usize, RequestSendError> {
+        let msg = "Unable to send request";
+
+        let active_request_counter = self.active_request_counter.load(Ordering::Relaxed);
+        if self
+            .sender
+            .service_state
+            .static_config
+            .request_response()
+            .max_active_requests_per_client
+            <= active_request_counter
+        {
+            fail!(from self, with RequestSendError::ExceedsMaxActiveRequests,
+                    "{} since the number of active requests is limited to {} and sending this request would exceed the limit.", msg, active_request_counter);
+        }
+
+        if !self.is_active.load(Ordering::Relaxed) {
+            fail!(from self, with RequestSendError::SendError(SendError::ConnectionBrokenSinceSenderNoLongerExists),
+                "{} since corresponding client is already disconnected.", msg);
+        }
+
+        fail!(from self, when self.update_connections(),
+            "{} since the connections could not be updated.", msg);
+
+        self.active_request_counter.fetch_add(1, Ordering::Relaxed);
+        Ok(self.sender.deliver_offset(offset, sample_size)?)
+    }
+
+    fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
+        if unsafe {
+            self.sender
+                .service_state
+                .dynamic_storage
+                .get()
+                .request_response()
+                .servers
+                .update_state(&mut *self.server_list_state.get())
+        } {
+            fail!(from self, when self.force_update_connections(),
+                "Connections were updated only partially since at least one connection to a Server port failed.");
+        }
+
+        Ok(())
+    }
+
+    fn force_update_connections(&self) -> Result<(), ZeroCopyCreationError> {
+        let mut result = Ok(());
+        self.sender.start_update_connection_cycle();
+        unsafe {
+            (*self.server_list_state.get()).for_each(|h, port| {
+                let inner_result = self.sender.update_connection(
+                    h.index() as usize,
+                    ReceiverDetails {
+                        port_id: port.server_port_id.value(),
+                        buffer_size: port.buffer_size,
+                    },
+                    |_| {},
+                );
+
+                result = result.and(inner_result);
+                CallbackProgression::Continue
+            })
+        };
+
+        self.sender.finish_update_connection_cycle();
+
+        result
+    }
+}
+
+/// Sends [`RequestMut`]s to a [`Server`](crate::port::server::Server) in a
+/// request-response based communication.
 #[derive(Debug)]
 pub struct Client<
     Service: service::Service,
@@ -53,10 +207,8 @@ pub struct Client<
     ResponseHeader: Debug,
 > {
     client_handle: Option<ContainerHandle>,
-    server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
-    server_connections: OutgoingConnections<Service>,
-    service_state: Arc<ServiceState<Service>>,
     client_port_id: UniqueClientId,
+    backend: Arc<ClientBackend<Service>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -73,12 +225,15 @@ impl<
 {
     fn drop(&mut self) {
         if let Some(handle) = self.client_handle {
-            self.service_state
+            self.backend
+                .sender
+                .service_state
                 .dynamic_storage
                 .get()
                 .request_response()
                 .release_client_handle(handle)
         }
+        self.backend.is_active.store(false, Ordering::Relaxed);
     }
 }
 
@@ -91,7 +246,7 @@ impl<
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new(
-        client_factory: &PortFactoryClient<
+        client_factory: PortFactoryClient<
             Service,
             RequestPayload,
             RequestHeader,
@@ -144,37 +299,40 @@ impl<
 
         let mut new_self = Self {
             client_handle: None,
-            server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
-            server_connections: OutgoingConnections {
-                data_segment,
-                segment_states: vec![SegmentState::new(number_of_requests)],
-                sender_port_id: client_port_id.value(),
-                shared_node: service.__internal_state().shared_node.clone(),
-                connections: (0..server_list.capacity())
-                    .map(|_| UnsafeCell::new(None))
-                    .collect(),
-                receiver_max_buffer_size: static_config.max_request_buffer_size,
-                receiver_max_borrowed_samples: static_config.max_borrowed_requests,
-                enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
-                degration_callback: None,
-                number_of_samples: number_of_requests,
-                max_number_of_segments,
-                service_state: service.__internal_state().clone(),
-                visitor: Visitor::new(),
-                loan_counter: IoxAtomicUsize::new(0),
-                sender_max_borrowed_samples: client_factory.max_loaned_requests,
-                unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
-                message_type_details: static_config.request_message_type_details.clone(),
-            },
+            backend: Arc::new(ClientBackend {
+                sender: Sender {
+                    data_segment,
+                    segment_states: vec![SegmentState::new(number_of_requests)],
+                    sender_port_id: client_port_id.value(),
+                    shared_node: service.__internal_state().shared_node.clone(),
+                    connections: (0..server_list.capacity())
+                        .map(|_| UnsafeCell::new(None))
+                        .collect(),
+                    receiver_max_buffer_size: static_config.max_active_requests_per_client,
+                    receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
+                    enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
+                    degradation_callback: client_factory.degradation_callback,
+                    number_of_samples: number_of_requests,
+                    max_number_of_segments,
+                    service_state: service.__internal_state().clone(),
+                    tagger: CyclicTagger::new(),
+                    loan_counter: IoxAtomicUsize::new(0),
+                    sender_max_borrowed_samples: client_factory.max_loaned_requests,
+                    unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
+                    message_type_details: static_config.request_message_type_details.clone(),
+                },
+                is_active: IoxAtomicBool::new(true),
+                server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
+                active_request_counter: IoxAtomicUsize::new(0),
+            }),
             client_port_id,
-            service_state: service.__internal_state().clone(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
         };
 
-        if let Err(e) = new_self.force_update_connections() {
+        if let Err(e) = new_self.backend.force_update_connections() {
             warn!(from new_self,
                 "The new Client port is unable to connect to every Server port, caused by {:?}.", e);
         }
@@ -207,31 +365,184 @@ impl<
         self.client_port_id
     }
 
-    fn force_update_connections(&self) -> Result<(), ZeroCopyCreationError> {
-        let mut result = Ok(());
-        self.server_connections.start_update_connection_cycle();
+    /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
+    /// if the [`Server`](crate::port::server::Server)s buffer is full.
+    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+        self.backend.sender.unable_to_deliver_strategy
+    }
+
+    /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
+    /// by default to avoid unnecessary copies.
+    ///
+    /// # Example
+    ///
+    /// ## True Zero Copy
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, u64>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// let mut request = client.loan_uninit()?;
+    ///
+    /// // Use MaybeUninit API to populate the underlying payload
+    /// request.payload_mut().write(1234);
+    /// // Promise that we have initialized everything and initialize request
+    /// let request = unsafe { request.assume_init() };
+    /// // Send request
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// ## Copy Payload
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, u64>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// let request = client.loan_uninit()?;
+    /// // we write the payload by copying the data into the request and retrieve
+    /// // an initialized RequestMut that can be sent
+    /// let request = request.write_payload(123);
+    /// // Send request
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn loan_uninit(
+        &self,
+    ) -> Result<
+        RequestMutUninit<
+            Service,
+            MaybeUninit<RequestPayload>,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        LoanError,
+    > {
+        let chunk = self
+            .backend
+            .sender
+            .allocate(self.backend.sender.sample_layout(1))?;
+
         unsafe {
-            (*self.server_list_state.get()).for_each(|h, port| {
-                let inner_result = self.server_connections.update_connection(
-                    h.index() as usize,
-                    ReceiverDetails {
-                        port_id: port.server_port_id.value(),
-                        buffer_size: port.buffer_size,
-                    },
-                    |_| {},
-                );
-
-                if result.is_ok() {
-                    result = inner_result;
-                }
-
-                CallbackProgression::Continue
-            })
+            (chunk.header as *mut service::header::request_response::RequestHeader).write(
+                service::header::request_response::RequestHeader {
+                    client_port_id: self.id(),
+                },
+            )
         };
 
-        self.server_connections.finish_update_connection_cycle();
+        let ptr = unsafe {
+            RawSampleMut::<
+                service::header::request_response::RequestHeader,
+                RequestHeader,
+                MaybeUninit<RequestPayload>,
+            >::new_unchecked(
+                chunk.header.cast(),
+                chunk.user_header.cast(),
+                chunk.payload.cast(),
+            )
+        };
 
-        result
+        Ok(RequestMutUninit {
+            request: RequestMut {
+                ptr,
+                sample_size: chunk.size,
+                offset_to_chunk: chunk.offset,
+                client_backend: self.backend.clone(),
+                _response_payload: PhantomData,
+                _response_header: PhantomData,
+                was_sample_sent: IoxAtomicBool::new(false),
+            },
+        })
+    }
+
+    /// Copies the input value into a [`RequestMut`] and sends it. On success it
+    /// returns a [`PendingResponse`] that can be used to receive a stream of
+    /// [`Response`](crate::response::Response)s from the
+    /// [`Server`](crate::port::server::Server).
+    pub fn send_copy(
+        &self,
+        value: RequestPayload,
+    ) -> Result<
+        PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        RequestSendError,
+    > {
+        let msg = "Unable to send copy of request";
+        let request = fail!(from self,
+                            when self.loan_uninit(),
+                            "{} since the loan of the request failed.", msg);
+
+        request.write_payload(value).send()
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + Default,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Acquires the payload for the request and initializes the underlying memory
+    /// with default. This can be very expensive when the payload is large, therefore
+    /// prefer [`Client::loan_uninit()`] when possible.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, u64>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// // Acquire request that is initialized with `Default::default()`.
+    /// let mut request = client.loan()?;
+    /// // Assign a value to the request
+    /// *request = 456;
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn loan(
+        &self,
+    ) -> Result<
+        RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        LoanError,
+    > {
+        Ok(self.loan_uninit()?.write_payload(RequestPayload::default()))
     }
 }
 
@@ -245,18 +556,6 @@ impl<
     for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
-        if unsafe {
-            self.service_state
-                .dynamic_storage
-                .get()
-                .request_response()
-                .servers
-                .update_state(&mut *self.server_list_state.get())
-        } {
-            fail!(from self, when self.force_update_connections(),
-                "Connections were updated only partially since at least one connection to a Server port failed.");
-        }
-
-        Ok(())
+        self.backend.update_connections()
     }
 }

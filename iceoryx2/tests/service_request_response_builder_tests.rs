@@ -17,6 +17,8 @@ mod service_request_response {
     use iceoryx2::service::builder::request_response::{
         RequestResponseCreateError, RequestResponseOpenError,
     };
+    use iceoryx2::service::port_factory::client::ClientCreateError;
+    use iceoryx2::service::port_factory::server::ServerCreateError;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
 
@@ -301,7 +303,7 @@ mod service_request_response {
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .request_payload_alignment(Alignment::new(512).unwrap())
+            .response_payload_alignment(Alignment::new(512).unwrap())
             .create();
 
         assert_that!(sut_create, is_ok);
@@ -309,7 +311,7 @@ mod service_request_response {
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .request_payload_alignment(Alignment::new(128).unwrap())
+            .response_payload_alignment(Alignment::new(128).unwrap())
             .open();
 
         assert_that!(sut_open, is_ok);
@@ -348,7 +350,8 @@ mod service_request_response {
         let config = generate_isolated_config();
         let attribute_key = "there is a muffin";
         let attribute_value = "with molten chocolate";
-        let attribute_incompatible_value = "its delicious";
+        let attribute_incompatible_key = "its delicious";
+        let attribute_incompatible_value = "I wanna eat it";
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
@@ -372,7 +375,7 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .open_with_attributes(
-                &AttributeVerifier::new().require_key(&attribute_incompatible_value),
+                &AttributeVerifier::new().require_key(&attribute_incompatible_key),
             );
 
         assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleAttributes));
@@ -426,7 +429,7 @@ mod service_request_response {
 
         let sut2 = node
             .service_builder(&service_name)
-            .request_response::<u64, u64>()
+            .request_response::<f32, f64>()
             .create();
         assert_that!(sut2, is_ok);
     }
@@ -472,28 +475,28 @@ mod service_request_response {
     }
 
     #[test]
-    fn open_verifies_max_active_responses_correctly<Sut: Service>() {
+    fn open_verifies_max_borrowed_responses_per_pending_response_correctly<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_responses(10)
+            .max_borrowed_responses_per_pending_response(10)
             .create();
         assert_that!(sut_create, is_ok);
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_responses(11)
+            .max_borrowed_responses_per_pending_response(11)
             .open();
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveResponses));
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse));
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_responses(9)
+            .max_borrowed_responses_per_pending_response(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -506,75 +509,21 @@ mod service_request_response {
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_requests(10)
+            .max_active_requests_per_client(10)
             .create();
         assert_that!(sut_create, is_ok);
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_requests(11)
+            .max_active_requests_per_client(11)
             .open();
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequests));
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient));
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_requests(9)
-            .open();
-        assert_that!(sut_open, is_ok);
-    }
-
-    #[test]
-    fn open_verifies_max_borrowed_responses_correctly<Sut: Service>() {
-        let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let sut_create = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_responses(10)
-            .create();
-        assert_that!(sut_create, is_ok);
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_responses(11)
-            .open();
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponses));
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_responses(9)
-            .open();
-        assert_that!(sut_open, is_ok);
-    }
-
-    #[test]
-    fn open_verifies_max_borrowed_requests_correctly<Sut: Service>() {
-        let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let sut_create = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_requests(10)
-            .create();
-        assert_that!(sut_create, is_ok);
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_requests(11)
-            .open();
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedRequests));
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_borrowed_requests(9)
+            .max_active_requests_per_client(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -601,34 +550,7 @@ mod service_request_response {
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_response_buffer_size(9)
-            .open();
-        assert_that!(sut_open, is_ok);
-    }
-
-    #[test]
-    fn open_verifies_max_request_buffer_size_correctly<Sut: Service>() {
-        let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let sut_create = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_request_buffer_size(10)
-            .create();
-        assert_that!(sut_create, is_ok);
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_request_buffer_size(11)
-            .open();
-        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedRequestBufferSize));
-
-        let sut_open = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .max_request_buffer_size(9)
+            .max_response_buffer_size(10)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -723,12 +645,9 @@ mod service_request_response {
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .max_active_requests(0)
-            .max_active_responses(0)
-            .max_borrowed_requests(0)
-            .max_borrowed_responses(0)
-            .max_request_buffer_size(0)
+            .max_active_requests_per_client(0)
             .max_response_buffer_size(0)
+            .max_borrowed_responses_per_pending_response(0)
             .max_servers(0)
             .max_clients(0)
             .max_nodes(0)
@@ -736,15 +655,12 @@ mod service_request_response {
         assert_that!(sut_create, is_ok);
         let sut_create = sut_create.unwrap();
 
-        assert_that!(sut_create.static_config().max_active_requests(), eq 1);
-        assert_that!(sut_create.static_config().max_active_responses(), eq 1);
-        assert_that!(sut_create.static_config().max_borrowed_requests(), eq 1);
-        assert_that!(sut_create.static_config().max_borrowed_responses(), eq 1);
-        assert_that!(sut_create.static_config().max_request_buffer_size(), eq 1);
+        assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 1);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 1);
         assert_that!(sut_create.static_config().max_servers(), eq 1);
         assert_that!(sut_create.static_config().max_clients(), eq 1);
         assert_that!(sut_create.static_config().max_nodes(), eq 1);
+        assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 1);
     }
 
     #[test]
@@ -754,12 +670,9 @@ mod service_request_response {
         let rpc_config = &mut config.defaults.request_response;
         rpc_config.enable_safe_overflow_for_requests = true;
         rpc_config.enable_safe_overflow_for_responses = true;
-        rpc_config.max_active_requests = 100;
-        rpc_config.max_active_responses = 100;
-        rpc_config.max_borrowed_requests = 100;
-        rpc_config.max_borrowed_responses = 100;
-        rpc_config.max_request_buffer_size = 100;
+        rpc_config.max_active_requests_per_client = 100;
         rpc_config.max_response_buffer_size = 100;
+        rpc_config.max_borrowed_responses_per_pending_response = 100;
         rpc_config.max_servers = 100;
         rpc_config.max_clients = 100;
         rpc_config.max_nodes = 100;
@@ -771,30 +684,24 @@ mod service_request_response {
             .request_response::<u64, u64>()
             .enable_safe_overflow_for_requests(false)
             .enable_safe_overflow_for_responses(false)
-            .max_active_requests(1)
-            .max_active_responses(2)
-            .max_borrowed_requests(3)
-            .max_borrowed_responses(4)
-            .max_request_buffer_size(5)
+            .max_active_requests_per_client(1)
             .max_response_buffer_size(6)
             .max_servers(7)
             .max_clients(8)
             .max_nodes(9)
+            .max_borrowed_responses_per_pending_response(10)
             .create();
         assert_that!(sut_create, is_ok);
         let sut_create = sut_create.unwrap();
 
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq false);
-        assert_that!(sut_create.static_config().max_active_requests(), eq 1);
-        assert_that!(sut_create.static_config().max_active_responses(), eq 2);
-        assert_that!(sut_create.static_config().max_borrowed_requests(), eq 3);
-        assert_that!(sut_create.static_config().max_borrowed_responses(), eq 4);
-        assert_that!(sut_create.static_config().max_request_buffer_size(), eq 5);
+        assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 1);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 6);
         assert_that!(sut_create.static_config().max_servers(), eq 7);
         assert_that!(sut_create.static_config().max_clients(), eq 8);
         assert_that!(sut_create.static_config().max_nodes(), eq 9);
+        assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 10);
     }
 
     #[test]
@@ -804,15 +711,12 @@ mod service_request_response {
         let rpc_config = &mut config.defaults.request_response;
         rpc_config.enable_safe_overflow_for_requests = true;
         rpc_config.enable_safe_overflow_for_responses = true;
-        rpc_config.max_active_requests = 11;
-        rpc_config.max_active_responses = 12;
-        rpc_config.max_borrowed_requests = 13;
-        rpc_config.max_borrowed_responses = 14;
-        rpc_config.max_request_buffer_size = 15;
+        rpc_config.max_active_requests_per_client = 11;
         rpc_config.max_response_buffer_size = 16;
         rpc_config.max_servers = 17;
         rpc_config.max_clients = 18;
         rpc_config.max_nodes = 19;
+        rpc_config.max_borrowed_responses_per_pending_response = 20;
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -825,15 +729,12 @@ mod service_request_response {
 
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq true);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq true);
-        assert_that!(sut_create.static_config().max_active_requests(), eq 11);
-        assert_that!(sut_create.static_config().max_active_responses(), eq 12);
-        assert_that!(sut_create.static_config().max_borrowed_requests(), eq 13);
-        assert_that!(sut_create.static_config().max_borrowed_responses(), eq 14);
-        assert_that!(sut_create.static_config().max_request_buffer_size(), eq 15);
+        assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 11);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 16);
         assert_that!(sut_create.static_config().max_servers(), eq 17);
         assert_that!(sut_create.static_config().max_clients(), eq 18);
         assert_that!(sut_create.static_config().max_nodes(), eq 19);
+        assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 20);
     }
 
     #[test]
@@ -847,15 +748,12 @@ mod service_request_response {
             .request_response::<u64, u64>()
             .enable_safe_overflow_for_requests(false)
             .enable_safe_overflow_for_responses(false)
-            .max_active_requests(1)
-            .max_active_responses(2)
-            .max_borrowed_requests(3)
-            .max_borrowed_responses(4)
-            .max_request_buffer_size(5)
+            .max_active_requests_per_client(1)
             .max_response_buffer_size(6)
             .max_servers(7)
             .max_clients(8)
             .max_nodes(9)
+            .max_borrowed_responses_per_pending_response(20)
             .create()
             .unwrap();
 
@@ -867,15 +765,12 @@ mod service_request_response {
 
         assert_that!(sut_open.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_open.static_config().has_safe_overflow_for_responses(), eq false);
-        assert_that!(sut_open.static_config().max_active_requests(), eq 1);
-        assert_that!(sut_open.static_config().max_active_responses(), eq 2);
-        assert_that!(sut_open.static_config().max_borrowed_requests(), eq 3);
-        assert_that!(sut_open.static_config().max_borrowed_responses(), eq 4);
-        assert_that!(sut_open.static_config().max_request_buffer_size(), eq 5);
+        assert_that!(sut_open.static_config().max_active_requests_per_client(), eq 1);
         assert_that!(sut_open.static_config().max_response_buffer_size(), eq 6);
         assert_that!(sut_open.static_config().max_servers(), eq 7);
         assert_that!(sut_open.static_config().max_clients(), eq 8);
         assert_that!(sut_open.static_config().max_nodes(), eq 9);
+        assert_that!(sut_open.static_config().max_borrowed_responses_per_pending_responses(), eq 20);
     }
 
     #[test]
@@ -901,15 +796,14 @@ mod service_request_response {
             assert_that!(Sut::does_exist(name, &config, MessagingPattern::RequestResponse).unwrap(), eq true);
         }
 
-        let mut number_of_listed_services = 0;
         Sut::list(&config, |service| {
             assert_that!(service_names, contains * service.static_details.name());
-            number_of_listed_services += 1;
+            service_names.retain(|v| v != service.static_details.name());
             CallbackProgression::Continue
         })
         .unwrap();
 
-        assert_that!(number_of_listed_services, eq service_names.len());
+        assert_that!(service_names, len 0);
     }
 
     #[test]
@@ -946,6 +840,118 @@ mod service_request_response {
             .request_response::<u64, u64>()
             .open();
         assert_that!(sut_3, is_ok);
+    }
+
+    #[test]
+    fn server_port_of_dropped_service_blocks_new_service_creation<Sut: Service>() {
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let _server = sut.server_builder().create().unwrap();
+        drop(sut);
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create();
+        assert_that!(result.err(), eq Some(RequestResponseCreateError::AlreadyExists));
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(result, is_ok);
+    }
+
+    #[test]
+    fn client_port_of_dropped_service_blocks_new_service_creation<Sut: Service>() {
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let _client = sut.client_builder().create().unwrap();
+        drop(sut);
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create();
+        assert_that!(result.err(), eq Some(RequestResponseCreateError::AlreadyExists));
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(result, is_ok);
+    }
+
+    #[test]
+    fn service_cannot_be_opened_by_more_clients_than_specified<Sut: Service>() {
+        const MAX_CLIENTS: usize = 8;
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        for max_clients in 1..MAX_CLIENTS {
+            let sut = node
+                .service_builder(&service_name)
+                .request_response::<u64, u64>()
+                .max_clients(max_clients)
+                .create()
+                .unwrap();
+
+            let mut clients = vec![];
+
+            for _ in 0..max_clients {
+                let client = sut.client_builder().create();
+                assert_that!(client, is_ok);
+                clients.push(client);
+            }
+
+            let client = sut.client_builder().create();
+            assert_that!(client.err(), eq Some(ClientCreateError::ExceedsMaxSupportedClients));
+        }
+    }
+
+    #[test]
+    fn service_cannot_be_opened_by_more_servers_than_specified<Sut: Service>() {
+        const MAX_SERVERS: usize = 8;
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        for max_servers in 1..MAX_SERVERS {
+            let sut = node
+                .service_builder(&service_name)
+                .request_response::<u64, u64>()
+                .max_servers(max_servers)
+                .create()
+                .unwrap();
+
+            let mut servers = vec![];
+
+            for _ in 0..max_servers {
+                let server = sut.server_builder().create();
+                assert_that!(server, is_ok);
+                servers.push(server);
+            }
+
+            let server = sut.server_builder().create();
+            assert_that!(server.err(), eq Some(ServerCreateError::ExceedsMaxSupportedServers));
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

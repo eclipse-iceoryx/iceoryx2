@@ -10,14 +10,36 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use crate::port::port_identifiers::{UniqueClientId, UniqueServerId};
+
 /// Request header used by
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
-pub struct RequestHeader {}
+pub struct RequestHeader {
+    pub(crate) client_port_id: UniqueClientId,
+}
+
+impl RequestHeader {
+    /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
+    /// which sent the [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn client_port_id(&self) -> UniqueClientId {
+        self.client_port_id
+    }
+}
 
 /// Response header used by
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
-pub struct ResponseHeader {}
+pub struct ResponseHeader {
+    pub(crate) server_port_id: UniqueServerId,
+}
+
+impl ResponseHeader {
+    /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server)
+    /// which sent the [`Response`](crate::response::Response)
+    pub fn server_port_id(&self) -> UniqueServerId {
+        self.server_port_id
+    }
+}

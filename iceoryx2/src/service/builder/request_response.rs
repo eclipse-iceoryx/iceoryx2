@@ -35,24 +35,18 @@ use super::{ServiceState, RETRY_LIMIT};
 pub enum RequestResponseOpenError {
     /// Service could not be openen since it does not exist
     DoesNotExist,
-    /// The [`Service`] has a lower maximum amount of active responses than requested.
-    DoesNotSupportRequestedAmountOfActiveResponses,
-    /// The [`Service`] has a lower maximum amount of active requests than requested.
-    DoesNotSupportRequestedAmountOfActiveRequests,
-    /// The [`Service`] has a lower maximum amount of borrowed responses than requested.
-    DoesNotSupportRequestedAmountOfBorrowedResponses,
-    /// The [`Service`] has a lower maximum amount of borrowed requests than requested.
-    DoesNotSupportRequestedAmountOfBorrowedRequests,
+    /// The [`Service`] has a lower maximum amount of [`ActiveRequest`](crate::active_request::ActiveRequest)s than requested.
+    DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
     /// The [`Service`] has a lower maximum response buffer size than requested.
     DoesNotSupportRequestedResponseBufferSize,
-    /// The [`Service`] has a lower maximum request buffer size than requested.
-    DoesNotSupportRequestedRequestBufferSize,
     /// The [`Service`] has a lower maximum number of servers than requested.
     DoesNotSupportRequestedAmountOfServers,
     /// The [`Service`] has a lower maximum number of clients than requested.
     DoesNotSupportRequestedAmountOfClients,
     /// The [`Service`] has a lower maximum number of nodes than requested.
     DoesNotSupportRequestedAmountOfNodes,
+    /// The [`Service`] has a lower maximum number of [`Response`](crate::response::Response) borrows than requested.
+    DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse,
     /// The maximum number of [`Node`](crate::node::Node)s have already opened the [`Service`].
     ExceedsMaxNumberOfNodes,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
@@ -226,15 +220,12 @@ pub struct Builder<
     override_response_alignment: Option<usize>,
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
-    verify_max_active_responses: bool,
-    verify_max_active_requests: bool,
-    verify_max_borrowed_responses: bool,
-    verify_max_borrowed_requests: bool,
+    verify_max_active_requests_per_client: bool,
     verify_max_response_buffer_size: bool,
-    verify_max_request_buffer_size: bool,
     verify_max_servers: bool,
     verify_max_clients: bool,
     verify_max_nodes: bool,
+    verify_max_borrowed_responses_per_pending_response: bool,
 
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -257,15 +248,12 @@ impl<
             override_response_alignment: None,
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
-            verify_max_active_responses: false,
-            verify_max_active_requests: false,
-            verify_max_borrowed_responses: false,
-            verify_max_borrowed_requests: false,
+            verify_max_active_requests_per_client: false,
             verify_max_response_buffer_size: false,
-            verify_max_request_buffer_size: false,
             verify_max_servers: false,
             verify_max_clients: false,
             verify_max_nodes: false,
+            verify_max_borrowed_responses_per_pending_response: false,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -351,39 +339,12 @@ impl<
         self
     }
 
-    /// Defines how many active responses a [`Client`](crate::port::client::Client) can hold in
-    /// parallel. The objects are used to receive the samples to a request that was sent earlier
-    /// to a [`Server`](crate::port::server::Server)
-    pub fn max_active_responses(mut self, value: usize) -> Self {
-        self.config_details_mut().max_active_responses = value;
-        self.verify_max_active_responses = true;
-        self
-    }
-
     /// Defines how many active requests a [`Server`](crate::port::server::Server) can hold in
-    /// parallel. The objects are used to send answers to a request that was received earlier
+    /// parallel per [`Client`](crate::port::client::Client). The objects are used to send answers to a request that was received earlier
     /// from a [`Client`](crate::port::client::Client)
-    pub fn max_active_requests(mut self, value: usize) -> Self {
-        self.config_details_mut().max_active_requests = value;
-        self.verify_max_active_requests = true;
-        self
-    }
-
-    /// If the [`Service`] is created it defines how many samples a
-    /// response can borrow at most in parallel. If an existing
-    /// [`Service`] is opened it defines the minimum required.
-    pub fn max_borrowed_responses(mut self, value: usize) -> Self {
-        self.config_details_mut().max_borrowed_responses = value;
-        self.verify_max_borrowed_responses = true;
-        self
-    }
-
-    /// If the [`Service`] is created it defines how many samples a
-    /// request can borrow at most in parallel. If an existing
-    /// [`Service`] is opened it defines the minimum required.
-    pub fn max_borrowed_requests(mut self, value: usize) -> Self {
-        self.config_details_mut().max_borrowed_requests = value;
-        self.verify_max_borrowed_requests = true;
+    pub fn max_active_requests_per_client(mut self, value: usize) -> Self {
+        self.config_details_mut().max_active_requests_per_client = value;
+        self.verify_max_active_requests_per_client = true;
         self
     }
 
@@ -393,15 +354,6 @@ impl<
     pub fn max_response_buffer_size(mut self, value: usize) -> Self {
         self.config_details_mut().max_response_buffer_size = value;
         self.verify_max_response_buffer_size = true;
-        self
-    }
-
-    /// If the [`Service`] is created it defines how many requests fit in the
-    /// [`Server`](crate::port::server::Server)s buffer. If an existing
-    /// [`Service`] is opened it defines the minimum required.
-    pub fn max_request_buffer_size(mut self, value: usize) -> Self {
-        self.config_details_mut().max_request_buffer_size = value;
-        self.verify_max_request_buffer_size = true;
         self
     }
 
@@ -432,15 +384,19 @@ impl<
         self
     }
 
+    /// If the [`Service`] is created it defines how many [`Response`](crate::response::Response)s shall
+    /// be able to be borrowed in parallel per [`PendingResponse`](crate::pending_response::PendingResponse). If an existing [`Service`] is opened it defines how many
+    /// borrows must be at least supported.
+    pub fn max_borrowed_responses_per_pending_response(mut self, value: usize) -> Self {
+        self.config_details_mut()
+            .max_borrowed_responses_per_pending_response = value;
+        self.verify_max_borrowed_responses_per_pending_response = true;
+        self
+    }
+
     fn adjust_configuration_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.request_response_mut();
-
-        if settings.max_request_buffer_size == 0 {
-            warn!(from origin,
-                "Setting the maximum size of the request buffer to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_request_buffer_size = 1;
-        }
 
         if settings.max_response_buffer_size == 0 {
             warn!(from origin,
@@ -448,28 +404,10 @@ impl<
             settings.max_response_buffer_size = 1;
         }
 
-        if settings.max_active_requests == 0 {
+        if settings.max_active_requests_per_client == 0 {
             warn!(from origin,
                 "Setting the maximum number of active requests to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_active_requests = 1;
-        }
-
-        if settings.max_active_responses == 0 {
-            warn!(from origin,
-                "Setting the maximum number of active responses to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_active_responses = 1;
-        }
-
-        if settings.max_borrowed_responses == 0 {
-            warn!(from origin,
-                "Setting the maximum number of borrowed responses to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_borrowed_responses = 1;
-        }
-
-        if settings.max_borrowed_requests == 0 {
-            warn!(from origin,
-                "Setting the maximum number of borrowed requests to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.max_borrowed_requests = 1;
+            settings.max_active_requests_per_client = 1;
         }
 
         if settings.max_servers == 0 {
@@ -488,6 +426,12 @@ impl<
             warn!(from origin,
                 "Setting the maximum number of nodes to 0 is not supported. Adjust it to 1, the smallest supported value.");
             settings.max_nodes = 1;
+        }
+
+        if settings.max_borrowed_responses_per_pending_response == 0 {
+            warn!(from origin,
+                "Setting the maximum number of borrowed responses per pending response to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_borrowed_responses_per_pending_response = 1;
         }
     }
 
@@ -534,40 +478,22 @@ impl<
                 msg);
         }
 
-        if self.verify_max_active_responses
-            && existing_configuration.max_active_responses
-                < required_configuration.max_active_responses
+        if self.verify_max_active_requests_per_client
+            && existing_configuration.max_active_requests_per_client
+                < required_configuration.max_active_requests_per_client
         {
-            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveResponses,
-                "{} since the service supports only {} active responses but {} are required.",
-                msg, existing_configuration.max_active_responses, required_configuration.max_active_responses);
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
+                "{} since the service supports only {} active requests per client but {} are required.",
+                msg, existing_configuration.max_active_requests_per_client, required_configuration.max_active_requests_per_client);
         }
 
-        if self.verify_max_active_requests
-            && existing_configuration.max_active_requests
-                < required_configuration.max_active_requests
+        if self.verify_max_borrowed_responses_per_pending_response
+            && existing_configuration.max_borrowed_responses_per_pending_response
+                < required_configuration.max_borrowed_responses_per_pending_response
         {
-            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequests,
-                "{} since the service supports only {} active requests but {} are required.",
-                msg, existing_configuration.max_active_requests, required_configuration.max_active_requests);
-        }
-
-        if self.verify_max_borrowed_responses
-            && existing_configuration.max_borrowed_responses
-                < required_configuration.max_borrowed_responses
-        {
-            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponses,
-                "{} since the service supports only {} borrowed responses but {} are required.",
-                msg, existing_configuration.max_borrowed_responses, required_configuration.max_borrowed_responses);
-        }
-
-        if self.verify_max_borrowed_requests
-            && existing_configuration.max_borrowed_requests
-                < required_configuration.max_borrowed_requests
-        {
-            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedRequests,
-                "{} since the service supports only {} borrowed requests but {} are required.",
-                msg, existing_configuration.max_borrowed_requests, required_configuration.max_borrowed_requests);
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse,
+                "{} since the service supports only {} borrowed responses per pending response but {} are required.",
+                msg, existing_configuration.max_borrowed_responses_per_pending_response, required_configuration.max_borrowed_responses_per_pending_response);
         }
 
         if self.verify_max_response_buffer_size
@@ -577,15 +503,6 @@ impl<
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedResponseBufferSize,
                 "{} since the service supports a maximum response buffer size of {} but a size of {} is required.",
                 msg, existing_configuration.max_response_buffer_size, required_configuration.max_response_buffer_size);
-        }
-
-        if self.verify_max_request_buffer_size
-            && existing_configuration.max_request_buffer_size
-                < required_configuration.max_request_buffer_size
-        {
-            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedRequestBufferSize,
-                "{} since the service supports a maximum request buffer size of {} but a size of {} is required.",
-                msg, existing_configuration.max_request_buffer_size, required_configuration.max_request_buffer_size);
         }
 
         if self.verify_max_servers
@@ -876,21 +793,20 @@ impl<
             }
             retry_count += 1;
 
-            match self.is_service_available(msg)? {
-                Some(_) => match self.open_impl(attributes) {
+            if self.is_service_available(msg)?.is_some() {
+                match self.open_impl(attributes) {
                     Ok(factory) => return Ok(factory),
                     Err(RequestResponseOpenError::DoesNotExist) => continue,
                     Err(e) => return Err(e.into()),
-                },
-                None => {
-                    match self.create_impl(&AttributeSpecifier(attributes.attributes().clone())) {
-                        Ok(factory) => return Ok(factory),
-                        Err(RequestResponseCreateError::AlreadyExists)
-                        | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
-                            continue;
-                        }
-                        Err(e) => return Err(e.into()),
+                }
+            } else {
+                match self.create_impl(&AttributeSpecifier(attributes.attributes().clone())) {
+                    Ok(factory) => return Ok(factory),
+                    Err(RequestResponseCreateError::AlreadyExists)
+                    | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
+                        continue;
                     }
+                    Err(e) => return Err(e.into()),
                 }
             }
         }

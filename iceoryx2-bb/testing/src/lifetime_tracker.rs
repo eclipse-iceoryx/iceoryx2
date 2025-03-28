@@ -25,6 +25,7 @@ impl LifetimeTrackingState {
     }
 }
 
+#[repr(C)]
 #[derive(Debug)]
 pub struct LifetimeTracker {}
 

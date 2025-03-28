@@ -31,7 +31,11 @@
 //! ```
 
 use super::request_response::PortFactory;
-use crate::{port::client::Client, prelude::UnableToDeliverStrategy, service};
+use crate::{
+    port::{client::Client, DegradationAction, DegradationCallback},
+    prelude::UnableToDeliverStrategy,
+    service,
+};
 use core::fmt::Debug;
 use iceoryx2_bb_log::fail;
 
@@ -77,6 +81,7 @@ pub struct PortFactoryClient<
     >,
     pub(crate) max_loaned_requests: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
 }
 
 impl<
@@ -117,10 +122,14 @@ impl<
             factory,
             unable_to_deliver_strategy: defs.client_unable_to_deliver_strategy,
             max_loaned_requests: defs.client_max_loaned_requests,
+            degradation_callback: None,
         }
     }
 
-    /// Sets the [`UnableToDeliverStrategy`].
+    /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Client`] shall behave
+    /// when a [`Server`](crate::port::server::Server) cannot receive a
+    /// [`RequestMut`](crate::request_mut::RequestMut) since
+    /// its internal buffer is full.
     pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
         self.unable_to_deliver_strategy = value;
         self
@@ -132,6 +141,23 @@ impl<
         self
     }
 
+    /// Sets the [`DegradationCallback`] of the [`Client`]. Whenever a connection to a
+    /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
+    /// is called and depending on the returned [`DegradationAction`] measures will be taken.
+    pub fn set_degradation_callback<
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
+    >(
+        mut self,
+        callback: Option<F>,
+    ) -> Self {
+        match callback {
+            Some(c) => self.degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.degradation_callback = None,
+        }
+
+        self
+    }
+
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.
     pub fn create(
         self,
@@ -139,8 +165,9 @@ impl<
         Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         ClientCreateError,
     > {
-        Ok(fail!(from self,
-              when Client::new(&self),
+        let origin = format!("{:?}", self);
+        Ok(fail!(from origin,
+              when Client::new(self),
               "Failed to create new Client port."))
     }
 }

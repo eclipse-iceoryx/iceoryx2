@@ -41,7 +41,7 @@ pub enum iox2_send_error_e {
     CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS = IOX2_OK as isize + 1,
     CONNECTION_CORRUPTED,
     LOAN_ERROR_OUT_OF_MEMORY,
-    LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES,
+    LOAN_ERROR_EXCEEDS_MAX_LOANS,
     LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE,
     LOAN_ERROR_INTERNAL_FAILURE,
     CONNECTION_ERROR,
@@ -57,8 +57,8 @@ impl IntoCInt for SendError {
             SendError::LoanError(LoanError::OutOfMemory) => {
                 iox2_send_error_e::LOAN_ERROR_OUT_OF_MEMORY
             }
-            SendError::LoanError(LoanError::ExceedsMaxLoanedSamples) => {
-                iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES
+            SendError::LoanError(LoanError::ExceedsMaxLoans) => {
+                iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOANS
             }
             SendError::LoanError(LoanError::ExceedsMaxLoanSize) => {
                 iox2_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE
@@ -75,7 +75,7 @@ impl IntoCInt for LoanError {
     fn into_c_int(self) -> c_int {
         (match self {
             LoanError::OutOfMemory => iox2_loan_error_e::OUT_OF_MEMORY,
-            LoanError::ExceedsMaxLoanedSamples => iox2_loan_error_e::EXCEEDS_MAX_LOANED_SAMPLES,
+            LoanError::ExceedsMaxLoans => iox2_loan_error_e::EXCEEDS_MAX_LOANED_SAMPLES,
             LoanError::ExceedsMaxLoanSize => iox2_loan_error_e::EXCEEDS_MAX_LOAN_SIZE,
             LoanError::InternalFailure => iox2_loan_error_e::INTERNAL_FAILURE,
         }) as c_int

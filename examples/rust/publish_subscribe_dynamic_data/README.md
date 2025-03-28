@@ -14,6 +14,7 @@ allowing users to send samples of arbitrary sizes.
 > * be self contained, no heap, no pointers to external sources
 > * have a uniform memory representation -> `#[repr(C)]`
 > * not use pointers to manage their internal structure
+> * the type and its members don't implement `Drop` explicitly
 >
 > Data types like `String` or `Vec` will cause undefined behavior and may
 > result in segmentation faults. We provide alternative data types that are

@@ -312,19 +312,10 @@ pub struct RequestResonse {
     pub enable_safe_overflow_for_requests: bool,
     /// Defines if the response buffer of the [`Service`] safely overflows.
     pub enable_safe_overflow_for_responses: bool,
-    /// The maximum of active responses a [`crate::port::server::Server`] can hold in parallel.
-    pub max_active_responses: usize,
-    /// The maximum of active requests a [`crate::port::client::Client`] can hold in parallel.
-    pub max_active_requests: usize,
-    /// The maximum number of responses a [`crate::port::client::Client`] can borrow from
-    /// an active request.
-    pub max_borrowed_responses: usize,
-    /// The maximum number of requests a [`crate::port::server::Server`] can borrow.
-    pub max_borrowed_requests: usize,
-    /// The maximum buffer size for responses for an active request.
+    /// The maximum of [`crate::active_request::ActiveRequest`]s a [`crate::port::server::Server`] can hold in parallel per [`crate::port::client::Client`].
+    pub max_active_requests_per_client: usize,
+    /// The maximum buffer size for [`crate::response::Response`]s for a [`crate::pending_response::PendingResponse`].
     pub max_response_buffer_size: usize,
-    /// The maximum buffer size for requests for a [`crate::port::server::Server`].
-    pub max_request_buffer_size: usize,
     /// The maximum amount of supported [`crate::port::server::Server`]
     pub max_servers: usize,
     /// The maximum amount of supported [`crate::port::client::Client`]
@@ -332,9 +323,11 @@ pub struct RequestResonse {
     /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub max_nodes: usize,
-    /// Defines how many requests a client can loan in parallel.
+    /// The maximum amount of borrowed [`crate::response::Response`] per [`crate::pending_response::PendingResponse`] on the [`crate::port::client::Client`] side.
+    pub max_borrowed_responses_per_pending_response: usize,
+    /// Defines how many [`crate::request_mut::RequestMut`] a [`crate::port::client::Client`] can loan in parallel.
     pub client_max_loaned_requests: usize,
-    /// Defines how many responses a server can loan in parallel for a request.
+    /// Defines how many [`crate::response_mut::ResponseMut`] a [`crate::port::server::Server`] can loan in parallel per [`crate::active_request::ActiveRequest`].
     pub server_max_loaned_responses_per_request: usize,
     /// Defines the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
     /// could not deliver the request to the [`Server`](crate::port::server::Server).
@@ -389,15 +382,12 @@ impl Default for Config {
                 request_response: RequestResonse {
                     enable_safe_overflow_for_requests: true,
                     enable_safe_overflow_for_responses: true,
-                    max_active_responses: 4,
-                    max_active_requests: 2,
-                    max_borrowed_responses: 4,
-                    max_borrowed_requests: 2,
+                    max_active_requests_per_client: 4,
                     max_response_buffer_size: 2,
-                    max_request_buffer_size: 4,
                     max_servers: 2,
                     max_clients: 8,
                     max_nodes: 20,
+                    max_borrowed_responses_per_pending_response: 2,
                     client_max_loaned_requests: 2,
                     server_max_loaned_responses_per_request: 2,
                     client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,

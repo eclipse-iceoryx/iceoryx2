@@ -40,7 +40,7 @@ use core::sync::atomic::Ordering;
 extern crate alloc;
 
 use iceoryx2_bb_container::queue::Queue;
-use iceoryx2_bb_elementary::visitor::Visitor;
+use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
@@ -56,7 +56,7 @@ use crate::{raw_sample::RawSample, sample::Sample, service};
 
 use super::details::chunk::Chunk;
 use super::details::chunk_details::ChunkDetails;
-use super::details::incoming_connections::*;
+use super::details::receiver::*;
 use super::port_identifiers::UniqueSubscriberId;
 use super::update_connections::{ConnectionFailure, UpdateConnections};
 use super::ReceiveError;
@@ -91,7 +91,7 @@ pub struct Subscriber<
     UserHeader: Debug,
 > {
     dynamic_subscriber_handle: Option<ContainerHandle>,
-    publisher_connections: IncomingConnections<Service>,
+    receiver: Receiver<Service>,
 
     publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
     _payload: PhantomData<Payload>,
@@ -103,7 +103,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Drop
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_subscriber_handle {
-            self.publisher_connections
+            self.receiver
                 .service_state
                 .dynamic_storage
                 .get()
@@ -144,7 +144,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             None => static_config.subscriber_max_buffer_size,
         };
 
-        let publisher_connections = IncomingConnections {
+        let receiver = Receiver {
             connections: (0..publisher_list.capacity())
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
@@ -154,8 +154,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
             enable_safe_overflow: static_config.enable_safe_overflow,
             buffer_size,
-            visitor: Visitor::new(),
-            to_be_removed_connections: UnsafeCell::new(Queue::new(
+            tagger: CyclicTagger::new(),
+            to_be_removed_connections: Some(UnsafeCell::new(Queue::new(
                 service
                     .__internal_state()
                     .shared_node
@@ -163,12 +163,12 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                     .defaults
                     .publish_subscribe
                     .subscriber_expired_connection_buffer,
-            )),
-            degration_callback: config.degration_callback,
+            ))),
+            degradation_callback: config.degradation_callback,
         };
 
         let mut new_self = Self {
-            publisher_connections,
+            receiver,
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             dynamic_subscriber_handle: None,
             _payload: PhantomData,
@@ -207,12 +207,12 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     }
 
     fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
-        self.publisher_connections.start_update_connection_cycle();
+        self.receiver.start_update_connection_cycle();
 
         let mut result = Ok(());
         unsafe {
             (*self.publisher_list_state.get()).for_each(|h, details| {
-                let inner_result = self.publisher_connections.update_connection(
+                let inner_result = self.receiver.update_connection(
                     h.index() as usize,
                     SenderDetails {
                         port_id: details.publisher_id.value(),
@@ -229,28 +229,26 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             })
         };
 
-        self.publisher_connections.finish_update_connection_cycle();
+        self.receiver.finish_update_connection_cycle();
 
         result
     }
 
     /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
     pub fn id(&self) -> UniqueSubscriberId {
-        UniqueSubscriberId(UniqueSystemId::from(
-            self.publisher_connections.receiver_port_id(),
-        ))
+        UniqueSubscriberId(UniqueSystemId::from(self.receiver.receiver_port_id()))
     }
 
     /// Returns the internal buffer size of the [`Subscriber`].
     pub fn buffer_size(&self) -> usize {
-        self.publisher_connections.buffer_size
+        self.receiver.buffer_size
     }
 
     /// Returns true if the [`Subscriber`] has samples in the buffer that can be received with [`Subscriber::receive`].
     pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
-        self.publisher_connections.has_samples()
+        self.receiver.has_samples()
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
@@ -260,7 +258,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 "Some samples are not being received since not all connections to publishers could be established.");
         }
 
-        self.publisher_connections.receive()
+        self.receiver.receive()
     }
 }
 
@@ -269,7 +267,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Upda
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
-            self.publisher_connections
+            self.receiver
                 .service_state
                 .dynamic_storage
                 .get()
@@ -349,8 +347,7 @@ impl<Service: service::Service, UserHeader: Debug>
         Ok(self.receive_impl()?.map(|(details, chunk)| {
             let header_ptr = chunk.header as *const Header;
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
-            let number_of_bytes =
-                number_of_elements as usize * self.publisher_connections.payload_size();
+            let number_of_bytes = number_of_elements as usize * self.receiver.payload_size();
 
             Sample {
                 details,

@@ -1016,8 +1016,8 @@ constexpr auto from<int, iox2::SendError>(const int value) noexcept -> iox2::Sen
         return iox2::SendError::ConnectionCorrupted;
     case iox2_send_error_e_LOAN_ERROR_OUT_OF_MEMORY:
         return iox2::SendError::LoanErrorOutOfMemory;
-    case iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES:
-        return iox2::SendError::LoanErrorExceedsMaxLoanedSamples;
+    case iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANS:
+        return iox2::SendError::LoanErrorExceedsMaxLoans;
     case iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE:
         return iox2::SendError::LoanErrorExceedsMaxLoanSize;
     case iox2_send_error_e_LOAN_ERROR_INTERNAL_FAILURE:
@@ -1038,8 +1038,8 @@ constexpr auto from<iox2::SendError, iox2_send_error_e>(const iox2::SendError va
         return iox2_send_error_e_CONNECTION_CORRUPTED;
     case iox2::SendError::LoanErrorOutOfMemory:
         return iox2_send_error_e_LOAN_ERROR_OUT_OF_MEMORY;
-    case iox2::SendError::LoanErrorExceedsMaxLoanedSamples:
-        return iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANED_SAMPLES;
+    case iox2::SendError::LoanErrorExceedsMaxLoans:
+        return iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANS;
     case iox2::SendError::LoanErrorExceedsMaxLoanSize:
         return iox2_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE;
     case iox2::SendError::LoanErrorInternalFailure:
@@ -1064,8 +1064,8 @@ constexpr auto from<int, iox2::ReceiveError>(const int value) noexcept -> iox2::
         return iox2::ReceiveError::FailedToEstablishConnection;
     case iox2_receive_error_e_UNABLE_TO_MAP_SENDERS_DATA_SEGMENT:
         return iox2::ReceiveError::UnableToMapSendersDataSegment;
-    case iox2_receive_error_e_EXCEEDS_MAX_BORROWED_SAMPLES:
-        return iox2::ReceiveError::ExceedsMaxBorrowedSamples;
+    case iox2_receive_error_e_EXCEEDS_MAX_BORROWS:
+        return iox2::ReceiveError::ExceedsMaxBorrows;
     }
 
     IOX_UNREACHABLE();
@@ -1079,8 +1079,8 @@ constexpr auto from<iox2::ReceiveError, iox2_receive_error_e>(const iox2::Receiv
         return iox2_receive_error_e_FAILED_TO_ESTABLISH_CONNECTION;
     case iox2::ReceiveError::UnableToMapSendersDataSegment:
         return iox2_receive_error_e_UNABLE_TO_MAP_SENDERS_DATA_SEGMENT;
-    case iox2::ReceiveError::ExceedsMaxBorrowedSamples:
-        return iox2_receive_error_e_EXCEEDS_MAX_BORROWED_SAMPLES;
+    case iox2::ReceiveError::ExceedsMaxBorrows:
+        return iox2_receive_error_e_EXCEEDS_MAX_BORROWS;
     }
 
     IOX_UNREACHABLE();
