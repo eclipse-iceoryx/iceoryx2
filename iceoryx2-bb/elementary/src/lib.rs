@@ -20,7 +20,7 @@
 pub mod enum_gen;
 pub mod identifiable;
 pub mod relocatable;
-pub mod zero_copy_capable;
+pub mod zero_copy_send;
 
 mod as_cstr;
 pub use as_cstr::*;
