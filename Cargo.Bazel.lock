@@ -1,5 +1,5 @@
 {
-  "checksum": "cc8259d45af87d3f18766c4fbf60cc4bea31d815615f4226c9d6097c273d5ddd",
+  "checksum": "c0294216ae977097aad891704f8414d46ad64dde120eab3a6437fdfa59210ece",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -1650,6 +1650,81 @@
       },
       "license": "MPL-2.0"
     },
+    "console 0.14.1": {
+      "name": "console",
+      "version": "0.14.1",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/console/0.14.1/download",
+          "sha256": "3993e6445baa160675931ec041a5e03ca84b9c6e32a056150d3aa2bdda0a1f45"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "console",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "console",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "ansi-parsing",
+            "default",
+            "regex",
+            "unicode-width"
+          ],
+          "selects": {}
+        },
+        "deps": {
+          "common": [
+            {
+              "id": "lazy_static 1.5.0",
+              "target": "lazy_static"
+            },
+            {
+              "id": "libc 0.2.169",
+              "target": "libc"
+            },
+            {
+              "id": "regex 1.11.0",
+              "target": "regex"
+            },
+            {
+              "id": "terminal_size 0.1.17",
+              "target": "terminal_size"
+            },
+            {
+              "id": "unicode-width 0.1.14",
+              "target": "unicode_width"
+            }
+          ],
+          "selects": {
+            "cfg(windows)": [
+              {
+                "id": "encode_unicode 0.3.6",
+                "target": "encode_unicode"
+              },
+              {
+                "id": "winapi 0.3.9",
+                "target": "winapi"
+              }
+            ]
+          }
+        },
+        "edition": "2018",
+        "version": "0.14.1"
+      },
+      "license": "MIT"
+    },
     "console 0.15.10": {
       "name": "console",
       "version": "0.15.10",
@@ -1704,6 +1779,154 @@
       },
       "license": "MIT"
     },
+    "dialoguer 0.8.0": {
+      "name": "dialoguer",
+      "version": "0.8.0",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/dialoguer/0.8.0/download",
+          "sha256": "c9dd058f8b65922819fabb4a41e7d1964e56344042c26efbccd465202c23fa0c"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "dialoguer",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "dialoguer",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "console 0.14.1",
+              "target": "console"
+            },
+            {
+              "id": "lazy_static 1.5.0",
+              "target": "lazy_static"
+            },
+            {
+              "id": "tempfile 3.13.0",
+              "target": "tempfile"
+            },
+            {
+              "id": "zeroize 1.8.1",
+              "target": "zeroize"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2018",
+        "version": "0.8.0"
+      },
+      "license": "MIT"
+    },
+    "dirs 5.0.1": {
+      "name": "dirs",
+      "version": "5.0.1",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/dirs/5.0.1/download",
+          "sha256": "44c45a9d03d6676652bcb5e724c7e988de1acad23a711b5217ab9cbecbec2225"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "dirs",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "dirs",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "dirs-sys 0.4.1",
+              "target": "dirs_sys"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2015",
+        "version": "5.0.1"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
+    "dirs-sys 0.4.1": {
+      "name": "dirs-sys",
+      "version": "0.4.1",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/dirs-sys/0.4.1/download",
+          "sha256": "520f05a5cbd335fae5a99ff7a6ab8627577660ee5cfd6a94a6a929b52ff0321c"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "dirs_sys",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "dirs_sys",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "option-ext 0.2.0",
+              "target": "option_ext"
+            }
+          ],
+          "selects": {
+            "cfg(target_os = \"redox\")": [
+              {
+                "id": "redox_users 0.4.6",
+                "target": "redox_users"
+              }
+            ],
+            "cfg(unix)": [
+              {
+                "id": "libc 0.2.169",
+                "target": "libc"
+              }
+            ],
+            "cfg(windows)": [
+              {
+                "id": "windows-sys 0.48.0",
+                "target": "windows_sys"
+              }
+            ]
+          }
+        },
+        "edition": "2015",
+        "version": "0.4.1"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
     "either 1.13.0": {
       "name": "either",
       "version": "1.13.0",
@@ -1740,6 +1963,43 @@
         "version": "1.13.0"
       },
       "license": "MIT OR Apache-2.0"
+    },
+    "encode_unicode 0.3.6": {
+      "name": "encode_unicode",
+      "version": "0.3.6",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/encode_unicode/0.3.6/download",
+          "sha256": "a357d28ed41a50f9c765dbfe56cbc04a64e53e5fc58ba79fbc34c10ef3df831f"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "encode_unicode",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "encode_unicode",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "default",
+            "std"
+          ],
+          "selects": {}
+        },
+        "edition": "2015",
+        "version": "0.3.6"
+      },
+      "license": "MIT/Apache-2.0"
     },
     "encode_unicode 1.0.0": {
       "name": "encode_unicode",
@@ -2973,6 +3233,18 @@
               "target": "colored"
             },
             {
+              "id": "dialoguer 0.8.0",
+              "target": "dialoguer"
+            },
+            {
+              "id": "dirs 5.0.1",
+              "target": "dirs"
+            },
+            {
+              "id": "enum-iterator 2.1.0",
+              "target": "enum_iterator"
+            },
+            {
               "id": "human-panic 1.2.3",
               "target": "human_panic"
             },
@@ -2991,6 +3263,10 @@
             {
               "id": "serde_yaml 0.9.34+deprecated",
               "target": "serde_yaml"
+            },
+            {
+              "id": "toml 0.8.19",
+              "target": "toml"
             }
           ],
           "selects": {}
@@ -3626,6 +3902,49 @@
       },
       "license": "ISC"
     },
+    "libredox 0.1.3": {
+      "name": "libredox",
+      "version": "0.1.3",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/libredox/0.1.3/download",
+          "sha256": "c0ff37bd590ca25063e35af745c343cb7a0271906fb7b37e4813e8f79f00268d"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "libredox",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "libredox",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "bitflags 2.6.0",
+              "target": "bitflags"
+            },
+            {
+              "id": "libc 0.2.169",
+              "target": "libc"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.1.3"
+      },
+      "license": "MIT"
+    },
     "linux-raw-sys 0.4.14": {
       "name": "linux-raw-sys",
       "version": "0.4.14",
@@ -3949,6 +4268,36 @@
       },
       "license": "MIT OR Apache-2.0"
     },
+    "option-ext 0.2.0": {
+      "name": "option-ext",
+      "version": "0.2.0",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/option-ext/0.2.0/download",
+          "sha256": "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "option_ext",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "option_ext",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2015",
+        "version": "0.2.0"
+      },
+      "license": "MPL-2.0"
+    },
     "os_info 3.8.2": {
       "name": "os_info",
       "version": "3.8.2",
@@ -4183,6 +4532,53 @@
         "version": "1.0.37"
       },
       "license": "MIT OR Apache-2.0"
+    },
+    "redox_users 0.4.6": {
+      "name": "redox_users",
+      "version": "0.4.6",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/redox_users/0.4.6/download",
+          "sha256": "ba009ff324d1fc1b900bd1fdb31564febe58a8ccc8a6fdbb93b543d33b13ca43"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "redox_users",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "redox_users",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [
+            {
+              "id": "getrandom 0.2.15",
+              "target": "getrandom"
+            },
+            {
+              "id": "libredox 0.1.3",
+              "target": "libredox"
+            },
+            {
+              "id": "thiserror 1.0.64",
+              "target": "thiserror"
+            }
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.4.6"
+      },
+      "license": "MIT"
     },
     "regex 1.11.0": {
       "name": "regex",
@@ -5295,6 +5691,53 @@
       },
       "license": "MIT OR Apache-2.0"
     },
+    "terminal_size 0.1.17": {
+      "name": "terminal_size",
+      "version": "0.1.17",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/terminal_size/0.1.17/download",
+          "sha256": "633c1a546cee861a1a6d0dc69ebeca693bf4296661ba7852b9d21d159e0506df"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "terminal_size",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "terminal_size",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "deps": {
+          "common": [],
+          "selects": {
+            "cfg(not(windows))": [
+              {
+                "id": "libc 0.2.169",
+                "target": "libc"
+              }
+            ],
+            "cfg(windows)": [
+              {
+                "id": "winapi 0.3.9",
+                "target": "winapi"
+              }
+            ]
+          }
+        },
+        "edition": "2018",
+        "version": "0.1.17"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
     "termsize 0.1.9": {
       "name": "termsize",
       "version": "0.1.9",
@@ -5678,6 +6121,43 @@
       },
       "license": "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
     },
+    "unicode-width 0.1.14": {
+      "name": "unicode-width",
+      "version": "0.1.14",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/unicode-width/0.1.14/download",
+          "sha256": "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "unicode_width",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "unicode_width",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "cjk",
+            "default"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "0.1.14"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
     "unsafe-libyaml 0.2.11": {
       "name": "unsafe-libyaml",
       "version": "0.2.11",
@@ -5912,9 +6392,14 @@
         ],
         "crate_features": {
           "common": [
+            "consoleapi",
             "fileapi",
             "handleapi",
-            "wincon"
+            "processenv",
+            "winbase",
+            "wincon",
+            "winnt",
+            "winuser"
           ],
           "selects": {}
         },
@@ -6085,6 +6570,7 @@
           "common": [
             "Win32",
             "Win32_Foundation",
+            "Win32_Globalization",
             "Win32_Networking",
             "Win32_Networking_WinSock",
             "Win32_Security",
@@ -6092,6 +6578,7 @@
             "Win32_Storage",
             "Win32_Storage_FileSystem",
             "Win32_System",
+            "Win32_System_Com",
             "Win32_System_Console",
             "Win32_System_Diagnostics",
             "Win32_System_Diagnostics_Debug",
@@ -6103,6 +6590,8 @@
             "Win32_System_SystemServices",
             "Win32_System_Threading",
             "Win32_System_WindowsProgramming",
+            "Win32_UI",
+            "Win32_UI_Shell",
             "default"
           ],
           "selects": {}
@@ -7223,6 +7712,43 @@
         "version": "0.6.20"
       },
       "license": "MIT"
+    },
+    "zeroize 1.8.1": {
+      "name": "zeroize",
+      "version": "1.8.1",
+      "repository": {
+        "Http": {
+          "url": "https://static.crates.io/crates/zeroize/1.8.1/download",
+          "sha256": "ced3678a2879b30306d323f4542626697a464a97c0a07c9aebf7ebca65cd4dde"
+        }
+      },
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "zeroize",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "zeroize",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "crate_features": {
+          "common": [
+            "alloc",
+            "default"
+          ],
+          "selects": {}
+        },
+        "edition": "2021",
+        "version": "1.8.1"
+      },
+      "license": "Apache-2.0 OR MIT"
     }
   },
   "binary_crates": [],
@@ -7394,7 +7920,38 @@
       "x86_64-unknown-linux-gnu",
       "x86_64-unknown-none"
     ],
+    "cfg(not(windows))": [
+      "aarch64-apple-darwin",
+      "aarch64-apple-ios",
+      "aarch64-apple-ios-sim",
+      "aarch64-fuchsia",
+      "aarch64-linux-android",
+      "aarch64-unknown-linux-gnu",
+      "arm-unknown-linux-gnueabi",
+      "armv7-linux-androideabi",
+      "armv7-unknown-linux-gnueabi",
+      "i686-apple-darwin",
+      "i686-linux-android",
+      "i686-unknown-freebsd",
+      "i686-unknown-linux-gnu",
+      "powerpc-unknown-linux-gnu",
+      "riscv32imc-unknown-none-elf",
+      "riscv64gc-unknown-none-elf",
+      "s390x-unknown-linux-gnu",
+      "thumbv7em-none-eabi",
+      "thumbv8m.main-none-eabi",
+      "wasm32-unknown-unknown",
+      "wasm32-wasi",
+      "x86_64-apple-darwin",
+      "x86_64-apple-ios",
+      "x86_64-fuchsia",
+      "x86_64-linux-android",
+      "x86_64-unknown-freebsd",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-none"
+    ],
     "cfg(target_os = \"hermit\")": [],
+    "cfg(target_os = \"redox\")": [],
     "cfg(target_os = \"wasi\")": [
       "wasm32-wasi"
     ],

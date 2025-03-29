@@ -25,12 +25,14 @@
     [#579](https://github.com/eclipse-iceoryx/iceoryx2/issues/579)
 * Use 'std_instead_of_alloc' and 'alloc_instead_of_core' clippy warning
     [#581](https://github.com/eclipse-iceoryx/iceoryx2/issues/581)
-* Intoduce platform abstraction based on the 'libc' crate
+* Introduce platform abstraction based on the 'libc' crate
     [#604](https://github.com/eclipse-iceoryx/iceoryx2/issues/604)
 * Extend benchmarks to test setups with multiple sending/receiving ports
     [#610](https://github.com/eclipse-iceoryx/iceoryx2/issues/610)
 * Reduce iceoryx2 dependencies
     [#640](https://github.com/eclipse-iceoryx/iceoryx2/issues/640)
+* Allow customizable payload and user header type name in C++ binding
+    [#643](https://github.com/eclipse-iceoryx/iceoryx2/issues/643)
 
 ### Bugfixes
 

@@ -10,13 +10,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-cmake_minimum_required(VERSION 3.22)
-project(examples_c LANGUAGES C)
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
-add_subdirectory(discovery)
-add_subdirectory(domains)
-add_subdirectory(event)
-add_subdirectory(event_multiplexing)
-add_subdirectory(publish_subscribe)
-add_subdirectory(publish_subscribe_cross_language)
-add_subdirectory(publish_subscribe_with_user_header)
+cc_binary(
+    name = "example_c_cross_language_publisher",
+    srcs = [
+        "src/message_data.h",
+        "src/publisher.c",
+    ],
+    deps = [
+        "//:iceoryx2-c-static",
+    ],
+)
+
+cc_binary(
+    name = "example_c_cross_language_subscriber",
+    srcs = [
+        "src/message_data.h",
+        "src/subscriber.c",
+    ],
+    deps = [
+        "//:iceoryx2-c-static",
+    ],
+)

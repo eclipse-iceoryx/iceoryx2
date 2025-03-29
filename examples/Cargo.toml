@@ -113,6 +113,16 @@ path = "rust/publish_subscribe_with_user_header/publisher.rs"
 name = "publish_subscribe_user_header_subscriber"
 path = "rust/publish_subscribe_with_user_header/subscriber.rs"
 
+# publish_subscribe_cross_language
+
+[[example]]
+name = "publish_subscribe_cross_language_publisher"
+path = "rust/publish_subscribe_cross_language/publisher.rs"
+
+[[example]]
+name = "publish_subscribe_cross_language_subscriber"
+path = "rust/publish_subscribe_cross_language/subscriber.rs"
+
 # request_response
 
 [[example]]
