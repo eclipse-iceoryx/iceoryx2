@@ -300,6 +300,46 @@ pub mod details {
                 + SegmentDetails::const_memory_size(number_of_samples) * number_of_segments
                 + RelocatableVec::<SegmentDetails>::const_memory_size(number_of_segments)
         }
+
+        unsafe fn init(
+            &mut self,
+            allocator: &mut BumpAllocator,
+            submission_queue_capacity: usize,
+            completion_queue_capacity: usize,
+        ) {
+            let msg = "Failed to initialize SharedManagementData";
+            // initialize channels
+            fatal_panic!(from self, when unsafe {self.channels.init(allocator)},
+                "{} since the channels vector allocation failed. - This is an implementation bug!", msg);
+            for n in 0..self.channels.capacity() {
+                unsafe {
+                    self.channels.push(Channel::new(
+                        submission_queue_capacity,
+                        completion_queue_capacity,
+                    ))
+                };
+                self.channels[n].init(allocator);
+            }
+
+            // initialize segment details
+            fatal_panic!(from self, when unsafe { self.segment_details.init(allocator) },
+                        "{} since the used chunk list vector allocation failed. - This is an implementation bug!", msg);
+
+            for n in 0..self.number_of_segments {
+                if !unsafe {
+                    self.segment_details.push(SegmentDetails::new_uninit(
+                        self.number_of_samples_per_segment,
+                    ))
+                } {
+                    fatal_panic!(from self,
+                        "{} since the used chunk list could not be added. - This is an implementation bug!", msg);
+                }
+
+                fatal_panic!(from self, when unsafe { self.segment_details[n as usize].init(allocator) },
+                    "{} since the used chunk list for segment id {} failed to allocate memory. - This is an implementation bug!",
+                    msg, n);
+            }
+        }
     }
 
     #[derive(Debug)]
@@ -341,29 +381,7 @@ pub mod details {
         .timeout(self.timeout)
         .supplementary_size(supplementary_size)
         .initializer(|data, allocator| {
-            fatal_panic!(from self, when unsafe {data.channels.init(allocator)},
-                "{} since the channels vector allocation failed. - This is an implementation bug!", msg);
-            for n in 0..data.channels.capacity() {
-                unsafe { data.channels.push(Channel::new(self.submission_queue_size(), self.completion_queue_size()))};
-                data.channels[n].init(allocator);
-            }
-            fatal_panic!(from self, when unsafe { data.segment_details.init(allocator) },
-                        "{} since the used chunk list vector allocation failed. - This is an implementation bug!", msg);
-
-            for _ in 0..self.number_of_segments {
-                if !unsafe {
-                    data.segment_details.push(SegmentDetails::new_uninit(self.number_of_samples_per_segment))
-                } {
-                    fatal_panic!(from self,
-                        "{} since the used chunk list could not be added. - This is an implementation bug!", msg);
-                }
-            }
-
-            for (n, details) in data.segment_details.iter_mut().enumerate() {
-                fatal_panic!(from self, when unsafe { details.init(allocator) },
-                    "{} since the used chunk list for segment id {} failed to allocate memory. - This is an implementation bug!",
-                    msg, n);
-            }
+            unsafe { data.init(allocator, self.submission_queue_size(), self.completion_queue_size())};
 
             true
         })
