@@ -18,7 +18,7 @@ pub mod details {
     use core::sync::atomic::Ordering;
     use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU8, IoxAtomicUsize};
+    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU8, IoxAtomicUsize};
 
     use crate::dynamic_storage::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
@@ -124,10 +124,23 @@ pub mod details {
         state_to_remove: State,
         channel_id: usize,
     ) {
-        if storage.get().channels[channel_id].remove_state(state_to_remove)
+        let mgmt_data = storage.get();
+        if mgmt_data.channels[channel_id].remove_state(state_to_remove)
             == State::MarkedForDestruction.value()
         {
-            storage.acquire_ownership()
+            for channel in mgmt_data.channels.iter() {
+                if channel.state.load(Ordering::Relaxed) != State::MarkedForDestruction.value() {
+                    return;
+                }
+            }
+
+            if mgmt_data
+                .is_marked_for_destruction
+                .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+                .is_ok()
+            {
+                storage.acquire_ownership()
+            }
         }
     }
 
@@ -266,6 +279,7 @@ pub mod details {
         number_of_samples_per_segment: usize,
         number_of_segments: u8,
         enable_safe_overflow: bool,
+        is_marked_for_destruction: IoxAtomicBool,
     }
 
     impl SharedManagementData {
@@ -285,6 +299,7 @@ pub mod details {
                 max_borrowed_samples,
                 number_of_samples_per_segment,
                 number_of_segments,
+                is_marked_for_destruction: IoxAtomicBool::new(false),
             }
         }
 
