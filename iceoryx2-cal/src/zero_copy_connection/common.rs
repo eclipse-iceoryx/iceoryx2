@@ -17,6 +17,7 @@ pub mod details {
     use core::marker::PhantomData;
     use core::sync::atomic::Ordering;
     use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
+    use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU8, IoxAtomicUsize};
 
     use crate::dynamic_storage::{
@@ -32,7 +33,7 @@ pub mod details {
         index_queue::RelocatableIndexQueue,
         safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,
     };
-    use iceoryx2_bb_log::{fail, fatal_panic, warn};
+    use iceoryx2_bb_log::{fail, fatal_panic};
     use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 
     use self::used_chunk_list::RelocatableUsedChunkList;
@@ -122,37 +123,9 @@ pub mod details {
         storage: &Storage,
         state_to_remove: State,
     ) {
-        let mut current_state = storage.get().channel.state.load(Ordering::Relaxed);
-        if current_state == State::MarkedForDestruction.value() {
-            warn!(from "common::ZeroCopyConnection::cleanup_shared_memory()",
-                    "Trying to remove state {:?} on the connection {:?} which is already marked for destruction.", state_to_remove, storage.name());
-            return;
-        }
-
-        loop {
-            let new_state = if current_state == state_to_remove.value() {
-                State::MarkedForDestruction.value()
-            } else {
-                current_state & !state_to_remove.value()
-            };
-
-            match storage.get().channel.state.compare_exchange(
-                current_state,
-                new_state,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => {
-                    current_state = new_state;
-                    break;
-                }
-                Err(s) => {
-                    current_state = s;
-                }
-            }
-        }
-
-        if current_state == State::MarkedForDestruction.value() {
+        if storage.get().channel.remove_state(state_to_remove)
+            == State::MarkedForDestruction.value()
+        {
             storage.acquire_ownership()
         }
     }
@@ -209,6 +182,77 @@ pub mod details {
                 + RelocatableSafelyOverflowingIndexQueue::const_memory_size(
                     submission_queue_capacity,
                 )
+        }
+
+        fn init(&mut self, allocator: &mut BumpAllocator) {
+            let msg = "Failed to initialize channel";
+            fatal_panic!(from self, when unsafe { self.submission_queue.init(allocator) },
+                        "{} since the submission queue allocation failed. - This is an implementation bug!", msg);
+            fatal_panic!(from self, when unsafe { self.completion_queue.init(allocator) },
+                        "{} since the completion queue allocation failed. - This is an implementation bug!", msg);
+        }
+
+        fn reserve_port(&self, new_state: u8, msg: &str) -> Result<(), ZeroCopyCreationError> {
+            let mut current_state = State::None.value();
+
+            loop {
+                match self.state.compare_exchange(
+                    current_state,
+                    current_state | new_state,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break,
+                    Err(v) => {
+                        current_state = v;
+                        if current_state & new_state != 0 {
+                            fail!(from self, with ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected,
+                            "{} since an instance is already connected.", msg);
+                        } else if current_state & State::MarkedForDestruction.value() != 0 {
+                            fail!(from self, with ZeroCopyCreationError::InternalError,
+                            "{} since the connection is currently being cleaned up.", msg);
+                        }
+                    }
+                }
+            }
+
+            Ok(())
+        }
+
+        fn is_connected(&self) -> bool {
+            self.state.load(Ordering::Relaxed) == State::Sender.value() | State::Receiver.value()
+        }
+
+        fn remove_state(&self, state_to_remove: State) -> u8 {
+            let mut current_state = self.state.load(Ordering::Relaxed);
+            if current_state == State::MarkedForDestruction.value() {
+                return State::MarkedForDestruction.value();
+            }
+
+            loop {
+                let new_state = if current_state == state_to_remove.value() {
+                    State::MarkedForDestruction.value()
+                } else {
+                    current_state & !state_to_remove.value()
+                };
+
+                match self.state.compare_exchange(
+                    current_state,
+                    new_state,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => {
+                        current_state = new_state;
+                        break;
+                    }
+                    Err(s) => {
+                        current_state = s;
+                    }
+                }
+            }
+
+            current_state
         }
     }
 
@@ -268,18 +312,18 @@ pub mod details {
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Builder<Storage> {
-        fn submission_channel_size(&self) -> usize {
+        fn submission_queue_size(&self) -> usize {
             self.buffer_size
         }
 
-        fn completion_channel_size(&self) -> usize {
+        fn completion_queue_size(&self) -> usize {
             self.buffer_size + self.max_borrowed_samples + 1
         }
 
         fn create_or_open_shm(&self) -> Result<Storage, ZeroCopyCreationError> {
             let supplementary_size = SharedManagementData::const_memory_size(
-                self.submission_channel_size(),
-                self.completion_channel_size(),
+                self.submission_queue_size(),
+                self.completion_queue_size(),
                 self.number_of_samples_per_segment,
                 self.number_of_segments,
             );
@@ -292,10 +336,7 @@ pub mod details {
         .timeout(self.timeout)
         .supplementary_size(supplementary_size)
         .initializer(|data, allocator| {
-            fatal_panic!(from self, when unsafe { data.channel.submission_queue.init(allocator) },
-                        "{} since the receive channel allocation failed. - This is an implementation bug!", msg);
-            fatal_panic!(from self, when unsafe { data.channel.completion_queue.init(allocator) },
-                        "{} since the retrieve channel allocation failed. - This is an implementation bug!", msg);
+            data.channel.init(allocator);
             fatal_panic!(from self, when unsafe { data.segment_details.init(allocator) },
                         "{} since the used chunk list vector allocation failed. - This is an implementation bug!", msg);
 
@@ -318,8 +359,8 @@ pub mod details {
         })
         .open_or_create(
             SharedManagementData::new(
-                                    self.submission_channel_size(),
-                                    self.completion_channel_size(),
+                                    self.submission_queue_size(),
+                                    self.completion_queue_size(),
                                     self.enable_safe_overflow,
                                     self.max_borrowed_samples,
                                     self.number_of_samples_per_segment,
@@ -358,16 +399,14 @@ pub mod details {
             } else {
                 let msg = "Failed to open existing connection";
 
-                if storage.get().channel.submission_queue.capacity()
-                    != self.submission_channel_size()
+                if storage.get().channel.submission_queue.capacity() != self.submission_queue_size()
                 {
                     fail!(from self, with ZeroCopyCreationError::IncompatibleBufferSize,
                         "{} since the connection has a buffer size of {} but a buffer size of {} is required.",
-                        msg, storage.get().channel.submission_queue.capacity(), self.submission_channel_size());
+                        msg, storage.get().channel.submission_queue.capacity(), self.submission_queue_size());
                 }
 
-                if storage.get().channel.completion_queue.capacity()
-                    != self.completion_channel_size()
+                if storage.get().channel.completion_queue.capacity() != self.completion_queue_size()
                 {
                     fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSampleSetting,
                         "{} since the max borrowed sample setting is set to {} but a value of {} is required.",
@@ -409,30 +448,7 @@ pub mod details {
             new_state: u8,
             msg: &str,
         ) -> Result<(), ZeroCopyCreationError> {
-            let mut current_state = State::None.value();
-
-            loop {
-                match mgmt_ref.channel.state.compare_exchange(
-                    current_state,
-                    current_state | new_state,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(_) => break,
-                    Err(v) => {
-                        current_state = v;
-                        if current_state & new_state != 0 {
-                            fail!(from self, with ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected,
-                            "{} since an instance is already connected.", msg);
-                        } else if current_state & State::MarkedForDestruction.value() != 0 {
-                            fail!(from self, with ZeroCopyCreationError::InternalError,
-                            "{} since the connection is currently being cleaned up.", msg);
-                        }
-                    }
-                }
-            }
-
-            Ok(())
+            mgmt_ref.channel.reserve_port(new_state, msg)
         }
     }
 
@@ -561,8 +577,7 @@ pub mod details {
         }
 
         fn is_connected(&self) -> bool {
-            self.storage.get().channel.state.load(Ordering::Relaxed)
-                == State::Sender.value() | State::Receiver.value()
+            self.storage.get().channel.is_connected()
         }
     }
 
@@ -731,8 +746,7 @@ pub mod details {
         }
 
         fn is_connected(&self) -> bool {
-            self.storage.get().channel.state.load(Ordering::Relaxed)
-                == State::Sender.value() | State::Receiver.value()
+            self.storage.get().channel.is_connected()
         }
     }
 
