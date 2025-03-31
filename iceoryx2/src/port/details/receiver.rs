@@ -76,7 +76,7 @@ impl<Service: service::Service> Connection<Service> {
                                     .number_of_samples_per_segment(number_of_samples)
                                     .max_supported_shared_memory_segments(max_number_of_segments)
                                     .timeout(global_config.global.service.creation_timeout)
-                                    .create_receiver(),
+                                    .create_receiver(ChannelId::new(0)),
                         "{} since the zero copy connection could not be established.", msg);
 
         let segment_name = data_segment_name(sender_port_id);

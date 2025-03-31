@@ -51,7 +51,7 @@ mod zero_copy_connection_posix_shared_memory_tests {
             .timeout(TIMEOUT)
             .number_of_samples_per_segment(1)
             .receiver_max_borrowed_samples(1)
-            .create_sender();
+            .create_sender(ChannelId::new(0));
 
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq ZeroCopyCreationError::InitializationNotYetFinalized);

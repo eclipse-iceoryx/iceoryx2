@@ -139,8 +139,8 @@ use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError};
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopyPortRemoveError,
-    ZeroCopySender,
+    ChannelId, ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails,
+    ZeroCopyPortRemoveError, ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
@@ -864,7 +864,11 @@ pub(crate) unsafe fn remove_publisher_from_all_connections<Service: service::Ser
         let publisher_id = extract_publisher_id_from_connection(&connection);
         if publisher_id == *port_id {
             let result = handle_port_remove_error(
-                Service::Connection::remove_sender(&connection, &connection_config),
+                Service::Connection::remove_sender(
+                    &connection,
+                    &connection_config,
+                    ChannelId::new(0),
+                ),
                 &origin,
                 msg,
                 &connection,
@@ -898,7 +902,11 @@ pub(crate) unsafe fn remove_subscriber_from_all_connections<Service: service::Se
         let subscriber_id = extract_subscriber_id_from_connection(&connection);
         if subscriber_id == *port_id {
             let result = handle_port_remove_error(
-                Service::Connection::remove_receiver(&connection, &connection_config),
+                Service::Connection::remove_receiver(
+                    &connection,
+                    &connection_config,
+                    ChannelId::new(0),
+                ),
                 &origin,
                 msg,
                 &connection,

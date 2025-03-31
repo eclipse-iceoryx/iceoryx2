@@ -22,8 +22,8 @@ use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopySendError,
-    ZeroCopySender,
+    ChannelId, ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
+    ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
@@ -85,7 +85,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .number_of_samples_per_segment(number_of_samples)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
-                                .create_sender(),
+                                .create_sender(ChannelId::new(0)),
                         "{}.", msg);
 
         Ok(Self {

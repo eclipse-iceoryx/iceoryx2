@@ -109,10 +109,24 @@ impl core::fmt::Display for ZeroCopyReleaseError {
 
 impl core::error::Error for ZeroCopyReleaseError {}
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ChannelId(usize);
+
+impl ChannelId {
+    pub fn new(value: usize) -> Self {
+        Self(value)
+    }
+
+    pub fn value(&self) -> usize {
+        self.0
+    }
+}
+
 pub const DEFAULT_BUFFER_SIZE: usize = 4;
 pub const DEFAULT_ENABLE_SAFE_OVERFLOW: bool = false;
 pub const DEFAULT_MAX_BORROWED_SAMPLES: usize = 4;
 pub const DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS: u8 = 1;
+pub const DEFAULT_NUMBER_OF_CHANNELS: usize = 1;
 
 pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<C> {
     fn buffer_size(self, value: usize) -> Self;
@@ -120,6 +134,7 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
     fn receiver_max_borrowed_samples(self, value: usize) -> Self;
     fn max_supported_shared_memory_segments(self, value: u8) -> Self;
     fn number_of_samples_per_segment(self, value: usize) -> Self;
+    fn number_of_channels(self, value: usize) -> Self;
     /// The timeout defines how long the [`ZeroCopyConnectionBuilder`] should wait for
     /// concurrent
     /// [`ZeroCopyConnectionBuilder::create_sender()`] or
@@ -127,8 +142,8 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
     /// By default it is set to [`Duration::ZERO`] for no timeout.
     fn timeout(self, value: Duration) -> Self;
 
-    fn create_sender(self) -> Result<C::Sender, ZeroCopyCreationError>;
-    fn create_receiver(self) -> Result<C::Receiver, ZeroCopyCreationError>;
+    fn create_sender(self, channel_id: ChannelId) -> Result<C::Sender, ZeroCopyCreationError>;
+    fn create_receiver(self, channel_id: ChannelId) -> Result<C::Receiver, ZeroCopyCreationError>;
 }
 
 pub trait ZeroCopyPortDetails {
@@ -184,6 +199,7 @@ pub trait ZeroCopyConnection: Debug + Sized + NamedConceptMgmt {
     unsafe fn remove_sender(
         name: &FileName,
         config: &Self::Configuration,
+        channel_id: ChannelId,
     ) -> Result<(), ZeroCopyPortRemoveError>;
 
     /// Removes the [`ZeroCopyReceiver`] forcefully from the [`ZeroCopyConnection`]. This shall
@@ -196,6 +212,7 @@ pub trait ZeroCopyConnection: Debug + Sized + NamedConceptMgmt {
     unsafe fn remove_receiver(
         name: &FileName,
         config: &Self::Configuration,
+        channel_id: ChannelId,
     ) -> Result<(), ZeroCopyPortRemoveError>;
 
     /// Returns true if the connection supports safe overflow
