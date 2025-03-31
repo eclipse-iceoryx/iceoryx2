@@ -278,12 +278,19 @@ pub mod details {
         ) -> Self {
             Self {
                 channels: unsafe { RelocatableVec::new_uninit(number_of_channels) },
-                segment_details: unsafe { RelocatableVec::new_uninit(number_of_segments as usize) },
+                segment_details: unsafe {
+                    RelocatableVec::new_uninit(number_of_segments as usize * number_of_channels)
+                },
                 enable_safe_overflow,
                 max_borrowed_samples,
                 number_of_samples_per_segment,
                 number_of_segments,
             }
+        }
+
+        fn get_segment_details(&self, segment_id: usize, channel_id: usize) -> &SegmentDetails {
+            let idx = channel_id * self.number_of_segments as usize + segment_id;
+            &self.segment_details[idx]
         }
 
         const fn const_memory_size(
@@ -325,7 +332,7 @@ pub mod details {
             fatal_panic!(from self, when unsafe { self.segment_details.init(allocator) },
                         "{} since the used chunk list vector allocation failed. - This is an implementation bug!", msg);
 
-            for n in 0..self.number_of_segments {
+            for n in 0..self.segment_details.capacity() {
                 if !unsafe {
                     self.segment_details.push(SegmentDetails::new_uninit(
                         self.number_of_samples_per_segment,
@@ -632,7 +639,7 @@ pub mod details {
             }
 
             let segment_id = ptr.segment_id().value() as usize;
-            let segment_details = &storage.segment_details[segment_id];
+            let segment_details = storage.get_segment_details(segment_id, self.channel_id);
             segment_details
                 .sample_size
                 .store(sample_size, Ordering::Relaxed);
@@ -653,7 +660,7 @@ pub mod details {
                     let pointer_offset = PointerOffset::from_value(v);
                     let segment_id = pointer_offset.segment_id().value() as usize;
 
-                    let segment_details = &storage.segment_details[segment_id];
+                    let segment_details = storage.get_segment_details(segment_id, self.channel_id);
                     debug_assert!(
                         pointer_offset.offset()
                             % segment_details.sample_size.load(Ordering::Relaxed)
@@ -711,7 +718,7 @@ pub mod details {
                             msg, pointer_offset);
                     }
 
-                    let segment_details = &storage.segment_details[segment_id];
+                    let segment_details = storage.get_segment_details(segment_id, self.channel_id);
                     debug_assert!(
                         pointer_offset.offset()
                             % segment_details.sample_size.load(Ordering::Relaxed)
