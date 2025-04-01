@@ -20,7 +20,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{parse_macro_input, Data, DeriveInput, Expr, Fields};
 
 /// Implements the [`iceoryx2_bb_elementary::placement_default::PlacementDefault`] trait when all
 /// fields of the struct implement it.
@@ -124,9 +124,27 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 /// };
 /// needs_zero_copy_send_type(&x);
 /// ```
-#[proc_macro_derive(ZeroCopySend)]
+#[proc_macro_derive(ZeroCopySend, attributes(type_name))]
 pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
+
+    // check attribute
+    // TODO: quote, compile error
+    let attributes: &Vec<_> = &ast
+        .attrs
+        .iter()
+        .filter(|a| a.path().segments.len() == 1 && a.path().segments[0].ident == "type_name")
+        .collect();
+    if attributes.len() > 1 {
+        panic!("Too many attributes provided for ZeroCopySend trait.");
+    }
+    let mut attribute: Option<Expr> = None;
+    if attributes.len() == 1 {
+        attribute = Some(attributes[0].parse_args().expect(
+            "Wrong format for ZeroCopySend attribute. Please provide exactly one \'type_name\'.",
+        ));
+    }
+
     let struct_name = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
@@ -141,10 +159,22 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     }
                 });
 
-                quote! {
-                    unsafe fn type_name(&self) -> &'static str {
-                        #(#field_inits)*
-                        core::any::type_name::<Self>()
+                match attribute {
+                    None => {
+                        quote! {
+                            unsafe fn type_name(&self) -> &'static str {
+                                #(#field_inits)*
+                                core::any::type_name::<Self>()
+                            }
+                        }
+                    }
+                    Some(_) => {
+                        quote! {
+                            unsafe fn type_name(&self) -> &'static str {
+                                #(#field_inits)*
+                                stringify!(#attribute)
+                            }
+                        }
                     }
                 }
             }
@@ -157,10 +187,22 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     }
                 });
 
-                quote! {
-                    unsafe fn type_name(&self) -> &'static str {
-                        #(#field_inits)*
-                        core::any::type_name::<Self>()
+                match attribute {
+                    None => {
+                        quote! {
+                            unsafe fn type_name(&self) -> &'static str {
+                                #(#field_inits)*
+                                core::any::type_name::<Self>()
+                            }
+                        }
+                    }
+                    Some(_) => {
+                        quote! {
+                            unsafe fn type_name(&self) -> &'static str {
+                                #(#field_inits)*
+                                stringify!(#attribute)
+                            }
+                        }
                     }
                 }
             }
