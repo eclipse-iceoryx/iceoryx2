@@ -18,7 +18,7 @@ pub mod details {
     use core::sync::atomic::Ordering;
     use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU8, IoxAtomicUsize};
+    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU8, IoxAtomicUsize};
 
     use crate::dynamic_storage::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
@@ -122,25 +122,10 @@ pub mod details {
     fn cleanup_shared_memory<Storage: DynamicStorage<SharedManagementData>>(
         storage: &Storage,
         state_to_remove: State,
-        channel_id: usize,
     ) {
         let mgmt_data = storage.get();
-        if mgmt_data.channels[channel_id].remove_state(state_to_remove)
-            == State::MarkedForDestruction.value()
-        {
-            for channel in mgmt_data.channels.iter() {
-                if channel.state.load(Ordering::Relaxed) != State::MarkedForDestruction.value() {
-                    return;
-                }
-            }
-
-            if mgmt_data
-                .is_marked_for_destruction
-                .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-                .is_ok()
-            {
-                storage.acquire_ownership()
-            }
+        if mgmt_data.remove_state(state_to_remove) == State::MarkedForDestruction.value() {
+            storage.acquire_ownership()
         }
     }
 
@@ -172,7 +157,6 @@ pub mod details {
     struct Channel {
         submission_queue: RelocatableSafelyOverflowingIndexQueue,
         completion_queue: RelocatableIndexQueue,
-        state: IoxAtomicU8,
     }
 
     impl Channel {
@@ -184,7 +168,6 @@ pub mod details {
                 completion_queue: unsafe {
                     RelocatableIndexQueue::new_uninit(completion_queue_capacity)
                 },
-                state: IoxAtomicU8::new(State::None.value()),
             }
         }
 
@@ -205,32 +188,44 @@ pub mod details {
             fatal_panic!(from self, when unsafe { self.completion_queue.init(allocator) },
                         "{} since the completion queue allocation failed. - This is an implementation bug!", msg);
         }
+    }
 
-        fn reserve_port(&self, new_state: u8, msg: &str) -> Result<(), ZeroCopyCreationError> {
-            let mut current_state = State::None.value();
+    #[derive(Debug)]
+    #[repr(C)]
+    pub struct SharedManagementData {
+        channels: RelocatableVec<Channel>,
+        segment_details: RelocatableVec<SegmentDetails>,
+        state: IoxAtomicU8,
+        max_borrowed_samples: usize,
+        number_of_samples_per_segment: usize,
+        number_of_segments: u8,
+        enable_safe_overflow: bool,
+    }
 
-            loop {
-                match self.state.compare_exchange(
-                    current_state,
-                    current_state | new_state,
-                    Ordering::Relaxed,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(_) => break,
-                    Err(v) => {
-                        current_state = v;
-                        if current_state & new_state != 0 {
-                            fail!(from self, with ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected,
-                            "{} since an instance is already connected.", msg);
-                        } else if current_state & State::MarkedForDestruction.value() != 0 {
-                            fail!(from self, with ZeroCopyCreationError::InternalError,
-                            "{} since the connection is currently being cleaned up.", msg);
-                        }
-                    }
-                }
+    impl SharedManagementData {
+        fn new(
+            enable_safe_overflow: bool,
+            max_borrowed_samples: usize,
+            number_of_samples_per_segment: usize,
+            number_of_segments: u8,
+            number_of_channels: usize,
+        ) -> Self {
+            Self {
+                channels: unsafe { RelocatableVec::new_uninit(number_of_channels) },
+                segment_details: unsafe {
+                    RelocatableVec::new_uninit(number_of_segments as usize * number_of_channels)
+                },
+                enable_safe_overflow,
+                max_borrowed_samples,
+                number_of_samples_per_segment,
+                number_of_segments,
+                state: IoxAtomicU8::new(State::None.value()),
             }
+        }
 
-            Ok(())
+        fn get_segment_details(&self, segment_id: usize, channel_id: usize) -> &SegmentDetails {
+            let idx = channel_id * self.number_of_segments as usize + segment_id;
+            &self.segment_details[idx]
         }
 
         fn is_connected(&self) -> bool {
@@ -268,44 +263,32 @@ pub mod details {
 
             current_state
         }
-    }
 
-    #[derive(Debug)]
-    #[repr(C)]
-    pub struct SharedManagementData {
-        channels: RelocatableVec<Channel>,
-        segment_details: RelocatableVec<SegmentDetails>,
-        max_borrowed_samples: usize,
-        number_of_samples_per_segment: usize,
-        number_of_segments: u8,
-        enable_safe_overflow: bool,
-        is_marked_for_destruction: IoxAtomicBool,
-    }
+        fn reserve_port(&self, new_state: u8, msg: &str) -> Result<(), ZeroCopyCreationError> {
+            let mut current_state = State::None.value();
 
-    impl SharedManagementData {
-        fn new(
-            enable_safe_overflow: bool,
-            max_borrowed_samples: usize,
-            number_of_samples_per_segment: usize,
-            number_of_segments: u8,
-            number_of_channels: usize,
-        ) -> Self {
-            Self {
-                channels: unsafe { RelocatableVec::new_uninit(number_of_channels) },
-                segment_details: unsafe {
-                    RelocatableVec::new_uninit(number_of_segments as usize * number_of_channels)
-                },
-                enable_safe_overflow,
-                max_borrowed_samples,
-                number_of_samples_per_segment,
-                number_of_segments,
-                is_marked_for_destruction: IoxAtomicBool::new(false),
+            loop {
+                match self.state.compare_exchange(
+                    current_state,
+                    current_state | new_state,
+                    Ordering::Relaxed,
+                    Ordering::Relaxed,
+                ) {
+                    Ok(_) => break,
+                    Err(v) => {
+                        current_state = v;
+                        if current_state & new_state != 0 {
+                            fail!(from self, with ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected,
+                            "{} since an instance is already connected.", msg);
+                        } else if current_state & State::MarkedForDestruction.value() != 0 {
+                            fail!(from self, with ZeroCopyCreationError::InternalError,
+                            "{} since the connection is currently being cleaned up.", msg);
+                        }
+                    }
+                }
             }
-        }
 
-        fn get_segment_details(&self, segment_id: usize, channel_id: usize) -> &SegmentDetails {
-            let idx = channel_id * self.number_of_segments as usize + segment_id;
-            &self.segment_details[idx]
+            Ok(())
         }
 
         const fn const_memory_size(
@@ -561,7 +544,6 @@ pub mod details {
 
         fn create_sender(
             self,
-            channel_id: ChannelId,
         ) -> Result<<Connection<Storage> as ZeroCopyConnection>::Sender, ZeroCopyCreationError>
         {
             let msg = "Unable to create sender";
@@ -569,24 +551,16 @@ pub mod details {
             "{} since the corresponding connection could not be created or opened", msg);
 
             let mgmt = storage.get();
-            if mgmt.channels.capacity() <= channel_id.value() {
-                fail!(from self, with ZeroCopyCreationError::ChannelIdOutOfBounds,
-                    "{} since there are {} channels available and the channel id {} is out-of-bounds.",
-                    msg, mgmt.channels.capacity(), channel_id.value());
-            }
-
-            mgmt.channels[channel_id.value()].reserve_port(State::Sender.value(), msg)?;
+            mgmt.reserve_port(State::Sender.value(), msg)?;
 
             Ok(Sender {
                 storage,
                 name: self.name,
-                channel_id: channel_id.value(),
             })
         }
 
         fn create_receiver(
             self,
-            channel_id: ChannelId,
         ) -> Result<<Connection<Storage> as ZeroCopyConnection>::Receiver, ZeroCopyCreationError>
         {
             let msg = "Unable to create receiver";
@@ -594,19 +568,18 @@ pub mod details {
             "{} since the corresponding connection could not be created or opened", msg);
 
             let mgmt = storage.get();
-            if mgmt.channels.capacity() <= channel_id.value() {
-                fail!(from self, with ZeroCopyCreationError::ChannelIdOutOfBounds,
-                    "{} since there are {} channels available and the channel id {} is out-of-bounds.",
-                    msg, mgmt.channels.capacity(), channel_id.value());
-            }
-
-            mgmt.channels[channel_id.value()].reserve_port(State::Receiver.value(), msg)?;
+            mgmt.reserve_port(State::Receiver.value(), msg)?;
 
             Ok(Receiver {
                 storage,
-                borrow_counter: UnsafeCell::new(0),
+                borrow_counter: {
+                    let mut borrow_counter = vec![];
+                    for _ in 0..self.number_of_channels {
+                        borrow_counter.push(UnsafeCell::new(0));
+                    }
+                    borrow_counter
+                },
                 name: self.name,
-                channel_id: channel_id.value(),
             })
         }
     }
@@ -615,12 +588,11 @@ pub mod details {
     pub struct Sender<Storage: DynamicStorage<SharedManagementData>> {
         storage: Storage,
         name: FileName,
-        channel_id: usize,
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Drop for Sender<Storage> {
         fn drop(&mut self) {
-            cleanup_shared_memory(&self.storage, State::Sender, self.channel_id);
+            cleanup_shared_memory(&self.storage, State::Sender);
         }
     }
 
@@ -632,9 +604,7 @@ pub mod details {
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyPortDetails for Sender<Storage> {
         fn buffer_size(&self) -> usize {
-            self.storage.get().channels[self.channel_id]
-                .submission_queue
-                .capacity()
+            self.storage.get().channels[0].submission_queue.capacity()
         }
 
         fn max_supported_shared_memory_segments(&self) -> u8 {
@@ -650,7 +620,7 @@ pub mod details {
         }
 
         fn is_connected(&self) -> bool {
-            self.storage.get().channels[self.channel_id].is_connected()
+            self.storage.get().is_connected()
         }
     }
 
@@ -659,19 +629,22 @@ pub mod details {
             &self,
             ptr: PointerOffset,
             sample_size: usize,
+            channel_id: ChannelId,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             let msg = "Unable to send sample";
             let storage = self.storage.get();
 
             if !storage.enable_safe_overflow
-                && storage.channels[self.channel_id].submission_queue.is_full()
+                && storage.channels[channel_id.value()]
+                    .submission_queue
+                    .is_full()
             {
                 fail!(from self, with ZeroCopySendError::ReceiveBufferFull,
                              "{} since the receive buffer is full.", msg);
             }
 
             let segment_id = ptr.segment_id().value() as usize;
-            let segment_details = storage.get_segment_details(segment_id, self.channel_id);
+            let segment_details = storage.get_segment_details(segment_id, channel_id.value());
             segment_details
                 .sample_size
                 .store(sample_size, Ordering::Relaxed);
@@ -684,7 +657,7 @@ pub mod details {
             debug_assert!(did_not_send_same_offset_twice);
 
             match unsafe {
-                storage.channels[self.channel_id]
+                storage.channels[channel_id.value()]
                     .submission_queue
                     .push(ptr.as_value())
             } {
@@ -692,7 +665,8 @@ pub mod details {
                     let pointer_offset = PointerOffset::from_value(v);
                     let segment_id = pointer_offset.segment_id().value() as usize;
 
-                    let segment_details = storage.get_segment_details(segment_id, self.channel_id);
+                    let segment_details =
+                        storage.get_segment_details(segment_id, channel_id.value());
                     debug_assert!(
                         pointer_offset.offset()
                             % segment_details.sample_size.load(Ordering::Relaxed)
@@ -716,27 +690,31 @@ pub mod details {
             &self,
             ptr: PointerOffset,
             sample_size: usize,
+            channel_id: ChannelId,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
             if !self.storage.get().enable_safe_overflow {
                 AdaptiveWaitBuilder::new()
                     .create()
                     .unwrap()
                     .wait_while(|| {
-                        self.storage.get().channels[self.channel_id]
+                        self.storage.get().channels[channel_id.value()]
                             .submission_queue
                             .is_full()
                     })
                     .unwrap();
             }
 
-            self.try_send(ptr, sample_size)
+            self.try_send(ptr, sample_size, channel_id)
         }
 
-        fn reclaim(&self) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
+        fn reclaim(
+            &self,
+            channel_id: ChannelId,
+        ) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
             let msg = "Unable to reclaim sample";
 
             let storage = self.storage.get();
-            match unsafe { storage.channels[self.channel_id].completion_queue.pop() } {
+            match unsafe { storage.channels[channel_id.value()].completion_queue.pop() } {
                 None => Ok(None),
                 Some(v) => {
                     let pointer_offset = PointerOffset::from_value(v);
@@ -750,7 +728,8 @@ pub mod details {
                             msg, pointer_offset);
                     }
 
-                    let segment_details = storage.get_segment_details(segment_id, self.channel_id);
+                    let segment_details =
+                        storage.get_segment_details(segment_id, channel_id.value());
                     debug_assert!(
                         pointer_offset.offset()
                             % segment_details.sample_size.load(Ordering::Relaxed)
@@ -784,24 +763,23 @@ pub mod details {
     #[derive(Debug)]
     pub struct Receiver<Storage: DynamicStorage<SharedManagementData>> {
         storage: Storage,
-        borrow_counter: UnsafeCell<usize>,
+        borrow_counter: Vec<UnsafeCell<usize>>,
         name: FileName,
-        channel_id: usize,
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Drop for Receiver<Storage> {
         fn drop(&mut self) {
-            cleanup_shared_memory(&self.storage, State::Receiver, self.channel_id);
+            cleanup_shared_memory(&self.storage, State::Receiver);
         }
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> Receiver<Storage> {
         #[allow(clippy::mut_from_ref)]
         // convenience to access internal mutable object
-        fn borrow_counter(&self) -> &mut usize {
+        fn borrow_counter(&self, channel_id: ChannelId) -> &mut usize {
             #[deny(clippy::mut_from_ref)]
             unsafe {
-                &mut *self.borrow_counter.get()
+                &mut *self.borrow_counter[channel_id.value()].get()
             }
         }
     }
@@ -814,9 +792,7 @@ pub mod details {
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyPortDetails for Receiver<Storage> {
         fn buffer_size(&self) -> usize {
-            self.storage.get().channels[self.channel_id]
-                .submission_queue
-                .capacity()
+            self.storage.get().channels[0].submission_queue.capacity()
         }
 
         fn max_supported_shared_memory_segments(&self) -> u8 {
@@ -832,45 +808,52 @@ pub mod details {
         }
 
         fn is_connected(&self) -> bool {
-            self.storage.get().channels[self.channel_id].is_connected()
+            self.storage.get().is_connected()
         }
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyReceiver for Receiver<Storage> {
-        fn has_data(&self) -> bool {
-            !self.storage.get().channels[self.channel_id]
+        fn has_data(&self, channel_id: ChannelId) -> bool {
+            !self.storage.get().channels[channel_id.value()]
                 .submission_queue
                 .is_empty()
         }
 
-        fn receive(&self) -> Result<Option<PointerOffset>, ZeroCopyReceiveError> {
-            if *self.borrow_counter() >= self.storage.get().max_borrowed_samples {
+        fn receive(
+            &self,
+            channel_id: ChannelId,
+        ) -> Result<Option<PointerOffset>, ZeroCopyReceiveError> {
+            if *self.borrow_counter(channel_id) >= self.storage.get().max_borrowed_samples {
                 fail!(from self, with ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue,
                 "Unable to receive another sample since already {} samples were borrowed and this would exceed the max borrow value of {}.",
-                    self.borrow_counter(), self.max_borrowed_samples());
+                    self.borrow_counter(channel_id), self.max_borrowed_samples());
             }
 
             match unsafe {
-                self.storage.get().channels[self.channel_id]
+                self.storage.get().channels[channel_id.value()]
                     .submission_queue
                     .pop()
             } {
                 None => Ok(None),
                 Some(v) => {
-                    *self.borrow_counter() += 1;
+                    *self.borrow_counter(channel_id) += 1;
                     Ok(Some(PointerOffset::from_value(v)))
                 }
             }
         }
 
-        fn release(&self, ptr: PointerOffset) -> Result<(), ZeroCopyReleaseError> {
+        fn release(
+            &self,
+            ptr: PointerOffset,
+            channel_id: ChannelId,
+        ) -> Result<(), ZeroCopyReleaseError> {
             match unsafe {
-                self.storage.get().channels[self.channel_id]
+                self.storage.get().channels[channel_id.value()]
                     .completion_queue
                     .push(ptr.as_value())
             } {
                 true => {
-                    *self.borrow_counter() -= 1;
+                    *self.borrow_counter(channel_id) -= 1;
                     Ok(())
                 }
                 false => {
@@ -959,28 +942,26 @@ pub mod details {
         unsafe fn remove_sender(
             name: &FileName,
             config: &Self::Configuration,
-            channel_id: ChannelId,
         ) -> Result<(), ZeroCopyPortRemoveError> {
             let storage = Self::open_storage(
                 name,
                 config,
                 "Unable to remove forcefully the sender of the Zero Copy Connection",
             )?;
-            cleanup_shared_memory(&storage, State::Sender, channel_id.value());
+            cleanup_shared_memory(&storage, State::Sender);
             Ok(())
         }
 
         unsafe fn remove_receiver(
             name: &FileName,
             config: &Self::Configuration,
-            channel_id: ChannelId,
         ) -> Result<(), ZeroCopyPortRemoveError> {
             let storage = Self::open_storage(
                 name,
                 config,
                 "Unable to remove forcefully the receiver of the Zero Copy Connection",
             )?;
-            cleanup_shared_memory(&storage, State::Receiver, channel_id.value());
+            cleanup_shared_memory(&storage, State::Receiver);
             Ok(())
         }
 
