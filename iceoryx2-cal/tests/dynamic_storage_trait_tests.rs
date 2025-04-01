@@ -17,10 +17,15 @@ mod dynamic_storage {
     use iceoryx2_bb_elementary::allocator::*;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
+    use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_requires};
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
+    use std::sync::{Arc, Barrier};
+    use std::time::{Duration, Instant};
+
+    const TIMEOUT: Duration = Duration::from_millis(100);
 
     #[derive(Debug)]
     struct TestData {
@@ -396,6 +401,85 @@ mod dynamic_storage {
                 eq 134 - i
             );
         }
+    }
+
+    #[test]
+    fn initialization_blocks_other_openers<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+        let _watchdog = Watchdog::new();
+
+        std::thread::scope(|s| {
+            let config_1 = config.clone();
+            s.spawn(move || {
+                let _sut = Sut::Builder::new(&storage_name)
+                    .config(&config_1)
+                    .supplementary_size(0)
+                    .initializer(|value, _| {
+                        std::thread::sleep(TIMEOUT);
+                        value.value.store(789, Ordering::Relaxed);
+                        true
+                    })
+                    .create(TestData::new(123))
+                    .unwrap();
+            });
+
+            let config_2 = config.clone();
+            s.spawn(move || loop {
+                let sut2 = Sut::Builder::new(&storage_name).config(&config_2).open();
+                if sut2.is_err() {
+                    let err = sut2.err().unwrap();
+                    assert_that!(err == DynamicStorageOpenError::DoesNotExist || err == DynamicStorageOpenError::InitializationNotYetFinalized, eq true);
+                } else {
+                    assert_that!(sut2.unwrap().get().value.load(Ordering::Relaxed), eq 789);
+                    break;
+                }
+            });
+        });
+    }
+
+    #[test]
+    fn initialization_timeout_blocks_for_at_least_timeout<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+        let barrier = Arc::new(Barrier::new(2));
+        let _watchdog = Watchdog::new();
+
+        std::thread::scope(|s| {
+            let config_1 = config.clone();
+            let barrier_1 = barrier.clone();
+            s.spawn(move || {
+                let _sut = Sut::Builder::new(&storage_name)
+                    .config(&config_1)
+                    .supplementary_size(0)
+                    .initializer(|_, _| {
+                        barrier_1.wait();
+                        std::thread::sleep(TIMEOUT * 2);
+                        true
+                    })
+                    .create(TestData::new(123))
+                    .unwrap();
+            });
+
+            let config_2 = config.clone();
+            let barrier_2 = barrier.clone();
+            s.spawn(move || {
+                barrier_2.wait();
+                let start = Instant::now();
+                let _sut = Sut::Builder::new(&storage_name)
+                    .config(&config_2)
+                    .timeout(TIMEOUT)
+                    .open();
+
+                assert_that!(start.elapsed(), time_at_least TIMEOUT);
+            });
+        });
     }
 
     #[test]
