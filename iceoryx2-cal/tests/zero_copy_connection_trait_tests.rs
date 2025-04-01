@@ -26,8 +26,8 @@ mod zero_copy_connection {
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
-    use iceoryx2_cal::zero_copy_connection;
     use iceoryx2_cal::zero_copy_connection::*;
+    use iceoryx2_cal::zero_copy_connection::{self, DEFAULT_NUMBER_OF_CHANNELS};
 
     const TIMEOUT: Duration = Duration::from_millis(25);
     const SAMPLE_SIZE: usize = 123;
@@ -101,7 +101,7 @@ mod zero_copy_connection {
         let sut_receiver = Sut::Builder::new(&name)
             .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
             .config(&config)
-            .create_receiver(ChannelId::new(0))
+            .create_receiver(ChannelId::new(DEFAULT_NUMBER_OF_CHANNELS - 1))
             .unwrap();
         assert_that!(sut_receiver.buffer_size(), eq DEFAULT_BUFFER_SIZE);
         assert_that!(
@@ -111,6 +111,18 @@ mod zero_copy_connection {
         assert_that!(
             sut_receiver.has_enabled_safe_overflow(), eq
             DEFAULT_ENABLE_SAFE_OVERFLOW
+        );
+
+        drop(sut_receiver);
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .config(&config)
+            .create_receiver(ChannelId::new(DEFAULT_NUMBER_OF_CHANNELS));
+
+        assert_that!(
+            sut_receiver.err(), eq
+            Some(ZeroCopyCreationError::ChannelIdOutOfBounds)
         );
     }
 
@@ -307,6 +319,74 @@ mod zero_copy_connection {
     }
 
     #[test]
+    fn connecting_with_incompatible_number_of_channels_fails<Sut: ZeroCopyConnection>() {
+        const NUMBER_OF_CHANNELS: usize = 5;
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let _sut_sender = Sut::Builder::new(&name)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .config(&config)
+            .create_sender(ChannelId::new(0))
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_channels(NUMBER_OF_CHANNELS + 1)
+            .config(&config)
+            .create_receiver(ChannelId::new(0));
+
+        assert_that!(sut_receiver.err(), eq Some(ZeroCopyCreationError::IncompatibleNumberOfChannels));
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_channels(NUMBER_OF_CHANNELS - 1)
+            .config(&config)
+            .create_receiver(ChannelId::new(0));
+
+        assert_that!(sut_receiver.err(), eq Some(ZeroCopyCreationError::IncompatibleNumberOfChannels));
+    }
+
+    #[test]
+    fn connecting_with_compatible_number_of_channels_works<Sut: ZeroCopyConnection>() {
+        const NUMBER_OF_CHANNELS: usize = 9;
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let _sut_sender = Sut::Builder::new(&name)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .config(&config)
+            .create_sender(ChannelId::new(0))
+            .unwrap();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .config(&config)
+            .create_receiver(ChannelId::new(0));
+
+        assert_that!(sut_receiver, is_ok);
+    }
+
+    #[test]
+    fn connecting_with_out_of_bounds_channel_id_fails<Sut: ZeroCopyConnection>() {
+        const NUMBER_OF_CHANNELS: usize = 7;
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .config(&config)
+            .create_sender(ChannelId::new(7));
+
+        assert_that!(sut_sender.err(), eq Some(ZeroCopyCreationError::ChannelIdOutOfBounds));
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .config(&config)
+            .create_receiver(ChannelId::new(8));
+
+        assert_that!(sut_receiver.err(), eq Some(ZeroCopyCreationError::ChannelIdOutOfBounds));
+    }
+
+    #[test]
     fn send_receive_and_retrieval_works<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
@@ -338,6 +418,132 @@ mod zero_copy_connection {
 
         let retrieval = sut_sender.reclaim().unwrap();
         assert_that!(retrieval, is_none);
+    }
+
+    #[test]
+    fn send_receive_and_retrieval_works_for_multiple_channels<Sut: ZeroCopyConnection>() {
+        const NUMBER_OF_CHANNELS: usize = 7;
+        const ITERATIONS: usize = 5;
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let mut sut_senders = vec![];
+        let mut sut_receivers = vec![];
+
+        for id in 0..NUMBER_OF_CHANNELS {
+            sut_senders.push(
+                Sut::Builder::new(&name)
+                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_sender(ChannelId::new(id))
+                    .unwrap(),
+            );
+            sut_receivers.push(
+                Sut::Builder::new(&name)
+                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_receiver(ChannelId::new(id))
+                    .unwrap(),
+            );
+        }
+
+        for iteration in 0..ITERATIONS {
+            for channel_id in 0..NUMBER_OF_CHANNELS {
+                let sample_offset = SAMPLE_SIZE * (iteration + 1) * (channel_id + 1);
+                let sender = &sut_senders[channel_id];
+                let receiver = &sut_receivers[channel_id];
+
+                assert_that!(
+                    sender.try_send(PointerOffset::new(sample_offset), SAMPLE_SIZE),
+                    is_ok
+                );
+                let sample = receiver.receive().unwrap();
+                assert_that!(sample, is_some);
+                assert_that!(sample.as_ref().unwrap().offset(), eq sample_offset);
+
+                assert_that!(receiver.release(sample.unwrap()), is_ok);
+                let retrieval = sender.reclaim().unwrap();
+                assert_that!(retrieval, is_some);
+                assert_that!(retrieval.as_ref().unwrap().offset(), eq sample_offset);
+
+                let retrieval = sender.reclaim().unwrap();
+                assert_that!(retrieval, is_none);
+            }
+        }
+    }
+
+    #[test]
+    fn same_offset_can_be_sent_receive_and_retrieval_via_multiple_channels_in_parallel<
+        Sut: ZeroCopyConnection,
+    >() {
+        const NUMBER_OF_CHANNELS: usize = 7;
+        const ITERATIONS: usize = 5;
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let mut sut_senders = vec![];
+        let mut sut_receivers = vec![];
+
+        for id in 0..NUMBER_OF_CHANNELS {
+            sut_senders.push(
+                Sut::Builder::new(&name)
+                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_sender(ChannelId::new(id))
+                    .unwrap(),
+            );
+            sut_receivers.push(
+                Sut::Builder::new(&name)
+                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_receiver(ChannelId::new(id))
+                    .unwrap(),
+            );
+        }
+
+        for iteration in 0..ITERATIONS {
+            let sample_offset = SAMPLE_SIZE * (iteration + 1);
+            // send out first the same sample_offset throught all channels
+            for channel_id in 0..NUMBER_OF_CHANNELS {
+                let sender = &sut_senders[channel_id];
+
+                assert_that!(
+                    sender.try_send(PointerOffset::new(sample_offset), SAMPLE_SIZE),
+                    is_ok
+                );
+            }
+
+            let mut samples = vec![];
+            // receive the sample_offset on all channels
+            for channel_id in 0..NUMBER_OF_CHANNELS {
+                let receiver = &sut_receivers[channel_id];
+
+                let sample = receiver.receive().unwrap();
+                assert_that!(sample, is_some);
+                assert_that!(sample.as_ref().unwrap().offset(), eq sample_offset);
+                samples.push(sample);
+            }
+
+            // release the received samples
+            for channel_id in 0..NUMBER_OF_CHANNELS {
+                let receiver = &sut_receivers[channel_id];
+
+                assert_that!(receiver.release(samples[channel_id].unwrap()), is_ok);
+            }
+
+            // reclaim them
+            for channel_id in 0..NUMBER_OF_CHANNELS {
+                let sender = &sut_senders[channel_id];
+
+                let retrieval = sender.reclaim().unwrap();
+                assert_that!(retrieval, is_some);
+                assert_that!(retrieval.as_ref().unwrap().offset(), eq sample_offset);
+            }
+        }
     }
 
     #[test]

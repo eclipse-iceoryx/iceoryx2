@@ -319,8 +319,12 @@ pub mod details {
             number_of_channels
                 * Channel::const_memory_size(submission_queue_capacity, completion_queue_capacity)
                 + RelocatableVec::<Channel>::const_memory_size(number_of_channels)
-                + SegmentDetails::const_memory_size(number_of_samples) * number_of_segments
-                + RelocatableVec::<SegmentDetails>::const_memory_size(number_of_segments)
+                + SegmentDetails::const_memory_size(number_of_samples)
+                    * number_of_segments
+                    * number_of_channels
+                + RelocatableVec::<SegmentDetails>::const_memory_size(
+                    number_of_segments * number_of_channels,
+                )
         }
 
         unsafe fn init(
@@ -482,6 +486,12 @@ pub mod details {
                         "{} since the requested number of segments is set to {} but should be set to {}.",
                         msg, self.number_of_segments, storage.get().number_of_segments);
                 }
+
+                if storage.get().channels.capacity() != self.number_of_channels {
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfChannels,
+                        "{} since the requested number of channels is set to {} but should be set to {}.",
+                        msg, self.number_of_channels, storage.get().channels.capacity());
+                }
             }
 
             Ok(storage)
@@ -497,7 +507,7 @@ pub mod details {
                 buffer_size: DEFAULT_BUFFER_SIZE,
                 enable_safe_overflow: DEFAULT_ENABLE_SAFE_OVERFLOW,
                 max_borrowed_samples: DEFAULT_MAX_BORROWED_SAMPLES,
-                number_of_samples_per_segment: 0,
+                number_of_samples_per_segment: DEFAULT_NUMBER_OF_SAMPLES_PER_SEGMENT,
                 number_of_segments: DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS,
                 number_of_channels: DEFAULT_NUMBER_OF_CHANNELS,
                 config: Configuration::default(),
@@ -558,7 +568,14 @@ pub mod details {
             let storage = fail!(from self, when self.create_or_open_shm(),
             "{} since the corresponding connection could not be created or opened", msg);
 
-            storage.get().channels[channel_id.value()].reserve_port(State::Sender.value(), msg)?;
+            let mgmt = storage.get();
+            if mgmt.channels.capacity() <= channel_id.value() {
+                fail!(from self, with ZeroCopyCreationError::ChannelIdOutOfBounds,
+                    "{} since there are {} channels available and the channel id {} is out-of-bounds.",
+                    msg, mgmt.channels.capacity(), channel_id.value());
+            }
+
+            mgmt.channels[channel_id.value()].reserve_port(State::Sender.value(), msg)?;
 
             Ok(Sender {
                 storage,
@@ -576,8 +593,14 @@ pub mod details {
             let storage = fail!(from self, when self.create_or_open_shm(),
             "{} since the corresponding connection could not be created or opened", msg);
 
-            storage.get().channels[channel_id.value()]
-                .reserve_port(State::Receiver.value(), msg)?;
+            let mgmt = storage.get();
+            if mgmt.channels.capacity() <= channel_id.value() {
+                fail!(from self, with ZeroCopyCreationError::ChannelIdOutOfBounds,
+                    "{} since there are {} channels available and the channel id {} is out-of-bounds.",
+                    msg, mgmt.channels.capacity(), channel_id.value());
+            }
+
+            mgmt.channels[channel_id.value()].reserve_port(State::Receiver.value(), msg)?;
 
             Ok(Receiver {
                 storage,

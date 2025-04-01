@@ -45,6 +45,8 @@ pub enum ZeroCopyCreationError {
     IncompatibleOverflowSetting,
     IncompatibleNumberOfSamples,
     IncompatibleNumberOfSegments,
+    IncompatibleNumberOfChannels,
+    ChannelIdOutOfBounds,
 }
 
 impl core::fmt::Display for ZeroCopyCreationError {
@@ -127,6 +129,7 @@ pub const DEFAULT_ENABLE_SAFE_OVERFLOW: bool = false;
 pub const DEFAULT_MAX_BORROWED_SAMPLES: usize = 4;
 pub const DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS: u8 = 1;
 pub const DEFAULT_NUMBER_OF_CHANNELS: usize = 1;
+pub const DEFAULT_NUMBER_OF_SAMPLES_PER_SEGMENT: usize = 8;
 
 pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<C> {
     fn buffer_size(self, value: usize) -> Self;
