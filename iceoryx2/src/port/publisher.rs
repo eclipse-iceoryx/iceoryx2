@@ -269,7 +269,10 @@ impl<Service: service::Service> PublisherBackend<Service> {
                     self.sender.retrieve_returned_samples();
 
                     let offset = PointerOffset::from_value(old_sample.offset);
-                    match connection.sender.try_send(offset, old_sample.size) {
+                    match connection
+                        .sender
+                        .try_send(offset, old_sample.size, ChannelId::new(0))
+                    {
                         Ok(overflow) => {
                             self.sender.borrow_sample(offset);
 
@@ -864,11 +867,7 @@ pub(crate) unsafe fn remove_publisher_from_all_connections<Service: service::Ser
         let publisher_id = extract_publisher_id_from_connection(&connection);
         if publisher_id == *port_id {
             let result = handle_port_remove_error(
-                Service::Connection::remove_sender(
-                    &connection,
-                    &connection_config,
-                    ChannelId::new(0),
-                ),
+                Service::Connection::remove_sender(&connection, &connection_config),
                 &origin,
                 msg,
                 &connection,
@@ -902,11 +901,7 @@ pub(crate) unsafe fn remove_subscriber_from_all_connections<Service: service::Se
         let subscriber_id = extract_subscriber_id_from_connection(&connection);
         if subscriber_id == *port_id {
             let result = handle_port_remove_error(
-                Service::Connection::remove_receiver(
-                    &connection,
-                    &connection_config,
-                    ChannelId::new(0),
-                ),
+                Service::Connection::remove_receiver(&connection, &connection_config),
                 &origin,
                 msg,
                 &connection,

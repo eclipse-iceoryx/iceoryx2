@@ -84,8 +84,9 @@ impl<Service: service::Service> Connection<Service> {
                                 .enable_safe_overflow(this.enable_safe_overflow)
                                 .number_of_samples_per_segment(number_of_samples)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
+                                .number_of_channels(1)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
-                                .create_sender(ChannelId::new(0)),
+                                .create_sender(),
                         "{}.", msg);
 
         Ok(Self {
@@ -149,7 +150,7 @@ impl<Service: service::Service> Sender<Service> {
         let mut number_of_recipients = 0;
         for i in 0..self.len() {
             if let Some(ref connection) = self.get(i) {
-                match deliver_call(&connection.sender, offset, sample_size) {
+                match deliver_call(&connection.sender, offset, sample_size, ChannelId::new(0)) {
                     Err(ZeroCopySendError::ReceiveBufferFull)
                     | Err(ZeroCopySendError::UsedChunkListFull) => {
                         /* causes no problem
@@ -276,7 +277,7 @@ impl<Service: service::Service> Sender<Service> {
         for i in 0..self.len() {
             if let Some(ref connection) = self.get(i) {
                 loop {
-                    match connection.sender.reclaim() {
+                    match connection.sender.reclaim(ChannelId::new(0)) {
                         Ok(Some(ptr_dist)) => {
                             self.release_sample(ptr_dist);
                         }

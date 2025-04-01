@@ -74,9 +74,10 @@ impl<Service: service::Service> Connection<Service> {
                                     .receiver_max_borrowed_samples(this.receiver_max_borrowed_samples)
                                     .enable_safe_overflow(this.enable_safe_overflow)
                                     .number_of_samples_per_segment(number_of_samples)
+                                    .number_of_channels(1)
                                     .max_supported_shared_memory_segments(max_number_of_segments)
                                     .timeout(global_config.global.service.creation_timeout)
-                                    .create_receiver(ChannelId::new(0)),
+                                    .create_receiver(),
                         "{} since the zero copy connection could not be established.", msg);
 
         let segment_name = data_segment_name(sender_port_id);
@@ -154,7 +155,7 @@ impl<Service: service::Service> Receiver<Service> {
     pub(crate) fn prepare_connection_removal(&self, index: usize) {
         if let Some(to_be_removed_connections) = &self.to_be_removed_connections {
             if let Some(connection) = self.get(index) {
-                if connection.receiver.has_data()
+                if connection.receiver.has_data(ChannelId::new(0))
                     && !unsafe { &mut *to_be_removed_connections.get() }.push(connection.clone())
                 {
                     warn!(from self,
@@ -176,7 +177,7 @@ impl<Service: service::Service> Receiver<Service> {
     pub(crate) fn has_samples(&self) -> Result<bool, ConnectionFailure> {
         for id in 0..self.len() {
             if let Some(ref connection) = &self.get(id) {
-                if connection.receiver.has_data() {
+                if connection.receiver.has_data(ChannelId::new(0)) {
                     return Ok(true);
                 }
             }
@@ -190,7 +191,7 @@ impl<Service: service::Service> Receiver<Service> {
         connection: &Arc<Connection<Service>>,
     ) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
         let msg = "Unable to receive another sample";
-        match connection.receiver.receive() {
+        match connection.receiver.receive(ChannelId::new(0)) {
             Ok(data) => match data {
                 None => Ok(None),
                 Some(offset) => {
