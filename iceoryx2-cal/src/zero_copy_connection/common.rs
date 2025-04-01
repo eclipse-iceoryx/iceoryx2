@@ -265,9 +265,17 @@ pub mod details {
         }
 
         fn reserve_port(&self, new_state: u8, msg: &str) -> Result<(), ZeroCopyCreationError> {
-            let mut current_state = State::None.value();
+            let mut current_state = self.state.load(Ordering::Relaxed);
 
             loop {
+                if current_state & new_state != 0 {
+                    fail!(from self, with ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected,
+                    "{} since an instance is already connected.", msg);
+                } else if current_state & State::MarkedForDestruction.value() != 0 {
+                    fail!(from self, with ZeroCopyCreationError::InternalError,
+                    "{} since the connection is currently being cleaned up.", msg);
+                }
+
                 match self.state.compare_exchange(
                     current_state,
                     current_state | new_state,
@@ -277,13 +285,6 @@ pub mod details {
                     Ok(_) => break,
                     Err(v) => {
                         current_state = v;
-                        if current_state & new_state != 0 {
-                            fail!(from self, with ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected,
-                            "{} since an instance is already connected.", msg);
-                        } else if current_state & State::MarkedForDestruction.value() != 0 {
-                            fail!(from self, with ZeroCopyCreationError::InternalError,
-                            "{} since the connection is currently being cleaned up.", msg);
-                        }
                     }
                 }
             }
@@ -373,7 +374,10 @@ pub mod details {
             self.buffer_size + self.max_borrowed_samples + 1
         }
 
-        fn create_or_open_shm(&self) -> Result<Storage, ZeroCopyCreationError> {
+        fn create_or_open_shm(
+            &self,
+            port_to_register: State,
+        ) -> Result<Storage, ZeroCopyCreationError> {
             let supplementary_size = SharedManagementData::const_memory_size(
                 self.submission_queue_size(),
                 self.completion_queue_size(),
@@ -430,6 +434,8 @@ pub mod details {
                 }
             };
 
+            storage.get().reserve_port(port_to_register.value(), msg)?;
+
             if storage.has_ownership() {
                 storage.release_ownership();
             } else {
@@ -438,6 +444,7 @@ pub mod details {
                 if storage.get().channels[0].submission_queue.capacity()
                     != self.submission_queue_size()
                 {
+                    cleanup_shared_memory(&storage, port_to_register);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleBufferSize,
                         "{} since the connection has a buffer size of {} but a buffer size of {} is required.",
                         msg, storage.get().channels[0].submission_queue.capacity(), self.submission_queue_size());
@@ -446,12 +453,14 @@ pub mod details {
                 if storage.get().channels[0].completion_queue.capacity()
                     != self.completion_queue_size()
                 {
+                    cleanup_shared_memory(&storage, port_to_register);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSampleSetting,
                         "{} since the max borrowed sample setting is set to {} but a value of {} is required.",
                         msg, storage.get().channels[0].completion_queue.capacity() - storage.get().channels[0].submission_queue.capacity(), self.max_borrowed_samples);
                 }
 
                 if storage.get().enable_safe_overflow != self.enable_safe_overflow {
+                    cleanup_shared_memory(&storage, port_to_register);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleOverflowSetting,
                         "{} since the safe overflow is set to {} but should be set to {}.",
                         msg, storage.get().enable_safe_overflow, self.enable_safe_overflow);
@@ -459,18 +468,21 @@ pub mod details {
 
                 if storage.get().number_of_samples_per_segment != self.number_of_samples_per_segment
                 {
+                    cleanup_shared_memory(&storage, port_to_register);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSamples,
                         "{} since the requested number of samples is set to {} but should be set to {}.",
                         msg, self.number_of_samples_per_segment, storage.get().number_of_samples_per_segment);
                 }
 
                 if storage.get().number_of_segments != self.number_of_segments {
+                    cleanup_shared_memory(&storage, port_to_register);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfSegments,
                         "{} since the requested number of segments is set to {} but should be set to {}.",
                         msg, self.number_of_segments, storage.get().number_of_segments);
                 }
 
                 if storage.get().channels.capacity() != self.number_of_channels {
+                    cleanup_shared_memory(&storage, port_to_register);
                     fail!(from self, with ZeroCopyCreationError::IncompatibleNumberOfChannels,
                         "{} since the requested number of channels is set to {} but should be set to {}.",
                         msg, self.number_of_channels, storage.get().channels.capacity());
@@ -547,11 +559,8 @@ pub mod details {
         ) -> Result<<Connection<Storage> as ZeroCopyConnection>::Sender, ZeroCopyCreationError>
         {
             let msg = "Unable to create sender";
-            let storage = fail!(from self, when self.create_or_open_shm(),
+            let storage = fail!(from self, when self.create_or_open_shm(State::Sender),
             "{} since the corresponding connection could not be created or opened", msg);
-
-            let mgmt = storage.get();
-            mgmt.reserve_port(State::Sender.value(), msg)?;
 
             Ok(Sender {
                 storage,
@@ -564,11 +573,8 @@ pub mod details {
         ) -> Result<<Connection<Storage> as ZeroCopyConnection>::Receiver, ZeroCopyCreationError>
         {
             let msg = "Unable to create receiver";
-            let storage = fail!(from self, when self.create_or_open_shm(),
+            let storage = fail!(from self, when self.create_or_open_shm(State::Receiver),
             "{} since the corresponding connection could not be created or opened", msg);
-
-            let mgmt = storage.get();
-            mgmt.reserve_port(State::Receiver.value(), msg)?;
 
             Ok(Receiver {
                 storage,
