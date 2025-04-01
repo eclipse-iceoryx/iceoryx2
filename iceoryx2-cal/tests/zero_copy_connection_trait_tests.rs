@@ -1297,54 +1297,70 @@ mod zero_copy_connection {
     }
 
     #[test]
-    fn receive_with_multiple_segments_works<Sut: ZeroCopyConnection>() {
+    fn receive_with_multiple_segments_and_channels_works<Sut: ZeroCopyConnection>() {
         const BUFFER_SIZE: usize = 10;
         const NUMBER_OF_SEGMENTS: u8 = 10;
+        const NUMBER_OF_CHANNELS: usize = 4;
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
-        let sut_sender = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
-            .buffer_size(2 * BUFFER_SIZE)
-            .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples(BUFFER_SIZE)
-            .enable_safe_overflow(true)
-            .config(&config)
-            .create_sender(ChannelId::new(0))
-            .unwrap();
+        let mut sut_senders = vec![];
+        let mut sut_receivers = vec![];
 
-        let sut_receiver = Sut::Builder::new(&name)
-            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
-            .buffer_size(2 * BUFFER_SIZE)
-            .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
-            .receiver_max_borrowed_samples(BUFFER_SIZE)
-            .enable_safe_overflow(true)
-            .config(&config)
-            .create_receiver(ChannelId::new(0))
-            .unwrap();
+        for id in 0..NUMBER_OF_CHANNELS {
+            sut_senders.push(
+                Sut::Builder::new(&name)
+                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .buffer_size(2 * BUFFER_SIZE)
+                    .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
+                    .receiver_max_borrowed_samples(BUFFER_SIZE)
+                    .enable_safe_overflow(true)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_sender(ChannelId::new(id))
+                    .unwrap(),
+            );
+
+            sut_receivers.push(
+                Sut::Builder::new(&name)
+                    .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+                    .buffer_size(2 * BUFFER_SIZE)
+                    .max_supported_shared_memory_segments(NUMBER_OF_SEGMENTS)
+                    .receiver_max_borrowed_samples(BUFFER_SIZE)
+                    .enable_safe_overflow(true)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_receiver(ChannelId::new(id))
+                    .unwrap(),
+            );
+        }
 
         for k in 0..2 {
             for n in 0..BUFFER_SIZE {
-                sut_sender
-                    .try_send(
-                        PointerOffset::from_offset_and_segment_id(
-                            k * SAMPLE_SIZE,
-                            SegmentId::new(n as u8),
-                        ),
-                        SAMPLE_SIZE,
-                    )
-                    .unwrap();
+                for id in 0..NUMBER_OF_CHANNELS {
+                    sut_senders[id]
+                        .try_send(
+                            PointerOffset::from_offset_and_segment_id(
+                                k * SAMPLE_SIZE,
+                                SegmentId::new(n as u8),
+                            ),
+                            SAMPLE_SIZE,
+                        )
+                        .unwrap();
+                }
             }
         }
 
         for k in 0..2 {
             for n in 0..BUFFER_SIZE {
-                let offset = sut_receiver.receive().unwrap().unwrap();
-                assert_that!(offset, eq PointerOffset::from_offset_and_segment_id(
-                    k * SAMPLE_SIZE,
-                    SegmentId::new(n as u8),
-                ));
-                sut_receiver.release(offset).unwrap();
+                for id in 0..NUMBER_OF_CHANNELS {
+                    let offset = sut_receivers[id].receive().unwrap().unwrap();
+                    assert_that!(offset, eq PointerOffset::from_offset_and_segment_id(
+                        k * SAMPLE_SIZE,
+                        SegmentId::new(n as u8),
+                    ));
+                    sut_receivers[id].release(offset).unwrap();
+                }
             }
         }
     }
@@ -1607,6 +1623,82 @@ mod zero_copy_connection {
 
         assert_that!(unsafe { Sut::remove_receiver(&name, &config, ChannelId::new(0)) }, eq Err(ZeroCopyPortRemoveError::DoesNotExist));
         assert_that!(unsafe { Sut::remove_sender(&name, &config, ChannelId::new(0)) }, eq Err(ZeroCopyPortRemoveError::DoesNotExist));
+    }
+
+    #[test]
+    fn connection_is_only_cleaned_up_when_all_channels_are_closed_sender_first<
+        Sut: ZeroCopyConnection,
+    >() {
+        const NUMBER_OF_CHANNELS: usize = 5;
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let mut senders = vec![];
+        let mut receivers = vec![];
+
+        for id in 0..NUMBER_OF_CHANNELS {
+            senders.push(
+                Sut::Builder::new(&name)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_sender(ChannelId::new(id))
+                    .unwrap(),
+            );
+
+            receivers.push(
+                Sut::Builder::new(&name)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_receiver(ChannelId::new(id))
+                    .unwrap(),
+            );
+        }
+
+        for _ in 0..NUMBER_OF_CHANNELS {
+            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+            senders.pop();
+            receivers.pop();
+        }
+
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
+    }
+
+    #[test]
+    fn connection_is_only_cleaned_up_when_all_channels_are_closed_receiver_first<
+        Sut: ZeroCopyConnection,
+    >() {
+        const NUMBER_OF_CHANNELS: usize = 5;
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let mut senders = vec![];
+        let mut receivers = vec![];
+
+        for id in 0..NUMBER_OF_CHANNELS {
+            senders.push(
+                Sut::Builder::new(&name)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_sender(ChannelId::new(id))
+                    .unwrap(),
+            );
+
+            receivers.push(
+                Sut::Builder::new(&name)
+                    .number_of_channels(NUMBER_OF_CHANNELS)
+                    .config(&config)
+                    .create_receiver(ChannelId::new(id))
+                    .unwrap(),
+            );
+        }
+
+        for _ in 0..NUMBER_OF_CHANNELS {
+            assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(true));
+            receivers.pop();
+            senders.pop();
+        }
+
+        assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
     }
 
     #[instantiate_tests(<zero_copy_connection::posix_shared_memory::Connection>)]
