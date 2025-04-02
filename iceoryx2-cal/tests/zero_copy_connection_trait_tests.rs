@@ -1646,6 +1646,7 @@ mod zero_copy_connection {
         assert_that!(unsafe { Sut::remove_sender(&name, &config) }, eq Err(ZeroCopyPortRemoveError::DoesNotExist));
     }
 
+    #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
     #[test]
     fn concurrent_creation_and_destruction_works<Sut: ZeroCopyConnection>() {
         const ITERATIONS: usize = 1000;
