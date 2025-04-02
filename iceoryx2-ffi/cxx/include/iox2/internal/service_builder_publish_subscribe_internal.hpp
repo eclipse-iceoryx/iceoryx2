@@ -20,7 +20,7 @@ template <typename Payload, typename = void>
 struct HasPayloadTypeNameMember : std::false_type { };
 
 template <typename Payload>
-struct HasPayloadTypeNameMember<Payload, decltype((void) Payload::TYPE_NAME)> : std::true_type { };
+struct HasPayloadTypeNameMember<Payload, decltype((void) Payload::IOX2_TYPE_NAME)> : std::true_type { };
 
 template <typename Payload>
 using FromCustomizedPayloadTypeName = std::enable_if_t<HasPayloadTypeNameMember<Payload>::value, const char*>;
@@ -45,7 +45,7 @@ template <typename UserHeader, typename = void>
 struct HasUserHeaderTypeNameMember : std::false_type { };
 
 template <typename UserHeader>
-struct HasUserHeaderTypeNameMember<UserHeader, decltype((void) UserHeader::TYPE_NAME)> : std::true_type { };
+struct HasUserHeaderTypeNameMember<UserHeader, decltype((void) UserHeader::IOX2_TYPE_NAME)> : std::true_type { };
 } // namespace iox2::internal
 
 #endif

@@ -84,19 +84,19 @@ service.
 For C++ and Rust applications, the internally derived type names
 usually depend on the used programming language. To allow cross-language
 communication involving C++ applications, iceoryx2 provides the possibility to
-customize the payload and the user header type name by setting `TYPE_NAME` in
+customize the payload and the user header type name by setting `IOX2_TYPE_NAME` in
 the sent C++ data struct and user header, e.g.
 
 ```cxx
 struct TransmissionData {
-    static constexpr const char* TYPE_NAME = "examples_common::transmission_data::TransmissionData";
+    static constexpr const char* IOX2_TYPE_NAME = "examples_common::transmission_data::TransmissionData";
     std::int32_t x;
     std::int32_t y;
     double funky;
 };
 
 struct CustomHeader {
-    static constexpr const char* TYPE_NAME = "examples_common::custom_header::CustomHeader";
+    static constexpr const char* IOX2_TYPE_NAME = "examples_common::custom_header::CustomHeader";
     int32_t version;
     uint64_t timestamp;
 };
