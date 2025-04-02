@@ -1149,13 +1149,16 @@ mod zero_copy_connection {
             .unwrap();
 
         sut_receiver
-            .release(PointerOffset::from_offset_and_segment_id(
-                0,
-                SegmentId::new(NUMBER_OF_SEGMENTS + 1),
-            ))
+            .release(
+                PointerOffset::from_offset_and_segment_id(
+                    0,
+                    SegmentId::new(NUMBER_OF_SEGMENTS + 1),
+                ),
+                ChannelId::new(0),
+            )
             .unwrap();
 
-        assert_that!(sut_sender.reclaim().err(), eq Some(ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset));
+        assert_that!(sut_sender.reclaim(ChannelId::new(0)).err(), eq Some(ZeroCopyReclaimError::ReceiverReturnedCorruptedPointerOffset));
     }
 
     #[test]
