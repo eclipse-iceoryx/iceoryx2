@@ -180,19 +180,19 @@ pub unsafe fn dup(fildes: int) -> int {
 pub unsafe fn close(fd: int) -> int {
     match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::SharedMemory(handle)) => {
+            HandleTranslator::get_instance().remove(fd);
             win32call! { CloseHandle(handle.handle.handle)};
             win32call! { CloseHandle(handle.state_handle)};
-            HandleTranslator::get_instance().remove(fd);
             0
         }
         Some(FdHandleEntry::File(handle)) => {
-            win32call! { CloseHandle(handle.handle)};
             HandleTranslator::get_instance().remove(fd);
+            win32call! { CloseHandle(handle.handle)};
             0
         }
         Some(FdHandleEntry::Socket(handle)) => {
-            win32call! { winsock closesocket(handle.fd) };
             HandleTranslator::get_instance().remove(fd);
+            win32call! { winsock closesocket(handle.fd) };
             0
         }
         Some(FdHandleEntry::UdsDatagramSocket(handle)) => {
