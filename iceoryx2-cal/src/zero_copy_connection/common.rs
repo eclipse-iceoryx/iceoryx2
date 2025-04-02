@@ -272,7 +272,7 @@ pub mod details {
                     fail!(from self, with ZeroCopyCreationError::AnotherInstanceIsAlreadyConnected,
                     "{} since an instance is already connected.", msg);
                 } else if current_state & State::MarkedForDestruction.value() != 0 {
-                    fail!(from self, with ZeroCopyCreationError::InternalError,
+                    fail!(from self, with ZeroCopyCreationError::IsBeingCleanedUp,
                     "{} since the connection is currently being cleaned up.", msg);
                 }
 

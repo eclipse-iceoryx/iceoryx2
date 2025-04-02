@@ -34,6 +34,7 @@ pub enum ZeroCopyPortRemoveError {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ZeroCopyCreationError {
     InternalError,
+    IsBeingCleanedUp,
     AnotherInstanceIsAlreadyConnected,
     InsufficientPermissions,
     VersionMismatch,

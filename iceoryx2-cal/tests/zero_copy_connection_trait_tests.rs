@@ -14,7 +14,7 @@
 mod zero_copy_connection {
     use core::time::Duration;
     use std::collections::HashSet;
-    use std::sync::Mutex;
+    use std::sync::{Arc, Barrier, Mutex};
     use std::time::Instant;
 
     use iceoryx2_bb_container::semantic_string::*;
@@ -1644,6 +1644,59 @@ mod zero_copy_connection {
 
         assert_that!(unsafe { Sut::remove_receiver(&name, &config) }, eq Err(ZeroCopyPortRemoveError::DoesNotExist));
         assert_that!(unsafe { Sut::remove_sender(&name, &config) }, eq Err(ZeroCopyPortRemoveError::DoesNotExist));
+    }
+
+    #[test]
+    fn concurrent_creation_and_destruction_works<Sut: ZeroCopyConnection>() {
+        const ITERATIONS: usize = 1000;
+        let barrier_1 = Arc::new(Barrier::new(2));
+        let barrier_2 = barrier_1.clone();
+        let name_1 = generate_name();
+        let name_2 = generate_name();
+        let config_1 = generate_isolated_config::<Sut>();
+        let config_2 = config_1.clone();
+
+        let verify = |error: ZeroCopyCreationError| {
+            assert_that!(error == ZeroCopyCreationError::IsBeingCleanedUp || error == ZeroCopyCreationError::InitializationNotYetFinalized, eq true);
+        };
+
+        std::thread::scope(|s| {
+            s.spawn(move || {
+                barrier_1.wait();
+                for _ in 0..ITERATIONS {
+                    let sut_sender = Sut::Builder::new(&name_1).config(&config_1).create_sender();
+                    let sut_receiver = Sut::Builder::new(&name_2)
+                        .config(&config_1)
+                        .create_receiver();
+
+                    if let Some(e) = sut_sender.err() {
+                        verify(e);
+                    }
+
+                    if let Some(e) = sut_receiver.err() {
+                        verify(e);
+                    }
+                }
+            });
+
+            s.spawn(move || {
+                barrier_2.wait();
+                for _ in 0..ITERATIONS {
+                    let sut_receiver = Sut::Builder::new(&name_1)
+                        .config(&config_2)
+                        .create_receiver();
+                    let sut_sender = Sut::Builder::new(&name_2).config(&config_2).create_sender();
+
+                    if let Some(e) = sut_sender.err() {
+                        verify(e);
+                    }
+
+                    if let Some(e) = sut_receiver.err() {
+                        verify(e);
+                    }
+                }
+            });
+        });
     }
 
     #[instantiate_tests(<zero_copy_connection::posix_shared_memory::Connection>)]
