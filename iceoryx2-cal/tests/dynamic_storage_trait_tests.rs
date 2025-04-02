@@ -411,13 +411,17 @@ mod dynamic_storage {
         let storage_name = generate_name();
         let config = generate_isolated_config::<Sut>();
         let _watchdog = Watchdog::new();
+        let barrier_1 = Arc::new(Barrier::new(2));
+        let barrier_2 = barrier_1.clone();
 
         std::thread::scope(|s| {
             let config_1 = config.clone();
             s.spawn(move || {
+                barrier_1.wait();
                 let _sut = Sut::Builder::new(&storage_name)
                     .config(&config_1)
                     .supplementary_size(0)
+                    .has_ownership(false)
                     .initializer(|value, _| {
                         std::thread::sleep(TIMEOUT);
                         value.value.store(789, Ordering::Relaxed);
@@ -428,7 +432,9 @@ mod dynamic_storage {
             });
 
             let config_2 = config.clone();
-            s.spawn(move || loop {
+            s.spawn(move || {
+                barrier_2.wait();
+                loop {
                 let sut2 = Sut::Builder::new(&storage_name).config(&config_2).open();
                 if sut2.is_err() {
                     let err = sut2.err().unwrap();
@@ -437,8 +443,11 @@ mod dynamic_storage {
                     assert_that!(sut2.unwrap().get().value.load(Ordering::Relaxed), eq 789);
                     break;
                 }
-            });
+            }});
         });
+
+        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
+        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
     }
 
     #[test]
@@ -709,7 +718,7 @@ mod dynamic_storage {
     }
 
     #[test]
-    fn remove_storage_with_unfinished_initialization_does_not_call_drop<
+    fn remove_storage_with_unfinished_initialization_does_call_drop<
         Sut: DynamicStorage<TestData> + 'static,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -727,13 +736,11 @@ mod dynamic_storage {
             let _ = Sut::Builder::new(&storage_name)
                 .has_ownership(false)
                 .config(&config)
-                .initializer(|_, _| {
-                    assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
-                    false
-                })
+                .initializer(|_, _| false)
                 .create(TestData::new_with_lifetime_tracking(0));
 
-            assert_that!(state.number_of_living_instances(), eq 1);
+            assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(false));
+            assert_that!(state.number_of_living_instances(), eq 0);
         }
     }
 
