@@ -345,7 +345,7 @@ pub mod details {
                         "{} since the used chunk list could not be added. - This is an implementation bug!", msg);
                 }
 
-                fatal_panic!(from self, when unsafe { self.segment_details[n as usize].init(allocator) },
+                fatal_panic!(from self, when unsafe { self.segment_details[n].init(allocator) },
                     "{} since the used chunk list for segment id {} failed to allocate memory. - This is an implementation bug!",
                     msg, n);
             }
