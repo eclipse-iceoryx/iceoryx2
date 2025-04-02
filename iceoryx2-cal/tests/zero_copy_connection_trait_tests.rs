@@ -720,19 +720,21 @@ mod zero_copy_connection {
 
     #[test]
     fn send_samples_can_be_acquired<Sut: ZeroCopyConnection>() {
-        let id = ChannelId::new(0);
+        const NUMBER_OF_CHANNELS: usize = 6;
         const BUFFER_SIZE: usize = 10;
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_sender = Sut::Builder::new(&name)
             .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(NUMBER_OF_CHANNELS)
             .buffer_size(BUFFER_SIZE)
             .config(&config)
             .create_sender()
             .unwrap();
         let _sut_receiver = Sut::Builder::new(&name)
             .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(NUMBER_OF_CHANNELS)
             .buffer_size(BUFFER_SIZE)
             .config(&config)
             .create_receiver()
@@ -740,22 +742,28 @@ mod zero_copy_connection {
 
         let mut offsets = HashSet::new();
 
-        for i in 0..BUFFER_SIZE {
-            let sample_offset = SAMPLE_SIZE * i;
-            offsets.insert(sample_offset);
-            assert_that!(
-                sut_sender.try_send(PointerOffset::new(sample_offset), SAMPLE_SIZE, id),
-                is_ok
-            );
+        let mut counter = 1;
+        for _ in 0..BUFFER_SIZE {
+            for id in 0..NUMBER_OF_CHANNELS {
+                let sample_offset = SAMPLE_SIZE * counter;
+                offsets.insert(sample_offset);
+                assert_that!(
+                    sut_sender.try_send(
+                        PointerOffset::new(sample_offset),
+                        SAMPLE_SIZE,
+                        ChannelId::new(id)
+                    ),
+                    is_ok
+                );
+                counter += 1;
+            }
         }
 
-        for _ in 0..BUFFER_SIZE {
-            unsafe {
-                sut_sender.acquire_used_offsets(|offset| {
-                    assert_that!(offsets.remove(&offset.offset()), eq true);
-                })
-            };
-        }
+        unsafe {
+            sut_sender.acquire_used_offsets(|offset| {
+                assert_that!(offsets.remove(&offset.offset()), eq true);
+            })
+        };
     }
 
     #[test]
