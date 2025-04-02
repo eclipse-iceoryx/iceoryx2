@@ -31,6 +31,15 @@ not receive any data.
 
 ## Implementation
 
+> [!CAUTION]
+> Every payload you transmit with iceoryx2 must be compatible with shared
+> memory. Specifically, it must:
+>
+> * be self contained, no heap, no pointers to external sources
+> * have a uniform memory representation, ensuring that shared structs have the
+>     same data layout
+> * not use pointers to manage their internal structure
+
 To achieve this, we create a copy of the global configuration, modify the
 setting `config.global.prefix` using the user-provided CLI argument, and then
 set up the example accordingly.
