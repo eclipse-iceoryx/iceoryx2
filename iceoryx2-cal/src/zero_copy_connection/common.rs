@@ -637,6 +637,8 @@ pub mod details {
             sample_size: usize,
             channel_id: ChannelId,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
+
             let msg = "Unable to send sample";
             let storage = self.storage.get();
 
@@ -698,6 +700,8 @@ pub mod details {
             sample_size: usize,
             channel_id: ChannelId,
         ) -> Result<Option<PointerOffset>, ZeroCopySendError> {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
+
             if !self.storage.get().enable_safe_overflow {
                 AdaptiveWaitBuilder::new()
                     .create()
@@ -717,6 +721,8 @@ pub mod details {
             &self,
             channel_id: ChannelId,
         ) -> Result<Option<PointerOffset>, ZeroCopyReclaimError> {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
+
             let msg = "Unable to reclaim sample";
 
             let storage = self.storage.get();
@@ -829,6 +835,8 @@ pub mod details {
             &self,
             channel_id: ChannelId,
         ) -> Result<Option<PointerOffset>, ZeroCopyReceiveError> {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
+
             if *self.borrow_counter(channel_id) >= self.storage.get().max_borrowed_samples {
                 fail!(from self, with ZeroCopyReceiveError::ReceiveWouldExceedMaxBorrowValue,
                 "Unable to receive another sample since already {} samples were borrowed and this would exceed the max borrow value of {}.",
@@ -853,6 +861,8 @@ pub mod details {
             ptr: PointerOffset,
             channel_id: ChannelId,
         ) -> Result<(), ZeroCopyReleaseError> {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
+
             match unsafe {
                 self.storage.get().channels[channel_id.value()]
                     .completion_queue

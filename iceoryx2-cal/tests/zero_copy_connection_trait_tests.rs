@@ -1539,6 +1539,96 @@ mod zero_copy_connection {
         assert_that!(Sut::does_exist_cfg(&name, &config), eq Ok(false));
     }
 
+    #[cfg(debug_assertions)]
+    #[should_panic]
+    #[test]
+    fn panics_on_out_of_bounds_channel_id_in_try_send<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(1)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        // panics here
+        let _ = sut_sender.try_send(PointerOffset::new(0), SAMPLE_SIZE, ChannelId::new(1));
+    }
+
+    #[cfg(debug_assertions)]
+    #[should_panic]
+    #[test]
+    fn panics_on_out_of_bounds_channel_id_in_blocking_send<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(1)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        // panics here
+        let _ = sut_sender.blocking_send(PointerOffset::new(0), SAMPLE_SIZE, ChannelId::new(1));
+    }
+
+    #[cfg(debug_assertions)]
+    #[should_panic]
+    #[test]
+    fn panics_on_out_of_bounds_channel_id_in_reclaim<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(1)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        // panics here
+        let _ = sut_sender.blocking_send(PointerOffset::new(0), SAMPLE_SIZE, ChannelId::new(1));
+    }
+
+    #[cfg(debug_assertions)]
+    #[should_panic]
+    #[test]
+    fn panics_on_out_of_bounds_channel_id_in_receive<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(1)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        // panics here
+        let _ = sut_receiver.receive(ChannelId::new(1));
+    }
+
+    #[cfg(debug_assertions)]
+    #[should_panic]
+    #[test]
+    fn panics_on_out_of_bounds_channel_id_in_release<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .number_of_samples_per_segment(NUMBER_OF_SAMPLES)
+            .number_of_channels(1)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        // panics here
+        let _ = sut_receiver.release(PointerOffset::new(0), ChannelId::new(1));
+    }
+
     #[test]
     fn removing_port_from_non_existing_connection_leads_to_error<Sut: ZeroCopyConnection>() {
         let name = generate_name();
