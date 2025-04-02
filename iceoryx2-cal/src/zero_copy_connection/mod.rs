@@ -41,7 +41,7 @@ pub enum ZeroCopyCreationError {
     InvalidSampleSize,
     InitializationNotYetFinalized,
     IncompatibleBufferSize,
-    IncompatibleMaxBorrowedSampleSetting,
+    IncompatibleMaxBorrowedSamplePerChannelSetting,
     IncompatibleOverflowSetting,
     IncompatibleNumberOfSamples,
     IncompatibleNumberOfSegments,
@@ -125,7 +125,7 @@ impl ChannelId {
 
 pub const DEFAULT_BUFFER_SIZE: usize = 4;
 pub const DEFAULT_ENABLE_SAFE_OVERFLOW: bool = false;
-pub const DEFAULT_MAX_BORROWED_SAMPLES: usize = 4;
+pub const DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL: usize = 4;
 pub const DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS: u8 = 1;
 pub const DEFAULT_NUMBER_OF_CHANNELS: usize = 1;
 pub const DEFAULT_NUMBER_OF_SAMPLES_PER_SEGMENT: usize = 8;
@@ -133,7 +133,7 @@ pub const DEFAULT_NUMBER_OF_SAMPLES_PER_SEGMENT: usize = 8;
 pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<C> {
     fn buffer_size(self, value: usize) -> Self;
     fn enable_safe_overflow(self, value: bool) -> Self;
-    fn receiver_max_borrowed_samples(self, value: usize) -> Self;
+    fn receiver_max_borrowed_samples_per_channel(self, value: usize) -> Self;
     fn max_supported_shared_memory_segments(self, value: u8) -> Self;
     fn number_of_samples_per_segment(self, value: usize) -> Self;
     fn number_of_channels(self, value: usize) -> Self;

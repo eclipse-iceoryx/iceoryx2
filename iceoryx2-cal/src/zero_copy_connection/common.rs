@@ -357,7 +357,7 @@ pub mod details {
         name: FileName,
         buffer_size: usize,
         enable_safe_overflow: bool,
-        max_borrowed_samples: usize,
+        max_borrowed_samples_per_channel: usize,
         number_of_samples_per_segment: usize,
         number_of_segments: u8,
         number_of_channels: usize,
@@ -371,7 +371,7 @@ pub mod details {
         }
 
         fn completion_queue_size(&self) -> usize {
-            self.buffer_size + self.max_borrowed_samples + 1
+            self.buffer_size + self.max_borrowed_samples_per_channel + 1
         }
 
         fn create_or_open_shm(
@@ -401,7 +401,7 @@ pub mod details {
         .open_or_create(
             SharedManagementData::new(
                                     self.enable_safe_overflow,
-                                    self.max_borrowed_samples,
+                                    self.max_borrowed_samples_per_channel,
                                     self.number_of_samples_per_segment,
                                     self.number_of_segments,
                                     self.number_of_channels
@@ -454,9 +454,9 @@ pub mod details {
                     != self.completion_queue_size()
                 {
                     cleanup_shared_memory(&storage, port_to_register);
-                    fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSampleSetting,
-                        "{} since the max borrowed sample setting is set to {} but a value of {} is required.",
-                        msg, storage.get().channels[0].completion_queue.capacity() - storage.get().channels[0].submission_queue.capacity(), self.max_borrowed_samples);
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSamplePerChannelSetting,
+                        "{} since the max borrowed sample per channel setting is set to {} but a value of {} is required.",
+                        msg, storage.get().channels[0].completion_queue.capacity() - storage.get().channels[0].submission_queue.capacity(), self.max_borrowed_samples_per_channel);
                 }
 
                 if storage.get().enable_safe_overflow != self.enable_safe_overflow {
@@ -501,7 +501,7 @@ pub mod details {
                 name: *name,
                 buffer_size: DEFAULT_BUFFER_SIZE,
                 enable_safe_overflow: DEFAULT_ENABLE_SAFE_OVERFLOW,
-                max_borrowed_samples: DEFAULT_MAX_BORROWED_SAMPLES,
+                max_borrowed_samples_per_channel: DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL,
                 number_of_samples_per_segment: DEFAULT_NUMBER_OF_SAMPLES_PER_SEGMENT,
                 number_of_segments: DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS,
                 number_of_channels: DEFAULT_NUMBER_OF_CHANNELS,
@@ -544,8 +544,8 @@ pub mod details {
             self
         }
 
-        fn receiver_max_borrowed_samples(mut self, value: usize) -> Self {
-            self.max_borrowed_samples = value.clamp(1, usize::MAX);
+        fn receiver_max_borrowed_samples_per_channel(mut self, value: usize) -> Self {
+            self.max_borrowed_samples_per_channel = value.clamp(1, usize::MAX);
             self
         }
 

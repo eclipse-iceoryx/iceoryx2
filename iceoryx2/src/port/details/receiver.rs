@@ -71,7 +71,7 @@ impl<Service: service::Service> Connection<Service> {
                             Builder::new( &connection_name(sender_port_id, this.receiver_port_id))
                                     .config(&connection_config::<Service>(global_config))
                                     .buffer_size(this.buffer_size)
-                                    .receiver_max_borrowed_samples(this.receiver_max_borrowed_samples)
+                                    .receiver_max_borrowed_samples_per_channel(this.receiver_max_borrowed_samples)
                                     .enable_safe_overflow(this.enable_safe_overflow)
                                     .number_of_samples_per_segment(number_of_samples)
                                     .number_of_channels(1)

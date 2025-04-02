@@ -80,7 +80,7 @@ impl<Service: service::Service> Connection<Service> {
                         Builder::new( &connection_name(this.sender_port_id, receiver_port_id))
                                 .config(&connection_config::<Service>(this.shared_node.config()))
                                 .buffer_size(buffer_size)
-                                .receiver_max_borrowed_samples(this.receiver_max_borrowed_samples)
+                                .receiver_max_borrowed_samples_per_channel(this.receiver_max_borrowed_samples)
                                 .enable_safe_overflow(this.enable_safe_overflow)
                                 .number_of_samples_per_segment(number_of_samples)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
