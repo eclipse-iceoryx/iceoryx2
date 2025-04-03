@@ -23,6 +23,7 @@ use anyhow::{anyhow, Result};
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Cli;
+use iceoryx2_bb_log::{set_log_level, LogLevel};
 
 fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
@@ -37,6 +38,8 @@ fn main() -> Result<()> {
             .verbosity(better_panic::Verbosity::Full)
             .install();
     }
+
+    set_log_level(LogLevel::Warn);
 
     let cli = Cli::try_parse().map_err(|e| anyhow!("{}", e))?;
     if cli.list {
