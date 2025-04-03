@@ -22,6 +22,7 @@ mod dynamic_storage {
     use iceoryx2_cal::dynamic_storage::*;
     use iceoryx2_cal::named_concept::*;
     use iceoryx2_cal::testing::*;
+    use iceoryx2_pal_posix::posix::POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY;
     use std::sync::{Arc, Barrier};
     use std::time::{Duration, Instant};
 
@@ -446,8 +447,10 @@ mod dynamic_storage {
             }});
         });
 
-        assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
-        assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
+        if POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY {
+            assert_that!(Sut::does_exist_cfg(&storage_name, &config), eq Ok(true));
+            assert_that!(unsafe { Sut::remove_cfg(&storage_name, &config) }, eq Ok(true));
+        }
     }
 
     #[test]
