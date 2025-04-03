@@ -400,7 +400,7 @@ unsafe impl Sync for NamedSemaphore {}
 
 impl Drop for NamedSemaphore {
     fn drop(&mut self) {
-        if self.handle == posix::SEM_FAILED {
+        if core::ptr::eq(self.handle, posix::SEM_FAILED) {
             return;
         }
 
@@ -505,7 +505,7 @@ impl NamedSemaphore {
             },
         };
 
-        if self.handle != posix::SEM_FAILED {
+        if !core::ptr::eq(self.handle, posix::SEM_FAILED) {
             match mode {
                 InitMode::Create => debug!(from self, "semaphore created."),
                 _ => debug!(from self, "semaphore opened."),

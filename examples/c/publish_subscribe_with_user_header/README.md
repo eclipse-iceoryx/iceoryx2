@@ -5,6 +5,15 @@ instructions in the [C Examples Readme](../README.md).
 
 ## Running The Example
 
+> [!CAUTION]
+> Every payload you transmit with iceoryx2 must be compatible with shared
+> memory. Specifically, it must:
+>
+> * be self contained, no heap, no pointers to external sources
+> * have a uniform memory representation, ensuring that shared structs have the
+>     same data layout
+> * not use pointers to manage their internal structure
+
 This example illustrates a publisher-subscriber communication pattern between
 two separate processes with an additional user header, referred to as a
 `CustomHeader`. The publisher sends messages every second, each containing an
@@ -12,7 +21,7 @@ incrementing number and the `CustomHeader`, which includes an additional version
 number and a timestamp. On the receiving end, the subscriber checks for new data
 every second and prints out the received payload and the user header.
 
-First you have to build the C++ examples:
+First you have to build the C examples:
 
 ```sh
 cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
@@ -25,13 +34,13 @@ execute the following commands:
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_with_user_header/example_cxx_publish_subscribe_user_header_subscriber
+./target/ffi/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_with_user_header/example_cxx_publish_subscribe_user_header_publisher
+./target/ffi/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_publisher
 ```
 
 Feel free to run multiple instances of the publisher or subscriber processes

@@ -118,9 +118,9 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_drop(
 /// # Arguments
 ///
 /// * `handle` is valid, non-null and was initialized with
-///    [`iox2_sample_header()`](crate::iox2_sample_header)
+///   [`iox2_sample_header()`](crate::iox2_sample_header)
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_publisher_id_t`].
-///                         If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_publisher_id_h`].
 ///
 /// # Safety
@@ -164,7 +164,7 @@ pub unsafe extern "C" fn iox2_publish_subscribe_header_publisher_id(
 /// # Arguments
 ///
 /// * `handle` is valid, non-null and was initialized with
-///    [`iox2_sample_header()`](crate::iox2_sample_header)
+///   [`iox2_sample_header()`](crate::iox2_sample_header)
 ///
 /// # Safety
 ///

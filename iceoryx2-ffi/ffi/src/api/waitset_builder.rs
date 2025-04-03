@@ -143,7 +143,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_drop(handle: iox2_waitset_builder_
 ///
 ///  * `handle` must be acquired with [`iox2_waitset_builder_new()`] and valid
 ///  * `handle` is invalidated after a successful operation and cannot used again
-///     with this function.
+///    with this function.
 ///  * `struct_ptr` must be either a valid pointer to uninitialized memory or `null`
 ///  * `handle_ptr` must point to a valid uninitialized memory location
 #[no_mangle]

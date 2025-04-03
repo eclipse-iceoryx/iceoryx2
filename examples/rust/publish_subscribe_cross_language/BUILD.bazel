@@ -10,13 +10,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-cmake_minimum_required(VERSION 3.22)
-project(examples_c LANGUAGES C)
+load("@rules_rust//rust:defs.bzl", "rust_binary")
 
-add_subdirectory(discovery)
-add_subdirectory(domains)
-add_subdirectory(event)
-add_subdirectory(event_multiplexing)
-add_subdirectory(publish_subscribe)
-add_subdirectory(publish_subscribe_cross_language)
-add_subdirectory(publish_subscribe_with_user_header)
+rust_binary(
+    name = "publisher",
+    srcs = [
+        "publisher.rs",
+    ],
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//examples/rust:examples-common",
+    ],
+)
+
+rust_binary(
+    name = "subscriber",
+    srcs = [
+        "subscriber.rs",
+    ],
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//examples/rust:examples-common",
+    ],
+)

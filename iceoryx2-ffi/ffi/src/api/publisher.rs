@@ -349,7 +349,7 @@ pub unsafe extern "C" fn iox2_publisher_initial_max_slice_len(
 ///
 /// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_publisher_id_t`].
-///                         If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_publisher_id_h`].
 ///
 /// # Safety
@@ -490,7 +490,7 @@ pub unsafe extern "C" fn iox2_publisher_send_copy(
 ///
 /// * `handle` obtained by [`iox2_port_factory_publisher_builder_create`](crate::iox2_port_factory_publisher_builder_create)
 /// * `sample_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_sample_mut_t`].
-///    If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `sample_handle_ptr` - An uninitialized or dangling [`iox2_sample_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
 /// * `number_of_bytes` - The number of bytes to loan from the publisher's payload segment
 ///

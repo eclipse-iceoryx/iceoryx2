@@ -11,12 +11,12 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
-project(examples_c LANGUAGES C)
+project(example_cxx_publish_subscribe_cross_language LANGUAGES CXX)
 
-add_subdirectory(discovery)
-add_subdirectory(domains)
-add_subdirectory(event)
-add_subdirectory(event_multiplexing)
-add_subdirectory(publish_subscribe)
-add_subdirectory(publish_subscribe_cross_language)
-add_subdirectory(publish_subscribe_with_user_header)
+find_package(iceoryx2-cxx 0.5.0 REQUIRED)
+
+add_executable(example_cxx_publish_subscribe_cross_language_publisher src/publisher.cpp)
+target_link_libraries(example_cxx_publish_subscribe_cross_language_publisher iceoryx2-cxx::static-lib-cxx)
+
+add_executable(example_cxx_publish_subscribe_cross_language_subscriber src/subscriber.cpp)
+target_link_libraries(example_cxx_publish_subscribe_cross_language_subscriber iceoryx2-cxx::static-lib-cxx)

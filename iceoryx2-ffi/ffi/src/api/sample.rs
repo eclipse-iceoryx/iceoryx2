@@ -153,7 +153,7 @@ pub unsafe extern "C" fn iox2_sample_move(
 ///
 /// * `handle` obtained by [`iox2_subscriber_receive()`](crate::iox2_subscriber_receive())
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
-///     [`iox2_publish_subscribe_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+///   [`iox2_publish_subscribe_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `header_handle_ptr` valid pointer to a [`iox2_publish_subscribe_header_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_header(
@@ -215,7 +215,7 @@ pub unsafe extern "C" fn iox2_sample_user_header(
 /// * `handle` obtained by [`iox2_subscriber_receive()`](crate::iox2_subscriber_receive())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
 /// * `number_of_elements` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`] with
-///                        the number of elements of the underlying type
+///   the number of elements of the underlying type
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_payload(
     handle: iox2_sample_h_ref,

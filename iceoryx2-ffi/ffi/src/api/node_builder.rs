@@ -162,7 +162,7 @@ pub unsafe extern "C" fn iox2_node_builder_new(
 ///
 /// * `node_builder_handle` - Must be a valid [`iox2_node_builder_h_ref`] obtained by [`iox2_node_builder_new`].
 /// * `node_name_ptr` - Must be a valid [`iox2_node_name_ptr`], e.g. obtained by [`iox2_node_name_new`](crate::iox2_node_name_new) and converted
-///    by [`iox2_cast_node_name_ptr`](crate::iox2_cast_node_name_ptr)
+///   by [`iox2_cast_node_name_ptr`](crate::iox2_cast_node_name_ptr)
 ///
 /// # Safety
 ///

@@ -308,7 +308,7 @@ pub unsafe extern "C" fn iox2_listener_timed_wait_all(
 ///
 /// * `handle` obtained by [`iox2_port_factory_listener_builder_create`](crate::iox2_port_factory_listener_builder_create)
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_listener_id_t`].
-///                         If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_listener_id_h`].
 ///
 /// # Safety

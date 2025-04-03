@@ -172,7 +172,7 @@ pub unsafe extern "C" fn iox2_config_creation_error_string(
 /// # Arguments
 ///
 /// * `handle` obtained by [`iox2_config_from_file()`], [`iox2_config_default()`],
-///     [`iox2_config_clone()`] or [`iox2_config_from_ptr()`]
+///   [`iox2_config_clone()`] or [`iox2_config_from_ptr()`]
 ///
 /// Returns a [`iox2_config_ptr`]
 ///
@@ -198,9 +198,9 @@ pub extern "C" fn iox2_config_global_config() -> iox2_config_ptr {
 /// # Safety
 ///
 /// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_config_t`].
-///                  If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
-///                  by this function call.
+///   by this function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_default(
     struct_ptr: *mut iox2_config_t,
@@ -228,9 +228,9 @@ pub unsafe extern "C" fn iox2_config_default(
 /// # Safety
 ///
 /// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_config_t`].
-///                  If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
-///                  by this function call.
+///   by this function call.
 /// * `config_file` - Must be a valid file path to an existing config file.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_from_file(
@@ -275,9 +275,9 @@ pub unsafe extern "C" fn iox2_config_from_file(
 ///
 /// * `handle` - Must be a valid pointer.
 /// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_config_t`].
-///                  If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
-///                  by this function call.
+///   by this function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_from_ptr(
     config: iox2_config_ptr,
@@ -306,9 +306,9 @@ pub unsafe extern "C" fn iox2_config_from_ptr(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_config_t`].
-///                  If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `handle_ptr` - An uninitialized or dangling [`iox2_config_h`] handle which will be initialized
-///                  by this function call.
+///   by this function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_clone(
     handle: iox2_config_h_ref,
@@ -337,7 +337,7 @@ pub unsafe extern "C" fn iox2_config_clone(
 /// # Safety
 ///
 /// * `handle` - An initialized [`iox2_config_h`] handle which will be uninitialized
-///                  after this function call.
+///   after this function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_drop(handle: iox2_config_h) {
     handle.assert_non_null();
@@ -1609,7 +1609,7 @@ pub unsafe extern "C" fn iox2_config_defaults_event_deadline(
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `seconds` & `nanoseconds` - either both must be `NULL` or both must point to a valid memory
-///                               location
+///   location
 #[no_mangle]
 pub unsafe extern "C" fn iox2_config_defaults_event_set_deadline(
     handle: iox2_config_h_ref,

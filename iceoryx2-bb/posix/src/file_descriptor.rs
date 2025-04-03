@@ -240,9 +240,9 @@ impl FileDescriptorManagement for FileDescriptor {}
 
 /// Provides additional feature for every file descriptor based construct like
 ///  * ownership handling, [`ownership`](FileDescriptorManagement::ownership()),
-///                        [`set_ownership`](FileDescriptorManagement::set_ownership())
+///    [`set_ownership`](FileDescriptorManagement::set_ownership())
 ///  * permission handling, [`permission`](FileDescriptorManagement::permission()),
-///                         [`set_permission`](FileDescriptorManagement::set_permission())
+///    [`set_permission`](FileDescriptorManagement::set_permission())
 ///  * truncate size, [`truncate`](FileDescriptorManagement::truncate())
 ///  * accessing extended stats via [`Metadata`], [`metadata`](FileDescriptorManagement::metadata())
 ///

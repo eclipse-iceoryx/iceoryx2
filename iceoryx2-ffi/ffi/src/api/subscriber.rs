@@ -232,7 +232,7 @@ pub unsafe extern "C" fn iox2_subscriber_buffer_size(
 ///
 /// * `subscriber_handle` obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_subscriber_id_t`].
-///                         If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_subscriber_id_h`].
 ///
 /// # Safety

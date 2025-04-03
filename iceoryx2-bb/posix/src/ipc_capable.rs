@@ -106,7 +106,7 @@ pub(crate) mod internal {
         /// # Safety
         ///  * The handle must be initialized
         ///  * Must not be used concurrently. Only one thread - the one that calls
-        ///     [`IpcCapable::cleanup()`] - is allowed to operate on the [`IpcCapable`].
+        ///    [`IpcCapable::cleanup()`] - is allowed to operate on the [`IpcCapable`].
         ///
         pub unsafe fn cleanup<F: FnOnce(&mut T)>(&self, cleanup: F) {
             debug_assert!(

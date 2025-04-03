@@ -15,11 +15,11 @@
 //! * [`Time`] - acquires the current system time and measures the elapsed time
 //! * [`ClockType`] - describes certain types of clocks
 //! * [`nanosleep()`] & [`nanosleep_with_clock()`] - wait a defined amount of time on a custom
-//!                           clock
+//!   clock
 //! * [`AsTimeval`] - trait for easy [`posix::timeval`] conversion, required for low level posix
-//!                     calls
+//!   calls
 //! * [`AsTimespec`] - trait for easy [`posix::timespec`] conversion, required for low level posix
-//!                     calls
+//!   calls
 
 use crate::system_configuration::Feature;
 use crate::{config::DEFAULT_CLOCK_MODE, handle_errno};

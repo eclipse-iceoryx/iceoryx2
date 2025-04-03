@@ -157,9 +157,9 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
     /// # Safety
     ///
     /// * must ensure that no receiver is still holding data, otherwise data races may occur on
-    ///     receiver side
+    ///   receiver side
     /// * must ensure that [`ZeroCopySender::try_send()`] and [`ZeroCopySender::blocking_send()`]
-    ///     are not called after using this method
+    ///   are not called after using this method
     unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, callback: F);
 }
 
