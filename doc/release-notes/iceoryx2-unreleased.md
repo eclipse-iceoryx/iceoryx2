@@ -77,6 +77,8 @@
     [#594](https://github.com/eclipse-iceoryx/iceoryx2/issues/594)
 * Updated all dependencies and increased MSRV to 1.81
     [#638](https://github.com/eclipse-iceoryx/iceoryx2/issues/638)
+* Reduce indentation in `main.rs` of CLI binaries
+    [#646](https://github.com/eclipse-iceoryx/iceoryx2/issues/646)
 
 ### Workflow
 
