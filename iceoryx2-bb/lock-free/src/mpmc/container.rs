@@ -286,7 +286,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     ///  * Ensure that [`Container::init()`] was called before calling this method
     ///  * Use [`Container::remove()`] to release the acquired index again. Otherwise, the
-    ///     element will leak.
+    ///    element will leak.
     ///
     pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
         self.verify_init("add()");
@@ -317,9 +317,9 @@ impl<T: Copy + Debug> Container<T> {
     ///
     ///  * Ensure that [`Container::init()`] was called before calling this method
     ///  * Ensure that no one else possesses the [`UniqueIndex`] and the index was unrecoverable
-    ///     lost
+    ///    lost
     ///  * Ensure that the `handle` was acquired by the same [`Container`]
-    ///     with [`Container::add()`], otherwise the method will panic.
+    ///    with [`Container::add()`], otherwise the method will panic.
     ///
     /// **Important:** If the UniqueIndex still exists it causes double frees or freeing an index
     /// which was allocated afterwards
@@ -362,7 +362,7 @@ impl<T: Copy + Debug> Container<T> {
     ///
     ///  * Ensure that [`Container::init()`] was called before calling this method
     ///  * Ensure that the input argument `previous_state` was acquired by the same [`Container`]
-    ///     with [`Container::get_state()`], otherwise the method will panic.
+    ///    with [`Container::get_state()`], otherwise the method will panic.
     ///
     pub unsafe fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
         debug_assert!(
@@ -508,7 +508,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// # Safety
     ///
     ///  * Use [`FixedSizeContainer::remove()`] to release the acquired index again. Otherwise,
-    ///     the element will leak.
+    ///    the element will leak.
     ///
     pub unsafe fn add(&self, value: T) -> Result<ContainerHandle, ContainerAddFailure> {
         self.container.add(value)
@@ -550,7 +550,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeContainer<T, CAPACITY> {
     /// # Safety
     ///
     ///  * Ensure that the input argument `previous_state` was acquired by the same [`Container`]
-    ///     with [`Container::get_state()`].
+    ///    with [`Container::get_state()`].
     ///
     pub unsafe fn update_state(&self, previous_state: &mut ContainerState<T>) -> bool {
         unsafe { self.container.update_state(previous_state) }

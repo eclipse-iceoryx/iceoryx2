@@ -148,7 +148,7 @@ pub mod heap {
     ///
     ///  * `ptr` must be allocated before with [`heap::allocate()`] or [`heap::allocate_zeroed()`]
     ///  * `old_layout` must be the same layout it was either acquired with in [`heap::allocate()`]
-    ///     or [`heap::allocate_zeroed()`] or when it was resized the current layout
+    ///    or [`heap::allocate_zeroed()`] or when it was resized the current layout
     pub unsafe fn resize(
         ptr: NonNull<u8>,
         old_layout: Layout,
@@ -184,7 +184,7 @@ pub mod heap {
     ///
     ///  * `ptr` must be allocated before with [`heap::allocate()`] or [`heap::allocate_zeroed()`]
     ///  * `old_layout` must be the same layout it was either acquired with in [`heap::allocate()`]
-    ///     or [`heap::allocate_zeroed()`] or when it was resized the current layout
+    ///    or [`heap::allocate_zeroed()`] or when it was resized the current layout
     ///
     pub unsafe fn deallocate(ptr: NonNull<u8>, _layout: Layout) {
         posix::free(extract_address(ptr.as_ptr() as usize) as *mut posix::void)

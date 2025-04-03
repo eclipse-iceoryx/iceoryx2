@@ -13,10 +13,10 @@
 //! A **threadsafe** and **lock-free** bitset. Bits can be set and read from multiple threads
 //! without any restriction. It provides 3 versions.
 //!  * [`BitSet`] - Stores data in the heap and has a fixed capacity that must be defined at
-//!                 runtime.
+//!    runtime.
 //!  * [`RelocatableBitSet`] - Stores data in the memory the allocator provides in
-//!                 [`RelocatableBitSet::init()`]. Is relocatable and can be used in shared memory,
-//!                 when the data allocator provides shared memory.
+//!    [`RelocatableBitSet::init()`]. Is relocatable and can be used in shared memory,
+//!    when the data allocator provides shared memory.
 //!  * [`FixedSizeBitSet`] - Bitset with a compile time fixed capacity.
 //!
 //!  # Example

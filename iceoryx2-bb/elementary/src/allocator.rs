@@ -71,7 +71,7 @@ pub trait BaseAllocator {
     ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
     ///    [`BaseAllocator::allocate_zeroed()`]
     ///  * `layout` must have the same value as in the allocation or, when the memory was
-    ///     resized, the same value as it was resized to
+    ///    resized, the same value as it was resized to
     ///
     unsafe fn deallocate(&self, ptr: NonNull<u8>, layout: Layout);
 }
@@ -87,7 +87,7 @@ pub trait Allocator: BaseAllocator {
     ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
     ///    [`BaseAllocator::allocate_zeroed()`]
     ///  * `old_layout` must have the same value as in the allocation or, when the memory was
-    ///     resized, the same value as it was resized to
+    ///    resized, the same value as it was resized to
     ///
     unsafe fn grow(
         &self,
@@ -106,7 +106,7 @@ pub trait Allocator: BaseAllocator {
     ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
     ///    [`BaseAllocator::allocate_zeroed()`]
     ///  * `old_layout` must have the same value as in the allocation or, when the memory was
-    ///     resized, the same value as it was resized to
+    ///    resized, the same value as it was resized to
     ///
     unsafe fn grow_zeroed(
         &self,
@@ -131,7 +131,7 @@ pub trait Allocator: BaseAllocator {
     ///  * `ptr` must be allocated previously with [`BaseAllocator::allocate()`] or
     ///    [`BaseAllocator::allocate_zeroed()`]
     ///  * `old_layout` must have the same value as in the allocation or, when the memory was
-    ///     resized, the same value as it was resized to
+    ///    resized, the same value as it was resized to
     ///
     unsafe fn shrink(
         &self,

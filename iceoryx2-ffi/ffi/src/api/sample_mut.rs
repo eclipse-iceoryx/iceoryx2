@@ -183,7 +183,7 @@ pub unsafe extern "C" fn iox2_sample_mut_user_header(
 ///
 /// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
-///     [`iox2_publish_subscribe_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+///   [`iox2_publish_subscribe_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `header_handle_ptr` valid pointer to a [`iox2_publish_subscribe_header_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_header(
@@ -310,7 +310,7 @@ pub unsafe extern "C" fn iox2_sample_mut_payload(
 ///
 /// * `handle` obtained by [`iox2_publisher_loan_slice_uninit()`](crate::iox2_publisher_loan_slice_uninit())
 /// * `number_of_recipients`, can be null or must point to a valid [`c_size_t`] to store the number
-///                 of subscribers that received the sample
+///   of subscribers that received the sample
 #[no_mangle]
 pub unsafe extern "C" fn iox2_sample_mut_send(
     sample_handle: iox2_sample_mut_h,

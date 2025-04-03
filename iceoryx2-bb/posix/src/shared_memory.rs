@@ -577,7 +577,7 @@ impl SharedMemory {
             )
         };
 
-        if base_address != posix::MAP_FAILED {
+        if !core::ptr::eq(base_address, posix::MAP_FAILED) {
             return Ok(base_address);
         }
 

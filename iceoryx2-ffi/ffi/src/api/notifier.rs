@@ -164,7 +164,7 @@ pub unsafe extern "C" fn iox2_notifier_notify_error_string(
 ///
 /// * `notifier_handle` is valid, non-null and was obtained via [`iox2_port_factory_notifier_builder_create`](crate::iox2_port_factory_notifier_builder_create).
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_notifier_id_t`].
-///                         If it is a NULL pointer, the storage will be allocated on the heap.
+///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_notifier_id_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_notifier_id(
