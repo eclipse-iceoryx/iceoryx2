@@ -13,6 +13,7 @@
 mod cli;
 mod commands;
 
+use anyhow::{anyhow, Result};
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
@@ -27,7 +28,7 @@ use human_panic::setup_panic;
 #[cfg(debug_assertions)]
 extern crate better_panic;
 
-fn main() {
+fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
     {
         setup_panic!();
@@ -41,51 +42,47 @@ fn main() {
             .install();
     }
 
-    match Cli::try_parse() {
-        Ok(cli) => {
-            if let Some(action) = cli.action {
-                match action {
-                    Action::Show { subcommand } => match subcommand {
-                        Some(ShowSubcommand::System) => {
-                            if let Err(e) = commands::show_system_config() {
-                                eprintln!("Failed to show options: {}", e);
-                            }
-                        }
-                        Some(ShowSubcommand::Current) => {
-                            if let Err(e) = commands::show_current_config() {
-                                eprintln!("Failed to show options: {}", e);
-                            }
-                        }
-                        None => {
-                            ConfigShow::command()
-                                .print_help()
-                                .expect("Failed to print help");
-                        }
-                    },
-                    Action::Generate { subcommand } => match subcommand {
-                        Some(GenerateSubcommand::Local) => {
-                            if let Err(e) = commands::generate_local() {
-                                eprintln!("Failed to generate configuration file: {}", e);
-                            }
-                        }
-                        Some(GenerateSubcommand::Global) => {
-                            if let Err(e) = commands::generate_global() {
-                                eprintln!("Failed to generate configuration file: {}", e);
-                            }
-                        }
-                        None => {
-                            ConfigGenerate::command()
-                                .print_help()
-                                .expect("Failed to print help");
-                        }
-                    },
+    let cli = Cli::try_parse().map_err(|e| anyhow!("{}", e))?;
+    if let Some(action) = cli.action {
+        match action {
+            Action::Show { subcommand } => match subcommand {
+                Some(ShowSubcommand::System) => {
+                    if let Err(e) = commands::show_system_config() {
+                        eprintln!("Failed to show options: {}", e);
+                    }
                 }
-            } else {
-                Cli::command().print_help().expect("Failed to print help");
-            }
+                Some(ShowSubcommand::Current) => {
+                    if let Err(e) = commands::show_current_config() {
+                        eprintln!("Failed to show options: {}", e);
+                    }
+                }
+                None => {
+                    ConfigShow::command()
+                        .print_help()
+                        .expect("Failed to print help");
+                }
+            },
+            Action::Generate { subcommand } => match subcommand {
+                Some(GenerateSubcommand::Local) => {
+                    if let Err(e) = commands::generate_local() {
+                        eprintln!("Failed to generate configuration file: {}", e);
+                    }
+                }
+                Some(GenerateSubcommand::Global) => {
+                    if let Err(e) = commands::generate_global() {
+                        eprintln!("Failed to generate configuration file: {}", e);
+                    }
+                }
+                None => {
+                    ConfigGenerate::command()
+                        .print_help()
+                        .expect("Failed to print help");
+                }
+            },
         }
-        Err(e) => {
-            eprintln!("{}", e);
-        }
+    } else {
+        Cli::command().print_help().expect("Failed to print help");
     }
+
+    Ok(())
 }

@@ -19,13 +19,14 @@ mod cli;
 mod commands;
 mod filter;
 
+use anyhow::{anyhow, Result};
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
 
-fn main() {
+fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
     {
         setup_panic!();
@@ -41,29 +42,23 @@ fn main() {
 
     set_log_level(LogLevel::Warn);
 
-    match Cli::try_parse() {
-        Ok(cli) => {
-            if let Some(action) = cli.action {
-                match action {
-                    Action::List(options) => {
-                        if let Err(e) = commands::list(options.filter, cli.format) {
-                            eprintln!("Failed to list services: {}", e);
-                        }
-                    }
-                    Action::Details(options) => {
-                        if let Err(e) =
-                            commands::details(options.service, options.filter, cli.format)
-                        {
-                            eprintln!("Failed to retrieve service details: {}", e);
-                        }
-                    }
+    let cli = Cli::try_parse().map_err(|e| anyhow!("{}", e))?;
+    if let Some(action) = cli.action {
+        match action {
+            Action::List(options) => {
+                if let Err(e) = commands::list(options.filter, cli.format) {
+                    eprintln!("Failed to list services: {}", e);
                 }
-            } else {
-                Cli::command().print_help().expect("Failed to print help");
+            }
+            Action::Details(options) => {
+                if let Err(e) = commands::details(options.service, options.filter, cli.format) {
+                    eprintln!("Failed to retrieve service details: {}", e);
+                }
             }
         }
-        Err(e) => {
-            eprintln!("{}", e);
-        }
+    } else {
+        Cli::command().print_help().expect("Failed to print help");
     }
+
+    Ok(())
 }
