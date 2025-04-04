@@ -103,3 +103,40 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+#[proc_macro_derive(ZeroCopySend)]
+pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+    let type_name = &ast.ident;
+
+    let fields = match ast.data {
+        Data::Struct(data_struct) => match data_struct.fields {
+            Fields::Named(fields_named) => fields_named.named,
+            Fields::Unnamed(fields_unnamed) => fields_unnamed.unnamed,
+            Fields::Unit => {
+                // TODO:
+                return quote! { compile_error!("What to do with Unit-like structs?"); }.into();
+            }
+        },
+        _ => {
+            return quote! {compile_error!("ZeroCopySend can only be implemented for structs");}
+                .into();
+        }
+    };
+
+    let field_types: Vec<_> = fields.iter().map(|f| &f.ty).collect();
+
+    // TODO: Identifiable must be implemented first
+    let gen = quote! {
+        unsafe impl ZeroCopySend for #type_name {}
+
+        // use constant item definition to force compile-time evaluation
+        const _: () = {
+            // a dummy function that is never called to check if all field types of the struct
+            // implement Relocatable
+            fn _assert_all_fields_are_relocatable()
+                where #(#field_types: Relocatable),* {}
+        };
+    };
+    gen.into()
+}
