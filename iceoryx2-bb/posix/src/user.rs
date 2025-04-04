@@ -112,12 +112,6 @@ pub struct User {
     password: String,
 }
 
-#[derive(Debug)]
-enum Source {
-    Uid(u32),
-    UserName(UserName),
-}
-
 impl User {
     /// Create an user object from the owner of the process
     pub fn from_self() -> Result<User, UserError> {
@@ -127,13 +121,55 @@ impl User {
     /// Create an user object from a given uid. If the uid does not exist an error will be
     /// returned.
     pub fn from_uid(uid: u32) -> Result<User, UserError> {
-        Self::from(Source::Uid(uid))
+        let mut passwd = posix::passwd::new();
+        let mut passwd_ptr: *mut posix::passwd = &mut passwd;
+        let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
+
+        let errno_value = unsafe {
+            posix::getpwuid_r(
+                uid,
+                &mut passwd,
+                buffer.as_mut_ptr(),
+                PASSWD_BUFFER_SIZE,
+                &mut passwd_ptr,
+            )
+        }
+        .into();
+
+        Self::extract_user_details(
+            errno_value,
+            "Unable to acquire user entry",
+            &format!("User::from_uid({})", uid),
+            passwd_ptr,
+            &mut passwd,
+        )
     }
 
     /// Create an user object from a given user-name. If the user-name does not exist an error will
     /// be returned
     pub fn from_name(user_name: &UserName) -> Result<User, UserError> {
-        Self::from(Source::UserName(*user_name))
+        let mut passwd = posix::passwd::new();
+        let mut passwd_ptr: *mut posix::passwd = &mut passwd;
+        let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
+
+        let errno_value = unsafe {
+            posix::getpwnam_r(
+                user_name.as_c_str(),
+                &mut passwd,
+                buffer.as_mut_ptr(),
+                PASSWD_BUFFER_SIZE,
+                &mut passwd_ptr,
+            )
+        }
+        .into();
+
+        Self::extract_user_details(
+            errno_value,
+            "Unable to acquire user entry",
+            &format!("User::from_name({})", user_name),
+            passwd_ptr,
+            &mut passwd,
+        )
     }
 
     /// Return the user id
@@ -191,35 +227,13 @@ impl User {
         )
     }
 
-    fn from(source: Source) -> Result<Self, UserError> {
-        let mut passwd = posix::passwd::new();
-        let mut passwd_ptr: *mut posix::passwd = &mut passwd;
-        let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
-
-        let msg = "Unable to acquire user entry";
-        let origin = format!("User::from({:?})", source);
-        let errno_value = match source {
-            Source::UserName(name) => unsafe {
-                posix::getpwnam_r(
-                    name.as_c_str(),
-                    &mut passwd,
-                    buffer.as_mut_ptr(),
-                    PASSWD_BUFFER_SIZE,
-                    &mut passwd_ptr,
-                )
-            },
-            Source::Uid(uid) => unsafe {
-                posix::getpwuid_r(
-                    uid,
-                    &mut passwd,
-                    buffer.as_mut_ptr(),
-                    PASSWD_BUFFER_SIZE,
-                    &mut passwd_ptr,
-                )
-            },
-        }
-        .into();
-
+    fn extract_user_details(
+        errno_value: Errno,
+        msg: &str,
+        origin: &str,
+        passwd_ptr: *mut posix::passwd,
+        passwd: &mut posix::passwd,
+    ) -> Result<Self, UserError> {
         handle_errno!(UserError, from origin,
             errno_source errno_value,
             continue_on_success,
@@ -242,8 +256,8 @@ impl User {
                             with UserError::SystemUserNameLengthLongerThanSupportedLength,
                             "{} since the user name on the system is longer than the supported length of {}.",
                             msg, UserName::max_len());
-        let info = Self::extract_entry(&origin, passwd.pw_gecos, msg, "gecos entry")?;
-        let home_dir_raw = Self::extract_entry(&origin, passwd.pw_dir, msg, "home directory")?;
+        let info = Self::extract_entry(origin, passwd.pw_gecos, msg, "gecos entry")?;
+        let home_dir_raw = Self::extract_entry(origin, passwd.pw_dir, msg, "home directory")?;
         let home_dir = fail!(from origin,
                         when Path::new(home_dir_raw.as_bytes()),
                         with UserError::InvalidSymbolsInPathEntry,
@@ -254,12 +268,12 @@ impl User {
               with UserError::ConfigPathIsTooLong,
               "{} since the user config directory path is too long.", msg);
 
-        let shell_raw = Self::extract_entry(&origin, passwd.pw_shell, msg, "shell")?;
+        let shell_raw = Self::extract_entry(origin, passwd.pw_shell, msg, "shell")?;
         let shell = fail!(from origin,
             when FilePath::new(shell_raw.as_bytes()),
             with UserError::InvalidSymbolsInShellPath,
             "{} since the user shell path \"{}\" contains invalid path symbols", msg, shell_raw);
-        let password = Self::extract_entry(&origin, passwd.pw_passwd, msg, "password")?;
+        let password = Self::extract_entry(origin, passwd.pw_passwd, msg, "password")?;
 
         Ok(User {
             uid,
