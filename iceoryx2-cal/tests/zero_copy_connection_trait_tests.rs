@@ -79,6 +79,40 @@ mod zero_copy_connection {
     }
 
     #[test]
+    fn builder_sets_default_values<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+        assert_that!(sut_sender.buffer_size(), eq DEFAULT_BUFFER_SIZE);
+        assert_that!(
+            sut_sender.max_borrowed_samples(), eq
+            DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL
+        );
+        assert_that!(
+            sut_sender.has_enabled_safe_overflow(), eq
+            DEFAULT_ENABLE_SAFE_OVERFLOW
+        );
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        assert_that!(sut_receiver.buffer_size(), eq DEFAULT_BUFFER_SIZE);
+        assert_that!(
+            sut_receiver.max_borrowed_samples(), eq
+            DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL
+        );
+        assert_that!(
+            sut_receiver.has_enabled_safe_overflow(), eq
+            DEFAULT_ENABLE_SAFE_OVERFLOW
+        );
+    }
+
+    #[test]
     fn multi_connections_fail<Sut: ZeroCopyConnection>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
