@@ -46,6 +46,7 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::service::builder::publish_subscribe::CustomPayloadMarker;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
@@ -165,6 +166,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                     .subscriber_expired_connection_buffer,
             ))),
             degradation_callback: config.degradation_callback,
+            number_of_channels: 1,
         };
 
         let mut new_self = Self {
@@ -248,7 +250,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
-        self.receiver.has_samples()
+        self.receiver.has_samples(ChannelId::new(0))
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
@@ -258,7 +260,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 "Some samples are not being received since not all connections to publishers could be established.");
         }
 
-        self.receiver.receive()
+        self.receiver.receive(ChannelId::new(0))
     }
 }
 

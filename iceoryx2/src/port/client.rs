@@ -45,8 +45,9 @@ use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::{
-    dynamic_storage::DynamicStorage, shm_allocator::PointerOffset,
-    zero_copy_connection::ZeroCopyCreationError,
+    dynamic_storage::DynamicStorage,
+    shm_allocator::PointerOffset,
+    zero_copy_connection::{ChannelId, ZeroCopyCreationError},
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
@@ -151,7 +152,9 @@ impl<Service: service::Service> ClientBackend<Service> {
             "{} since the connections could not be updated.", msg);
 
         self.active_request_counter.fetch_add(1, Ordering::Relaxed);
-        Ok(self.sender.deliver_offset(offset, sample_size)?)
+        Ok(self
+            .sender
+            .deliver_offset(offset, sample_size, ChannelId::new(0))?)
     }
 
     fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
@@ -320,6 +323,7 @@ impl<
                     sender_max_borrowed_samples: client_factory.max_loaned_requests,
                     unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
                     message_type_details: static_config.request_message_type_details.clone(),
+                    number_of_channels: 1,
                 },
                 is_active: IoxAtomicBool::new(true),
                 server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),

@@ -304,7 +304,8 @@ impl<Service: service::Service> PublisherBackend<Service> {
             "{} since the connections could not be updated.", msg);
 
         self.add_sample_to_history(offset, sample_size);
-        self.sender.deliver_offset(offset, sample_size)
+        self.sender
+            .deliver_offset(offset, sample_size, ChannelId::new(0))
     }
 }
 
@@ -435,6 +436,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 sender_max_borrowed_samples: config.max_loaned_samples,
                 unable_to_deliver_strategy: config.unable_to_deliver_strategy,
                 message_type_details: static_config.message_type_details.clone(),
+                number_of_channels: 1,
             },
             config,
             subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),

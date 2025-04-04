@@ -84,7 +84,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .enable_safe_overflow(this.enable_safe_overflow)
                                 .number_of_samples_per_segment(number_of_samples)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
-                                .number_of_channels(1)
+                                .number_of_channels(this.number_of_channels)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
                                 .create_sender(),
                         "{}.", msg);
@@ -116,6 +116,7 @@ pub(crate) struct Sender<Service: service::Service> {
     pub(crate) loan_counter: IoxAtomicUsize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) message_type_details: MessageTypeDetails,
+    pub(crate) number_of_channels: usize,
 }
 
 impl<Service: service::Service> Sender<Service> {
@@ -136,6 +137,7 @@ impl<Service: service::Service> Sender<Service> {
         &self,
         offset: PointerOffset,
         sample_size: usize,
+        channel_id: ChannelId,
     ) -> Result<usize, SendError> {
         self.retrieve_returned_samples();
         let deliver_call = match self.unable_to_deliver_strategy {
@@ -150,7 +152,7 @@ impl<Service: service::Service> Sender<Service> {
         let mut number_of_recipients = 0;
         for i in 0..self.len() {
             if let Some(ref connection) = self.get(i) {
-                match deliver_call(&connection.sender, offset, sample_size, ChannelId::new(0)) {
+                match deliver_call(&connection.sender, offset, sample_size, channel_id) {
                     Err(ZeroCopySendError::ReceiveBufferFull)
                     | Err(ZeroCopySendError::UsedChunkListFull) => {
                         /* causes no problem
@@ -276,14 +278,17 @@ impl<Service: service::Service> Sender<Service> {
     pub(crate) fn retrieve_returned_samples(&self) {
         for i in 0..self.len() {
             if let Some(ref connection) = self.get(i) {
-                loop {
-                    match connection.sender.reclaim(ChannelId::new(0)) {
-                        Ok(Some(ptr_dist)) => {
-                            self.release_sample(ptr_dist);
-                        }
-                        Ok(None) => break,
-                        Err(e) => {
-                            warn!(from self, "Unable to reclaim samples from connection {:?} due to {:?}. This may lead to a situation where no more samples will be delivered to this connection.", connection, e)
+                for channel_id in 0..self.number_of_channels {
+                    let id = ChannelId::new(channel_id);
+                    loop {
+                        match connection.sender.reclaim(id) {
+                            Ok(Some(ptr_dist)) => {
+                                self.release_sample(ptr_dist);
+                            }
+                            Ok(None) => break,
+                            Err(e) => {
+                                warn!(from self, "Unable to reclaim samples from connection {:?} due to {:?}. This may lead to a situation where no more samples will be delivered to this connection.", connection, e)
+                            }
                         }
                     }
                 }
