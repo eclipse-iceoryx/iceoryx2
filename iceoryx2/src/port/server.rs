@@ -37,6 +37,7 @@ extern crate alloc;
 use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -151,6 +152,7 @@ impl<
             tagger: CyclicTagger::new(),
             to_be_removed_connections: None,
             degradation_callback: server_factory.degradation_callback,
+            number_of_channels: 1,
         };
 
         let mut new_self = Self {
@@ -202,7 +204,7 @@ impl<
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
-        self.receiver.has_samples()
+        self.receiver.has_samples(ChannelId::new(0))
     }
 
     fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
@@ -240,7 +242,7 @@ impl<
                   "Some requests are not being received since not all connections to the clients could be established.");
         }
 
-        self.receiver.receive()
+        self.receiver.receive(ChannelId::new(0))
     }
 
     /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
