@@ -36,4 +36,10 @@ fn group_name_new_with_legal_name_works() {
 
     let sut = GroupName::new(b"a456789-");
     assert_that!(sut, is_ok);
+
+    let sut = GroupName::new(b"Abc-Def");
+    assert_that!(sut, is_ok);
+
+    let sut = GroupName::new(b"_fuu_bar_");
+    assert_that!(sut, is_ok);
 }

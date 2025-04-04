@@ -47,7 +47,7 @@ semantic_string! {
   invalid_characters: |string: &[u8]| {
     for value in string {
         match value {
-            b'a'..=b'z' | b'0'..=b'9' | b'-' => (),
+            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'-' | b'_' => (),
             _ => return true,
         }
     }
