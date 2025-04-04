@@ -454,7 +454,7 @@ pub mod details {
                     != self.completion_queue_size()
                 {
                     cleanup_shared_memory(&storage, port_to_register);
-                    fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSamplePerChannelSetting,
+                    fail!(from self, with ZeroCopyCreationError::IncompatibleMaxBorrowedSamplesPerChannelSetting,
                         "{} since the max borrowed sample per channel setting is set to {} but a value of {} is required.",
                         msg, storage.get().channels[0].completion_queue.capacity() - storage.get().channels[0].submission_queue.capacity(), self.max_borrowed_samples_per_channel);
                 }
@@ -826,6 +826,7 @@ pub mod details {
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyReceiver for Receiver<Storage> {
         fn has_data(&self, channel_id: ChannelId) -> bool {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
             !self.storage.get().channels[channel_id.value()]
                 .submission_queue
                 .is_empty()

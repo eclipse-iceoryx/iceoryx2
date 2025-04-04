@@ -42,7 +42,7 @@ pub enum ZeroCopyCreationError {
     InvalidSampleSize,
     InitializationNotYetFinalized,
     IncompatibleBufferSize,
-    IncompatibleMaxBorrowedSamplePerChannelSetting,
+    IncompatibleMaxBorrowedSamplesPerChannelSetting,
     IncompatibleOverflowSetting,
     IncompatibleNumberOfSamples,
     IncompatibleNumberOfSegments,
