@@ -290,6 +290,9 @@ mod compiletests;
 /// Handles iceoryx2s global configuration
 pub mod config;
 
+///
+pub mod monitor;
+
 /// Central instance that owns all service entities and can handle incoming event in an event loop
 pub mod node;
 
