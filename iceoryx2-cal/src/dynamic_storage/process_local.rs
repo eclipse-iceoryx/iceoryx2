@@ -308,8 +308,11 @@ impl<T: Send + Sync + Debug + 'static> Drop for Storage<T> {
     fn drop(&mut self) {
         if self.has_ownership() {
             match unsafe { Self::remove_cfg(&self.name, &self.config) } {
-                Ok(false) | Err(_) => {
-                    fatal_panic!(from self, "This should never happen! Unable to remove dynamic storage");
+                Ok(false) => {
+                    fatal_panic!(from self, "This should never happen! Unable to remove dynamic storage since it does not exist.");
+                }
+                Err(e) => {
+                    fatal_panic!(from self, "This should never happen! Unable to remove dynamic storage ({:?}).", e);
                 }
                 Ok(_) => (),
             }

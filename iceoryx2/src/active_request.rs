@@ -14,7 +14,7 @@ use core::{fmt::Debug, marker::PhantomData, ops::Deref};
 
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::zero_copy_connection::{ZeroCopyReceiver, ZeroCopyReleaseError};
+use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError};
 
 use crate::{
     port::{details::chunk_details::ChunkDetails, port_identifiers::UniqueClientId},
@@ -105,7 +105,7 @@ impl<
             .details
             .connection
             .receiver
-            .release(self.details.offset)
+            .release(self.details.offset, ChannelId::new(0))
         {
             Ok(()) => (),
             Err(ZeroCopyReleaseError::RetrieveBufferFull) => {

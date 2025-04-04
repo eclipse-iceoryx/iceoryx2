@@ -139,8 +139,8 @@ use iceoryx2_cal::event::NamedConceptMgmt;
 use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError};
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopyPortRemoveError,
-    ZeroCopySender,
+    ChannelId, ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails,
+    ZeroCopyPortRemoveError, ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
@@ -269,7 +269,10 @@ impl<Service: service::Service> PublisherBackend<Service> {
                     self.sender.retrieve_returned_samples();
 
                     let offset = PointerOffset::from_value(old_sample.offset);
-                    match connection.sender.try_send(offset, old_sample.size) {
+                    match connection
+                        .sender
+                        .try_send(offset, old_sample.size, ChannelId::new(0))
+                    {
                         Ok(overflow) => {
                             self.sender.borrow_sample(offset);
 

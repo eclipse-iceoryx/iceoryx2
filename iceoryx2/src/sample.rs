@@ -36,7 +36,7 @@ extern crate alloc;
 
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::zero_copy_connection::{ZeroCopyReceiver, ZeroCopyReleaseError};
+use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError};
 
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::port_identifiers::UniquePublisherId;
@@ -90,7 +90,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
             .details
             .connection
             .receiver
-            .release(self.details.offset)
+            .release(self.details.offset, ChannelId::new(0))
         {
             Ok(()) => (),
             Err(ZeroCopyReleaseError::RetrieveBufferFull) => {

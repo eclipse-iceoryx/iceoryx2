@@ -22,8 +22,8 @@ use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::shm_allocator::{AllocationError, PointerOffset, ShmAllocationError};
 use iceoryx2_cal::zero_copy_connection::{
-    ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError, ZeroCopySendError,
-    ZeroCopySender,
+    ChannelId, ZeroCopyConnection, ZeroCopyConnectionBuilder, ZeroCopyCreationError,
+    ZeroCopySendError, ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
@@ -80,10 +80,11 @@ impl<Service: service::Service> Connection<Service> {
                         Builder::new( &connection_name(this.sender_port_id, receiver_port_id))
                                 .config(&connection_config::<Service>(this.shared_node.config()))
                                 .buffer_size(buffer_size)
-                                .receiver_max_borrowed_samples(this.receiver_max_borrowed_samples)
+                                .receiver_max_borrowed_samples_per_channel(this.receiver_max_borrowed_samples)
                                 .enable_safe_overflow(this.enable_safe_overflow)
                                 .number_of_samples_per_segment(number_of_samples)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
+                                .number_of_channels(1)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
                                 .create_sender(),
                         "{}.", msg);
@@ -149,7 +150,7 @@ impl<Service: service::Service> Sender<Service> {
         let mut number_of_recipients = 0;
         for i in 0..self.len() {
             if let Some(ref connection) = self.get(i) {
-                match deliver_call(&connection.sender, offset, sample_size) {
+                match deliver_call(&connection.sender, offset, sample_size, ChannelId::new(0)) {
                     Err(ZeroCopySendError::ReceiveBufferFull)
                     | Err(ZeroCopySendError::UsedChunkListFull) => {
                         /* causes no problem
@@ -276,7 +277,7 @@ impl<Service: service::Service> Sender<Service> {
         for i in 0..self.len() {
             if let Some(ref connection) = self.get(i) {
                 loop {
-                    match connection.sender.reclaim() {
+                    match connection.sender.reclaim(ChannelId::new(0)) {
                         Ok(Some(ptr_dist)) => {
                             self.release_sample(ptr_dist);
                         }

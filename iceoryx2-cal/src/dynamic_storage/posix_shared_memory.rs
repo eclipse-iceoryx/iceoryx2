@@ -306,6 +306,8 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
             .initializer
             .call(unsafe { &mut (*value).data }, &mut allocator)
         {
+            unsafe { core::ptr::drop_in_place(value) };
+            shm.acquire_ownership();
             fail!(from origin, with DynamicStorageCreateError::InitializationFailed,
                 "{} since the initialization of the underlying construct failed.", msg);
         }
@@ -320,6 +322,8 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         unsafe { (*version_ptr).store(PackageVersion::get().to_u64(), Ordering::SeqCst) };
 
         if let Err(e) = shm.set_permission(FINAL_PERMISSIONS) {
+            unsafe { core::ptr::drop_in_place(value) };
+            shm.acquire_ownership();
             fail!(from origin, with DynamicStorageCreateError::InternalError,
                 "{} since the final permissions could not be applied to the underlying shared memory ({:?}).",
                 msg, e);
