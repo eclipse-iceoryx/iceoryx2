@@ -27,7 +27,7 @@ rust_library(
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
-        "//iceoryx2-pal/configuration:iceoryx2-pal-posix",
+        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
         "@crate_index//:serde",
     ],
 )
