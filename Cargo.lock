@@ -657,6 +657,7 @@ dependencies = [
  "iceoryx2-bb-log",
  "iceoryx2-bb-testing",
  "iceoryx2-pal-configuration",
+ "iceoryx2-pal-posix",
  "serde",
 ]
 

@@ -36,4 +36,10 @@ fn user_name_new_with_legal_name_works() {
 
     let sut = UserName::new(b"a456789-");
     assert_that!(sut, is_ok);
+
+    let sut = UserName::new(b"Abc-Def");
+    assert_that!(sut, is_ok);
+
+    let sut = UserName::new(b"_fuu_bar_");
+    assert_that!(sut, is_ok);
 }

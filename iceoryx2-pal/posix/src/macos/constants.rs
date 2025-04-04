@@ -20,6 +20,8 @@ pub const MAX_NUMBER_OF_THREADS: usize = 1024;
 pub const FD_SETSIZE: usize = crate::internal::FD_SETSIZE as _;
 pub const THREAD_NAME_LENGTH: usize = 16;
 pub const NULL_TERMINATOR: c_char = 0;
+pub const USER_NAME_LENGTH: usize = 31;
+pub const GROUP_NAME_LENGTH: usize = 31;
 
 pub const O_RDONLY: int = crate::internal::O_RDONLY as _;
 pub const O_WRONLY: int = crate::internal::O_WRONLY as _;

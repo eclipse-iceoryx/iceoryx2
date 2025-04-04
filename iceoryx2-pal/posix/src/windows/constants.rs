@@ -19,6 +19,8 @@ pub const CPU_SETSIZE: usize = core::mem::size_of::<usize>() * 8;
 pub const MAX_NUMBER_OF_THREADS: usize = 1024;
 pub const FD_SETSIZE: usize = windows_sys::Win32::Networking::WinSock::FD_SETSIZE as _;
 pub const NULL_TERMINATOR: c_char = 0;
+pub const USER_NAME_LENGTH: usize = 255;
+pub const GROUP_NAME_LENGTH: usize = 31;
 
 pub const O_RDONLY: int = 1;
 pub const O_WRONLY: int = 2;
