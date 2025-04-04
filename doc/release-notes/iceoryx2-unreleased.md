@@ -61,6 +61,8 @@
     [#605](https://github.com/eclipse-iceoryx/iceoryx2/issues/605)
 * LogLevel is considered for custom loggers.
     [#608](https://github.com/eclipse-iceoryx/iceoryx2/issues/608)
+* Allow missing legal characters in system type for user- and group-name
+    [#677](https://github.com/eclipse-iceoryx/iceoryx2/issues/677)
 
 ### Refactoring
 
