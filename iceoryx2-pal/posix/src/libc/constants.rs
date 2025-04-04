@@ -18,6 +18,8 @@ use crate::posix::types::*;
 pub const CPU_SETSIZE: usize = libc::CPU_SETSIZE as _;
 pub const FD_SETSIZE: usize = libc::FD_SETSIZE as _;
 pub const NULL_TERMINATOR: c_char = 0;
+pub const USER_NAME_LENGTH: usize = 31;
+pub const GROUP_NAME_LENGTH: usize = 31;
 
 pub const O_RDONLY: int = libc::O_RDONLY as _;
 pub const O_WRONLY: int = libc::O_WRONLY as _;

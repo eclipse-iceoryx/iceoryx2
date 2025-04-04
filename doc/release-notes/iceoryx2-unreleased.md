@@ -57,7 +57,7 @@
     are cleaned up
     [#596](https://github.com/eclipse-iceoryx/iceoryx2/issues/596)
 * Remove `SIGPOLL` that lead to compile issues on older glibc versions.
-    Fixe issue where fatal signals are generated with non-fatal values.
+    Fix issue where fatal signals are generated with non-fatal values.
     [#605](https://github.com/eclipse-iceoryx/iceoryx2/issues/605)
 * LogLevel is considered for custom loggers.
     [#608](https://github.com/eclipse-iceoryx/iceoryx2/issues/608)
