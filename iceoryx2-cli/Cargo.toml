@@ -30,6 +30,10 @@ path = "iox2-service/src/main.rs"
 name = "iox2-config"
 path = "iox2-config/src/main.rs"
 
+[[bin]]
+name = "iox2-discovery"
+path = "iox2-discovery/src/main.rs"
+
 [lib]
 name = "iceoryx2_cli"
 path = "lib/src/lib.rs"

@@ -57,10 +57,23 @@ pub struct DetailsOptions {
     pub filter: OutputFilter,
 }
 
+#[derive(Parser)]
+pub struct MonitorOptions {
+    #[clap(
+        short,
+        long,
+        default_value = "1000",
+        help = "Update rate in milliseconds"
+    )]
+    pub rate: u64,
+}
+
 #[derive(Subcommand)]
 pub enum Action {
     #[clap(about = "List all services")]
     List(ListOptions),
     #[clap(about = "Show service details")]
     Details(DetailsOptions),
+    #[clap(about = "Start a service monitor")]
+    Monitor(MonitorOptions),
 }

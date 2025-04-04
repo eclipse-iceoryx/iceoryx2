@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use anyhow::{Context, Error, Result};
+use iceoryx2::monitor::services::Monitor;
 use iceoryx2::prelude::*;
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
@@ -65,4 +66,23 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
         return Err(err);
     }
     Ok(())
+}
+
+pub fn monitor(rate: u64) -> Result<()> {
+    println!("Starting Service Monitor...");
+
+    let monitor = Monitor::new();
+
+    let monitor_runner = move || {
+        println!("Monitoring services (update rate: {}ms)", rate);
+        loop {
+            monitor.poll();
+            monitor.publish();
+
+            std::thread::sleep(std::time::Duration::from_millis(rate));
+        }
+    };
+
+    monitor_runner();
+    Ok(()) // This line is never reached in practice as monitor_runner loops indefinitely
 }

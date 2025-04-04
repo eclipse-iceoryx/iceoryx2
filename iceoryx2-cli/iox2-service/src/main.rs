@@ -55,6 +55,11 @@ fn main() -> Result<()> {
                     eprintln!("Failed to retrieve service details: {}", e);
                 }
             }
+            Action::Monitor(options) => {
+                if let Err(_e) = commands::monitor(options.rate) {
+                    eprintln!("Failed to start service monitor")
+                }
+            }
         }
     } else {
         Cli::command().print_help().expect("Failed to print help");

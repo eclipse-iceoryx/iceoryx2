@@ -17,15 +17,23 @@ use iceoryx2_bb_elementary::CallbackProgression;
 
 struct Registry {}
 
-// - Registry of all services in the system
-// - Callback to update registry
-// - Changes to registry published on internal topic
-struct Monitor {
+/// - Registry of all services in the system
+/// - Callback to update registry
+/// - Changes to registry published on internal service
+pub struct Monitor {
     registry: Registry,
 }
 
 impl Monitor {
-    pub fn update() {
+    /// Creates a new Monitor instance with an empty registry.
+    pub fn new() -> Self {
+        Self {
+            registry: Registry {},
+        }
+    }
+
+    /// Updates the monitor by listing all services in the system.
+    pub fn poll(&self) {
         if let Err(_) = ipc::Service::list(Config::global_config(), |service| {
             println!("\n{:#?}", &service);
             CallbackProgression::Continue
@@ -33,5 +41,7 @@ impl Monitor {
             // On error, function does nothing
         }
     }
-    pub fn publish() {}
+
+    /// Publishes registry changes to the internal service.
+    pub fn publish(&self) {}
 }
