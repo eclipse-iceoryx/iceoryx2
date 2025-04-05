@@ -61,6 +61,14 @@ auto use_file_logger(const char* log_file) -> bool;
 /// It returns true if the logger was set, otherwise false.
 auto set_logger(Log& logger) -> bool;
 
+/// Sets the global log level for the application using `IOX2_LOG_LEVEL` environment variable
+/// or defaults it to LogLevel::INFO if variable does not exist.
+auto set_log_level_from_env_or_default() -> void;
+
+/// Sets the global log level for the application using `IOX2_LOG_LEVEL` environment variable
+/// or sets it to a user-given value if variable does not exist.
+auto set_log_level_from_env_or(LogLevel level) -> void;
+
 /// Sets the global log level for the application
 auto set_log_level(LogLevel level) -> void;
 

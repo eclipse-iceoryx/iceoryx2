@@ -108,4 +108,27 @@ TEST(Log, can_set_and_get_log_level) {
     EXPECT_EQ(get_log_level(), LogLevel::Fatal);
 }
 
+TEST(Log, can_set_and_get_log_level_from_env) {
+    set_log_level_from_env_or_default();
+    EXPECT_EQ(get_log_level(), LogLevel::Info);
+
+    set_log_level_from_env_or(LogLevel::Trace);
+    EXPECT_EQ(get_log_level(), LogLevel::Trace);
+
+    set_log_level_from_env_or(LogLevel::Debug);
+    EXPECT_EQ(get_log_level(), LogLevel::Debug);
+
+    set_log_level_from_env_or(LogLevel::Info);
+    EXPECT_EQ(get_log_level(), LogLevel::Info);
+
+    set_log_level_from_env_or(LogLevel::Warn);
+    EXPECT_EQ(get_log_level(), LogLevel::Warn);
+
+    set_log_level_from_env_or(LogLevel::Error);
+    EXPECT_EQ(get_log_level(), LogLevel::Error);
+
+    set_log_level_from_env_or(LogLevel::Fatal);
+    EXPECT_EQ(get_log_level(), LogLevel::Fatal);
+}
+
 } // namespace
