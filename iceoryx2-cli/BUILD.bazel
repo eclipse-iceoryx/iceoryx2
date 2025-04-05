@@ -42,6 +42,7 @@ rust_binary(
     deps = [
         ":iceoryx2-cli",
         "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
         "@crate_index//:anyhow",
         "@crate_index//:better-panic",
         "@crate_index//:cargo_metadata",
@@ -76,6 +77,27 @@ rust_binary(
         "@crate_index//:better-panic",
         "@crate_index//:clap",
         "@crate_index//:human-panic",
+    ],
+)
+
+rust_binary(
+    name = "iox2-config",
+    srcs = glob(["iox2-config/src/**/*.rs"]),
+    deps = [
+        ":iceoryx2-cli",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "@crate_index//:anyhow",
+        "@crate_index//:better-panic",
+        "@crate_index//:clap",
+        "@crate_index//:colored",
+        "@crate_index//:dialoguer",
+        "@crate_index//:enum-iterator",
+        "@crate_index//:human-panic",
+        "@crate_index//:toml",
     ],
 )
 

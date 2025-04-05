@@ -14,6 +14,7 @@ mod cli;
 mod commands;
 mod filter;
 
+use anyhow::{anyhow, Result};
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
@@ -25,7 +26,7 @@ use human_panic::setup_panic;
 #[cfg(debug_assertions)]
 extern crate better_panic;
 
-fn main() {
+fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
     {
         setup_panic!();
@@ -41,28 +42,23 @@ fn main() {
 
     set_log_level(LogLevel::Warn);
 
-    match Cli::try_parse() {
-        Ok(cli) => {
-            if let Some(action) = cli.action {
-                match action {
-                    Action::List(options) => {
-                        if let Err(e) = commands::list(options.filter, cli.format) {
-                            eprintln!("Failed to list nodes: {}", e);
-                        }
-                    }
-                    Action::Details(options) => {
-                        if let Err(e) = commands::details(options.node, options.filter, cli.format)
-                        {
-                            eprintln!("Failed to retrieve node details: {}", e);
-                        }
-                    }
+    let cli = Cli::try_parse().map_err(|e| anyhow!("{}", e))?;
+    if let Some(action) = cli.action {
+        match action {
+            Action::List(options) => {
+                if let Err(e) = commands::list(options.filter, cli.format) {
+                    eprintln!("Failed to list nodes: {}", e);
                 }
-            } else {
-                Cli::command().print_help().expect("Failed to print help");
+            }
+            Action::Details(options) => {
+                if let Err(e) = commands::details(options.node, options.filter, cli.format) {
+                    eprintln!("Failed to retrieve node details: {}", e);
+                }
             }
         }
-        Err(e) => {
-            eprintln!("{}", e);
-        }
+    } else {
+        Cli::command().print_help().expect("Failed to print help");
     }
+
+    Ok(())
 }
