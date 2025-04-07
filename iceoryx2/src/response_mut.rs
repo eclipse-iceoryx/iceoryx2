@@ -118,6 +118,9 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
                 "{} since the corresponding server is already disconnected.", msg);
         }
 
+        fail!(from self, when self.shared_state.update_connections(),
+            "{} since the connections could not be updated.", msg);
+
         self.shared_state.response_sender.deliver_offset(
             self.offset_to_chunk,
             self.sample_size,

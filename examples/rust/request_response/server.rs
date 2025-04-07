@@ -27,10 +27,25 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let server = service.server_builder().create()?;
 
+    let mut counter = 0;
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(active_request) = server.receive()? {
             println!("received request: {:?}", *active_request);
+
+            active_request.send_copy(TransmissionData {
+                x: counter as i32,
+                y: counter as i32,
+                funky: counter as f64 * 0.1234,
+            })?;
+
+            active_request.send_copy(TransmissionData {
+                x: counter as i32 * 2,
+                y: counter as i32 * 3,
+                funky: counter as f64 * 0.1234 * 4.0,
+            })?;
         }
+
+        counter += 1;
     }
 
     println!("exit");
