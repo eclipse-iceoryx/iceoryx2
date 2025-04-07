@@ -326,6 +326,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Drop
     for Publisher<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
+        self.backend.is_active.store(false, Ordering::Relaxed);
         if let Some(handle) = self.dynamic_publisher_handle {
             self.backend
                 .service_state

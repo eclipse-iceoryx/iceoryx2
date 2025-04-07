@@ -10,15 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{fmt::Debug, marker::PhantomData, ops::Deref};
+use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
+use std::sync::Arc;
 
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_log::{error, fail};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError};
 
 use crate::{
-    port::{details::chunk_details::ChunkDetails, port_identifiers::UniqueClientId},
-    raw_sample::RawSample,
+    port::{
+        details::chunk_details::ChunkDetails,
+        port_identifiers::{UniqueClientId, UniqueServerId},
+        server::SharedServerState,
+        update_connections::ConnectionFailure,
+        LoanError, SendError,
+    },
+    raw_sample::{RawSample, RawSampleMut},
+    response_mut::ResponseMut,
+    response_mut_uninit::ResponseMutUninit,
+    service,
 };
 
 /// Represents a one-to-one connection to a [`Client`](crate::port::client::Client)
@@ -41,7 +51,10 @@ pub struct ActiveRequest<
         RequestHeader,
         RequestPayload,
     >,
+    pub(crate) shared_state: Arc<SharedServerState<Service>>,
     pub(crate) details: ChunkDetails<Service>,
+    pub(crate) request_id: u64,
+    pub(crate) channel_id: ChannelId,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
@@ -109,7 +122,7 @@ impl<
         {
             Ok(()) => (),
             Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
-                fatal_panic!(from self, "This should never happen! The clients retrieve channel is full and the request cannot be returned.");
+                error!(from self, "This should never happen! The clients retrieve channel is full and the request cannot be returned.");
             }
         }
     }
@@ -123,6 +136,61 @@ impl<
         ResponseHeader: Debug,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    pub fn loan_uninit(
+        &self,
+    ) -> Result<ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>, LoanError>
+    {
+        let chunk = self
+            .shared_state
+            .response_sender
+            .allocate(self.shared_state.response_sender.sample_layout(1))?;
+
+        unsafe {
+            (chunk.header as *mut service::header::request_response::ResponseHeader).write(
+                service::header::request_response::ResponseHeader {
+                    server_port_id: UniqueServerId(UniqueSystemId::from(
+                        self.shared_state.response_sender.sender_port_id,
+                    )),
+                    request_id: self.request_id,
+                },
+            )
+        };
+
+        let ptr = unsafe {
+            RawSampleMut::<
+                service::header::request_response::ResponseHeader,
+                ResponseHeader,
+                MaybeUninit<ResponsePayload>,
+            >::new_unchecked(
+                chunk.header.cast(),
+                chunk.user_header.cast(),
+                chunk.payload.cast(),
+            )
+        };
+
+        Ok(ResponseMutUninit {
+            response: ResponseMut {
+                ptr,
+                shared_state: self.shared_state.clone(),
+                offset_to_chunk: chunk.offset,
+                channel_id: self.channel_id,
+                sample_size: chunk.size,
+                _service: PhantomData,
+                _response_payload: PhantomData,
+                _response_header: PhantomData,
+            },
+        })
+    }
+
+    pub fn send_copy(&self, value: ResponsePayload) -> Result<(), SendError> {
+        let msg = "Unable to send copy of response";
+        let response = fail!(from self,
+                            when self.loan_uninit(),
+                            "{} since the loan of the response failed.", msg);
+
+        response.write_payload(value).send()
+    }
+
     /// Returns a reference to the payload of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
     pub fn payload(&self) -> &RequestPayload {
@@ -145,5 +213,20 @@ impl<
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
     pub fn origin(&self) -> UniqueClientId {
         UniqueClientId(UniqueSystemId::from(self.details.origin))
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug + Default,
+        ResponseHeader: Debug,
+    > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    pub fn loan(&self) -> Result<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError> {
+        Ok(self
+            .loan_uninit()?
+            .write_payload(ResponsePayload::default()))
     }
 }

@@ -65,15 +65,7 @@ impl<
     for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "RequestMutUninit<{}, {}, {}, {}, {}> {{ }}",
-            core::any::type_name::<Service>(),
-            core::any::type_name::<RequestPayload>(),
-            core::any::type_name::<RequestHeader>(),
-            core::any::type_name::<ResponsePayload>(),
-            core::any::type_name::<ResponseHeader>()
-        )
+        write!(f, "RequestMutUninit {{  request: {:?} }}", self.request)
     }
 }
 
