@@ -42,15 +42,6 @@ mod zero_copy_send {
     #[derive(ZeroCopySend)]
     struct UnnamedTestStruct(i32, u32, Foo);
 
-    #[derive(ZeroCopySend)]
-    struct GenericNamedTestStruct<T1, T2> {
-        _val1: T1,
-        _val2: T2,
-    }
-
-    #[derive(ZeroCopySend)]
-    struct GenericUnnamedTestStruct<T1, T2, T3>(T1, T2, T3);
-
     #[test]
     fn zero_copy_send_derive_works_for_named_struct() {
         let sut = NamedTestStruct {
@@ -66,50 +57,5 @@ mod zero_copy_send {
         let sut = UnnamedTestStruct(4, 6, Foo(2));
         assert_that!(is_zero_copy_send(&sut), eq true);
         assert_that!(is_identifiable(&sut), eq true);
-    }
-
-    #[test]
-    fn zero_copy_send_derive_works_for_named_generic_struct() {
-        let sut = GenericNamedTestStruct {
-            _val1: false,
-            _val2: -1984,
-        };
-        assert_that!(is_zero_copy_send(&sut), eq true);
-        assert_that!(is_identifiable(&sut), eq true);
-    }
-
-    #[test]
-    fn zero_copy_send_derive_works_for_unnamed_generic_struct() {
-        let sut = GenericUnnamedTestStruct(2023.4, 'N', 23);
-        assert_that!(is_zero_copy_send(&sut), eq true);
-        assert_that!(is_identifiable(&sut), eq true);
-    }
-
-    #[derive(ZeroCopySend)]
-    struct MyType {
-        val: u64,
-        //val: String,
-    }
-
-    #[derive(ZeroCopySend)]
-    struct MyTupleStruct(i32, u64);
-    //struct MyTupleStruct(i32, String);
-
-    //#[derive(ZeroCopySend)]
-    //struct MyUnitStruct;
-
-    #[test]
-    fn blub_works() {
-        let x = MyType { val: 9 };
-        //let x = MyType {
-        //val: String::from("test"),
-        //};
-        println!("val = {}", x.val);
-        println!("type name = {}", unsafe { MyType::type_name() });
-
-        let y = MyTupleStruct(0, 0);
-        //let y = MyTupleStruct(0, String::from("hui"));
-        println!("tuple = {}, {}", y.0, y.1);
-        println!("type name = {}", unsafe { MyTupleStruct::type_name() });
     }
 }

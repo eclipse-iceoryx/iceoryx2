@@ -19,7 +19,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields, Type};
 
 /// Implements the [`iceoryx2_bb_elementary::placement_default::PlacementDefault`] trait when all
@@ -108,15 +108,13 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     let type_name = &ast.ident;
-    let generics = ast.generics.clone();
-    let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let fields = match ast.data {
         Data::Struct(data_struct) => match data_struct.fields {
             Fields::Named(fields_named) => fields_named.named,
             Fields::Unnamed(fields_unnamed) => fields_unnamed.unnamed,
             Fields::Unit => {
-                return quote! { compile_error!("ZeroCopySend cannot be implemented for Unit-like structs?"); }.into();
+                return quote! { compile_error!("ZeroCopySend cannot be implemented for Unit-like structs"); }.into();
             }
         },
         _ => {
@@ -126,22 +124,23 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     };
 
     let field_types: Vec<&Type> = fields.iter().map(|f| &f.ty).collect();
-    //let _assert_all_fields_are_relocatable =
-    //format_ident!("_assert_all_fields_are_relocatable_in_{}", type_name);
 
     let gen = quote! {
         // use constant item definition to force compile-time evaluation
         const _: () = {
             // a dummy function that is never called to check if all field types of the struct
             // implement Relocatable
-            fn _assert_all_fields_are_relocatable #impl_generics ()
-                where #(#field_types: iceoryx2_bb_elementary::relocatable::Relocatable),* {}
+            fn _assert_all_fields_are_relocatable()
+            where #(#field_types: iceoryx2_bb_elementary::relocatable::Relocatable),* {}
         };
 
         // TODO: without path the user has to include Identifiable, Relocatable and ZeroCopySend traits
-        unsafe impl #impl_generics iceoryx2_bb_elementary::identifiable::Identifiable for #type_name #ty_generics #where_clause {}
-        unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #type_name #ty_generics #where_clause{}
+        unsafe impl iceoryx2_bb_elementary::identifiable::Identifiable for #type_name {}
+        unsafe impl iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #type_name{}
 
     };
     gen.into()
 }
+
+#[cfg(doctest)]
+mod zero_copy_send_compile_tests;
