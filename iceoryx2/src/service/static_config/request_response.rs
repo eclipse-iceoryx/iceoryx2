@@ -25,6 +25,7 @@
 //! println!("response type details: {:?}", req_res.static_config().response_message_type_details());
 //! println!("max active requests per client: {:?}", req_res.static_config().max_active_requests_per_client());
 //! println!("max response buffer size: {:?}", req_res.static_config().max_response_buffer_size());
+//! println!("client max loaned requests: {:?}", req_res.static_config().client_max_loaned_requests());
 //! println!("max servers: {:?}", req_res.static_config().max_clients());
 //! println!("max clients: {:?}", req_res.static_config().max_servers());
 //! println!("max nodes: {:?}", req_res.static_config().max_nodes());
@@ -51,6 +52,7 @@ pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_requests: bool,
     pub(crate) enable_safe_overflow_for_responses: bool,
     pub(crate) max_active_requests_per_client: usize,
+    pub(crate) client_max_loaned_requests: usize,
     pub(crate) max_response_buffer_size: usize,
     pub(crate) max_servers: usize,
     pub(crate) max_clients: usize,
@@ -83,6 +85,7 @@ impl StaticConfig {
                 .defaults
                 .request_response
                 .max_borrowed_responses_per_pending_response,
+            client_max_loaned_requests: config.defaults.request_response.client_max_loaned_requests,
             request_message_type_details: MessageTypeDetails::default(),
             response_message_type_details: MessageTypeDetails::default(),
         }
@@ -102,6 +105,15 @@ impl StaticConfig {
         )
         // all chunks a client can loan in parallel
             + client_max_loaned_data
+    }
+
+    pub(crate) fn required_amount_of_chunks_per_server_data_segment(
+        &self,
+        max_loaned_responses_per_request: usize,
+    ) -> usize {
+        self.max_clients
+            * (self.max_active_requests_per_client * self.max_response_buffer_size
+                + max_loaned_responses_per_request)
     }
 
     /// Returns the request type details of the [`crate::service::Service`].
@@ -146,6 +158,12 @@ impl StaticConfig {
     /// Returns the maximum buffer size for responses for an active request.
     pub fn max_response_buffer_size(&self) -> usize {
         self.max_response_buffer_size
+    }
+
+    /// Returns the maximum number of [`RequestMut`](crate::request_mut::RequestMut) a
+    /// [`Client`](crate::port::client::Client) can loan in parallel.
+    pub fn client_max_loaned_requests(&self) -> usize {
+        self.client_max_loaned_requests
     }
 
     /// Returns the maximum number of supported [`crate::port::server::Server`] ports for the
