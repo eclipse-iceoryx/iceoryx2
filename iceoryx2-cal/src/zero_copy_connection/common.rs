@@ -628,6 +628,10 @@ pub mod details {
         fn is_connected(&self) -> bool {
             self.storage.get().is_connected()
         }
+
+        fn number_of_channels(&self) -> usize {
+            self.storage.get().channels.capacity()
+        }
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopySender for Sender<Storage> {
@@ -821,6 +825,10 @@ pub mod details {
 
         fn is_connected(&self) -> bool {
             self.storage.get().is_connected()
+        }
+
+        fn number_of_channels(&self) -> usize {
+            self.storage.get().channels.capacity()
         }
     }
 

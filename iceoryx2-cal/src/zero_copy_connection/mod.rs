@@ -150,6 +150,7 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
 }
 
 pub trait ZeroCopyPortDetails {
+    fn number_of_channels(&self) -> usize;
     fn buffer_size(&self) -> usize;
     fn has_enabled_safe_overflow(&self) -> bool;
     fn max_borrowed_samples(&self) -> usize;

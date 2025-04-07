@@ -96,6 +96,7 @@ mod zero_copy_connection {
             sut_sender.has_enabled_safe_overflow(), eq
             DEFAULT_ENABLE_SAFE_OVERFLOW
         );
+        assert_that!(sut_sender.number_of_channels(), eq DEFAULT_NUMBER_OF_CHANNELS);
 
         let sut_receiver = Sut::Builder::new(&name)
             .config(&config)
@@ -110,6 +111,28 @@ mod zero_copy_connection {
             sut_receiver.has_enabled_safe_overflow(), eq
             DEFAULT_ENABLE_SAFE_OVERFLOW
         );
+        assert_that!(sut_receiver.number_of_channels(), eq DEFAULT_NUMBER_OF_CHANNELS);
+    }
+
+    #[test]
+    fn setting_number_of_channels_works<Sut: ZeroCopyConnection>() {
+        const NUMBER_OF_CHANNELS: usize = 12;
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_sender = Sut::Builder::new(&name)
+            .config(&config)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .create_sender()
+            .unwrap();
+        assert_that!(sut_sender.number_of_channels(), eq NUMBER_OF_CHANNELS);
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .config(&config)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .create_receiver()
+            .unwrap();
+        assert_that!(sut_receiver.number_of_channels(), eq NUMBER_OF_CHANNELS);
     }
 
     #[test]
