@@ -22,6 +22,7 @@ use crate::port::port_identifiers::{UniqueClientId, UniqueServerId};
 pub struct RequestHeader {
     pub(crate) client_port_id: UniqueClientId,
     pub(crate) channel_id: ChannelId,
+    pub(crate) request_id: u64,
 }
 
 impl RequestHeader {
@@ -38,6 +39,7 @@ impl RequestHeader {
 #[repr(C)]
 pub struct ResponseHeader {
     pub(crate) server_port_id: UniqueServerId,
+    pub(crate) request_id: u64,
 }
 
 impl ResponseHeader {

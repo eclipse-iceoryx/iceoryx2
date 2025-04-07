@@ -73,9 +73,9 @@ pub struct RequestMut<
     pub(crate) sample_size: usize,
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) client_backend: Arc<ClientBackend<Service>>,
+    pub(crate) was_sample_sent: IoxAtomicBool,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
-    pub(crate) was_sample_sent: IoxAtomicBool,
 }
 
 impl<
@@ -119,12 +119,16 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "RequestMut<{}, {}, {}, {}, {}> {{ }}",
+            "RequestMut<{}, {}, {}, {}, {}> {{ ptr: {:?}, sample_size: {}, offset_to_chunk: {:?}, was_sample_sent: {} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<RequestPayload>(),
             core::any::type_name::<RequestHeader>(),
             core::any::type_name::<ResponsePayload>(),
-            core::any::type_name::<ResponseHeader>()
+            core::any::type_name::<ResponseHeader>(),
+            self.ptr,
+            self.sample_size,
+            self.offset_to_chunk,
+            self.was_sample_sent.load(Ordering::Relaxed)
         )
     }
 }
