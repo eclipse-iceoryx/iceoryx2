@@ -278,6 +278,7 @@ impl<
 
     fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
         self.request_receiver.start_update_connection_cycle();
+        self.response_sender.start_update_connection_cycle();
 
         let mut result = Ok(());
         unsafe {
@@ -294,6 +295,7 @@ impl<
                 );
                 result = result.and(inner_result);
 
+                // establish response connection
                 let inner_result = self.response_sender.update_connection(
                     h.index() as usize,
                     ReceiverDetails {
@@ -310,6 +312,7 @@ impl<
             })
         };
 
+        self.response_sender.finish_update_connection_cycle();
         self.request_receiver.finish_update_connection_cycle();
 
         result
