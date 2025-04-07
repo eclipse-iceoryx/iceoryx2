@@ -37,7 +37,6 @@ pub struct ResponseMut<Service: service::Service, ResponsePayload: Debug, Respon
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
     pub(crate) channel_id: ChannelId,
-    pub(crate) _service: PhantomData<Service>,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }

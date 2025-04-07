@@ -254,11 +254,8 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
-        if let Err(e) = self.update_connections() {
-            fail!(from self,
-                with ReceiveError::ConnectionFailure(e),
+        fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
-        }
 
         self.receiver.receive(ChannelId::new(0))
     }

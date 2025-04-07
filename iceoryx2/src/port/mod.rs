@@ -143,6 +143,12 @@ pub enum ReceiveError {
     ConnectionFailure(ConnectionFailure),
 }
 
+impl From<ConnectionFailure> for ReceiveError {
+    fn from(value: ConnectionFailure) -> Self {
+        ReceiveError::ConnectionFailure(value)
+    }
+}
+
 impl core::fmt::Display for ReceiveError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         std::write!(f, "ReceiveError::{:?}", self)
