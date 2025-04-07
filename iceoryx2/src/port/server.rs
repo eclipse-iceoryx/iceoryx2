@@ -38,7 +38,7 @@ use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_cal::zero_copy_connection::ChannelId;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -73,6 +73,12 @@ use super::{
     ReceiveError, UniqueServerId,
 };
 
+#[derive(Debug)]
+pub(crate) struct SharedServerState<Service: service::Service> {
+    pub(crate) response_sender: Sender<Service>,
+    pub(crate) is_active: IoxAtomicBool,
+}
+
 /// Receives [`RequestMut`](crate::request_mut::RequestMut) from a
 /// [`Client`](crate::port::client::Client) and responds with
 /// [`Response`](crate::response::Response) by using an
@@ -86,7 +92,7 @@ pub struct Server<
     ResponseHeader: Debug,
 > {
     request_receiver: Receiver<Service>,
-    response_sender: Sender<Service>,
+    shared_state: Arc<SharedServerState<Service>>,
     server_handle: Option<ContainerHandle>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
     service_state: Arc<ServiceState<Service>>,
@@ -105,6 +111,7 @@ impl<
     > Drop for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
+        self.shared_state.is_active.store(false, Ordering::Relaxed);
         if let Some(handle) = self.server_handle {
             self.service_state
                 .dynamic_storage
@@ -198,7 +205,7 @@ impl<
             with ServerCreateError::UnableToCreateDataSegment,
             "{} since the server data segment could not be created.", msg);
 
-        let response_sender = Sender::<Service> {
+        let response_sender = Sender {
             segment_states: vec![SegmentState::new(number_of_requests)],
             data_segment,
             connections: (0..client_list.capacity())
@@ -224,7 +231,10 @@ impl<
 
         let mut new_self = Self {
             request_receiver,
-            response_sender,
+            shared_state: Arc::new(SharedServerState {
+                response_sender,
+                is_active: IoxAtomicBool::new(true),
+            }),
             server_handle: None,
             client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
             service_state: service.__internal_state().clone(),
@@ -278,7 +288,9 @@ impl<
 
     fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
         self.request_receiver.start_update_connection_cycle();
-        self.response_sender.start_update_connection_cycle();
+        self.shared_state
+            .response_sender
+            .start_update_connection_cycle();
 
         let mut result = Ok(());
         unsafe {
@@ -296,7 +308,7 @@ impl<
                 result = result.and(inner_result);
 
                 // establish response connection
-                let inner_result = self.response_sender.update_connection(
+                let inner_result = self.shared_state.response_sender.update_connection(
                     h.index() as usize,
                     ReceiverDetails {
                         port_id: details.client_port_id.value(),
@@ -312,7 +324,9 @@ impl<
             })
         };
 
-        self.response_sender.finish_update_connection_cycle();
+        self.shared_state
+            .response_sender
+            .finish_update_connection_cycle();
         self.request_receiver.finish_update_connection_cycle();
 
         result
@@ -364,17 +378,25 @@ impl<
         >,
         ReceiveError,
     > {
-        Ok(self.receive_impl()?.map(|(details, chunk)| ActiveRequest {
-            details,
-            ptr: unsafe {
-                RawSample::new_unchecked(
-                    chunk.header.cast(),
-                    chunk.user_header.cast(),
-                    chunk.payload.cast(),
-                )
-            },
-            _response_payload: PhantomData,
-            _response_header: PhantomData,
+        Ok(self.receive_impl()?.map(|(details, chunk)| {
+            let header = unsafe {
+                &*(chunk.header as *const service::header::request_response::RequestHeader)
+            };
+            ActiveRequest {
+                details,
+                request_id: header.request_id,
+                channel_id: header.channel_id,
+                shared_state: self.shared_state.clone(),
+                ptr: unsafe {
+                    RawSample::new_unchecked(
+                        chunk.header.cast(),
+                        chunk.user_header.cast(),
+                        chunk.payload.cast(),
+                    )
+                },
+                _response_payload: PhantomData,
+                _response_header: PhantomData,
+            }
         }))
     }
 }

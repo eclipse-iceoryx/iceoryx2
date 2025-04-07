@@ -48,7 +48,7 @@ use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::{
     dynamic_storage::DynamicStorage, shm_allocator::PointerOffset, zero_copy_connection::ChannelId,
 };
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 
 use crate::{
     pending_response::PendingResponse,
@@ -232,6 +232,7 @@ pub struct Client<
     client_handle: Option<ContainerHandle>,
     client_port_id: UniqueClientId,
     backend: Arc<ClientBackend<Service>>,
+    request_id_counter: IoxAtomicU64,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -324,6 +325,7 @@ impl<
         };
 
         let mut new_self = Self {
+            request_id_counter: IoxAtomicU64::new(0),
             client_handle: None,
             backend: Arc::new(ClientBackend {
                 available_channel_ids: {
@@ -509,6 +511,7 @@ impl<
                 service::header::request_response::RequestHeader {
                     client_port_id: self.id(),
                     channel_id,
+                    request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
                 },
             )
         };
