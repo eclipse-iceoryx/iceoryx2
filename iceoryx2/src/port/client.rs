@@ -44,7 +44,7 @@ use iceoryx2_bb_container::queue::Queue;
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::{
     dynamic_storage::DynamicStorage, shm_allocator::PointerOffset, zero_copy_connection::ChannelId,
 };
@@ -121,7 +121,7 @@ pub(crate) struct ClientBackend<Service: service::Service> {
     is_active: IoxAtomicBool,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: IoxAtomicUsize,
-    pub(crate) available_channel_ids: Queue<usize>,
+    pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
 }
 
 impl<Service: service::Service> ClientBackend<Service> {
@@ -329,9 +329,9 @@ impl<
                 available_channel_ids: {
                     let mut queue = Queue::new(number_of_requests);
                     for n in 0..number_of_requests {
-                        queue.push(n);
+                        queue.push(ChannelId::new(n));
                     }
-                    queue
+                    UnsafeCell::new(queue)
                 },
                 request_sender: Sender {
                     data_segment,
@@ -496,10 +496,19 @@ impl<
             .request_sender
             .allocate(self.backend.request_sender.sample_layout(1))?;
 
+        let channel_id = match unsafe { &mut *self.backend.available_channel_ids.get() }.pop() {
+            Some(channel_id) => channel_id,
+            None => {
+                fatal_panic!(from self,
+                    "This should never happen! There are no more available response channels.");
+            }
+        };
+
         unsafe {
             (chunk.header as *mut service::header::request_response::RequestHeader).write(
                 service::header::request_response::RequestHeader {
                     client_port_id: self.id(),
+                    channel_id,
                 },
             )
         };

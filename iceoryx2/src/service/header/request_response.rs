@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::port::port_identifiers::{UniqueClientId, UniqueServerId};
 
@@ -20,6 +21,7 @@ use crate::port::port_identifiers::{UniqueClientId, UniqueServerId};
 #[repr(C)]
 pub struct RequestHeader {
     pub(crate) client_port_id: UniqueClientId,
+    pub(crate) channel_id: ChannelId,
 }
 
 impl RequestHeader {

@@ -20,7 +20,6 @@ mod client {
     use iceoryx2::port::client::RequestSendError;
     use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
-    use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
