@@ -177,6 +177,8 @@ impl<Service: service::Service> ClientBackend<Service> {
     fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
         let mut result = Ok(());
         self.request_sender.start_update_connection_cycle();
+        self.response_receiver.start_update_connection_cycle();
+
         unsafe {
             (*self.server_list_state.get()).for_each(|h, port| {
                 // establish response connection
@@ -208,6 +210,7 @@ impl<Service: service::Service> ClientBackend<Service> {
             })
         };
 
+        self.response_receiver.finish_update_connection_cycle();
         self.request_sender.finish_update_connection_cycle();
 
         result
