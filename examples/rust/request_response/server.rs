@@ -14,7 +14,7 @@ use core::time::Duration;
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
 
-const CYCLE_TIME: Duration = Duration::from_millis(10);
+const CYCLE_TIME: Duration = Duration::from_millis(100);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
@@ -32,12 +32,17 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         while let Some(active_request) = server.receive()? {
             println!("received request: {:?}", *active_request);
 
-            active_request.send_copy(TransmissionData {
+            // use zero copy API
+            let sample = active_request.loan_uninit()?;
+            let sample = sample.write_payload(TransmissionData {
                 x: counter as i32 * *active_request as i32,
                 y: counter as i32,
                 funky: counter as f64 * 0.1234,
-            })?;
+            });
+            sample.send()?;
 
+            // a request can have a stream of responses, send one by
+            // using the slower, inefficient copy API
             active_request.send_copy(TransmissionData {
                 x: counter as i32 * 2 * *active_request as i32,
                 y: counter as i32 * 3,

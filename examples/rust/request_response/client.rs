@@ -29,6 +29,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter: u64 = 0;
 
+    // sending first request by using slower, inefficient copy API
     println!("Send request {} ...", counter);
     let mut pending_response = client.send_copy(counter)?;
     while node.wait(CYCLE_TIME).is_ok() {
@@ -37,6 +38,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         }
 
         counter += 1;
+        // send all other request by using zero copy API
         let request = client.loan_uninit()?;
         let request = request.write_payload(counter);
 
