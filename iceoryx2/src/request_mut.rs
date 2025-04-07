@@ -43,6 +43,7 @@ use core::{
     ops::{Deref, DerefMut},
     sync::atomic::Ordering,
 };
+use iceoryx2_bb_log::fatal_panic;
 
 use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
@@ -86,6 +87,14 @@ impl<
     > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
+        if unsafe { &mut *self.client_backend.available_channel_ids.get() }
+            .push(self.header().channel_id)
+            == false
+        {
+            fatal_panic!(from self,
+                    "This should never happen! The channel id could not be returned.");
+        }
+
         self.client_backend
             .request_sender
             .release_sample(self.offset_to_chunk);
