@@ -45,9 +45,7 @@ use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::{
-    dynamic_storage::DynamicStorage,
-    shm_allocator::PointerOffset,
-    zero_copy_connection::{ChannelId, ZeroCopyCreationError},
+    dynamic_storage::DynamicStorage, shm_allocator::PointerOffset, zero_copy_connection::ChannelId,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
@@ -69,7 +67,7 @@ use crate::{
 use super::{
     details::{
         data_segment::DataSegmentType,
-        receiver::Receiver,
+        receiver::{Receiver, SenderDetails},
         segment_state::SegmentState,
         sender::{ReceiverDetails, Sender},
     },
@@ -176,21 +174,36 @@ impl<Service: service::Service> ClientBackend<Service> {
         Ok(())
     }
 
-    fn force_update_connections(&self) -> Result<(), ZeroCopyCreationError> {
+    fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
         let mut result = Ok(());
         self.request_sender.start_update_connection_cycle();
         unsafe {
             (*self.server_list_state.get()).for_each(|h, port| {
+                // establish response connection
+                let inner_result = self.response_receiver.update_connection(
+                    h.index() as usize,
+                    SenderDetails {
+                        port_id: port.server_port_id.value(),
+                        max_number_of_segments: 1,
+                        data_segment_type: DataSegmentType::Static,
+                        number_of_samples: port.number_of_responses,
+                    },
+                );
+                result = result.and(inner_result);
+
+                // establish request connection
                 let inner_result = self.request_sender.update_connection(
                     h.index() as usize,
                     ReceiverDetails {
                         port_id: port.server_port_id.value(),
-                        buffer_size: port.buffer_size,
+                        buffer_size: port.request_buffer_size,
                     },
                     |_| {},
                 );
+                if let Some(err) = inner_result.err() {
+                    result = result.and(Err(err.into()));
+                }
 
-                result = result.and(inner_result);
                 CallbackProgression::Continue
             })
         };
@@ -302,6 +315,7 @@ impl<
             client_port_id,
             node_id: *service.__internal_state().shared_node.id(),
             number_of_requests,
+            response_buffer_size: static_config.max_response_buffer_size,
         };
 
         let mut new_self = Self {

@@ -61,7 +61,7 @@ use crate::{
 
 use super::details::data_segment::DataSegment;
 use super::details::segment_state::SegmentState;
-use super::details::sender::Sender;
+use super::details::sender::{ReceiverDetails, Sender};
 use super::{
     details::{
         chunk::Chunk,
@@ -249,7 +249,8 @@ impl<
             .request_response()
             .add_server_id(ServerDetails {
                 server_port_id,
-                buffer_size: static_config.max_active_requests_per_client,
+                request_buffer_size: static_config.max_active_requests_per_client,
+                number_of_responses,
             }) {
             Some(v) => Some(v),
             None => {
@@ -281,6 +282,7 @@ impl<
         let mut result = Ok(());
         unsafe {
             (*self.client_list_state.get()).for_each(|h, details| {
+                // establish request connection
                 let inner_result = self.request_receiver.update_connection(
                     h.index() as usize,
                     SenderDetails {
@@ -290,10 +292,20 @@ impl<
                         data_segment_type: DataSegmentType::Static,
                     },
                 );
+                result = result.and(inner_result);
 
-                if result.is_ok() {
-                    result = inner_result;
+                let inner_result = self.response_sender.update_connection(
+                    h.index() as usize,
+                    ReceiverDetails {
+                        port_id: details.client_port_id.value(),
+                        buffer_size: details.response_buffer_size,
+                    },
+                    |_| {},
+                );
+                if let Some(err) = inner_result.err() {
+                    result = result.and(Err(err.into()));
                 }
+
                 CallbackProgression::Continue
             })
         };
