@@ -29,12 +29,18 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter: u64 = 0;
 
+    println!("Send request {} ...", counter);
+    let mut pending_response = client.send_copy(counter)?;
     while node.wait(CYCLE_TIME).is_ok() {
+        while let Some(response) = pending_response.receive()? {
+            println!("  received response: {:?}", response);
+        }
+
         counter += 1;
         let request = client.loan_uninit()?;
         let request = request.write_payload(counter);
 
-        let _pending_response = request.send()?;
+        pending_response = request.send()?;
 
         println!("Send request {} ...", counter);
     }
