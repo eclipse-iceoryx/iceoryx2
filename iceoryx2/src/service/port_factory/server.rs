@@ -45,6 +45,8 @@ pub enum ServerCreateError {
     /// The maximum amount of [`Server`]s supported by the [`Service`](crate::service::Service)
     /// is already connected.
     ExceedsMaxSupportedServers,
+    /// The datasegment in which the payload of the [`Server`] is stored, could not be created.
+    UnableToCreateDataSegment,
 }
 
 impl core::fmt::Display for ServerCreateError {
@@ -77,7 +79,8 @@ pub struct PortFactoryServer<
 
     pub(crate) max_loaned_responses_per_request: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) request_degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
 }
 
 impl<
@@ -118,7 +121,8 @@ impl<
             factory,
             max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
             unable_to_deliver_strategy: defs.server_unable_to_deliver_strategy,
-            degradation_callback: None,
+            request_degradation_callback: None,
+            response_degradation_callback: None,
         }
     }
 
@@ -139,18 +143,38 @@ impl<
         self
     }
 
-    /// Sets the [`DegradationCallback`] of the [`Server`]. Whenever a connection to a
+    /// Sets the [`DegradationCallback`] for receiving [`ActiveRequest`](crate::active_request::ActiveRequest)s
+    /// from a [`Client`](crate::port::client::Client). Whenever a connection to a
     /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_degradation_callback<
+    pub fn set_request_degradation_callback<
         F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
     >(
         mut self,
         callback: Option<F>,
     ) -> Self {
         match callback {
-            Some(c) => self.degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.degradation_callback = None,
+            Some(c) => self.request_degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.request_degradation_callback = None,
+        }
+
+        self
+    }
+
+    /// Sets the [`DegradationCallback`] for sending
+    /// [`ResponseMut`](crate::response_mut::ResponseMut)s
+    /// to a [`Client`](crate::port::client::Client). Whenever a connection to a
+    /// [`Client`](crate::port::client::Client) is corrupted or it seems to be dead, this callback
+    /// is called and depending on the returned [`DegradationAction`] measures will be taken.
+    pub fn set_response_degradation_callback<
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
+    >(
+        mut self,
+        callback: Option<F>,
+    ) -> Self {
+        match callback {
+            Some(c) => self.response_degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.response_degradation_callback = None,
         }
 
         self

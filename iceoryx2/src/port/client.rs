@@ -69,6 +69,7 @@ use crate::{
 use super::{
     details::{
         data_segment::DataSegmentType,
+        receiver::Receiver,
         segment_state::SegmentState,
         sender::{ReceiverDetails, Sender},
     },
@@ -117,6 +118,7 @@ impl core::error::Error for RequestSendError {}
 #[derive(Debug)]
 pub(crate) struct ClientBackend<Service: service::Service> {
     pub(crate) request_sender: Sender<Service>,
+    pub(crate) response_receiver: Receiver<Service>,
     is_active: IoxAtomicBool,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: IoxAtomicUsize,
@@ -261,6 +263,7 @@ impl<
         let origin = "Client::new()";
         let service = &client_factory.factory.service;
         let client_port_id = UniqueClientId::new();
+        let static_config = client_factory.factory.static_config();
         let number_of_requests = unsafe {
             service
                 .__internal_state()
@@ -268,7 +271,9 @@ impl<
                 .messaging_pattern
                 .request_response()
         }
-        .required_amount_of_chunks_per_client_data_segment(client_factory.max_loaned_requests);
+        .required_amount_of_chunks_per_client_data_segment(
+            static_config.client_max_loaned_requests,
+        );
         let server_list = &service
             .__internal_state()
             .dynamic_storage
@@ -276,7 +281,6 @@ impl<
             .request_response()
             .servers;
 
-        let static_config = client_factory.factory.static_config();
         let global_config = service.__internal_state().shared_node.config();
         let segment_name = data_segment_name(client_port_id.value());
         let data_segment_type = DataSegmentType::Static;
@@ -314,16 +318,32 @@ impl<
                     receiver_max_buffer_size: static_config.max_active_requests_per_client,
                     receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
                     enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
-                    degradation_callback: client_factory.degradation_callback,
+                    degradation_callback: client_factory.request_degradation_callback,
                     number_of_samples: number_of_requests,
                     max_number_of_segments,
                     service_state: service.__internal_state().clone(),
                     tagger: CyclicTagger::new(),
                     loan_counter: IoxAtomicUsize::new(0),
-                    sender_max_borrowed_samples: client_factory.max_loaned_requests,
+                    sender_max_borrowed_samples: static_config.client_max_loaned_requests,
                     unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
                     message_type_details: static_config.request_message_type_details.clone(),
                     number_of_channels: 1,
+                },
+                response_receiver: Receiver {
+                    connections: (0..server_list.capacity())
+                        .map(|_| UnsafeCell::new(None))
+                        .collect(),
+                    receiver_port_id: client_port_id.value(),
+                    service_state: service.__internal_state().clone(),
+                    buffer_size: static_config.max_response_buffer_size,
+                    tagger: CyclicTagger::new(),
+                    to_be_removed_connections: None,
+                    degradation_callback: client_factory.response_degradation_callback,
+                    message_type_details: static_config.response_message_type_details.clone(),
+                    receiver_max_borrowed_samples: static_config
+                        .max_borrowed_responses_per_pending_response,
+                    enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
+                    number_of_channels: number_of_requests,
                 },
                 is_active: IoxAtomicBool::new(true),
                 server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),

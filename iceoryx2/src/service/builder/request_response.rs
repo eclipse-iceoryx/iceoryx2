@@ -35,6 +35,9 @@ use super::{ServiceState, RETRY_LIMIT};
 pub enum RequestResponseOpenError {
     /// Service could not be openen since it does not exist
     DoesNotExist,
+    /// The [`Service`] has a lower maximum amount of loaned
+    /// [`RequestMut`](crate::request_mut::RequestMut) for a [`Client`](crate::port::client::Client).
+    DoesNotSupportRequestedAmountOfClientRequestLoans,
     /// The [`Service`] has a lower maximum amount of [`ActiveRequest`](crate::active_request::ActiveRequest)s than requested.
     DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
     /// The [`Service`] has a lower maximum response buffer size than requested.
@@ -221,6 +224,7 @@ pub struct Builder<
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
     verify_max_active_requests_per_client: bool,
+    verify_client_max_loaned_requests: bool,
     verify_max_response_buffer_size: bool,
     verify_max_servers: bool,
     verify_max_clients: bool,
@@ -248,6 +252,7 @@ impl<
             override_response_alignment: None,
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
+            verify_client_max_loaned_requests: false,
             verify_max_active_requests_per_client: false,
             verify_max_response_buffer_size: false,
             verify_max_servers: false,
@@ -348,6 +353,13 @@ impl<
         self
     }
 
+    /// Defines how many requests the [`Client`] can loan in parallel.
+    pub fn client_max_loaned_requests(mut self, value: usize) -> Self {
+        self.config_details_mut().client_max_loaned_requests = value;
+        self.verify_client_max_loaned_requests = true;
+        self
+    }
+
     /// If the [`Service`] is created it defines how many responses fit in the
     /// [`Clients`](crate::port::client::Client)s buffer. If an existing
     /// [`Service`] is opened it defines the minimum required.
@@ -433,6 +445,12 @@ impl<
                 "Setting the maximum number of borrowed responses per pending response to 0 is not supported. Adjust it to 1, the smallest supported value.");
             settings.max_borrowed_responses_per_pending_response = 1;
         }
+
+        if settings.client_max_loaned_requests == 0 {
+            warn!(from origin,
+                "Setting the maximum loaned requests for clients to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.client_max_loaned_requests = 1;
+        }
     }
 
     fn verify_service_configuration(
@@ -485,6 +503,15 @@ impl<
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
                 "{} since the service supports only {} active requests per client but {} are required.",
                 msg, existing_configuration.max_active_requests_per_client, required_configuration.max_active_requests_per_client);
+        }
+
+        if self.verify_client_max_loaned_requests
+            && existing_configuration.client_max_loaned_requests
+                < required_configuration.client_max_loaned_requests
+        {
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans,
+                "{} since the service supports only {} loaned requests per client but {} are required.",
+                msg, existing_configuration.client_max_loaned_requests, required_configuration.client_max_loaned_requests);
         }
 
         if self.verify_max_borrowed_responses_per_pending_response
