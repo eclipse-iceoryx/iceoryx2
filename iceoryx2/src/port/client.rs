@@ -159,7 +159,9 @@ impl<Service: service::Service> ClientBackend<Service> {
             .deliver_offset(offset, sample_size, ChannelId::new(0))?)
     }
 
-    fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
+    pub(crate) fn update_connections(
+        &self,
+    ) -> Result<(), super::update_connections::ConnectionFailure> {
         if unsafe {
             self.request_sender
                 .service_state
@@ -532,6 +534,7 @@ impl<
             request: RequestMut {
                 ptr,
                 sample_size: chunk.size,
+                channel_id,
                 offset_to_chunk: chunk.offset,
                 client_backend: self.backend.clone(),
                 _response_payload: PhantomData,
