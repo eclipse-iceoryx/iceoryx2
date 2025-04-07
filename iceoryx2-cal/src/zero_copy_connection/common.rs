@@ -18,7 +18,7 @@ pub mod details {
     use core::sync::atomic::Ordering;
     use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU8, IoxAtomicUsize};
+    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
 
     use crate::dynamic_storage::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
@@ -157,6 +157,7 @@ pub mod details {
     struct Channel {
         submission_queue: RelocatableSafelyOverflowingIndexQueue,
         completion_queue: RelocatableIndexQueue,
+        state: IoxAtomicU64,
     }
 
     impl Channel {
@@ -168,6 +169,7 @@ pub mod details {
                 completion_queue: unsafe {
                     RelocatableIndexQueue::new_uninit(completion_queue_capacity)
                 },
+                state: IoxAtomicU64::new(INITIAL_CHANNEL_STATE),
             }
         }
 
@@ -632,6 +634,11 @@ pub mod details {
         fn number_of_channels(&self) -> usize {
             self.storage.get().channels.capacity()
         }
+
+        fn custom_channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
+            &self.storage.get().channels[channel_id.value()].state
+        }
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopySender for Sender<Storage> {
@@ -829,6 +836,11 @@ pub mod details {
 
         fn number_of_channels(&self) -> usize {
             self.storage.get().channels.capacity()
+        }
+
+        fn custom_channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
+            &self.storage.get().channels[channel_id.value()].state
         }
     }
 

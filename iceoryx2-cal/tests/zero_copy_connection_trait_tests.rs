@@ -12,6 +12,7 @@
 
 #[generic_tests::define]
 mod zero_copy_connection {
+    use core::sync::atomic::Ordering;
     use core::time::Duration;
     use std::collections::HashSet;
     use std::sync::{Arc, Barrier, Mutex};
@@ -26,8 +27,8 @@ mod zero_copy_connection {
     use iceoryx2_cal::named_concept::{NamedConceptBuilder, NamedConceptMgmt};
     use iceoryx2_cal::shm_allocator::{PointerOffset, SegmentId};
     use iceoryx2_cal::testing::{generate_isolated_config, generate_name};
-    use iceoryx2_cal::zero_copy_connection::*;
     use iceoryx2_cal::zero_copy_connection::{self};
+    use iceoryx2_cal::zero_copy_connection::{ChannelId, *};
 
     const TIMEOUT: Duration = Duration::from_millis(25);
     const SAMPLE_SIZE: usize = 123;
@@ -1838,6 +1839,54 @@ mod zero_copy_connection {
                 }
             });
         });
+    }
+
+    #[test]
+    fn channel_state_is_set_to_default_value_on_creation<Sut: ZeroCopyConnection>() {
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+
+        assert_that!(sut_receiver.custom_channel_state(ChannelId::new(0)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+        drop(sut_receiver);
+
+        let sut_sender = Sut::Builder::new(&name)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+
+        assert_that!(sut_sender.custom_channel_state(ChannelId::new(0)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+        drop(sut_sender);
+    }
+
+    #[test]
+    fn changing_channel_state_works<Sut: ZeroCopyConnection>() {
+        const CHANNEL_ID: ChannelId = ChannelId::new(0);
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .config(&config)
+            .create_receiver()
+            .unwrap();
+        sut_receiver
+            .custom_channel_state(CHANNEL_ID)
+            .store(456, Ordering::Relaxed);
+
+        let sut_sender = Sut::Builder::new(&name)
+            .config(&config)
+            .create_sender()
+            .unwrap();
+        assert_that!(sut_sender.custom_channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 456);
+        sut_sender
+            .custom_channel_state(CHANNEL_ID)
+            .store(789, Ordering::Relaxed);
+
+        assert_that!(sut_receiver.custom_channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 789);
     }
 
     #[instantiate_tests(<zero_copy_connection::posix_shared_memory::Connection>)]
