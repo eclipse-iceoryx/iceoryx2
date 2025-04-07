@@ -76,7 +76,71 @@ use super::{
 #[derive(Debug)]
 pub(crate) struct SharedServerState<Service: service::Service> {
     pub(crate) response_sender: Sender<Service>,
+    request_receiver: Receiver<Service>,
+    client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
     pub(crate) is_active: IoxAtomicBool,
+}
+
+impl<Service: service::Service> SharedServerState<Service> {
+    pub(crate) fn update_connections(&self) -> Result<(), ConnectionFailure> {
+        if unsafe {
+            self.request_receiver
+                .service_state
+                .dynamic_storage
+                .get()
+                .request_response()
+                .clients
+                .update_state(&mut *self.client_list_state.get())
+        } {
+            fail!(from self,
+                  when self.force_update_connections(),
+                  "Connections were updated only partially since at least one connection to a client failed.");
+        }
+
+        Ok(())
+    }
+
+    fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
+        self.request_receiver.start_update_connection_cycle();
+        self.response_sender.start_update_connection_cycle();
+
+        let mut result = Ok(());
+        unsafe {
+            (*self.client_list_state.get()).for_each(|h, details| {
+                // establish request connection
+                let inner_result = self.request_receiver.update_connection(
+                    h.index() as usize,
+                    SenderDetails {
+                        port_id: details.client_port_id.value(),
+                        number_of_samples: details.number_of_requests,
+                        max_number_of_segments: 1,
+                        data_segment_type: DataSegmentType::Static,
+                    },
+                );
+                result = result.and(inner_result);
+
+                // establish response connection
+                let inner_result = self.response_sender.update_connection(
+                    h.index() as usize,
+                    ReceiverDetails {
+                        port_id: details.client_port_id.value(),
+                        buffer_size: details.response_buffer_size,
+                    },
+                    |_| {},
+                );
+                if let Some(err) = inner_result.err() {
+                    result = result.and(Err(err.into()));
+                }
+
+                CallbackProgression::Continue
+            })
+        };
+
+        self.response_sender.finish_update_connection_cycle();
+        self.request_receiver.finish_update_connection_cycle();
+
+        result
+    }
 }
 
 /// Receives [`RequestMut`](crate::request_mut::RequestMut) from a
@@ -91,10 +155,8 @@ pub struct Server<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    request_receiver: Receiver<Service>,
     shared_state: Arc<SharedServerState<Service>>,
     server_handle: Option<ContainerHandle>,
-    client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
     service_state: Arc<ServiceState<Service>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -230,13 +292,13 @@ impl<
         };
 
         let mut new_self = Self {
-            request_receiver,
             shared_state: Arc::new(SharedServerState {
+                request_receiver,
+                client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
                 response_sender,
                 is_active: IoxAtomicBool::new(true),
             }),
             server_handle: None,
-            client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
             service_state: service.__internal_state().clone(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
@@ -244,7 +306,7 @@ impl<
             _response_header: PhantomData,
         };
 
-        if let Err(e) = new_self.force_update_connections() {
+        if let Err(e) = new_self.shared_state.force_update_connections() {
             warn!(from new_self, "The new server is unable to connect to every client, caused by {:?}.", e);
         }
 
@@ -276,60 +338,18 @@ impl<
 
     /// Returns the [`UniqueServerId`] of the [`Server`]
     pub fn id(&self) -> UniqueServerId {
-        UniqueServerId(UniqueSystemId::from(self.request_receiver.receiver_port_id))
+        UniqueServerId(UniqueSystemId::from(
+            self.shared_state.request_receiver.receiver_port_id,
+        ))
     }
 
     /// Returns true if the [`Server`] has [`RequestMut`](crate::request_mut::RequestMut)s in its buffer.
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
-        self.request_receiver.has_samples(ChannelId::new(0))
-    }
-
-    fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
-        self.request_receiver.start_update_connection_cycle();
         self.shared_state
-            .response_sender
-            .start_update_connection_cycle();
-
-        let mut result = Ok(());
-        unsafe {
-            (*self.client_list_state.get()).for_each(|h, details| {
-                // establish request connection
-                let inner_result = self.request_receiver.update_connection(
-                    h.index() as usize,
-                    SenderDetails {
-                        port_id: details.client_port_id.value(),
-                        number_of_samples: details.number_of_requests,
-                        max_number_of_segments: 1,
-                        data_segment_type: DataSegmentType::Static,
-                    },
-                );
-                result = result.and(inner_result);
-
-                // establish response connection
-                let inner_result = self.shared_state.response_sender.update_connection(
-                    h.index() as usize,
-                    ReceiverDetails {
-                        port_id: details.client_port_id.value(),
-                        buffer_size: details.response_buffer_size,
-                    },
-                    |_| {},
-                );
-                if let Some(err) = inner_result.err() {
-                    result = result.and(Err(err.into()));
-                }
-
-                CallbackProgression::Continue
-            })
-        };
-
-        self.shared_state
-            .response_sender
-            .finish_update_connection_cycle();
-        self.request_receiver.finish_update_connection_cycle();
-
-        result
+            .request_receiver
+            .has_samples(ChannelId::new(0))
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
@@ -339,7 +359,9 @@ impl<
                   "Some requests are not being received since not all connections to the clients could be established.");
         }
 
-        self.request_receiver.receive(ChannelId::new(0))
+        self.shared_state
+            .request_receiver
+            .receive(ChannelId::new(0))
     }
 
     /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
@@ -411,20 +433,6 @@ impl<
     for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        if unsafe {
-            self.request_receiver
-                .service_state
-                .dynamic_storage
-                .get()
-                .request_response()
-                .clients
-                .update_state(&mut *self.client_list_state.get())
-        } {
-            fail!(from self,
-                  when self.force_update_connections(),
-                  "Connections were updated only partially since at least one connection to a client failed.");
-        }
-
-        Ok(())
+        self.shared_state.update_connections()
     }
 }
