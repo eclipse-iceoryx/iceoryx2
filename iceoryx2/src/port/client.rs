@@ -116,7 +116,7 @@ impl core::error::Error for RequestSendError {}
 
 #[derive(Debug)]
 pub(crate) struct ClientBackend<Service: service::Service> {
-    pub(crate) sender: Sender<Service>,
+    pub(crate) request_sender: Sender<Service>,
     is_active: IoxAtomicBool,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: IoxAtomicUsize,
@@ -132,7 +132,7 @@ impl<Service: service::Service> ClientBackend<Service> {
 
         let active_request_counter = self.active_request_counter.load(Ordering::Relaxed);
         if self
-            .sender
+            .request_sender
             .service_state
             .static_config
             .request_response()
@@ -153,13 +153,13 @@ impl<Service: service::Service> ClientBackend<Service> {
 
         self.active_request_counter.fetch_add(1, Ordering::Relaxed);
         Ok(self
-            .sender
+            .request_sender
             .deliver_offset(offset, sample_size, ChannelId::new(0))?)
     }
 
     fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
         if unsafe {
-            self.sender
+            self.request_sender
                 .service_state
                 .dynamic_storage
                 .get()
@@ -176,10 +176,10 @@ impl<Service: service::Service> ClientBackend<Service> {
 
     fn force_update_connections(&self) -> Result<(), ZeroCopyCreationError> {
         let mut result = Ok(());
-        self.sender.start_update_connection_cycle();
+        self.request_sender.start_update_connection_cycle();
         unsafe {
             (*self.server_list_state.get()).for_each(|h, port| {
-                let inner_result = self.sender.update_connection(
+                let inner_result = self.request_sender.update_connection(
                     h.index() as usize,
                     ReceiverDetails {
                         port_id: port.server_port_id.value(),
@@ -193,7 +193,7 @@ impl<Service: service::Service> ClientBackend<Service> {
             })
         };
 
-        self.sender.finish_update_connection_cycle();
+        self.request_sender.finish_update_connection_cycle();
 
         result
     }
@@ -229,7 +229,7 @@ impl<
     fn drop(&mut self) {
         if let Some(handle) = self.client_handle {
             self.backend
-                .sender
+                .request_sender
                 .service_state
                 .dynamic_storage
                 .get()
@@ -303,7 +303,7 @@ impl<
         let mut new_self = Self {
             client_handle: None,
             backend: Arc::new(ClientBackend {
-                sender: Sender {
+                request_sender: Sender {
                     data_segment,
                     segment_states: vec![SegmentState::new(number_of_requests)],
                     sender_port_id: client_port_id.value(),
@@ -372,7 +372,7 @@ impl<
     /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
     /// if the [`Server`](crate::port::server::Server)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
-        self.backend.sender.unable_to_deliver_strategy
+        self.backend.request_sender.unable_to_deliver_strategy
     }
 
     /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
@@ -447,8 +447,8 @@ impl<
     > {
         let chunk = self
             .backend
-            .sender
-            .allocate(self.backend.sender.sample_layout(1))?;
+            .request_sender
+            .allocate(self.backend.request_sender.sample_layout(1))?;
 
         unsafe {
             (chunk.header as *mut service::header::request_response::RequestHeader).write(

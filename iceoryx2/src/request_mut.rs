@@ -87,11 +87,11 @@ impl<
 {
     fn drop(&mut self) {
         self.client_backend
-            .sender
+            .request_sender
             .release_sample(self.offset_to_chunk);
         if !self.was_sample_sent.load(Ordering::Relaxed) {
             self.client_backend
-                .sender
+                .request_sender
                 .loan_counter
                 .fetch_sub(1, Ordering::Relaxed);
         }
@@ -199,7 +199,7 @@ impl<
             Ok(number_of_server_connections) => {
                 self.was_sample_sent.store(true, Ordering::Relaxed);
                 self.client_backend
-                    .sender
+                    .request_sender
                     .loan_counter
                     .fetch_sub(1, Ordering::Relaxed);
                 let active_request = PendingResponse {
