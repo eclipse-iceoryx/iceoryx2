@@ -40,6 +40,7 @@ use alloc::sync::Arc;
 use core::{
     cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit, sync::atomic::Ordering,
 };
+use iceoryx2_bb_container::queue::Queue;
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -120,6 +121,7 @@ pub(crate) struct ClientBackend<Service: service::Service> {
     is_active: IoxAtomicBool,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: IoxAtomicUsize,
+    pub(crate) available_channel_ids: Queue<usize>,
 }
 
 impl<Service: service::Service> ClientBackend<Service> {
@@ -324,6 +326,13 @@ impl<
         let mut new_self = Self {
             client_handle: None,
             backend: Arc::new(ClientBackend {
+                available_channel_ids: {
+                    let mut queue = Queue::new(number_of_requests);
+                    for n in 0..number_of_requests {
+                        queue.push(n);
+                    }
+                    queue
+                },
                 request_sender: Sender {
                     data_segment,
                     segment_states: vec![SegmentState::new(number_of_requests)],
