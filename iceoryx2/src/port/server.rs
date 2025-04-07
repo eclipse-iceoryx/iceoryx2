@@ -80,7 +80,7 @@ pub struct Server<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    receiver: Receiver<Service>,
+    request_receiver: Receiver<Service>,
     server_handle: Option<ContainerHandle>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
     service_state: Arc<ServiceState<Service>>,
@@ -139,7 +139,7 @@ impl<
             .clients;
 
         let static_config = server_factory.factory.static_config();
-        let receiver = Receiver {
+        let request_receiver = Receiver {
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
@@ -156,7 +156,7 @@ impl<
         };
 
         let mut new_self = Self {
-            receiver,
+            request_receiver,
             server_handle: None,
             client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
             service_state: service.__internal_state().clone(),
@@ -197,23 +197,23 @@ impl<
 
     /// Returns the [`UniqueServerId`] of the [`Server`]
     pub fn id(&self) -> UniqueServerId {
-        UniqueServerId(UniqueSystemId::from(self.receiver.receiver_port_id))
+        UniqueServerId(UniqueSystemId::from(self.request_receiver.receiver_port_id))
     }
 
     /// Returns true if the [`Server`] has [`RequestMut`](crate::request_mut::RequestMut)s in its buffer.
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
-        self.receiver.has_samples(ChannelId::new(0))
+        self.request_receiver.has_samples(ChannelId::new(0))
     }
 
     fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
-        self.receiver.start_update_connection_cycle();
+        self.request_receiver.start_update_connection_cycle();
 
         let mut result = Ok(());
         unsafe {
             (*self.client_list_state.get()).for_each(|h, details| {
-                let inner_result = self.receiver.update_connection(
+                let inner_result = self.request_receiver.update_connection(
                     h.index() as usize,
                     SenderDetails {
                         port_id: details.client_port_id.value(),
@@ -230,7 +230,7 @@ impl<
             })
         };
 
-        self.receiver.finish_update_connection_cycle();
+        self.request_receiver.finish_update_connection_cycle();
 
         result
     }
@@ -242,7 +242,7 @@ impl<
                   "Some requests are not being received since not all connections to the clients could be established.");
         }
 
-        self.receiver.receive(ChannelId::new(0))
+        self.request_receiver.receive(ChannelId::new(0))
     }
 
     /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
@@ -307,7 +307,7 @@ impl<
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
-            self.receiver
+            self.request_receiver
                 .service_state
                 .dynamic_storage
                 .get()
