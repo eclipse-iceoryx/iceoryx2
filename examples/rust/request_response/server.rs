@@ -33,13 +33,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             println!("received request: {:?}", *active_request);
 
             active_request.send_copy(TransmissionData {
-                x: counter as i32,
+                x: counter as i32 * *active_request as i32,
                 y: counter as i32,
                 funky: counter as f64 * 0.1234,
             })?;
 
             active_request.send_copy(TransmissionData {
-                x: counter as i32 * 2,
+                x: counter as i32 * 2 * *active_request as i32,
                 y: counter as i32 * 3,
                 funky: counter as f64 * 0.1234 * 4.0,
             })?;

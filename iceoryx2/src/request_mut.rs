@@ -44,6 +44,7 @@ use core::{
     sync::atomic::Ordering,
 };
 use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
@@ -74,6 +75,7 @@ pub struct RequestMut<
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) client_backend: Arc<ClientBackend<Service>>,
     pub(crate) was_sample_sent: IoxAtomicBool,
+    pub(crate) channel_id: ChannelId,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
@@ -119,7 +121,7 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "RequestMut<{}, {}, {}, {}, {}> {{ ptr: {:?}, sample_size: {}, offset_to_chunk: {:?}, was_sample_sent: {} }}",
+            "RequestMut<{}, {}, {}, {}, {}> {{ ptr: {:?}, sample_size: {}, offset_to_chunk: {:?}, was_sample_sent: {}, channel_id: {} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<RequestPayload>(),
             core::any::type_name::<RequestHeader>(),
@@ -128,7 +130,8 @@ impl<
             self.ptr,
             self.sample_size,
             self.offset_to_chunk,
-            self.was_sample_sent.load(Ordering::Relaxed)
+            self.was_sample_sent.load(Ordering::Relaxed),
+            self.channel_id.value()
         )
     }
 }

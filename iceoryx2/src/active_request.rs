@@ -22,7 +22,6 @@ use crate::{
         details::chunk_details::ChunkDetails,
         port_identifiers::{UniqueClientId, UniqueServerId},
         server::SharedServerState,
-        update_connections::ConnectionFailure,
         LoanError, SendError,
     },
     raw_sample::{RawSample, RawSampleMut},
@@ -71,13 +70,15 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "ActiveRequest<{}, {}, {}, {}, {}> {{ details: {:?} }}",
+            "ActiveRequest<{}, {}, {}, {}, {}> {{ details: {:?}, request_id: {}, channel_id: {} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<RequestPayload>(),
             core::any::type_name::<RequestHeader>(),
             core::any::type_name::<ResponsePayload>(),
             core::any::type_name::<ResponseHeader>(),
-            self.details
+            self.details,
+            self.request_id,
+            self.channel_id.value()
         )
     }
 }
@@ -175,7 +176,6 @@ impl<
                 offset_to_chunk: chunk.offset,
                 channel_id: self.channel_id,
                 sample_size: chunk.size,
-                _service: PhantomData,
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
             },

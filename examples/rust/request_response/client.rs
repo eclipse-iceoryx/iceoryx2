@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let mut pending_response = client.send_copy(counter)?;
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(response) = pending_response.receive()? {
-            println!("  received response: {:?}", response);
+            println!("  received response: {}", response.x);
         }
 
         counter += 1;
