@@ -38,6 +38,7 @@ use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_cal::zero_copy_connection::ChannelId;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -45,6 +46,7 @@ use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::service::naming_scheme::data_segment_name;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
@@ -57,6 +59,9 @@ use crate::{
     },
 };
 
+use super::details::data_segment::DataSegment;
+use super::details::segment_state::SegmentState;
+use super::details::sender::Sender;
 use super::{
     details::{
         chunk::Chunk,
@@ -81,6 +86,7 @@ pub struct Server<
     ResponseHeader: Debug,
 > {
     request_receiver: Receiver<Service>,
+    response_sender: Sender<Service>,
     server_handle: Option<ContainerHandle>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
     service_state: Arc<ServiceState<Service>>,
@@ -130,6 +136,27 @@ impl<
         let origin = "Server::new()";
         let server_port_id = UniqueServerId::new();
         let service = &server_factory.factory.service;
+        let static_config = server_factory.factory.static_config();
+        let number_of_requests = unsafe {
+            service
+                .__internal_state()
+                .static_config
+                .messaging_pattern
+                .request_response()
+        }
+        .required_amount_of_chunks_per_client_data_segment(
+            static_config.client_max_loaned_requests,
+        );
+        let number_of_responses = unsafe {
+            service
+                .__internal_state()
+                .static_config
+                .messaging_pattern
+                .request_response()
+        }
+        .required_amount_of_chunks_per_server_data_segment(
+            server_factory.max_loaned_responses_per_request,
+        );
 
         let client_list = &service
             .__internal_state()
@@ -138,7 +165,6 @@ impl<
             .request_response()
             .clients;
 
-        let static_config = server_factory.factory.static_config();
         let request_receiver = Receiver {
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))
@@ -151,12 +177,54 @@ impl<
             buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
             to_be_removed_connections: None,
-            degradation_callback: server_factory.degradation_callback,
+            degradation_callback: server_factory.request_degradation_callback,
             number_of_channels: 1,
+        };
+
+        let global_config = service.__internal_state().shared_node.config();
+        let data_segment_type = DataSegmentType::Static;
+        let segment_name = data_segment_name(server_port_id.value());
+        let max_number_of_segments =
+            DataSegment::<Service>::max_number_of_segments(data_segment_type);
+        let data_segment = DataSegment::<Service>::create_static_segment(
+            &segment_name,
+            static_config.request_message_type_details.sample_layout(1),
+            global_config,
+            number_of_requests,
+        );
+
+        let data_segment = fail!(from origin,
+            when data_segment,
+            with ServerCreateError::UnableToCreateDataSegment,
+            "{} since the server data segment could not be created.", msg);
+
+        let response_sender = Sender::<Service> {
+            segment_states: vec![SegmentState::new(number_of_requests)],
+            data_segment,
+            connections: (0..client_list.capacity())
+                .map(|_| UnsafeCell::new(None))
+                .collect(),
+            sender_port_id: server_port_id.value(),
+            shared_node: service.__internal_state().shared_node.clone(),
+            receiver_max_buffer_size: static_config.max_response_buffer_size,
+            receiver_max_borrowed_samples: static_config
+                .max_borrowed_responses_per_pending_response,
+            sender_max_borrowed_samples: server_factory.max_loaned_responses_per_request,
+            enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
+            number_of_samples: number_of_responses,
+            max_number_of_segments,
+            degradation_callback: server_factory.response_degradation_callback,
+            service_state: service.__internal_state().clone(),
+            tagger: CyclicTagger::new(),
+            loan_counter: IoxAtomicUsize::new(0),
+            unable_to_deliver_strategy: server_factory.unable_to_deliver_strategy,
+            message_type_details: static_config.response_message_type_details.clone(),
+            number_of_channels: number_of_requests,
         };
 
         let mut new_self = Self {
             request_receiver,
+            response_sender,
             server_handle: None,
             client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
             service_state: service.__internal_state().clone(),
