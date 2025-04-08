@@ -127,6 +127,8 @@ impl<
                 error!(from self, "This should never happen! The clients retrieve channel is full and the request cannot be returned.");
             }
         }
+
+        self.finish();
     }
 }
 
@@ -138,6 +140,20 @@ impl<
         ResponseHeader: Debug,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    fn finish(&self) {
+        self.shared_state
+            .response_sender
+            .invalidate_channel_state(self.channel_id, self.connection_id);
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.shared_state.response_sender.has_channel_state(
+            self.channel_id,
+            self.connection_id,
+            self.request_id,
+        )
+    }
+
     pub fn loan_uninit(
         &self,
     ) -> Result<ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>, LoanError>

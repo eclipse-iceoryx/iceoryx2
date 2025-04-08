@@ -208,10 +208,12 @@ impl<
         PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestSendError,
     > {
-        match self
-            .client_shared_state
-            .send_request(self.offset_to_chunk, self.sample_size)
-        {
+        match self.client_shared_state.send_request(
+            self.offset_to_chunk,
+            self.sample_size,
+            self.channel_id,
+            self.header().request_id,
+        ) {
             Ok(number_of_server_connections) => {
                 self.was_sample_sent.store(true, Ordering::Relaxed);
                 self.client_shared_state

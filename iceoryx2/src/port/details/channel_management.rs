@@ -28,6 +28,11 @@ pub(crate) trait ChannelManagement: ZeroCopyPortDetails {
             .is_ok()
     }
 
+    fn get_channel_state(&self, channel_id: ChannelId) -> u64 {
+        self.custom_channel_state(channel_id)
+            .load(Ordering::Relaxed)
+    }
+
     fn has_invalid_channel_state(&self, channel_id: ChannelId) -> bool {
         self.custom_channel_state(channel_id)
             .load(Ordering::Relaxed)
