@@ -14,6 +14,7 @@
 #include "iox/duration.hpp"
 #include "iox/string.hpp"
 #include "iox2/config.hpp"
+#include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_name.hpp"
@@ -37,6 +38,7 @@ constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1)
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
+    set_log_level_from_env_or(LogLevel::Info);
     auto args = Args::parse(argc, argv, "Publisher of the domain example.");
 
     // create a new config based on the global config

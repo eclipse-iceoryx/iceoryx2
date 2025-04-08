@@ -23,6 +23,7 @@ const HISTORY_SIZE: usize = 20;
 const DEADLINE: Duration = Duration::from_secs(2);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_log_level_from_env_or(LogLevel::Info);
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let subscriber = CustomSubscriber::new(&node, &"My/Funk/ServiceName".try_into()?)?;

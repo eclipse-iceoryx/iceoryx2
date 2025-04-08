@@ -13,6 +13,7 @@
 #include "iox/cli_definition.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
+#include "iox2/log.hpp"
 #include "iox2/service.hpp"
 #include "iox2/service_type.hpp"
 
@@ -29,6 +30,7 @@ struct Args {
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
+    set_log_level_from_env_or(LogLevel::Info);
     auto args = Args::parse(argc, argv, "Discovery of the domain example.");
 
     // create a new config based on the global config

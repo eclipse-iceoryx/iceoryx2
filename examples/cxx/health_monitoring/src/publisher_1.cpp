@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox/duration.hpp"
+#include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
@@ -23,6 +24,7 @@ constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromMillisecon
 
 auto main() -> int {
     using namespace iox2;
+    set_log_level_from_env_or(LogLevel::Info);
     auto service_name = ServiceName::create("service_1").expect("");
     auto node = NodeBuilder()
                     .name(NodeName::create("publisher 1").expect(""))

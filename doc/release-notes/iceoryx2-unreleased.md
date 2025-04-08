@@ -33,6 +33,8 @@
     [#640](https://github.com/eclipse-iceoryx/iceoryx2/issues/640)
 * Allow customizable payload and user header type name in C++ binding
     [#643](https://github.com/eclipse-iceoryx/iceoryx2/issues/643)
+* Expose set_log_level_from_env* APIs to C++
+    [#653](https://github.com/eclipse-iceoryx/iceoryx2/issues/653)
 
 ### Bugfixes
 

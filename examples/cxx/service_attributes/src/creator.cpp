@@ -12,6 +12,7 @@
 
 #include "iox/duration.hpp"
 #include "iox2/attribute_specifier.hpp"
+#include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/sample_mut.hpp"
 #include "iox2/service_name.hpp"
@@ -25,6 +26,7 @@ constexpr iox::units::Duration CYCLE_TIME = iox::units::Duration::fromSeconds(1)
 
 auto main() -> int {
     using namespace iox2;
+    set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
     auto service = node.service_builder(ServiceName::create("Service/With/Properties").expect("valid service name"))

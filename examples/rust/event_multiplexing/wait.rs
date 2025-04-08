@@ -15,6 +15,7 @@ use iceoryx2::{port::listener::Listener, prelude::*};
 use std::collections::HashMap;
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_log_level_from_env_or(LogLevel::Info);
     let args = Args::parse();
 
     let node = NodeBuilder::new().create::<ipc::Service>()?;

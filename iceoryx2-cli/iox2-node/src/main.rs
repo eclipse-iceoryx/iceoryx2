@@ -19,7 +19,7 @@ use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_bb_log::{set_log_level_from_env_or, LogLevel};
 
 #[cfg(not(debug_assertions))]
 use human_panic::setup_panic;
@@ -40,7 +40,7 @@ fn main() -> Result<()> {
             .install();
     }
 
-    set_log_level(LogLevel::Warn);
+    set_log_level_from_env_or(LogLevel::Warn);
 
     let cli = Cli::try_parse().map_err(|e| anyhow!("{}", e))?;
     if let Some(action) = cli.action {

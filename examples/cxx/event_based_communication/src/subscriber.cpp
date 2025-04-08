@@ -14,6 +14,7 @@
 
 #include "custom_subscriber.hpp"
 #include "iox/duration.hpp"
+#include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/waitset.hpp"
@@ -23,6 +24,7 @@ constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromSeconds(2);
 using namespace iox2;
 
 auto main() -> int {
+    set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
     auto subscriber = CustomSubscriber::create(node, ServiceName::create("My/Funk/ServiceName").expect(""));
