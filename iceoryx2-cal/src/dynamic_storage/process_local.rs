@@ -74,6 +74,7 @@ struct StorageEntry {
 struct StorageDetails<T> {
     data_ptr: *mut T,
     layout: Layout,
+    call_drop_on_destruction: bool,
 }
 
 #[derive(PartialEq, Eq, Copy, Debug)]
@@ -146,7 +147,7 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
 }
 
 impl<T> StorageDetails<T> {
-    fn new(value: T, additional_size: u64) -> Self {
+    fn new(value: T, additional_size: u64, call_drop_on_destruction: bool) -> Self {
         let size = core::mem::size_of::<T>() + additional_size as usize;
         let align = core::mem::align_of::<T>();
         let layout = unsafe { Layout::from_size_align_unchecked(size, align) };
@@ -155,6 +156,7 @@ impl<T> StorageDetails<T> {
                 .allocate(layout), "Failed to allocate {} bytes for dynamic global storage.", size)
             .as_ptr() as *mut T,
             layout,
+            call_drop_on_destruction,
         };
         unsafe { new_self.data_ptr.write(value) };
         new_self
@@ -259,16 +261,17 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptMgmt for Storage<T> {
             return Ok(false);
         }
 
-        core::ptr::drop_in_place(
-            entry
-                .as_mut()
-                .unwrap()
-                .content
-                .clone()
-                .downcast::<StorageDetails<T>>()
-                .unwrap()
-                .data_ptr,
-        );
+        let details = entry
+            .as_mut()
+            .unwrap()
+            .content
+            .clone()
+            .downcast::<StorageDetails<T>>()
+            .unwrap();
+
+        if details.call_drop_on_destruction {
+            core::ptr::drop_in_place(details.data_ptr);
+        }
 
         Ok(guard.remove(&storage_name).is_some())
     }
@@ -325,6 +328,7 @@ pub struct Builder<'builder, T: Send + Sync + Debug> {
     name: FileName,
     supplementary_size: usize,
     has_ownership: bool,
+    call_drop_on_destruction: bool,
     config: Configuration<T>,
     initializer: Initializer<'builder, T>,
     _phantom_data: PhantomData<T>,
@@ -335,6 +339,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Build
         Self {
             name: *storage_name,
             has_ownership: true,
+            call_drop_on_destruction: true,
             supplementary_size: 0,
             config: Configuration::default(),
             initializer: Initializer::new(|_, _| true),
@@ -393,6 +398,7 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
         let storage_details = Arc::new(StorageDetails::new(
             initial_value,
             self.supplementary_size as u64,
+            self.call_drop_on_destruction,
         ));
 
         let value = storage_details.data_ptr;
@@ -438,6 +444,11 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
 impl<'builder, T: Send + Sync + Debug + 'static> DynamicStorageBuilder<'builder, T, Storage<T>>
     for Builder<'builder, T>
 {
+    fn call_drop_on_destruction(mut self, value: bool) -> Self {
+        self.call_drop_on_destruction = value;
+        self
+    }
+
     fn has_ownership(mut self, value: bool) -> Self {
         self.has_ownership = value;
         self
