@@ -363,6 +363,7 @@ pub mod details {
         number_of_samples_per_segment: usize,
         number_of_segments: u8,
         number_of_channels: usize,
+        initial_channel_state: u64,
         timeout: Duration,
         config: Configuration<Storage>,
     }
@@ -397,6 +398,9 @@ pub mod details {
         .supplementary_size(supplementary_size)
         .initializer(|data, allocator| {
             unsafe { data.init(allocator, self.submission_queue_size(), self.completion_queue_size())};
+            for channel in data.channels.iter() {
+                channel.state.store(self.initial_channel_state, Ordering::Relaxed);
+            }
 
             true
         })
@@ -508,6 +512,7 @@ pub mod details {
                 number_of_segments: DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS,
                 number_of_channels: DEFAULT_NUMBER_OF_CHANNELS,
                 config: Configuration::default(),
+                initial_channel_state: INITIAL_CHANNEL_STATE,
                 timeout: Duration::ZERO,
             }
         }
@@ -523,6 +528,11 @@ pub mod details {
     {
         fn max_supported_shared_memory_segments(mut self, value: u8) -> Self {
             self.number_of_segments = value.clamp(1, u8::MAX);
+            self
+        }
+
+        fn initial_channel_state(mut self, value: u64) -> Self {
+            self.initial_channel_state = value;
             self
         }
 
