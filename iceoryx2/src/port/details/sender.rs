@@ -35,6 +35,7 @@ use crate::service::static_config::message_type_details::{MessageTypeDetails, Ty
 use crate::service::ServiceState;
 use crate::{service, service::naming_scheme::connection_name};
 
+use super::channel_management::ChannelManagement;
 use super::chunk::ChunkMut;
 use super::data_segment::DataSegment;
 use super::segment_state::SegmentState;
