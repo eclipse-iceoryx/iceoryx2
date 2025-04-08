@@ -89,6 +89,7 @@ impl<
             .client_shared_state
             .active_request_counter
             .fetch_sub(1, Ordering::Relaxed);
+        self.close();
     }
 }
 
@@ -123,6 +124,23 @@ impl<
         ResponseHeader: Debug,
     > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    fn close(&self) {
+        self.request
+            .client_shared_state
+            .response_receiver
+            .invalidate_channel_state(self.request.channel_id);
+    }
+
+    pub fn is_connected(&self) -> bool {
+        self.request
+            .client_shared_state
+            .response_receiver
+            .has_at_least_one_channel_the_state(
+                self.request.channel_id,
+                self.request.header().request_id,
+            )
+    }
+
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`] of the corresponding
     /// [`RequestMut`]

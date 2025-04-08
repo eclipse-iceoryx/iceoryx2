@@ -125,10 +125,17 @@ pub(crate) struct ClientSharedState<Service: service::Service> {
 }
 
 impl<Service: service::Service> ClientSharedState<Service> {
+    fn prepare_channel_to_receive_responses(&self, channel_id: ChannelId, request_id: u64) {
+        self.response_receiver
+            .set_channel_state(channel_id, request_id);
+    }
+
     pub(crate) fn send_request(
         &self,
         offset: PointerOffset,
         sample_size: usize,
+        channel_id: ChannelId,
+        request_id: u64,
     ) -> Result<usize, RequestSendError> {
         let msg = "Unable to send request";
 
@@ -152,6 +159,8 @@ impl<Service: service::Service> ClientSharedState<Service> {
 
         fail!(from self, when self.update_connections(),
             "{} since the connections could not be updated.", msg);
+
+        self.prepare_channel_to_receive_responses(channel_id, request_id);
 
         self.active_request_counter.fetch_add(1, Ordering::Relaxed);
         Ok(self
