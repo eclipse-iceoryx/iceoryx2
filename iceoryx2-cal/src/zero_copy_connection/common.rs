@@ -396,6 +396,7 @@ pub mod details {
         .config(&self.config.dynamic_storage_config)
         .timeout(self.timeout)
         .supplementary_size(supplementary_size)
+        .call_drop_on_destruction(false)
         .initializer(|data, allocator| {
             unsafe { data.init(allocator, self.submission_queue_size(), self.completion_queue_size())};
             for channel in data.channels.iter() {

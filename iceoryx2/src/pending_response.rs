@@ -86,7 +86,7 @@ impl<
 {
     fn drop(&mut self) {
         self.request
-            .client_backend
+            .client_shared_state
             .active_request_counter
             .fetch_sub(1, Ordering::Relaxed);
     }
@@ -150,11 +150,11 @@ impl<
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
         let msg = "Unable to receive response";
-        fail!(from self, when self.request.client_backend.update_connections(),
+        fail!(from self, when self.request.client_shared_state.update_connections(),
                 "{msg} since the connections could not be updated.");
 
         self.request
-            .client_backend
+            .client_shared_state
             .response_receiver
             .receive(self.request.channel_id)
     }
