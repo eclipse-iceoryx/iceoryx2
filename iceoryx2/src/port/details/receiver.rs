@@ -146,10 +146,12 @@ impl<Service: service::Service> Receiver<Service> {
         ret_val
     }
 
-    pub(crate) fn invalidate_channel_state(&self, channel_id: ChannelId) {
+    pub(crate) fn invalidate_channel_state(&self, channel_id: ChannelId, expected_state: u64) {
         for i in 0..self.len() {
             if let Some(ref connection) = self.get(i) {
-                connection.receiver.invalidate_channel_state(channel_id);
+                connection
+                    .receiver
+                    .invalidate_channel_state(channel_id, expected_state);
             }
         }
     }

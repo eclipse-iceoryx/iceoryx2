@@ -141,9 +141,11 @@ impl<
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn finish(&self) {
-        self.shared_state
-            .response_sender
-            .invalidate_channel_state(self.channel_id, self.connection_id);
+        self.shared_state.response_sender.invalidate_channel_state(
+            self.channel_id,
+            self.connection_id,
+            self.request_id,
+        );
     }
 
     pub fn is_connected(&self) -> bool {

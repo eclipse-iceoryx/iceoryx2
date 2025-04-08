@@ -235,9 +235,16 @@ impl<Service: service::Service> Sender<Service> {
         }
     }
 
-    pub(crate) fn invalidate_channel_state(&self, channel_id: ChannelId, connection_id: usize) {
+    pub(crate) fn invalidate_channel_state(
+        &self,
+        channel_id: ChannelId,
+        connection_id: usize,
+        expected_state: u64,
+    ) {
         if let Some(ref connection) = self.get(connection_id) {
-            connection.sender.invalidate_channel_state(channel_id);
+            connection
+                .sender
+                .invalidate_channel_state(channel_id, expected_state);
         }
     }
 

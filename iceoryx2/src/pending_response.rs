@@ -128,7 +128,7 @@ impl<
         self.request
             .client_shared_state
             .response_receiver
-            .invalidate_channel_state(self.request.channel_id);
+            .invalidate_channel_state(self.request.channel_id, self.request.header().request_id);
     }
 
     pub fn is_connected(&self) -> bool {
