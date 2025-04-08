@@ -13,6 +13,7 @@
 use core::cell::UnsafeCell;
 
 extern crate alloc;
+use super::channel_management::ChannelManagement;
 use super::chunk::Chunk;
 use super::chunk_details::ChunkDetails;
 use super::data_segment::{DataSegmentType, DataSegmentView};
@@ -119,6 +120,40 @@ pub(crate) struct Receiver<Service: service::Service> {
 }
 
 impl<Service: service::Service> Receiver<Service> {
+    pub(crate) fn set_channel_state(&self, channel_id: ChannelId, state: u64) -> bool {
+        let mut ret_val = true;
+        for i in 0..self.len() {
+            if let Some(ref connection) = self.get(i) {
+                ret_val &= connection.receiver.set_channel_state(channel_id, state)
+            }
+        }
+
+        ret_val
+    }
+
+    pub(crate) fn has_at_least_one_channel_the_state(
+        &self,
+        channel_id: ChannelId,
+        state: u64,
+    ) -> bool {
+        let mut ret_val = false;
+        for i in 0..self.len() {
+            if let Some(ref connection) = self.get(i) {
+                ret_val |= connection.receiver.get_channel_state(channel_id) == state;
+            }
+        }
+
+        ret_val
+    }
+
+    pub(crate) fn invalidate_channel_state(&self, channel_id: ChannelId) {
+        for i in 0..self.len() {
+            if let Some(ref connection) = self.get(i) {
+                connection.receiver.invalidate_channel_state(channel_id);
+            }
+        }
+    }
+
     pub(crate) fn receiver_port_id(&self) -> u128 {
         self.receiver_port_id
     }
