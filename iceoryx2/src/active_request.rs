@@ -54,6 +54,7 @@ pub struct ActiveRequest<
     pub(crate) details: ChunkDetails<Service>,
     pub(crate) request_id: u64,
     pub(crate) channel_id: ChannelId,
+    pub(crate) connection_id: usize,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
@@ -175,6 +176,7 @@ impl<
                 shared_state: self.shared_state.clone(),
                 offset_to_chunk: chunk.offset,
                 channel_id: self.channel_id,
+                connection_id: self.connection_id,
                 sample_size: chunk.size,
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
