@@ -64,7 +64,7 @@
 //! ```
 
 use crate::{
-    port::publisher::PublisherBackend, port::SendError, raw_sample::RawSampleMut,
+    port::publisher::PublisherSharedState, port::SendError, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
 use iceoryx2_cal::shared_memory::*;
@@ -88,7 +88,7 @@ use alloc::sync::Arc;
 /// Does not implement [`Send`] since it releases unsent samples in the [`crate::port::publisher::Publisher`] and the
 /// [`crate::port::publisher::Publisher`] is not thread-safe!
 pub struct SampleMut<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> {
-    pub(crate) publisher_backend: Arc<PublisherBackend<Service>>,
+    pub(crate) publisher_shared_state: Arc<PublisherSharedState<Service>>,
     pub(crate) ptr: RawSampleMut<Header, UserHeader, Payload>,
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
@@ -117,11 +117,11 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debu
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "SampleMut<{}, {}, {}> {{ publisher_backend: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",
+            "SampleMut<{}, {}, {}> {{ publisher_shared_state: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
-            self.publisher_backend,
+            self.publisher_shared_state,
             self.offset_to_chunk,
             self.sample_size
         )
@@ -132,7 +132,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
     for SampleMut<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        self.publisher_backend
+        self.publisher_shared_state
             .sender
             .return_loaned_sample(self.offset_to_chunk);
     }
@@ -310,7 +310,7 @@ impl<
     /// # }
     /// ```
     pub fn send(self) -> Result<usize, SendError> {
-        self.publisher_backend
+        self.publisher_shared_state
             .send_sample(self.offset_to_chunk, self.sample_size)
     }
 }

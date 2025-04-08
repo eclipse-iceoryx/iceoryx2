@@ -98,7 +98,7 @@ use alloc::sync::Arc;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::{
-    port::publisher::PublisherBackend, raw_sample::RawSampleMut, sample_mut::SampleMut,
+    port::publisher::PublisherSharedState, raw_sample::RawSampleMut, sample_mut::SampleMut,
     service::header::publish_subscribe::Header,
 };
 
@@ -265,14 +265,14 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
 {
     pub(crate) fn new(
-        publisher_backend: &Arc<PublisherBackend<Service>>,
+        publisher_shared_state: &Arc<PublisherSharedState<Service>>,
         ptr: RawSampleMut<Header, UserHeader, MaybeUninit<Payload>>,
         offset_to_chunk: PointerOffset,
         sample_size: usize,
     ) -> Self {
         Self {
             sample: SampleMut {
-                publisher_backend: Arc::clone(publisher_backend),
+                publisher_shared_state: Arc::clone(publisher_shared_state),
                 ptr,
                 offset_to_chunk,
                 sample_size,
@@ -347,14 +347,14 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
 {
     pub(crate) fn new(
-        publisher_backend: &Arc<PublisherBackend<Service>>,
+        publisher_shared_state: &Arc<PublisherSharedState<Service>>,
         ptr: RawSampleMut<Header, UserHeader, [MaybeUninit<Payload>]>,
         offset_to_chunk: PointerOffset,
         sample_size: usize,
     ) -> Self {
         Self {
             sample: SampleMut {
-                publisher_backend: Arc::clone(publisher_backend),
+                publisher_shared_state: Arc::clone(publisher_shared_state),
                 ptr,
                 offset_to_chunk,
                 sample_size,
