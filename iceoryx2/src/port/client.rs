@@ -115,7 +115,7 @@ impl core::fmt::Display for RequestSendError {
 impl core::error::Error for RequestSendError {}
 
 #[derive(Debug)]
-pub(crate) struct ClientBackend<Service: service::Service> {
+pub(crate) struct ClientSharedState<Service: service::Service> {
     pub(crate) request_sender: Sender<Service>,
     pub(crate) response_receiver: Receiver<Service>,
     is_active: IoxAtomicBool,
@@ -124,7 +124,7 @@ pub(crate) struct ClientBackend<Service: service::Service> {
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
 }
 
-impl<Service: service::Service> ClientBackend<Service> {
+impl<Service: service::Service> ClientSharedState<Service> {
     pub(crate) fn send_request(
         &self,
         offset: PointerOffset,
@@ -233,7 +233,7 @@ pub struct Client<
 > {
     client_handle: Option<ContainerHandle>,
     client_port_id: UniqueClientId,
-    backend: Arc<ClientBackend<Service>>,
+    client_shared_state: Arc<ClientSharedState<Service>>,
     request_id_counter: IoxAtomicU64,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -251,7 +251,7 @@ impl<
 {
     fn drop(&mut self) {
         if let Some(handle) = self.client_handle {
-            self.backend
+            self.client_shared_state
                 .request_sender
                 .service_state
                 .dynamic_storage
@@ -259,7 +259,9 @@ impl<
                 .request_response()
                 .release_client_handle(handle)
         }
-        self.backend.is_active.store(false, Ordering::Relaxed);
+        self.client_shared_state
+            .is_active
+            .store(false, Ordering::Relaxed);
     }
 }
 
@@ -329,7 +331,7 @@ impl<
         let mut new_self = Self {
             request_id_counter: IoxAtomicU64::new(0),
             client_handle: None,
-            backend: Arc::new(ClientBackend {
+            client_shared_state: Arc::new(ClientSharedState {
                 available_channel_ids: {
                     let mut queue = Queue::new(number_of_requests);
                     for n in 0..number_of_requests {
@@ -386,7 +388,7 @@ impl<
             _response_header: PhantomData,
         };
 
-        if let Err(e) = new_self.backend.force_update_connections() {
+        if let Err(e) = new_self.client_shared_state.force_update_connections() {
             warn!(from new_self,
                 "The new Client port is unable to connect to every Server port, caused by {:?}.", e);
         }
@@ -422,7 +424,9 @@ impl<
     /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
     /// if the [`Server`](crate::port::server::Server)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
-        self.backend.request_sender.unable_to_deliver_strategy
+        self.client_shared_state
+            .request_sender
+            .unable_to_deliver_strategy
     }
 
     /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
@@ -496,17 +500,18 @@ impl<
         LoanError,
     > {
         let chunk = self
-            .backend
+            .client_shared_state
             .request_sender
-            .allocate(self.backend.request_sender.sample_layout(1))?;
+            .allocate(self.client_shared_state.request_sender.sample_layout(1))?;
 
-        let channel_id = match unsafe { &mut *self.backend.available_channel_ids.get() }.pop() {
-            Some(channel_id) => channel_id,
-            None => {
-                fatal_panic!(from self,
+        let channel_id =
+            match unsafe { &mut *self.client_shared_state.available_channel_ids.get() }.pop() {
+                Some(channel_id) => channel_id,
+                None => {
+                    fatal_panic!(from self,
                     "This should never happen! There are no more available response channels.");
-            }
-        };
+                }
+            };
 
         unsafe {
             (chunk.header as *mut service::header::request_response::RequestHeader).write(
@@ -536,7 +541,7 @@ impl<
                 sample_size: chunk.size,
                 channel_id,
                 offset_to_chunk: chunk.offset,
-                client_backend: self.backend.clone(),
+                client_shared_state: self.client_shared_state.clone(),
                 _response_payload: PhantomData,
                 _response_header: PhantomData,
                 was_sample_sent: IoxAtomicBool::new(false),
@@ -621,6 +626,6 @@ impl<
     for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
-        self.backend.update_connections()
+        self.client_shared_state.update_connections()
     }
 }

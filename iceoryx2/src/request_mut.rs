@@ -51,7 +51,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 use crate::{
     pending_response::PendingResponse,
-    port::client::{ClientBackend, RequestSendError},
+    port::client::{ClientSharedState, RequestSendError},
     raw_sample::RawSampleMut,
     service,
 };
@@ -73,7 +73,7 @@ pub struct RequestMut<
     >,
     pub(crate) sample_size: usize,
     pub(crate) offset_to_chunk: PointerOffset,
-    pub(crate) client_backend: Arc<ClientBackend<Service>>,
+    pub(crate) client_shared_state: Arc<ClientSharedState<Service>>,
     pub(crate) was_sample_sent: IoxAtomicBool,
     pub(crate) channel_id: ChannelId,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
@@ -89,7 +89,7 @@ impl<
     > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        if unsafe { &mut *self.client_backend.available_channel_ids.get() }
+        if unsafe { &mut *self.client_shared_state.available_channel_ids.get() }
             .push(self.header().channel_id)
             == false
         {
@@ -97,11 +97,11 @@ impl<
                     "This should never happen! The channel id could not be returned.");
         }
 
-        self.client_backend
+        self.client_shared_state
             .request_sender
             .release_sample(self.offset_to_chunk);
         if !self.was_sample_sent.load(Ordering::Relaxed) {
-            self.client_backend
+            self.client_shared_state
                 .request_sender
                 .loan_counter
                 .fetch_sub(1, Ordering::Relaxed);
@@ -209,12 +209,12 @@ impl<
         RequestSendError,
     > {
         match self
-            .client_backend
+            .client_shared_state
             .send_request(self.offset_to_chunk, self.sample_size)
         {
             Ok(number_of_server_connections) => {
                 self.was_sample_sent.store(true, Ordering::Relaxed);
-                self.client_backend
+                self.client_shared_state
                     .request_sender
                     .loan_counter
                     .fetch_sub(1, Ordering::Relaxed);
