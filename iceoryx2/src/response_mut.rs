@@ -37,6 +37,7 @@ pub struct ResponseMut<Service: service::Service, ResponsePayload: Debug, Respon
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
     pub(crate) channel_id: ChannelId,
+    pub(crate) connection_id: usize,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
@@ -120,11 +121,14 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
         fail!(from self, when self.shared_state.update_connections(),
             "{} since the connections could not be updated.", msg);
 
-        self.shared_state.response_sender.deliver_offset(
-            self.offset_to_chunk,
-            self.sample_size,
-            self.channel_id,
-        )?;
+        self.shared_state
+            .response_sender
+            .deliver_offset_to_connection(
+                self.offset_to_chunk,
+                self.sample_size,
+                self.channel_id,
+                self.connection_id,
+            )?;
 
         Ok(())
     }
