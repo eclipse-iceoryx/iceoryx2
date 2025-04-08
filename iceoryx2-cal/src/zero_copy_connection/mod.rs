@@ -140,6 +140,7 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
     fn max_supported_shared_memory_segments(self, value: u8) -> Self;
     fn number_of_samples_per_segment(self, value: usize) -> Self;
     fn number_of_channels(self, value: usize) -> Self;
+    fn initial_channel_state(self, value: u64) -> Self;
     /// The timeout defines how long the [`ZeroCopyConnectionBuilder`] should wait for
     /// concurrent
     /// [`ZeroCopyConnectionBuilder::create_sender()`] or
