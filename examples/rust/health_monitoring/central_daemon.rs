@@ -19,6 +19,7 @@ const DEADLINE_SERVICE_1: Duration = Duration::from_millis(1500);
 const DEADLINE_SERVICE_2: Duration = Duration::from_millis(2000);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_log_level_from_env_or(LogLevel::Info);
     let service_name_1 = ServiceName::new("service_1")?;
     let service_name_2 = ServiceName::new("service_2")?;
 
