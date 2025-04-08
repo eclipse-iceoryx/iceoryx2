@@ -17,6 +17,7 @@
 #include "iox/duration.hpp"
 #include "iox/string.hpp"
 #include "iox/vector.hpp"
+#include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
@@ -38,6 +39,7 @@ struct ServiceNameListenerPair {
 
 auto main(int argc, char** argv) -> int {
     using namespace iox2;
+    set_log_level_from_env_or(LogLevel::Info);
     auto args = Args::parse(argc, argv, "Notifier of the event multiplexing example.");
 
     auto service_name_1 = ServiceName::create(args.service1().c_str()).expect("valid service name");

@@ -12,6 +12,7 @@
 
 #include "iox2/callback_progression.hpp"
 #include "iox2/config.hpp"
+#include "iox2/log.hpp"
 #include "iox2/service.hpp"
 #include "iox2/service_type.hpp"
 
@@ -19,6 +20,7 @@
 
 auto main() -> int {
     using namespace iox2;
+    set_log_level_from_env_or(LogLevel::Info);
 
     Service<ServiceType::Ipc>::list(Config::global_config(), [](auto service) {
         std::cout << service.static_details << std::endl;

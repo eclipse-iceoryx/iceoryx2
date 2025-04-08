@@ -13,6 +13,7 @@
 #include <iostream>
 
 #include "iox/duration.hpp"
+#include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service_name.hpp"
 #include "iox2/service_type.hpp"
@@ -30,6 +31,7 @@ void find_and_cleanup_dead_nodes();
 }
 
 auto main() -> int {
+    set_log_level_from_env_or(LogLevel::Info);
     auto service_name_1 = ServiceName::create("service_1").expect("");
     auto service_name_2 = ServiceName::create("service_2").expect("");
 
