@@ -1843,23 +1843,62 @@ mod zero_copy_connection {
 
     #[test]
     fn channel_state_is_set_to_default_value_on_creation<Sut: ZeroCopyConnection>() {
+        const NUMBER_OF_CHANNELS: usize = 12;
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();
 
         let sut_receiver = Sut::Builder::new(&name)
             .config(&config)
+            .number_of_channels(NUMBER_OF_CHANNELS)
             .create_receiver()
             .unwrap();
 
-        assert_that!(sut_receiver.custom_channel_state(ChannelId::new(0)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+        for id in 0..NUMBER_OF_CHANNELS {
+            assert_that!(sut_receiver.custom_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+        }
         drop(sut_receiver);
 
         let sut_sender = Sut::Builder::new(&name)
             .config(&config)
+            .number_of_channels(NUMBER_OF_CHANNELS)
             .create_sender()
             .unwrap();
 
-        assert_that!(sut_sender.custom_channel_state(ChannelId::new(0)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+        for id in 0..NUMBER_OF_CHANNELS {
+            assert_that!(sut_sender.custom_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+        }
+        drop(sut_sender);
+    }
+
+    #[test]
+    fn initial_channel_state_can_be_defined_for_all_channels<Sut: ZeroCopyConnection>() {
+        const NUMBER_OF_CHANNELS: usize = 11;
+        const CUSTOM_INITIAL_CHANNEL_STATE: u64 = 981273;
+        let name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut_receiver = Sut::Builder::new(&name)
+            .config(&config)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .initial_channel_state(CUSTOM_INITIAL_CHANNEL_STATE)
+            .create_receiver()
+            .unwrap();
+
+        for id in 0..NUMBER_OF_CHANNELS {
+            assert_that!(sut_receiver.custom_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CUSTOM_INITIAL_CHANNEL_STATE);
+        }
+        drop(sut_receiver);
+
+        let sut_sender = Sut::Builder::new(&name)
+            .config(&config)
+            .number_of_channels(NUMBER_OF_CHANNELS)
+            .initial_channel_state(CUSTOM_INITIAL_CHANNEL_STATE)
+            .create_sender()
+            .unwrap();
+
+        for id in 0..NUMBER_OF_CHANNELS {
+            assert_that!(sut_sender.custom_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CUSTOM_INITIAL_CHANNEL_STATE);
+        }
         drop(sut_sender);
     }
 
