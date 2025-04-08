@@ -400,26 +400,39 @@ impl<
         >,
         ReceiveError,
     > {
-        Ok(self.receive_impl()?.map(|(details, chunk)| {
-            let header = unsafe {
-                &*(chunk.header as *const service::header::request_response::RequestHeader)
-            };
-            ActiveRequest {
-                details,
-                request_id: header.request_id,
-                channel_id: header.channel_id,
-                shared_state: self.shared_state.clone(),
-                ptr: unsafe {
-                    RawSample::new_unchecked(
-                        chunk.header.cast(),
-                        chunk.user_header.cast(),
-                        chunk.payload.cast(),
-                    )
-                },
-                _response_payload: PhantomData,
-                _response_header: PhantomData,
+        match self.receive_impl()? {
+            Some((details, chunk)) => {
+                let header = unsafe {
+                    &*(chunk.header as *const service::header::request_response::RequestHeader)
+                };
+
+                match self
+                    .shared_state
+                    .response_sender
+                    .get_connection_id_of(header.client_port_id.value())
+                {
+                    Some(connection_id) => Ok(Some(ActiveRequest {
+                        details,
+                        request_id: header.request_id,
+                        channel_id: header.channel_id,
+                        connection_id,
+                        shared_state: self.shared_state.clone(),
+                        ptr: unsafe {
+                            RawSample::new_unchecked(
+                                chunk.header.cast(),
+                                chunk.user_header.cast(),
+                                chunk.payload.cast(),
+                            )
+                        },
+                        _response_payload: PhantomData,
+                        _response_header: PhantomData,
+                    })),
+
+                    None => return Ok(None),
+                }
             }
-        }))
+            None => return Ok(None),
+        }
     }
 }
 

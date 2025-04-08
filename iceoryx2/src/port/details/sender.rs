@@ -134,13 +134,25 @@ impl<Service: service::Service> Sender<Service> {
         }
     }
 
-    pub(crate) fn deliver_offset(
+    pub(crate) fn get_connection_id_of(&self, receiver_port_id: u128) -> Option<usize> {
+        for i in 0..self.len() {
+            if let Some(connection) = self.get(i) {
+                if connection.receiver_port_id == receiver_port_id {
+                    return Some(i);
+                }
+            }
+        }
+
+        None
+    }
+
+    fn deliver_offset_to_connection_impl(
         &self,
         offset: PointerOffset,
         sample_size: usize,
         channel_id: ChannelId,
+        connection_id: usize,
     ) -> Result<usize, SendError> {
-        self.retrieve_returned_samples();
         let deliver_call = match self.unable_to_deliver_strategy {
             UnableToDeliverStrategy::Block => {
                 <Service::Connection as ZeroCopyConnection>::Sender::blocking_send
@@ -151,51 +163,75 @@ impl<Service: service::Service> Sender<Service> {
         };
 
         let mut number_of_recipients = 0;
-        for i in 0..self.len() {
-            if let Some(ref connection) = self.get(i) {
-                match deliver_call(&connection.sender, offset, sample_size, channel_id) {
-                    Err(ZeroCopySendError::ReceiveBufferFull)
-                    | Err(ZeroCopySendError::UsedChunkListFull) => {
-                        /* causes no problem
-                         *   blocking_send => can never happen
-                         *   try_send => we tried and expect that the buffer is full
-                         * */
-                    }
-                    Err(ZeroCopySendError::ConnectionCorrupted) => match &self.degradation_callback
-                    {
-                        Some(c) => match c.call(
-                            &self.service_state.static_config,
-                            self.sender_port_id,
-                            connection.receiver_port_id,
-                        ) {
-                            DegradationAction::Ignore => (),
-                            DegradationAction::Warn => {
-                                error!(from self,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                        offset, connection.receiver_port_id);
-                            }
-                            DegradationAction::Fail => {
-                                fail!(from self, with SendError::ConnectionCorrupted,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                        offset, connection.receiver_port_id);
-                            }
-                        },
-                        None => {
+        if let Some(ref connection) = self.get(connection_id) {
+            match deliver_call(&connection.sender, offset, sample_size, channel_id) {
+                Err(ZeroCopySendError::ReceiveBufferFull)
+                | Err(ZeroCopySendError::UsedChunkListFull) => {
+                    /* causes no problem
+                     *   blocking_send => can never happen
+                     *   try_send => we tried and expect that the buffer is full
+                     * */
+                }
+                Err(ZeroCopySendError::ConnectionCorrupted) => match &self.degradation_callback {
+                    Some(c) => match c.call(
+                        &self.service_state.static_config,
+                        self.sender_port_id,
+                        connection.receiver_port_id,
+                    ) {
+                        DegradationAction::Ignore => (),
+                        DegradationAction::Warn => {
                             error!(from self,
-                                    "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
-                                    offset, connection.receiver_port_id);
+                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                        offset, connection.receiver_port_id);
+                        }
+                        DegradationAction::Fail => {
+                            fail!(from self, with SendError::ConnectionCorrupted,
+                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                        offset, connection.receiver_port_id);
                         }
                     },
-                    Ok(overflow) => {
-                        self.borrow_sample(offset);
-                        number_of_recipients += 1;
+                    None => {
+                        error!(from self,
+                                    "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                    offset, connection.receiver_port_id);
+                    }
+                },
+                Ok(overflow) => {
+                    self.borrow_sample(offset);
+                    number_of_recipients += 1;
 
-                        if let Some(old) = overflow {
-                            self.release_sample(old)
-                        }
+                    if let Some(old) = overflow {
+                        self.release_sample(old)
                     }
                 }
             }
+        }
+        Ok(number_of_recipients)
+    }
+
+    pub(crate) fn deliver_offset_to_connection(
+        &self,
+        offset: PointerOffset,
+        sample_size: usize,
+        channel_id: ChannelId,
+        connection_id: usize,
+    ) -> Result<usize, SendError> {
+        self.retrieve_returned_samples();
+        self.deliver_offset_to_connection_impl(offset, sample_size, channel_id, connection_id)
+    }
+
+    pub(crate) fn deliver_offset(
+        &self,
+        offset: PointerOffset,
+        sample_size: usize,
+        channel_id: ChannelId,
+    ) -> Result<usize, SendError> {
+        self.retrieve_returned_samples();
+
+        let mut number_of_recipients = 0;
+        for i in 0..self.len() {
+            number_of_recipients +=
+                self.deliver_offset_to_connection_impl(offset, sample_size, channel_id, i)?;
         }
         Ok(number_of_recipients)
     }
