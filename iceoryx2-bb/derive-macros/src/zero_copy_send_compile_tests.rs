@@ -22,7 +22,7 @@
 /// }
 /// ```
 #[cfg(doctest)]
-fn zero_copy_send_derive_does_not_work_for_named_struct_when_not_all_members_are_relocatable() {}
+fn zero_copy_send_derive_does_not_work_for_named_struct_when_not_all_members_implement_it() {}
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -33,7 +33,7 @@ fn zero_copy_send_derive_does_not_work_for_named_struct_when_not_all_members_are
 /// struct UnnamedTestStruct(i32, u32, Foo);
 /// ```
 #[cfg(doctest)]
-fn zero_copy_send_derive_does_not_work_for_unnamed_struct_when_not_all_members_are_relocatable() {}
+fn zero_copy_send_derive_does_not_work_for_unnamed_struct_when_not_all_members_implement_it() {}
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -54,8 +54,8 @@ fn zero_copy_send_derive_does_not_work_for_unit_like_struct() {}
 /// }
 /// ```
 #[cfg(doctest)]
-fn zero_copy_send_derive_does_not_work_for_generic_named_struct_when_not_all_members_are_relocatable(
-) {
+fn zero_copy_send_derive_does_not_work_for_generic_named_struct_when_not_all_members_implement_it()
+{
 }
 
 /// ``` compile_fail
@@ -65,6 +65,6 @@ fn zero_copy_send_derive_does_not_work_for_generic_named_struct_when_not_all_mem
 /// struct GenericUnnamedTestStruct<T1, T2>(T1, T2);
 /// ```
 #[cfg(doctest)]
-fn zero_copy_send_derive_does_not_work_for_generic_unnamed_struct_when_not_all_members_are_relocatable(
+fn zero_copy_send_derive_does_not_work_for_generic_unnamed_struct_when_not_all_members_implement_it(
 ) {
 }

@@ -18,8 +18,6 @@
 
 #[macro_use]
 pub mod enum_gen;
-pub mod identifiable;
-pub mod relocatable;
 pub mod zero_copy_send;
 
 mod as_cstr;

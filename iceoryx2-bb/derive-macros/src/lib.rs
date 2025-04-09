@@ -104,7 +104,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-/// Implements the [`iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend`] trait when all fields of the struct implement [`iceoryx2_bb_elementary::relocatable::Relocatable`].
+/// Implements the [`iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend`] trait when all fields of the struct implement it.
 ///
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -136,7 +136,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 let field_inits = fields_named.named.iter().map(|f| {
                     let field_name = &f.ident;
                     quote! {
-                        iceoryx2_bb_elementary::relocatable::Relocatable::_is_relocatable(&self.#field_name);
+                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::type_name(&self.#field_name);
                     }
                 });
 
@@ -151,7 +151,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 let field_inits = fields_unnamed.unnamed.iter().enumerate().map(|(i, _)| {
                     let field_index = syn::Index::from(i);
                     quote! {
-                        iceoryx2_bb_elementary::relocatable::Relocatable::_is_relocatable(&self.#field_index);
+                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::type_name(&self.#field_index);
                     }
                 });
 
@@ -173,10 +173,9 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        unsafe impl #impl_generics iceoryx2_bb_elementary::identifiable::Identifiable for #struct_name #ty_generics #where_clause {
+        unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {
             #get_name_impl
         }
-        unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {}
     };
 
     TokenStream::from(expanded)
