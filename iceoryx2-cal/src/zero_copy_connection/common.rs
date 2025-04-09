@@ -787,10 +787,18 @@ pub mod details {
                 segment_details.used_chunk_list.remove_all(|index| {
                     callback(PointerOffset::from_offset_and_segment_id(
                         index * segment_details.sample_size.load(Ordering::Relaxed),
-                        SegmentId::new(n as u8),
+                        self.segment_id_from_index(n),
                     ))
                 });
             }
+        }
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> Sender<Storage> {
+        fn segment_id_from_index(&self, index: usize) -> SegmentId {
+            let storage = self.storage.get();
+            let number_of_segments = storage.number_of_segments as usize;
+            SegmentId::new((index - (index / number_of_segments) * number_of_segments) as u8)
         }
     }
 
