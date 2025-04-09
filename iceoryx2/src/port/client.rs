@@ -72,7 +72,7 @@ use super::{
         segment_state::SegmentState,
         sender::{ReceiverDetails, Sender},
     },
-    update_connections::{ConnectionFailure, UpdateConnections},
+    update_connections::ConnectionFailure,
     LoanError, SendError,
 };
 
@@ -622,19 +622,5 @@ impl<
         LoanError,
     > {
         Ok(self.loan_uninit()?.write_payload(RequestPayload::default()))
-    }
-}
-
-impl<
-        Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
-    > UpdateConnections
-    for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
-{
-    fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
-        self.client_shared_state.update_connections()
     }
 }

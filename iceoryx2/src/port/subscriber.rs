@@ -59,7 +59,7 @@ use super::details::chunk::Chunk;
 use super::details::chunk_details::ChunkDetails;
 use super::details::receiver::*;
 use super::port_identifiers::UniqueSubscriberId;
-use super::update_connections::{ConnectionFailure, UpdateConnections};
+use super::update_connections::ConnectionFailure;
 use super::ReceiveError;
 
 /// Describes the failures when a new [`Subscriber`] is created via the
@@ -259,11 +259,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
         self.receiver.receive(ChannelId::new(0))
     }
-}
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> UpdateConnections
-    for Subscriber<Service, Payload, UserHeader>
-{
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
             self.receiver
