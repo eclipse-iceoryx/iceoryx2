@@ -180,16 +180,29 @@ impl<
     pub fn receive(
         &self,
     ) -> Result<Option<Response<Service, ResponsePayload, ResponseHeader>>, ReceiveError> {
-        Ok(self.receive_impl()?.map(|(details, chunk)| Response {
-            details,
-            channel_id: self.request.channel_id,
-            ptr: unsafe {
-                RawSample::new_unchecked(
-                    chunk.header.cast(),
-                    chunk.user_header.cast(),
-                    chunk.payload.cast(),
-                )
-            },
-        }))
+        loop {
+            match self.receive_impl()? {
+                None => return Ok(None),
+                Some((details, chunk)) => {
+                    let response = Response {
+                        details,
+                        channel_id: self.request.channel_id,
+                        ptr: unsafe {
+                            RawSample::new_unchecked(
+                                chunk.header.cast(),
+                                chunk.user_header.cast(),
+                                chunk.payload.cast::<ResponsePayload>(),
+                            )
+                        },
+                    };
+
+                    if response.header().request_id != self.request.header().request_id {
+                        continue;
+                    }
+
+                    return Ok(Some(response));
+                }
+            }
+        }
     }
 }
