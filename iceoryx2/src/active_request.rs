@@ -35,6 +35,8 @@
 //!     response.write_payload(456).send()?;
 //!     # drop(pending_response);
 //! }
+//!
+//! # Ok(())
 //! # }
 //! ```
 
@@ -189,6 +191,8 @@ impl<
 
     /// Loans uninitialized memory for a [`ResponseMut`] where the user can writes its payload to.
     ///
+    /// # Example
+    ///
     /// ```
     /// use iceoryx2::prelude::*;
     ///
@@ -206,6 +210,8 @@ impl<
     /// let active_request = server.receive()?.unwrap();
     /// let response = active_request.loan_uninit()?;
     /// response.write_payload(456).send()?;
+    ///
+    /// # Ok(())
     /// # }
     /// ```
     pub fn loan_uninit(
@@ -259,6 +265,8 @@ impl<
     /// [`Client`](crate::port::client::Client).
     /// This is not a zero-copy API. Use [`ActiveRequest::loan_uninit()`] instead.
     ///
+    /// # Example
+    ///
     /// ```
     /// use iceoryx2::prelude::*;
     ///
@@ -275,6 +283,8 @@ impl<
     ///
     /// let active_request = server.receive()?.unwrap();
     /// active_request.send_copy(456)?;
+    ///
+    /// # Ok(())
     /// # }
     /// ```
     pub fn send_copy(&self, value: ResponsePayload) -> Result<(), SendError> {
@@ -322,6 +332,8 @@ impl<
     /// Loans default initialized memory for a [`ResponseMut`] where the user can writes its
     /// payload to.
     ///
+    /// # Example
+    ///
     /// ```
     /// use iceoryx2::prelude::*;
     ///
@@ -340,6 +352,8 @@ impl<
     /// let mut response = active_request.loan()?;
     /// *response = 789;
     /// response.send()?;
+    ///
+    /// # Ok(())
     /// # }
     /// ```
     pub fn loan(&self) -> Result<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError> {

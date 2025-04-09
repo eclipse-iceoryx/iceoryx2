@@ -67,6 +67,15 @@ mod active_request {
     }
 
     #[test]
+    fn is_not_connected_when_pending_response_is_dropped_immediately<Sut: Service>() {
+        let test = TestFixture::<Sut>::new();
+        test.client.send_copy(123).unwrap();
+
+        let sut = test.server.receive().unwrap().unwrap();
+        assert_that!(sut.is_connected(), eq false);
+    }
+
+    #[test]
     fn keeps_being_connected_when_client_goes_out_of_scope<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let client2 = test.service.client_builder().create().unwrap();
