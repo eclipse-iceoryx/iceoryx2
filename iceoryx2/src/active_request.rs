@@ -10,6 +10,34 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! # let service = node
+//! #     .service_builder(&"My/Funk/ServiceName".try_into()?)
+//! #     .request_response::<u64, u64>()
+//! #     .open_or_create()?;
+//! # let client = service.client_builder().create()?;
+//! # let server = service.server_builder().create()?;
+//! #
+//! # let pending_response = client.send_copy(123)?;
+//!
+//! let active_request = server.receive()?.unwrap();
+//!
+//! // send a stream of responses until the corresponding client
+//! // lets the pending response go out-of-scope and signaling that there is no more interest
+//! // in further responses
+//! while active_request.is_connected() {
+//!     let response = active_request.loan_uninit()?;
+//!     response.write_payload(456).send()?;
+//!     # drop(pending_response);
+//! }
+//! # }
+//! ```
+
 use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
 use std::sync::Arc;
 
@@ -148,6 +176,9 @@ impl<
         );
     }
 
+    /// Returns [`true`] until the [`PendingResponse`](crate::pending_response::PendingResponse)
+    /// goes out of scope on the [`Client`](crate::port::client::Client)s side indicating that the
+    /// [`Client`](crate::port::client::Client) no longer receives the [`ResponseMut`].
     pub fn is_connected(&self) -> bool {
         self.shared_state.response_sender.has_channel_state(
             self.channel_id,
@@ -156,6 +187,27 @@ impl<
         )
     }
 
+    /// Loans uninitialized memory for a [`ResponseMut`] where the user can writes its payload to.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node
+    /// #     .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .request_response::<u64, u64>()
+    /// #     .open_or_create()?;
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// #
+    /// # let pending_response = client.send_copy(123)?;
+    ///
+    /// let active_request = server.receive()?.unwrap();
+    /// let response = active_request.loan_uninit()?;
+    /// response.write_payload(456).send()?;
+    /// # }
+    /// ```
     pub fn loan_uninit(
         &self,
     ) -> Result<ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>, LoanError>
@@ -202,6 +254,29 @@ impl<
         })
     }
 
+    /// Sends a copy of the provided data to the
+    /// [`PendingResponse`](crate::pending_response::PendingResponse) of the corresponding
+    /// [`Client`](crate::port::client::Client).
+    /// This is not a zero-copy API. Use [`ActiveRequest::loan_uninit()`] instead.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node
+    /// #     .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .request_response::<u64, u64>()
+    /// #     .open_or_create()?;
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// #
+    /// # let pending_response = client.send_copy(123)?;
+    ///
+    /// let active_request = server.receive()?.unwrap();
+    /// active_request.send_copy(456)?;
+    /// # }
+    /// ```
     pub fn send_copy(&self, value: ResponsePayload) -> Result<(), SendError> {
         let msg = "Unable to send copy of response";
         let response = fail!(from self,
@@ -244,6 +319,29 @@ impl<
         ResponseHeader: Debug,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    /// Loans default initialized memory for a [`ResponseMut`] where the user can writes its
+    /// payload to.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node
+    /// #     .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .request_response::<u64, u64>()
+    /// #     .open_or_create()?;
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// #
+    /// # let pending_response = client.send_copy(123)?;
+    ///
+    /// let active_request = server.receive()?.unwrap();
+    /// let mut response = active_request.loan()?;
+    /// *response = 789;
+    /// response.send()?;
+    /// # }
+    /// ```
     pub fn loan(&self) -> Result<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError> {
         Ok(self
             .loan_uninit()?
