@@ -33,6 +33,15 @@
 //! println!("send request to {} server",
 //!           pending_response.number_of_server_connections());
 //!
+//! // we receive a stream of responses from the server and are interested in 5 of them
+//! for i in 0..5 {
+//!     // busy loop until we receive a response
+//!     while !pending_response.has_response() && pending_response.is_connected() {}
+//!
+//!     let response = pending_response.receive()?.unwrap();
+//!     println!("received response: {}", *response);
+//! }
+//!
 //! // We are no longer interested in the responses from the server and
 //! // drop the object. This informs the corresponding servers, that hold
 //! // an ActiveRequest that the connection was terminated from the client
@@ -132,6 +141,10 @@ impl<
             .invalidate_channel_state(self.request.channel_id, self.request.header().request_id);
     }
 
+    /// Returns [`true`] until the [`ActiveRequest`](crate::active_request::ActiveRequest)
+    /// goes out of scope on the [`Server`](crate::port::server::Server)s side indicating that the
+    /// [`Server`](crate::port::server::Server) will no longer send [`Response`]s.
+    /// It also returns [`false`] when there are no [`Server`](crate::port::server::Server)s.
     pub fn is_connected(&self) -> bool {
         self.request
             .client_shared_state
@@ -167,6 +180,8 @@ impl<
         self.number_of_server_connections
     }
 
+    /// Returns [`true`] when a [`Server`](crate::port::server::Server) has sent a [`Response`]
+    /// otherwise [`false`].
     pub fn has_response(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.request.client_shared_state.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
@@ -187,6 +202,36 @@ impl<
             .receive(self.request.channel_id)
     }
 
+    /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
+    /// received the [`RequestMut`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, u64>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// # let request = client.loan_uninit()?;
+    /// # let request = request.write_payload(0);
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// if let Some(response) = pending_response.receive()? {
+    ///     println!("received response: {}", *response);
+    /// }
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn receive(
         &self,
     ) -> Result<Option<Response<Service, ResponsePayload, ResponseHeader>>, ReceiveError> {
