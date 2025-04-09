@@ -26,7 +26,7 @@ pub unsafe trait Identifiable {
     ///
     ///  * The user must guarantee that all types, also definitions in different languages, have
     ///    the same memory layout.
-    unsafe fn type_name() -> &'static str {
+    unsafe fn type_name(&self) -> &'static str {
         core::any::type_name::<Self>()
     }
 }

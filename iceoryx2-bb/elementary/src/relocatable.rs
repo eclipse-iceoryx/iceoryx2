@@ -27,7 +27,11 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 ///    its internal structure.
 ///    Examples:
 ///       * A list must be implemented using indices to structure itself.
-pub unsafe trait Relocatable {}
+pub unsafe trait Relocatable {
+    #[doc(hidden)]
+    // dummy function to check if a type is relocatable for ZeroCopySend derive macro
+    unsafe fn _is_relocatable(&self) {}
+}
 
 unsafe impl Relocatable for usize {}
 unsafe impl Relocatable for u8 {}

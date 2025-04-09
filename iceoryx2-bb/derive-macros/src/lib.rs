@@ -20,7 +20,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields, Type};
+use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 /// Implements the [`iceoryx2_bb_elementary::placement_default::PlacementDefault`] trait when all
 /// fields of the struct implement it.
@@ -104,15 +104,64 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
+/// Implements the [`iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend`] trait when all fields of the struct implement [`iceoryx2_bb_elementary::relocatable::Relocatable`].
+///
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+///
+/// #[derive(ZeroCopySend)]
+/// struct MyZeroCopySendStruct {
+///     val1: u64,
+///     val2: u64,
+/// }
+///
+/// fn needs_zero_copy_send_type<T: ZeroCopySend>(_: &T) {}
+///
+/// let x = MyZeroCopySendStruct{
+///     val1: 23,
+///     val2: 4,
+/// };
+/// needs_zero_copy_send_type(&x);
+/// ```
 #[proc_macro_derive(ZeroCopySend)]
 pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
-    let type_name = &ast.ident;
+    let struct_name = &ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
-    let fields = match ast.data {
-        Data::Struct(data_struct) => match data_struct.fields {
-            Fields::Named(fields_named) => fields_named.named,
-            Fields::Unnamed(fields_unnamed) => fields_unnamed.unnamed,
+    let get_name_impl = match ast.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Named(ref fields_named) => {
+                let field_inits = fields_named.named.iter().map(|f| {
+                    let field_name = &f.ident;
+                    quote! {
+                        iceoryx2_bb_elementary::relocatable::Relocatable::_is_relocatable(&self.#field_name);
+                    }
+                });
+
+                quote! {
+                    unsafe fn type_name(&self) -> &'static str {
+                        #(#field_inits)*
+                        core::any::type_name::<Self>()
+                    }
+                }
+            }
+            Fields::Unnamed(ref fields_unnamed) => {
+                let field_inits = fields_unnamed.unnamed.iter().enumerate().map(|(i, _)| {
+                    let field_index = syn::Index::from(i);
+                    quote! {
+                        iceoryx2_bb_elementary::relocatable::Relocatable::_is_relocatable(&self.#field_index);
+                    }
+                });
+
+                quote! {
+                    unsafe fn type_name(&self) -> &'static str {
+                        #(#field_inits)*
+                        core::any::type_name::<Self>()
+                    }
+                }
+            }
             Fields::Unit => {
                 return quote! { compile_error!("ZeroCopySend cannot be implemented for Unit-like structs"); }.into();
             }
@@ -123,23 +172,14 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
         }
     };
 
-    let field_types: Vec<&Type> = fields.iter().map(|f| &f.ty).collect();
-
-    let gen = quote! {
-        // use constant item definition to force compile-time evaluation
-        const _: () = {
-            // a dummy function that is never called to check if all field types of the struct
-            // implement Relocatable
-            fn _assert_all_fields_are_relocatable()
-            where #(#field_types: iceoryx2_bb_elementary::relocatable::Relocatable),* {}
-        };
-
-        // TODO: without path the user has to include Identifiable, Relocatable and ZeroCopySend traits
-        unsafe impl iceoryx2_bb_elementary::identifiable::Identifiable for #type_name {}
-        unsafe impl iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #type_name{}
-
+    let expanded = quote! {
+        unsafe impl #impl_generics iceoryx2_bb_elementary::identifiable::Identifiable for #struct_name #ty_generics #where_clause {
+            #get_name_impl
+        }
+        unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {}
     };
-    gen.into()
+
+    TokenStream::from(expanded)
 }
 
 #[cfg(doctest)]
