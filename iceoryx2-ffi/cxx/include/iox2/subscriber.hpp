@@ -46,14 +46,6 @@ class Subscriber {
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
     auto receive() const -> iox::expected<iox::optional<Sample<S, Payload, UserHeader>>, ReceiveError>;
 
-    /// Explicitly updates all connections to the [`Subscriber`]s. This is
-    /// required to be called whenever a new [`Subscriber`] connected to
-    /// the service. It is done implicitly whenever [`SampleMut::send()`] or
-    /// [`Publisher::send_copy()`] is called.
-    /// When a [`Subscriber`] is connected that requires a history this
-    /// call will deliver it.
-    auto update_connections() const -> iox::expected<void, ConnectionFailure>;
-
     /// Returns true when the [`Subscriber`] has [`Sample`]s that can be
     /// acquired via [`Subscriber::receive()`], otherwise false.
     auto has_samples() const -> iox::expected<bool, ConnectionFailure>;
@@ -141,17 +133,6 @@ inline auto Subscriber<S, Payload, UserHeader>::receive() const
 
     return iox::err(iox::into<ReceiveError>(result));
 }
-
-template <ServiceType S, typename Payload, typename UserHeader>
-inline auto Subscriber<S, Payload, UserHeader>::update_connections() const -> iox::expected<void, ConnectionFailure> {
-    auto result = iox2_subscriber_update_connections(&m_handle);
-    if (result != IOX2_OK) {
-        return iox::err(iox::into<ConnectionFailure>(result));
-    }
-
-    return iox::ok();
-}
-
 } // namespace iox2
 
 #endif

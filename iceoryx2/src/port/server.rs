@@ -69,7 +69,7 @@ use super::{
         data_segment::DataSegmentType,
         receiver::{Receiver, SenderDetails},
     },
-    update_connections::{ConnectionFailure, UpdateConnections},
+    update_connections::ConnectionFailure,
     ReceiveError, UniqueServerId,
 };
 
@@ -345,7 +345,7 @@ impl<
 
     /// Returns true if the [`Server`] has [`RequestMut`](crate::request_mut::RequestMut)s in its buffer.
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
-        fail!(from self, when self.update_connections(),
+        fail!(from self, when self.shared_state.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
         self.shared_state
             .request_receiver
@@ -353,7 +353,7 @@ impl<
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
-        if let Err(e) = self.update_connections() {
+        if let Err(e) = self.shared_state.update_connections() {
             fail!(from self,
                   with ReceiveError::ConnectionFailure(e),
                   "Some requests are not being received since not all connections to the clients could be established.");
@@ -433,19 +433,5 @@ impl<
             }
             None => return Ok(None),
         }
-    }
-}
-
-impl<
-        Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
-    > UpdateConnections
-    for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
-{
-    fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        self.shared_state.update_connections()
     }
 }
