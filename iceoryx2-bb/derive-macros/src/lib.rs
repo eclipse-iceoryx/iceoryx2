@@ -135,6 +135,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
             Fields::Named(ref fields_named) => {
                 let field_inits = fields_named.named.iter().map(|f| {
                     let field_name = &f.ident;
+                    // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
                     quote! {
                         iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::type_name(&self.#field_name);
                     }
@@ -150,6 +151,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
             Fields::Unnamed(ref fields_unnamed) => {
                 let field_inits = fields_unnamed.unnamed.iter().enumerate().map(|(i, _)| {
                     let field_index = syn::Index::from(i);
+                    // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
                     quote! {
                         iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::type_name(&self.#field_index);
                     }
