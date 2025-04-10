@@ -104,13 +104,15 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-/// Implements the [`iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend`] trait when all fields of the struct implement it.
+/// Implements the [`iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend`] trait when all fields of
+/// the struct implement it. A type name can be optionally set with the helper attribute `type_name`.
 ///
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 ///
 /// #[derive(ZeroCopySend)]
+/// #[type_name(MyTypeName)]
 /// struct MyZeroCopySendStruct {
 ///     val1: u64,
 ///     val2: u64,
@@ -123,13 +125,13 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 ///     val2: 4,
 /// };
 /// needs_zero_copy_send_type(&x);
+/// assert_eq!(unsafe { x.type_name() }, "MyTypeName");
 /// ```
 #[proc_macro_derive(ZeroCopySend, attributes(type_name))]
 pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
 
     // check attribute
-    // TODO: quote, compile error
     let attributes: &Vec<_> = &ast
         .attrs
         .iter()
@@ -148,7 +150,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     let struct_name = &ast.ident;
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
-    let get_name_impl = match ast.data {
+    let type_name_impl = match ast.data {
         Data::Struct(ref data_struct) => match data_struct.fields {
             Fields::Named(ref fields_named) => {
                 let field_inits = fields_named.named.iter().map(|f| {
@@ -218,7 +220,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {
-            #get_name_impl
+            #type_name_impl
         }
     };
 

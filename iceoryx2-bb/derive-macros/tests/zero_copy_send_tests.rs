@@ -112,8 +112,8 @@ mod zero_copy_send {
     #[test]
     fn zero_copy_send_derive_sets_type_name_correctly_for_named_structs() {
         let sut = NamedTestStruct {
-            _val1: 19,
-            _val2: Foo(90),
+            _val1: 23,
+            _val2: Foo(4),
         };
         assert_that!(is_zero_copy_send(&sut), eq true);
         assert_that!(unsafe {sut.type_name() }, eq core::any::type_name::<NamedTestStruct>());
@@ -147,8 +147,8 @@ mod zero_copy_send {
         assert_that!(unsafe {sut.type_name() }, eq core::any::type_name::<GenericNamedTestStruct<i32, Foo>>());
 
         let sut_with_attr = GenericNamedTestStructWithAttr {
-            _val1: 8.11,
-            _val2: Foo(1956),
+            _val1: 11.11,
+            _val2: Foo(2008),
         };
         assert_that!(is_zero_copy_send(&sut_with_attr), eq true);
         assert_that!(unsafe {sut_with_attr.type_name() }, eq "Wolf");
