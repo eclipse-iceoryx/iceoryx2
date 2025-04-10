@@ -225,6 +225,7 @@ impl<
         }
         .required_amount_of_chunks_per_server_data_segment(
             server_factory.max_loaned_responses_per_request,
+            number_of_requests,
         );
 
         let client_list = &service
@@ -268,7 +269,7 @@ impl<
             "{} since the server data segment could not be created.", msg);
 
         let response_sender = Sender {
-            segment_states: vec![SegmentState::new(number_of_requests)],
+            segment_states: vec![SegmentState::new(number_of_responses)],
             data_segment,
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))
