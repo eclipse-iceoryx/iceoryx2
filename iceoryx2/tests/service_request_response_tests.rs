@@ -49,7 +49,7 @@ mod service_request_response {
 
     struct TestFixture<Sut: Service> {
         _node: Node<Sut>,
-        service: PortFactory<Sut, usize, usize, usize, usize>,
+        _service: PortFactory<Sut, usize, usize, usize, usize>,
         clients: Vec<Client<Sut, usize, usize, usize, usize>>,
         servers: Vec<Server<Sut, usize, usize, usize, usize>>,
     }
@@ -96,7 +96,7 @@ mod service_request_response {
 
             Self {
                 _node: node,
-                service,
+                _service: service,
                 clients,
                 servers,
             }
@@ -251,9 +251,9 @@ mod service_request_response {
 
     #[test]
     fn responses_from_previous_requests_are_filtered_out<Sut: Service>() {
-        const ITERATIONS: usize = 19;
+        const ITERATIONS: usize = 50;
         let test_args = Args {
-            response_buffer_size: 9,
+            response_buffer_size: 8,
             response_overflow: true,
             ..Default::default()
         };
