@@ -259,7 +259,7 @@ impl<
             &segment_name,
             static_config.request_message_type_details.sample_layout(1),
             global_config,
-            number_of_requests,
+            number_of_responses,
         );
 
         let data_segment = fail!(from origin,
