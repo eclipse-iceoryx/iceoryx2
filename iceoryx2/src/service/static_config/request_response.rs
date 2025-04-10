@@ -110,9 +110,10 @@ impl StaticConfig {
     pub(crate) fn required_amount_of_chunks_per_server_data_segment(
         &self,
         max_loaned_responses_per_request: usize,
+        total_number_of_requests: usize,
     ) -> usize {
         self.max_clients
-            * (self.max_active_requests_per_client * self.max_response_buffer_size
+            * (total_number_of_requests * self.max_response_buffer_size
                 + max_loaned_responses_per_request)
     }
 
