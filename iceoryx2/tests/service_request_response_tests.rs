@@ -15,30 +15,37 @@ mod service_request_response {
     use iceoryx2::node::NodeBuilder;
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
+    use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
-    use iceoryx2::{pending_response, prelude::*};
     use iceoryx2_bb_testing::assert_that;
 
+    #[derive(Clone, Copy)]
     struct Args {
         number_of_clients: usize,
         number_of_servers: usize,
+        response_buffer_size: usize,
+        request_overflow: bool,
+        response_overflow: bool,
     }
 
-    impl Args {
-        fn new() -> Self {
+    impl Default for Args {
+        fn default() -> Self {
             Self {
                 number_of_clients: 1,
                 number_of_servers: 1,
+                response_buffer_size: 1,
+                request_overflow: true,
+                response_overflow: true,
             }
         }
     }
 
     struct TestFixture<Sut: Service> {
         _node: Node<Sut>,
-        service: PortFactory<Sut, u64, u64, u64, ()>,
-        clients: Vec<Client<Sut, u64, u64, u64, ()>>,
-        servers: Vec<Server<Sut, u64, u64, u64, ()>>,
+        service: PortFactory<Sut, usize, usize, usize, usize>,
+        clients: Vec<Client<Sut, usize, usize, usize, usize>>,
+        servers: Vec<Server<Sut, usize, usize, usize, usize>>,
     }
 
     impl<Sut: Service> TestFixture<Sut> {
@@ -48,8 +55,12 @@ mod service_request_response {
             let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
             let service = node
                 .service_builder(&service_name)
-                .request_response::<u64, u64>()
-                .request_user_header::<u64>()
+                .request_response::<usize, usize>()
+                .request_user_header::<usize>()
+                .response_user_header::<usize>()
+                .enable_safe_overflow_for_requests(args.request_overflow)
+                .enable_safe_overflow_for_responses(args.response_overflow)
+                .max_response_buffer_size(args.response_buffer_size)
                 .max_servers(args.number_of_servers)
                 .max_clients(args.number_of_clients)
                 .create()
@@ -75,31 +86,62 @@ mod service_request_response {
     }
 
     #[test]
-    fn request_response_stream_works<Sut: Service>() {
+    fn response_buffer_size_of_client_is_set_correctly<Sut: Service>() {
         let test_args = Args {
-            number_of_clients: 5,
-            number_of_servers: 7,
+            response_buffer_size: 7,
+            ..Default::default()
         };
+
+        const REQUEST_HEADER: usize = 918239;
+        const RESPONSE_HEADER: usize = 438921412;
+        const PAYLOAD: usize = 12;
+
         let test = TestFixture::<Sut>::new(test_args);
 
-        let mut pending_responses = vec![];
-        for (n, client) in test.clients.iter().enumerate() {
-            pending_responses.push(client.send_copy(n as _).unwrap());
+        let mut request = test.clients[0].loan().unwrap();
+        *request.user_header_mut() = REQUEST_HEADER;
+        *request.payload_mut() = PAYLOAD;
+
+        let pending_response = request.send().unwrap();
+
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq PAYLOAD);
+        assert_that!(*active_request.user_header(), eq REQUEST_HEADER);
+
+        for n in 0..test_args.response_buffer_size {
+            let mut response = active_request.loan().unwrap();
+            *response.user_header_mut() = RESPONSE_HEADER + n;
+            *response.payload_mut() = PAYLOAD + n;
+            assert_that!(response.send(), is_ok);
         }
 
-        let mut active_responses = vec![];
-        for server in test.servers.iter() {
-            active_responses.push(server.receive().unwrap().unwrap());
+        for n in 0..test_args.response_buffer_size {
+            let response = pending_response.receive().unwrap().unwrap();
+            assert_that!(*response.payload(), eq PAYLOAD + n);
+            assert_that!(*response.user_header(), eq RESPONSE_HEADER + n);
+        }
+    }
+
+    #[test]
+    fn response_buffer_size_with_overflow_works<Sut: Service>() {
+        let test_args = Args {
+            response_buffer_size: 5,
+            response_overflow: true,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+
+        let pending_response = test.clients[0].send_copy(0).unwrap();
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+
+        for n in 0..test_args.response_buffer_size * 2 {
+            assert_that!(active_request.send_copy(n), is_ok);
         }
 
-        for (n, active_response) in active_responses.iter().enumerate() {
-            let response_value = n as u64 * *active_response.payload();
-            active_response.send_copy(response_value).unwrap();
-
-            for pending_response in &pending_responses {
-                let response = pending_response.receive().unwrap().unwrap();
-                assert_that!(*response.payload(), eq response_value);
-            }
+        for n in 0..test_args.response_buffer_size {
+            let response = pending_response.receive().unwrap().unwrap();
+            assert_that!(*response.payload(), eq test_args.response_buffer_size + n);
         }
     }
 
