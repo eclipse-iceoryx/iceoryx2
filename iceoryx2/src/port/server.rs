@@ -37,6 +37,8 @@ extern crate alloc;
 use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_cal::zero_copy_connection::ChannelId;
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -44,6 +46,7 @@ use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::service::naming_scheme::data_segment_name;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
@@ -56,6 +59,9 @@ use crate::{
     },
 };
 
+use super::details::data_segment::DataSegment;
+use super::details::segment_state::SegmentState;
+use super::details::sender::{ReceiverDetails, Sender};
 use super::{
     details::{
         chunk::Chunk,
@@ -63,9 +69,79 @@ use super::{
         data_segment::DataSegmentType,
         receiver::{Receiver, SenderDetails},
     },
-    update_connections::{ConnectionFailure, UpdateConnections},
+    update_connections::ConnectionFailure,
     ReceiveError, UniqueServerId,
 };
+
+#[derive(Debug)]
+pub(crate) struct SharedServerState<Service: service::Service> {
+    pub(crate) response_sender: Sender<Service>,
+    request_receiver: Receiver<Service>,
+    client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
+    pub(crate) is_active: IoxAtomicBool,
+}
+
+impl<Service: service::Service> SharedServerState<Service> {
+    pub(crate) fn update_connections(&self) -> Result<(), ConnectionFailure> {
+        if unsafe {
+            self.request_receiver
+                .service_state
+                .dynamic_storage
+                .get()
+                .request_response()
+                .clients
+                .update_state(&mut *self.client_list_state.get())
+        } {
+            fail!(from self,
+                  when self.force_update_connections(),
+                  "Connections were updated only partially since at least one connection to a client failed.");
+        }
+
+        Ok(())
+    }
+
+    fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
+        self.request_receiver.start_update_connection_cycle();
+        self.response_sender.start_update_connection_cycle();
+
+        let mut result = Ok(());
+        unsafe {
+            (*self.client_list_state.get()).for_each(|h, details| {
+                // establish request connection
+                let inner_result = self.request_receiver.update_connection(
+                    h.index() as usize,
+                    SenderDetails {
+                        port_id: details.client_port_id.value(),
+                        number_of_samples: details.number_of_requests,
+                        max_number_of_segments: 1,
+                        data_segment_type: DataSegmentType::Static,
+                    },
+                );
+                result = result.and(inner_result);
+
+                // establish response connection
+                let inner_result = self.response_sender.update_connection(
+                    h.index() as usize,
+                    ReceiverDetails {
+                        port_id: details.client_port_id.value(),
+                        buffer_size: details.response_buffer_size,
+                    },
+                    |_| {},
+                );
+                if let Some(err) = inner_result.err() {
+                    result = result.and(Err(err.into()));
+                }
+
+                CallbackProgression::Continue
+            })
+        };
+
+        self.response_sender.finish_update_connection_cycle();
+        self.request_receiver.finish_update_connection_cycle();
+
+        result
+    }
+}
 
 /// Receives [`RequestMut`](crate::request_mut::RequestMut) from a
 /// [`Client`](crate::port::client::Client) and responds with
@@ -79,9 +155,8 @@ pub struct Server<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    receiver: Receiver<Service>,
+    shared_state: Arc<SharedServerState<Service>>,
     server_handle: Option<ContainerHandle>,
-    client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
     service_state: Arc<ServiceState<Service>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -98,6 +173,7 @@ impl<
     > Drop for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
+        self.shared_state.is_active.store(false, Ordering::Relaxed);
         if let Some(handle) = self.server_handle {
             self.service_state
                 .dynamic_storage
@@ -129,6 +205,28 @@ impl<
         let origin = "Server::new()";
         let server_port_id = UniqueServerId::new();
         let service = &server_factory.factory.service;
+        let static_config = server_factory.factory.static_config();
+        let number_of_requests = unsafe {
+            service
+                .__internal_state()
+                .static_config
+                .messaging_pattern
+                .request_response()
+        }
+        .required_amount_of_chunks_per_client_data_segment(
+            static_config.client_max_loaned_requests,
+        );
+        let number_of_responses = unsafe {
+            service
+                .__internal_state()
+                .static_config
+                .messaging_pattern
+                .request_response()
+        }
+        .required_amount_of_chunks_per_server_data_segment(
+            server_factory.max_loaned_responses_per_request,
+            number_of_requests,
+        );
 
         let client_list = &service
             .__internal_state()
@@ -137,8 +235,7 @@ impl<
             .request_response()
             .clients;
 
-        let static_config = server_factory.factory.static_config();
-        let receiver = Receiver {
+        let request_receiver = Receiver {
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
@@ -150,13 +247,59 @@ impl<
             buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
             to_be_removed_connections: None,
-            degradation_callback: server_factory.degradation_callback,
+            degradation_callback: server_factory.request_degradation_callback,
+            number_of_channels: 1,
+        };
+
+        let global_config = service.__internal_state().shared_node.config();
+        let data_segment_type = DataSegmentType::Static;
+        let segment_name = data_segment_name(server_port_id.value());
+        let max_number_of_segments =
+            DataSegment::<Service>::max_number_of_segments(data_segment_type);
+        let data_segment = DataSegment::<Service>::create_static_segment(
+            &segment_name,
+            static_config.request_message_type_details.sample_layout(1),
+            global_config,
+            number_of_responses,
+        );
+
+        let data_segment = fail!(from origin,
+            when data_segment,
+            with ServerCreateError::UnableToCreateDataSegment,
+            "{} since the server data segment could not be created.", msg);
+
+        let response_sender = Sender {
+            segment_states: vec![SegmentState::new(number_of_responses)],
+            data_segment,
+            connections: (0..client_list.capacity())
+                .map(|_| UnsafeCell::new(None))
+                .collect(),
+            sender_port_id: server_port_id.value(),
+            shared_node: service.__internal_state().shared_node.clone(),
+            receiver_max_buffer_size: static_config.max_response_buffer_size,
+            receiver_max_borrowed_samples: static_config
+                .max_borrowed_responses_per_pending_response,
+            sender_max_borrowed_samples: server_factory.max_loaned_responses_per_request,
+            enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
+            number_of_samples: number_of_responses,
+            max_number_of_segments,
+            degradation_callback: server_factory.response_degradation_callback,
+            service_state: service.__internal_state().clone(),
+            tagger: CyclicTagger::new(),
+            loan_counter: IoxAtomicUsize::new(0),
+            unable_to_deliver_strategy: server_factory.unable_to_deliver_strategy,
+            message_type_details: static_config.response_message_type_details.clone(),
+            number_of_channels: number_of_requests,
         };
 
         let mut new_self = Self {
-            receiver,
+            shared_state: Arc::new(SharedServerState {
+                request_receiver,
+                client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
+                response_sender,
+                is_active: IoxAtomicBool::new(true),
+            }),
             server_handle: None,
-            client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
             service_state: service.__internal_state().clone(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
@@ -164,7 +307,7 @@ impl<
             _response_header: PhantomData,
         };
 
-        if let Err(e) = new_self.force_update_connections() {
+        if let Err(e) = new_self.shared_state.force_update_connections() {
             warn!(from new_self, "The new server is unable to connect to every client, caused by {:?}.", e);
         }
 
@@ -179,7 +322,8 @@ impl<
             .request_response()
             .add_server_id(ServerDetails {
                 server_port_id,
-                buffer_size: static_config.max_active_requests_per_client,
+                request_buffer_size: static_config.max_active_requests_per_client,
+                number_of_responses,
             }) {
             Some(v) => Some(v),
             None => {
@@ -195,52 +339,30 @@ impl<
 
     /// Returns the [`UniqueServerId`] of the [`Server`]
     pub fn id(&self) -> UniqueServerId {
-        UniqueServerId(UniqueSystemId::from(self.receiver.receiver_port_id))
+        UniqueServerId(UniqueSystemId::from(
+            self.shared_state.request_receiver.receiver_port_id,
+        ))
     }
 
     /// Returns true if the [`Server`] has [`RequestMut`](crate::request_mut::RequestMut)s in its buffer.
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
-        fail!(from self, when self.update_connections(),
+        fail!(from self, when self.shared_state.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
-        self.receiver.has_samples()
-    }
-
-    fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
-        self.receiver.start_update_connection_cycle();
-
-        let mut result = Ok(());
-        unsafe {
-            (*self.client_list_state.get()).for_each(|h, details| {
-                let inner_result = self.receiver.update_connection(
-                    h.index() as usize,
-                    SenderDetails {
-                        port_id: details.client_port_id.value(),
-                        number_of_samples: details.number_of_requests,
-                        max_number_of_segments: 1,
-                        data_segment_type: DataSegmentType::Static,
-                    },
-                );
-
-                if result.is_ok() {
-                    result = inner_result;
-                }
-                CallbackProgression::Continue
-            })
-        };
-
-        self.receiver.finish_update_connection_cycle();
-
-        result
+        self.shared_state
+            .request_receiver
+            .has_samples(ChannelId::new(0))
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
-        if let Err(e) = self.update_connections() {
+        if let Err(e) = self.shared_state.update_connections() {
             fail!(from self,
                   with ReceiveError::ConnectionFailure(e),
                   "Some requests are not being received since not all connections to the clients could be established.");
         }
 
-        self.receiver.receive()
+        self.shared_state
+            .request_receiver
+            .receive(ChannelId::new(0))
     }
 
     /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
@@ -279,45 +401,38 @@ impl<
         >,
         ReceiveError,
     > {
-        Ok(self.receive_impl()?.map(|(details, chunk)| ActiveRequest {
-            details,
-            ptr: unsafe {
-                RawSample::new_unchecked(
-                    chunk.header.cast(),
-                    chunk.user_header.cast(),
-                    chunk.payload.cast(),
-                )
-            },
-            _response_payload: PhantomData,
-            _response_header: PhantomData,
-        }))
-    }
-}
+        match self.receive_impl()? {
+            Some((details, chunk)) => {
+                let header = unsafe {
+                    &*(chunk.header as *const service::header::request_response::RequestHeader)
+                };
 
-impl<
-        Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
-    > UpdateConnections
-    for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
-{
-    fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        if unsafe {
-            self.receiver
-                .service_state
-                .dynamic_storage
-                .get()
-                .request_response()
-                .clients
-                .update_state(&mut *self.client_list_state.get())
-        } {
-            fail!(from self,
-                  when self.force_update_connections(),
-                  "Connections were updated only partially since at least one connection to a client failed.");
+                match self
+                    .shared_state
+                    .response_sender
+                    .get_connection_id_of(header.client_port_id.value())
+                {
+                    Some(connection_id) => Ok(Some(ActiveRequest {
+                        details,
+                        request_id: header.request_id,
+                        channel_id: header.channel_id,
+                        connection_id,
+                        shared_state: self.shared_state.clone(),
+                        ptr: unsafe {
+                            RawSample::new_unchecked(
+                                chunk.header.cast(),
+                                chunk.user_header.cast(),
+                                chunk.payload.cast(),
+                            )
+                        },
+                        _response_payload: PhantomData,
+                        _response_header: PhantomData,
+                    })),
+
+                    None => return Ok(None),
+                }
+            }
+            None => return Ok(None),
         }
-
-        Ok(())
     }
 }

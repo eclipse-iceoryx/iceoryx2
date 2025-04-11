@@ -13,6 +13,7 @@
 use core::cell::UnsafeCell;
 
 extern crate alloc;
+use super::channel_management::ChannelManagement;
 use super::chunk::Chunk;
 use super::chunk_details::ChunkDetails;
 use super::data_segment::{DataSegmentType, DataSegmentView};
@@ -74,7 +75,7 @@ impl<Service: service::Service> Connection<Service> {
                                     .receiver_max_borrowed_samples_per_channel(this.receiver_max_borrowed_samples)
                                     .enable_safe_overflow(this.enable_safe_overflow)
                                     .number_of_samples_per_segment(number_of_samples)
-                                    .number_of_channels(1)
+                                    .number_of_channels(this.number_of_channels)
                                     .max_supported_shared_memory_segments(max_number_of_segments)
                                     .timeout(global_config.global.service.creation_timeout)
                                     .create_receiver(),
@@ -115,9 +116,46 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) receiver_max_borrowed_samples: usize,
     pub(crate) enable_safe_overflow: bool,
+    pub(crate) number_of_channels: usize,
 }
 
 impl<Service: service::Service> Receiver<Service> {
+    pub(crate) fn set_channel_state(&self, channel_id: ChannelId, state: u64) -> bool {
+        let mut ret_val = true;
+        for i in 0..self.len() {
+            if let Some(ref connection) = self.get(i) {
+                ret_val &= connection.receiver.set_channel_state(channel_id, state)
+            }
+        }
+
+        ret_val
+    }
+
+    pub(crate) fn has_at_least_one_channel_the_state(
+        &self,
+        channel_id: ChannelId,
+        state: u64,
+    ) -> bool {
+        let mut ret_val = false;
+        for i in 0..self.len() {
+            if let Some(ref connection) = self.get(i) {
+                ret_val |= connection.receiver.get_channel_state(channel_id) == state;
+            }
+        }
+
+        ret_val
+    }
+
+    pub(crate) fn invalidate_channel_state(&self, channel_id: ChannelId, expected_state: u64) {
+        for i in 0..self.len() {
+            if let Some(ref connection) = self.get(i) {
+                connection
+                    .receiver
+                    .invalidate_channel_state(channel_id, expected_state);
+            }
+        }
+    }
+
     pub(crate) fn receiver_port_id(&self) -> u128 {
         self.receiver_port_id
     }
@@ -155,7 +193,15 @@ impl<Service: service::Service> Receiver<Service> {
     pub(crate) fn prepare_connection_removal(&self, index: usize) {
         if let Some(to_be_removed_connections) = &self.to_be_removed_connections {
             if let Some(connection) = self.get(index) {
-                if connection.receiver.has_data(ChannelId::new(0))
+                let mut keep_connection = false;
+                for id in 0..self.number_of_channels {
+                    if connection.receiver.has_data(ChannelId::new(id)) {
+                        keep_connection = true;
+                        break;
+                    }
+                }
+
+                if keep_connection
                     && !unsafe { &mut *to_be_removed_connections.get() }.push(connection.clone())
                 {
                     warn!(from self,
@@ -174,10 +220,10 @@ impl<Service: service::Service> Receiver<Service> {
         self.connections.len()
     }
 
-    pub(crate) fn has_samples(&self) -> Result<bool, ConnectionFailure> {
+    pub(crate) fn has_samples(&self, channel_id: ChannelId) -> Result<bool, ConnectionFailure> {
         for id in 0..self.len() {
             if let Some(ref connection) = &self.get(id) {
-                if connection.receiver.has_data(ChannelId::new(0)) {
+                if connection.receiver.has_data(channel_id) {
                     return Ok(true);
                 }
             }
@@ -189,9 +235,10 @@ impl<Service: service::Service> Receiver<Service> {
     fn receive_from_connection(
         &self,
         connection: &Arc<Connection<Service>>,
+        channel_id: ChannelId,
     ) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
         let msg = "Unable to receive another sample";
-        match connection.receiver.receive(ChannelId::new(0)) {
+        match connection.receiver.receive(channel_id) {
             Ok(data) => match data {
                 None => Ok(None),
                 Some(offset) => {
@@ -227,13 +274,16 @@ impl<Service: service::Service> Receiver<Service> {
         }
     }
 
-    pub(crate) fn receive(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
+    pub(crate) fn receive(
+        &self,
+        channel_id: ChannelId,
+    ) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
         if let Some(to_be_removed_connections) = &self.to_be_removed_connections {
             let to_be_removed_connections = unsafe { &mut *to_be_removed_connections.get() };
 
             if let Some(connection) = to_be_removed_connections.peek() {
                 if let Some((details, absolute_address)) =
-                    self.receive_from_connection(connection)?
+                    self.receive_from_connection(connection, channel_id)?
                 {
                     return Ok(Some((details, absolute_address)));
                 } else {
@@ -245,7 +295,7 @@ impl<Service: service::Service> Receiver<Service> {
         for id in 0..self.len() {
             if let Some(ref mut connection) = &mut self.get_mut(id) {
                 if let Some((details, absolute_address)) =
-                    self.receive_from_connection(connection)?
+                    self.receive_from_connection(connection, channel_id)?
                 {
                     return Ok(Some((details, absolute_address)));
                 }

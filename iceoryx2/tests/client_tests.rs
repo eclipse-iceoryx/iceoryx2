@@ -20,7 +20,6 @@ mod client {
     use iceoryx2::port::client::RequestSendError;
     use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
-    use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
@@ -32,18 +31,6 @@ mod client {
     fn create_node<Sut: Service>() -> Node<Sut> {
         let config = generate_isolated_config();
         NodeBuilder::new().config(&config).create::<Sut>().unwrap()
-    }
-
-    fn create_node_and_service<Sut: Service>() -> (Node<Sut>, PortFactory<Sut, u64, (), u64, ()>) {
-        let service_name = generate_service_name();
-        let node = create_node::<Sut>();
-        let service = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .create()
-            .unwrap();
-
-        (node, service)
     }
 
     #[test]
@@ -89,13 +76,16 @@ mod client {
     fn can_loan_at_most_max_supported_amount_of_requests<Sut: Service>() {
         const MAX_LOANED_REQUESTS: usize = 29;
         const ITERATIONS: usize = 3;
-        let (_node, service) = create_node_and_service::<Sut>();
-
-        let sut = service
-            .client_builder()
-            .max_loaned_requests(MAX_LOANED_REQUESTS)
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .client_max_loaned_requests(MAX_LOANED_REQUESTS)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         for _ in 0..ITERATIONS {
             let mut requests = vec![];
@@ -123,14 +113,11 @@ mod client {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .max_active_requests_per_client(MAX_PENDING_RESPONSES)
+            .client_max_loaned_requests(MAX_LOANED_REQUESTS)
             .create()
             .unwrap();
 
-        let sut = service
-            .client_builder()
-            .max_loaned_requests(MAX_LOANED_REQUESTS)
-            .create()
-            .unwrap();
+        let sut = service.client_builder().create().unwrap();
 
         for _ in 0..ITERATIONS {
             let mut pending_responses = vec![];
@@ -281,13 +268,17 @@ mod client {
 
     #[test]
     fn sending_requests_reduces_loan_counter<Sut: Service>() {
-        let (_node, service) = create_node_and_service::<Sut>();
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
 
-        let sut = service
-            .client_builder()
-            .max_loaned_requests(1)
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .client_max_loaned_requests(1)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         let request = sut.loan().unwrap();
 
@@ -302,13 +293,17 @@ mod client {
 
     #[test]
     fn dropping_requests_reduces_loan_counter<Sut: Service>() {
-        let (_node, service) = create_node_and_service::<Sut>();
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
 
-        let sut = service
-            .client_builder()
-            .max_loaned_requests(1)
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .client_max_loaned_requests(1)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         let request = sut.loan().unwrap();
 
@@ -331,14 +326,11 @@ mod client {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .request_payload_alignment(Alignment::new(ALIGNMENT).unwrap())
+            .client_max_loaned_requests(MAX_LOAN)
             .create()
             .unwrap();
 
-        let sut = service
-            .client_builder()
-            .max_loaned_requests(MAX_LOAN)
-            .create()
-            .unwrap();
+        let sut = service.client_builder().create().unwrap();
 
         let mut requests = vec![];
 
@@ -394,14 +386,11 @@ mod client {
             .max_clients(1)
             .max_servers(max_servers)
             .max_active_requests_per_client(max_active_requests_per_client)
+            .client_max_loaned_requests(max_loaned_requests)
             .create()
             .unwrap();
 
-        let sut = service
-            .client_builder()
-            .max_loaned_requests(max_loaned_requests)
-            .create()
-            .unwrap();
+        let sut = service.client_builder().create().unwrap();
 
         let mut servers = vec![];
         for _ in 0..max_servers {
@@ -529,14 +518,11 @@ mod client {
             .max_clients(1)
             .max_servers(max_servers)
             .max_active_requests_per_client(max_active_requests_per_client)
+            .client_max_loaned_requests(max_loaned_requests)
             .create()
             .unwrap();
 
-        let sut = service
-            .client_builder()
-            .max_loaned_requests(max_loaned_requests)
-            .create()
-            .unwrap();
+        let sut = service.client_builder().create().unwrap();
 
         let mut servers = vec![];
         for _ in 0..max_servers {
