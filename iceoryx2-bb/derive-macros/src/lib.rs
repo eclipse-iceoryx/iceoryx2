@@ -103,3 +103,85 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+/// Implements the [`iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend`] trait when all fields of the struct implement it.
+///
+/// ```
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+///
+/// #[derive(ZeroCopySend)]
+/// struct MyZeroCopySendStruct {
+///     val1: u64,
+///     val2: u64,
+/// }
+///
+/// fn needs_zero_copy_send_type<T: ZeroCopySend>(_: &T) {}
+///
+/// let x = MyZeroCopySendStruct{
+///     val1: 23,
+///     val2: 4,
+/// };
+/// needs_zero_copy_send_type(&x);
+/// ```
+#[proc_macro_derive(ZeroCopySend)]
+pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
+    let ast = parse_macro_input!(input as DeriveInput);
+    let struct_name = &ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+
+    let get_name_impl = match ast.data {
+        Data::Struct(ref data_struct) => match data_struct.fields {
+            Fields::Named(ref fields_named) => {
+                let field_inits = fields_named.named.iter().map(|f| {
+                    let field_name = &f.ident;
+                    // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
+                    quote! {
+                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::type_name(&self.#field_name);
+                    }
+                });
+
+                quote! {
+                    unsafe fn type_name(&self) -> &'static str {
+                        #(#field_inits)*
+                        core::any::type_name::<Self>()
+                    }
+                }
+            }
+            Fields::Unnamed(ref fields_unnamed) => {
+                let field_inits = fields_unnamed.unnamed.iter().enumerate().map(|(i, _)| {
+                    let field_index = syn::Index::from(i);
+                    // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
+                    quote! {
+                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::type_name(&self.#field_index);
+                    }
+                });
+
+                quote! {
+                    unsafe fn type_name(&self) -> &'static str {
+                        #(#field_inits)*
+                        core::any::type_name::<Self>()
+                    }
+                }
+            }
+            Fields::Unit => {
+                return quote! { compile_error!("ZeroCopySend cannot be implemented for Unit-like structs"); }.into();
+            }
+        },
+        _ => {
+            return quote! {compile_error!("ZeroCopySend can only be implemented for structs");}
+                .into();
+        }
+    };
+
+    let expanded = quote! {
+        unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {
+            #get_name_impl
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
+#[cfg(doctest)]
+mod zero_copy_send_compile_tests;
