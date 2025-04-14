@@ -17,9 +17,8 @@
 #include <iostream>
 
 struct TransmissionData {
-    // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side and was determined with
-    // `core::any::type_name::<TransmissionData>()`
-    static constexpr const char* IOX2_TYPE_NAME = "examples_common::transmission_data::TransmissionData";
+    // IOX2_TYPE_NAME is equivalent to the payload type name used on the Rust side
+    static constexpr const char* IOX2_TYPE_NAME = "TransmissionData";
     std::int32_t x;
     std::int32_t y;
     double funky;
@@ -31,9 +30,8 @@ inline auto operator<<(std::ostream& stream, const TransmissionData& value) -> s
 }
 
 struct CustomHeader {
-    // IOX2_TYPE_NAME is equivalent to the user header type name used on the Rust side and was determined with
-    // `core::any::type_name::<CustomHeader>()`
-    static constexpr const char* IOX2_TYPE_NAME = "examples_common::custom_header::CustomHeader";
+    // IOX2_TYPE_NAME is equivalent to the user header type name used on the Rust side
+    static constexpr const char* IOX2_TYPE_NAME = "CustomHeader";
     int32_t version;
     uint64_t timestamp;
 };

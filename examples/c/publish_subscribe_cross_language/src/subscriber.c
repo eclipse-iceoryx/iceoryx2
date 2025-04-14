@@ -45,13 +45,10 @@ int main(void) {
     iox2_service_builder_pub_sub_h service_builder_pub_sub = iox2_service_builder_pub_sub(service_builder);
 
     // set pub sub payload type
-    // payload_type_name is equivalent to the payload type name used on the Rust side and was determined with
-    // `core::any::type_name::<TransmissionData>()`
-    const char* payload_type_name = "examples_common::transmission_data::TransmissionData";
     if (iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
                                                               iox2_type_variant_e_FIXED_SIZE,
-                                                              payload_type_name,
-                                                              strlen(payload_type_name),
+                                                              IOX2_PAYLOAD_TYPE_NAME,
+                                                              strlen(IOX2_PAYLOAD_TYPE_NAME),
                                                               sizeof(struct TransmissionData),
                                                               alignof(struct TransmissionData))
         != IOX2_OK) {
@@ -60,13 +57,10 @@ int main(void) {
     }
 
     // set pub sub user header type
-    // user_header_type_name is equivalent to the user header type name used on the Rust side and was determined with
-    // `core::any::type_name::<CustomHeader>()`
-    const char* user_header_type_name = "examples_common::custom_header::CustomHeader";
     if (iox2_service_builder_pub_sub_set_user_header_type_details(&service_builder_pub_sub,
                                                                   iox2_type_variant_e_FIXED_SIZE,
-                                                                  user_header_type_name,
-                                                                  strlen(user_header_type_name),
+                                                                  IOX2_USER_HEADER_TYPE_NAME,
+                                                                  strlen(IOX2_USER_HEADER_TYPE_NAME),
                                                                   sizeof(struct CustomHeader),
                                                                   alignof(struct CustomHeader))
         != IOX2_OK) {

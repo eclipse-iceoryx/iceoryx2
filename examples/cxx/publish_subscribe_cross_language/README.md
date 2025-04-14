@@ -74,40 +74,33 @@ To communicate with each other, publisher and subscriber applications must share
 the same service configuration, including the payload and the user header type
 name.
 
-The internally derived type names usually depend on the used programming
-language. To allow cross-language communication involving C++ applications,
-iceoryx2 provides the possibility to customize the payload and the user header
-type name by setting `IOX2_TYPE_NAME` in the sent C++ data struct and user
-header, e.g.
+To allow cross-language communication involving C++ applications, iceoryx2
+provides the possibility to customize the payload and the user header type name
+by setting `IOX2_TYPE_NAME` in the sent C++ data struct and user header, e.g.
 
 ```cxx
 struct TransmissionData {
-    static constexpr const char* IOX2_TYPE_NAME = "examples_common::transmission_data::TransmissionData";
+    static constexpr const char* IOX2_TYPE_NAME = "TransmissionData";
     std::int32_t x;
     std::int32_t y;
     double funky;
 };
 
 struct CustomHeader {
-    static constexpr const char* IOX2_TYPE_NAME = "examples_common::custom_header::CustomHeader";
+    static constexpr const char* IOX2_TYPE_NAME = "CustomHeader";
     int32_t version;
     uint64_t timestamp;
 };
 ```
 
-> [!NOTE]
-> The type name can't currently be set for Rust applications. If you want to
-> communicate with Rust applications, you can determine the type names on the
-> Rust side with `core::any::type_name()` and use these as the type names in C++
-> applications.
->
-> For the C++ types (u)int{8|16|32|64}_t, float, double and bool, you don't need
-> to provide `IOX2_TYPE_NAME` for the payload as these types are automatically
-> translated into the Rust equivalents.
-
 When the type names are set to the same value, and the structure has the same
 memory layout, the C++ applications and applications written in other supported
 languages can communicate.
+
+> [!NOTE]
+> For the communication with Rust applications, you don't need to provide
+> `IOX2_TYPE_NAME` for (u)int{8|16|32|64}_t, float, double and bool payloads.
+> These types are automatically translated into the Rust equivalents.
 
 You can also send dynamic data between C++ and Rust applications (see
 [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If

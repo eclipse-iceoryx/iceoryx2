@@ -13,6 +13,7 @@
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 
 #[derive(Debug, ZeroCopySend)]
+#[type_name(TransmissionData)]
 #[repr(C)]
 pub struct TransmissionData {
     pub x: i32,

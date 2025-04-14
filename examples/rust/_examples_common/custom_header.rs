@@ -13,6 +13,7 @@
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 
 #[derive(Default, Debug, ZeroCopySend)]
+#[type_name(CustomHeader)]
 #[repr(C)]
 pub struct CustomHeader {
     pub version: i32,

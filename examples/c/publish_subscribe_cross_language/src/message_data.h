@@ -15,20 +15,18 @@
 
 #include <stdint.h>
 
-// payload_type_name is equivalent to the payload type name used on the Rust side and was determined with
-// `core::any::type_name::<TransmissionData>()`
+// payload_type_name is equivalent to the payload type name used on the Rust side
 // NOLINTNEXTLINE, C idiomatic way for compile time const variables
-#define PAYLOAD_TYPE_NAME "examples_common::transmission_data::TransmissionData"
+#define IOX2_PAYLOAD_TYPE_NAME "TransmissionData"
 struct TransmissionData {
     int32_t x;
     int32_t y;
     double funky;
 };
 
-// user_header_type_name is equivalent to the user header type name used on the Rust side and was determined with
-// `core::any::type_name::<CustomHeader>()`
+// user_header_type_name is equivalent to the user header type name used on the Rust side
 // NOLINTNEXTLINE, C idiomatic way for compile time const variables
-#define USER_HEADER_TYPE_NAME "examples_common::custom_header::CustomHeader"
+#define IOX2_USER_HEADER_TYPE_NAME "CustomHeader"
 struct CustomHeader {
     int32_t version;
     uint64_t timestamp;

@@ -46,7 +46,7 @@ pub enum TypeVariant {
 pub struct TypeDetail {
     /// The [`TypeVariant`] of the type
     pub variant: TypeVariant,
-    /// Contains the output of [`core::any::type_name()`].
+    /// Contains the name of the underlying type.
     pub type_name: String,
     /// The size of the underlying type calculated by [`core::mem::size_of`].
     pub size: usize,
