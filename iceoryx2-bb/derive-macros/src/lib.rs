@@ -247,7 +247,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
-// TODO: changelog
 
 #[cfg(doctest)]
 mod zero_copy_send_compile_tests;

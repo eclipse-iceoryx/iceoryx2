@@ -165,3 +165,47 @@
 
 5. Renamed `ConnectionFailure::UnableToMapPublishersDataSegment`
    into `ConnectionFailure::UnableToMapSendersDataSegment`
+
+6. Add requirement that every payload and user header type must implement
+   `ZeroCopySend` for type safe shared memory usage
+   [#602](https://github.com/eclipse-iceoryx/iceoryx2/issues/602)
+
+   ```rust
+   // old
+   #[repr(C)]
+   pub struct TransmissionData {
+      // ...
+   }
+
+   #[repr(C)]
+   pub struct CustomHeader {
+      // ...
+   }
+
+   let service = node
+       .service_builder(&"ServiceName".try_into()?)
+       .publish_subscribe::<TransmissionData>()
+       .user_header::<CustomHeader>()
+       .open_or_create()?;
+
+   // new
+   use iceoryx2_bb_derive_macros::ZeroCopySend;
+
+   #[derive(ZeroCopySend)]
+   #[repr(C)]
+   pub struct TransmissionData {
+      // ...
+   }
+
+   #[derive(ZeroCopySend)]
+   #[repr(C)]
+   pub struct CustomHeader {
+      // ...
+   }
+
+   let service = node
+       .service_builder(&"ServiceName".try_into()?)
+       .publish_subscribe::<TransmissionData>()
+       .user_header::<CustomHeader>()
+       .open_or_create()?;
+   ```

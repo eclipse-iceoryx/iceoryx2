@@ -96,11 +96,12 @@ use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator, owning_pointer::GenericOwningPointer,
     relocatable_ptr::GenericRelocatablePointer,
 };
-use iceoryx2_bb_elementary::{generic_pointer::GenericPointer, zero_copy_send::ZeroCopySend};
+
 use iceoryx2_bb_elementary::{
-    math::unaligned_mem_size, owning_pointer::OwningPointer, placement_default::PlacementDefault,
-    pointer_trait::PointerTrait, relocatable_container::RelocatableContainer,
-    relocatable_ptr::RelocatablePointer,
+    generic_pointer::GenericPointer, math::unaligned_mem_size, owning_pointer::OwningPointer,
+    placement_default::PlacementDefault, pointer_trait::PointerTrait,
+    relocatable_container::RelocatableContainer, relocatable_ptr::RelocatablePointer,
+    zero_copy_send::ZeroCopySend,
 };
 
 use iceoryx2_bb_log::{fail, fatal_panic};
