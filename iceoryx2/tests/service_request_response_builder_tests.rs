@@ -638,6 +638,33 @@ mod service_request_response {
     }
 
     #[test]
+    fn open_verifies_client_max_loaned_requests_correctly<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .client_max_loaned_requests(10)
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .client_max_loaned_requests(11)
+            .open();
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans));
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .client_max_loaned_requests(9)
+            .open();
+        assert_that!(sut_open, is_ok);
+    }
+
+    #[test]
     fn service_builder_adjusts_config_to_sane_values<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
@@ -652,6 +679,7 @@ mod service_request_response {
             .max_servers(0)
             .max_clients(0)
             .max_nodes(0)
+            .client_max_loaned_requests(0)
             .create();
         assert_that!(sut_create, is_ok);
         let sut_create = sut_create.unwrap();
@@ -662,6 +690,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().max_clients(), eq 1);
         assert_that!(sut_create.static_config().max_nodes(), eq 1);
         assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 1);
+        assert_that!(sut_create.static_config().client_max_loaned_requests(), eq 1);
     }
 
     #[test]
@@ -677,6 +706,7 @@ mod service_request_response {
         rpc_config.max_servers = 100;
         rpc_config.max_clients = 100;
         rpc_config.max_nodes = 100;
+        rpc_config.client_max_loaned_requests = 100;
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -691,6 +721,7 @@ mod service_request_response {
             .max_clients(8)
             .max_nodes(9)
             .max_borrowed_responses_per_pending_response(10)
+            .client_max_loaned_requests(11)
             .create();
         assert_that!(sut_create, is_ok);
         let sut_create = sut_create.unwrap();
@@ -703,6 +734,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().max_clients(), eq 8);
         assert_that!(sut_create.static_config().max_nodes(), eq 9);
         assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 10);
+        assert_that!(sut_create.static_config().client_max_loaned_requests(), eq 11);
     }
 
     #[test]
@@ -718,6 +750,7 @@ mod service_request_response {
         rpc_config.max_clients = 18;
         rpc_config.max_nodes = 19;
         rpc_config.max_borrowed_responses_per_pending_response = 20;
+        rpc_config.client_max_loaned_requests = 21;
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -736,6 +769,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().max_clients(), eq 18);
         assert_that!(sut_create.static_config().max_nodes(), eq 19);
         assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 20);
+        assert_that!(sut_create.static_config().client_max_loaned_requests(), eq 21);
     }
 
     #[test]
@@ -755,6 +789,7 @@ mod service_request_response {
             .max_clients(8)
             .max_nodes(9)
             .max_borrowed_responses_per_pending_response(20)
+            .client_max_loaned_requests(21)
             .create()
             .unwrap();
 
@@ -772,6 +807,7 @@ mod service_request_response {
         assert_that!(sut_open.static_config().max_clients(), eq 8);
         assert_that!(sut_open.static_config().max_nodes(), eq 9);
         assert_that!(sut_open.static_config().max_borrowed_responses_per_pending_responses(), eq 20);
+        assert_that!(sut_open.static_config().client_max_loaned_requests(), eq 21);
     }
 
     #[test]
