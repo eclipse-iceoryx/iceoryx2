@@ -11,8 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use anyhow::{Context, Error, Result};
-use iceoryx2::monitor::services::Monitor;
 use iceoryx2::prelude::*;
+use iceoryx2::tracker::service::Tracker;
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
@@ -68,21 +68,43 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
     Ok(())
 }
 
+// Monitor services that come and go.
+//
+// 1. Periodically check for added/removed services
+// 2. Publish changes on internal topic
 pub fn monitor(rate: u64) -> Result<()> {
     println!("Starting Service Monitor...");
 
-    let monitor = Monitor::new();
+    let node = NodeBuilder::new()
+        .config(Config::global_config())
+        .create::<ipc::Service>()
+        .expect("failed to create monitor node");
+    let service_name =
+        ServiceName::new("iox2://monitor/services").expect("failed to create monitor service name");
+    let _service_pubsub = node
+        .service_builder(&service_name)
+        .publish_subscribe::<u64>()
+        .create()
+        .expect("failed to create publish-subscribe service");
+    let _service_event = node
+        .service_builder(&service_name)
+        .event()
+        .create()
+        .expect("failed to create event service");
 
-    let monitor_runner = move || {
-        println!("Monitoring services (update rate: {}ms)", rate);
-        loop {
-            monitor.poll();
-            monitor.publish();
+    let mut tracker = Tracker::<ipc::Service>::new();
 
-            std::thread::sleep(std::time::Duration::from_millis(rate));
-        }
-    };
+    println!("Monitoring services (update rate: {}ms)", rate);
 
-    monitor_runner();
-    Ok(()) // This line is never reached in practice as monitor_runner loops indefinitely
+    loop {
+        // identify added/removed services
+        let (_added, _removed) = tracker.sync(Config::global_config());
+
+        // publish changes
+
+        // wait
+        std::thread::sleep(std::time::Duration::from_millis(rate));
+    }
+
+    // Ok(())
 }
