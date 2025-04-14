@@ -39,15 +39,6 @@ fn zero_copy_send_derive_does_not_work_for_unnamed_struct_when_not_all_members_i
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
 /// #[derive(ZeroCopySend)]
-/// struct UnitLikeTestStruct;
-/// ```
-#[cfg(doctest)]
-fn zero_copy_send_derive_does_not_work_for_unit_like_struct() {}
-
-/// ``` compile_fail
-/// use iceoryx2_bb_derive_macros::ZeroCopySend;
-///
-/// #[derive(ZeroCopySend)]
 /// struct GenericNamedTestStruct<T1, T2> {
 ///     val1: T1,
 ///     val2: T2,

@@ -125,7 +125,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 ///     val2: 4,
 /// };
 /// needs_zero_copy_send_type(&x);
-/// assert_eq!(unsafe { x.type_name() }, "MyTypeName");
+/// assert_eq!(unsafe { MyZeroCopySendStruct::type_name() }, "MyTypeName");
 /// ```
 #[proc_macro_derive(ZeroCopySend, attributes(type_name))]
 pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
@@ -157,23 +157,27 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     let field_name = &f.ident;
                     // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
                     quote! {
-                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::type_name(&self.#field_name);
+                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(&self.#field_name);
                     }
                 });
 
                 match attribute {
                     None => {
                         quote! {
-                            unsafe fn type_name(&self) -> &'static str {
+                            fn __is_zero_copy_send(&self) {
                                 #(#field_inits)*
+                            }
+                            unsafe fn type_name() -> &'static str {
                                 core::any::type_name::<Self>()
                             }
                         }
                     }
                     Some(_) => {
                         quote! {
-                            unsafe fn type_name(&self) -> &'static str {
+                            fn __is_zero_copy_send(&self) {
                                 #(#field_inits)*
+                            }
+                            unsafe fn type_name() -> &'static str {
                                 stringify!(#attribute)
                             }
                         }
@@ -185,32 +189,49 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     let field_index = syn::Index::from(i);
                     // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
                     quote! {
-                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::type_name(&self.#field_index);
+                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(&self.#field_index);
                     }
                 });
 
                 match attribute {
                     None => {
                         quote! {
-                            unsafe fn type_name(&self) -> &'static str {
+                            fn __is_zero_copy_send(&self) {
                                 #(#field_inits)*
+                            }
+                            unsafe fn type_name() -> &'static str {
                                 core::any::type_name::<Self>()
                             }
                         }
                     }
                     Some(_) => {
                         quote! {
-                            unsafe fn type_name(&self) -> &'static str {
+                            fn __is_zero_copy_send(&self) {
                                 #(#field_inits)*
+                            }
+                            unsafe fn type_name() -> &'static str {
                                 stringify!(#attribute)
                             }
                         }
                     }
                 }
             }
-            Fields::Unit => {
-                return quote! { compile_error!("ZeroCopySend cannot be implemented for Unit-like structs"); }.into();
-            }
+            Fields::Unit => match attribute {
+                None => {
+                    quote! {
+                        unsafe fn type_name() -> &'static str {
+                            core::any::type_name::<Self>()
+                        }
+                    }
+                }
+                Some(_) => {
+                    quote! {
+                        unsafe fn type_name() -> &'static str {
+                            stringify!(#attribute)
+                        }
+                    }
+                }
+            },
         },
         _ => {
             return quote! {compile_error!("ZeroCopySend can only be implemented for structs");}
@@ -219,6 +240,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
+        // TODO: repr(C)
         unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {
             #type_name_impl
         }
@@ -226,6 +248,8 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+// TODO: check other containers + lock-free
+// TODO: bazel
 
 #[cfg(doctest)]
 mod zero_copy_send_compile_tests;

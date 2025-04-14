@@ -116,25 +116,25 @@ mod zero_copy_send {
             _val2: Foo(4),
         };
         assert_that!(is_zero_copy_send(&sut), eq true);
-        assert_that!(unsafe {sut.type_name() }, eq core::any::type_name::<NamedTestStruct>());
+        assert_that!(unsafe { NamedTestStruct::type_name() }, eq core::any::type_name::<NamedTestStruct>());
 
         let sut_with_attr = NamedTestStructWithAttr {
             _val1: 20,
             _val2: Foo(23),
         };
         assert_that!(is_zero_copy_send(&sut_with_attr), eq true);
-        assert_that!(unsafe {sut_with_attr.type_name() }, eq "Nala");
+        assert_that!(unsafe { NamedTestStructWithAttr::type_name() }, eq "Nala");
     }
 
     #[test]
     fn zero_copy_send_derive_sets_type_name_correctly_for_unnamed_structs() {
         let sut = UnnamedTestStruct(1, 2, Foo(3));
         assert_that!(is_zero_copy_send(&sut), eq true);
-        assert_that!(unsafe {sut.type_name() }, eq core::any::type_name::<UnnamedTestStruct>());
+        assert_that!(unsafe { UnnamedTestStruct::type_name() }, eq core::any::type_name::<UnnamedTestStruct>());
 
         let sut_with_attr = UnnamedTestStructWithAttr(84, 90, Foo(23));
         assert_that!(is_zero_copy_send(&sut_with_attr), eq true);
-        assert_that!(unsafe {sut_with_attr.type_name() }, eq "Hypnotoad");
+        assert_that!(unsafe { UnnamedTestStructWithAttr::type_name() }, eq "Hypnotoad");
     }
 
     #[test]
@@ -144,24 +144,24 @@ mod zero_copy_send {
             _val2: Foo(11),
         };
         assert_that!(is_zero_copy_send(&sut), eq true);
-        assert_that!(unsafe {sut.type_name() }, eq core::any::type_name::<GenericNamedTestStruct<i32, Foo>>());
+        assert_that!(unsafe { GenericNamedTestStruct::<i32, Foo>::type_name() }, eq core::any::type_name::<GenericNamedTestStruct<i32, Foo>>());
 
         let sut_with_attr = GenericNamedTestStructWithAttr {
             _val1: 11.11,
             _val2: Foo(2008),
         };
         assert_that!(is_zero_copy_send(&sut_with_attr), eq true);
-        assert_that!(unsafe {sut_with_attr.type_name() }, eq "Wolf");
+        assert_that!(unsafe { GenericNamedTestStructWithAttr::<f32, Foo>::type_name() }, eq "Wolf");
     }
 
     #[test]
     fn zero_copy_send_derive_sets_type_name_correctly_for_generic_unnamed_struct() {
         let sut = GenericUnnamedTestStruct(-13, 13);
         assert_that!(is_zero_copy_send(&sut), eq true);
-        assert_that!(unsafe {sut.type_name() }, eq core::any::type_name::<GenericUnnamedTestStruct<i32, i32>>());
+        assert_that!(unsafe { GenericUnnamedTestStruct::<i32, i32>::type_name() }, eq core::any::type_name::<GenericUnnamedTestStruct<i32, i32>>());
 
         let sut_with_attr = GenericUnnamedTestStructWithAttr(-13, 13);
         assert_that!(is_zero_copy_send(&sut_with_attr), eq true);
-        assert_that!(unsafe {sut_with_attr.type_name() }, eq "Smeik");
+        assert_that!(unsafe { GenericUnnamedTestStructWithAttr::<i32, i32>::type_name() }, eq "Smeik");
     }
 }

@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[derive(Debug)]
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+
+#[derive(Debug, ZeroCopySend)]
 #[repr(C)]
 pub struct TransmissionData {
     pub x: i32,

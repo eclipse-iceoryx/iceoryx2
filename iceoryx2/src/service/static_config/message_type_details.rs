@@ -12,7 +12,7 @@
 
 use core::alloc::Layout;
 
-use iceoryx2_bb_elementary::math::align;
+use iceoryx2_bb_elementary::{math::align, zero_copy_send::ZeroCopySend};
 use serde::{Deserialize, Serialize};
 
 /// Defines if the type is a slice with a runtime-size ([`TypeVariant::Dynamic`])
@@ -57,10 +57,10 @@ pub struct TypeDetail {
 
 impl TypeDetail {
     #[doc(hidden)]
-    pub fn __internal_new<T>(variant: TypeVariant) -> Self {
+    pub fn __internal_new<T: ZeroCopySend>(variant: TypeVariant) -> Self {
         Self {
             variant,
-            type_name: core::any::type_name::<T>().to_string(),
+            type_name: unsafe { T::type_name().to_string() },
             size: core::mem::size_of::<T>(),
             alignment: core::mem::align_of::<T>(),
         }
@@ -80,7 +80,9 @@ pub struct MessageTypeDetails {
 }
 
 impl MessageTypeDetails {
-    pub(crate) fn from<Header, UserHeader, Payload>(payload_variant: TypeVariant) -> Self {
+    pub(crate) fn from<Header: ZeroCopySend, UserHeader: ZeroCopySend, Payload: ZeroCopySend>(
+        payload_variant: TypeVariant,
+    ) -> Self {
         Self {
             header: TypeDetail::__internal_new::<Header>(TypeVariant::FixedSize),
             user_header: TypeDetail::__internal_new::<UserHeader>(TypeVariant::FixedSize),
@@ -132,6 +134,7 @@ impl MessageTypeDetails {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_testing::assert_that;
 
     #[cfg(target_pointer_width = "32")]
@@ -141,6 +144,7 @@ mod tests {
 
     #[test]
     fn test_from() {
+        #[derive(ZeroCopySend)]
         #[repr(C)]
         struct MyPayload {
             _a: i32,
@@ -294,6 +298,7 @@ mod tests {
         let expected = 32;
         assert_that!(sut.size(), eq expected);
 
+        #[derive(ZeroCopySend)]
         #[repr(C)]
         struct Demo {
             _b: bool,

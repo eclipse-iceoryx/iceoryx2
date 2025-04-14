@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+
 use crate::port::port_identifiers::{UniqueClientId, UniqueServerId};
 
 /// Request header used by
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, ZeroCopySend)]
 #[repr(C)]
 pub struct RequestHeader {
     pub(crate) client_port_id: UniqueClientId,
@@ -30,7 +32,7 @@ impl RequestHeader {
 
 /// Response header used by
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, ZeroCopySend)]
 #[repr(C)]
 pub struct ResponseHeader {
     pub(crate) server_port_id: UniqueServerId,

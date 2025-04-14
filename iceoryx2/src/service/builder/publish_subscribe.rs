@@ -23,7 +23,8 @@ use crate::service::port_factory::publish_subscribe;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use builder::RETRY_LIMIT;
-use iceoryx2_bb_elementary::alignment::Alignment;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::{alignment::Alignment, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
@@ -37,12 +38,12 @@ use self::{
 use super::{OpenDynamicStorageFailure, ServiceState};
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
 #[doc(hidden)]
 pub struct CustomHeaderMarker {}
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
 #[doc(hidden)]
 pub struct CustomPayloadMarker(u8);
 
@@ -759,8 +760,11 @@ impl<Payload: Debug + ?Sized, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
-    Builder<Payload, UserHeader, ServiceType>
+impl<
+        Payload: Debug + ZeroCopySend,
+        UserHeader: Debug + ZeroCopySend,
+        ServiceType: service::Service,
+    > Builder<Payload, UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =
@@ -851,8 +855,11 @@ impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
-    Builder<[Payload], UserHeader, ServiceType>
+impl<
+        Payload: Debug + ZeroCopySend,
+        UserHeader: Debug + ZeroCopySend,
+        ServiceType: service::Service,
+    > Builder<[Payload], UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =

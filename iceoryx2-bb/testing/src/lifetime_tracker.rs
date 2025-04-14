@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use std::sync::{Mutex, MutexGuard};
 
 static CREATION_COUNTER: Mutex<usize> = Mutex::new(0);
@@ -25,8 +26,9 @@ impl LifetimeTrackingState {
     }
 }
 
+// ZeroCopySend derived because LifetimeTracker is only used for process local test purposes
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
 pub struct LifetimeTracker {}
 
 impl Default for LifetimeTracker {

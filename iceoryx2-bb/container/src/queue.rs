@@ -103,6 +103,7 @@
 //!
 use core::marker::PhantomData;
 use core::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
@@ -111,6 +112,7 @@ use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
@@ -213,6 +215,8 @@ pub mod details {
             unsafe { self.get_unchecked(index) }
         }
     }
+
+    unsafe impl<T: ZeroCopySend> ZeroCopySend for MetaQueue<T, GenericRelocatablePointer> {}
 
     impl<T> RelocatableContainer for MetaQueue<T, GenericRelocatablePointer> {
         unsafe fn new_uninit(capacity: usize) -> Self {
@@ -452,13 +456,13 @@ pub mod details {
 /// Relocatable queue with compile time fixed size capacity. In contrast to its counterpart the
 /// [`Queue`] it is movable.
 #[repr(C)]
-#[derive(Debug)]
-pub struct FixedSizeQueue<T, const CAPACITY: usize> {
+#[derive(Debug, ZeroCopySend)]
+pub struct FixedSizeQueue<T: ZeroCopySend, const CAPACITY: usize> {
     state: RelocatableQueue<T>,
     _data: [MaybeUninit<T>; CAPACITY],
 }
 
-impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> {
+impl<T: ZeroCopySend, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(RelocatableQueue::new_uninit(CAPACITY));
@@ -471,7 +475,7 @@ impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> 
     }
 }
 
-impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
+impl<T: ZeroCopySend, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
             state: unsafe { RelocatableQueue::new_uninit(CAPACITY) },
@@ -490,9 +494,9 @@ impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
     }
 }
 
-unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeQueue<T, CAPACITY> {}
+unsafe impl<T: Send + ZeroCopySend, const CAPACITY: usize> Send for FixedSizeQueue<T, CAPACITY> {}
 
-impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
+impl<T: ZeroCopySend, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     /// Creates a new queue.
     pub fn new() -> Self {
         Self::default()
@@ -552,7 +556,7 @@ impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     }
 }
 
-impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
+impl<T: Copy + Debug + ZeroCopySend, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     /// Returns a copy of the element stored at index. The index is starting by 0 for the first
     /// element until [`FixedSizeQueue::len()`].
     ///

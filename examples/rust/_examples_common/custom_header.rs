@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[derive(Default, Debug)]
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+
+#[derive(Default, Debug, ZeroCopySend)]
 #[repr(C)]
 pub struct CustomHeader {
     pub version: i32,

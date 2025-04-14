@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 
@@ -18,7 +19,7 @@ macro_rules! generate_id {
         $id_name:ident } => {
         $(#[$documentation])*
         #[repr(C)]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, ZeroCopySend)]
         pub struct $id_name(pub(crate) UniqueSystemId);
 
         impl Default for $id_name {

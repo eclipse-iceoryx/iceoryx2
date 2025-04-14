@@ -40,9 +40,14 @@ pub unsafe trait ZeroCopySend {
     ///
     ///  * The user must guarantee that all types, also definitions in different languages, have
     ///    the same memory layout.
-    unsafe fn type_name(&self) -> &'static str {
+    unsafe fn type_name() -> &'static str {
         core::any::type_name::<Self>()
     }
+
+    #[doc(hidden)]
+    /// used as dummy call in the derive macro to ensure at compile-time that all fields of
+    /// a struct implement ZeroCopySend
+    fn __is_zero_copy_send(&self) {}
 }
 
 unsafe impl ZeroCopySend for usize {}
@@ -76,6 +81,8 @@ unsafe impl ZeroCopySend for IoxAtomicI8 {}
 unsafe impl ZeroCopySend for IoxAtomicI16 {}
 unsafe impl ZeroCopySend for IoxAtomicI32 {}
 unsafe impl ZeroCopySend for IoxAtomicI64 {}
+
+unsafe impl ZeroCopySend for () {}
 
 unsafe impl<T: ZeroCopySend> ZeroCopySend for [T] {}
 unsafe impl<T: ZeroCopySend, const N: usize> ZeroCopySend for [T; N] {}
