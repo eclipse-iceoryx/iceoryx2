@@ -216,8 +216,6 @@ pub mod details {
         }
     }
 
-    unsafe impl<T: ZeroCopySend> ZeroCopySend for MetaQueue<T, GenericRelocatablePointer> {}
-
     impl<T> RelocatableContainer for MetaQueue<T, GenericRelocatablePointer> {
         unsafe fn new_uninit(capacity: usize) -> Self {
             Self {
@@ -260,6 +258,8 @@ pub mod details {
             Self::const_memory_size(capacity)
         }
     }
+
+    unsafe impl<T: ZeroCopySend> ZeroCopySend for MetaQueue<T, GenericRelocatablePointer> {}
 
     impl<T> MetaQueue<T, GenericRelocatablePointer> {
         /// Returns the required memory size for a queue with a specified capacity

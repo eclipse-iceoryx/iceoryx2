@@ -49,12 +49,14 @@ use core::mem::MaybeUninit;
 use crate::queue::details::MetaQueue;
 use crate::vec::details::MetaVec;
 use crate::{queue::RelocatableQueue, vec::RelocatableVec};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary::owning_pointer::GenericOwningPointer;
 use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 
 /// A key of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`] that identifies a
@@ -74,7 +76,8 @@ impl SlotMapKey {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
 struct FreeListEntry {
     previous: usize,
     next: usize,
@@ -455,6 +458,8 @@ pub mod details {
         }
     }
 
+    unsafe impl<T: ZeroCopySend> ZeroCopySend for MetaSlotMap<T, GenericRelocatablePointer> {}
+
     impl<T> MetaSlotMap<T, GenericRelocatablePointer> {
         /// Returns how many memory the [`RelocatableSlotMap`] will allocate from the allocator
         /// in [`RelocatableSlotMap::init()`].
@@ -576,8 +581,8 @@ pub mod details {
 
 /// A compile-time fixed-size, shared memory compatible [`FixedSizeSlotMap`].
 #[repr(C)]
-#[derive(Debug)]
-pub struct FixedSizeSlotMap<T, const CAPACITY: usize> {
+#[derive(Debug, ZeroCopySend)]
+pub struct FixedSizeSlotMap<T: ZeroCopySend, const CAPACITY: usize> {
     state: RelocatableSlotMap<T>,
     _idx_to_data: MaybeUninit<[usize; CAPACITY]>,
     _idx_to_data_free_list: MaybeUninit<[FreeListEntry; CAPACITY]>,
@@ -585,7 +590,7 @@ pub struct FixedSizeSlotMap<T, const CAPACITY: usize> {
     _data_next_free_index: MaybeUninit<[usize; CAPACITY]>,
 }
 
-impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY> {
+impl<T: ZeroCopySend, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(unsafe { RelocatableSlotMap::new_uninit(CAPACITY) });
@@ -597,7 +602,7 @@ impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY
     }
 }
 
-impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
+impl<T: ZeroCopySend, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
             _idx_to_data: MaybeUninit::uninit(),
@@ -619,7 +624,7 @@ impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
     }
 }
 
-impl<T, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
+impl<T: ZeroCopySend, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
     /// Creates a new empty [`FixedSizeSlotMap`].
     pub fn new() -> Self {
         Self::default()

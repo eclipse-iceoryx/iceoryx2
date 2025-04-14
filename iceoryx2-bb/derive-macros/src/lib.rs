@@ -240,7 +240,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        // TODO: repr(C)
         unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {
             #type_name_impl
         }
@@ -248,7 +247,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
-// TODO: check other containers + lock-free
 
 #[cfg(doctest)]
 mod zero_copy_send_compile_tests;
