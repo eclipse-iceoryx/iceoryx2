@@ -71,6 +71,7 @@ rust_test_suite(
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
     proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
         "@crate_index//:generic-tests",
     ],
 )

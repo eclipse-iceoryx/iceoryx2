@@ -20,5 +20,9 @@ rust_binary(
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+    ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
     ],
 )

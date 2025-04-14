@@ -249,7 +249,6 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 // TODO: check other containers + lock-free
-// TODO: bazel
 
 #[cfg(doctest)]
 mod zero_copy_send_compile_tests;
