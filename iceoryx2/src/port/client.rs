@@ -378,7 +378,15 @@ impl<
                     service_state: service.__internal_state().clone(),
                     buffer_size: static_config.max_response_buffer_size,
                     tagger: CyclicTagger::new(),
-                    to_be_removed_connections: None,
+                    to_be_removed_connections: Some(UnsafeCell::new(Queue::new(
+                        service
+                            .__internal_state()
+                            .shared_node
+                            .config()
+                            .defaults
+                            .request_response
+                            .client_expired_connection_buffer,
+                    ))),
                     degradation_callback: client_factory.response_degradation_callback,
                     message_type_details: static_config.response_message_type_details.clone(),
                     receiver_max_borrowed_samples: static_config

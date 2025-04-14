@@ -34,6 +34,7 @@ client-max-loaned-requests = 2
 server-max-loaned-responses-per-request = 2
 client-unable-to-deliver-strategy = 'Block'     # or 'DiscardSample'
 server-unable-to-deliver-strategy = 'Block'     # or 'DiscardSample'
+client-expired-connection-buffer = 128
 
 [defaults.publish-subscribe]
 max-subscribers = 8

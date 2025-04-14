@@ -335,6 +335,12 @@ pub struct RequestResonse {
     /// Defines the [`UnableToDeliverStrategy`] when a [`Server`](crate::port::server::Server)
     /// could not deliver the response to the [`Client`](crate::port::client::Client).
     pub server_unable_to_deliver_strategy: UnableToDeliverStrategy,
+    /// Defines the size of the internal [`Client`](crate::port::client::Client)
+    /// buffer that contains expired connections. An
+    /// connection is expired when the [`Server`](crate::port::server::Server)
+    /// disconnected from a service and the connection
+    /// still contains unconsumed [`Response`](crate::response::Response)s.
+    pub client_expired_connection_buffer: usize,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -392,6 +398,7 @@ impl Default for Config {
                     server_max_loaned_responses_per_request: 2,
                     client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+                    client_expired_connection_buffer: 128,
                 },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,
