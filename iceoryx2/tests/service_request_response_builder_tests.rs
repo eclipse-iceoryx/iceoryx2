@@ -19,6 +19,7 @@ mod service_request_response {
     };
     use iceoryx2::service::port_factory::client::ClientCreateError;
     use iceoryx2::service::port_factory::server::ServerCreateError;
+    use iceoryx2::service::static_config::message_type_details::TypeVariant;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
 
@@ -952,6 +953,90 @@ mod service_request_response {
             let server = sut.server_builder().create();
             assert_that!(server.err(), eq Some(ServerCreateError::ExceedsMaxSupportedServers));
         }
+    }
+
+    #[test]
+    fn type_informations_are_correct<Sut: Service>() {
+        type RequestPayload = u128;
+        type RequestHeader = f32;
+        type ResponsePayload = u8;
+        type ResponseHeader = u16;
+
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<RequestPayload, ResponsePayload>()
+            .request_user_header::<RequestHeader>()
+            .response_user_header::<ResponseHeader>()
+            .create()
+            .unwrap();
+
+        let d = sut.static_config().request_message_type_details();
+        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.header.type_name, eq core::any::type_name::<iceoryx2::service::header::request_response::RequestHeader>());
+        assert_that!(d.header.size, eq core::mem::size_of::<iceoryx2::service::header::request_response::RequestHeader>());
+        assert_that!(d.header.alignment, eq core::mem::align_of::<iceoryx2::service::header::request_response::RequestHeader>());
+        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.user_header.type_name, eq core::any::type_name::<RequestHeader>());
+        assert_that!(d.user_header.size, eq core::mem::size_of::<RequestHeader>());
+        assert_that!(d.user_header.alignment, eq core::mem::align_of::<RequestHeader>());
+        assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.payload.type_name, eq core::any::type_name::<RequestPayload>());
+        assert_that!(d.payload.size, eq core::mem::size_of::<RequestPayload>());
+        assert_that!(d.payload.alignment, eq core::mem::align_of::<RequestPayload>());
+
+        let d = sut.static_config().response_message_type_details();
+        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.header.type_name, eq core::any::type_name::<iceoryx2::service::header::request_response::ResponseHeader>());
+        assert_that!(d.header.size, eq core::mem::size_of::<iceoryx2::service::header::request_response::ResponseHeader>());
+        assert_that!(d.header.alignment, eq core::mem::align_of::<iceoryx2::service::header::request_response::ResponseHeader>());
+        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.user_header.type_name, eq core::any::type_name::<ResponseHeader>());
+        assert_that!(d.user_header.size, eq core::mem::size_of::<ResponseHeader>());
+        assert_that!(d.user_header.alignment, eq core::mem::align_of::<ResponseHeader>());
+        assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
+        assert_that!(d.payload.type_name, eq core::any::type_name::<ResponsePayload>());
+        assert_that!(d.payload.size, eq core::mem::size_of::<ResponsePayload>());
+        assert_that!(d.payload.alignment, eq core::mem::align_of::<ResponsePayload>());
+    }
+
+    #[test]
+    fn custom_request_alignment_cannot_be_smaller_than_type_alignment<Sut: Service>() {
+        type RequestPayload = u64;
+
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<RequestPayload, u8>()
+            .request_payload_alignment(Alignment::new(2).unwrap())
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().request_message_type_details().payload.alignment, eq core::mem::align_of::<RequestPayload>());
+    }
+
+    #[test]
+    fn custom_respone_alignment_cannot_be_smaller_than_type_alignment<Sut: Service>() {
+        type ResponsePayload = u64;
+
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u8, ResponsePayload>()
+            .response_payload_alignment(Alignment::new(2).unwrap())
+            .create()
+            .unwrap();
+
+        assert_that!(sut.static_config().response_message_type_details().payload.alignment, eq core::mem::align_of::<ResponsePayload>());
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
