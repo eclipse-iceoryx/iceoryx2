@@ -14,6 +14,7 @@ use core::cell::UnsafeCell;
 
 extern crate alloc;
 use super::channel_management::ChannelManagement;
+use super::channel_management::INVALID_CHANNEL_STATE;
 use super::chunk::Chunk;
 use super::chunk_details::ChunkDetails;
 use super::data_segment::{DataSegmentType, DataSegmentView};
@@ -76,6 +77,7 @@ impl<Service: service::Service> Connection<Service> {
                                     .enable_safe_overflow(this.enable_safe_overflow)
                                     .number_of_samples_per_segment(number_of_samples)
                                     .number_of_channels(this.number_of_channels)
+                                    .initial_channel_state(INVALID_CHANNEL_STATE)
                                     .max_supported_shared_memory_segments(max_number_of_segments)
                                     .timeout(global_config.global.service.creation_timeout)
                                     .create_receiver(),

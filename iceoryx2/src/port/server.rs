@@ -400,38 +400,48 @@ impl<
         >,
         ReceiveError,
     > {
-        match self.receive_impl()? {
-            Some((details, chunk)) => {
-                let header = unsafe {
-                    &*(chunk.header as *const service::header::request_response::RequestHeader)
-                };
+        loop {
+            match self.receive_impl()? {
+                Some((details, chunk)) => {
+                    let header = unsafe {
+                        &*(chunk.header as *const service::header::request_response::RequestHeader)
+                    };
 
-                match self
-                    .shared_state
-                    .response_sender
-                    .get_connection_id_of(header.client_port_id.value())
-                {
-                    Some(connection_id) => Ok(Some(ActiveRequest {
-                        details,
-                        request_id: header.request_id,
-                        channel_id: header.channel_id,
-                        connection_id,
-                        shared_state: self.shared_state.clone(),
-                        ptr: unsafe {
-                            RawSample::new_unchecked(
-                                chunk.header.cast(),
-                                chunk.user_header.cast(),
-                                chunk.payload.cast(),
-                            )
-                        },
-                        _response_payload: PhantomData,
-                        _response_header: PhantomData,
-                    })),
+                    match self
+                        .shared_state
+                        .response_sender
+                        .get_connection_id_of(header.client_port_id.value())
+                    {
+                        Some(connection_id) => {
+                            let active_request = ActiveRequest {
+                                details,
+                                request_id: header.request_id,
+                                channel_id: header.channel_id,
+                                connection_id,
+                                shared_state: self.shared_state.clone(),
+                                ptr: unsafe {
+                                    RawSample::new_unchecked(
+                                        chunk.header.cast(),
+                                        chunk.user_header.cast(),
+                                        chunk.payload.cast::<RequestPayload>(),
+                                    )
+                                },
+                                _response_payload: PhantomData,
+                                _response_header: PhantomData,
+                            };
 
-                    None => return Ok(None),
+                            if !active_request.is_connected() {
+                                continue;
+                            }
+
+                            return Ok(Some(active_request));
+                        }
+
+                        None => (),
+                    }
                 }
+                None => return Ok(None),
             }
-            None => return Ok(None),
         }
     }
 }
