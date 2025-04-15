@@ -12,6 +12,7 @@
 
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::info;
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
@@ -80,7 +81,8 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
 pub fn monitor(rate: u64) -> Result<()> {
     let mut monitor = Monitor::<ipc::Service>::new();
 
-    println!("Monitoring services (update rate: {}ms)", rate);
+    info!("Started service monitor (update rate: {}ms)", rate);
+
     loop {
         monitor.spin();
         std::thread::sleep(std::time::Duration::from_millis(rate));

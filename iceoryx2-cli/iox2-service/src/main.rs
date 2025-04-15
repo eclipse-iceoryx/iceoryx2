@@ -25,7 +25,9 @@ use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_bb_log::error;
+use iceoryx2_bb_log::set_log_level_from_env_or;
+use iceoryx2_bb_log::LogLevel;
 
 fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
@@ -41,24 +43,24 @@ fn main() -> Result<()> {
             .install();
     }
 
-    set_log_level(LogLevel::Warn);
+    set_log_level_from_env_or(LogLevel::Warn);
 
     let cli = Cli::try_parse().map_err(|e| anyhow!("{}", e))?;
     if let Some(action) = cli.action {
         match action {
             Action::List(options) => {
                 if let Err(e) = commands::list(options.filter, cli.format) {
-                    eprintln!("Failed to list services: {}", e);
+                    error!("Failed to list services: {}", e);
                 }
             }
             Action::Details(options) => {
                 if let Err(e) = commands::details(options.service, options.filter, cli.format) {
-                    eprintln!("Failed to retrieve service details: {}", e);
+                    error!("Failed to retrieve service details: {}", e);
                 }
             }
             Action::Monitor(options) => {
                 if let Err(_e) = commands::monitor(options.rate) {
-                    eprintln!("Failed to start service monitor")
+                    error!("Failed to start service monitor")
                 }
             }
         }

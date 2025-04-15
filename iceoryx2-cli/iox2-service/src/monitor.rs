@@ -18,6 +18,7 @@ use iceoryx2::{
     service::{static_config::StaticConfig, Service},
     tracker::service::Tracker,
 };
+use iceoryx2_bb_log::info;
 use iceoryx2_cli::output::ServiceDescriptor;
 
 #[derive(Debug)]
@@ -93,15 +94,15 @@ impl<S: Service> Monitor<S> {
 
         // Publish
         for id in added {
-            // Clone required since the details are stored in the tracker.
             if let Some(service) = self.tracker.get(&id) {
-                println!("Added: {:?}", ServiceDescriptor::from(service));
+                info!("ADDED {:?}", ServiceDescriptor::from(service));
+                // Clone required since the details are stored in the tracker.
                 let event = DiscoveryEvent::Added(service.static_details.clone());
                 let _ = self.publisher.send_copy(event);
             }
         }
         for service in removed {
-            println!("Removed: {:?}", ServiceDescriptor::from(&service));
+            info!("REMOVED {:?}", ServiceDescriptor::from(&service));
             // The removed details are not stored in the tracker. Claim ownership.
             let event = DiscoveryEvent::Removed(service.static_details);
             let _ = self.publisher.send_copy(event);
