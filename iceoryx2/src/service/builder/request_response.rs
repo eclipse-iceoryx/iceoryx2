@@ -209,9 +209,9 @@ enum ServiceAvailabilityState {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Builder<
-    RequestPayload: Debug,
+    RequestPayload: Debug + ZeroCopySend,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug,
+    ResponsePayload: Debug + ZeroCopySend,
     ResponseHeader: Debug + ZeroCopySend,
     ServiceType: Service,
 > {
