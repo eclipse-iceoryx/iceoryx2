@@ -37,6 +37,7 @@ extern crate alloc;
 use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
@@ -236,9 +237,7 @@ impl<
             .clients;
 
         let request_receiver = Receiver {
-            connections: (0..client_list.capacity())
-                .map(|_| UnsafeCell::new(None))
-                .collect(),
+            connections: Vec::from_fn(client_list.capacity(), |_| UnsafeCell::new(None)),
             receiver_port_id: server_port_id.value(),
             service_state: service.__internal_state().clone(),
             message_type_details: static_config.request_message_type_details.clone(),

@@ -39,7 +39,7 @@ use core::sync::atomic::Ordering;
 
 extern crate alloc;
 
-use iceoryx2_bb_container::queue::Queue;
+use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -146,9 +146,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         };
 
         let receiver = Receiver {
-            connections: (0..publisher_list.capacity())
-                .map(|_| UnsafeCell::new(None))
-                .collect(),
+            connections: Vec::from_fn(publisher_list.capacity(), |_| UnsafeCell::new(None)),
             receiver_port_id: subscriber_id.value(),
             service_state: service.__internal_state().clone(),
             message_type_details: static_config.message_type_details.clone(),
@@ -156,7 +154,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
             enable_safe_overflow: static_config.enable_safe_overflow,
             buffer_size,
             tagger: CyclicTagger::new(),
-            to_be_removed_connections: Some(UnsafeCell::new(Queue::new(
+            to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
                 service
                     .__internal_state()
                     .shared_node
