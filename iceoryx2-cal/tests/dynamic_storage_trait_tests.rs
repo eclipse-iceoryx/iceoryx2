@@ -404,6 +404,7 @@ mod dynamic_storage {
         }
     }
 
+    #[ignore] // TODO: iox2-671 enable this test when the concurrency issue is fixed.
     #[test]
     fn initialization_blocks_other_openers<
         Sut: DynamicStorage<TestData>,
