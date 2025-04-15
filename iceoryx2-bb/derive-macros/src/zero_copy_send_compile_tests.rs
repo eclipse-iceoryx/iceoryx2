@@ -110,3 +110,13 @@ fn zero_copy_send_derive_does_not_work_with_empty_attribute_argument() {}
 /// ```
 #[cfg(doctest)]
 fn zero_copy_send_derive_does_not_work_with_more_than_one_attribute_argument() {}
+
+/// ``` compile_fail
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+///
+/// #[derive(ZeroCopySend)]
+/// #[type_name(abc, def)]
+/// struct TestStruct(u8, i32);
+/// ```
+#[cfg(doctest)]
+fn zero_copy_send_derive_does_not_work_with_more_than_one_attribute_argument_comma_separated() {}

@@ -60,8 +60,8 @@ pub struct TriggerQueue<'a, T: Debug, const CAPACITY: usize> {
     _phantom_data: PhantomData<T>,
 }
 
-unsafe impl<'a, T: Debug + ZeroCopySend, const CAPACITY: usize> ZeroCopySend
-    for TriggerQueue<'a, T, CAPACITY>
+unsafe impl<T: Debug + ZeroCopySend, const CAPACITY: usize> ZeroCopySend
+    for TriggerQueue<'_, T, CAPACITY>
 {
 }
 
