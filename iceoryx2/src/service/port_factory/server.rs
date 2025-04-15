@@ -36,7 +36,7 @@ use crate::{
     service,
 };
 use core::fmt::Debug;
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, warn};
 
 /// Defines a failure that can occur when a [`Server`] is created with
 /// [`crate::service::port_factory::server::PortFactoryServer`].
@@ -139,7 +139,11 @@ impl<
     /// the [`Server`] can loan in parallel per
     /// [`ActiveRequest`](crate::active_request::ActiveRequest).
     pub fn max_loaned_responses_per_request(mut self, value: usize) -> Self {
-        self.max_loaned_responses_per_request = value;
+        if value == 0 {
+            warn!(from self,
+                "A value of 0 is not allowed for max loaned responses per request. Adjusting it to 1.");
+        }
+        self.max_loaned_responses_per_request = value.max(1);
         self
     }
 

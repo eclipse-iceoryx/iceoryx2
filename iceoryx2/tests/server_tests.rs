@@ -160,6 +160,25 @@ mod server {
     }
 
     #[test]
+    fn max_loaned_responses_per_requests_is_adjusted_to_sane_values<Sut: Service>() {
+        let (_node, service) = create_node_and_service::<Sut>();
+
+        let sut = service
+            .server_builder()
+            .max_loaned_responses_per_request(0)
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        assert_that!(client.send_copy(0), is_ok);
+
+        let active_request = sut.receive().unwrap().unwrap();
+        // max loaned responses per request needs to be adjusted to 1 and therefore this
+        // must work
+        assert_that!(active_request.loan(), is_ok);
+    }
+
+    #[test]
     fn server_can_hold_specified_amount_of_active_requests_one_client_one_request<Sut: Service>() {
         const MAX_CLIENTS: usize = 1;
         const MAX_ACTIVE_REQUESTS: usize = 1;
@@ -290,6 +309,80 @@ mod server {
             let response = pending_response.receive().unwrap().unwrap();
             assert_that!(*response, eq 654);
         });
+    }
+
+    #[test]
+    fn reclaims_all_responses_delivered_to_client_after_a_client_disconnect<Sut: Service>() {
+        const MAX_ACTIVE_REQUESTS: usize = 4;
+        const ITERATIONS: usize = 20;
+        const MAX_CLIENTS: usize = 4;
+        const RESPONSE_BUFFER_SIZE: usize = 7;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+            .max_clients(MAX_CLIENTS)
+            .max_response_buffer_size(RESPONSE_BUFFER_SIZE)
+            .create()
+            .unwrap();
+
+        let sut = service.server_builder().create().unwrap();
+
+        for n in 0..MAX_CLIENTS {
+            for _ in 0..ITERATIONS {
+                let mut requests = vec![];
+                let mut clients = vec![];
+                for _ in 0..n {
+                    let client = service.client_builder().create().unwrap();
+
+                    for _ in 0..MAX_ACTIVE_REQUESTS {
+                        requests.push(client.send_copy(0).unwrap());
+                    }
+
+                    clients.push(client);
+                }
+
+                while let Some(request) = sut.receive().unwrap() {
+                    for _ in 0..RESPONSE_BUFFER_SIZE {
+                        request.send_copy(0).unwrap();
+                    }
+                }
+
+                // disconnect all clients by dropping them and the requests
+                drop(requests);
+                drop(clients);
+            }
+        }
+    }
+
+    #[test]
+    fn updates_connections_after_reconnect<Sut: Service>() {
+        const ITERATIONS: usize = 20;
+        const MAX_CLIENTS: usize = 4;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(MAX_CLIENTS)
+            .create()
+            .unwrap();
+
+        let sut = service.server_builder().create().unwrap();
+
+        for _ in 0..ITERATIONS {
+            let mut requests = vec![];
+            let mut clients = vec![];
+            for _ in 0..MAX_CLIENTS {
+                let client = service.client_builder().create().unwrap();
+                requests.push(client.send_copy(0).unwrap());
+                clients.push(client);
+
+                assert_that!(sut.receive().unwrap(), is_some);
+            }
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
