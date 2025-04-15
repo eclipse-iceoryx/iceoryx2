@@ -17,15 +17,18 @@ mod service_request_response {
     use iceoryx2::node::NodeBuilder;
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
-    use iceoryx2::prelude::*;
-    use iceoryx2::service::port_factory::request_response::PortFactory;
+    use iceoryx2::prelude::{PortFactory, *};
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
 
     #[derive(Clone, Copy)]
     struct Args {
+        number_of_active_requests: usize,
+        number_of_nodes: usize,
         number_of_clients: usize,
         number_of_servers: usize,
+        request_alignment: Alignment,
+        response_alignment: Alignment,
         response_buffer_size: usize,
         request_overflow: bool,
         response_overflow: bool,
@@ -36,8 +39,12 @@ mod service_request_response {
     impl Default for Args {
         fn default() -> Self {
             Self {
+                number_of_active_requests: 1,
+                number_of_nodes: 1,
                 number_of_clients: 1,
                 number_of_servers: 1,
+                request_alignment: Alignment::new(8).unwrap(),
+                response_alignment: Alignment::new(8).unwrap(),
                 response_buffer_size: 1,
                 request_overflow: true,
                 response_overflow: true,
@@ -48,8 +55,14 @@ mod service_request_response {
     }
 
     struct TestFixture<Sut: Service> {
-        _node: Node<Sut>,
-        _service: PortFactory<Sut, usize, usize, usize, usize>,
+        node: Node<Sut>,
+        service: iceoryx2::service::port_factory::request_response::PortFactory<
+            Sut,
+            usize,
+            usize,
+            usize,
+            usize,
+        >,
         clients: Vec<Client<Sut, usize, usize, usize, usize>>,
         servers: Vec<Server<Sut, usize, usize, usize, usize>>,
     }
@@ -64,6 +77,10 @@ mod service_request_response {
                 .request_response::<usize, usize>()
                 .request_user_header::<usize>()
                 .response_user_header::<usize>()
+                .max_active_requests_per_client(args.number_of_active_requests)
+                .max_nodes(args.number_of_nodes)
+                .request_payload_alignment(args.request_alignment)
+                .response_payload_alignment(args.response_alignment)
                 .enable_safe_overflow_for_requests(args.request_overflow)
                 .enable_safe_overflow_for_responses(args.response_overflow)
                 .max_response_buffer_size(args.response_buffer_size)
@@ -95,8 +112,8 @@ mod service_request_response {
             }
 
             Self {
-                _node: node,
-                _service: service,
+                node,
+                service,
                 clients,
                 servers,
             }
@@ -344,6 +361,75 @@ mod service_request_response {
 
         assert_that!(client.send_copy(8182982), is_ok);
         assert_that!(*server.receive().unwrap().unwrap(), eq 8182982);
+    }
+
+    #[test]
+    fn requests_are_correctly_aligned_on_all_ends<Sut: Service>() {
+        let test_args = Args {
+            number_of_clients: 2,
+            number_of_active_requests: 8,
+            request_alignment: Alignment::new(512).unwrap(),
+            ..Default::default()
+        };
+        let mut test = TestFixture::<Sut>::new(test_args);
+        test.clients.pop();
+
+        let service_2 = test
+            .node
+            .service_builder(test.service.name())
+            .request_response::<usize, usize>()
+            .request_user_header::<usize>()
+            .response_user_header::<usize>()
+            .open()
+            .unwrap();
+
+        let client_2 = service_2.client_builder().create().unwrap();
+
+        for _ in 0..test_args.number_of_active_requests {
+            let request = client_2.loan().unwrap();
+            assert_that!(request.payload() as *const _, aligned_to test_args.request_alignment.value());
+            assert_that!(request.send(), is_ok);
+        }
+
+        while let Some(request) = test.servers[0].receive().unwrap() {
+            assert_that!(request.payload() as *const _, aligned_to test_args.request_alignment.value());
+        }
+    }
+
+    #[test]
+    fn responses_are_correctly_aligned_on_all_ends<Sut: Service>() {
+        let test_args = Args {
+            number_of_clients: 2,
+            response_buffer_size: 21,
+            response_alignment: Alignment::new(512).unwrap(),
+            ..Default::default()
+        };
+        let mut test = TestFixture::<Sut>::new(test_args);
+        test.clients.pop();
+
+        let service_2 = test
+            .node
+            .service_builder(test.service.name())
+            .request_response::<usize, usize>()
+            .request_user_header::<usize>()
+            .response_user_header::<usize>()
+            .open()
+            .unwrap();
+
+        let client_2 = service_2.client_builder().create().unwrap();
+
+        let request = client_2.send_copy(0).unwrap();
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+
+        for _ in 0..test_args.response_buffer_size {
+            let response = active_request.loan().unwrap();
+            assert_that!((response.payload() as *const _), aligned_to test_args.response_alignment.value());
+            assert_that!(response.send(), is_ok);
+        }
+
+        while let Some(response) = request.receive().unwrap() {
+            assert_that!((response.payload() as *const _), aligned_to test_args.response_alignment.value());
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

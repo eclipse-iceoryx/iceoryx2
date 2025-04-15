@@ -258,7 +258,7 @@ impl<
             DataSegment::<Service>::max_number_of_segments(data_segment_type);
         let data_segment = DataSegment::<Service>::create_static_segment(
             &segment_name,
-            static_config.request_message_type_details.sample_layout(1),
+            static_config.response_message_type_details.sample_layout(1),
             global_config,
             number_of_responses,
         );
