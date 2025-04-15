@@ -118,10 +118,23 @@ impl core::error::Error for RequestSendError {}
 pub(crate) struct ClientSharedState<Service: service::Service> {
     pub(crate) request_sender: Sender<Service>,
     pub(crate) response_receiver: Receiver<Service>,
-    is_active: IoxAtomicBool,
+    client_handle: UnsafeCell<Option<ContainerHandle>>,
     server_list_state: UnsafeCell<ContainerState<ServerDetails>>,
     pub(crate) active_request_counter: IoxAtomicUsize,
     pub(crate) available_channel_ids: UnsafeCell<Queue<ChannelId>>,
+}
+
+impl<Service: service::Service> Drop for ClientSharedState<Service> {
+    fn drop(&mut self) {
+        if let Some(handle) = unsafe { *self.client_handle.get() } {
+            self.request_sender
+                .service_state
+                .dynamic_storage
+                .get()
+                .request_response()
+                .release_client_handle(handle)
+        }
+    }
 }
 
 impl<Service: service::Service> ClientSharedState<Service> {
@@ -150,11 +163,6 @@ impl<Service: service::Service> ClientSharedState<Service> {
         {
             fail!(from self, with RequestSendError::ExceedsMaxActiveRequests,
                     "{} since the number of active requests is limited to {} and sending this request would exceed the limit.", msg, active_request_counter);
-        }
-
-        if !self.is_active.load(Ordering::Relaxed) {
-            fail!(from self, with RequestSendError::SendError(SendError::ConnectionBrokenSinceSenderNoLongerExists),
-                "{} since corresponding client is already disconnected.", msg);
         }
 
         fail!(from self, when self.update_connections(),
@@ -240,7 +248,6 @@ pub struct Client<
     ResponsePayload: Debug,
     ResponseHeader: Debug,
 > {
-    client_handle: Option<ContainerHandle>,
     client_port_id: UniqueClientId,
     client_shared_state: Arc<ClientSharedState<Service>>,
     request_id_counter: IoxAtomicU64,
@@ -248,30 +255,6 @@ pub struct Client<
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
     _response_header: PhantomData<ResponseHeader>,
-}
-
-impl<
-        Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
-    > Drop for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
-{
-    fn drop(&mut self) {
-        if let Some(handle) = self.client_handle {
-            self.client_shared_state
-                .request_sender
-                .service_state
-                .dynamic_storage
-                .get()
-                .request_response()
-                .release_client_handle(handle)
-        }
-        self.client_shared_state
-            .is_active
-            .store(false, Ordering::Relaxed);
-    }
 }
 
 impl<
@@ -337,10 +320,56 @@ impl<
             response_buffer_size: static_config.max_response_buffer_size,
         };
 
-        let mut new_self = Self {
+        let request_sender = Sender {
+            data_segment,
+            segment_states: vec![SegmentState::new(number_of_requests)],
+            sender_port_id: client_port_id.value(),
+            shared_node: service.__internal_state().shared_node.clone(),
+            connections: (0..server_list.capacity())
+                .map(|_| UnsafeCell::new(None))
+                .collect(),
+            receiver_max_buffer_size: static_config.max_active_requests_per_client,
+            receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
+            enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
+            degradation_callback: client_factory.request_degradation_callback,
+            number_of_samples: number_of_requests,
+            max_number_of_segments,
+            service_state: service.__internal_state().clone(),
+            tagger: CyclicTagger::new(),
+            loan_counter: IoxAtomicUsize::new(0),
+            sender_max_borrowed_samples: static_config.client_max_loaned_requests,
+            unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
+            message_type_details: static_config.request_message_type_details.clone(),
+            number_of_channels: 1,
+        };
+
+        let response_receiver = Receiver {
+            connections: Vec::from_fn(server_list.capacity(), |_| UnsafeCell::new(None)),
+            receiver_port_id: client_port_id.value(),
+            service_state: service.__internal_state().clone(),
+            buffer_size: static_config.max_response_buffer_size,
+            tagger: CyclicTagger::new(),
+            to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
+                service
+                    .__internal_state()
+                    .shared_node
+                    .config()
+                    .defaults
+                    .request_response
+                    .client_expired_connection_buffer,
+            ))),
+            degradation_callback: client_factory.response_degradation_callback,
+            message_type_details: static_config.response_message_type_details.clone(),
+            receiver_max_borrowed_samples: static_config
+                .max_borrowed_responses_per_pending_response,
+            enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
+            number_of_channels: number_of_requests,
+        };
+
+        let new_self = Self {
             request_id_counter: IoxAtomicU64::new(0),
-            client_handle: None,
             client_shared_state: Arc::new(ClientSharedState {
+                client_handle: UnsafeCell::new(None),
                 available_channel_ids: {
                     let mut queue = Queue::new(number_of_requests);
                     for n in 0..number_of_requests {
@@ -348,51 +377,8 @@ impl<
                     }
                     UnsafeCell::new(queue)
                 },
-                request_sender: Sender {
-                    data_segment,
-                    segment_states: vec![SegmentState::new(number_of_requests)],
-                    sender_port_id: client_port_id.value(),
-                    shared_node: service.__internal_state().shared_node.clone(),
-                    connections: (0..server_list.capacity())
-                        .map(|_| UnsafeCell::new(None))
-                        .collect(),
-                    receiver_max_buffer_size: static_config.max_active_requests_per_client,
-                    receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
-                    enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
-                    degradation_callback: client_factory.request_degradation_callback,
-                    number_of_samples: number_of_requests,
-                    max_number_of_segments,
-                    service_state: service.__internal_state().clone(),
-                    tagger: CyclicTagger::new(),
-                    loan_counter: IoxAtomicUsize::new(0),
-                    sender_max_borrowed_samples: static_config.client_max_loaned_requests,
-                    unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
-                    message_type_details: static_config.request_message_type_details.clone(),
-                    number_of_channels: 1,
-                },
-                response_receiver: Receiver {
-                    connections: Vec::from_fn(server_list.capacity(), |_| UnsafeCell::new(None)),
-                    receiver_port_id: client_port_id.value(),
-                    service_state: service.__internal_state().clone(),
-                    buffer_size: static_config.max_response_buffer_size,
-                    tagger: CyclicTagger::new(),
-                    to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
-                        service
-                            .__internal_state()
-                            .shared_node
-                            .config()
-                            .defaults
-                            .request_response
-                            .client_expired_connection_buffer,
-                    ))),
-                    degradation_callback: client_factory.response_degradation_callback,
-                    message_type_details: static_config.response_message_type_details.clone(),
-                    receiver_max_borrowed_samples: static_config
-                        .max_borrowed_responses_per_pending_response,
-                    enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
-                    number_of_channels: number_of_requests,
-                },
-                is_active: IoxAtomicBool::new(true),
+                request_sender,
+                response_receiver,
                 server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
                 active_request_counter: IoxAtomicUsize::new(0),
             }),
@@ -412,19 +398,21 @@ impl<
 
         // !MUST! be the last task otherwise a client is added to the dynamic config without the
         // creation of all required resources
-        new_self.client_handle = match service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .request_response()
-            .add_client_id(client_details)
-        {
-            Some(handle) => Some(handle),
-            None => {
-                fail!(from origin,
+        unsafe {
+            *new_self.client_shared_state.client_handle.get() = match service
+                .__internal_state()
+                .dynamic_storage
+                .get()
+                .request_response()
+                .add_client_id(client_details)
+            {
+                Some(handle) => Some(handle),
+                None => {
+                    fail!(from origin,
                       with ClientCreateError::ExceedsMaxSupportedClients,
                       "{} since it would exceed the maximum support amount of clients of {}.",
                       msg, service.__internal_state().static_config.request_response().max_clients());
+                }
             }
         };
 

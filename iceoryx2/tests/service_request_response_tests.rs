@@ -388,8 +388,9 @@ mod service_request_response {
             assert_that!(active_request_1.send_copy(n + 100), is_ok);
         }
 
-        // disconnect servers[1]
+        // disconnect servers[1] and the request-response connection
         test.servers.pop();
+        drop(active_request_1);
 
         for n in 0..test_args.response_buffer_size {
             assert_that!(*pending_response.receive().unwrap().unwrap(), eq n + 100);
@@ -443,6 +444,81 @@ mod service_request_response {
         assert_that!(*active_request.payload(), eq * pending_response_1.payload());
         let active_request = test.servers[0].receive().unwrap().unwrap();
         assert_that!(*active_request.payload(), eq * pending_response_2.payload());
+    }
+
+    #[test]
+    fn responses_can_be_received_when_client_no_longer_exists<Sut: Service>() {
+        let test_args = Args {
+            response_buffer_size: 5,
+            ..Default::default()
+        };
+
+        let mut test = TestFixture::<Sut>::new(test_args);
+
+        let pending_response = test.clients[0].send_copy(5).unwrap();
+        test.clients.clear();
+
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        for n in 0..test_args.response_buffer_size {
+            assert_that!(active_request.send_copy(4 * n * n + 3), is_ok);
+        }
+
+        for n in 0..test_args.response_buffer_size {
+            assert_that!(*pending_response.receive().unwrap().unwrap(), eq 4 * n * n + 3)
+        }
+    }
+
+    #[test]
+    fn safe_overflow_for_requests_works<Sut: Service>() {
+        let test_args = Args {
+            number_of_active_requests: 5,
+            request_overflow: true,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+
+        // send dummy data first so that the buffer is full and can overflow
+        for _ in 0..test_args.number_of_active_requests {
+            assert_that!(test.clients[0].send_copy(0), is_ok);
+        }
+
+        // let the buffer overflow
+        let mut pending_responses = vec![];
+        for n in 0..test_args.number_of_active_requests {
+            pending_responses.push(test.clients[0].send_copy(n * n * n + 3).unwrap());
+        }
+
+        for n in 0..test_args.number_of_active_requests {
+            assert_that!(*test.servers[0].receive().unwrap().unwrap(), eq n * n * n + 3);
+        }
+    }
+
+    #[test]
+    fn safe_overflow_for_responses_works<Sut: Service>() {
+        let test_args = Args {
+            response_buffer_size: 7,
+            response_overflow: true,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+        let pending_response = test.clients[0].send_copy(0).unwrap();
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+
+        // send dummy data first so that the buffer is full and can overflow
+        for _ in 0..test_args.response_buffer_size {
+            assert_that!(active_request.send_copy(0), is_ok);
+        }
+
+        // let the buffer overflow
+        for n in 0..test_args.response_buffer_size {
+            assert_that!(active_request.send_copy(4 * n + 3 * n * n), is_ok);
+        }
+
+        for n in 0..test_args.response_buffer_size {
+            assert_that!(*pending_response.receive().unwrap().unwrap(), eq 4 * n + 3 * n * n);
+        }
     }
 
     #[test]
@@ -512,6 +588,33 @@ mod service_request_response {
 
         let _pending_response = client.send_copy(8182982);
         assert_that!(*server.receive().unwrap().unwrap(), eq 8182982);
+    }
+
+    #[test]
+    fn dropping_service_keeps_established_communication_for_active_requests<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let server = sut.server_builder().create().unwrap();
+        let client = sut.client_builder().create().unwrap();
+
+        drop(sut);
+
+        let pending_response = client.send_copy(8182982).unwrap();
+        let active_request = server.receive().unwrap().unwrap();
+
+        drop(server);
+        drop(client);
+
+        assert_that!(active_request.send_copy(78223), is_ok);
+        assert_that!(*pending_response.receive().unwrap().unwrap(), eq 78223);
     }
 
     #[test]

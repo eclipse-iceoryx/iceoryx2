@@ -113,11 +113,6 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     pub fn send(self) -> Result<(), SendError> {
         let msg = "Unable to send response";
 
-        if !self.shared_state.is_active.load(Ordering::Relaxed) {
-            fail!(from self, with SendError::ConnectionBrokenSinceSenderNoLongerExists,
-                "{} since the corresponding server is already disconnected.", msg);
-        }
-
         fail!(from self, when self.shared_state.update_connections(),
             "{} since the connections could not be updated.", msg);
 

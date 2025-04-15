@@ -936,6 +936,41 @@ mod service_request_response {
     }
 
     #[test]
+    fn active_request_response_connection_blocks_new_service_creation<Sut: Service>() {
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let client = sut.client_builder().create().unwrap();
+        let server = sut.server_builder().create().unwrap();
+
+        let _pending_response = client.send_copy(0).unwrap();
+        let _active_request = server.receive().unwrap().unwrap();
+
+        drop(sut);
+        drop(client);
+        drop(server);
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create();
+        assert_that!(result.err(), eq Some(RequestResponseCreateError::AlreadyExists));
+
+        let result = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(result, is_ok);
+    }
+
+    #[test]
     fn service_cannot_be_opened_by_more_clients_than_specified<Sut: Service>() {
         const MAX_CLIENTS: usize = 8;
         let config = generate_isolated_config();
