@@ -24,7 +24,7 @@ use crate::service::static_config::message_type_details::MessageTypeDetails;
 use crate::service::ServiceState;
 use crate::service::{self, config_scheme::connection_config, naming_scheme::connection_name};
 use alloc::sync::Arc;
-use iceoryx2_bb_container::queue::Queue;
+use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
@@ -111,7 +111,7 @@ pub(crate) struct Receiver<Service: service::Service> {
     pub(crate) service_state: Arc<ServiceState<Service>>,
     pub(crate) buffer_size: usize,
     pub(crate) tagger: CyclicTagger,
-    pub(crate) to_be_removed_connections: Option<UnsafeCell<Queue<Arc<Connection<Service>>>>>,
+    pub(crate) to_be_removed_connections: Option<UnsafeCell<Vec<Arc<Connection<Service>>>>>,
     pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) receiver_max_borrowed_samples: usize,
@@ -278,28 +278,58 @@ impl<Service: service::Service> Receiver<Service> {
         &self,
         channel_id: ChannelId,
     ) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
+        let msg = "Unable to receive data";
         if let Some(to_be_removed_connections) = &self.to_be_removed_connections {
             let to_be_removed_connections = unsafe { &mut *to_be_removed_connections.get() };
 
-            if let Some(connection) = to_be_removed_connections.peek() {
-                if let Some((details, absolute_address)) =
-                    self.receive_from_connection(connection, channel_id)?
-                {
-                    return Ok(Some((details, absolute_address)));
-                } else {
-                    to_be_removed_connections.pop();
+            if !to_be_removed_connections.is_empty() {
+                let mut clean_connections = Vec::new(to_be_removed_connections.capacity());
+                for (n, connection) in to_be_removed_connections.iter_mut().enumerate() {
+                    if connection.receiver.borrow_count(channel_id)
+                        == connection.receiver.max_borrowed_samples()
+                    {
+                        continue;
+                    }
+
+                    if let Some((details, absolute_address)) =
+                        self.receive_from_connection(connection, channel_id)?
+                    {
+                        return Ok(Some((details, absolute_address)));
+                    } else {
+                        clean_connections.push(n);
+                    }
+                }
+
+                for idx in clean_connections.iter().rev() {
+                    to_be_removed_connections.remove(*idx);
                 }
             }
         }
 
+        let mut active_channel_count = 0;
+        let mut all_channels_exceed_max_borrows = true;
         for id in 0..self.len() {
             if let Some(ref mut connection) = &mut self.get_mut(id) {
+                active_channel_count += 1;
+                if connection.receiver.borrow_count(channel_id)
+                    >= connection.receiver.max_borrowed_samples()
+                {
+                    continue;
+                } else {
+                    all_channels_exceed_max_borrows = false;
+                }
+
                 if let Some((details, absolute_address)) =
                     self.receive_from_connection(connection, channel_id)?
                 {
                     return Ok(Some((details, absolute_address)));
                 }
             }
+        }
+
+        if all_channels_exceed_max_borrows && active_channel_count != 0 {
+            fail!(from self, with ReceiveError::ExceedsMaxBorrows,
+                 "{msg} since every channel exceeds the max number of borrows.");
         }
 
         Ok(None)

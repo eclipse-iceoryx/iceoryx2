@@ -40,7 +40,7 @@ use alloc::sync::Arc;
 use core::{
     cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit, sync::atomic::Ordering,
 };
-use iceoryx2_bb_container::queue::Queue;
+use iceoryx2_bb_container::{queue::Queue, vec::Vec};
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -371,14 +371,12 @@ impl<
                     number_of_channels: 1,
                 },
                 response_receiver: Receiver {
-                    connections: (0..server_list.capacity())
-                        .map(|_| UnsafeCell::new(None))
-                        .collect(),
+                    connections: Vec::from_fn(server_list.capacity(), |_| UnsafeCell::new(None)),
                     receiver_port_id: client_port_id.value(),
                     service_state: service.__internal_state().clone(),
                     buffer_size: static_config.max_response_buffer_size,
                     tagger: CyclicTagger::new(),
-                    to_be_removed_connections: Some(UnsafeCell::new(Queue::new(
+                    to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
                         service
                             .__internal_state()
                             .shared_node
