@@ -54,7 +54,7 @@ mod client {
     }
 
     #[test]
-    fn send_request_via_disconnected_client_fails<Sut: Service>() {
+    fn send_request_via_disconnected_client_works<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -68,8 +68,7 @@ mod client {
         let request = sut.loan().unwrap();
         drop(sut);
 
-        let result = request.send();
-        assert_that!(result.err(), eq Some(RequestSendError::SendError(iceoryx2::port::SendError::ConnectionBrokenSinceSenderNoLongerExists)));
+        assert_that!(request.send(), is_ok);
     }
 
     #[test]

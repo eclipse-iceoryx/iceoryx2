@@ -39,7 +39,7 @@ use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
@@ -77,9 +77,22 @@ use super::{
 #[derive(Debug)]
 pub(crate) struct SharedServerState<Service: service::Service> {
     pub(crate) response_sender: Sender<Service>,
+    server_handle: UnsafeCell<Option<ContainerHandle>>,
     request_receiver: Receiver<Service>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
-    pub(crate) is_active: IoxAtomicBool,
+    service_state: Arc<ServiceState<Service>>,
+}
+
+impl<Service: service::Service> Drop for SharedServerState<Service> {
+    fn drop(&mut self) {
+        if let Some(handle) = unsafe { *self.server_handle.get() } {
+            self.service_state
+                .dynamic_storage
+                .get()
+                .request_response()
+                .release_server_handle(handle);
+        }
+    }
 }
 
 impl<Service: service::Service> SharedServerState<Service> {
@@ -157,32 +170,10 @@ pub struct Server<
     ResponseHeader: Debug,
 > {
     shared_state: Arc<SharedServerState<Service>>,
-    server_handle: Option<ContainerHandle>,
-    service_state: Arc<ServiceState<Service>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
     _response_header: PhantomData<ResponseHeader>,
-}
-
-impl<
-        Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
-    > Drop for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
-{
-    fn drop(&mut self) {
-        self.shared_state.is_active.store(false, Ordering::Relaxed);
-        if let Some(handle) = self.server_handle {
-            self.service_state
-                .dynamic_storage
-                .get()
-                .request_response()
-                .release_server_handle(handle);
-        }
-    }
 }
 
 impl<
@@ -291,15 +282,14 @@ impl<
             number_of_channels: number_of_requests,
         };
 
-        let mut new_self = Self {
+        let new_self = Self {
             shared_state: Arc::new(SharedServerState {
                 request_receiver,
                 client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
                 response_sender,
-                is_active: IoxAtomicBool::new(true),
+                server_handle: UnsafeCell::new(None),
+                service_state: service.__internal_state().clone(),
             }),
-            server_handle: None,
-            service_state: service.__internal_state().clone(),
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -314,22 +304,24 @@ impl<
 
         // !MUST! be the last task otherwise a server is added to the dynamic config without the
         // creation of all required resources
-        new_self.server_handle = match service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .request_response()
-            .add_server_id(ServerDetails {
-                server_port_id,
-                request_buffer_size: static_config.max_active_requests_per_client,
-                number_of_responses,
-            }) {
-            Some(v) => Some(v),
-            None => {
-                fail!(from origin,
+        unsafe {
+            *new_self.shared_state.server_handle.get() = match service
+                .__internal_state()
+                .dynamic_storage
+                .get()
+                .request_response()
+                .add_server_id(ServerDetails {
+                    server_port_id,
+                    request_buffer_size: static_config.max_active_requests_per_client,
+                    number_of_responses,
+                }) {
+                Some(v) => Some(v),
+                None => {
+                    fail!(from origin,
                     with ServerCreateError::ExceedsMaxSupportedServers,
                     "{} since it would exceed the maximum supported amount of servers of {}.",
                     msg, service.__internal_state().static_config.request_response().max_servers());
+                }
             }
         };
 
