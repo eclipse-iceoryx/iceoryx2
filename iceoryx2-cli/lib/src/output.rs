@@ -27,6 +27,7 @@ use iceoryx2_pal_posix::posix::pid_t;
 pub enum ServiceDescriptor {
     PublishSubscribe(String),
     Event(String),
+    RequestResponse(String),
     Undefined(String),
 }
 
@@ -41,6 +42,9 @@ where
             }
             IceoryxMessagingPattern::Event(_) => {
                 ServiceDescriptor::Event(service.static_details.name().to_string())
+            }
+            IceoryxMessagingPattern::RequestResponse(_) => {
+                ServiceDescriptor::RequestResponse(service.static_details.name().to_string())
             }
             _ => ServiceDescriptor::Undefined("Undefined".to_string()),
         }

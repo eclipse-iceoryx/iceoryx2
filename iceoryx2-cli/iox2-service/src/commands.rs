@@ -35,7 +35,8 @@ pub fn list(filter: OutputFilter, format: Format) -> Result<()> {
     services.sort_by_key(|pattern| match pattern {
         ServiceDescriptor::PublishSubscribe(name) => (name.clone(), 0),
         ServiceDescriptor::Event(name) => (name.clone(), 1),
-        ServiceDescriptor::Undefined(name) => (name.to_string(), 2),
+        ServiceDescriptor::RequestResponse(name) => (name.clone(), 2),
+        ServiceDescriptor::Undefined(name) => (name.to_string(), 3),
     });
 
     print!("{}", format.as_string(&services)?);
@@ -81,7 +82,7 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
 pub fn monitor(rate: u64) -> Result<()> {
     let mut monitor = Monitor::<ipc::Service>::new();
 
-    info!("Started service monitor (update rate: {}ms)", rate);
+    info!("STARTED Service Monitor (update rate: {}ms)", rate);
 
     loop {
         monitor.spin();
