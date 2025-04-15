@@ -12,7 +12,6 @@
 
 use crate::config;
 use crate::service::service_id::ServiceId;
-use crate::service::static_config::StaticConfig;
 use crate::service::{Service, ServiceDetails};
 use iceoryx2_bb_elementary::CallbackProgression;
 use std::collections::{HashMap, HashSet};
@@ -39,83 +38,65 @@ impl<S: Service> Tracker<S> {
 
     /// Synchronizes the tracker with the current state of services in the system.
     ///
-    /// This method discovers all services of type `S` in the provided configuration,
-    /// tracks new services, and removes services that are no longer available.
+    /// This method queries the system for all services of type `S` and updates the tracker's
+    /// internal state. It identifies new services that have appeared since the last sync
+    /// and services that are no longer available.
     ///
     /// # Arguments
     ///
-    /// * `config` - The configuration to use for service discovery
+    /// * `config` - Configuration used to discover services
     ///
     /// # Returns
     ///
     /// A tuple containing:
-    /// * A set of service IDs of the newly discovered services, whose details are stored
-    /// * A vector of static configurations for services, whose details are no longer stored
-    pub fn sync(&mut self, config: &config::Config) -> (HashSet<ServiceId>, Vec<StaticConfig>) {
+    /// * A vector of service IDs that were newly discovered, details are stored in the tracker and
+    /// retrievable with `Tracker::get()`
+    /// * A vector of service details for services that are no longer available, these details are
+    /// no longer stored in the tracker
+    pub fn sync(&mut self, config: &config::Config) -> (Vec<ServiceId>, Vec<ServiceDetails<S>>) {
         let mut discovered_ids = HashSet::<ServiceId>::new();
-        let mut new_ids = HashSet::<ServiceId>::new();
+        let mut added_ids = Vec::<ServiceId>::new();
 
         let _ = S::list(config, |service| {
-            let id = service.static_details.service_id();
+            let id = service.static_details.service_id().clone();
             discovered_ids.insert(id.clone());
 
             // Track new services.
-            if !self.services.contains_key(id) {
-                new_ids.insert(id.clone());
+            if !self.services.contains_key(&id) {
                 self.services.insert(id.clone(), service);
+                added_ids.push(id);
             }
             CallbackProgression::Continue
         });
 
         // Get the details of the services not discovered
-        let undiscovered_ids: HashSet<ServiceId> = self
+        let mut removed_services = Vec::new();
+        let undiscovered_ids: Vec<ServiceId> = self
             .services
             .keys()
             .filter(|&id| !discovered_ids.contains(id))
             .cloned()
             .collect();
-        let undiscovered_details = self.get_many(&undiscovered_ids);
 
-        // Remove the services that were not discovered
-        self.services.retain(|id, _| discovered_ids.contains(id));
+        for id in undiscovered_ids {
+            if let Some(service) = self.services.remove(&id) {
+                removed_services.push(service);
+            }
+        }
 
-        (new_ids, undiscovered_details)
+        (added_ids, removed_services)
     }
 
-    /// Returns the static details of a single service with the given ID.
+    /// Retrieves service details for a specific service ID if tracked.
     ///
     /// # Arguments
     ///
-    /// * `id` - The service ID to retrieve details for
+    /// * `id` - The service ID to look up
     ///
     /// # Returns
     ///
-    /// An option containing the static details if the service was found, or None otherwise
-    pub fn get_one(&self, id: &ServiceId) -> Option<StaticConfig> {
-        self.services
-            .get(id)
-            .map(|service| service.static_details.clone())
-    }
-
-    /// Returns the static details of the services with the given IDs.
-    ///
-    /// # Arguments
-    ///
-    /// * `ids` - A set of service IDs to retrieve details for
-    ///
-    /// # Returns
-    ///
-    /// A vector of static configurations for the services that were found
-    pub fn get_many<'a, I>(&self, ids: I) -> Vec<StaticConfig>
-    where
-        I: IntoIterator<Item = &'a ServiceId>,
-    {
-        ids.into_iter()
-            .filter_map(|id| {
-                self.services
-                    .get(id)
-                    .map(|service| service.static_details.clone())
-            })
-            .collect()
+    /// An `Option` containing a reference to the service details if tracked, or `None` if not tracked
+    pub fn get(&self, id: &ServiceId) -> Option<&ServiceDetails<S>> {
+        self.services.get(id)
     }
 }
