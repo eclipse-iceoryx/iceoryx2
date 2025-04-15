@@ -31,7 +31,7 @@ mod zero_copy_send {
     }
 
     #[derive(ZeroCopySend)]
-    #[type_name(Nala)]
+    #[type_name("Nala")]
     struct NamedTestStructWithAttr {
         _val1: u64,
         _val2: Foo,
@@ -42,7 +42,7 @@ mod zero_copy_send {
     struct UnnamedTestStruct(i32, u32, Foo);
 
     #[derive(ZeroCopySend)]
-    #[type_name(Hypnotoad)]
+    #[type_name("Hypnotoad")]
     struct UnnamedTestStructWithAttr(i32, u32, Foo);
 
     #[derive(ZeroCopySend)]
@@ -56,7 +56,7 @@ mod zero_copy_send {
     }
 
     #[derive(ZeroCopySend)]
-    #[type_name(Wolf)]
+    #[type_name("Wolf")]
     struct GenericNamedTestStructWithAttr<T1, T2>
     where
         T1: ZeroCopySend,
@@ -73,7 +73,7 @@ mod zero_copy_send {
         T2: ZeroCopySend;
 
     #[derive(ZeroCopySend)]
-    #[type_name(Smeik)]
+    #[type_name("Smeik")]
     struct GenericUnnamedTestStructWithAttr<T1, T2>(T1, T2)
     where
         T1: ZeroCopySend,

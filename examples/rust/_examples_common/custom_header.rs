@@ -14,7 +14,7 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 
 #[derive(Default, Debug, ZeroCopySend)]
 // optional type name; if not set, `core::any::type_name::<CustomHeader>()` is used
-#[type_name(CustomHeader)]
+#[type_name("CustomHeader")]
 #[repr(C)]
 pub struct CustomHeader {
     pub version: i32,

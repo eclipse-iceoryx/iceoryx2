@@ -14,7 +14,7 @@ use iceoryx2_bb_derive_macros::ZeroCopySend;
 
 #[derive(Debug, ZeroCopySend)]
 // optional type name; if not set, `core::any::type_name::<TransmissionData>()` is used
-#[type_name(TransmissionData)]
+#[type_name("TransmissionData")]
 #[repr(C)]
 pub struct TransmissionData {
     pub x: i32,
