@@ -295,6 +295,157 @@ mod service_request_response {
     }
 
     #[test]
+    fn client_port_ids_are_set_correctly<Sut: Service>() {
+        let test_args = Args {
+            number_of_clients: 2,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+
+        let _pending_response_0 = test.clients[0].send_copy(0).unwrap();
+        let _pending_response_1 = test.clients[1].send_copy(1).unwrap();
+        let active_request_0 = test.servers[0].receive().unwrap().unwrap();
+        let active_request_1 = test.servers[0].receive().unwrap().unwrap();
+
+        let p0 = *active_request_0.payload();
+        let id0 = active_request_0.header().client_port_id();
+        let p1 = *active_request_1.payload();
+        let id1 = active_request_1.header().client_port_id();
+
+        assert_that!(test.clients[p0].id(), eq id0);
+        assert_that!(test.clients[p1].id(), eq id1);
+    }
+
+    #[test]
+    fn server_port_ids_are_set_correctly<Sut: Service>() {
+        let test_args = Args {
+            number_of_servers: 2,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+
+        let pending_response = test.clients[0].send_copy(0).unwrap();
+        let active_request_0 = test.servers[0].receive().unwrap().unwrap();
+        let active_request_1 = test.servers[1].receive().unwrap().unwrap();
+
+        assert_that!(active_request_0.send_copy(0), is_ok);
+        assert_that!(active_request_1.send_copy(1), is_ok);
+
+        let response0 = pending_response.receive().unwrap().unwrap();
+        let response1 = pending_response.receive().unwrap().unwrap();
+
+        let p0 = *response0.payload();
+        let id0 = response0.header().server_port_id();
+        let p1 = *response1.payload();
+        let id1 = response1.header().server_port_id();
+
+        assert_that!(test.servers[p0].id(), eq id0);
+        assert_that!(test.servers[p1].id(), eq id1);
+    }
+
+    #[test]
+    fn sent_responses_from_disconnected_servers_can_be_received<Sut: Service>() {
+        let test_args = Args {
+            response_buffer_size: 8,
+            ..Default::default()
+        };
+
+        let mut test = TestFixture::<Sut>::new(test_args);
+
+        let pending_response = test.clients[0].send_copy(0).unwrap();
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+
+        for n in 0..test_args.response_buffer_size {
+            assert_that!(active_request.send_copy(n), is_ok);
+        }
+
+        // disconnect all servers
+        test.servers.clear();
+
+        for n in 0..test_args.response_buffer_size {
+            assert_that!(*pending_response.receive().unwrap().unwrap(), eq n);
+        }
+    }
+
+    #[test]
+    fn sent_responses_from_disconnected_servers_are_received_first<Sut: Service>() {
+        let test_args = Args {
+            number_of_servers: 2,
+            response_buffer_size: 8,
+            ..Default::default()
+        };
+
+        let mut test = TestFixture::<Sut>::new(test_args);
+
+        let pending_response = test.clients[0].send_copy(0).unwrap();
+        let active_request_0 = test.servers[0].receive().unwrap().unwrap();
+        let active_request_1 = test.servers[1].receive().unwrap().unwrap();
+
+        for n in 0..test_args.response_buffer_size {
+            assert_that!(active_request_0.send_copy(n), is_ok);
+            assert_that!(active_request_1.send_copy(n + 100), is_ok);
+        }
+
+        // disconnect servers[1]
+        test.servers.pop();
+
+        for n in 0..test_args.response_buffer_size {
+            assert_that!(*pending_response.receive().unwrap().unwrap(), eq n + 100);
+        }
+
+        for n in 0..test_args.response_buffer_size {
+            assert_that!(*pending_response.receive().unwrap().unwrap(), eq n );
+        }
+    }
+
+    #[test]
+    fn sent_requests_from_out_of_scope_pending_responses_are_discarded<Sut: Service>() {
+        let test_args = Args {
+            number_of_active_requests: 3,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+
+        let pending_response_0 = test.clients[0].send_copy(5).unwrap();
+        let pending_response_1 = test.clients[0].send_copy(7).unwrap();
+        let pending_response_2 = test.clients[0].send_copy(11).unwrap();
+
+        drop(pending_response_1);
+
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq * pending_response_0.payload());
+
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq * pending_response_2.payload());
+    }
+
+    #[test]
+    fn sent_requests_from_out_of_scope_clients_are_not_discarded<Sut: Service>() {
+        let test_args = Args {
+            number_of_clients: 3,
+            ..Default::default()
+        };
+
+        let mut test = TestFixture::<Sut>::new(test_args);
+
+        let pending_response_0 = test.clients[0].send_copy(5).unwrap();
+        let pending_response_1 = test.clients[1].send_copy(7).unwrap();
+        let pending_response_2 = test.clients[2].send_copy(11).unwrap();
+
+        test.clients.remove(1);
+
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq * pending_response_0.payload());
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq * pending_response_1.payload());
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq * pending_response_2.payload());
+    }
+
+    #[test]
     fn communication_with_max_clients_and_servers_works<Sut: Service>() {
         const MAX_CLIENTS: usize = 4;
         const MAX_SERVERS: usize = 4;
@@ -359,7 +510,7 @@ mod service_request_response {
 
         drop(sut);
 
-        assert_that!(client.send_copy(8182982), is_ok);
+        let _pending_response = client.send_copy(8182982);
         assert_that!(*server.receive().unwrap().unwrap(), eq 8182982);
     }
 
@@ -430,6 +581,46 @@ mod service_request_response {
         while let Some(response) = request.receive().unwrap() {
             assert_that!((response.payload() as *const _), aligned_to test_args.response_alignment.value());
         }
+    }
+
+    #[test]
+    fn request_response_comm_with_mixed_types_works<Sut: Service>() {
+        const REQUEST_PAYLOAD: u128 = 9891238912831298319823;
+        const RESPONSE_PAYLOAD: u16 = 17821;
+        const REQUEST_HEADER: u32 = 89213998;
+        const RESPONSE_HEADER: u64 = 467440737095516161;
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u128, u16>()
+            .request_user_header::<u32>()
+            .response_user_header::<u64>()
+            .create()
+            .unwrap();
+
+        let server = service.server_builder().create().unwrap();
+        let client = service.client_builder().create().unwrap();
+
+        let mut request = client.loan().unwrap();
+        *request.payload_mut() = REQUEST_PAYLOAD;
+        *request.user_header_mut() = REQUEST_HEADER;
+        let pending_response = request.send().unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq REQUEST_PAYLOAD);
+        assert_that!(*active_request.user_header(), eq REQUEST_HEADER);
+
+        let mut response = active_request.loan().unwrap();
+        *response.payload_mut() = RESPONSE_PAYLOAD;
+        *response.user_header_mut() = RESPONSE_HEADER;
+        assert_that!(response.send(), is_ok);
+
+        let response = pending_response.receive().unwrap().unwrap();
+        assert_that!(*response.payload(), eq RESPONSE_PAYLOAD);
+        assert_that!(*response.user_header(), eq RESPONSE_HEADER);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

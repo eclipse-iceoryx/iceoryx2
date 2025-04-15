@@ -70,7 +70,7 @@ mod server {
         let client = service.client_builder().create().unwrap();
 
         assert_that!(sut.has_requests(), eq Ok(false));
-        assert_that!(client.send_copy(1234), is_ok);
+        let _pending_response = client.send_copy(1234).unwrap();
         assert_that!(sut.has_requests(), eq Ok(true));
 
         let active_request = sut.receive().unwrap().unwrap();
@@ -84,7 +84,7 @@ mod server {
         let sut = service.server_builder().create().unwrap();
 
         assert_that!(sut.has_requests(), eq Ok(false));
-        assert_that!(client.send_copy(5678), is_ok);
+        let _pending_response = client.send_copy(5678);
         assert_that!(sut.has_requests(), eq Ok(true));
 
         let active_request = sut.receive().unwrap().unwrap();
@@ -144,16 +144,18 @@ mod server {
         }
 
         let mut active_requests = vec![];
+        let mut pending_responses = vec![];
 
         for client in clients {
             for n in 0..max_active_requests {
-                assert_that!(client.send_copy(n as u64 * 5 + 7), is_ok);
+                pending_responses.push(client.send_copy(n as u64 * 5 + 7).unwrap());
                 let active_request = sut.receive().unwrap().unwrap();
                 assert_that!(*active_request, eq n as u64 * 5 + 7);
                 active_requests.push(active_request);
             }
 
-            assert_that!(client.send_copy(99), is_ok);
+            pending_responses.pop();
+            pending_responses.push(client.send_copy(99).unwrap());
             let active_request = sut.receive();
             assert_that!(active_request.err(), eq Some(ReceiveError::ExceedsMaxBorrows));
         }
@@ -170,7 +172,7 @@ mod server {
             .unwrap();
 
         let client = service.client_builder().create().unwrap();
-        assert_that!(client.send_copy(0), is_ok);
+        let _pending_response = client.send_copy(0).unwrap();
 
         let active_request = sut.receive().unwrap().unwrap();
         // max loaned responses per request needs to be adjusted to 1 and therefore this

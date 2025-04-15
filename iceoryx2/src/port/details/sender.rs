@@ -36,6 +36,7 @@ use crate::service::ServiceState;
 use crate::{service, service::naming_scheme::connection_name};
 
 use super::channel_management::ChannelManagement;
+use super::channel_management::INVALID_CHANNEL_STATE;
 use super::chunk::ChunkMut;
 use super::data_segment::DataSegment;
 use super::segment_state::SegmentState;
@@ -85,6 +86,7 @@ impl<Service: service::Service> Connection<Service> {
                                 .enable_safe_overflow(this.enable_safe_overflow)
                                 .number_of_samples_per_segment(number_of_samples)
                                 .max_supported_shared_memory_segments(this.max_number_of_segments)
+                                .initial_channel_state(INVALID_CHANNEL_STATE)
                                 .number_of_channels(this.number_of_channels)
                                 .timeout(this.shared_node.config().global.service.creation_timeout)
                                 .create_sender(),
