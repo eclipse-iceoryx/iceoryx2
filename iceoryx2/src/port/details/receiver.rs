@@ -274,11 +274,10 @@ impl<Service: service::Service> Receiver<Service> {
         }
     }
 
-    pub(crate) fn receive(
+    fn receive_from_to_be_removed_connections(
         &self,
         channel_id: ChannelId,
     ) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
-        let msg = "Unable to receive data";
         if let Some(to_be_removed_connections) = &self.to_be_removed_connections {
             let to_be_removed_connections = unsafe { &mut *to_be_removed_connections.get() };
 
@@ -306,10 +305,26 @@ impl<Service: service::Service> Receiver<Service> {
             }
         }
 
+        Ok(None)
+    }
+
+    pub(crate) fn receive(
+        &self,
+        channel_id: ChannelId,
+    ) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
+        if let Some(data) = self.receive_from_to_be_removed_connections(channel_id)? {
+            return Ok(Some(data));
+        }
+
+        let msg = "Unable to receive data";
         let mut active_channel_count = 0;
         let mut all_channels_exceed_max_borrows = true;
         for id in 0..self.len() {
             if let Some(ref mut connection) = &mut self.get_mut(id) {
+                if !connection.receiver.has_data(channel_id) {
+                    continue;
+                }
+
                 active_channel_count += 1;
                 if connection.receiver.borrow_count(channel_id)
                     >= connection.receiver.max_borrowed_samples()
