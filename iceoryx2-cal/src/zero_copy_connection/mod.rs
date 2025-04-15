@@ -198,6 +198,7 @@ pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept {
         ptr: PointerOffset,
         channel_id: ChannelId,
     ) -> Result<(), ZeroCopyReleaseError>;
+    fn borrow_count(&self, channel_id: ChannelId) -> usize;
 }
 
 pub trait ZeroCopyConnection: Debug + Sized + NamedConceptMgmt {

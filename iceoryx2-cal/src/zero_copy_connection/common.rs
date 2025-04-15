@@ -896,6 +896,10 @@ pub mod details {
             }
         }
 
+        fn borrow_count(&self, channel_id: ChannelId) -> usize {
+            *self.borrow_counter(channel_id)
+        }
+
         fn release(
             &self,
             ptr: PointerOffset,
