@@ -106,67 +106,7 @@
 
 ### API Breaking Changes
 
-1. Renamed `PublisherLoanError` into `LoanError`
-
-   ```rust
-   // old
-   let sample = match publisher.loan() {
-     Ok(sample) => sample,
-     Err(PublisherLoanError::OutOfMemory) => handle_error(),
-     // ...
-   };
-
-   // new
-   let sample = match publisher.loan() {
-     Ok(sample) => sample,
-     Err(LoanError::OutOfMemory) => handle_error(),
-     // ...
-   };
-   ```
-
-2. Renamed `PublisherSendError` into `SendError`
-
-   ```rust
-   // old
-   match sample.send() {
-     Ok(n) => println!("send data to {n} subscribers"),
-     Err(PublisherSendError::ConnectionCorrupted) => handle_error(),
-     // ...
-   };
-
-   // new
-   match sample.send() {
-     Ok(n) => println!("send data to {n} subscribers"),
-     Err(SendError::ConnectionCorrupted) => handle_error(),
-     // ...
-   };
-   ```
-
-3. Renamed `SubscriberReceiveError` into `ReceiveError`
-
-   ```rust
-   // old
-   match subscriber.receive() {
-     Ok(sample) => println!("received: {:?}", *sample),
-     Err(SubscriberReceiveError::ExceedsMaxBorrowedSamples) => handle_error(),
-     // ...
-   }
-
-   // new
-   match subscriber.receive() {
-     Ok(sample) => println!("received: {:?}", *sample),
-     Err(ReceiveError::ExceedsMaxBorrowedSamples) => handle_error(),
-     // ...
-   }
-   ```
-
-4. Renamed `PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists`
-   into `SendError::ConnectionBrokenSinceSenderNoLongerExists`
-
-5. Renamed `ConnectionFailure::UnableToMapPublishersDataSegment`
-   into `ConnectionFailure::UnableToMapSendersDataSegment`
-
-6. Add requirement that every payload and user header type must implement
+1. Add requirement that every payload and user header type must implement
    `ZeroCopySend` for type safe shared memory usage
    [#602](https://github.com/eclipse-iceoryx/iceoryx2/issues/602)
 
@@ -209,3 +149,63 @@
        .user_header::<CustomHeader>()
        .open_or_create()?;
    ```
+
+2. Renamed `PublisherLoanError` into `LoanError`
+
+   ```rust
+   // old
+   let sample = match publisher.loan() {
+     Ok(sample) => sample,
+     Err(PublisherLoanError::OutOfMemory) => handle_error(),
+     // ...
+   };
+
+   // new
+   let sample = match publisher.loan() {
+     Ok(sample) => sample,
+     Err(LoanError::OutOfMemory) => handle_error(),
+     // ...
+   };
+   ```
+
+3. Renamed `PublisherSendError` into `SendError`
+
+   ```rust
+   // old
+   match sample.send() {
+     Ok(n) => println!("send data to {n} subscribers"),
+     Err(PublisherSendError::ConnectionCorrupted) => handle_error(),
+     // ...
+   };
+
+   // new
+   match sample.send() {
+     Ok(n) => println!("send data to {n} subscribers"),
+     Err(SendError::ConnectionCorrupted) => handle_error(),
+     // ...
+   };
+   ```
+
+4. Renamed `SubscriberReceiveError` into `ReceiveError`
+
+   ```rust
+   // old
+   match subscriber.receive() {
+     Ok(sample) => println!("received: {:?}", *sample),
+     Err(SubscriberReceiveError::ExceedsMaxBorrowedSamples) => handle_error(),
+     // ...
+   }
+
+   // new
+   match subscriber.receive() {
+     Ok(sample) => println!("received: {:?}", *sample),
+     Err(ReceiveError::ExceedsMaxBorrowedSamples) => handle_error(),
+     // ...
+   }
+   ```
+
+5. Renamed `PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists`
+   into `SendError::ConnectionBrokenSinceSenderNoLongerExists`
+
+6. Renamed `ConnectionFailure::UnableToMapPublishersDataSegment`
+   into `ConnectionFailure::UnableToMapSendersDataSegment`
