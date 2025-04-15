@@ -726,6 +726,96 @@ mod service_request_response {
         assert_that!(*response.user_header(), eq RESPONSE_HEADER);
     }
 
+    #[test]
+    fn server_can_receive_max_amount_of_requests_from_max_clients<Sut: Service>() {
+        let test_args = Args {
+            number_of_active_requests: 5,
+            number_of_clients: 6,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+
+        let mut pending_responses = vec![];
+        let mut requests = vec![];
+        let mut counter = 0;
+        for client in &test.clients {
+            for _ in 0..test_args.number_of_active_requests {
+                pending_responses.push(client.send_copy(counter).unwrap());
+                requests.push(counter);
+                counter += 1;
+            }
+        }
+
+        let mut active_requests = vec![];
+        while let Some(request) = test.servers[0].receive().unwrap() {
+            active_requests.push(request);
+        }
+
+        assert_that!(active_requests, len requests.len());
+        for active_request in active_requests {
+            assert_that!(requests, contains * active_request);
+            requests.retain(|v| *v != *active_request);
+        }
+    }
+
+    #[test]
+    fn client_can_receive_max_amount_of_responses_from_max_servers<Sut: Service>() {
+        let test_args = Args {
+            number_of_active_requests: 3,
+            response_buffer_size: 4,
+            number_of_clients: 5,
+            number_of_servers: 6,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+
+        let mut pending_responses = vec![];
+        let mut requests = vec![];
+        let mut counter = 0;
+        for client in &test.clients {
+            for _ in 0..test_args.number_of_active_requests {
+                pending_responses.push(client.send_copy(counter).unwrap());
+                requests.push(counter);
+                counter += 1;
+            }
+        }
+
+        let mut active_requests = vec![];
+        for server in &test.servers {
+            while let Some(request) = server.receive().unwrap() {
+                active_requests.push(request);
+            }
+        }
+
+        assert_that!(active_requests, len requests.len() * test_args.number_of_servers);
+        for active_request in &active_requests {
+            assert_that!(requests, contains * *active_request);
+        }
+
+        let mut responses = vec![];
+        for active_request in active_requests {
+            for _ in 0..test_args.response_buffer_size {
+                assert_that!(active_request.send_copy(counter), is_ok);
+                responses.push(counter);
+                counter += 1;
+            }
+        }
+
+        let mut received_responses = vec![];
+        for pending_response in &pending_responses {
+            while let Some(response) = pending_response.receive().unwrap() {
+                received_responses.push(*response);
+            }
+        }
+
+        assert_that!(received_responses, len test_args.response_buffer_size * test_args.number_of_servers * test_args.number_of_active_requests * test_args.number_of_clients);
+        for received_response in received_responses {
+            assert_that!(responses, contains received_response);
+        }
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
