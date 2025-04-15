@@ -439,11 +439,14 @@ mod zero_copy_connection {
                     sut_sender.try_send(PointerOffset::new(sample_offset), SAMPLE_SIZE, id),
                     is_ok
                 );
+                assert_that!(sut_receiver.borrow_count(id), eq 0);
                 let sample = sut_receiver.receive(id).unwrap();
                 assert_that!(sample, is_some);
                 assert_that!(sample.as_ref().unwrap().offset(), eq sample_offset);
+                assert_that!(sut_receiver.borrow_count(id), eq 1);
 
                 assert_that!(sut_receiver.release(sample.unwrap(), id), is_ok);
+                assert_that!(sut_receiver.borrow_count(id), eq 0);
                 let retrieval = sut_sender.reclaim(id).unwrap();
                 assert_that!(retrieval, is_some);
                 assert_that!(retrieval.as_ref().unwrap().offset(), eq sample_offset);
