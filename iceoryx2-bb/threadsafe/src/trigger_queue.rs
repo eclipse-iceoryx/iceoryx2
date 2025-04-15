@@ -53,14 +53,19 @@ use iceoryx2_bb_log::fatal_panic;
 const INTER_PROCESS_SUPPORT: bool = true;
 
 #[derive(Debug)]
-pub struct TriggerQueue<'a, T: Debug + ZeroCopySend, const CAPACITY: usize> {
+pub struct TriggerQueue<'a, T: Debug, const CAPACITY: usize> {
     queue: Mutex<'a, FixedSizeQueue<T, CAPACITY>>,
     free_slots: UnnamedSemaphore<'a>,
     used_slots: UnnamedSemaphore<'a>,
     _phantom_data: PhantomData<T>,
 }
 
-impl<'a, T: Debug + ZeroCopySend, const CAPACITY: usize> TriggerQueue<'a, T, CAPACITY> {
+unsafe impl<'a, T: Debug + ZeroCopySend, const CAPACITY: usize> ZeroCopySend
+    for TriggerQueue<'a, T, CAPACITY>
+{
+}
+
+impl<'a, T: Debug, const CAPACITY: usize> TriggerQueue<'a, T, CAPACITY> {
     /// Creates a new [`TriggerQueue`] which uses the [`ClockType::default()`] in
     /// [`TriggerQueue::timed_push()`] and [`TriggerQueue::timed_pop()`].
     pub fn new(

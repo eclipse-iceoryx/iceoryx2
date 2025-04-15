@@ -91,7 +91,6 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator, owning_pointer::GenericOwningPointer,
     relocatable_ptr::GenericRelocatablePointer,
@@ -496,13 +495,15 @@ pub mod details {
 /// Relocatable vector with compile time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableVec`] it is movable.
 #[repr(C)]
-#[derive(Debug, ZeroCopySend)]
-pub struct FixedSizeVec<T: ZeroCopySend, const CAPACITY: usize> {
+#[derive(Debug)]
+pub struct FixedSizeVec<T, const CAPACITY: usize> {
     state: RelocatableVec<T>,
     _data: [MaybeUninit<T>; CAPACITY],
 }
 
-impl<'de, T: Serialize + Deserialize<'de> + ZeroCopySend, const CAPACITY: usize> Serialize
+unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for FixedSizeVec<T, CAPACITY> {}
+
+impl<'de, T: Serialize + Deserialize<'de>, const CAPACITY: usize> Serialize
     for FixedSizeVec<T, CAPACITY>
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -517,7 +518,7 @@ struct FixedSizeVecVisitor<T, const CAPACITY: usize> {
     _value: PhantomData<T>,
 }
 
-impl<'de, T: Deserialize<'de> + ZeroCopySend, const CAPACITY: usize> Visitor<'de>
+impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Visitor<'de>
     for FixedSizeVecVisitor<T, CAPACITY>
 {
     type Value = FixedSizeVec<T, CAPACITY>;
@@ -550,7 +551,7 @@ impl<'de, T: Deserialize<'de> + ZeroCopySend, const CAPACITY: usize> Visitor<'de
     }
 }
 
-impl<'de, T: Deserialize<'de> + ZeroCopySend, const CAPACITY: usize> Deserialize<'de>
+impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Deserialize<'de>
     for FixedSizeVec<T, CAPACITY>
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -563,7 +564,7 @@ impl<'de, T: Deserialize<'de> + ZeroCopySend, const CAPACITY: usize> Deserialize
     }
 }
 
-impl<T: ZeroCopySend, const CAPACITY: usize> PlacementDefault for FixedSizeVec<T, CAPACITY> {
+impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeVec<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(unsafe { RelocatableVec::new_uninit(CAPACITY) });
@@ -575,7 +576,7 @@ impl<T: ZeroCopySend, const CAPACITY: usize> PlacementDefault for FixedSizeVec<T
     }
 }
 
-impl<T: ZeroCopySend, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACITY> {
+impl<T, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
             state: unsafe { RelocatableVec::new_uninit(CAPACITY) },
@@ -594,7 +595,7 @@ impl<T: ZeroCopySend, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACIT
     }
 }
 
-impl<T: ZeroCopySend, const CAPACITY: usize> Deref for FixedSizeVec<T, CAPACITY> {
+impl<T, const CAPACITY: usize> Deref for FixedSizeVec<T, CAPACITY> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
@@ -602,21 +603,21 @@ impl<T: ZeroCopySend, const CAPACITY: usize> Deref for FixedSizeVec<T, CAPACITY>
     }
 }
 
-impl<T: ZeroCopySend, const CAPACITY: usize> DerefMut for FixedSizeVec<T, CAPACITY> {
+impl<T, const CAPACITY: usize> DerefMut for FixedSizeVec<T, CAPACITY> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.state.deref_mut()
     }
 }
 
-impl<T: PartialEq + ZeroCopySend, const CAPACITY: usize> PartialEq for FixedSizeVec<T, CAPACITY> {
+impl<T: PartialEq, const CAPACITY: usize> PartialEq for FixedSizeVec<T, CAPACITY> {
     fn eq(&self, other: &Self) -> bool {
         self.state.eq(&other.state)
     }
 }
 
-impl<T: Eq + ZeroCopySend, const CAPACITY: usize> Eq for FixedSizeVec<T, CAPACITY> {}
+impl<T: Eq, const CAPACITY: usize> Eq for FixedSizeVec<T, CAPACITY> {}
 
-impl<T: Clone + ZeroCopySend, const CAPACITY: usize> Clone for FixedSizeVec<T, CAPACITY> {
+impl<T: Clone, const CAPACITY: usize> Clone for FixedSizeVec<T, CAPACITY> {
     fn clone(&self) -> Self {
         let mut new_self = Self::new();
         new_self.extend_from_slice(self.deref());
@@ -624,9 +625,9 @@ impl<T: Clone + ZeroCopySend, const CAPACITY: usize> Clone for FixedSizeVec<T, C
     }
 }
 
-unsafe impl<T: Send + ZeroCopySend, const CAPACITY: usize> Send for FixedSizeVec<T, CAPACITY> {}
+unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeVec<T, CAPACITY> {}
 
-impl<T: ZeroCopySend, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
+impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
     /// Creates a new vector.
     pub fn new() -> Self {
         Self::default()

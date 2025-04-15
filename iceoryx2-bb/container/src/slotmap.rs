@@ -581,8 +581,8 @@ pub mod details {
 
 /// A compile-time fixed-size, shared memory compatible [`FixedSizeSlotMap`].
 #[repr(C)]
-#[derive(Debug, ZeroCopySend)]
-pub struct FixedSizeSlotMap<T: ZeroCopySend, const CAPACITY: usize> {
+#[derive(Debug)]
+pub struct FixedSizeSlotMap<T, const CAPACITY: usize> {
     state: RelocatableSlotMap<T>,
     _idx_to_data: MaybeUninit<[usize; CAPACITY]>,
     _idx_to_data_free_list: MaybeUninit<[FreeListEntry; CAPACITY]>,
@@ -590,7 +590,9 @@ pub struct FixedSizeSlotMap<T: ZeroCopySend, const CAPACITY: usize> {
     _data_next_free_index: MaybeUninit<[usize; CAPACITY]>,
 }
 
-impl<T: ZeroCopySend, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY> {
+unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for FixedSizeSlotMap<T, CAPACITY> {}
+
+impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(unsafe { RelocatableSlotMap::new_uninit(CAPACITY) });
@@ -602,7 +604,7 @@ impl<T: ZeroCopySend, const CAPACITY: usize> PlacementDefault for FixedSizeSlotM
     }
 }
 
-impl<T: ZeroCopySend, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
+impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
             _idx_to_data: MaybeUninit::uninit(),
@@ -624,7 +626,7 @@ impl<T: ZeroCopySend, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAP
     }
 }
 
-impl<T: ZeroCopySend, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
+impl<T, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
     /// Creates a new empty [`FixedSizeSlotMap`].
     pub fn new() -> Self {
         Self::default()

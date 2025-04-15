@@ -103,7 +103,6 @@
 //!
 use core::marker::PhantomData;
 use core::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
-use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
@@ -456,13 +455,15 @@ pub mod details {
 /// Relocatable queue with compile time fixed size capacity. In contrast to its counterpart the
 /// [`Queue`] it is movable.
 #[repr(C)]
-#[derive(Debug, ZeroCopySend)]
-pub struct FixedSizeQueue<T: ZeroCopySend, const CAPACITY: usize> {
+#[derive(Debug)]
+pub struct FixedSizeQueue<T, const CAPACITY: usize> {
     state: RelocatableQueue<T>,
     _data: [MaybeUninit<T>; CAPACITY],
 }
 
-impl<T: ZeroCopySend, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> {
+unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for FixedSizeQueue<T, CAPACITY> {}
+
+impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(RelocatableQueue::new_uninit(CAPACITY));
@@ -475,7 +476,7 @@ impl<T: ZeroCopySend, const CAPACITY: usize> PlacementDefault for FixedSizeQueue
     }
 }
 
-impl<T: ZeroCopySend, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
+impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
     fn default() -> Self {
         let mut new_self = Self {
             state: unsafe { RelocatableQueue::new_uninit(CAPACITY) },
@@ -494,9 +495,9 @@ impl<T: ZeroCopySend, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPAC
     }
 }
 
-unsafe impl<T: Send + ZeroCopySend, const CAPACITY: usize> Send for FixedSizeQueue<T, CAPACITY> {}
+unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeQueue<T, CAPACITY> {}
 
-impl<T: ZeroCopySend, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
+impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     /// Creates a new queue.
     pub fn new() -> Self {
         Self::default()
@@ -556,7 +557,7 @@ impl<T: ZeroCopySend, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     }
 }
 
-impl<T: Copy + Debug + ZeroCopySend, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
+impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     /// Returns a copy of the element stored at index. The index is starting by 0 for the first
     /// element until [`FixedSizeQueue::len()`].
     ///
