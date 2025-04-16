@@ -129,8 +129,6 @@
        .open_or_create()?;
 
    // new
-   use iceoryx2_bb_derive_macros::ZeroCopySend;
-
    #[derive(ZeroCopySend)]
    #[repr(C)]
    pub struct TransmissionData {

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2::prelude::*;
 
 #[derive(Default, Debug, ZeroCopySend)]
 // optional type name; if not set, `core::any::type_name::<CustomHeader>()` is used

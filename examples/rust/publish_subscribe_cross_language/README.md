@@ -69,8 +69,6 @@ the helper attribute `type_name` when `ZeroCopySend` is derived for the types,
 e.g.
 
 ``` rust
-use iceoryx2_bb_derive_macros::ZeroCopySend;
-
 #[derive(ZeroCopySend)]
 #[type_name(TransmissionData)]
 #[repr(C)]

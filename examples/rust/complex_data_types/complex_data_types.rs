@@ -16,7 +16,6 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_container::{
     byte_string::FixedSizeByteString, queue::FixedSizeQueue, vec::FixedSizeVec,
 };
-use iceoryx2_bb_derive_macros::ZeroCopySend;
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
 // without any copy. Avoids stack overflows when data type is larger than the available stack.
