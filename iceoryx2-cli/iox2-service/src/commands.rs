@@ -17,9 +17,9 @@ use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
 use iceoryx2_cli::Format;
+use iceoryx2_discovery::service::Monitor;
 
 use crate::cli::OutputFilter;
-use crate::monitor::Monitor;
 
 pub fn list(filter: OutputFilter, format: Format) -> Result<()> {
     let mut services = Vec::<ServiceDescriptor>::new();
@@ -82,7 +82,7 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
 pub fn monitor(rate: u64) -> Result<()> {
     let mut monitor = Monitor::<ipc::Service>::new();
 
-    info!("STARTED Service Monitor (update rate: {}ms)", rate);
+    info!("Service Monitor (update rate: {}ms)", rate);
 
     loop {
         monitor.spin();

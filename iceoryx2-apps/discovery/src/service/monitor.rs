@@ -10,25 +10,38 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use crate::service::Tracker;
 use iceoryx2::{
     config::Config,
     node::{Node, NodeBuilder},
     port::{notifier::Notifier, publisher::Publisher},
     prelude::ServiceName,
     service::{static_config::StaticConfig, Service},
-    tracker::service::Tracker,
 };
 use iceoryx2_bb_log::info;
-use iceoryx2_cli::output::ServiceDescriptor;
 
+/// Events emitted by the service discovery monitor
+///
+/// These events are published when services are added to or removed from the system.
 #[derive(Debug)]
 #[allow(dead_code)] // Fields used by subscribers
-enum DiscoveryEvent {
+pub enum DiscoveryEvent {
+    /// A service has been added to the system
     Added(StaticConfig),
+    /// A service has been removed from the system
     Removed(StaticConfig),
 }
 
-pub(crate) struct Monitor<S: Service> {
+/// A service monitor that tracks and publishes service discovery events.
+///
+/// The monitor detects when services are added or removed from the system and
+/// publishes these events to subscribers. It also sends notifications when
+/// changes occur.
+///
+/// # Type Parameters
+///
+/// * `S` - The service implementation type that provides communication capabilities
+pub struct Monitor<S: Service> {
     #[allow(dead_code)]
     node: Node<S>, // Kept to maintain ownership of the node
     publisher: Publisher<S, DiscoveryEvent, ()>,
@@ -95,14 +108,22 @@ impl<S: Service> Monitor<S> {
         // Publish
         for id in added {
             if let Some(service) = self.tracker.get(&id) {
-                info!("ADDED {:?}", ServiceDescriptor::from(service));
+                info!(
+                    "ADDED {} {}",
+                    service.static_details.messaging_pattern(),
+                    service.static_details.name()
+                );
                 // Clone required since the details are stored in the tracker.
                 let event = DiscoveryEvent::Added(service.static_details.clone());
                 let _ = self.publisher.send_copy(event);
             }
         }
         for service in removed {
-            info!("REMOVED {:?}", ServiceDescriptor::from(&service));
+            info!(
+                "REMOVED {} {}",
+                service.static_details.messaging_pattern(),
+                service.static_details.name()
+            );
             // The removed details are not stored in the tracker. Claim ownership.
             let event = DiscoveryEvent::Removed(service.static_details);
             let _ = self.publisher.send_copy(event);

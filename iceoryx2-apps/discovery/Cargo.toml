@@ -1,0 +1,27 @@
+[package]
+name = "iceoryx2-apps-discovery"
+description = "iceoryx2: embeddable discovery utilities"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+readme = "../README.md"
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lib]
+name = "iceoryx2_discovery"
+path = "src/lib.rs"
+
+[features]
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+generic-tests = { workspace = true }

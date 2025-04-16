@@ -10,10 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::config;
-use crate::service::service_id::ServiceId;
-use crate::service::{Service, ServiceDetails};
-use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2::{
+    config::Config,
+    prelude::CallbackProgression,
+    service::{service_id::ServiceId, Service, ServiceDetails},
+};
 use std::collections::{HashMap, HashSet};
 
 /// A tracker for monitoring services of a specific type.
@@ -53,7 +54,7 @@ impl<S: Service> Tracker<S> {
     /// retrievable with `Tracker::get()`
     /// * A vector of service details for services that are no longer available, these details are
     /// no longer stored in the tracker
-    pub fn sync(&mut self, config: &config::Config) -> (Vec<ServiceId>, Vec<ServiceDetails<S>>) {
+    pub fn sync(&mut self, config: &Config) -> (Vec<ServiceId>, Vec<ServiceDetails<S>>) {
         let mut discovered_ids = HashSet::<ServiceId>::new();
         let mut added_ids = Vec::<ServiceId>::new();
 

@@ -15,9 +15,9 @@ mod service_tracker {
 
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
-    use iceoryx2::tracker::service::Tracker;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_discovery::service::Tracker;
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -34,6 +34,9 @@ mod service_tracker {
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
+        let mut sut = Tracker::<S>::new();
+
+        // add a bunch of services
         let mut services = vec![];
         for _ in 0..NUMBER_OF_SERVICES_ADDED {
             let service_name = generate_name();
@@ -45,16 +48,16 @@ mod service_tracker {
             services.push(service);
         }
 
-        let mut monitor = Tracker::<S>::new();
-        let (added, _) = monitor.sync(&config);
+        // verify added services are detected
+        let (added, _) = sut.sync(&config);
 
         assert_that!(added.len(), eq NUMBER_OF_SERVICES_ADDED);
         for service in &services {
-            assert_that!(added, contains service.service_id().clone());
+            assert_that!(added, contains * service.service_id());
         }
 
-        // subsequent poll shows no change
-        let (added, removed) = monitor.sync(&config);
+        // verify added services are not detected again in subsequent sync
+        let (added, removed) = sut.sync(&config);
         assert_that!(added.len(), eq 0);
         assert_that!(removed.len(), eq 0);
     }
@@ -67,6 +70,9 @@ mod service_tracker {
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
+        let mut sut = Tracker::<S>::new();
+
+        // add a bunch of services
         let mut services = vec![];
         for _ in 0..NUMBER_OF_SERVICES_ADDED {
             let service_name = generate_name();
@@ -78,10 +84,10 @@ mod service_tracker {
             services.push(service);
         }
 
-        let mut monitor = Tracker::<S>::new();
-        let (added, _) = monitor.sync(&config);
+        let (added, _) = sut.sync(&config);
         assert_that!(added.len(), eq NUMBER_OF_SERVICES_ADDED);
 
+        // remove some services by dropping them
         let mut removed_ids = vec![];
         for _ in 0..NUMBER_OF_SERVICES_REMOVED {
             let removed = services.pop().unwrap();
@@ -89,10 +95,11 @@ mod service_tracker {
             drop(removed);
         }
 
-        let (_, removed) = monitor.sync(&config);
+        // verify the dropped services are detected as removed
+        let (_, removed) = sut.sync(&config);
         assert_that!(removed.len(), eq NUMBER_OF_SERVICES_REMOVED);
-        for id in removed_ids {
-            assert_that!(removed, contains id);
+        for service in removed {
+            assert_that!(removed_ids, contains * service.static_details.service_id());
         }
     }
 
