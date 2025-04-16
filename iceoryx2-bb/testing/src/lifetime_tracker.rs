@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use std::sync::{Mutex, MutexGuard};
 
 static CREATION_COUNTER: Mutex<usize> = Mutex::new(0);
@@ -36,6 +37,10 @@ impl Default for LifetimeTracker {
         Self {}
     }
 }
+
+#[doc(hidden)]
+// ZeroCopySend can be derived because LifetimeTracker is only used for process local test purposes
+unsafe impl ZeroCopySend for LifetimeTracker {}
 
 impl LifetimeTracker {
     pub fn new() -> Self {

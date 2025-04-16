@@ -37,7 +37,7 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-use iceoryx2_bb_derive_macros::PlacementDefault;
+use iceoryx2_bb_derive_macros::{PlacementDefault, ZeroCopySend};
 use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
@@ -76,7 +76,7 @@ impl core::fmt::Display for FixedSizeByteStringModificationError {
 impl core::error::Error for FixedSizeByteStringModificationError {}
 
 /// Relocatable string with compile time fixed size capacity.
-#[derive(Clone, Copy, PlacementDefault)]
+#[derive(Clone, Copy, PlacementDefault, ZeroCopySend)]
 #[repr(C)]
 pub struct FixedSizeByteString<const CAPACITY: usize> {
     len: usize,

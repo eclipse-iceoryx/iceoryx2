@@ -31,6 +31,7 @@ use crate::service::static_config::*;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use iceoryx2_bb_elementary::enum_gen;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
@@ -119,7 +120,10 @@ impl<S: Service> Builder<S> {
 
     /// Create a new builder to create a
     /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse) [`Service`].
-    pub fn request_response<RequestPayload: Debug, ResponsePayload: Debug>(
+    pub fn request_response<
+        RequestPayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+    >(
         self,
     ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), S> {
         BuilderWithServiceType::new(
@@ -134,7 +138,7 @@ impl<S: Service> Builder<S> {
 
     /// Create a new builder to create a
     /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe) [`Service`].
-    pub fn publish_subscribe<PayloadType: Debug + ?Sized>(
+    pub fn publish_subscribe<PayloadType: Debug + ?Sized + ZeroCopySend>(
         self,
     ) -> publish_subscribe::Builder<PayloadType, (), S> {
         BuilderWithServiceType::new(
@@ -175,13 +179,16 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         }
     }
 
-    fn request_response<RequestPayload: Debug, ResponsePayload: Debug>(
+    fn request_response<
+        RequestPayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+    >(
         self,
     ) -> request_response::Builder<RequestPayload, (), ResponsePayload, (), ServiceType> {
         request_response::Builder::new(self)
     }
 
-    fn publish_subscribe<PayloadType: Debug + ?Sized>(
+    fn publish_subscribe<PayloadType: Debug + ?Sized + ZeroCopySend>(
         self,
     ) -> publish_subscribe::Builder<PayloadType, (), ServiceType> {
         publish_subscribe::Builder::new(self)

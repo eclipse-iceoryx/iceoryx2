@@ -23,7 +23,8 @@ use crate::service::port_factory::publish_subscribe;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use builder::RETRY_LIMIT;
-use iceoryx2_bb_elementary::alignment::Alignment;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::{alignment::Alignment, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::serialize::Serialize;
@@ -37,12 +38,12 @@ use self::{
 use super::{OpenDynamicStorageFailure, ServiceState};
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
 #[doc(hidden)]
 pub struct CustomHeaderMarker {}
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, ZeroCopySend)]
 #[doc(hidden)]
 pub struct CustomPayloadMarker(u8);
 
@@ -219,7 +220,11 @@ impl core::error::Error for PublishSubscribeOpenOrCreateError {}
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Builder<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service> {
+pub struct Builder<
+    Payload: Debug + ?Sized + ZeroCopySend,
+    UserHeader: Debug + ZeroCopySend,
+    ServiceType: service::Service,
+> {
     base: builder::BuilderWithServiceType<ServiceType>,
     override_alignment: Option<usize>,
     override_payload_type: Option<TypeDetail>,
@@ -235,8 +240,11 @@ pub struct Builder<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: serv
     _user_header: PhantomData<UserHeader>,
 }
 
-impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
-    Builder<Payload, UserHeader, ServiceType>
+impl<
+        Payload: Debug + ?Sized + ZeroCopySend,
+        UserHeader: Debug + ZeroCopySend,
+        ServiceType: service::Service,
+    > Builder<Payload, UserHeader, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
@@ -305,7 +313,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
     }
 
     /// Sets the user header type of the [`Service`].
-    pub fn user_header<M: Debug>(self) -> Builder<Payload, M, ServiceType> {
+    pub fn user_header<M: Debug + ZeroCopySend>(self) -> Builder<Payload, M, ServiceType> {
         unsafe { core::mem::transmute::<Self, Builder<Payload, M, ServiceType>>(self) }
     }
 
@@ -739,7 +747,7 @@ impl<Payload: Debug + ?Sized, UserHeader: Debug, ServiceType: service::Service>
     }
 }
 
-impl<UserHeader: Debug, ServiceType: service::Service>
+impl<UserHeader: Debug + ZeroCopySend, ServiceType: service::Service>
     Builder<[CustomPayloadMarker], UserHeader, ServiceType>
 {
     #[doc(hidden)]
@@ -749,7 +757,7 @@ impl<UserHeader: Debug, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug + ?Sized, ServiceType: service::Service>
+impl<Payload: Debug + ?Sized + ZeroCopySend, ServiceType: service::Service>
     Builder<Payload, CustomHeaderMarker, ServiceType>
 {
     #[doc(hidden)]
@@ -759,8 +767,11 @@ impl<Payload: Debug + ?Sized, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
-    Builder<Payload, UserHeader, ServiceType>
+impl<
+        Payload: Debug + ZeroCopySend,
+        UserHeader: Debug + ZeroCopySend,
+        ServiceType: service::Service,
+    > Builder<Payload, UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =
@@ -851,8 +862,11 @@ impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
     }
 }
 
-impl<Payload: Debug, UserHeader: Debug, ServiceType: service::Service>
-    Builder<[Payload], UserHeader, ServiceType>
+impl<
+        Payload: Debug + ZeroCopySend,
+        UserHeader: Debug + ZeroCopySend,
+        ServiceType: service::Service,
+    > Builder<[Payload], UserHeader, ServiceType>
 {
     fn prepare_config_details(&mut self) {
         self.config_details_mut().message_type_details =

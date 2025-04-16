@@ -62,11 +62,20 @@ To communicate with each other, publisher and subscriber applications must share
 the same service configuration, including the payload and the user header type
 name.
 
-> [!NOTE]
-> These type name can't currently be set for Rust applications. If you want to
-> enable communication between Rust and other applications, you can determine
-> the type names on the Rust side with `core::any::type_name()` and use these as
-> the type names in the applications written in other languages.
+To allow cross-language communication involving Rust applications, iceoryx2
+provides the possibility to customize these type names by implementing
+`ZeroCopySend::type_name()` for the payload and user header types or by setting
+the helper attribute `type_name` when `ZeroCopySend` is derived for the types,
+e.g.
+
+``` rust
+#[derive(ZeroCopySend)]
+#[type_name(TransmissionData)]
+#[repr(C)]
+pub struct TransmissionData {
+  // ...
+}
+```
 
 When the type names are set to the same value, and the structure has the same
 memory layout, the Rust applications and applications written in other supported

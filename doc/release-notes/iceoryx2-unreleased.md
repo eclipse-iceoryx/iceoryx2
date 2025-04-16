@@ -106,7 +106,49 @@
 
 ### API Breaking Changes
 
-1. Renamed `PublisherLoanError` into `LoanError`
+1. Add requirement that every payload and user header type must implement
+   `ZeroCopySend` for type safe shared memory usage
+   [#602](https://github.com/eclipse-iceoryx/iceoryx2/issues/602)
+
+   ```rust
+   // old
+   #[repr(C)]
+   pub struct TransmissionData {
+      // ...
+   }
+
+   #[repr(C)]
+   pub struct CustomHeader {
+      // ...
+   }
+
+   let service = node
+       .service_builder(&"ServiceName".try_into()?)
+       .publish_subscribe::<TransmissionData>()
+       .user_header::<CustomHeader>()
+       .open_or_create()?;
+
+   // new
+   #[derive(ZeroCopySend)]
+   #[repr(C)]
+   pub struct TransmissionData {
+      // ...
+   }
+
+   #[derive(ZeroCopySend)]
+   #[repr(C)]
+   pub struct CustomHeader {
+      // ...
+   }
+
+   let service = node
+       .service_builder(&"ServiceName".try_into()?)
+       .publish_subscribe::<TransmissionData>()
+       .user_header::<CustomHeader>()
+       .open_or_create()?;
+   ```
+
+2. Renamed `PublisherLoanError` into `LoanError`
 
    ```rust
    // old
@@ -124,7 +166,7 @@
    };
    ```
 
-2. Renamed `PublisherSendError` into `SendError`
+3. Renamed `PublisherSendError` into `SendError`
 
    ```rust
    // old
@@ -142,7 +184,7 @@
    };
    ```
 
-3. Renamed `SubscriberReceiveError` into `ReceiveError`
+4. Renamed `SubscriberReceiveError` into `ReceiveError`
 
    ```rust
    // old
@@ -160,8 +202,8 @@
    }
    ```
 
-4. Renamed `PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists`
+5. Renamed `PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists`
    into `SendError::ConnectionBrokenSinceSenderNoLongerExists`
 
-5. Renamed `ConnectionFailure::UnableToMapPublishersDataSegment`
+6. Renamed `ConnectionFailure::UnableToMapPublishersDataSegment`
    into `ConnectionFailure::UnableToMapSendersDataSegment`

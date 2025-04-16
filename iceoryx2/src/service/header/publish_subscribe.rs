@@ -31,11 +31,13 @@
 //! # }
 //! ```
 
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+
 use crate::port::port_identifiers::UniquePublisherId;
 
 /// Sample header used by
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, ZeroCopySend)]
 #[repr(C)]
 pub struct Header {
     publisher_port_id: UniquePublisherId,

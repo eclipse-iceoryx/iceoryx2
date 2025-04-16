@@ -21,8 +21,10 @@ pub use crate::service::{
 pub use crate::signal_handling_mode::SignalHandlingMode;
 pub use crate::waitset::{WaitSet, WaitSetAttachmentId, WaitSetBuilder, WaitSetGuard};
 pub use iceoryx2_bb_derive_macros::PlacementDefault;
+pub use iceoryx2_bb_derive_macros::ZeroCopySend;
 pub use iceoryx2_bb_elementary::alignment::Alignment;
 pub use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+pub use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 pub use iceoryx2_bb_elementary::CallbackProgression;
 pub use iceoryx2_bb_log::set_log_level;
 pub use iceoryx2_bb_log::set_log_level_from_env_or;

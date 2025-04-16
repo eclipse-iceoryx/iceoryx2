@@ -19,7 +19,7 @@ use iceoryx2_bb_container::{
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
 // without any copy. Avoids stack overflows when data type is larger than the available stack.
-#[derive(Debug, Default, PlacementDefault)]
+#[derive(Debug, Default, PlacementDefault, ZeroCopySend)]
 #[repr(C)]
 pub struct ComplexData {
     name: FixedSizeByteString<4>,
@@ -28,7 +28,7 @@ pub struct ComplexData {
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
 // without any copy. Avoids stack overflows when data type is larger than the available stack.
-#[derive(Debug, Default, PlacementDefault)]
+#[derive(Debug, Default, PlacementDefault, ZeroCopySend)]
 #[repr(C)]
 pub struct ComplexDataType {
     plain_old_data: u64,

@@ -47,8 +47,8 @@ int main(void) {
     // set pub sub payload type
     if (iox2_service_builder_pub_sub_set_payload_type_details(&service_builder_pub_sub,
                                                               iox2_type_variant_e_FIXED_SIZE,
-                                                              PAYLOAD_TYPE_NAME,
-                                                              strlen(PAYLOAD_TYPE_NAME),
+                                                              IOX2_PAYLOAD_TYPE_NAME,
+                                                              strlen(IOX2_PAYLOAD_TYPE_NAME),
                                                               sizeof(struct TransmissionData),
                                                               alignof(struct TransmissionData))
         != IOX2_OK) {
@@ -59,8 +59,8 @@ int main(void) {
     // set pub sub user header type
     if (iox2_service_builder_pub_sub_set_user_header_type_details(&service_builder_pub_sub,
                                                                   iox2_type_variant_e_FIXED_SIZE,
-                                                                  USER_HEADER_TYPE_NAME,
-                                                                  strlen(USER_HEADER_TYPE_NAME),
+                                                                  IOX2_USER_HEADER_TYPE_NAME,
+                                                                  strlen(IOX2_USER_HEADER_TYPE_NAME),
                                                                   sizeof(struct CustomHeader),
                                                                   alignof(struct CustomHeader))
         != IOX2_OK) {

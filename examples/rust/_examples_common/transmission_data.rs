@@ -10,7 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[derive(Debug)]
+use iceoryx2::prelude::*;
+
+#[derive(Debug, ZeroCopySend)]
+// optional type name; if not set, `core::any::type_name::<TransmissionData>()` is used
+#[type_name("TransmissionData")]
 #[repr(C)]
 pub struct TransmissionData {
     pub x: i32,

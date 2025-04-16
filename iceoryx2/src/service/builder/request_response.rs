@@ -20,7 +20,7 @@ use crate::service::port_factory::request_response;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::{self, header, static_config};
 use crate::service::{builder, dynamic_config, Service};
-use iceoryx2_bb_elementary::alignment::Alignment;
+use iceoryx2_bb_elementary::{alignment::Alignment, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::{DynamicStorageCreateError, DynamicStorageOpenError};
 use iceoryx2_cal::serialize::Serialize;
@@ -209,10 +209,10 @@ enum ServiceAvailabilityState {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Builder<
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
     ServiceType: Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
@@ -234,10 +234,10 @@ pub struct Builder<
 }
 
 impl<
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
         ServiceType: Service,
     > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
@@ -280,7 +280,7 @@ impl<
     }
 
     /// Sets the request user header type of the [`Service`].
-    pub fn request_user_header<M: Debug>(
+    pub fn request_user_header<M: Debug + ZeroCopySend>(
         self,
     ) -> Builder<RequestPayload, M, ResponsePayload, ResponseHeader, ServiceType> {
         unsafe {
@@ -292,7 +292,7 @@ impl<
     }
 
     /// Sets the response user header type of the [`Service`].
-    pub fn response_user_header<M: Debug>(
+    pub fn response_user_header<M: Debug + ZeroCopySend>(
         self,
     ) -> Builder<RequestPayload, RequestHeader, ResponsePayload, M, ServiceType> {
         unsafe {

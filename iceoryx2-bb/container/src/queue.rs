@@ -111,6 +111,7 @@ use iceoryx2_bb_elementary::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
 pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
@@ -256,6 +257,8 @@ pub mod details {
             Self::const_memory_size(capacity)
         }
     }
+
+    unsafe impl<T: ZeroCopySend> ZeroCopySend for MetaQueue<T, GenericRelocatablePointer> {}
 
     impl<T> MetaQueue<T, GenericRelocatablePointer> {
         /// Returns the required memory size for a queue with a specified capacity
@@ -457,6 +460,8 @@ pub struct FixedSizeQueue<T, const CAPACITY: usize> {
     state: RelocatableQueue<T>,
     _data: [MaybeUninit<T>; CAPACITY],
 }
+
+unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for FixedSizeQueue<T, CAPACITY> {}
 
 impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {

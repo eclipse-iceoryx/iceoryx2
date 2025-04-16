@@ -91,15 +91,16 @@ use core::{
     sync::atomic::Ordering,
 };
 
-use iceoryx2_bb_elementary::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator, owning_pointer::GenericOwningPointer,
     relocatable_ptr::GenericRelocatablePointer,
 };
+
 use iceoryx2_bb_elementary::{
-    math::unaligned_mem_size, owning_pointer::OwningPointer, placement_default::PlacementDefault,
-    pointer_trait::PointerTrait, relocatable_container::RelocatableContainer,
-    relocatable_ptr::RelocatablePointer,
+    generic_pointer::GenericPointer, math::unaligned_mem_size, owning_pointer::OwningPointer,
+    placement_default::PlacementDefault, pointer_trait::PointerTrait,
+    relocatable_container::RelocatableContainer, relocatable_ptr::RelocatablePointer,
+    zero_copy_send::ZeroCopySend,
 };
 
 use iceoryx2_bb_log::{fail, fatal_panic};
@@ -393,6 +394,8 @@ pub mod details {
         }
     }
 
+    unsafe impl<T: ZeroCopySend> ZeroCopySend for MetaVec<T, GenericRelocatablePointer> {}
+
     impl<T> MetaVec<T, GenericRelocatablePointer> {
         /// Returns the required memory size for a vec with a specified capacity
         pub const fn const_memory_size(capacity: usize) -> usize {
@@ -497,6 +500,8 @@ pub struct FixedSizeVec<T, const CAPACITY: usize> {
     state: RelocatableVec<T>,
     _data: [MaybeUninit<T>; CAPACITY],
 }
+
+unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for FixedSizeVec<T, CAPACITY> {}
 
 impl<'de, T: Serialize + Deserialize<'de>, const CAPACITY: usize> Serialize
     for FixedSizeVec<T, CAPACITY>

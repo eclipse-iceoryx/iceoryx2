@@ -47,6 +47,7 @@ pub use iceoryx2_bb_posix::semaphore::*;
 
 use core::{fmt::Debug, marker::PhantomData, time::Duration};
 use iceoryx2_bb_container::queue::FixedSizeQueue;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 
 const INTER_PROCESS_SUPPORT: bool = true;
@@ -57,6 +58,11 @@ pub struct TriggerQueue<'a, T: Debug, const CAPACITY: usize> {
     free_slots: UnnamedSemaphore<'a>,
     used_slots: UnnamedSemaphore<'a>,
     _phantom_data: PhantomData<T>,
+}
+
+unsafe impl<T: Debug + ZeroCopySend, const CAPACITY: usize> ZeroCopySend
+    for TriggerQueue<'_, T, CAPACITY>
+{
 }
 
 impl<'a, T: Debug, const CAPACITY: usize> TriggerQueue<'a, T, CAPACITY> {

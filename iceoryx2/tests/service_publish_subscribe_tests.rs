@@ -29,6 +29,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{Service, ServiceDetails};
     use iceoryx2::testing::*;
+    use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_elementary::CallbackProgression;
     use iceoryx2_bb_log::{set_log_level, LogLevel};
@@ -36,7 +37,7 @@ mod service_publish_subscribe {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
-    #[derive(Debug)]
+    #[derive(Debug, ZeroCopySend)]
     struct SomeUserHeader {
         value: [u64; 1024],
     }

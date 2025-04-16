@@ -72,12 +72,6 @@ For C applications, these type names must be set with
 `iox2_service_builder_pub_sub_set_user_header_type_details` before creating the
 service.
 
-> [!NOTE]
-> The type name can't currently be set for Rust applications. If you want to
-> communicate with Rust applications, you can determine the type names on the
-> Rust side with `core::any::type_name()` and use these as the type names in C
-> applications.
-
 When the type names are set to the same value, and the structure has the same
 memory layout, the C applications and applications written in other supported
 languages can communicate.

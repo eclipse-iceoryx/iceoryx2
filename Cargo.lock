@@ -453,6 +453,8 @@ dependencies = [
  "clap",
  "iceoryx2",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-derive-macros",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-log",
  "iceoryx2-bb-system-types",
 ]
@@ -636,6 +638,7 @@ dependencies = [
  "enum-iterator",
  "generic-tests",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-log",
  "iceoryx2-bb-system-types",
@@ -665,6 +668,8 @@ dependencies = [
 name = "iceoryx2-bb-testing"
 version = "0.5.0"
 dependencies = [
+ "iceoryx2-bb-derive-macros",
+ "iceoryx2-bb-elementary",
  "iceoryx2-pal-configuration",
 ]
 
@@ -673,6 +678,7 @@ name = "iceoryx2-bb-threadsafe"
 version = "0.5.0"
 dependencies = [
  "iceoryx2-bb-container",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",

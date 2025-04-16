@@ -10,7 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[derive(Default, Debug)]
+use iceoryx2::prelude::*;
+
+#[derive(Default, Debug, ZeroCopySend)]
+// optional type name; if not set, `core::any::type_name::<CustomHeader>()` is used
+#[type_name("CustomHeader")]
 #[repr(C)]
 pub struct CustomHeader {
     pub version: i32,
