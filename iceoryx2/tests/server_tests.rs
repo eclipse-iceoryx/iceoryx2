@@ -387,6 +387,97 @@ mod server {
         }
     }
 
+    fn completion_channel_capacity_is_never_exceeded_impl<Sut: Service>(
+        max_response_buffer_size: usize,
+        max_borrowed_responses: usize,
+    ) {
+        const ITERATIONS: usize = 5;
+
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(1)
+            .max_servers(1)
+            .max_response_buffer_size(max_response_buffer_size)
+            .max_active_requests_per_client(1)
+            .max_borrowed_responses_per_pending_response(max_borrowed_responses)
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let sut = service.server_builder().create().unwrap();
+
+        let pending_response = client.send_copy(0).unwrap();
+        let active_request = sut.receive().unwrap().unwrap();
+
+        for _ in 0..ITERATIONS {
+            let mut borrowed_responses = vec![];
+            for _ in 0..max_borrowed_responses {
+                assert_that!(active_request.send_copy(0), is_ok);
+                borrowed_responses.push(pending_response.receive().unwrap().unwrap());
+            }
+
+            for _ in 0..max_response_buffer_size {
+                assert_that!(active_request.send_copy(0), is_ok);
+            }
+
+            // return everything at once and verify that in the worst case scenario
+            // the completion channel capacity is sufficient
+            drop(borrowed_responses);
+            for _ in 0..max_response_buffer_size {
+                assert_that!(pending_response.receive().unwrap(), is_some);
+            }
+        }
+    }
+
+    #[test]
+    fn completion_channel_capacity_is_never_exceeded_with_huge_buffer_size<Sut: Service>() {
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 100;
+        const MAX_BORROWED_RESPONSES: usize = 1;
+
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+        );
+    }
+
+    #[test]
+    fn completion_channel_capacity_is_never_exceeded_with_huge_response_borrow_size<
+        Sut: Service,
+    >() {
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
+        const MAX_BORROWED_RESPONSES: usize = 100;
+
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+        );
+    }
+
+    #[test]
+    fn completion_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 100;
+        const MAX_BORROWED_RESPONSES: usize = 100;
+
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+        );
+    }
+
+    #[test]
+    fn completion_channel_capacity_is_never_exceeded_with_smallest_possible_values<Sut: Service>() {
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
+        const MAX_BORROWED_RESPONSES: usize = 1;
+
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+        );
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

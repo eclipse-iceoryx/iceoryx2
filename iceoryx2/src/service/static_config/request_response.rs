@@ -113,7 +113,9 @@ impl StaticConfig {
         total_number_of_requests: usize,
     ) -> usize {
         self.max_clients
-            * (total_number_of_requests * self.max_response_buffer_size
+            * (total_number_of_requests
+                * self.max_response_buffer_size
+                * self.max_borrowed_responses_per_pending_response
                 + max_loaned_responses_per_request)
     }
 

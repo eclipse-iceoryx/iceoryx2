@@ -502,7 +502,7 @@ mod client {
         );
     }
 
-    fn retrieve_channel_capacity_is_never_exceeded_impl<Sut: Service>(
+    fn completion_channel_capacity_is_never_exceeded_impl<Sut: Service>(
         max_active_requests_per_client: usize,
         max_servers: usize,
         max_loaned_requests: usize,
@@ -558,12 +558,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_huge_active_requests<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_huge_active_requests<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 100;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
@@ -571,12 +571,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_huge_max_servers<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_huge_max_servers<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 100;
         const MAX_LOANED_REQUESTS: usize = 1;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
@@ -584,12 +584,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_huge_max_loaned_requests<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_huge_max_loaned_requests<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 100;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
@@ -597,12 +597,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 23;
         const MAX_SERVERS: usize = 12;
         const MAX_LOANED_REQUESTS: usize = 10;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
@@ -610,12 +610,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_smallest_possible_values<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_smallest_possible_values<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,

@@ -208,6 +208,7 @@ impl<
         .required_amount_of_chunks_per_client_data_segment(
             static_config.client_max_loaned_requests,
         );
+
         let number_of_responses = unsafe {
             service
                 .__internal_state()
