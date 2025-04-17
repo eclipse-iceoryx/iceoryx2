@@ -16,10 +16,10 @@ mod server {
     use core::time::Duration;
     use std::sync::Barrier;
 
-    use iceoryx2::port::ReceiveError;
-    use iceoryx2::prelude::*;
+    use iceoryx2::port::{LoanError, ReceiveError};
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
+    use iceoryx2::{pending_response, prelude::*};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
@@ -669,6 +669,60 @@ mod server {
             MAX_BORROWED_RESPONSES,
             MAX_LOANED_RESPONSES,
         );
+    }
+
+    #[test]
+    fn can_borrow_per_request_at_most_max_loaned_responses<Sut: Service>() {
+        const MAX_CLIENTS: usize = 4;
+        const MAX_ACTIVE_REQUESTS: usize = 5;
+        const MAX_LOANED_RESPONSES: usize = 6;
+        const ITERATIONS: usize = 5;
+
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(MAX_CLIENTS)
+            .max_servers(1)
+            .max_active_requests_per_client(MAX_ACTIVE_REQUESTS)
+            .create()
+            .unwrap();
+
+        let sut = service
+            .server_builder()
+            .max_loaned_responses_per_request(MAX_LOANED_RESPONSES)
+            .create()
+            .unwrap();
+
+        let mut clients = vec![];
+        for _ in 0..MAX_CLIENTS {
+            clients.push(service.client_builder().create().unwrap());
+        }
+
+        for _ in 0..ITERATIONS {
+            let mut pending_responses = vec![];
+            for client in &clients {
+                for _ in 0..MAX_ACTIVE_REQUESTS {
+                    pending_responses.push(client.send_copy(0).unwrap());
+                }
+            }
+
+            let mut active_requests = vec![];
+            for _ in 0..MAX_ACTIVE_REQUESTS * MAX_CLIENTS {
+                active_requests.push(sut.receive().unwrap().unwrap());
+            }
+
+            let mut loans = vec![];
+            for active_request in &active_requests {
+                for _ in 0..MAX_LOANED_RESPONSES {
+                    loans.push(active_request.loan().unwrap());
+                }
+
+                let result = active_request.loan();
+                assert_that!(result.err(), eq Some(LoanError::ExceedsMaxLoans));
+            }
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
