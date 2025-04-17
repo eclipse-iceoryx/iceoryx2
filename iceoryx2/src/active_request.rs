@@ -40,8 +40,10 @@
 //! # }
 //! ```
 
+extern crate alloc;
+
+use alloc::sync::Arc;
 use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
-use std::sync::Arc;
 
 use iceoryx2_bb_log::{error, fail};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
