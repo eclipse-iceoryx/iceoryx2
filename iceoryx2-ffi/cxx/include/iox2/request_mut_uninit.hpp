@@ -14,10 +14,7 @@
 #define REQUEST_MUT_UNINIT_HPP
 
 #include "iox/assertions_addendum.hpp"
-#include "iox/expected.hpp"
 #include "iox2/header_request_response.hpp"
-#include "iox2/pending_response.hpp"
-#include "iox2/port_error.hpp"
 #include "iox2/request_mut.hpp"
 #include "iox2/service_type.hpp"
 
