@@ -32,6 +32,7 @@ mod service_request_response {
         response_buffer_size: usize,
         request_overflow: bool,
         response_overflow: bool,
+        allow_fire_and_forget: bool,
         client_unable_to_deliver_strategy: UnableToDeliverStrategy,
         server_unable_to_deliver_strategy: UnableToDeliverStrategy,
     }
@@ -48,6 +49,7 @@ mod service_request_response {
                 response_buffer_size: 1,
                 request_overflow: true,
                 response_overflow: true,
+                allow_fire_and_forget: false,
                 client_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardSample,
                 server_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardSample,
             }
@@ -86,6 +88,7 @@ mod service_request_response {
                 .max_response_buffer_size(args.response_buffer_size)
                 .max_servers(args.number_of_servers)
                 .max_clients(args.number_of_clients)
+                .allow_fire_and_forget_requests(args.allow_fire_and_forget)
                 .create()
                 .unwrap();
 
@@ -402,9 +405,12 @@ mod service_request_response {
     }
 
     #[test]
-    fn sent_requests_from_out_of_scope_pending_responses_are_discarded<Sut: Service>() {
+    fn sent_requests_from_out_of_scope_pending_responses_are_discarded_when_fire_and_forget_is_disabled<
+        Sut: Service,
+    >() {
         let test_args = Args {
             number_of_active_requests: 3,
+            allow_fire_and_forget: false,
             ..Default::default()
         };
 
@@ -418,6 +424,34 @@ mod service_request_response {
 
         let active_request = test.servers[0].receive().unwrap().unwrap();
         assert_that!(*active_request.payload(), eq * pending_response_0.payload());
+
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq * pending_response_2.payload());
+    }
+
+    #[test]
+    fn sent_requests_from_out_of_scope_pending_responses_are_received_when_fire_and_forget_is_allowed<
+        Sut: Service,
+    >() {
+        let test_args = Args {
+            number_of_active_requests: 3,
+            allow_fire_and_forget: true,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+
+        let pending_response_0 = test.clients[0].send_copy(5).unwrap();
+        let pending_response_1 = test.clients[0].send_copy(7).unwrap();
+        let pending_response_2 = test.clients[0].send_copy(11).unwrap();
+
+        drop(pending_response_1);
+
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq * pending_response_0.payload());
+
+        let active_request = test.servers[0].receive().unwrap().unwrap();
+        assert_that!(*active_request.payload(), eq 7);
 
         let active_request = test.servers[0].receive().unwrap().unwrap();
         assert_that!(*active_request.payload(), eq * pending_response_2.payload());
