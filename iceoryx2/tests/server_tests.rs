@@ -478,6 +478,199 @@ mod server {
         );
     }
 
+    fn server_never_goes_out_of_memory_impl<Sut: Service>(
+        max_clients: usize,
+        max_active_requests: usize,
+        max_response_buffer_size: usize,
+        max_borrowed_responses: usize,
+        max_loaned_responses: usize,
+    ) {
+        const ITERATIONS: usize = 5;
+
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(max_clients)
+            .max_servers(1)
+            .max_response_buffer_size(max_response_buffer_size)
+            .max_active_requests_per_client(max_active_requests)
+            .max_borrowed_responses_per_pending_response(max_borrowed_responses)
+            .create()
+            .unwrap();
+
+        let mut clients = vec![];
+
+        for _ in 0..max_clients {
+            clients.push(service.client_builder().create().unwrap());
+        }
+        let sut = service
+            .server_builder()
+            .max_loaned_responses_per_request(max_loaned_responses)
+            .create()
+            .unwrap();
+
+        for _ in 0..ITERATIONS {
+            let mut pending_responses = vec![];
+            for client in &clients {
+                for _ in 0..max_active_requests {
+                    pending_responses.push(client.send_copy(0).unwrap());
+                }
+            }
+
+            let mut active_requests = vec![];
+            for _ in 0..max_active_requests * max_clients {
+                active_requests.push(sut.receive().unwrap().unwrap());
+            }
+
+            // borrow maximum amount of responses
+            let mut responses = vec![];
+            for _ in 0..max_borrowed_responses {
+                for active_request in &active_requests {
+                    assert_that!(active_request.send_copy(0), is_ok);
+                }
+                for pending_response in &pending_responses {
+                    responses.push(pending_response.receive().unwrap().unwrap());
+                }
+            }
+
+            // fill response buffer size
+            for _ in 0..max_borrowed_responses {
+                for active_request in &active_requests {
+                    assert_that!(active_request.send_copy(0), is_ok);
+                }
+            }
+
+            // loan maximum amount of responses per request
+            let mut loaned_responses = vec![];
+            for active_request in &active_requests {
+                for _ in 0..max_loaned_responses {
+                    loaned_responses.push(active_request.loan().unwrap());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn server_runs_never_out_of_memory_with_smallest_possible_values<Sut: Service>() {
+        const MAX_CLIENTS: usize = 1;
+        const MAX_ACTIVE_REQUESTS: usize = 1;
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
+        const MAX_BORROWED_RESPONSES: usize = 1;
+        const MAX_LOANED_RESPONSES: usize = 1;
+
+        server_never_goes_out_of_memory_impl::<Sut>(
+            MAX_CLIENTS,
+            MAX_ACTIVE_REQUESTS,
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+            MAX_LOANED_RESPONSES,
+        );
+    }
+
+    #[test]
+    fn server_runs_never_out_of_memory_with_huge_values<Sut: Service>() {
+        const MAX_CLIENTS: usize = 10;
+        const MAX_ACTIVE_REQUESTS: usize = 10;
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 10;
+        const MAX_BORROWED_RESPONSES: usize = 10;
+        const MAX_LOANED_RESPONSES: usize = 10;
+
+        server_never_goes_out_of_memory_impl::<Sut>(
+            MAX_CLIENTS,
+            MAX_ACTIVE_REQUESTS,
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+            MAX_LOANED_RESPONSES,
+        );
+    }
+
+    #[test]
+    fn server_runs_never_out_of_memory_with_huge_max_clients<Sut: Service>() {
+        const MAX_CLIENTS: usize = 10;
+        const MAX_ACTIVE_REQUESTS: usize = 1;
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
+        const MAX_BORROWED_RESPONSES: usize = 1;
+        const MAX_LOANED_RESPONSES: usize = 1;
+
+        server_never_goes_out_of_memory_impl::<Sut>(
+            MAX_CLIENTS,
+            MAX_ACTIVE_REQUESTS,
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+            MAX_LOANED_RESPONSES,
+        );
+    }
+
+    #[test]
+    fn server_runs_never_out_of_memory_with_huge_max_active_requests<Sut: Service>() {
+        const MAX_CLIENTS: usize = 1;
+        const MAX_ACTIVE_REQUESTS: usize = 10;
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
+        const MAX_BORROWED_RESPONSES: usize = 1;
+        const MAX_LOANED_RESPONSES: usize = 1;
+
+        server_never_goes_out_of_memory_impl::<Sut>(
+            MAX_CLIENTS,
+            MAX_ACTIVE_REQUESTS,
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+            MAX_LOANED_RESPONSES,
+        );
+    }
+
+    #[test]
+    fn server_runs_never_out_of_memory_with_huge_response_buffer_size<Sut: Service>() {
+        const MAX_CLIENTS: usize = 1;
+        const MAX_ACTIVE_REQUESTS: usize = 1;
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 10;
+        const MAX_BORROWED_RESPONSES: usize = 1;
+        const MAX_LOANED_RESPONSES: usize = 1;
+
+        server_never_goes_out_of_memory_impl::<Sut>(
+            MAX_CLIENTS,
+            MAX_ACTIVE_REQUESTS,
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+            MAX_LOANED_RESPONSES,
+        );
+    }
+
+    #[test]
+    fn server_runs_never_out_of_memory_with_huge_borrowed_responses<Sut: Service>() {
+        const MAX_CLIENTS: usize = 1;
+        const MAX_ACTIVE_REQUESTS: usize = 1;
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
+        const MAX_BORROWED_RESPONSES: usize = 10;
+        const MAX_LOANED_RESPONSES: usize = 1;
+
+        server_never_goes_out_of_memory_impl::<Sut>(
+            MAX_CLIENTS,
+            MAX_ACTIVE_REQUESTS,
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+            MAX_LOANED_RESPONSES,
+        );
+    }
+
+    #[test]
+    fn server_runs_never_out_of_memory_with_huge_max_loaned_responses<Sut: Service>() {
+        const MAX_CLIENTS: usize = 1;
+        const MAX_ACTIVE_REQUESTS: usize = 1;
+        const MAX_RESPONSE_BUFFER_SIZE: usize = 1;
+        const MAX_BORROWED_RESPONSES: usize = 1;
+        const MAX_LOANED_RESPONSES: usize = 10;
+
+        server_never_goes_out_of_memory_impl::<Sut>(
+            MAX_CLIENTS,
+            MAX_ACTIVE_REQUESTS,
+            MAX_RESPONSE_BUFFER_SIZE,
+            MAX_BORROWED_RESPONSES,
+            MAX_LOANED_RESPONSES,
+        );
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
