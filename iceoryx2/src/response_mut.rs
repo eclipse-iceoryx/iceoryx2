@@ -14,7 +14,6 @@ use core::{
     fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},
-    sync::atomic::Ordering,
 };
 use std::sync::Arc;
 

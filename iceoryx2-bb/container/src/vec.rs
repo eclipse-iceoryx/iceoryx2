@@ -723,7 +723,7 @@ impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
     }
 
     /// Removes the element at the provided index and returns it.
-    pub unsafe fn remove(&mut self, index: usize) -> T {
+    pub fn remove(&mut self, index: usize) -> T {
         unsafe { self.state.remove(index) }
     }
 
