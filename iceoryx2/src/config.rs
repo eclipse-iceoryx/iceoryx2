@@ -414,7 +414,7 @@ impl Default for Config {
                     client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     client_expired_connection_buffer: 128,
-                    allow_fire_and_forget_requests: false,
+                    allow_fire_and_forget_requests: true,
                 },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,
