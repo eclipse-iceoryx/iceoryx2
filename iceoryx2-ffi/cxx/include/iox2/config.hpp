@@ -238,6 +238,93 @@ class Event {
     iox2_config_h* m_config = nullptr;
 };
 
+/// Default settings for the request response messaging pattern. These settings are used unless
+/// the user specifies custom QoS or port settings.
+class RequestResonse {
+    /// Defines if the request buffer of the [`Service`] safely overflows.
+    auto enable_safe_overflow_for_requests() && -> bool;
+    /// Enables/disables safe overflow for the request buffer.
+    void set_enable_safe_overflow_for_requests(bool value) &&;
+    /// Defines if the response buffer of the [`Service`] safely overflows.
+    auto enable_safe_overflow_for_responses() && -> bool;
+    /// Enables/disables safe overflow for the response buffer.
+    void set_enable_safe_overflow_for_responses(bool value) &&;
+    /// The maximum of [`crate::active_request::ActiveRequest`]s a [`crate::port::server::Server`] can hold in
+    /// parallel per [`crate::port::client::Client`].
+    auto max_active_requests_per_client() && -> size_t;
+    /// Set the maximum of [`crate::active_request::ActiveRequest`]s a [`crate::port::server::Server`] can hold in
+    /// parallel per [`crate::port::client::Client`].
+    void set_max_active_requests_per_client(size_t value) &&;
+    /// The maximum buffer size for [`crate::response::Response`]s for a
+    /// [`crate::pending_response::PendingResponse`].
+    auto max_response_buffer_size() && -> size_t;
+    /// Set the maximum buffer size for [`crate::response::Response`]s for a
+    /// [`crate::pending_response::PendingResponse`].
+    void set_max_response_buffer_size(size_t value) &&;
+    /// The maximum amount of supported [`crate::port::server::Server`]
+    auto max_servers() && -> size_t;
+    /// Set the maximum amount of supported [`crate::port::server::Server`]
+    void set_max_servers(size_t value) &&;
+    /// The maximum amount of supported [`crate::port::client::Client`]
+    auto max_clients() && -> size_t;
+    /// Set the maximum amount of supported [`crate::port::client::Client`]
+    void set_max_clients(size_t value) &&;
+    /// The maximum amount of supported [`crate::node::Node`]s. Defines
+    /// indirectly how many processes can open the service at the same time.
+    auto max_nodes() && -> size_t;
+    /// Set the maximum amount of supported [`crate::node::Node`]s. Defines
+    /// indirectly how many processes can open the service at the same time.
+    void set_max_nodes(size_t value) &&;
+    /// The maximum amount of borrowed [`crate::response::Response`] per
+    /// [`crate::pending_response::PendingResponse`] on the [`crate::port::client::Client`] side.
+    auto max_borrowed_responses_per_pending_response() && -> size_t;
+    /// Set the maximum amount of borrowed [`crate::response::Response`] per
+    /// [`crate::pending_response::PendingResponse`] on the [`crate::port::client::Client`] side.
+    void set_max_borrowed_responses_per_pending_response(size_t value) &&;
+    /// Defines how many [`crate::request_mut::RequestMut`] a
+    /// [`crate::port::client::Client`] can loan in parallel.
+    auto client_max_loaned_requests() && -> size_t;
+    /// Set how many [`crate::request_mut::RequestMut`] a
+    /// [`crate::port::client::Client`] can loan in parallel.
+    void set_client_max_loaned_requests(size_t value) &&;
+    /// Defines how many [`crate::response_mut::ResponseMut`] a [`crate::port::server::Server`] can loan in
+    /// parallel per [`crate::active_request::ActiveRequest`].
+    auto server_max_loaned_responses_per_request() && -> size_t;
+    /// Set how many [`crate::response_mut::ResponseMut`] a [`crate::port::server::Server`] can loan in
+    /// parallel per [`crate::active_request::ActiveRequest`].
+    void set_server_max_loaned_responses_per_request(size_t value) &&;
+    /// Defines the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
+    /// could not deliver the request to the [`Server`](crate::port::server::Server).
+    auto client_unable_to_deliver_strategy() && -> UnableToDeliverStrategy;
+    /// Set the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
+    /// could not deliver the request to the [`Server`](crate::port::server::Server).
+    void set_client_unable_to_deliver_strategy(UnableToDeliverStrategy value) &&;
+    /// Defines the [`UnableToDeliverStrategy`] when a [`Server`](crate::port::server::Server)
+    /// could not deliver the response to the [`Client`](crate::port::client::Client).
+    auto server_unable_to_deliver_strategy() && -> UnableToDeliverStrategy;
+    /// Set the [`UnableToDeliverStrategy`] when a [`Server`](crate::port::server::Server)
+    /// could not deliver the response to the [`Client`](crate::port::client::Client).
+    void set_server_unable_to_deliver_strategy(UnableToDeliverStrategy value) &&;
+    /// Defines the size of the internal [`Client`](crate::port::client::Client)
+    /// buffer that contains expired connections. An
+    /// connection is expired when the [`Server`](crate::port::server::Server)
+    /// disconnected from a service and the connection
+    /// still contains unconsumed [`Response`](crate::response::Response)s.
+    auto client_expired_connection_buffer() && -> size_t;
+    /// Set the size of the internal [`Client`](crate::port::client::Client)
+    /// buffer that contains expired connections. An
+    /// connection is expired when the [`Server`](crate::port::server::Server)
+    /// disconnected from a service and the connection
+    /// still contains unconsumed [`Response`](crate::response::Response)s.
+    void set_client_expired_connection_buffer(size_t value) &&;
+
+  private:
+    friend class Defaults;
+    explicit RequestResonse(iox2_config_h* config);
+
+    iox2_config_h* m_config = nullptr;
+};
+
 /// Default settings. These values are used when the user in the code does not specify anything
 /// else.
 class Defaults {
@@ -246,6 +333,8 @@ class Defaults {
     auto publish_subscribe() && -> PublishSubscribe;
     /// Returns the event part of the default settings
     auto event() && -> Event;
+    /// Returns the request_response part of the default settings
+    auto request_response() && -> RequestResonse;
 
   private:
     friend class ::iox2::Config;

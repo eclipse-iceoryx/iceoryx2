@@ -71,6 +71,12 @@ enum class ReceiveError : uint8_t {
     /// Failures when mapping the corresponding data segment
     UnableToMapSendersDataSegment
 };
+
+enum class RequestSendError : uint8_t {
+    // ExceedsMaxActiveRequests,
+
+    // SendError(SendError),
+};
 } // namespace iox2
 
 #endif
