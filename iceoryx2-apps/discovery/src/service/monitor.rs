@@ -12,7 +12,7 @@
 
 use crate::service::Tracker;
 use iceoryx2::{
-    config::Config,
+    config::Config as IceoryxConfig,
     node::{Node, NodeBuilder},
     port::{notifier::Notifier, publisher::Publisher},
     prelude::ServiceName,
@@ -32,6 +32,30 @@ pub enum DiscoveryEvent {
     Removed(StaticConfig),
 }
 
+/// Configuration options for the service monitor.
+///
+/// This struct provides a more self-documenting way to configure
+/// the behavior of the `Monitor`.
+#[derive(Debug, Clone)]
+pub struct MonitorConfig {
+    /// Custom service name for the monitor (defaults to "iox2://monitor/services")
+    pub service_name: Option<ServiceName>,
+    /// Whether to publish discovery events
+    pub publish_events: bool,
+    /// Whether to send notifications on changes
+    pub send_notifications: bool,
+}
+
+impl Default for MonitorConfig {
+    fn default() -> Self {
+        Self {
+            service_name: None,
+            publish_events: true,
+            send_notifications: true,
+        }
+    }
+}
+
 /// A service monitor that tracks and publishes service discovery events.
 ///
 /// The monitor detects when services are added or removed from the system and
@@ -42,52 +66,65 @@ pub enum DiscoveryEvent {
 ///
 /// * `S` - The service implementation type that provides communication capabilities
 pub struct Monitor<S: Service> {
-    #[allow(dead_code)]
-    node: Node<S>, // Kept to maintain ownership of the node
-    publisher: Publisher<S, DiscoveryEvent, ()>,
-    notifier: Notifier<S>,
+    _node: Node<S>,
+    publisher: Option<Publisher<S, DiscoveryEvent, ()>>,
+    notifier: Option<Notifier<S>>,
     tracker: Tracker<S>,
 }
 
 impl<S: Service> Monitor<S> {
     /// Creates a new service monitor.
     ///
+    /// # Arguments
+    ///
+    /// * `config` - Configuration options for the monitor
+    ///
     /// # Returns
     ///
     /// A new `Monitor` instance ready to track service changes
-    pub fn new() -> Self {
+    pub fn new(config: MonitorConfig) -> Self {
         let node = NodeBuilder::new()
-            .config(Config::global_config())
+            .config(IceoryxConfig::global_config())
             .create::<S>()
             .expect("failed to create monitor node");
 
-        let service_name = ServiceName::new("iox2://monitor/services")
-            .expect("failed to create monitor service name");
+        let service_name = config.service_name.unwrap_or_else(|| {
+            ServiceName::new("iox2://monitor/services")
+                .expect("failed to create monitor service name")
+        });
 
-        let publish_subscribe = node
-            .service_builder(&service_name)
-            .publish_subscribe::<DiscoveryEvent>()
-            .create()
-            .expect("failed to create publish-subscribe service");
-        let publisher = publish_subscribe
-            .publisher_builder()
-            .create()
-            .expect("failed to create publisher");
+        let mut publisher = None;
+        if config.publish_events {
+            let publish_subscribe = node
+                .service_builder(&service_name)
+                .publish_subscribe::<DiscoveryEvent>()
+                .create()
+                .expect("failed to create publish-subscribe service");
+            let port = publish_subscribe
+                .publisher_builder()
+                .create()
+                .expect("failed to create publisher");
+            publisher = Some(port);
+        }
 
-        let event = node
-            .service_builder(&service_name)
-            .event()
-            .create()
-            .expect("failed to create event service");
-        let notifier = event
-            .notifier_builder()
-            .create()
-            .expect("failed to create notifier");
+        let mut notifier = None;
+        if config.send_notifications {
+            let event = node
+                .service_builder(&service_name)
+                .event()
+                .create()
+                .expect("failed to create event service");
+            let port = event
+                .notifier_builder()
+                .create()
+                .expect("failed to create notifier");
+            notifier = Some(port);
+        }
 
         let tracker = Tracker::<S>::new();
 
         Monitor::<S> {
-            node,
+            _node: node,
             publisher,
             notifier,
             tracker,
@@ -102,7 +139,7 @@ impl<S: Service> Monitor<S> {
     /// 3. Sends a notification if any changes were detected
     pub fn spin(&mut self) {
         // Detect changes
-        let (added, removed) = self.tracker.sync(Config::global_config());
+        let (added, removed) = self.tracker.sync(IceoryxConfig::global_config());
         let changes_detected = !added.is_empty() || !removed.is_empty();
 
         // Publish
@@ -113,9 +150,12 @@ impl<S: Service> Monitor<S> {
                     service.static_details.messaging_pattern(),
                     service.static_details.name()
                 );
-                // Clone required since the details are stored in the tracker.
-                let event = DiscoveryEvent::Added(service.static_details.clone());
-                let _ = self.publisher.send_copy(event);
+
+                if let Some(publisher) = &mut self.publisher {
+                    // Clone required since the details are stored in the tracker.
+                    let event = DiscoveryEvent::Added(service.static_details.clone());
+                    let _ = publisher.send_copy(event);
+                }
             }
         }
         for service in removed {
@@ -124,14 +164,19 @@ impl<S: Service> Monitor<S> {
                 service.static_details.messaging_pattern(),
                 service.static_details.name()
             );
-            // The removed details are not stored in the tracker. Claim ownership.
-            let event = DiscoveryEvent::Removed(service.static_details);
-            let _ = self.publisher.send_copy(event);
+
+            if let Some(publisher) = &mut self.publisher {
+                // The removed details are not stored in the tracker. Claim ownership.
+                let event = DiscoveryEvent::Removed(service.static_details);
+                let _ = publisher.send_copy(event);
+            }
         }
 
         // Notify
-        if changes_detected {
-            let _ = self.notifier.notify();
+        if let Some(notifier) = &mut self.notifier {
+            if changes_detected {
+                let _ = notifier.notify();
+            }
         }
     }
 }

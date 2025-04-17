@@ -19,8 +19,7 @@ mod cli;
 mod commands;
 mod filter;
 
-use anyhow::{anyhow, Result};
-use clap::CommandFactory;
+use anyhow::Result;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
@@ -44,7 +43,16 @@ fn main() -> Result<()> {
 
     set_log_level_from_env_or(LogLevel::Warn);
 
-    let cli = Cli::try_parse().map_err(|e| anyhow!("{}", e))?;
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(e) => {
+            // --help and --version is treated as a parse error by clap
+            // printing the error is actually printing the result of those commands ...
+            let _ = e.print();
+            return Ok(());
+        }
+    };
+
     if let Some(action) = cli.action {
         match action {
             Action::List(options) => {
@@ -58,13 +66,18 @@ fn main() -> Result<()> {
                 }
             }
             Action::Monitor(options) => {
-                if let Err(_e) = commands::monitor(options.rate) {
+                let should_publish = options.disable_publish == false;
+                let should_notify = options.disable_notify == false;
+                if let Err(_e) = commands::monitor(
+                    options.service_name.as_str(),
+                    options.rate,
+                    should_publish,
+                    should_notify,
+                ) {
                     error!("Failed to start service monitor")
                 }
             }
         }
-    } else {
-        Cli::command().print_help().expect("Failed to print help");
     }
 
     Ok(())

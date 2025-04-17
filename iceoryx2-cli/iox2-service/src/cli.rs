@@ -60,20 +60,42 @@ pub struct DetailsOptions {
 #[derive(Parser)]
 pub struct MonitorOptions {
     #[clap(
+        long,
+        help = "Name of the service monitoring service",
+        default_value = "iox2://monitor/services"
+    )]
+    pub service_name: String,
+
+    #[clap(
         short,
         long,
         default_value = "1000",
         help = "Update rate in milliseconds"
     )]
     pub rate: u64,
+
+    #[clap(long, help = "Do not publish changes")]
+    pub disable_publish: bool,
+
+    #[clap(long, help = "Do not notify of changes")]
+    pub disable_notify: bool,
 }
 
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "List all services")]
+    #[clap(
+        about = "List all services",
+        help_template = help_template("iox2 service list", false)
+    )]
     List(ListOptions),
-    #[clap(about = "Show service details")]
+    #[clap(
+        about = "Show service details",
+        help_template = help_template("iox2 service details", false)
+    )]
     Details(DetailsOptions),
-    #[clap(about = "Start a service monitor")]
+    #[clap(
+        about = "Start a service monitor", 
+        help_template = help_template("iox2 service monitor", false)
+    )]
     Monitor(MonitorOptions),
 }

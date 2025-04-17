@@ -18,6 +18,7 @@ use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
 use iceoryx2_cli::Format;
 use iceoryx2_discovery::service::Monitor;
+use iceoryx2_discovery::service::MonitorConfig;
 
 use crate::cli::OutputFilter;
 
@@ -74,13 +75,23 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
 ///
 /// # Arguments
 ///
+/// * `service_name` - The name of the service monitoring service
 /// * `rate` - The update rate in milliseconds between monitor refreshes
-///
-/// # Returns
-///
-/// * `Result<()>` - Ok if the monitor runs successfully, or an error if it fails
-pub fn monitor(rate: u64) -> Result<()> {
-    let mut monitor = Monitor::<ipc::Service>::new();
+/// * `publish_events` - Whether to publish events about service changes
+/// * `send_notifications` - Whether to send notifications about service changes
+pub fn monitor(
+    service_name: &str,
+    rate: u64,
+    publish_events: bool,
+    send_notifications: bool,
+) -> Result<()> {
+    let mut monitor = Monitor::<ipc::Service>::new(MonitorConfig {
+        service_name: Some(
+            ServiceName::new(service_name).expect("failed to create monitor service name"),
+        ),
+        publish_events,
+        send_notifications,
+    });
 
     info!("Service Monitor (update rate: {}ms)", rate);
 
