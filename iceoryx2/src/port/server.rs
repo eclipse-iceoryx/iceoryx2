@@ -295,9 +295,9 @@ impl<
             shared_state: Arc::new(SharedServerState {
                 request_receiver,
                 client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
-                response_sender,
                 server_handle: UnsafeCell::new(None),
                 service_state: service.__internal_state().clone(),
+                response_sender,
             }),
             _request_payload: PhantomData,
             _request_header: PhantomData,

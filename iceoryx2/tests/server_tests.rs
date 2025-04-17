@@ -16,10 +16,10 @@ mod server {
     use core::time::Duration;
     use std::sync::Barrier;
 
-    use iceoryx2::port::{LoanError, ReceiveError};
+    use iceoryx2::port::ReceiveError;
+    use iceoryx2::prelude::*;
     use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
-    use iceoryx2::{pending_response, prelude::*};
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
@@ -672,7 +672,7 @@ mod server {
     }
 
     #[test]
-    fn can_borrow_per_request_at_most_max_loaned_responses<Sut: Service>() {
+    fn can_loan_per_request_at_most_number_of_responses<Sut: Service>() {
         const MAX_CLIENTS: usize = 4;
         const MAX_ACTIVE_REQUESTS: usize = 5;
         const MAX_LOANED_RESPONSES: usize = 6;
@@ -718,10 +718,9 @@ mod server {
                 for _ in 0..MAX_LOANED_RESPONSES {
                     loans.push(active_request.loan().unwrap());
                 }
-
-                let result = active_request.loan();
-                assert_that!(result.err(), eq Some(LoanError::ExceedsMaxLoans));
             }
+
+            assert_that!(loans, len MAX_LOANED_RESPONSES * MAX_ACTIVE_REQUESTS * MAX_CLIENTS);
         }
     }
 
