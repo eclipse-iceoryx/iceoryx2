@@ -199,7 +199,7 @@ impl<
         let server_port_id = UniqueServerId::new();
         let service = &server_factory.factory.service;
         let static_config = server_factory.factory.static_config();
-        let number_of_requests = unsafe {
+        let number_of_requests_per_client = unsafe {
             service
                 .__internal_state()
                 .static_config
@@ -219,7 +219,7 @@ impl<
         }
         .required_amount_of_chunks_per_server_data_segment(
             server_factory.max_loaned_responses_per_request,
-            number_of_requests,
+            number_of_requests_per_client,
         );
 
         let client_list = &service
@@ -271,7 +271,9 @@ impl<
             receiver_max_buffer_size: static_config.max_response_buffer_size,
             receiver_max_borrowed_samples: static_config
                 .max_borrowed_responses_per_pending_response,
-            sender_max_borrowed_samples: server_factory.max_loaned_responses_per_request,
+            sender_max_borrowed_samples: server_factory.max_loaned_responses_per_request
+                * number_of_requests_per_client
+                * static_config.max_clients,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
             number_of_samples: number_of_responses,
             max_number_of_segments,
@@ -281,7 +283,7 @@ impl<
             loan_counter: IoxAtomicUsize::new(0),
             unable_to_deliver_strategy: server_factory.unable_to_deliver_strategy,
             message_type_details: static_config.response_message_type_details.clone(),
-            number_of_channels: number_of_requests,
+            number_of_channels: number_of_requests_per_client,
         };
 
         let new_self = Self {
