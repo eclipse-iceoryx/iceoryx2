@@ -67,6 +67,8 @@ pub enum RequestResponseOpenError {
     IncompatibleOverflowBehaviorForRequests,
     /// The [`Service`] required overflow behavior for responses is not compatible.
     IncompatibleOverflowBehaviorForResponses,
+    /// The [`Service`] does not support the required behavior for fire and forget requests.
+    IncompatibleBehaviorForFireAndForgetRequests,
     /// The process has not enough permissions to open the [`Service`].
     InsufficientPermissions,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -230,6 +232,7 @@ pub struct Builder<
     verify_max_clients: bool,
     verify_max_nodes: bool,
     verify_max_borrowed_responses_per_pending_response: bool,
+    verify_allow_fire_and_forget_requests: bool,
 
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -259,6 +262,7 @@ impl<
             verify_max_clients: false,
             verify_max_nodes: false,
             verify_max_borrowed_responses_per_pending_response: false,
+            verify_allow_fire_and_forget_requests: false,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -341,6 +345,15 @@ impl<
     pub fn enable_safe_overflow_for_responses(mut self, value: bool) -> Self {
         self.config_details_mut().enable_safe_overflow_for_responses = value;
         self.verify_enable_safe_overflow_for_responses = true;
+        self
+    }
+
+    /// If the [`Service`] is created, defines if fire and forget requests are allowed or not.
+    /// If an existing [`Service`] is opened it requires the service to have the defined fire
+    /// and forget requests behavior.
+    pub fn allow_fire_and_forget_requests(mut self, value: bool) -> Self {
+        self.config_details_mut().allow_fire_and_forget_requests = value;
+        self.verify_allow_fire_and_forget_requests = true;
         self
     }
 
@@ -493,6 +506,15 @@ impl<
         {
             fail!(from self, with RequestResponseOpenError::IncompatibleOverflowBehaviorForResponses,
                 "{} since the service has an incompatible safe overflow behavior for responses.",
+                msg);
+        }
+
+        if self.verify_allow_fire_and_forget_requests
+            && existing_configuration.allow_fire_and_forget_requests
+                != required_configuration.allow_fire_and_forget_requests
+        {
+            fail!(from self, with RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests,
+                "{} since the service has an incompatible behavior for fire and forget requests.",
                 msg);
         }
 

@@ -341,6 +341,21 @@ pub struct RequestResonse {
     /// disconnected from a service and the connection
     /// still contains unconsumed [`Response`](crate::response::Response)s.
     pub client_expired_connection_buffer: usize,
+    /// Allows the [`Server`](crate::port::server::Server) to receive
+    /// [`RequestMut`](crate::response_mut::ResponseMut)s of
+    /// [`Client`](crate::port::client::Client)s that are not interested in a
+    /// [`Response`](crate::response::Response), meaning that the
+    /// [`Server`](crate:port::server::Server) will receive the
+    /// [`RequestMut`](crate::response_mut::ResponseMut) despite the corresponding
+    /// [`PendingResponse`](crate::pending_response::PendingResponse) already went out-of-scope.
+    /// So any [`Response`](crate::response::Response) sent by the
+    /// [`Server`](crate::port::server::Server) would not be received by the corresponding
+    /// [`Client`](crate::port::client::Client)s
+    /// [`PendingResponse`](crate::pending_response::PendingResponse).
+    ///
+    /// Consider enabling this feature if you do not want to loose any
+    /// [`RequestMut`](crate::response_mut::ResponseMut).
+    pub allow_fire_and_forget_requests: bool,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -399,6 +414,7 @@ impl Default for Config {
                     client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     client_expired_connection_buffer: 128,
+                    allow_fire_and_forget_requests: false,
                 },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,

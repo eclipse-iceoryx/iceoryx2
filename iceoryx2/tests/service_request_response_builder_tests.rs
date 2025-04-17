@@ -476,6 +476,35 @@ mod service_request_response {
     }
 
     #[test]
+    fn open_fails_when_service_does_has_required_fire_and_forget_behavior_for_requests<
+        Sut: Service,
+    >() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .allow_fire_and_forget_requests(true)
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .allow_fire_and_forget_requests(false)
+            .open();
+        assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests));
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .allow_fire_and_forget_requests(true)
+            .open();
+        assert_that!(sut_open, is_ok);
+    }
+
+    #[test]
     fn open_verifies_max_borrowed_responses_per_pending_response_correctly<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();

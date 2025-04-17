@@ -51,6 +51,7 @@ use super::message_type_details::MessageTypeDetails;
 pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_requests: bool,
     pub(crate) enable_safe_overflow_for_responses: bool,
+    pub(crate) allow_fire_and_forget_requests: bool,
     pub(crate) max_active_requests_per_client: usize,
     pub(crate) client_max_loaned_requests: usize,
     pub(crate) max_response_buffer_size: usize,
@@ -86,6 +87,10 @@ impl StaticConfig {
                 .request_response
                 .max_borrowed_responses_per_pending_response,
             client_max_loaned_requests: config.defaults.request_response.client_max_loaned_requests,
+            allow_fire_and_forget_requests: config
+                .defaults
+                .request_response
+                .allow_fire_and_forget_requests,
             request_message_type_details: MessageTypeDetails::default(),
             response_message_type_details: MessageTypeDetails::default(),
         }
@@ -143,6 +148,12 @@ impl StaticConfig {
     /// is full.
     pub fn has_safe_overflow_for_responses(&self) -> bool {
         self.enable_safe_overflow_for_responses
+    }
+
+    /// Returns true if fire and forget [`RequestMut`](crate::request_mut::RequestMut)s can be
+    /// sent from the [`Client`](crate::port::client::Client), otherwise false.
+    pub fn allow_fire_and_forget_requests(&self) -> bool {
+        self.allow_fire_and_forget_requests
     }
 
     /// Returns the maximum number of borrowed [`Response`](crate::response::Response)s a
