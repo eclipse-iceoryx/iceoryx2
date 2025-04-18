@@ -366,7 +366,7 @@ impl<
         self
     }
 
-    /// Defines how many requests the [`Client`] can loan in parallel.
+    /// Defines how many requests the [`Client`](crate::port::client::Client) can loan in parallel.
     pub fn client_max_loaned_requests(mut self, value: usize) -> Self {
         self.config_details_mut().client_max_loaned_requests = value;
         self.verify_client_max_loaned_requests = true;
