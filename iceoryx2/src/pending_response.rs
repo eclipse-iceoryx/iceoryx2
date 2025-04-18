@@ -35,11 +35,14 @@
 //!
 //! // we receive a stream of responses from the server and are interested in 5 of them
 //! for i in 0..5 {
-//!     // busy loop until we receive a response
-//!     while !pending_response.has_response() && pending_response.is_connected() {}
+//!     if !pending_response.is_connected() {
+//!         println!("server terminated connection - abort");
+//!         break;
+//!     }
 //!
-//!     let response = pending_response.receive()?.unwrap();
-//!     println!("received response: {}", *response);
+//!     if let Some(response) = pending_response.receive()? {
+//!         println!("received response: {}", *response);
+//!     }
 //! }
 //!
 //! // We are no longer interested in the responses from the server and
