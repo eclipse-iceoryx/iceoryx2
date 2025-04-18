@@ -1,0 +1,19 @@
+[package]
+name = "benchmark-request-response"
+description = "iceoryx2: [internal] benchmark for request-response messaging pattern"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2-bb-log = { workspace = true }
+iceoryx2 = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+
+clap = { workspace = true }
