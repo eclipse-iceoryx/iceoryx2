@@ -89,9 +89,8 @@ impl<
     > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        if unsafe { &mut *self.client_shared_state.available_channel_ids.get() }
+        if !unsafe { &mut *self.client_shared_state.available_channel_ids.get() }
             .push(self.header().channel_id)
-            == false
         {
             fatal_panic!(from self,
                     "This should never happen! The channel id could not be returned.");

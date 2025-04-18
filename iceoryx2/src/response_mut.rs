@@ -39,12 +39,14 @@
 //! # }
 //! ```
 
+extern crate alloc;
+
+use alloc::sync::Arc;
 use core::{
     fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
-use std::sync::Arc;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::{shm_allocator::PointerOffset, zero_copy_connection::ChannelId};
@@ -82,7 +84,7 @@ pub struct ResponseMut<Service: service::Service, ResponsePayload: Debug, Respon
 impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Debug
     for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "ResponseMut<{}, {}, {}> {{ ptr: {:?}, offset_to_chunk: {:?}, sample_size: {}, channel_id: {} }}",
@@ -127,7 +129,8 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
 impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
     ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
-    /// Returns a reference to the header of the response.
+    /// Returns a reference to the
+    /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
     ///
     /// ```
     /// use iceoryx2::prelude::*;

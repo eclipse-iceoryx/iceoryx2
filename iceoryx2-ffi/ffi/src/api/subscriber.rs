@@ -19,7 +19,7 @@ use crate::api::{
 };
 
 use iceoryx2::port::subscriber::Subscriber;
-use iceoryx2::port::update_connections::{ConnectionFailure, UpdateConnections};
+use iceoryx2::port::update_connections::ConnectionFailure;
 use iceoryx2::port::ReceiveError;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;

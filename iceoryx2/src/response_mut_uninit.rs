@@ -66,7 +66,7 @@ pub struct ResponseMutUninit<
 impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Debug
     for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "ResponseMut {{ response: {:?} }}", self.response)
     }
 }
@@ -74,7 +74,8 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
 impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
     ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
-    /// Returns a reference to the header of the response.
+    /// Returns a reference to the
+    /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
     ///
     /// ```
     /// use iceoryx2::prelude::*;

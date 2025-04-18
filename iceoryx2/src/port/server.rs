@@ -408,37 +408,33 @@ impl<
                         &*(chunk.header as *const service::header::request_response::RequestHeader)
                     };
 
-                    match self
+                    if let Some(connection_id) = self
                         .shared_state
                         .response_sender
                         .get_connection_id_of(header.client_port_id.value())
                     {
-                        Some(connection_id) => {
-                            let active_request = ActiveRequest {
-                                details,
-                                request_id: header.request_id,
-                                channel_id: header.channel_id,
-                                connection_id,
-                                shared_state: self.shared_state.clone(),
-                                ptr: unsafe {
-                                    RawSample::new_unchecked(
-                                        chunk.header.cast(),
-                                        chunk.user_header.cast(),
-                                        chunk.payload.cast::<RequestPayload>(),
-                                    )
-                                },
-                                _response_payload: PhantomData,
-                                _response_header: PhantomData,
-                            };
+                        let active_request = ActiveRequest {
+                            details,
+                            request_id: header.request_id,
+                            channel_id: header.channel_id,
+                            connection_id,
+                            shared_state: self.shared_state.clone(),
+                            ptr: unsafe {
+                                RawSample::new_unchecked(
+                                    chunk.header.cast(),
+                                    chunk.user_header.cast(),
+                                    chunk.payload.cast::<RequestPayload>(),
+                                )
+                            },
+                            _response_payload: PhantomData,
+                            _response_header: PhantomData,
+                        };
 
-                            if !self.allow_fire_and_forget && !active_request.is_connected() {
-                                continue;
-                            }
-
-                            return Ok(Some(active_request));
+                        if !self.allow_fire_and_forget && !active_request.is_connected() {
+                            continue;
                         }
 
-                        None => (),
+                        return Ok(Some(active_request));
                     }
                 }
                 None => return Ok(None),
