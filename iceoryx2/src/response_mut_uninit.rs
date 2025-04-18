@@ -30,11 +30,11 @@
 //!
 //! let mut response = active_request.loan_uninit()?;
 //! // write 1234 into sample
-//! *response.payload_mut() = 1234;
+//! response.payload_mut().write(1234);
 //! // overwrite contents with 456 because its fun
 //! let response = response.write_payload(456);
 //!
-//! println!("server port id: {:?}", response.header().server_id());
+//! println!("server port id: {:?}", response.header().server_port_id());
 //! response.send()?;
 //!
 //! # Ok(())
@@ -93,7 +93,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     ///
     /// let response = active_request.loan_uninit()?;
     ///
-    /// println!("server port id: {:?}", response.header().server_id());
+    /// println!("server port id: {:?}", response.header().server_port_id());
     ///
     /// # Ok(())
     /// # }
@@ -109,9 +109,9 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"Whatever2".try_into()?)
     /// #     .request_response::<u64, u64>()
-    /// #     .response_header::<u64>()
+    /// #     .response_user_header::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
@@ -138,9 +138,9 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"Whatever".try_into()?)
     /// #     .request_response::<u64, u64>()
-    /// #     .response_header::<u64>()
+    /// #     .response_user_header::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
@@ -165,7 +165,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"Whatever3".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -175,8 +175,8 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # let active_request = server.receive()?.unwrap();
     ///
     /// let mut response = active_request.loan_uninit()?;
-    /// *response.payload_mut() = 123;
-    /// println!("default payload {}", *response.payload());
+    /// response.payload_mut().write(123);
+    /// println!("default payload {:?}", *response.payload());
     ///
     /// # Ok(())
     /// # }
@@ -192,7 +192,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"Whatever4".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -202,7 +202,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # let active_request = server.receive()?.unwrap();
     ///
     /// let mut response = active_request.loan_uninit()?;
-    /// *response.payload_mut() = 123;
+    /// response.payload_mut().write(123);
     ///
     /// # Ok(())
     /// # }
@@ -223,7 +223,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"Whatever5".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -259,7 +259,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"Whatever6".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -269,7 +269,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # let active_request = server.receive()?.unwrap();
     ///
     /// let mut response = active_request.loan_uninit()?;
-    /// *response.payload_mut() = 789;
+    /// response.payload_mut().write(789);
     /// // this is fine since the payload was initialized to 789
     /// let response = unsafe { response.assume_init() };
     ///

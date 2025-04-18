@@ -19,7 +19,7 @@
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! # let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! #
-//! # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//! # let service = node.service_builder(&"ResponseMutExample1".try_into()?)
 //! #     .request_response::<u64, u64>()
 //! #     .open_or_create()?;
 //! #
@@ -28,11 +28,11 @@
 //! # let pending_response = client.send_copy(0)?;
 //! # let active_request = server.receive()?.unwrap();
 //!
-//! let response = active_request.loan()?;
+//! let mut response = active_request.loan()?;
 //! // write 456 because its fun
 //! *response.payload_mut() = 456;
 //!
-//! println!("server port id: {:?}", response.header().server_id());
+//! println!("server port id: {:?}", response.header().server_port_id());
 //! response.send()?;
 //!
 //! # Ok(())
@@ -137,7 +137,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"ResponseMutExample2".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -148,7 +148,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     ///
     /// let response = active_request.loan()?;
     ///
-    /// println!("server port id: {:?}", response.header().server_id());
+    /// println!("server port id: {:?}", response.header().server_port_id());
     ///
     /// # Ok(())
     /// # }
@@ -164,9 +164,9 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"ResponseMutExample3".try_into()?)
     /// #     .request_response::<u64, u64>()
-    /// #     .response_header::<u64>()
+    /// #     .response_user_header::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
@@ -193,9 +193,9 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"ResponseMutExample4".try_into()?)
     /// #     .request_response::<u64, u64>()
-    /// #     .response_header::<u64>()
+    /// #     .response_user_header::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
@@ -220,7 +220,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"ResponseMutExample4".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -248,7 +248,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"ResponseMutExample5".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -276,7 +276,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// # let service = node.service_builder(&"ResponseMutExample6".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #

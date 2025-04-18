@@ -30,8 +30,8 @@
 //! # active_request.send_copy(0)?;
 //!
 //! if let Some(response) = pending_response.receive()? {
-//!     println!("received response: {} from: {}",
-//!         response.payload(), response.header().server_id());
+//!     println!("received response: {} from: {:?}",
+//!         response.payload(), response.header().server_port_id());
 //! }
 //!
 //! # Ok(())

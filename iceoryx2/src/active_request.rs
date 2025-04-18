@@ -23,7 +23,7 @@
 //! # let client = service.client_builder().create()?;
 //! # let server = service.server_builder().create()?;
 //! #
-//! # let pending_response = client.send_copy(123)?;
+//! # client.send_copy(123)?;
 //!
 //! let active_request = server.receive()?.unwrap();
 //!
@@ -33,7 +33,6 @@
 //! while active_request.is_connected() {
 //!     let response = active_request.loan_uninit()?;
 //!     response.write_payload(456).send()?;
-//!     # drop(pending_response);
 //! }
 //!
 //! # Ok(())
