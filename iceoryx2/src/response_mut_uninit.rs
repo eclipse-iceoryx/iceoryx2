@@ -28,11 +28,11 @@
 //! # let pending_response = client.send_copy(0)?;
 //! # let active_request = server.receive()?.unwrap();
 //!
-//! let response = active_request.loan_uninit()?;
+//! let mut response = active_request.loan_uninit()?;
 //! // write 1234 into sample
-//! let mut response = response.write_payload(1234);
-//! // override contents with 456 because its fun
-//! *response.payload_mut() = 456;
+//! *response.payload_mut() = 1234;
+//! // overwrite contents with 456 because its fun
+//! let response = response.write_payload(456);
 //!
 //! println!("server port id: {:?}", response.header().server_id());
 //! response.send()?;
@@ -118,7 +118,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # let pending_response = client.send_copy(0)?;
     /// # let active_request = server.receive()?.unwrap();
     ///
-    /// // loan_uninit initializes the user header with default therefore it is okay to access the
+    /// // initializes the user header with default, therefore it is okay to access
     /// // it without assigning something first
     /// let mut response = active_request.loan_uninit()?;
     /// println!("user header {}", response.user_header());
@@ -166,7 +166,6 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .request_response::<u64, u64>()
-    /// #     .response_header::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
@@ -194,7 +193,6 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .request_response::<u64, u64>()
-    /// #     .response_header::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
@@ -226,7 +224,6 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .request_response::<u64, u64>()
-    /// #     .response_header::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
@@ -263,7 +260,6 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// #
     /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .request_response::<u64, u64>()
-    /// #     .response_header::<u64>()
     /// #     .open_or_create()?;
     /// #
     /// # let client = service.client_builder().create()?;
