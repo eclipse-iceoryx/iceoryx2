@@ -345,7 +345,7 @@ pub struct RequestResonse {
     /// [`RequestMut`](crate::response_mut::ResponseMut)s of
     /// [`Client`](crate::port::client::Client)s that are not interested in a
     /// [`Response`](crate::response::Response), meaning that the
-    /// [`Server`](crate:port::server::Server) will receive the
+    /// [`Server`](crate::port::server::Server) will receive the
     /// [`RequestMut`](crate::response_mut::ResponseMut) despite the corresponding
     /// [`PendingResponse`](crate::pending_response::PendingResponse) already went out-of-scope.
     /// So any [`Response`](crate::response::Response) sent by the
