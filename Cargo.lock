@@ -133,6 +133,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "benchmark-request-response"
+version = "0.5.0"
+dependencies = [
+ "clap",
+ "iceoryx2",
+ "iceoryx2-bb-container",
+ "iceoryx2-bb-log",
+ "iceoryx2-bb-posix",
+]
+
+[[package]]
 name = "better-panic"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

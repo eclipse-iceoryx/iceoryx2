@@ -26,6 +26,7 @@ members = [
 
     "examples",
 
+    "benchmarks/request-response",
     "benchmarks/publish-subscribe",
     "benchmarks/event", 
     "benchmarks/queue"
