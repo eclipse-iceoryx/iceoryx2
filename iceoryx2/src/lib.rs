@@ -25,9 +25,9 @@
 //!
 //! - Publish-Subscribe
 //! - Events
-//! - Request-Response (planned)
-//! - Pipeline (planned)
+//! - Request-Response
 //! - Blackboard (planned)
+//! - Pipeline (planned)
 //!
 //! For a comprehensive list of all planned features, please refer to the
 //! [GitHub Roadmap](https://github.com/eclipse-iceoryx/iceoryx2/blob/main/ROADMAP.md).
