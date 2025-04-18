@@ -1,5 +1,10 @@
 # Benchmarks
 
+1. [Publish-Subscribe](#Publish-Subscribe)
+2. [Request-Response](#Request-Response)
+3. [Event](#Event)
+4. [Queue](#Queue)
+
 ## Publish-Subscribe
 
 The benchmark quantifies the latency between a `Publisher` sending a message and
@@ -17,6 +22,31 @@ For more benchmark configuration details, see
 
 ```sh
 cargo run --bin benchmark-publish-subscribe --release -- --help
+```
+
+## Request-Response
+
+The benchmark quantifies two scenarios:
+
+1. The latency between a `Client` sending a request and a `Server` receiving it.
+2. The latency of a response stream from an established request-response
+   connection. So sending a stream of responses from an `ActiveRequest` to the
+   corresponding `PendingResponse`.
+
+In the setup, a bidirectional connection is
+established from process `a` to `b` (service name `a2b`) and back (service name
+`b2a`). `PendingResponse`s employ multithreaded busy waiting and promptly
+respond upon message reception. This process repeats `n` times, and the average
+latency is subsequently computed.
+
+```sh
+cargo run --bin benchmark-request-response --release
+```
+
+For more benchmark configuration details, see
+
+```sh
+cargo run --bin benchmark-request-response --release -- --help
 ```
 
 ## Event
