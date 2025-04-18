@@ -22,7 +22,7 @@ patterns, including:
   which waits until it receives a notification. It is the basic pattern for
   implementing push-notifications.
 
-* **Request-Response:** (planned) This pattern enables clients to send requests
+* **Request-Response:** This pattern enables clients to send requests
   to a server, which responds with the requested data or action, making it
   suitable for interactive, transactional communication.
 
@@ -84,4 +84,5 @@ These types are demonstrated in the complex data types example.
 | publish subscribe cross language   | [C](c/publish_subscribe_cross_language) [C++](cxx/publish_subscribe_cross_language) [Rust](rust/publish_subscribe_cross_language)       | Cross-language communication between multiple Rust, C++ and C processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern).                                  |
 | publish subscribe dynamic data     | [C++](cxx/publish_subscribe_dynamic_data) [Rust](rust/publish_subscribe_dynamic_data)                                                   | Communication between multiple processes with a [publish subscribe messaging pattern](https://en.wikipedia.org/wiki/Publish–subscribe_pattern) and payload data that has a dynamic size.                        |
 | publish subscribe with user header | [C](c/publish_subscribe_with_user_header) [C++](cxx/publish_subscribe_with_user_header) [Rust](rust/publish_subscribe_with_user_header) | Add a user header to the payload (samples) to transfer additional information.                                                                                                                                  |
+| request response                   | [Rust](rust/request_response)                                                                                                           | Sending requests from one or many clients to one or many servers and receive a stream of responses.                                                                                                             |
 | service attributes                 | [C++](cxx/service_attributes) [Rust](rust/service_attributes)                                                                           | Creates a service with custom attributes that are available to every endpoint. If the attributes are not compatible the service will not open.                                                                  |

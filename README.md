@@ -50,8 +50,8 @@ reliable zero-copy and lock-free inter-process communication mechanisms.
 So if you want to communicate efficiently between multiple processes or
 applications iceoryx2 is for you. With iceoryx2, you can:
 
-* Send huge amounts of data using a publish/subscribe, request/response
-  (planned), pipeline (planned) or blackboard pattern (planned), making it ideal
+* Send huge amounts of data using a publish/subscribe, request/response,
+  pipeline (planned) or blackboard pattern (planned), making it ideal
   for scenarios where large datasets need to be shared.
 * Exchange signals through events, enabling quick and reliable signaling between
   processes.
@@ -325,13 +325,13 @@ The support levels can be adjusted when required.
 
 | Language |   State |
 | -------- | ------: |
-| C / C++  |    beta |
-| C#       | planned |
+| C / C++  |    done |
+| Python   | planned |
 | Go       | planned |
+| C#       | planned |
 | Java     | planned |
 | Kotlin   | planned |
 | Lua      | planned |
-| Python   | planned |
 | Swift    | planned |
 | Zig      | planned |
 
@@ -386,17 +386,17 @@ The support levels can be adjusted when required.
           <img src="https://avatars.githubusercontent.com/u/8487595" width="120px;" alt="»orecham«"/><br />
           <sub><b>»orecham«</b></sub></a></td>
       <td align="center" valign="top" width="14.28%">
+          <a href="https://github.com/FerdinandSpitzschnueffler">
+          <img src="https://avatars.githubusercontent.com/u/61289993" width="120px;" alt="»FerdinandSpitzschnueffler«"/><br />
+          <sub><b>»FerdinandSpitzschnueffler«</b></sub></a></td>
+    </tr><tr>
+      <td align="center" valign="top" width="14.28%">
           <a href="https://github.com/xieyuschen">
           <img src="https://avatars.githubusercontent.com/u/52945328" width="120px;" alt="xieyuschen"/><br />
           <sub><b>»xieyuschen«</b></sub></a></td>
       <td align="center" valign="top" width="14.28%">
-          <a href="https://github.com/FerdinandSpitzschnueffler">
-          <img src="https://avatars.githubusercontent.com/u/61289993" width="120px;" alt="»FerdinandSpitzschnueffler«"/><br />
-          <sub><b>»FerdinandSpitzschnueffler«</b></sub></a></td>
-          <sub><b>»xieyuschen«</b></sub></a></td>                   
-      <td align="center" valign="top" width="14.28%">
           <a href="https://github.com/brosier01">
-          <img src="https://avatars.githubusercontent.com/u/71630425?v=4" width="120px;" alt="Bruce »brosier01« Rosier"/><br />
+          <img src="https://avatars.githubusercontent.com/u/71630425" width="120px;" alt="Bruce »brosier01« Rosier"/><br />
           <sub><b>Bruce »brosier01« Rosier</b></sub></a></td>
       <td align="center" valign="top" width="14.28%">
           <a href="https://github.com/hanky-qorix">

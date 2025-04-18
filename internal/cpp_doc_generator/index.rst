@@ -157,18 +157,18 @@ Language Bindings
    :header-rows: 1
 
    * - C / C++
-     - beta
-   * - C#
+     - done
+   * - Python
      - planned
    * - Go
+     - planned
+   * - C#
      - planned
    * - Lua
      - planned
    * - Java
      - planned
    * - Kotlin
-     - planned
-   * - Python
      - planned
    * - Swift
      - planned
