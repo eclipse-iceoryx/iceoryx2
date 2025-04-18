@@ -335,6 +335,27 @@ pub struct RequestResonse {
     /// Defines the [`UnableToDeliverStrategy`] when a [`Server`](crate::port::server::Server)
     /// could not deliver the response to the [`Client`](crate::port::client::Client).
     pub server_unable_to_deliver_strategy: UnableToDeliverStrategy,
+    /// Defines the size of the internal [`Client`](crate::port::client::Client)
+    /// buffer that contains expired connections. An
+    /// connection is expired when the [`Server`](crate::port::server::Server)
+    /// disconnected from a service and the connection
+    /// still contains unconsumed [`Response`](crate::response::Response)s.
+    pub client_expired_connection_buffer: usize,
+    /// Allows the [`Server`](crate::port::server::Server) to receive
+    /// [`RequestMut`](crate::response_mut::ResponseMut)s of
+    /// [`Client`](crate::port::client::Client)s that are not interested in a
+    /// [`Response`](crate::response::Response), meaning that the
+    /// [`Server`](crate::port::server::Server) will receive the
+    /// [`RequestMut`](crate::response_mut::ResponseMut) despite the corresponding
+    /// [`PendingResponse`](crate::pending_response::PendingResponse) already went out-of-scope.
+    /// So any [`Response`](crate::response::Response) sent by the
+    /// [`Server`](crate::port::server::Server) would not be received by the corresponding
+    /// [`Client`](crate::port::client::Client)s
+    /// [`PendingResponse`](crate::pending_response::PendingResponse).
+    ///
+    /// Consider enabling this feature if you do not want to loose any
+    /// [`RequestMut`](crate::response_mut::ResponseMut).
+    pub allow_fire_and_forget_requests: bool,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -392,6 +413,8 @@ impl Default for Config {
                     server_max_loaned_responses_per_request: 2,
                     client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+                    client_expired_connection_buffer: 128,
+                    allow_fire_and_forget_requests: true,
                 },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,

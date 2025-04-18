@@ -44,6 +44,9 @@ rust_library(
         "@crate_index//:tiny-fn",
         "@crate_index//:toml",
     ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+    ],
 )
 
 rust_test_suite(

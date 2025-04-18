@@ -333,4 +333,40 @@ mod vec {
         assert_that!(sut.pop(), eq Some(TEST_VALUE));
         assert_that!(sut, len 0);
     }
+
+    #[test]
+    fn remove_reverse_order_works() {
+        const CAPACITY: usize = 12;
+        let mut sut = Vec::<usize>::new(CAPACITY);
+
+        for n in 0..CAPACITY {
+            sut.push(n);
+        }
+
+        for n in (0..CAPACITY).rev() {
+            assert_that!(sut.remove(n), eq n);
+
+            for (idx, v) in sut.iter().enumerate() {
+                assert_that!(*v, eq idx);
+            }
+        }
+    }
+
+    #[test]
+    fn remove_works() {
+        const CAPACITY: usize = 12;
+        let mut sut = Vec::<usize>::new(CAPACITY);
+
+        for n in 0..CAPACITY {
+            sut.push(n);
+        }
+
+        for n in 0..CAPACITY {
+            assert_that!(sut.remove(0), eq n);
+
+            for (idx, v) in sut.iter().enumerate() {
+                assert_that!(*v, eq idx + n + 1);
+            }
+        }
+    }
 }

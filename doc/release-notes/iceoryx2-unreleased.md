@@ -13,6 +13,8 @@
 
 * Read LogLevel from environment variable
     [#396](https://github.com/eclipse-iceoryx/iceoryx2/issues/396)
+* Add Request-Response messaging pattern
+    [#429](https://github.com/eclipse-iceoryx/iceoryx2/issues/429)
 * Lookup config file in default locations
     [#442](https://github.com/eclipse-iceoryx/iceoryx2/issues/442)
 * Introduce `socket_pair` abstraction in POSIX wrapper
@@ -35,6 +37,8 @@
     [#643](https://github.com/eclipse-iceoryx/iceoryx2/issues/643)
 * Expose set_log_level_from_env* APIs to C++
     [#653](https://github.com/eclipse-iceoryx/iceoryx2/issues/653)
+* Add benchmark for request-response
+    [#687](https://github.com/eclipse-iceoryx/iceoryx2/issues/687)
 
 ### Bugfixes
 
@@ -76,7 +80,6 @@
 * Remove the `print_system_configuration()` function in
 `iceoryx2-bb/posix/src/system_configuration.rs` file and move it into the CLI `iox2-config`
     [#432](https://github.com/eclipse-iceoryx/iceoryx2/issues/432)
-
 * Remove obsolete POSIX wrapper
     [#594](https://github.com/eclipse-iceoryx/iceoryx2/issues/594)
 * Updated all dependencies and increased MSRV to 1.81

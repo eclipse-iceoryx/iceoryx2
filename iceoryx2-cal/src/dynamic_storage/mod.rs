@@ -106,7 +106,12 @@ enum_gen! {
 pub trait DynamicStorageBuilder<'builder, T: Send + Sync, D: DynamicStorage<T>>:
     Debug + Sized + NamedConceptBuilder<D>
 {
-    /// Defines if a newly created [`DynamicStorage`] owns the underlying resources
+    /// Defines if `T::Drop` shall be called when the [`DynamicStorage`] is removed. The default
+    /// is [`true`].
+    fn call_drop_on_destruction(self, value: bool) -> Self;
+
+    /// Defines if a newly created [`DynamicStorage`] owns the underlying resources. The default
+    /// is [`true`].
     fn has_ownership(self, value: bool) -> Self;
 
     /// Sets the size of the supplementary data. Only relevant when it is newly created otherwise
