@@ -64,9 +64,10 @@
 //! ```
 
 use crate::{
-    port::publisher::PublisherBackend, port::SendError, raw_sample::RawSampleMut,
+    port::publisher::PublisherSharedState, port::SendError, raw_sample::RawSampleMut,
     service::header::publish_subscribe::Header,
 };
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::shared_memory::*;
 
 use core::fmt::{Debug, Formatter};
@@ -87,15 +88,22 @@ use alloc::sync::Arc;
 ///
 /// Does not implement [`Send`] since it releases unsent samples in the [`crate::port::publisher::Publisher`] and the
 /// [`crate::port::publisher::Publisher`] is not thread-safe!
-pub struct SampleMut<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> {
-    pub(crate) publisher_backend: Arc<PublisherBackend<Service>>,
+pub struct SampleMut<
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> {
+    pub(crate) publisher_shared_state: Arc<PublisherSharedState<Service>>,
     pub(crate) ptr: RawSampleMut<Header, UserHeader, Payload>,
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
 }
 
-impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Deref
-    for SampleMut<Service, Payload, UserHeader>
+impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > Deref for SampleMut<Service, Payload, UserHeader>
 {
     type Target = Payload;
     fn deref(&self) -> &Self::Target {
@@ -103,36 +111,45 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Dere
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> DerefMut
-    for SampleMut<Service, Payload, UserHeader>
+impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > DerefMut for SampleMut<Service, Payload, UserHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.ptr.as_payload_mut()
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Debug
-    for SampleMut<Service, Payload, UserHeader>
+impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > Debug for SampleMut<Service, Payload, UserHeader>
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "SampleMut<{}, {}, {}> {{ publisher_backend: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",
+            "SampleMut<{}, {}, {}> {{ publisher_shared_state: {:?}, offset_to_chunk: {:?}, sample_size: {} }}",
             core::any::type_name::<Service>(),
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
-            self.publisher_backend,
+            self.publisher_shared_state,
             self.offset_to_chunk,
             self.sample_size
         )
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
-    for SampleMut<Service, Payload, UserHeader>
+impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > Drop for SampleMut<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        self.publisher_backend
+        self.publisher_shared_state
             .sender
             .return_loaned_sample(self.offset_to_chunk);
     }
@@ -140,8 +157,8 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> Drop
 
 impl<
         Service: crate::service::Service,
-        M: Debug + ?Sized, // `M` is either a `Payload` or a `MaybeUninit<Payload>`
-        UserHeader,
+        M: Debug + ZeroCopySend + ?Sized, // `M` is either a `Payload` or a `MaybeUninit<Payload>`
+        UserHeader: ZeroCopySend,
     > SampleMut<Service, M, UserHeader>
 {
     /// Returns a reference to the header of the sample.
@@ -310,7 +327,7 @@ impl<
     /// # }
     /// ```
     pub fn send(self) -> Result<usize, SendError> {
-        self.publisher_backend
+        self.publisher_shared_state
             .send_sample(self.offset_to_chunk, self.sample_size)
     }
 }

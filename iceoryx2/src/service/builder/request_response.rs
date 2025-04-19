@@ -35,6 +35,9 @@ use super::{ServiceState, RETRY_LIMIT};
 pub enum RequestResponseOpenError {
     /// Service could not be openen since it does not exist
     DoesNotExist,
+    /// The [`Service`] has a lower maximum amount of loaned
+    /// [`RequestMut`](crate::request_mut::RequestMut) for a [`Client`](crate::port::client::Client).
+    DoesNotSupportRequestedAmountOfClientRequestLoans,
     /// The [`Service`] has a lower maximum amount of [`ActiveRequest`](crate::active_request::ActiveRequest)s than requested.
     DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
     /// The [`Service`] has a lower maximum response buffer size than requested.
@@ -64,6 +67,8 @@ pub enum RequestResponseOpenError {
     IncompatibleOverflowBehaviorForRequests,
     /// The [`Service`] required overflow behavior for responses is not compatible.
     IncompatibleOverflowBehaviorForResponses,
+    /// The [`Service`] does not support the required behavior for fire and forget requests.
+    IncompatibleBehaviorForFireAndForgetRequests,
     /// The process has not enough permissions to open the [`Service`].
     InsufficientPermissions,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -221,11 +226,13 @@ pub struct Builder<
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
     verify_max_active_requests_per_client: bool,
+    verify_max_loaned_requests: bool,
     verify_max_response_buffer_size: bool,
     verify_max_servers: bool,
     verify_max_clients: bool,
     verify_max_nodes: bool,
     verify_max_borrowed_responses_per_pending_response: bool,
+    verify_enable_fire_and_forget_requests: bool,
 
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -248,12 +255,14 @@ impl<
             override_response_alignment: None,
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
+            verify_max_loaned_requests: false,
             verify_max_active_requests_per_client: false,
             verify_max_response_buffer_size: false,
             verify_max_servers: false,
             verify_max_clients: false,
             verify_max_nodes: false,
             verify_max_borrowed_responses_per_pending_response: false,
+            verify_enable_fire_and_forget_requests: false,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -339,12 +348,28 @@ impl<
         self
     }
 
+    /// If the [`Service`] is created, defines if fire and forget requests are allowed or not.
+    /// If an existing [`Service`] is opened it requires the service to have the defined fire
+    /// and forget requests behavior.
+    pub fn enable_fire_and_forget_requests(mut self, value: bool) -> Self {
+        self.config_details_mut().enable_fire_and_forget_requests = value;
+        self.verify_enable_fire_and_forget_requests = true;
+        self
+    }
+
     /// Defines how many active requests a [`Server`](crate::port::server::Server) can hold in
     /// parallel per [`Client`](crate::port::client::Client). The objects are used to send answers to a request that was received earlier
     /// from a [`Client`](crate::port::client::Client)
     pub fn max_active_requests_per_client(mut self, value: usize) -> Self {
         self.config_details_mut().max_active_requests_per_client = value;
         self.verify_max_active_requests_per_client = true;
+        self
+    }
+
+    /// Defines how many requests the [`Client`](crate::port::client::Client) can loan in parallel.
+    pub fn max_loaned_requests(mut self, value: usize) -> Self {
+        self.config_details_mut().max_loaned_requests = value;
+        self.verify_max_loaned_requests = true;
         self
     }
 
@@ -433,6 +458,12 @@ impl<
                 "Setting the maximum number of borrowed responses per pending response to 0 is not supported. Adjust it to 1, the smallest supported value.");
             settings.max_borrowed_responses_per_pending_response = 1;
         }
+
+        if settings.max_loaned_requests == 0 {
+            warn!(from origin,
+                "Setting the maximum loaned requests for clients to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_loaned_requests = 1;
+        }
     }
 
     fn verify_service_configuration(
@@ -478,6 +509,15 @@ impl<
                 msg);
         }
 
+        if self.verify_enable_fire_and_forget_requests
+            && existing_configuration.enable_fire_and_forget_requests
+                != required_configuration.enable_fire_and_forget_requests
+        {
+            fail!(from self, with RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests,
+                "{} since the service has an incompatible behavior for fire and forget requests.",
+                msg);
+        }
+
         if self.verify_max_active_requests_per_client
             && existing_configuration.max_active_requests_per_client
                 < required_configuration.max_active_requests_per_client
@@ -485,6 +525,15 @@ impl<
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
                 "{} since the service supports only {} active requests per client but {} are required.",
                 msg, existing_configuration.max_active_requests_per_client, required_configuration.max_active_requests_per_client);
+        }
+
+        if self.verify_max_loaned_requests
+            && existing_configuration.max_loaned_requests
+                < required_configuration.max_loaned_requests
+        {
+            fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans,
+                "{} since the service supports only {} loaned requests per client but {} are required.",
+                msg, existing_configuration.max_loaned_requests, required_configuration.max_loaned_requests);
         }
 
         if self.verify_max_borrowed_responses_per_pending_response

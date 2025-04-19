@@ -22,6 +22,9 @@ creation-timeout.secs = 0
 creation-timeout.nanos = 500000000
 
 [defaults.request-response]
+client-expired-connection-buffer = 128
+client-unable-to-deliver-strategy = 'Block'     # or 'DiscardSample'
+enable-fire-and-forget-requests = true
 enable-safe-overflow-for-requests = true
 enable-safe-overflow-for-responses = true
 max-active-requests-per-client = 4
@@ -30,9 +33,8 @@ max-servers = 2
 max-clients = 8
 max-nodes = 20
 max-borrowed-responses-per-pending-response = 2
-client-max-loaned-requests = 2
+max-loaned-requests = 2
 server-max-loaned-responses-per-request = 2
-client-unable-to-deliver-strategy = 'Block'     # or 'DiscardSample'
 server-unable-to-deliver-strategy = 'Block'     # or 'DiscardSample'
 
 [defaults.publish-subscribe]

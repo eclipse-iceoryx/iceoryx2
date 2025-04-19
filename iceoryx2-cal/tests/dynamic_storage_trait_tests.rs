@@ -655,7 +655,7 @@ mod dynamic_storage {
     }
 
     #[test]
-    fn when_storage_is_removed_it_calls_drop<
+    fn by_default_when_storage_is_removed_it_calls_drop<
         Sut: DynamicStorage<TestData>,
         WrongTypeSut: DynamicStorage<u64>,
     >() {
@@ -673,6 +673,28 @@ mod dynamic_storage {
         drop(sut);
 
         assert_that!(state.number_of_living_instances(), eq 0);
+    }
+
+    #[test]
+    fn when_drop_on_destruction_is_disabled_remove_does_not_call_drop<
+        Sut: DynamicStorage<TestData>,
+        WrongTypeSut: DynamicStorage<u64>,
+    >() {
+        let state = LifetimeTracker::start_tracking();
+
+        let storage_name = generate_name();
+        let config = generate_isolated_config::<Sut>();
+
+        let sut = Sut::Builder::new(&storage_name)
+            .config(&config)
+            .call_drop_on_destruction(false)
+            .create(TestData::new_with_lifetime_tracking(123))
+            .unwrap();
+
+        assert_that!(sut.has_ownership(), eq true);
+        drop(sut);
+
+        assert_that!(state.number_of_living_instances(), eq 1);
     }
 
     #[test]
