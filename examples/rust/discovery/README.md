@@ -1,12 +1,12 @@
 # Discovery
 
-## Running The Example
-
 This example demonstrates how to list all active services within your iceoryx2
 application. To get the most out of this example, you can combine it with other
 examples, such as the [event example](../event/) or the
 [publish-subscribe example](../publish_subscribe/), to see active services in
 action.
+
+## How to Run
 
 To begin, let's start some interesting services. Open two terminals and execute
 the following commands:

@@ -1,7 +1,5 @@
 # Complex Data Types
 
-## Running The Example
-
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared
 > memory. Specifically, it must:
@@ -20,6 +18,8 @@ compatible like `FixedSizeVec` and `FixedSizeByteString`.
 will become the basic building blocks for dynamic-sized messages in iceoryx2, so
 that the user is not forced to provide a capacity at compile-time.
 
+## How to Run
+
 To see the example in action, open a terminal and enter:
 
 ```sh
@@ -36,9 +36,10 @@ would then receive the samples from every publisher from every running instance.
    shared-memory compatible containers like some of the constructs in the
    `iceoryx2-bb-containers`.
 2. Add `#[repr(C`)]` to your custom data type so that it has a uniform memory
-   representation.
+   representation and derive from `ZeroCopySend`.
 
    ```rust
+    #[derive(ZeroCopySend)]
     #[repr(C)]
     struct MyDataType {
         //....
@@ -46,4 +47,5 @@ would then receive the samples from every publisher from every running instance.
    ```
 
 3. **Do not use pointers, or data types that are not self-contained or use
-   pointers for their internal management!**
+   pointers for their internal management!** When using the `ZeroCopySend`
+   derive macro this is taking care for you!
