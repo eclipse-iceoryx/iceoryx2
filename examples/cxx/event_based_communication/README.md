@@ -1,7 +1,5 @@
 # Event-Based Communication
 
-## Running The Example
-
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared
 > memory. Specifically, it must:
@@ -34,6 +32,20 @@ The `WaitSet` notifies the user of the origin of an event notification. The
 user can then acquire the `EventId` from the `Listener`. Based on the value of
 the `EventId`, the user can identify the specific event that occurred and take
 appropriate action.
+
+## How to Build
+
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C++ Examples Readme](../README.md).
+
+First you have to build the C++ examples:
+
+```sh
+cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/build
+```
+
+## How to Run
 
 ### Terminal 1
 

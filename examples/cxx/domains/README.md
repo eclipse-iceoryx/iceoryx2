@@ -1,8 +1,5 @@
 # Domains
 
-Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C++ Examples Readme](../README.md).
-
 Let's assume you want to create multiple iceoryx2 groups of processes where the
 processes inside a group can communicate and interact with each other. However,
 the groups themselves should remain isolated, meaning a process from one group
@@ -50,12 +47,10 @@ To achieve this, we create a copy of the global configuration, modify the
 setting `config.global.prefix` using the user-provided CLI argument, and then
 set up the example accordingly.
 
-## Running The Example
+## How to Build
 
-You can experiment with this setup by creating multiple publishers and
-subscribers with different service names using `-s $SERVICE_NAME`. Only
-publisher-subscriber pairs within the same domain will be able to communicate,
-and the discovery tool will only detect services from within the same domain.
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C++ Examples Readme](../README.md).
 
 First you have to build the C++ examples:
 
@@ -63,6 +58,13 @@ First you have to build the C++ examples:
 cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
 cmake --build target/ffi/build
 ```
+
+## How to Run
+
+You can experiment with this setup by creating multiple publishers and
+subscribers with different service names using `-s $SERVICE_NAME`. Only
+publisher-subscriber pairs within the same domain will be able to communicate,
+and the discovery tool will only detect services from within the same domain.
 
 ### Terminal 1: Subscriber in domain "fuu" subscribing to service "bar"
 

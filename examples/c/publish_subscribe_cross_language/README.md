@@ -1,10 +1,5 @@
 # Cross-language Publish-Subscribe
 
-Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C Examples Readme](../README.md).
-
-## Running The Example
-
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared
 > memory. Specifically, it must:
@@ -22,6 +17,11 @@ containing `TransmissionData` and the `CustomHeader`. On the receiving end, the
 subscriber applications of the cross-language examples print the received
 payload and the user header to the console whenever new data arrives.
 
+## How to Build
+
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C Examples Readme](../README.md).
+
 When you want to run the C publisher and subscriber applications, you first have
 to build the C examples:
 
@@ -29,6 +29,8 @@ to build the C examples:
 cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
 cmake --build target/ffi/build
 ```
+
+## How to Run
 
 To observe the dynamic communication in action, open two separate terminals and
 execute the following commands:

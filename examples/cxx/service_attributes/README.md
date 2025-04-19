@@ -1,7 +1,5 @@
 # Service-Attributes
 
-## Running the Example
-
 This example illustrates the definition and usage of custom service attributes.
 Service attributes are key-value pairs that can be defined via the service
 builder like so:
@@ -63,12 +61,19 @@ for (auto i = 0; i < service.attributes().len(); i++) {
 To observe the service attributes in action, open three separate terminals and
 execute the following commands.
 
+## How to Build
+
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C++ Examples Readme](../README.md).
+
 First you have to build the C++ examples:
 
 ```sh
 cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
 cmake --build target/ffi/build
 ```
+
+## How to Run
 
 ### Terminal 1
 

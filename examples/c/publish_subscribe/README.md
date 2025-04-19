@@ -1,10 +1,5 @@
 # Publish-Subscribe
 
-Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C Examples Readme](../README.md).
-
-## Running The Example
-
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared
 > memory. Specifically, it must:
@@ -21,12 +16,19 @@ checks for new data every second.
 
 The subscriber is printing the sample on the console whenever new data arrives.
 
+## How to Build
+
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C Examples Readme](../README.md).
+
 First you have to build the C examples:
 
 ```sh
 cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
 cmake --build target/ffi/build
 ```
+
+## How to Run
 
 To observe this dynamic communication in action, open two separate terminals and
 execute the following commands:

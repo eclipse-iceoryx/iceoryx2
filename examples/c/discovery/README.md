@@ -1,15 +1,15 @@
 # Discovery
 
-Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C Examples Readme](../README.md).
-
-## Running The Example
-
 This example demonstrates how to list all active services within your iceoryx2
 application. To get the most out of this example, you can combine it with other
 examples, such as the [event example](../event/) or the
 [publish-subscribe example](../publish_subscribe/), to see active services in
 action.
+
+## How to Build
+
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C Examples Readme](../README.md).
 
 First you have to build the C++ examples:
 
@@ -17,6 +17,8 @@ First you have to build the C++ examples:
 cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
 cmake --build target/ffi/build
 ```
+
+## How to Run
 
 To begin, let's start some interesting services. Open two terminals and execute
 the following commands:

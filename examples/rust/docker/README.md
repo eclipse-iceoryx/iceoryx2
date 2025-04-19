@@ -36,8 +36,8 @@ shared with the host, iceoryx2 can establish a connection between them.
 
 ## How to Run
 
-We start three separate terminals. We use `archlinux:latest` in this example but you
-are free to choose any other linux distribution.
+We start three separate terminals. We use `archlinux:latest` in this example
+but you are free to choose any other linux distribution.
 
 We start by building the example:
 
