@@ -12,7 +12,7 @@
 
 use iceoryx2::prelude::*;
 
-#[derive(Debug, ZeroCopySend)]
+#[derive(Debug, Clone, Copy, ZeroCopySend)]
 // optional type name; if not set, `core::any::type_name::<TransmissionData>()` is used
 #[type_name("TransmissionData")]
 #[repr(C)]

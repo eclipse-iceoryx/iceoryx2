@@ -17,7 +17,7 @@
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
 
-This example illustrates a robust publisher-subscriber communication pattern
+This example illustrates a robust publisher-subscriber messaging pattern
 between two separate processes. The publisher sends a message every second,
 each containing [`TransmissionData`]. On the receiving end, the subscriber
 checks for new data every second.

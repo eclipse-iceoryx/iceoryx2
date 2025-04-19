@@ -15,3 +15,66 @@
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
 
+This example demonstrates the request-response messaging pattern between two
+separate processes using iceoryx2. A key feature of request-response in
+iceoryx2 is that the `Client` can receive a stream of responses instead of
+being limited to just one.
+
+## Client Side
+
+The `Client` uses the following approach:
+
+1. Loans memory and acquires a `RequestMut`.
+2. Writes the payload and user header into the `RequestMut`.
+3. Sends the `RequestMut` to the `Server` and receives a `PendingResponse`
+   object. The `PendingResponse` can be used to:
+   - Receive `Response`s for this specific `RequestMut`.
+   - Signal the `Server` that the `Client` is no longer interested in data by
+     going out of scope.
+   - Check whether the corresponding `ActiveRequest` on the `Server` side is
+     still connected.
+
+## Server Side
+
+The `Server` uses the following approach:
+
+1. Receives the `RequestMut` sent by the `Client` and obtains an
+   `ActiveRequest` object.
+2. The `ActiveRequest` can be used to:
+   - Read the payload, header, and user header.
+   - Loan memory for a `ResponseMut`.
+   - Signal the `Client` that it is no longer sending responses by going out
+     of scope.
+   - Check whether the corresponding `PendingResponse` on the `Client` side
+     is still connected.
+3. Loans memory via the `ActiveRequest` for a `ResponseMut` to send a response
+   to this specific request.
+
+In this example, both the client and server print the received and sent data
+to the console.
+
+## How to Run
+
+To observe the communication in action, open two terminals and execute the
+following commands:
+
+#### Terminal 1
+```sh
+cargo run --example request_response_server
+```
+
+#### Terminal 2
+```sh
+cargo run --example request_response_client
+```
+
+Feel free to run multiple instances of the client or server processes
+simultaneously to explore how iceoryx2 handles request-response communication
+efficiently.
+
+> [!TIP]
+> You may hit the maximum supported number of ports when too many client or
+> server processes are running. Refer to the [iceoryx2 config](../../../config)
+> to configure limits globally, or use the
+> [Service builder API](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
+> to set them for a specific service.
