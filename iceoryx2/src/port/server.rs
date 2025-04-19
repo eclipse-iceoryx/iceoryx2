@@ -171,7 +171,7 @@ pub struct Server<
     ResponseHeader: Debug + ZeroCopySend,
 > {
     shared_state: Arc<SharedServerState<Service>>,
-    allow_fire_and_forget: bool,
+    enable_fire_and_forget: bool,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -207,9 +207,7 @@ impl<
                 .messaging_pattern
                 .request_response()
         }
-        .required_amount_of_chunks_per_client_data_segment(
-            static_config.client_max_loaned_requests,
-        );
+        .required_amount_of_chunks_per_client_data_segment(static_config.max_loaned_requests);
 
         let number_of_responses = unsafe {
             service
@@ -288,11 +286,11 @@ impl<
         };
 
         let new_self = Self {
-            allow_fire_and_forget: service
+            enable_fire_and_forget: service
                 .__internal_state()
                 .static_config
                 .request_response()
-                .allow_fire_and_forget_requests,
+                .enable_fire_and_forget_requests,
             shared_state: Arc::new(SharedServerState {
                 request_receiver,
                 client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
@@ -431,7 +429,7 @@ impl<
                             _response_header: PhantomData,
                         };
 
-                        if !self.allow_fire_and_forget && !active_request.is_connected() {
+                        if !self.enable_fire_and_forget && !active_request.is_connected() {
                             continue;
                         }
 
