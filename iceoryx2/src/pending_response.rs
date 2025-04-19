@@ -55,6 +55,7 @@
 //! # }
 //! ```
 
+use core::ops::Deref;
 use core::sync::atomic::Ordering;
 use core::{fmt::Debug, marker::PhantomData};
 
@@ -103,6 +104,21 @@ impl<
             .active_request_counter
             .fetch_sub(1, Ordering::Relaxed);
         self.close();
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug,
+        RequestHeader: Debug,
+        ResponsePayload: Debug,
+        ResponseHeader: Debug,
+    > Deref
+    for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    type Target = RequestPayload;
+    fn deref(&self) -> &Self::Target {
+        self.request.payload()
     }
 }
 
