@@ -485,21 +485,21 @@ mod service_request_response {
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .allow_fire_and_forget_requests(true)
+            .enable_fire_and_forget_requests(true)
             .create();
         assert_that!(sut_create, is_ok);
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .allow_fire_and_forget_requests(false)
+            .enable_fire_and_forget_requests(false)
             .open();
         assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests));
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .allow_fire_and_forget_requests(true)
+            .enable_fire_and_forget_requests(true)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -667,28 +667,28 @@ mod service_request_response {
     }
 
     #[test]
-    fn open_verifies_client_max_loaned_requests_correctly<Sut: Service>() {
+    fn open_verifies_max_loaned_requests_correctly<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .client_max_loaned_requests(10)
+            .max_loaned_requests(10)
             .create();
         assert_that!(sut_create, is_ok);
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .client_max_loaned_requests(11)
+            .max_loaned_requests(11)
             .open();
         assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans));
 
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .client_max_loaned_requests(9)
+            .max_loaned_requests(9)
             .open();
         assert_that!(sut_open, is_ok);
     }
@@ -708,7 +708,7 @@ mod service_request_response {
             .max_servers(0)
             .max_clients(0)
             .max_nodes(0)
-            .client_max_loaned_requests(0)
+            .max_loaned_requests(0)
             .create();
         assert_that!(sut_create, is_ok);
         let sut_create = sut_create.unwrap();
@@ -719,7 +719,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().max_clients(), eq 1);
         assert_that!(sut_create.static_config().max_nodes(), eq 1);
         assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 1);
-        assert_that!(sut_create.static_config().client_max_loaned_requests(), eq 1);
+        assert_that!(sut_create.static_config().max_loaned_requests(), eq 1);
     }
 
     #[test]
@@ -729,14 +729,14 @@ mod service_request_response {
         let rpc_config = &mut config.defaults.request_response;
         rpc_config.enable_safe_overflow_for_requests = true;
         rpc_config.enable_safe_overflow_for_responses = true;
-        rpc_config.allow_fire_and_forget_requests = true;
+        rpc_config.enable_fire_and_forget_requests = true;
         rpc_config.max_active_requests_per_client = 100;
         rpc_config.max_response_buffer_size = 100;
         rpc_config.max_borrowed_responses_per_pending_response = 100;
         rpc_config.max_servers = 100;
         rpc_config.max_clients = 100;
         rpc_config.max_nodes = 100;
-        rpc_config.client_max_loaned_requests = 100;
+        rpc_config.max_loaned_requests = 100;
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -745,19 +745,19 @@ mod service_request_response {
             .request_response::<u64, u64>()
             .enable_safe_overflow_for_requests(false)
             .enable_safe_overflow_for_responses(false)
-            .allow_fire_and_forget_requests(false)
+            .enable_fire_and_forget_requests(false)
             .max_active_requests_per_client(1)
             .max_response_buffer_size(6)
             .max_servers(7)
             .max_clients(8)
             .max_nodes(9)
             .max_borrowed_responses_per_pending_response(10)
-            .client_max_loaned_requests(11)
+            .max_loaned_requests(11)
             .create();
         assert_that!(sut_create, is_ok);
         let sut_create = sut_create.unwrap();
 
-        assert_that!(sut_create.static_config().allow_fire_and_forget_requests(), eq false);
+        assert_that!(sut_create.static_config().enable_fire_and_forget_requests(), eq false);
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq false);
         assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 1);
@@ -766,7 +766,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().max_clients(), eq 8);
         assert_that!(sut_create.static_config().max_nodes(), eq 9);
         assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 10);
-        assert_that!(sut_create.static_config().client_max_loaned_requests(), eq 11);
+        assert_that!(sut_create.static_config().max_loaned_requests(), eq 11);
     }
 
     #[test]
@@ -782,8 +782,8 @@ mod service_request_response {
         rpc_config.max_clients = 18;
         rpc_config.max_nodes = 19;
         rpc_config.max_borrowed_responses_per_pending_response = 20;
-        rpc_config.client_max_loaned_requests = 21;
-        rpc_config.allow_fire_and_forget_requests = true;
+        rpc_config.max_loaned_requests = 21;
+        rpc_config.enable_fire_and_forget_requests = true;
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
@@ -796,14 +796,14 @@ mod service_request_response {
 
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq true);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq true);
-        assert_that!(sut_create.static_config().allow_fire_and_forget_requests(), eq true);
+        assert_that!(sut_create.static_config().enable_fire_and_forget_requests(), eq true);
         assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 11);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 16);
         assert_that!(sut_create.static_config().max_servers(), eq 17);
         assert_that!(sut_create.static_config().max_clients(), eq 18);
         assert_that!(sut_create.static_config().max_nodes(), eq 19);
         assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 20);
-        assert_that!(sut_create.static_config().client_max_loaned_requests(), eq 21);
+        assert_that!(sut_create.static_config().max_loaned_requests(), eq 21);
     }
 
     #[test]
@@ -817,14 +817,14 @@ mod service_request_response {
             .request_response::<u64, u64>()
             .enable_safe_overflow_for_requests(false)
             .enable_safe_overflow_for_responses(false)
-            .allow_fire_and_forget_requests(false)
+            .enable_fire_and_forget_requests(false)
             .max_active_requests_per_client(1)
             .max_response_buffer_size(6)
             .max_servers(7)
             .max_clients(8)
             .max_nodes(9)
             .max_borrowed_responses_per_pending_response(20)
-            .client_max_loaned_requests(21)
+            .max_loaned_requests(21)
             .create()
             .unwrap();
 
@@ -836,14 +836,14 @@ mod service_request_response {
 
         assert_that!(sut_open.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_open.static_config().has_safe_overflow_for_responses(), eq false);
-        assert_that!(sut_open.static_config().allow_fire_and_forget_requests(), eq false);
+        assert_that!(sut_open.static_config().enable_fire_and_forget_requests(), eq false);
         assert_that!(sut_open.static_config().max_active_requests_per_client(), eq 1);
         assert_that!(sut_open.static_config().max_response_buffer_size(), eq 6);
         assert_that!(sut_open.static_config().max_servers(), eq 7);
         assert_that!(sut_open.static_config().max_clients(), eq 8);
         assert_that!(sut_open.static_config().max_nodes(), eq 9);
         assert_that!(sut_open.static_config().max_borrowed_responses_per_pending_responses(), eq 20);
-        assert_that!(sut_open.static_config().client_max_loaned_requests(), eq 21);
+        assert_that!(sut_open.static_config().max_loaned_requests(), eq 21);
     }
 
     #[test]

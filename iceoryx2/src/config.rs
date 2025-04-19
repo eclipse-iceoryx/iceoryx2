@@ -326,7 +326,7 @@ pub struct RequestResonse {
     /// The maximum amount of borrowed [`crate::response::Response`] per [`crate::pending_response::PendingResponse`] on the [`crate::port::client::Client`] side.
     pub max_borrowed_responses_per_pending_response: usize,
     /// Defines how many [`crate::request_mut::RequestMut`] a [`crate::port::client::Client`] can loan in parallel.
-    pub client_max_loaned_requests: usize,
+    pub max_loaned_requests: usize,
     /// Defines how many [`crate::response_mut::ResponseMut`] a [`crate::port::server::Server`] can loan in parallel per [`crate::active_request::ActiveRequest`].
     pub server_max_loaned_responses_per_request: usize,
     /// Defines the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
@@ -355,7 +355,7 @@ pub struct RequestResonse {
     ///
     /// Consider enabling this feature if you do not want to loose any
     /// [`RequestMut`](crate::response_mut::ResponseMut).
-    pub allow_fire_and_forget_requests: bool,
+    pub enable_fire_and_forget_requests: bool,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -409,12 +409,12 @@ impl Default for Config {
                     max_clients: 8,
                     max_nodes: 20,
                     max_borrowed_responses_per_pending_response: 2,
-                    client_max_loaned_requests: 2,
+                    max_loaned_requests: 2,
                     server_max_loaned_responses_per_request: 2,
                     client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     client_expired_connection_buffer: 128,
-                    allow_fire_and_forget_requests: true,
+                    enable_fire_and_forget_requests: true,
                 },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,

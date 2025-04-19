@@ -80,7 +80,7 @@ mod client {
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .client_max_loaned_requests(MAX_LOANED_REQUESTS)
+            .max_loaned_requests(MAX_LOANED_REQUESTS)
             .create()
             .unwrap();
 
@@ -112,7 +112,7 @@ mod client {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .max_active_requests_per_client(MAX_PENDING_RESPONSES)
-            .client_max_loaned_requests(MAX_LOANED_REQUESTS)
+            .max_loaned_requests(MAX_LOANED_REQUESTS)
             .create()
             .unwrap();
 
@@ -273,7 +273,7 @@ mod client {
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .client_max_loaned_requests(1)
+            .max_loaned_requests(1)
             .create()
             .unwrap();
 
@@ -298,7 +298,7 @@ mod client {
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .client_max_loaned_requests(1)
+            .max_loaned_requests(1)
             .create()
             .unwrap();
 
@@ -325,7 +325,7 @@ mod client {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .request_payload_alignment(Alignment::new(ALIGNMENT).unwrap())
-            .client_max_loaned_requests(MAX_LOAN)
+            .max_loaned_requests(MAX_LOAN)
             .create()
             .unwrap();
 
@@ -385,7 +385,7 @@ mod client {
             .max_clients(1)
             .max_servers(max_servers)
             .max_active_requests_per_client(max_active_requests_per_client)
-            .client_max_loaned_requests(max_loaned_requests)
+            .max_loaned_requests(max_loaned_requests)
             .create()
             .unwrap();
 
@@ -517,7 +517,7 @@ mod client {
             .max_clients(1)
             .max_servers(max_servers)
             .max_active_requests_per_client(max_active_requests_per_client)
-            .client_max_loaned_requests(max_loaned_requests)
+            .max_loaned_requests(max_loaned_requests)
             .create()
             .unwrap();
 

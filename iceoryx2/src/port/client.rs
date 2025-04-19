@@ -288,9 +288,7 @@ impl<
                 .messaging_pattern
                 .request_response()
         }
-        .required_amount_of_chunks_per_client_data_segment(
-            static_config.client_max_loaned_requests,
-        );
+        .required_amount_of_chunks_per_client_data_segment(static_config.max_loaned_requests);
         let server_list = &service
             .__internal_state()
             .dynamic_storage
@@ -339,7 +337,7 @@ impl<
             service_state: service.__internal_state().clone(),
             tagger: CyclicTagger::new(),
             loan_counter: IoxAtomicUsize::new(0),
-            sender_max_borrowed_samples: static_config.client_max_loaned_requests,
+            sender_max_borrowed_samples: static_config.max_loaned_requests,
             unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
             message_type_details: static_config.request_message_type_details.clone(),
             number_of_channels: 1,

@@ -25,7 +25,7 @@
 //! println!("response type details: {:?}", req_res.static_config().response_message_type_details());
 //! println!("max active requests per client: {:?}", req_res.static_config().max_active_requests_per_client());
 //! println!("max response buffer size: {:?}", req_res.static_config().max_response_buffer_size());
-//! println!("client max loaned requests: {:?}", req_res.static_config().client_max_loaned_requests());
+//! println!("client max loaned requests: {:?}", req_res.static_config().max_loaned_requests());
 //! println!("max servers: {:?}", req_res.static_config().max_clients());
 //! println!("max clients: {:?}", req_res.static_config().max_servers());
 //! println!("max nodes: {:?}", req_res.static_config().max_nodes());
@@ -51,9 +51,9 @@ use super::message_type_details::MessageTypeDetails;
 pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_requests: bool,
     pub(crate) enable_safe_overflow_for_responses: bool,
-    pub(crate) allow_fire_and_forget_requests: bool,
+    pub(crate) enable_fire_and_forget_requests: bool,
     pub(crate) max_active_requests_per_client: usize,
-    pub(crate) client_max_loaned_requests: usize,
+    pub(crate) max_loaned_requests: usize,
     pub(crate) max_response_buffer_size: usize,
     pub(crate) max_servers: usize,
     pub(crate) max_clients: usize,
@@ -86,11 +86,11 @@ impl StaticConfig {
                 .defaults
                 .request_response
                 .max_borrowed_responses_per_pending_response,
-            client_max_loaned_requests: config.defaults.request_response.client_max_loaned_requests,
-            allow_fire_and_forget_requests: config
+            max_loaned_requests: config.defaults.request_response.max_loaned_requests,
+            enable_fire_and_forget_requests: config
                 .defaults
                 .request_response
-                .allow_fire_and_forget_requests,
+                .enable_fire_and_forget_requests,
             request_message_type_details: MessageTypeDetails::default(),
             response_message_type_details: MessageTypeDetails::default(),
         }
@@ -152,8 +152,8 @@ impl StaticConfig {
 
     /// Returns true if fire and forget [`RequestMut`](crate::request_mut::RequestMut)s can be
     /// sent from the [`Client`](crate::port::client::Client), otherwise false.
-    pub fn allow_fire_and_forget_requests(&self) -> bool {
-        self.allow_fire_and_forget_requests
+    pub fn enable_fire_and_forget_requests(&self) -> bool {
+        self.enable_fire_and_forget_requests
     }
 
     /// Returns the maximum number of borrowed [`Response`](crate::response::Response)s a
@@ -176,8 +176,8 @@ impl StaticConfig {
 
     /// Returns the maximum number of [`RequestMut`](crate::request_mut::RequestMut) a
     /// [`Client`](crate::port::client::Client) can loan in parallel.
-    pub fn client_max_loaned_requests(&self) -> usize {
-        self.client_max_loaned_requests
+    pub fn max_loaned_requests(&self) -> usize {
+        self.max_loaned_requests
     }
 
     /// Returns the maximum number of supported [`crate::port::server::Server`] ports for the

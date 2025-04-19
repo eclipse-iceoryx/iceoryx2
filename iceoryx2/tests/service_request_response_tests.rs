@@ -32,7 +32,7 @@ mod service_request_response {
         response_buffer_size: usize,
         request_overflow: bool,
         response_overflow: bool,
-        allow_fire_and_forget: bool,
+        enable_fire_and_forget: bool,
         client_unable_to_deliver_strategy: UnableToDeliverStrategy,
         server_unable_to_deliver_strategy: UnableToDeliverStrategy,
     }
@@ -49,7 +49,7 @@ mod service_request_response {
                 response_buffer_size: 1,
                 request_overflow: true,
                 response_overflow: true,
-                allow_fire_and_forget: false,
+                enable_fire_and_forget: false,
                 client_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardSample,
                 server_unable_to_deliver_strategy: UnableToDeliverStrategy::DiscardSample,
             }
@@ -88,7 +88,7 @@ mod service_request_response {
                 .max_response_buffer_size(args.response_buffer_size)
                 .max_servers(args.number_of_servers)
                 .max_clients(args.number_of_clients)
-                .allow_fire_and_forget_requests(args.allow_fire_and_forget)
+                .enable_fire_and_forget_requests(args.enable_fire_and_forget)
                 .create()
                 .unwrap();
 
@@ -410,7 +410,7 @@ mod service_request_response {
     >() {
         let test_args = Args {
             number_of_active_requests: 3,
-            allow_fire_and_forget: false,
+            enable_fire_and_forget: false,
             ..Default::default()
         };
 
@@ -435,7 +435,7 @@ mod service_request_response {
     >() {
         let test_args = Args {
             number_of_active_requests: 3,
-            allow_fire_and_forget: true,
+            enable_fire_and_forget: true,
             ..Default::default()
         };
 

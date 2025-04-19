@@ -226,13 +226,13 @@ pub struct Builder<
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
     verify_max_active_requests_per_client: bool,
-    verify_client_max_loaned_requests: bool,
+    verify_max_loaned_requests: bool,
     verify_max_response_buffer_size: bool,
     verify_max_servers: bool,
     verify_max_clients: bool,
     verify_max_nodes: bool,
     verify_max_borrowed_responses_per_pending_response: bool,
-    verify_allow_fire_and_forget_requests: bool,
+    verify_enable_fire_and_forget_requests: bool,
 
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -255,14 +255,14 @@ impl<
             override_response_alignment: None,
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
-            verify_client_max_loaned_requests: false,
+            verify_max_loaned_requests: false,
             verify_max_active_requests_per_client: false,
             verify_max_response_buffer_size: false,
             verify_max_servers: false,
             verify_max_clients: false,
             verify_max_nodes: false,
             verify_max_borrowed_responses_per_pending_response: false,
-            verify_allow_fire_and_forget_requests: false,
+            verify_enable_fire_and_forget_requests: false,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -351,9 +351,9 @@ impl<
     /// If the [`Service`] is created, defines if fire and forget requests are allowed or not.
     /// If an existing [`Service`] is opened it requires the service to have the defined fire
     /// and forget requests behavior.
-    pub fn allow_fire_and_forget_requests(mut self, value: bool) -> Self {
-        self.config_details_mut().allow_fire_and_forget_requests = value;
-        self.verify_allow_fire_and_forget_requests = true;
+    pub fn enable_fire_and_forget_requests(mut self, value: bool) -> Self {
+        self.config_details_mut().enable_fire_and_forget_requests = value;
+        self.verify_enable_fire_and_forget_requests = true;
         self
     }
 
@@ -367,9 +367,9 @@ impl<
     }
 
     /// Defines how many requests the [`Client`](crate::port::client::Client) can loan in parallel.
-    pub fn client_max_loaned_requests(mut self, value: usize) -> Self {
-        self.config_details_mut().client_max_loaned_requests = value;
-        self.verify_client_max_loaned_requests = true;
+    pub fn max_loaned_requests(mut self, value: usize) -> Self {
+        self.config_details_mut().max_loaned_requests = value;
+        self.verify_max_loaned_requests = true;
         self
     }
 
@@ -459,10 +459,10 @@ impl<
             settings.max_borrowed_responses_per_pending_response = 1;
         }
 
-        if settings.client_max_loaned_requests == 0 {
+        if settings.max_loaned_requests == 0 {
             warn!(from origin,
                 "Setting the maximum loaned requests for clients to 0 is not supported. Adjust it to 1, the smallest supported value.");
-            settings.client_max_loaned_requests = 1;
+            settings.max_loaned_requests = 1;
         }
     }
 
@@ -509,9 +509,9 @@ impl<
                 msg);
         }
 
-        if self.verify_allow_fire_and_forget_requests
-            && existing_configuration.allow_fire_and_forget_requests
-                != required_configuration.allow_fire_and_forget_requests
+        if self.verify_enable_fire_and_forget_requests
+            && existing_configuration.enable_fire_and_forget_requests
+                != required_configuration.enable_fire_and_forget_requests
         {
             fail!(from self, with RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests,
                 "{} since the service has an incompatible behavior for fire and forget requests.",
@@ -527,13 +527,13 @@ impl<
                 msg, existing_configuration.max_active_requests_per_client, required_configuration.max_active_requests_per_client);
         }
 
-        if self.verify_client_max_loaned_requests
-            && existing_configuration.client_max_loaned_requests
-                < required_configuration.client_max_loaned_requests
+        if self.verify_max_loaned_requests
+            && existing_configuration.max_loaned_requests
+                < required_configuration.max_loaned_requests
         {
             fail!(from self, with RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans,
                 "{} since the service supports only {} loaned requests per client but {} are required.",
-                msg, existing_configuration.client_max_loaned_requests, required_configuration.client_max_loaned_requests);
+                msg, existing_configuration.max_loaned_requests, required_configuration.max_loaned_requests);
         }
 
         if self.verify_max_borrowed_responses_per_pending_response
