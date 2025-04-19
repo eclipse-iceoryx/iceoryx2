@@ -38,6 +38,7 @@ use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_container::vec::Vec;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
@@ -164,10 +165,10 @@ impl<Service: service::Service> SharedServerState<Service> {
 #[derive(Debug)]
 pub struct Server<
     Service: service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     shared_state: Arc<SharedServerState<Service>>,
     allow_fire_and_forget: bool,
@@ -179,10 +180,10 @@ pub struct Server<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new(

@@ -59,6 +59,7 @@ use core::ops::Deref;
 use core::sync::atomic::Ordering;
 use core::{fmt::Debug, marker::PhantomData};
 
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 
 use crate::port::details::chunk::Chunk;
@@ -76,10 +77,10 @@ use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, ser
 /// [`Server`](crate::port::server::Server)s are informed.
 pub struct PendingResponse<
     Service: crate::service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) request:
         RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
@@ -91,10 +92,10 @@ pub struct PendingResponse<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Drop
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -109,10 +110,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Deref
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -124,10 +125,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -147,10 +148,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn close(&self) {

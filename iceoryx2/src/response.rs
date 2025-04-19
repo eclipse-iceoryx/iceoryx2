@@ -41,6 +41,7 @@
 use core::fmt::Debug;
 use core::ops::Deref;
 
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::error;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError};
@@ -54,8 +55,11 @@ use crate::service;
 /// [`PendingResponse`](crate::pending_response::PendingResponse) after a
 /// [`RequestMut`](crate::request_mut::RequestMut) was sent to a
 /// [`Server`](crate::port::server::Server) via the [`Client`](crate::port::client::Client).
-pub struct Response<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
-{
+pub struct Response<
+    Service: crate::service::Service,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> {
     pub(crate) ptr: RawSample<
         crate::service::header::request_response::ResponseHeader,
         ResponseHeader,
@@ -65,8 +69,11 @@ pub struct Response<Service: crate::service::Service, ResponsePayload: Debug, Re
     pub(crate) channel_id: ChannelId,
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Drop
-    for Response<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Drop for Response<Service, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
         unsafe {
@@ -90,8 +97,11 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     }
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Debug
-    for Response<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Debug for Response<Service, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -105,8 +115,11 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     }
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Deref
-    for Response<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Deref for Response<Service, ResponsePayload, ResponseHeader>
 {
     type Target = ResponsePayload;
     fn deref(&self) -> &Self::Target {
@@ -114,8 +127,11 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     }
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
-    Response<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Response<Service, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).

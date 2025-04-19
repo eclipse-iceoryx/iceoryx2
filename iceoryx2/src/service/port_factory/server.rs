@@ -36,6 +36,7 @@ use crate::{
     service,
 };
 use core::fmt::Debug;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, warn};
 
 /// Defines a failure that can occur when a [`Server`] is created with
@@ -64,10 +65,10 @@ impl core::error::Error for ServerCreateError {}
 pub struct PortFactoryServer<
     'factory,
     Service: service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<
         Service,
@@ -86,10 +87,10 @@ pub struct PortFactoryServer<
 impl<
         'factory,
         Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     >
     PortFactoryServer<
         'factory,

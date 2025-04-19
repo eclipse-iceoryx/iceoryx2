@@ -41,6 +41,8 @@
 //! # }
 //! ```
 
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+
 use crate::{response_mut::ResponseMut, service};
 use core::{fmt::Debug, mem::MaybeUninit};
 
@@ -57,22 +59,28 @@ use core::{fmt::Debug, mem::MaybeUninit};
 /// The generic parameter `Payload` is actually [`core::mem::MaybeUninit<Payload>`].
 pub struct ResponseMutUninit<
     Service: service::Service,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) response: ResponseMut<Service, ResponsePayload, ResponseHeader>,
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Debug
-    for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Debug for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "ResponseMut {{ response: {:?} }}", self.response)
     }
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
-    ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
@@ -212,8 +220,11 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     }
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
-    ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>
 {
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns and initialized
     /// [`ResponseMut`] that is ready to be sent.

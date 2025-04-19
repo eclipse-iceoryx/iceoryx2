@@ -95,6 +95,7 @@ use core::{fmt::Debug, mem::MaybeUninit};
 extern crate alloc;
 use alloc::sync::Arc;
 
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::{
@@ -117,12 +118,19 @@ use crate::{
 ///
 /// The generic parameter `Payload` is actually [`core::mem::MaybeUninit<Payload>`].
 #[repr(transparent)]
-pub struct SampleMutUninit<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader> {
+pub struct SampleMutUninit<
+    Service: crate::service::Service,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: ZeroCopySend,
+> {
     sample: SampleMut<Service, Payload, UserHeader>,
 }
 
-impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader>
-    SampleMutUninit<Service, Payload, UserHeader>
+impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > SampleMutUninit<Service, Payload, UserHeader>
 {
     /// Returns a reference to the header of the sample.
     ///
@@ -261,7 +269,7 @@ impl<Service: crate::service::Service, Payload: Debug + ?Sized, UserHeader>
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug, UserHeader>
+impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
 {
     pub(crate) fn new(
@@ -343,7 +351,7 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug, UserHeader>
+impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader: ZeroCopySend>
     SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
 {
     pub(crate) fn new(
@@ -440,8 +448,11 @@ impl<Service: crate::service::Service, Payload: Debug, UserHeader>
     }
 }
 
-impl<Service: crate::service::Service, Payload: Debug + Copy, UserHeader>
-    SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
+impl<
+        Service: crate::service::Service,
+        Payload: Debug + Copy + ZeroCopySend,
+        UserHeader: ZeroCopySend,
+    > SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
 {
     /// Writes the payload by mem copying the provided slice into the [`SampleMutUninit`].
     ///

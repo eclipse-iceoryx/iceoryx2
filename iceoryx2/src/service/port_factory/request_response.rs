@@ -40,7 +40,7 @@
 
 use core::{fmt::Debug, marker::PhantomData};
 
-use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary::{zero_copy_send::ZeroCopySend, CallbackProgression};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::{
@@ -61,10 +61,10 @@ use super::{client::PortFactoryClient, nodes, server::PortFactoryServer};
 #[derive(Debug)]
 pub struct PortFactory<
     Service: service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) service: Service,
     _request_payload: PhantomData<RequestPayload>,
@@ -75,20 +75,20 @@ pub struct PortFactory<
 
 unsafe impl<
         Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Send
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
 }
 unsafe impl<
         Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Sync
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -96,10 +96,10 @@ unsafe impl<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > crate::service::port_factory::PortFactory
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -148,10 +148,10 @@ impl<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new(service: Service) -> Self {

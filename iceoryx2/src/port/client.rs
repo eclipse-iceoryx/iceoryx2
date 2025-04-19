@@ -42,7 +42,9 @@ use core::{
 };
 use iceoryx2_bb_container::{queue::Queue, vec::Vec};
 
-use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
+use iceoryx2_bb_elementary::{
+    cyclic_tagger::CyclicTagger, zero_copy_send::ZeroCopySend, CallbackProgression,
+};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::{
@@ -243,10 +245,10 @@ impl<Service: service::Service> ClientSharedState<Service> {
 #[derive(Debug)]
 pub struct Client<
     Service: service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     client_port_id: UniqueClientId,
     client_shared_state: Arc<ClientSharedState<Service>>,
@@ -259,10 +261,10 @@ pub struct Client<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     pub(crate) fn new(
@@ -574,10 +576,10 @@ impl<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug + Default,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + Default + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Acquires the payload for the request and initializes the underlying memory

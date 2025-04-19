@@ -43,6 +43,7 @@ extern crate alloc;
 
 use alloc::sync::Arc;
 use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 
 use iceoryx2_bb_log::{error, fail};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -71,10 +72,10 @@ use crate::{
 /// [`Response`](crate::response::Response)s.
 pub struct ActiveRequest<
     Service: crate::service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<
         crate::service::header::request_response::RequestHeader,
@@ -92,10 +93,10 @@ pub struct ActiveRequest<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -117,10 +118,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Deref
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -132,10 +133,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Drop
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -165,10 +166,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn finish(&self) {
@@ -324,10 +325,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug + Default,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + Default + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Loans default initialized memory for a [`ResponseMut`] where the user can writes its
