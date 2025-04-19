@@ -24,7 +24,7 @@ mod pending_response {
 
     struct TestFixture<Sut: Service> {
         _node: Node<Sut>,
-        service: PortFactory<Sut, u64, u64, u64, ()>,
+        _service: PortFactory<Sut, u64, u64, u64, ()>,
         client: Client<Sut, u64, u64, u64, ()>,
         server_1: Server<Sut, u64, u64, u64, ()>,
         server_2: Server<Sut, u64, u64, u64, ()>,
@@ -50,7 +50,7 @@ mod pending_response {
                 client,
                 server_1: service.server_builder().create().unwrap(),
                 server_2: service.server_builder().create().unwrap(),
-                service,
+                _service: service,
             }
         }
     }
