@@ -1,7 +1,5 @@
 # Cross-language Publish-Subscribe
 
-## Running The Example
-
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared
 > memory. Specifically, it must:
@@ -24,6 +22,8 @@ applications of the cross-language examples send a message every second, each
 containing `TransmissionData` and the `CustomHeader`. On the receiving end, the
 subscriber applications of the cross-language examples print the received
 payload and the user header to the console whenever new data arrives.
+
+## How to Run
 
 To observe the dynamic communication in action, open two separate terminals and
 execute the following commands:
@@ -81,9 +81,10 @@ When the type names are set to the same value, and the structure has the same
 memory layout, the Rust applications and applications written in other supported
 languages can communicate.
 
-You can also send dynamic data between Rust and C++ applications (see
-[Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
-you send `iox::Slice`s of (u)int{8|16|32|64}_t, float, double or bool, the
-payload type name is automatically translated to the Rust equivalent. For other
-slice types, you have to set `IOX2_TYPE_NAME` for the inner type to the Rust
-equivalent to enable the communication.
+> [!TIP]
+> You can also send dynamic data between Rust and C++ applications (see
+> [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
+> you send `iox::Slice`s of `(u)int{8|16|32|64}_t`, `float`, `double` or
+> `bool`, the payload type name is automatically translated to the Rust
+> equivalent. For other slice types, you have to set `IOX2_TYPE_NAME` for the
+> inner type to the Rust equivalent to enable the communication.

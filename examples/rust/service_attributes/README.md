@@ -1,7 +1,5 @@
 # Service-Attributes
 
-## Running the Example
-
 This example illustrates the definition and usage of custom service attributes.
 Service attributes are key-value pairs that can be defined via the service
 builder like so:
@@ -59,6 +57,8 @@ for attribute in service.attributes().iter() {
     println!("{} = {}", attribute.key(), attribute.value());
 }
 ```
+
+## How to Run
 
 To observe the service attributes in action, open three separate terminals and
 execute the following commands:
