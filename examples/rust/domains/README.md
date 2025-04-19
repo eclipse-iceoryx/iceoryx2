@@ -32,7 +32,7 @@ To achieve this, we create a copy of the global configuration, modify the
 setting `config.global.prefix` using the user-provided CLI argument, and then
 set up the example accordingly.
 
-## Running The Example
+## How to Run
 
 You can experiment with this setup by creating multiple publishers and
 subscribers with different service names using `-s $SERVICE_NAME`. Only

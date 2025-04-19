@@ -984,7 +984,6 @@ mod service_publish_subscribe {
 
         let subscriber = sut.subscriber_builder().create().unwrap();
         let publisher = sut2.publisher_builder().create().unwrap();
-        assert_that!(subscriber.update_connections(), is_ok);
 
         assert_that!(publisher.send_copy(1234), is_ok);
         assert_that!(publisher.send_copy(4567), is_ok);
@@ -2562,7 +2561,6 @@ mod service_publish_subscribe {
 
         let subscriber = sut.subscriber_builder().create().unwrap();
         let publisher = sut2.publisher_builder().create().unwrap();
-        assert_that!(subscriber.update_connections(), is_ok);
         let mut sample = publisher.loan().unwrap();
 
         for i in 0..1024 {

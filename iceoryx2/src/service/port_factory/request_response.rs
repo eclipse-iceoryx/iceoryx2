@@ -180,7 +180,6 @@ impl<
     ///
     /// let client = request_response
     ///         .client_builder()
-    ///         .max_loaned_requests(5)
     ///         .create()?;
     ///
     /// # Ok(())

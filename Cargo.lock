@@ -706,6 +706,7 @@ dependencies = [
  "cdr",
  "generic-tests",
  "iceoryx2-bb-container",
+ "iceoryx2-bb-derive-macros",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-lock-free",
  "iceoryx2-bb-log",

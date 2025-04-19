@@ -34,10 +34,10 @@ iceoryx2 discovers services by parsing the service toml files in the
 `/dev/shm`. If both directories are available in every docker container and are
 shared with the host, iceoryx2 can establish a connection between them.
 
-## Terminal Example
+## How to Run
 
-We start 3 separate terminals. We use `archlinux:latest` in this example but you
-are free to choose any other linux distribution.
+We start three separate terminals. We use `archlinux:latest` in this example
+but you are free to choose any other linux distribution.
 
 We start by building the example:
 

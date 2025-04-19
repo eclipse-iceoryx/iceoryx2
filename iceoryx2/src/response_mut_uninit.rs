@@ -19,7 +19,7 @@
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! # let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! #
-//! # let service = node.service_builder(&"ResponseMutExample1".try_into()?)
+//! # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //! #     .request_response::<u64, u64>()
 //! #     .open_or_create()?;
 //! #
@@ -28,9 +28,11 @@
 //! # let pending_response = client.send_copy(0)?;
 //! # let active_request = server.receive()?.unwrap();
 //!
-//! let mut response = active_request.loan()?;
-//! // write 456 because its fun
-//! *response.payload_mut() = 456;
+//! let mut response = active_request.loan_uninit()?;
+//! // write 1234 into sample
+//! response.payload_mut().write(1234);
+//! // overwrite contents with 456 because its fun
+//! let response = response.write_payload(456);
 //!
 //! println!("server port id: {:?}", response.header().server_port_id());
 //! response.send()?;
@@ -39,23 +41,8 @@
 //! # }
 //! ```
 
-extern crate alloc;
-
-use alloc::sync::Arc;
-use core::{
-    fmt::Debug,
-    marker::PhantomData,
-    ops::{Deref, DerefMut},
-};
-
-use iceoryx2_bb_log::fail;
-use iceoryx2_cal::{shm_allocator::PointerOffset, zero_copy_connection::ChannelId};
-
-use crate::{
-    port::{server::SharedServerState, SendError},
-    raw_sample::RawSampleMut,
-    service,
-};
+use crate::{response_mut::ResponseMut, service};
+use core::{fmt::Debug, mem::MaybeUninit};
 
 /// Acquired by a [`ActiveRequest`](crate::active_request::ActiveRequest) with
 ///  * [`ActiveRequest::loan_uninit()`](crate::active_request::ActiveRequest::loan_uninit())
@@ -64,70 +51,28 @@ use crate::{
 /// [`PendingResponse`](crate::pending_response::PendingResponse) of the
 /// [`Client`](crate::port::client::Client).
 ///
-/// If the [`ResponseMut`] is not sent it will reelase the loaned memory when going out of
+/// If the [`ResponseMutUninit`] is not sent it will reelase the loaned memory when going out of
 /// scope.
-pub struct ResponseMut<Service: service::Service, ResponsePayload: Debug, ResponseHeader: Debug> {
-    pub(crate) ptr: RawSampleMut<
-        service::header::request_response::ResponseHeader,
-        ResponseHeader,
-        ResponsePayload,
-    >,
-    pub(crate) shared_state: Arc<SharedServerState<Service>>,
-    pub(crate) offset_to_chunk: PointerOffset,
-    pub(crate) sample_size: usize,
-    pub(crate) channel_id: ChannelId,
-    pub(crate) connection_id: usize,
-    pub(crate) _response_payload: PhantomData<ResponsePayload>,
-    pub(crate) _response_header: PhantomData<ResponseHeader>,
+///
+/// The generic parameter `Payload` is actually [`core::mem::MaybeUninit<Payload>`].
+pub struct ResponseMutUninit<
+    Service: service::Service,
+    ResponsePayload: Debug,
+    ResponseHeader: Debug,
+> {
+    pub(crate) response: ResponseMut<Service, ResponsePayload, ResponseHeader>,
 }
 
 impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Debug
-    for ResponseMut<Service, ResponsePayload, ResponseHeader>
+    for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "ResponseMut<{}, {}, {}> {{ ptr: {:?}, offset_to_chunk: {:?}, sample_size: {}, channel_id: {} }}",
-            core::any::type_name::<Service>(),
-            core::any::type_name::<ResponsePayload>(),
-            core::any::type_name::<ResponseHeader>(),
-            self.ptr,
-            self.offset_to_chunk,
-            self.sample_size,
-            self.channel_id.value()
-        )
-    }
-}
-
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Drop
-    for ResponseMut<Service, ResponsePayload, ResponseHeader>
-{
-    fn drop(&mut self) {
-        self.shared_state
-            .response_sender
-            .return_loaned_sample(self.offset_to_chunk);
-    }
-}
-
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Deref
-    for ResponseMut<Service, ResponsePayload, ResponseHeader>
-{
-    type Target = ResponsePayload;
-    fn deref(&self) -> &Self::Target {
-        self.ptr.as_payload_ref()
-    }
-}
-
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> DerefMut
-    for ResponseMut<Service, ResponsePayload, ResponseHeader>
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.ptr.as_payload_mut()
+        write!(f, "ResponseMut {{ response: {:?} }}", self.response)
     }
 }
 
 impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
-    ResponseMut<Service, ResponsePayload, ResponseHeader>
+    ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
@@ -137,7 +82,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"ResponseMutExample2".try_into()?)
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -146,7 +91,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # let pending_response = client.send_copy(0)?;
     /// # let active_request = server.receive()?.unwrap();
     ///
-    /// let response = active_request.loan()?;
+    /// let response = active_request.loan_uninit()?;
     ///
     /// println!("server port id: {:?}", response.header().server_port_id());
     ///
@@ -154,7 +99,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # }
     /// ```
     pub fn header(&self) -> &service::header::request_response::ResponseHeader {
-        self.ptr.as_header_ref()
+        self.response.header()
     }
 
     /// Returns a reference to the user header of the response.
@@ -164,7 +109,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"ResponseMutExample3".try_into()?)
+    /// # let service = node.service_builder(&"Whatever2".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .response_user_header::<u64>()
     /// #     .open_or_create()?;
@@ -176,14 +121,14 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     ///
     /// // initializes the user header with default, therefore it is okay to access
     /// // it without assigning something first
-    /// let mut response = active_request.loan()?;
+    /// let mut response = active_request.loan_uninit()?;
     /// println!("user header {}", response.user_header());
     ///
     /// # Ok(())
     /// # }
     /// ```
     pub fn user_header(&self) -> &ResponseHeader {
-        self.ptr.as_user_header_ref()
+        self.response.user_header()
     }
 
     /// Returns a mutable reference to the user header of the response.
@@ -193,7 +138,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"ResponseMutExample4".try_into()?)
+    /// # let service = node.service_builder(&"Whatever".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .response_user_header::<u64>()
     /// #     .open_or_create()?;
@@ -203,14 +148,14 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # let pending_response = client.send_copy(0)?;
     /// # let active_request = server.receive()?.unwrap();
     ///
-    /// let mut response = active_request.loan()?;
+    /// let mut response = active_request.loan_uninit()?;
     /// *response.user_header_mut() = 123;
     ///
     /// # Ok(())
     /// # }
     /// ```
     pub fn user_header_mut(&mut self) -> &mut ResponseHeader {
-        self.ptr.as_user_header_mut()
+        self.response.user_header_mut()
     }
 
     /// Returns a reference to the payload of the response.
@@ -220,7 +165,7 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"ResponseMutExample4".try_into()?)
+    /// # let service = node.service_builder(&"Whatever3".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -229,26 +174,25 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # let pending_response = client.send_copy(0)?;
     /// # let active_request = server.receive()?.unwrap();
     ///
-    /// // initializes the payload with default, therefore it is okay to access
-    /// // it without assigning something first
-    /// let mut response = active_request.loan()?;
-    /// println!("default payload {}", *response.payload());
+    /// let mut response = active_request.loan_uninit()?;
+    /// response.payload_mut().write(123);
+    /// println!("default payload {:?}", *response.payload());
     ///
     /// # Ok(())
     /// # }
     /// ```
     pub fn payload(&self) -> &ResponsePayload {
-        self.ptr.as_payload_ref()
+        self.response.payload()
     }
 
-    /// Returns a reference to the payload of the response.
+    /// Returns a mutable reference to the payload of the response.
     ///
     /// ```
     /// use iceoryx2::prelude::*;
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"ResponseMutExample5".try_into()?)
+    /// # let service = node.service_builder(&"Whatever4".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -257,26 +201,29 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # let pending_response = client.send_copy(0)?;
     /// # let active_request = server.receive()?.unwrap();
     ///
-    /// let mut response = active_request.loan()?;
-    /// *response.payload_mut() = 123;
+    /// let mut response = active_request.loan_uninit()?;
+    /// response.payload_mut().write(123);
     ///
     /// # Ok(())
     /// # }
     /// ```
     pub fn payload_mut(&mut self) -> &mut ResponsePayload {
-        self.ptr.as_payload_mut()
+        self.response.payload_mut()
     }
+}
 
-    /// Sends a [`ResponseMut`] to the corresponding
-    /// [`PendingResponse`](crate::pending_response::PendingResponse) of the
-    /// [`Client`](crate::port::client::Client).
+impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
+    ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>
+{
+    /// Writes the provided payload into the [`ResponseMutUninit`] and returns and initialized
+    /// [`ResponseMut`] that is ready to be sent.
     ///
     /// ```
     /// use iceoryx2::prelude::*;
     /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// #
-    /// # let service = node.service_builder(&"ResponseMutExample6".try_into()?)
+    /// # let service = node.service_builder(&"Whatever5".try_into()?)
     /// #     .request_response::<u64, u64>()
     /// #     .open_or_create()?;
     /// #
@@ -285,28 +232,52 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     /// # let pending_response = client.send_copy(0)?;
     /// # let active_request = server.receive()?.unwrap();
     ///
-    /// let mut response = active_request.loan()?;
-    /// *response.payload_mut() = 456;
+    /// let mut response = active_request.loan_uninit()?;
+    /// let response = response.write_payload(123);
     /// response.send()?;
     ///
     /// # Ok(())
     /// # }
     /// ```
-    pub fn send(self) -> Result<(), SendError> {
-        let msg = "Unable to send response";
+    pub fn write_payload(
+        mut self,
+        value: ResponsePayload,
+    ) -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
+        self.payload_mut().write(value);
+        unsafe { self.assume_init() }
+    }
 
-        fail!(from self, when self.shared_state.update_connections(),
-            "{} since the connections could not be updated.", msg);
-
-        self.shared_state
-            .response_sender
-            .deliver_offset_to_connection(
-                self.offset_to_chunk,
-                self.sample_size,
-                self.channel_id,
-                self.connection_id,
-            )?;
-
-        Ok(())
+    /// Converts the [`ResponseMutUninit`] into [`ResponseMut`]. This shall be done after the
+    /// payload was written into the [`ResponseMutUninit`].
+    ///
+    /// # Safety
+    ///
+    ///  * Must ensure that the payload was properly initialized.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever6".try_into()?)
+    /// #     .request_response::<u64, u64>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder().create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// let mut response = active_request.loan_uninit()?;
+    /// response.payload_mut().write(789);
+    /// // this is fine since the payload was initialized to 789
+    /// let response = unsafe { response.assume_init() };
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub unsafe fn assume_init(self) -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
+        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
+        core::mem::transmute(self.response)
     }
 }

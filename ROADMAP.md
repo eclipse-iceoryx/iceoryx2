@@ -6,10 +6,10 @@
 
 The list is sorted by priority
 
-* [ ] Request/Response
+* [x] Request/Response
 * [ ] Zenoh Gateway
 * [ ] Finalize C and C++ API (still some tiny things open)
-* [ ] Improve cross-compilation support
+* [x] Improve cross-compilation support
 
 ### Bonus
 

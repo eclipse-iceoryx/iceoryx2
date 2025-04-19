@@ -29,14 +29,24 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter: u64 = 0;
 
+    // sending first request by using slower, inefficient copy API
+    println!("send request {} ...", counter);
+    let mut pending_response = client.send_copy(counter)?;
+
     while node.wait(CYCLE_TIME).is_ok() {
+        // acquire all responses to our request from our buffer that were sent by the servers
+        while let Some(response) = pending_response.receive()? {
+            println!("  received response: {:?}", *response);
+        }
+
         counter += 1;
+        // send another request by using zero copy API
         let request = client.loan_uninit()?;
         let request = request.write_payload(counter);
 
-        let _pending_response = request.send()?;
+        pending_response = request.send()?;
 
-        println!("Send request {} ...", counter);
+        println!("send request {} ...", counter);
     }
 
     println!("exit");

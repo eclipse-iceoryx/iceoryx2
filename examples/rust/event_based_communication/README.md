@@ -1,7 +1,5 @@
 # Event-Based Communication
 
-## Running The Example
-
 This example demonstrates iceoryx2's event multiplexing mechanism in a more
 complex setup. The iceoryx2 `Publisher` and `Subscriber` are integrated into
 custom `ExamplePublisher` and `ExampleSubscriber` classes, which also
@@ -19,6 +17,11 @@ The `WaitSet` notifies the user of the origin of an event notification. The
 user can then acquire the `EventId` from the `Listener`. Based on the value of
 the `EventId`, the user can identify the specific event that occurred and take
 appropriate action.
+
+## How to Run
+
+To see this in action, open two separate terminals and run the following
+commands:
 
 ### Terminal 1
 

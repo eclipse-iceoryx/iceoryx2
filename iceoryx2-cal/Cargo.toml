@@ -19,6 +19,7 @@ dev_permissions = []
 [dependencies]
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
+iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }

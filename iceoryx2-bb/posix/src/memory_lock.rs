@@ -30,6 +30,7 @@ pub enum MemoryLockCreationError {
     UnknownError(i32),
 }
 
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum MemoryLockAllError {
     UnableToLock,
     WouldExceedMainMemory,
