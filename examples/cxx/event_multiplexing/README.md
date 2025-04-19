@@ -3,9 +3,6 @@
 Before proceeding, all dependencies need to be installed. You can find
 instructions in the [C++ Examples Readme](../README.md).
 
-## Running The Example
-
-> [!CAUTION]
 > The WaitSet wakes up as soon as there is data to read. If the data
 > is not consumed in the callback, the WaitSet will immediately wake
 > up the process again, potentially causing an infinite loop and leading
@@ -21,6 +18,20 @@ user can specify via the command line option `-s` and `-t`.
 The `notifier` can define the service to which it will send event
 notifications using the `-s` option and specify the event ID with
 the `-e` option.
+
+## How to Build
+
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C++ Examples Readme](../README.md).
+
+First you have to build the C++ examples:
+
+```sh
+cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/build
+```
+
+## How to Run
 
 In the example below, we are waiting for events on the services `fuu` and
 `bar`. Service `fuu` is notified with event ID `123`, and service `bar` is

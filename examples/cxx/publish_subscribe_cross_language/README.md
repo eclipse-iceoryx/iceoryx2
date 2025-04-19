@@ -1,10 +1,5 @@
 # Cross-language Publish-Subscribe
 
-Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C++ Examples Readme](../README.md).
-
-## Running The Example
-
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared
 > memory. Specifically, it must:
@@ -29,6 +24,11 @@ containing `TransmissionData` and the `CustomHeader`. On the receiving end, the
 subscriber applications of the cross-language examples print the received
 payload and the user header to the console whenever new data arrives.
 
+## How to Build
+
+Before proceeding, all dependencies need to be installed. You can find
+instructions in the [C++ Examples Readme](../README.md).
+
 When you want to run the C++ publisher and subscriber applications, you first
 have to build the C++ examples:
 
@@ -36,6 +36,8 @@ have to build the C++ examples:
 cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
 cmake --build target/ffi/build
 ```
+
+## How to Run
 
 To observe the dynamic communication in action, open two separate terminals and
 execute the following commands:
@@ -99,12 +101,13 @@ languages can communicate.
 
 > [!NOTE]
 > For the communication with Rust applications, you don't need to provide
-> `IOX2_TYPE_NAME` for (u)int{8|16|32|64}_t, float, double and bool payloads.
+> `IOX2_TYPE_NAME` for `(u)int{8|16|32|64}_t`, `float`, `double` and `bool`
+> payloads.
 > These types are automatically translated into the Rust equivalents.
 
 You can also send dynamic data between C++ and Rust applications (see
 [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
-you send `iox::Slice`s of (u)int{8|16|32|64}_t, float, double or bool, the
-payload type name is automatically translated to the Rust equivalent. For other
-slice types, you have to set `IOX2_TYPE_NAME` for the inner type to the Rust
-equivalent to enable the communication.
+you send `iox::Slice`s of `(u)int{8|16|32|64}_t`, `float`, `double` or `bool`,
+the payload type name is automatically translated to the Rust equivalent. For
+other slice types, you have to set `IOX2_TYPE_NAME` for the inner type to the
+Rust equivalent to enable the communication.
