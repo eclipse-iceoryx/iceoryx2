@@ -47,6 +47,7 @@ use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::{shm_allocator::PointerOffset, zero_copy_connection::ChannelId};
@@ -66,7 +67,11 @@ use crate::{
 ///
 /// If the [`ResponseMut`] is not sent it will reelase the loaned memory when going out of
 /// scope.
-pub struct ResponseMut<Service: service::Service, ResponsePayload: Debug, ResponseHeader: Debug> {
+pub struct ResponseMut<
+    Service: service::Service,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
+> {
     pub(crate) ptr: RawSampleMut<
         service::header::request_response::ResponseHeader,
         ResponseHeader,
@@ -81,8 +86,11 @@ pub struct ResponseMut<Service: service::Service, ResponsePayload: Debug, Respon
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Debug
-    for ResponseMut<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Debug for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
@@ -99,8 +107,11 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     }
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Drop
-    for ResponseMut<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Drop for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
         self.shared_state
@@ -109,8 +120,11 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     }
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> Deref
-    for ResponseMut<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Deref for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
     type Target = ResponsePayload;
     fn deref(&self) -> &Self::Target {
@@ -118,16 +132,22 @@ impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: D
     }
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug> DerefMut
-    for ResponseMut<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > DerefMut for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.ptr.as_payload_mut()
     }
 }
 
-impl<Service: crate::service::Service, ResponsePayload: Debug, ResponseHeader: Debug>
-    ResponseMut<Service, ResponsePayload, ResponseHeader>
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).

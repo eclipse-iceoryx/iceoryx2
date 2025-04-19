@@ -43,6 +43,7 @@ use core::{
     ops::{Deref, DerefMut},
     sync::atomic::Ordering,
 };
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
@@ -61,10 +62,10 @@ use crate::{
 /// [`Server`](crate::port::server::Server).
 pub struct RequestMut<
     Service: crate::service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) ptr: RawSampleMut<
         service::header::request_response::RequestHeader,
@@ -82,10 +83,10 @@ pub struct RequestMut<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
@@ -110,10 +111,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -137,10 +138,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Deref
     for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -152,10 +153,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > DerefMut
     for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -166,10 +167,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the iceoryx2 internal

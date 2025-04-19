@@ -56,6 +56,7 @@
 
 use core::fmt::Debug;
 
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::shm_allocator::AllocationStrategy;
 
@@ -85,15 +86,19 @@ pub(crate) struct LocalPublisherConfig {
 pub struct PortFactoryPublisher<
     'factory,
     Service: service::Service,
-    Payload: Debug + ?Sized,
-    UserHeader: Debug,
+    Payload: Debug + ZeroCopySend + ?Sized,
+    UserHeader: Debug + ZeroCopySend,
 > {
     config: LocalPublisherConfig,
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
 
-impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
-    PortFactoryPublisher<'factory, Service, Payload, UserHeader>
+impl<
+        'factory,
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > PortFactoryPublisher<'factory, Service, Payload, UserHeader>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, Payload, UserHeader>) -> Self {
         Self {
@@ -163,8 +168,11 @@ impl<'factory, Service: service::Service, Payload: Debug + ?Sized, UserHeader: D
     }
 }
 
-impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
-    PortFactoryPublisher<'_, Service, [Payload], UserHeader>
+impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend,
+        UserHeader: Debug + ZeroCopySend,
+    > PortFactoryPublisher<'_, Service, [Payload], UserHeader>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`Publisher::loan_slice()`] or [`Publisher::loan_slice_uninit()`].
