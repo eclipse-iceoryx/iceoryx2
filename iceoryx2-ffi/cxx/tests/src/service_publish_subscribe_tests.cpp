@@ -510,6 +510,12 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     ASSERT_THAT(static_config.message_type_details().payload().size(), Eq(sizeof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u64"));
+
+    auto subscriber = service.subscriber_builder().create().expect("");
+    ASSERT_THAT(subscriber.buffer_size(), Eq(SUBSCRIBER_MAX_BUFFER_SIZE));
+
+    auto subscriber_2 = service.subscriber_builder().buffer_size(1).create().expect("");
+    ASSERT_THAT(subscriber_2.buffer_size(), Eq(1));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, safe_overflow_can_be_set) {
