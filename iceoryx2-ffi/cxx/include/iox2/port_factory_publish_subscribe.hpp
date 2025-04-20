@@ -44,7 +44,7 @@ class PortFactoryPublishSubscribe {
     auto operator=(const PortFactoryPublishSubscribe&) -> PortFactoryPublishSubscribe& = delete;
 
     /// Returns the [`ServiceName`] of the service
-    auto name() const -> const ServiceName&;
+    auto name() const -> ServiceNameView;
 
     /// Returns the [`ServiceId`] of the [`Service`]
     auto service_id() const -> const ServiceId&;
@@ -121,8 +121,9 @@ inline PortFactoryPublishSubscribe<S, Payload, UserHeader>::~PortFactoryPublishS
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const -> const ServiceName& {
-    IOX_TODO();
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const -> ServiceNameView {
+    const auto* service_name_ptr = iox2_port_factory_pub_sub_service_name(&m_handle);
+    return ServiceNameView(service_name_ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

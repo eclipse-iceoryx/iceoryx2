@@ -26,7 +26,7 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::mem::ManuallyDrop;
 
-use super::iox2_attribute_set_h_ref;
+use super::{iox2_attribute_set_h_ref, iox2_service_name_ptr};
 
 // BEGIN types definition
 
@@ -305,6 +305,28 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_number_of_publ
             .local
             .dynamic_config()
             .number_of_publishers(),
+    }
+}
+
+/// Returns the [`iox2_service_name_ptr`], an immutable pointer to the service name.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
+///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_name(
+    handle: iox2_port_factory_pub_sub_h_ref,
+) -> iox2_service_name_ptr {
+    use iceoryx2::prelude::PortFactory;
+
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.name(),
+        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.name(),
     }
 }
 

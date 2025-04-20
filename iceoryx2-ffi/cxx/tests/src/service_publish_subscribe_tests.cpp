@@ -56,6 +56,17 @@ TYPED_TEST(ServicePublishSubscribeTest, created_service_does_exist) {
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).expect(""));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, service_name_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    ASSERT_THAT(sut.name().to_string().c_str(), StrEq(service_name.to_string().c_str()));
+}
+
 TYPED_TEST(ServicePublishSubscribeTest, creating_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
