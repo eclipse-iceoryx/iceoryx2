@@ -44,7 +44,7 @@ class PortFactoryEvent {
     auto name() const -> ServiceNameView;
 
     /// Returns the [`ServiceId`] of the [`Service`]
-    auto service_id() const -> const ServiceId&;
+    auto service_id() const -> ServiceId;
 
     /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> AttributeSetView;

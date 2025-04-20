@@ -12,6 +12,7 @@
 
 #include "iox2/port_factory_event.hpp"
 #include "iox/assertions_addendum.hpp"
+#include "iox/uninitialized_array.hpp"
 #include "iox2/iceoryx2.h"
 
 namespace iox2 {
@@ -56,8 +57,12 @@ auto PortFactoryEvent<S>::name() const -> ServiceNameView {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::service_id() const -> const ServiceId& {
-    IOX_TODO();
+auto PortFactoryEvent<S>::service_id() const -> ServiceId {
+    iox::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
+
+    iox2_port_factory_event_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
+
+    return ServiceId(iox::string<IOX2_SERVICE_ID_LENGTH>(iox::TruncateToCapacity, &buffer[0]));
 }
 
 template <ServiceType S>
