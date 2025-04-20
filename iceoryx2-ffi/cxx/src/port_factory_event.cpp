@@ -59,7 +59,6 @@ auto PortFactoryEvent<S>::name() const -> ServiceNameView {
 template <ServiceType S>
 auto PortFactoryEvent<S>::service_id() const -> ServiceId {
     iox::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
-
     iox2_port_factory_event_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
 
     return ServiceId(iox::string<IOX2_SERVICE_ID_LENGTH>(iox::TruncateToCapacity, &buffer[0]));

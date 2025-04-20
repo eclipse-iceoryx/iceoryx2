@@ -47,7 +47,7 @@ class PortFactoryPublishSubscribe {
     auto name() const -> ServiceNameView;
 
     /// Returns the [`ServiceId`] of the [`Service`]
-    auto service_id() const -> const ServiceId&;
+    auto service_id() const -> ServiceId;
 
     /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> AttributeSetView;
@@ -127,8 +127,11 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const ->
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_id() const -> const ServiceId& {
-    IOX_TODO();
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_id() const -> ServiceId {
+    iox::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
+    iox2_port_factory_pub_sub_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
+
+    return ServiceId(iox::string<IOX2_SERVICE_ID_LENGTH>(iox::TruncateToCapacity, &buffer[0]));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

@@ -1318,5 +1318,20 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToInnerTypeNameIfPro
     auto static_config = service.static_config();
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("Payload"));
 }
+
+TYPED_TEST(ServicePublishSubscribeTest, service_id_is_unique_per_service) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name_1 = iox2_testing::generate_service_name();
+    const auto service_name_2 = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+
+    auto service_1_create =
+        node.service_builder(service_name_1).template publish_subscribe<uint64_t>().create().expect("");
+    auto service_1_open = node.service_builder(service_name_1).template publish_subscribe<uint64_t>().open().expect("");
+    auto service_2 = node.service_builder(service_name_2).template publish_subscribe<uint64_t>().create().expect("");
+
+    ASSERT_THAT(service_1_create.service_id().as_str(), StrEq(service_1_open.service_id().as_str()));
+    ASSERT_THAT(service_1_create.service_id().as_str(), Not(StrEq(service_2.service_id().as_str())));
+}
 // END tests for customizable payload and user header type name
 } // namespace

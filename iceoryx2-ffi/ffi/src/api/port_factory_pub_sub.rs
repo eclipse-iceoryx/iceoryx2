@@ -24,7 +24,7 @@ use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use core::mem::ManuallyDrop;
+use core::{ffi::c_char, mem::ManuallyDrop};
 
 use super::{iox2_attribute_set_h_ref, iox2_service_name_ptr};
 
@@ -328,6 +328,36 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_name(
         iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.name(),
         iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.name(),
     }
+}
+
+/// Stores the service id in the provided buffer
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
+///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
+/// * `buffer` must be non-zero and point to a valid memory location
+/// * `buffer_len` must define the actual size of the memory location `buffer` is pointing to
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_id(
+    handle: iox2_port_factory_pub_sub_h_ref,
+    buffer: *mut c_char,
+    buffer_len: usize,
+) {
+    use iceoryx2::prelude::PortFactory;
+
+    debug_assert!(!buffer.is_null());
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+    let service_id = match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.service_id(),
+        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.service_id(),
+    };
+
+    let len = buffer_len.min(service_id.as_str().len()) - 1;
+    core::ptr::copy_nonoverlapping(service_id.as_str().as_ptr(), buffer.cast(), len);
+    buffer.add(len).write(0);
 }
 
 /// Returns how many subscriber ports are currently connected.
