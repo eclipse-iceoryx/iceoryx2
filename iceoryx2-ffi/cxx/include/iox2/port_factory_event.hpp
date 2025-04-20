@@ -55,7 +55,7 @@ class PortFactoryEvent {
 
     /// Returns the DynamicConfig of the [`Service`].
     /// Contains all dynamic settings, like the current participants etc..
-    auto dynamic_config() const -> const DynamicConfigEvent&;
+    auto dynamic_config() const -> DynamicConfigEvent;
 
     /// Iterates over all [`Node`]s of the [`Service`]
     /// and calls for every [`Node`] the provided callback. If an error occurs

@@ -294,6 +294,68 @@ pub unsafe extern "C" fn iox2_port_factory_event_attributes(
     }
 }
 
+/// Returns how many listener ports are currently connected.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_number_of_listeners(
+    handle: iox2_port_factory_event_h_ref,
+) -> usize {
+    use iceoryx2::prelude::PortFactory;
+
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .number_of_listeners(),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .number_of_listeners(),
+    }
+}
+
+/// Returns how many notifier ports are currently connected.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_number_of_notifiers(
+    handle: iox2_port_factory_event_h_ref,
+) -> usize {
+    use iceoryx2::prelude::PortFactory;
+
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .number_of_notifiers(),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .number_of_notifiers(),
+    }
+}
+
 /// This function needs to be called to destroy the port factory!
 ///
 /// # Arguments

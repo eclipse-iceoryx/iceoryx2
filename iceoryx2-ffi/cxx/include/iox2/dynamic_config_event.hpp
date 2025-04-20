@@ -13,19 +13,32 @@
 #ifndef IOX2_DYNAMIC_CONFIG_EVENT_HPP
 #define IOX2_DYNAMIC_CONFIG_EVENT_HPP
 
-#include "iox/assertions_addendum.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 #include <cstdint>
 
 namespace iox2 {
 class DynamicConfigEvent {
   public:
-    auto number_of_listeners() const -> uint64_t {
-        IOX_TODO();
-    }
-    auto number_of_notifiers() const -> uint64_t {
-        IOX_TODO();
-    }
+    DynamicConfigEvent(const DynamicConfigEvent&) = delete;
+    DynamicConfigEvent(DynamicConfigEvent&&) = delete;
+    auto operator=(const DynamicConfigEvent&) -> DynamicConfigEvent& = delete;
+    auto operator=(DynamicConfigEvent&&) -> DynamicConfigEvent& = delete;
+    ~DynamicConfigEvent() = default;
+
+    /// Returns how many [`Listener`] ports are currently connected.
+    auto number_of_listeners() const -> uint64_t;
+
+    /// Returns how many [`Notifier`] ports are currently connected.
+    auto number_of_notifiers() const -> uint64_t;
+
+  private:
+    template <ServiceType>
+    friend class PortFactoryEvent;
+
+    explicit DynamicConfigEvent(iox2_port_factory_event_h handle);
+
+    iox2_port_factory_event_h m_handle = nullptr;
 };
 } // namespace iox2
 

@@ -74,8 +74,8 @@ auto PortFactoryEvent<S>::static_config() const -> StaticConfigEvent {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::dynamic_config() const -> const DynamicConfigEvent& {
-    IOX_TODO();
+auto PortFactoryEvent<S>::dynamic_config() const -> DynamicConfigEvent {
+    return DynamicConfigEvent(m_handle);
 }
 
 template <ServiceType S>

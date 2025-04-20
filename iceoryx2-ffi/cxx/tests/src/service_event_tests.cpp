@@ -570,4 +570,28 @@ TYPED_TEST(ServiceEventTest, when_deadline_is_not_missed_notification_works) {
     ASSERT_THAT(result.has_value(), Eq(true));
     ASSERT_THAT(listener.try_wait_one().expect("").has_value(), Eq(true));
 }
+
+TYPED_TEST(ServiceEventTest, number_of_listener_notifier_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+
+    auto service = node.service_builder(service_name).event().create().expect("");
+
+    ASSERT_THAT(service.dynamic_config().number_of_listeners(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_notifiers(), Eq(0));
+    {
+        auto listener = service.listener_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_listeners(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_notifiers(), Eq(0));
+
+        auto notifier = service.notifier_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_listeners(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_notifiers(), Eq(1));
+    }
+    ASSERT_THAT(service.dynamic_config().number_of_listeners(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_notifiers(), Eq(0));
+}
+
+
 } // namespace
