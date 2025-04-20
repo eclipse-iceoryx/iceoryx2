@@ -12,6 +12,7 @@
 
 #include "iox2/attribute_set.hpp"
 #include "iox/assertions_addendum.hpp"
+#include "iox/uninitialized_array.hpp"
 #include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
@@ -35,13 +36,20 @@ auto AttributeSetView::at(const uint64_t index) const -> AttributeView {
     return AttributeView(iox2_attribute_set_at(m_handle, index));
 }
 
-auto AttributeSetView::get_key_value_len([[maybe_unused]] const Attribute::Key& key) const -> uint64_t {
-    IOX_TODO();
+auto AttributeSetView::get_key_value_len(const Attribute::Key& key) const -> uint64_t {
+    return iox2_attribute_set_get_key_value_len(m_handle, key.c_str());
 }
 
-auto AttributeSetView::get_key_value_at([[maybe_unused]] const Attribute::Key& key, [[maybe_unused]] const uint64_t idx)
+auto AttributeSetView::get_key_value_at(const Attribute::Key& key, const uint64_t idx)
     -> iox::optional<Attribute::Value> {
-    IOX_TODO();
+    iox::UninitializedArray<char, Attribute::Value::capacity()> buffer;
+    iox2_attribute_set_get_key_value_at(m_handle, key.c_str(), idx, &buffer[0], Attribute::Value::capacity());
+
+    if (buffer[0] == 0) {
+        return iox::nullopt;
+    }
+
+    return Attribute::Value(iox::TruncateToCapacity, &buffer[0]);
 }
 
 void AttributeSetView::get_key_values(

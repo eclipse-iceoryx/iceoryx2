@@ -118,4 +118,42 @@ TEST(AttributeSet, all_key_values_can_be_acquired) {
         return CallbackProgression::Continue;
     });
 }
+
+TEST(AttributeSet, get_key_value_len_works) {
+    auto empty_key = Attribute::Key("fuu");
+    auto key = Attribute::Key("whatever");
+    auto value_1 = Attribute::Value("you");
+    auto value_2 = Attribute::Value("want");
+
+    auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
+    auto attributes = attribute_specifer.attributes();
+
+    ASSERT_THAT(attributes.get_key_value_len(key), Eq(2));
+    ASSERT_THAT(attributes.get_key_value_len(empty_key), Eq(0));
+}
+
+TEST(AttributeSet, get_key_value_at_works) {
+    auto key = Attribute::Key("schmu whatever");
+    auto value_1 = Attribute::Value("fuu you");
+    auto value_2 = Attribute::Value("blue want");
+
+    auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
+    auto attributes = attribute_specifer.attributes();
+
+    auto v_1 = attributes.get_key_value_at(key, 0);
+    auto v_2 = attributes.get_key_value_at(key, 1);
+    auto v_3 = attributes.get_key_value_at(key, 2);
+
+    ASSERT_THAT(v_1.has_value(), Eq(true));
+    ASSERT_THAT(v_2.has_value(), Eq(true));
+    ASSERT_THAT(v_3.has_value(), Eq(true));
+
+    if (v_1->size() == value_1.size()) {
+        ASSERT_THAT(v_1.value().c_str(), StrEq(value_1.c_str()));
+        ASSERT_THAT(v_2.value().c_str(), StrEq(value_2.c_str()));
+    } else {
+        ASSERT_THAT(v_2.value().c_str(), StrEq(value_1.c_str()));
+        ASSERT_THAT(v_1.value().c_str(), StrEq(value_2.c_str()));
+    }
+}
 } // namespace
