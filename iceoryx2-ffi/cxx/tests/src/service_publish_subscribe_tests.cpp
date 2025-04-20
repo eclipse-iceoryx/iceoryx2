@@ -300,6 +300,32 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, number_of_publishers_subscribers_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    ASSERT_THAT(service.dynamic_config().number_of_publishers(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_subscribers(), Eq(0));
+
+    {
+        auto sut_publisher = service.publisher_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_publishers(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_subscribers(), Eq(0));
+
+        auto sut_subscriber = service.subscriber_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_publishers(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_subscribers(), Eq(1));
+    }
+
+    ASSERT_THAT(service.dynamic_config().number_of_publishers(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_subscribers(), Eq(0));
+}
+
+
 // NOLINTBEGIN(readability-function-cognitive-complexity) : Cognitive complexity of 26 (+1) is OK. Test case is complex.
 TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;

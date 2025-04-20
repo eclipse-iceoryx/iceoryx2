@@ -277,6 +277,68 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_static_config(
     *static_config = config.into();
 }
 
+/// Returns how many publisher ports are currently connected.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
+///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_number_of_publishers(
+    handle: iox2_port_factory_pub_sub_h_ref,
+) -> usize {
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+
+    use iceoryx2::prelude::PortFactory;
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .number_of_publishers(),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .number_of_publishers(),
+    }
+}
+
+/// Returns how many subscriber ports are currently connected.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
+///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_number_of_subscribers(
+    handle: iox2_port_factory_pub_sub_h_ref,
+) -> usize {
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+
+    use iceoryx2::prelude::PortFactory;
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .number_of_subscribers(),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .number_of_subscribers(),
+    }
+}
+
 /// This function needs to be called to destroy the port factory!
 ///
 /// # Arguments

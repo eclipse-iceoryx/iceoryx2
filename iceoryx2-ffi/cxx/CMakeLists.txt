@@ -41,6 +41,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/attribute_specifier.cpp
     src/attribute_verifier.cpp
     src/config.cpp
+    src/dynamic_config_publish_subscribe.cpp
     src/event_id.cpp
     src/file_descriptor.cpp
     src/header_publish_subscribe.cpp

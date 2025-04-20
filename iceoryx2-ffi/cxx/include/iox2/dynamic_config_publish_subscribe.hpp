@@ -13,19 +13,36 @@
 #ifndef IOX2_DYNAMIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_DYNAMIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
 
-#include "iox/assertions_addendum.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 #include <cstdint>
 
 namespace iox2 {
+
+/// The dynamic configuration of an
+/// [`MessagingPattern::PublishSubscribe`] based service. Contains dynamic
+/// parameters like the connected endpoints etc..
 class DynamicConfigPublishSubscribe {
   public:
-    auto number_of_publishers() const -> uint64_t {
-        IOX_TODO();
-    }
-    auto number_of_subscribers() const -> uint64_t {
-        IOX_TODO();
-    }
+    DynamicConfigPublishSubscribe(const DynamicConfigPublishSubscribe&) = delete;
+    DynamicConfigPublishSubscribe(DynamicConfigPublishSubscribe&&) = delete;
+    auto operator=(const DynamicConfigPublishSubscribe&) -> DynamicConfigPublishSubscribe& = delete;
+    auto operator=(DynamicConfigPublishSubscribe&&) -> DynamicConfigPublishSubscribe& = delete;
+    ~DynamicConfigPublishSubscribe() = default;
+
+    /// Returns how many [`Publisher`] ports are currently connected.
+    auto number_of_publishers() const -> uint64_t;
+
+    /// Returns how many [`Subscriber`] ports are currently connected.
+    auto number_of_subscribers() const -> uint64_t;
+
+  private:
+    template <ServiceType, typename, typename>
+    friend class PortFactoryPublishSubscribe;
+
+    explicit DynamicConfigPublishSubscribe(iox2_port_factory_pub_sub_h handle);
+
+    iox2_port_factory_pub_sub_h m_handle = nullptr;
 };
 } // namespace iox2
 

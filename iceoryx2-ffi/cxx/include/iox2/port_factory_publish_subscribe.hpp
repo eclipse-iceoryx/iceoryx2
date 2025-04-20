@@ -58,7 +58,7 @@ class PortFactoryPublishSubscribe {
 
     /// Returns the DynamicConfig of the [`Service`].
     /// Contains all dynamic settings, like the current participants etc..
-    auto dynamic_config() const -> const DynamicConfigPublishSubscribe&;
+    auto dynamic_config() const -> DynamicConfigPublishSubscribe;
 
     /// Iterates over all [`Node`]s of the [`Service`]
     /// and calls for every [`Node`] the provided callback. If an error occurs
@@ -145,8 +145,8 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::static_config()
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::dynamic_config() const
-    -> const DynamicConfigPublishSubscribe& {
-    IOX_TODO();
+    -> DynamicConfigPublishSubscribe {
+    return DynamicConfigPublishSubscribe(m_handle);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
