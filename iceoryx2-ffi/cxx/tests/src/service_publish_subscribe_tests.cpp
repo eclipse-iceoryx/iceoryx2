@@ -104,7 +104,6 @@ TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
     ASSERT_THAT(counter, Eq(2));
 }
 
-
 TYPED_TEST(ServicePublishSubscribeTest, creating_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 

@@ -606,4 +606,41 @@ TYPED_TEST(ServiceEventTest, service_id_is_unique_per_service) {
     ASSERT_THAT(service_1_create.service_id().as_str(), StrEq(service_1_open.service_id().as_str()));
     ASSERT_THAT(service_1_create.service_id().as_str(), Not(StrEq(service_2.service_id().as_str())));
 }
+
+TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto node_name_1 = NodeName::create("Nala and The HypnoToad").expect("");
+    const auto node_name_2 = NodeName::create("Can they be friends?").expect("");
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");
+    auto node_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().expect("");
+
+    auto sut_1 = node_1.service_builder(service_name).event().create().expect("");
+    auto sut_2 = node_2.service_builder(service_name).event().open().expect("");
+
+    auto counter = 0;
+    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) {
+        counter++;
+        if (node_view.id() == node_1.id()) {
+            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
+        } else {
+            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_2.name().to_string().c_str()));
+        }
+    };
+
+    auto result = sut_1.nodes([&](auto node_state) -> CallbackProgression {
+        node_state.alive(verify_node);
+
+        node_state.dead([](auto) { ASSERT_TRUE(false); });
+        node_state.inaccessible([](auto) { ASSERT_TRUE(false); });
+        node_state.undefined([](auto) { ASSERT_TRUE(false); });
+
+        return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(result.has_value(), Eq(true));
+    ASSERT_THAT(counter, Eq(2));
+}
 } // namespace
