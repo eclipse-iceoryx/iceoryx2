@@ -14,14 +14,18 @@
 
 use core::ffi::c_char;
 
-use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2::{
+    prelude::AttributeSet, service::static_config::messaging_pattern::MessagingPattern,
+};
 use iceoryx2_bb_log::fatal_panic;
 
 use crate::{
     iox2_messaging_pattern_e, iox2_static_config_event_t, iox2_static_config_publish_subscribe_t,
     IOX2_SERVICE_ID_LENGTH, IOX2_SERVICE_NAME_LENGTH,
 };
+
+use super::iox2_attribute_set_h_ref;
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -37,12 +41,15 @@ pub struct iox2_static_config_t {
     pub name: [c_char; IOX2_SERVICE_NAME_LENGTH],
     pub messaging_pattern: iox2_messaging_pattern_e,
     pub details: iox2_static_config_details_t,
+    pub attributes: iox2_attribute_set_h_ref,
 }
 
 impl From<&StaticConfig> for iox2_static_config_t {
     fn from(value: &StaticConfig) -> Self {
         Self {
             id: core::array::from_fn(|n| {
+                debug_assert!(value.service_id().as_str().len() + 1 < IOX2_SERVICE_ID_LENGTH);
+
                 let raw_service_id = value.service_id().as_str().as_bytes();
                 if n < raw_service_id.len() {
                     raw_service_id[n] as _
@@ -59,6 +66,7 @@ impl From<&StaticConfig> for iox2_static_config_t {
                     0
                 }
             }),
+            attributes: (value.attributes() as *const AttributeSet).cast(),
             messaging_pattern: value.messaging_pattern().into(),
             details: {
                 match value.messaging_pattern() {

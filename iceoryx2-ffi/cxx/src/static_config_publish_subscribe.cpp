@@ -11,10 +11,15 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/static_config_publish_subscribe.hpp"
+#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 StaticConfigPublishSubscribe::StaticConfigPublishSubscribe(iox2_static_config_publish_subscribe_t value)
     : m_value { value } {
+}
+
+auto StaticConfigPublishSubscribe::attributes() const -> AttributeSetView {
+    IOX_TODO();
 }
 
 auto StaticConfigPublishSubscribe::max_nodes() const -> uint64_t {

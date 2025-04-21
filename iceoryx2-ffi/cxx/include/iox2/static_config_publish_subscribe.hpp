@@ -13,6 +13,7 @@
 #ifndef IOX2_STATIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_STATIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
 
+#include "iox2/attribute_set.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/message_type_details.hpp"
 
@@ -42,6 +43,9 @@ class StaticConfigPublishSubscribe {
 
     /// Returns how many [`Sample`]s a [`Subscriber`] port can borrow in parallel at most.
     auto subscriber_max_borrowed_samples() const -> uint64_t;
+
+    /// Returns the attributes defined in the [`Service`]
+    auto attributes() const -> AttributeSetView;
 
     /// Returns true if the [`Service`] safely overflows, otherwise false. Safe
     /// overflow means that the [`Publisher`] will recycle the oldest

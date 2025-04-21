@@ -407,7 +407,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_service_id(
         iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.service_id(),
     };
 
-    let len = buffer_len.min(service_id.as_str().len()) - 1;
+    let len = buffer_len.min(service_id.as_str().len());
     core::ptr::copy_nonoverlapping(service_id.as_str().as_ptr(), buffer.cast(), len);
     buffer.add(len).write(0);
 }

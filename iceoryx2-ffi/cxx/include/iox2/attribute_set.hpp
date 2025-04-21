@@ -56,6 +56,7 @@ class AttributeSetView {
     friend class PortFactoryEvent;
     friend class AttributeVerifier;
     friend class AttributeSpecifier;
+    friend class StaticConfig;
 
     explicit AttributeSetView(iox2_attribute_set_h_ref handle);
 
