@@ -613,6 +613,7 @@ TYPED_TEST(ServiceEventTest, service_id_is_unique_per_service) {
     ASSERT_THAT(service_1_create.service_id().as_str(), Not(StrEq(service_2.service_id().as_str())));
 }
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -639,9 +640,9 @@ TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
     auto result = sut_1.nodes([&](auto node_state) -> CallbackProgression {
         node_state.alive(verify_node);
 
-        node_state.dead([](auto) { ASSERT_TRUE(false); });
-        node_state.inaccessible([](auto) { ASSERT_TRUE(false); });
-        node_state.undefined([](auto) { ASSERT_TRUE(false); });
+        node_state.dead([](const auto&) { ASSERT_TRUE(false); });
+        node_state.inaccessible([](const auto&) { ASSERT_TRUE(false); });
+        node_state.undefined([](const auto&) { ASSERT_TRUE(false); });
 
         return CallbackProgression::Continue;
     });
@@ -649,4 +650,5 @@ TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
     ASSERT_THAT(result.has_value(), Eq(true));
     ASSERT_THAT(counter, Eq(2));
 }
+//NOLINTEND(readability-function-cognitive-complexity)
 } // namespace

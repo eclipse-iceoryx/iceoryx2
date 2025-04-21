@@ -132,6 +132,7 @@ TEST(AttributeSet, get_key_value_len_works) {
     ASSERT_THAT(attributes.get_key_value_len(empty_key), Eq(0));
 }
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TEST(AttributeSet, get_key_value_at_works) {
     auto key = Attribute::Key("schmu whatever");
     auto value_1 = Attribute::Value("fuu you");
@@ -156,4 +157,5 @@ TEST(AttributeSet, get_key_value_at_works) {
         ASSERT_THAT(v_1.value().c_str(), StrEq(value_2.c_str()));
     }
 }
+//NOLINTEND(readability-function-cognitive-complexity)
 } // namespace

@@ -67,6 +67,7 @@ TYPED_TEST(ServicePublishSubscribeTest, service_name_works) {
     ASSERT_THAT(sut.name().to_string().c_str(), StrEq(service_name.to_string().c_str()));
 }
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -93,9 +94,9 @@ TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
     auto result = sut_1.nodes([&](auto node_state) -> CallbackProgression {
         node_state.alive(verify_node);
 
-        node_state.dead([](auto) { ASSERT_TRUE(false); });
-        node_state.inaccessible([](auto) { ASSERT_TRUE(false); });
-        node_state.undefined([](auto) { ASSERT_TRUE(false); });
+        node_state.dead([](const auto&) { ASSERT_TRUE(false); });
+        node_state.inaccessible([](const auto&) { ASSERT_TRUE(false); });
+        node_state.undefined([](const auto&) { ASSERT_TRUE(false); });
 
         return CallbackProgression::Continue;
     });
@@ -103,6 +104,7 @@ TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
     ASSERT_THAT(result.has_value(), Eq(true));
     ASSERT_THAT(counter, Eq(2));
 }
+//NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServicePublishSubscribeTest, creating_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
