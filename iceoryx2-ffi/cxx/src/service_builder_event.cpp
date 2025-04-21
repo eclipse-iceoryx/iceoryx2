@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/service_builder_event.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 template <ServiceType S>
@@ -56,8 +55,9 @@ void ServiceBuilderEvent<S>::set_parameters() {
             .or_else([&]() { iox2_service_builder_event_disable_deadline(&m_handle); });
     }
 
-    m_max_nodes.and_then([](auto) { IOX_TODO(); });
-    m_event_id_max_value.and_then([](auto) { IOX_TODO(); });
+    m_max_nodes.and_then([&](auto value) { iox2_service_builder_event_set_max_nodes(&m_handle, value); });
+    m_event_id_max_value.and_then(
+        [&](auto value) { iox2_service_builder_event_set_event_id_max_value(&m_handle, value); });
 }
 
 template <ServiceType S>

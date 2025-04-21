@@ -92,6 +92,8 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_NOTIFIERS = 5;
     constexpr uint64_t NUMBER_OF_LISTENERS = 7;
+    constexpr uint64_t NUMBER_OF_NODES = 8;
+    constexpr uint64_t MAX_EVENT_ID_VALUE = 9;
     const auto create_event_id = EventId(12);
     const auto dropped_event_id = EventId(13);
     const auto dead_event_id = EventId(14);
@@ -103,6 +105,8 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
                    .event()
                    .max_notifiers(NUMBER_OF_NOTIFIERS)
                    .max_listeners(NUMBER_OF_LISTENERS)
+                   .max_nodes(NUMBER_OF_NODES)
+                   .event_id_max_value(MAX_EVENT_ID_VALUE)
                    .notifier_created_event(create_event_id)
                    .notifier_dropped_event(dropped_event_id)
                    .notifier_dead_event(dead_event_id)
@@ -113,6 +117,8 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
 
     ASSERT_THAT(static_config.max_notifiers(), Eq(NUMBER_OF_NOTIFIERS));
     ASSERT_THAT(static_config.max_listeners(), Eq(NUMBER_OF_LISTENERS));
+    ASSERT_THAT(static_config.max_nodes(), Eq(NUMBER_OF_NODES));
+    ASSERT_THAT(static_config.event_id_max_value(), Eq(MAX_EVENT_ID_VALUE));
     ASSERT_THAT(static_config.notifier_created_event(), Eq(iox::optional<EventId>(create_event_id)));
     ASSERT_THAT(static_config.notifier_dropped_event(), Eq(iox::optional<EventId>(dropped_event_id)));
     ASSERT_THAT(static_config.notifier_dead_event(), Eq(iox::optional<EventId>(dead_event_id)));
