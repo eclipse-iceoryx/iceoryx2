@@ -19,6 +19,7 @@
 #include "iox2/attribute_set.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/dynamic_config_publish_subscribe.hpp"
+#include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/node_state.hpp"
@@ -155,9 +156,17 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::dynamic_config(
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::nodes(
-    [[maybe_unused]] const iox::function<CallbackProgression(NodeState<S>)>& callback) const
-    -> iox::expected<void, NodeListFailure> {
-    IOX_TODO();
+    const iox::function<CallbackProgression(NodeState<S>)>& callback) const -> iox::expected<void, NodeListFailure> {
+    auto ctx = internal::ctx(callback);
+
+    const auto ret_val =
+        iox2_port_factory_pub_sub_nodes(&m_handle, internal::list_callback<S>, static_cast<void*>(&ctx));
+
+    if (ret_val == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

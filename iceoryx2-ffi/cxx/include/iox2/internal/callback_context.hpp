@@ -13,6 +13,14 @@
 #ifndef IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 #define IOX2_INTERNAL_CALLBACK_CONTEXT_HPP
 
+#include "iox/optional.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/node_details.hpp"
+#include "iox2/node_id.hpp"
+#include "iox2/node_name.hpp"
+#include "iox2/node_state.hpp"
+#include "iox2/service_type.hpp"
+
 namespace iox2::internal {
 template <typename T>
 class CallbackContext {
@@ -30,14 +38,59 @@ class CallbackContext {
 };
 
 template <typename T>
-auto ctx(const T& ptr) -> CallbackContext<T> {
+inline auto ctx(const T& ptr) -> CallbackContext<T> {
     return CallbackContext<T>(ptr);
 }
 
 template <typename T>
-auto ctx_cast(void* ptr) -> CallbackContext<T>* {
+inline auto ctx_cast(void* ptr) -> CallbackContext<T>* {
     return static_cast<CallbackContext<T>*>(ptr);
 }
+
+template <ServiceType T>
+// NOLINTBEGIN(readability-function-size)
+auto list_callback(iox2_node_state_e node_state,
+                   iox2_node_id_ptr node_id_ptr,
+                   const char* executable,
+                   iox2_node_name_ptr node_name,
+                   iox2_config_ptr config,
+                   iox2_callback_context context) -> iox2_callback_progression_e {
+    auto node_details = [&] {
+        if (node_id_ptr == nullptr || config == nullptr) {
+            return iox::optional<NodeDetails>();
+        }
+
+        return iox::optional<NodeDetails>(NodeDetails {
+            iox::FileName::create(iox::string<iox::FileName::capacity()>(iox::TruncateToCapacity, executable))
+                .expect("The executable file name is always valid."),
+            NodeNameView { node_name }.to_owned(),
+            Config {} });
+    }();
+
+    iox2_node_id_h node_id_handle = nullptr;
+    iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &node_id_handle);
+    NodeId node_id { node_id_handle };
+
+    auto node_state_object = [&] {
+        switch (node_state) {
+        case iox2_node_state_e_ALIVE:
+            return NodeState<T> { AliveNodeView<T> { node_id, node_details } };
+        case iox2_node_state_e_DEAD:
+            return NodeState<T> { DeadNodeView<T> { AliveNodeView<T> { node_id, node_details } } };
+        case iox2_node_state_e_UNDEFINED:
+            return NodeState<T> { iox2_node_state_e_UNDEFINED, node_id };
+        case iox2_node_state_e_INACCESSIBLE:
+            return NodeState<T> { iox2_node_state_e_INACCESSIBLE, node_id };
+        }
+
+        IOX_UNREACHABLE();
+    }();
+
+    auto* callback = internal::ctx_cast<iox::function<CallbackProgression(NodeState<T>)>>(context);
+    return iox::into<iox2_callback_progression_e>(callback->value()(node_state_object));
+}
+// NOLINTEND(readability-function-size)
+
 } // namespace iox2::internal
 
 #endif
