@@ -44,9 +44,6 @@ class StaticConfigPublishSubscribe {
     /// Returns how many [`Sample`]s a [`Subscriber`] port can borrow in parallel at most.
     auto subscriber_max_borrowed_samples() const -> uint64_t;
 
-    /// Returns the attributes defined in the [`Service`]
-    auto attributes() const -> AttributeSetView;
-
     /// Returns true if the [`Service`] safely overflows, otherwise false. Safe
     /// overflow means that the [`Publisher`] will recycle the oldest
     /// [`Sample`] from the [`Subscriber`] when its buffer is full.

@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/static_config_event.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 StaticConfigEvent::StaticConfigEvent(iox2_static_config_event_t value)
@@ -32,10 +31,6 @@ auto StaticConfigEvent::max_listeners() const -> size_t {
 
 auto StaticConfigEvent::event_id_max_value() const -> size_t {
     return m_value.event_id_max_value;
-}
-
-auto StaticConfigEvent::attributes() const -> AttributeSetView {
-    IOX_TODO();
 }
 
 auto StaticConfigEvent::notifier_created_event() const -> iox::optional<EventId> {

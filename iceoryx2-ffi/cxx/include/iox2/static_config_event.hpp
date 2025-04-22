@@ -48,9 +48,6 @@ class StaticConfigEvent {
     /// Returns the emitted [`EventId`] when a notifier is identified as dead.
     auto notifier_dead_event() const -> iox::optional<EventId>;
 
-    /// Returns the attributes defined in the [`Service`]
-    auto attributes() const -> AttributeSetView;
-
     /// Returns the deadline of the service. If no new notification is signaled from any
     /// [`Notifier`] after the given deadline, it is rated
     /// as an error and all [`Listener`] that are attached
