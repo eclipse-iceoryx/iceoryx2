@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-services-discovery"
-description = "iceoryx2: discovery services"
+name = "iceoryx2-services-common"
+description = "iceoryx2: common library for iceoryx2 services"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -12,17 +12,11 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [lib]
-name = "iceoryx2_services_discovery"
+name = "iceoryx2_services_common"
 path = "src/lib.rs"
 
 [features]
 
 [dependencies]
-iceoryx2 = { workspace = true }
-iceoryx2-services-common = { workspace = true }
-iceoryx2-bb-log = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-bb-testing = { workspace = true }
-iceoryx2-bb-posix = { workspace = true }
-generic-tests = { workspace = true }

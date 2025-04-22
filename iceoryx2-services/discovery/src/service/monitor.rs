@@ -16,9 +16,12 @@ use iceoryx2::{
     node::{Node, NodeBuilder},
     port::{notifier::Notifier, publisher::Publisher},
     prelude::ServiceName,
-    service::{static_config::StaticConfig, Service, ServiceDetails},
+    service::{static_config::StaticConfig, Service},
 };
 use iceoryx2_bb_log::info;
+use iceoryx2_services_common::{is_internal_service, INTERNAL_SERVICE_PREFIX};
+
+const SERVICE_DISCOVERY_SERVICE_NAME: &str = "discovery/services/";
 
 /// Events emitted by the service discovery monitor
 ///
@@ -41,7 +44,7 @@ pub struct MonitorConfig {
     /// Custom service name for the monitor
     pub service_name: String,
     /// Whether to ignore iceoryx-internal services
-    pub ignore_internal: bool,
+    pub include_internal: bool,
     /// Whether to publish discovery events
     pub publish_events: bool,
     /// Whether to send notifications on changes
@@ -51,8 +54,8 @@ pub struct MonitorConfig {
 impl Default for MonitorConfig {
     fn default() -> Self {
         Self {
-            service_name: "iox2://monitor/services".to_string(),
-            ignore_internal: true,
+            service_name: INTERNAL_SERVICE_PREFIX.to_owned() + SERVICE_DISCOVERY_SERVICE_NAME,
+            include_internal: true,
             publish_events: true,
             send_notifications: true,
         }
@@ -154,7 +157,9 @@ impl<S: Service> Monitor<S> {
         // Publish
         for id in added {
             if let Some(service) = self.tracker.get(&id) {
-                if self.monitor_config.ignore_internal && self.is_internal(service) {
+                if !self.monitor_config.include_internal
+                    && is_internal_service(service.static_details.name())
+                {
                     continue;
                 }
                 info!(
@@ -173,7 +178,9 @@ impl<S: Service> Monitor<S> {
             }
         }
         for service in removed {
-            if self.monitor_config.ignore_internal && self.is_internal(&service) {
+            if !self.monitor_config.include_internal
+                && is_internal_service(service.static_details.name())
+            {
                 continue;
             }
             info!(
@@ -196,13 +203,5 @@ impl<S: Service> Monitor<S> {
                 let _ = notifier.notify();
             }
         }
-    }
-
-    fn is_internal(&self, service: &ServiceDetails<S>) -> bool {
-        service
-            .static_details
-            .name()
-            .to_string()
-            .starts_with("iox2://")
     }
 }

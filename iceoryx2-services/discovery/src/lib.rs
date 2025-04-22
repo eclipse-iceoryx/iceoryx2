@@ -12,9 +12,9 @@
 
 #![warn(missing_docs)]
 
-//! # iceoryx2-discovery
+//! # iceoryx2-services-discovery
 //!
-//! A library for service discovery and monitoring in iceoryx2 applications.
+//! A service for discovery and monitoring of other iceoryx2 services.
 //!
 //! This crate provides utilities for discovering, tracking, and monitoring services
 //! in an iceoryx2 system. It enables applications to detect when services become

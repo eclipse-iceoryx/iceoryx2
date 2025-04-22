@@ -16,11 +16,12 @@ mod service_monitor {
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_services_common::INTERNAL_SERVICE_PREFIX;
     use iceoryx2_services_discovery::service::{DiscoveryEvent, Monitor, MonitorConfig};
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
-            "service_monitor_tests_{}",
+            "service_monitor_service_tests_{}",
             UniqueSystemId::new().unwrap().value()
         ))
         .unwrap()
@@ -29,8 +30,6 @@ mod service_monitor {
     #[test]
     fn publishes_added_services_when_configured() {
         const NUMBER_OF_SERVICES_ADDED: usize = 3;
-        const TEST_SERVICE_MONITOR_NAME: &str =
-            "iox2://test/publishes_added_services_when_configured";
 
         let iceoryx_config = generate_isolated_config();
         let node = NodeBuilder::new()
@@ -38,9 +37,12 @@ mod service_monitor {
             .create::<ipc::Service>()
             .unwrap();
 
+        // create a service monitoring service
+        let service_name_string: String = INTERNAL_SERVICE_PREFIX.to_owned()
+            + "test/service_monitor/publishes_added_services_when_configured";
         let monitor_config = MonitorConfig {
-            service_name: TEST_SERVICE_MONITOR_NAME.to_string(),
-            ignore_internal: true,
+            service_name: service_name_string.to_string(),
+            include_internal: false,
             publish_events: true,
             send_notifications: false,
         };
@@ -48,7 +50,7 @@ mod service_monitor {
         sut.spin();
 
         // subscribe to the monitoring service
-        let service_name = ServiceName::new(TEST_SERVICE_MONITOR_NAME).unwrap();
+        let service_name = ServiceName::new(service_name_string.as_str()).unwrap();
         let service = node
             .service_builder(&service_name)
             .publish_subscribe::<DiscoveryEvent>()
