@@ -85,13 +85,14 @@ pub fn monitor(
     publish_events: bool,
     send_notifications: bool,
 ) -> Result<()> {
-    let mut monitor = Monitor::<ipc::Service>::new(MonitorConfig {
-        service_name: Some(
-            ServiceName::new(service_name).expect("failed to create monitor service name"),
-        ),
-        publish_events,
-        send_notifications,
-    });
+    let mut monitor = Monitor::<ipc::Service>::new(
+        &MonitorConfig {
+            service_name: service_name.to_string(),
+            publish_events,
+            send_notifications,
+        },
+        &Config::global_config(),
+    );
 
     info!("Service Monitor (update rate: {}ms)", rate);
 

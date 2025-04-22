@@ -16,7 +16,7 @@ use iceoryx2::{
     node::{Node, NodeBuilder},
     port::{notifier::Notifier, publisher::Publisher},
     prelude::ServiceName,
-    service::{static_config::StaticConfig, Service},
+    service::{static_config::StaticConfig, Service, ServiceDetails},
 };
 use iceoryx2_bb_log::info;
 
@@ -38,8 +38,10 @@ pub enum DiscoveryEvent {
 /// the behavior of the `Monitor`.
 #[derive(Debug, Clone)]
 pub struct MonitorConfig {
-    /// Custom service name for the monitor (defaults to "iox2://monitor/services")
-    pub service_name: Option<ServiceName>,
+    /// Custom service name for the monitor
+    pub service_name: String,
+    /// Whether to ignore iceoryx-internal services
+    pub ignore_internal: bool,
     /// Whether to publish discovery events
     pub publish_events: bool,
     /// Whether to send notifications on changes
@@ -49,7 +51,8 @@ pub struct MonitorConfig {
 impl Default for MonitorConfig {
     fn default() -> Self {
         Self {
-            service_name: None,
+            service_name: "iox2://monitor/services".to_string(),
+            ignore_internal: true,
             publish_events: true,
             send_notifications: true,
         }
@@ -66,6 +69,8 @@ impl Default for MonitorConfig {
 ///
 /// * `S` - The service implementation type that provides communication capabilities
 pub struct Monitor<S: Service> {
+    monitor_config: MonitorConfig,
+    iceoryx_config: IceoryxConfig,
     _node: Node<S>,
     publisher: Option<Publisher<S, DiscoveryEvent, ()>>,
     notifier: Option<Notifier<S>>,
@@ -82,33 +87,37 @@ impl<S: Service> Monitor<S> {
     /// # Returns
     ///
     /// A new `Monitor` instance ready to track service changes
-    pub fn new(config: MonitorConfig) -> Self {
+    pub fn new(monitor_config: &MonitorConfig, iceoryx_config: &IceoryxConfig) -> Self {
         let node = NodeBuilder::new()
-            .config(IceoryxConfig::global_config())
+            .config(iceoryx_config)
             .create::<S>()
             .expect("failed to create monitor node");
 
-        let service_name = config.service_name.unwrap_or_else(|| {
-            ServiceName::new("iox2://monitor/services")
-                .expect("failed to create monitor service name")
-        });
+        let service_name = ServiceName::new(monitor_config.service_name.as_str())
+            .expect("failed to create monitor service name");
 
         let mut publisher = None;
-        if config.publish_events {
+        if monitor_config.publish_events {
             let publish_subscribe = node
                 .service_builder(&service_name)
                 .publish_subscribe::<DiscoveryEvent>()
+                // TODO: Work out how to handle pub-sub config ...
+                .subscriber_max_borrowed_samples(10)
+                .history_size(1)
+                .subscriber_max_buffer_size(10)
                 .create()
                 .expect("failed to create publish-subscribe service");
-            let port = publish_subscribe
-                .publisher_builder()
-                .create()
-                .expect("failed to create publisher");
-            publisher = Some(port);
+
+            publisher = Some(
+                publish_subscribe
+                    .publisher_builder()
+                    .create()
+                    .expect("failed to create publisher"),
+            );
         }
 
         let mut notifier = None;
-        if config.send_notifications {
+        if monitor_config.send_notifications {
             let event = node
                 .service_builder(&service_name)
                 .event()
@@ -124,6 +133,8 @@ impl<S: Service> Monitor<S> {
         let tracker = Tracker::<S>::new();
 
         Monitor::<S> {
+            monitor_config: monitor_config.clone(),
+            iceoryx_config: iceoryx_config.clone(),
             _node: node,
             publisher,
             notifier,
@@ -133,18 +144,19 @@ impl<S: Service> Monitor<S> {
 
     /// Performs a single iteration of the service monitoring process.
     ///
-    /// This method:
-    /// 1. Detects added and removed services by syncing with the global configuration
-    /// 2. Publishes the added and removed services
-    /// 3. Sends a notification if any changes were detected
+    /// This method checks for added or removed services, publishes discovery events
+    /// for these changes, and sends notifications when changes are detected.
     pub fn spin(&mut self) {
         // Detect changes
-        let (added, removed) = self.tracker.sync(IceoryxConfig::global_config());
+        let (added, removed) = self.tracker.sync(&self.iceoryx_config);
         let changes_detected = !added.is_empty() || !removed.is_empty();
 
         // Publish
         for id in added {
             if let Some(service) = self.tracker.get(&id) {
+                if self.monitor_config.ignore_internal && self.is_internal(service) {
+                    continue;
+                }
                 info!(
                     "ADDED {} {}",
                     service.static_details.messaging_pattern(),
@@ -153,12 +165,17 @@ impl<S: Service> Monitor<S> {
 
                 if let Some(publisher) = &mut self.publisher {
                     // Clone required since the details are stored in the tracker.
-                    let event = DiscoveryEvent::Added(service.static_details.clone());
-                    let _ = publisher.send_copy(event);
+                    let sample = publisher.loan_uninit().unwrap();
+                    let sample =
+                        sample.write_payload(DiscoveryEvent::Added(service.static_details.clone()));
+                    let _ = sample.send();
                 }
             }
         }
         for service in removed {
+            if self.monitor_config.ignore_internal && self.is_internal(&service) {
+                continue;
+            }
             info!(
                 "REMOVED {} {}",
                 service.static_details.messaging_pattern(),
@@ -167,8 +184,9 @@ impl<S: Service> Monitor<S> {
 
             if let Some(publisher) = &mut self.publisher {
                 // The removed details are not stored in the tracker. Claim ownership.
-                let event = DiscoveryEvent::Removed(service.static_details);
-                let _ = publisher.send_copy(event);
+                let sample = publisher.loan_uninit().unwrap();
+                let sample = sample.write_payload(DiscoveryEvent::Removed(service.static_details));
+                let _ = sample.send();
             }
         }
 
@@ -178,5 +196,13 @@ impl<S: Service> Monitor<S> {
                 let _ = notifier.notify();
             }
         }
+    }
+
+    fn is_internal(&self, service: &ServiceDetails<S>) -> bool {
+        service
+            .static_details
+            .name()
+            .to_string()
+            .starts_with("iox2://")
     }
 }
