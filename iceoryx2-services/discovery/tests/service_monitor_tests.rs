@@ -16,7 +16,7 @@ mod service_monitor {
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_discovery::service::{Monitor, MonitorConfig};
+    use iceoryx2_services_discovery::service::{DiscoveryEvent, Monitor, MonitorConfig};
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -51,7 +51,7 @@ mod service_monitor {
         let service_name = ServiceName::new(TEST_SERVICE_MONITOR_NAME).unwrap();
         let service = node
             .service_builder(&service_name)
-            .publish_subscribe::<iceoryx2_discovery::service::DiscoveryEvent>()
+            .publish_subscribe::<DiscoveryEvent>()
             .open()
             .unwrap();
         let subscriber = service.subscriber_builder().create().unwrap();
@@ -74,10 +74,10 @@ mod service_monitor {
         let mut num_received = 0;
         while let Ok(Some(event)) = subscriber.receive() {
             match event.payload() {
-                iceoryx2_discovery::service::DiscoveryEvent::Added(service) => {
+                DiscoveryEvent::Added(service) => {
                     println!("added {:?}", service.name())
                 }
-                iceoryx2_discovery::service::DiscoveryEvent::Removed(service) => {
+                DiscoveryEvent::Removed(service) => {
                     println!("removed {}", service.name())
                 }
             }

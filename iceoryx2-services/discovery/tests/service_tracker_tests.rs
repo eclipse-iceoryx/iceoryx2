@@ -17,7 +17,7 @@ mod service_tracker {
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_discovery::service::Tracker;
+    use iceoryx2_services_discovery::service::Tracker;
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(

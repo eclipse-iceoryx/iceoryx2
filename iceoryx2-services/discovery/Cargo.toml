@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-apps-discovery"
-description = "iceoryx2: embeddable discovery utilities"
+name = "iceoryx2-services-discovery"
+description = "iceoryx2: discovery services"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -12,7 +12,7 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [lib]
-name = "iceoryx2_discovery"
+name = "iceoryx2_services_discovery"
 path = "src/lib.rs"
 
 [features]
