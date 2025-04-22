@@ -21,7 +21,7 @@ mod service_tracker {
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
-            "service_tracker_tests_{}",
+            "test_service_tracker_{}",
             UniqueSystemId::new().unwrap().value()
         ))
         .unwrap()

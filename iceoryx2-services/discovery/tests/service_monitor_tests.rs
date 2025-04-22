@@ -16,12 +16,13 @@ mod service_monitor {
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::test_fail;
     use iceoryx2_services_common::INTERNAL_SERVICE_PREFIX;
     use iceoryx2_services_discovery::service::{DiscoveryEvent, Monitor, MonitorConfig};
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
-            "service_monitor_service_tests_{}",
+            "test_service_monitor_service_{}",
             UniqueSystemId::new().unwrap().value()
         ))
         .unwrap()
@@ -96,5 +97,46 @@ mod service_monitor {
     fn sends_notifications_when_configured() {}
 
     #[test]
-    fn monitors_internal_services_when_configured() {}
+    fn monitors_internal_services_when_configured() {
+        let iceoryx_config = generate_isolated_config();
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<ipc::Service>()
+            .unwrap();
+
+        // create a service monitoring service
+        let service_name_string: String = INTERNAL_SERVICE_PREFIX.to_owned()
+            + "test/service_monitor/monitors_internal_services_when_configured";
+        let monitor_config = MonitorConfig {
+            service_name: service_name_string.to_string(),
+            include_internal: true,
+            publish_events: true,
+            send_notifications: false,
+        };
+        let mut sut = Monitor::<ipc::Service>::new(&monitor_config, &iceoryx_config);
+
+        // subscribe to the monitoring service
+        let service_name = ServiceName::new(service_name_string.as_str()).unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<DiscoveryEvent>()
+            .open()
+            .unwrap();
+        let subscriber = service.subscriber_builder().create().unwrap();
+
+        // check for service changes
+        sut.spin();
+
+        // verify the addition of this service is announced (as it is an internal service)
+        let result = subscriber.receive();
+        assert_that!(result, is_ok);
+        let result = result.unwrap();
+        assert_that!(result, is_some);
+        let service = result.unwrap();
+        if let DiscoveryEvent::Added(service_info) = service.payload() {
+            assert_that!(service_info.name().to_string(), eq service_name_string);
+        } else {
+            test_fail!("expected DiscoveryEvent::Added for the internal service")
+        }
+    }
 }
