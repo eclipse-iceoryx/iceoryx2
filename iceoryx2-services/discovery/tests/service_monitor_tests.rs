@@ -29,8 +29,9 @@ mod service_monitor {
     }
 
     #[test]
-    fn publishes_added_services_when_configured() {
-        const NUMBER_OF_SERVICES_ADDED: usize = 3;
+    fn publishes_added_and_removed_services_when_configured() {
+        const NUMBER_OF_SERVICES_ADDED: usize = 5;
+        const NUMBER_OF_SERVICES_REMOVED: usize = 3;
 
         let iceoryx_config = generate_isolated_config();
         let node = NodeBuilder::new()
@@ -48,7 +49,6 @@ mod service_monitor {
             send_notifications: false,
         };
         let mut sut = Monitor::<ipc::Service>::new(&monitor_config, &iceoryx_config);
-        sut.spin();
 
         // subscribe to the monitoring service
         let service_name = ServiceName::new(service_name_string.as_str()).unwrap();
@@ -70,28 +70,30 @@ mod service_monitor {
                 .unwrap();
             services.push(service);
         }
-
-        // verify the added services are published on next monitor iteration
         sut.spin();
 
-        let mut num_received = 0;
+        // remove some services
+        for _ in 0..NUMBER_OF_SERVICES_REMOVED {
+            services.pop();
+        }
+        sut.spin();
+
+        let mut num_added = 0;
+        let mut num_removed = 0;
         while let Ok(Some(event)) = subscriber.receive() {
             match event.payload() {
-                DiscoveryEvent::Added(service) => {
-                    println!("added {:?}", service.name())
+                DiscoveryEvent::Added(_) => {
+                    num_added += 1;
                 }
-                DiscoveryEvent::Removed(service) => {
-                    println!("removed {}", service.name())
+                DiscoveryEvent::Removed(_) => {
+                    num_removed += 1;
                 }
             }
-            num_received += 1;
         }
 
-        assert_that!(num_received, eq NUMBER_OF_SERVICES_ADDED);
+        assert_that!(num_added, eq NUMBER_OF_SERVICES_ADDED);
+        assert_that!(num_removed, eq NUMBER_OF_SERVICES_REMOVED);
     }
-
-    #[test]
-    fn publishes_removed_services_when_configured() {}
 
     #[test]
     fn sends_notifications_when_configured() {}
