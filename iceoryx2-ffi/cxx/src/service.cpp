@@ -38,11 +38,31 @@ auto Service<S>::does_exist(const ServiceName& service_name,
 }
 
 template <ServiceType S>
-auto Service<S>::details([[maybe_unused]] const ServiceName& service_name,
-                         [[maybe_unused]] const ConfigView config,
-                         [[maybe_unused]] const MessagingPattern messaging_pattern)
+auto Service<S>::details(const ServiceName& service_name,
+                         const ConfigView config,
+                         const MessagingPattern messaging_pattern)
     -> iox::expected<iox::optional<ServiceDetails<S>>, ServiceDetailsError> {
-    IOX_TODO();
+    iox2_static_config_t raw_static_config;
+    bool does_exist = false;
+
+    auto result = iox2_service_details(iox::into<iox2_service_type_e>(S),
+                                       service_name.as_view().m_ptr,
+                                       config.m_ptr,
+                                       iox::into<iox2_messaging_pattern_e>(messaging_pattern),
+                                       &raw_static_config,
+                                       &does_exist);
+
+    StaticConfig static_config(raw_static_config);
+
+    if (result != IOX2_OK) {
+        return iox::err(iox::into<ServiceDetailsError>(result));
+    }
+
+    if (!does_exist) {
+        return iox::ok(iox::optional<ServiceDetails<S>>());
+    }
+
+    return iox::ok(iox::optional(ServiceDetails<S> { static_config }));
 }
 
 template <ServiceType S>

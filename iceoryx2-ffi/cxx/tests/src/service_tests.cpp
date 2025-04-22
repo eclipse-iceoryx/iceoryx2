@@ -141,4 +141,58 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
 
     ASSERT_THAT(result.has_value(), Eq(true));
 }
+
+TYPED_TEST(ServiceTest, details_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    auto key_1 = Attribute::Key("gimme a strawberries?");
+    auto value_1 = Attribute::Value("i want a strawberry!");
+    auto key_2 = Attribute::Key("it makes me immortal");
+    auto value_2 = Attribute::Value("or at least sticky");
+
+
+    const auto service_name_1 = iox2_testing::generate_service_name();
+    const auto service_name_2 = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+
+    auto sut = node.service_builder(service_name_1)
+                   .template publish_subscribe<uint64_t>()
+                   .create_with_attributes(AttributeSpecifier().define(key_1, value_1).define(key_2, value_2))
+                   .expect("");
+
+    auto result =
+        Service<SERVICE_TYPE>::details(service_name_1, Config::global_config(), MessagingPattern::PublishSubscribe);
+
+    ASSERT_THAT(result.has_value(), Eq(true));
+    ASSERT_THAT(result->has_value(), Eq(true));
+
+    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().c_str()));
+    ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().c_str()));
+
+    // auto counter = 0;
+    // result.value()->static_details.attributes().get_key_values(key_1, [&](auto& value) -> CallbackProgression {
+    //     EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
+    //     counter++;
+    //     return CallbackProgression::Continue;
+    // });
+    // EXPECT_THAT(counter, Eq(1));
+
+    // counter = 0;
+    // result.value()->static_details.attributes().get_key_values(key_2, [&](auto& value) -> CallbackProgression {
+    //     EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
+    //     counter++;
+    //     return CallbackProgression::Continue;
+    // });
+    // EXPECT_THAT(counter, Eq(1));
+
+    result = Service<SERVICE_TYPE>::details(service_name_1, Config::global_config(), MessagingPattern::Event);
+    ASSERT_THAT(result.has_value(), Eq(true));
+    ASSERT_THAT(result->has_value(), Eq(false));
+
+    result =
+        Service<SERVICE_TYPE>::details(service_name_2, Config::global_config(), MessagingPattern::PublishSubscribe);
+    ASSERT_THAT(result.has_value(), Eq(true));
+    ASSERT_THAT(result->has_value(), Eq(false));
+}
 } // namespace

@@ -34,6 +34,8 @@ class StaticConfig {
 
   private:
     template <ServiceType>
+    friend class Service;
+    template <ServiceType>
     friend auto list_callback(const iox2_static_config_t*, void*) -> iox2_callback_progression_e;
     explicit StaticConfig(iox2_static_config_t value);
 
