@@ -77,8 +77,14 @@ pub struct MonitorOptions {
     #[clap(long, help = "Do not publish changes")]
     pub disable_publish: bool,
 
+    #[clap(long, default_value = "10", help = "The maximum number of subscribers")]
+    pub max_subscribers: usize,
+
     #[clap(long, help = "Do not notify of changes")]
     pub disable_notify: bool,
+
+    #[clap(long, default_value = "10", help = "The maximum number of listeners")]
+    pub max_listeners: usize,
 }
 
 #[derive(Subcommand)]

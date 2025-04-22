@@ -47,8 +47,12 @@ pub struct MonitorConfig {
     pub include_internal: bool,
     /// Whether to publish discovery events
     pub publish_events: bool,
+    /// The maximum number of subscribers to the service permitted
+    pub max_subscribers: usize,
     /// Whether to send notifications on changes
     pub send_notifications: bool,
+    /// The maximum number of listeners to the service permitted
+    pub max_listeners: usize,
 }
 
 impl Default for MonitorConfig {
@@ -57,7 +61,9 @@ impl Default for MonitorConfig {
             service_name: INTERNAL_SERVICE_PREFIX.to_owned() + SERVICE_DISCOVERY_SERVICE_NAME,
             include_internal: true,
             publish_events: true,
+            max_subscribers: 10,
             send_notifications: true,
+            max_listeners: 10,
         }
     }
 }
@@ -106,8 +112,10 @@ impl<S: Service> Monitor<S> {
                 .publish_subscribe::<DiscoveryEvent>()
                 // TODO: Work out how to handle pub-sub config ...
                 .subscriber_max_borrowed_samples(10)
-                .history_size(1)
+                .history_size(10)
                 .subscriber_max_buffer_size(10)
+                .max_publishers(1)
+                .max_subscribers(monitor_config.max_subscribers)
                 .create()
                 .expect("failed to create publish-subscribe service");
 
@@ -124,6 +132,8 @@ impl<S: Service> Monitor<S> {
             let event = node
                 .service_builder(&service_name)
                 .event()
+                .max_notifiers(1)
+                .max_listeners(monitor_config.max_listeners)
                 .create()
                 .expect("failed to create event service");
             let port = event

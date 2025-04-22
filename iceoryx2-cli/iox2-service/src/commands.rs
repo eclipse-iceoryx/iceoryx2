@@ -17,8 +17,8 @@ use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
 use iceoryx2_cli::Format;
-use iceoryx2_discovery::service::Monitor;
-use iceoryx2_discovery::service::MonitorConfig;
+use iceoryx2_services_discovery::service::Monitor;
+use iceoryx2_services_discovery::service::MonitorConfig;
 
 use crate::cli::OutputFilter;
 
@@ -83,13 +83,18 @@ pub fn monitor(
     service_name: &str,
     rate: u64,
     publish_events: bool,
+    max_subscribers: usize,
     send_notifications: bool,
+    max_listeners: usize,
 ) -> Result<()> {
     let mut monitor = Monitor::<ipc::Service>::new(
         &MonitorConfig {
             service_name: service_name.to_string(),
             publish_events,
+            max_subscribers,
             send_notifications,
+            max_listeners,
+            include_internal: false,
         },
         &Config::global_config(),
     );

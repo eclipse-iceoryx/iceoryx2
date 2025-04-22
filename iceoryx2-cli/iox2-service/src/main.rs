@@ -72,7 +72,9 @@ fn main() -> Result<()> {
                     options.service_name.as_str(),
                     options.rate,
                     should_publish,
+                    options.max_subscribers,
                     should_notify,
+                    options.max_listeners,
                 ) {
                     error!("Failed to start service monitor")
                 }
