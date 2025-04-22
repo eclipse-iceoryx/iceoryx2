@@ -75,6 +75,7 @@ fn main() -> Result<()> {
                     options.max_subscribers,
                     should_notify,
                     options.max_listeners,
+                    cli.format,
                 ) {
                     error!("Failed to start service monitor")
                 }

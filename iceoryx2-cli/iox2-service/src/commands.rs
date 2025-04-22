@@ -12,7 +12,7 @@
 
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
-use iceoryx2_bb_log::info;
+use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
@@ -71,6 +71,52 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
     Ok(())
 }
 
+#[derive(serde::Serialize)]
+enum ChangeKind {
+    Added,
+    Removed,
+}
+
+#[derive(serde::Serialize)]
+struct ChangeDetails {
+    name: String,
+    pattern: String,
+    kind: ChangeKind,
+}
+
+impl ChangeDetails {
+    fn new(kind: ChangeKind, details: &StaticConfig) -> Self {
+        Self {
+            name: details.name().to_string(),
+            pattern: details.messaging_pattern().to_string(),
+            kind,
+        }
+    }
+}
+
+#[derive(serde::Serialize)]
+struct SerializableMonitorConfig {
+    service_name: String,
+    publish_events: bool,
+    max_subscribers: usize,
+    send_notifications: bool,
+    max_listeners: usize,
+    include_internal: bool,
+}
+
+impl SerializableMonitorConfig {
+    fn from_config(config: &MonitorConfig) -> Self {
+        Self {
+            service_name: config.service_name.clone(),
+            publish_events: config.publish_events,
+            max_subscribers: config.max_subscribers,
+            send_notifications: config.send_notifications,
+            max_listeners: config.max_listeners,
+            include_internal: config.include_internal,
+        }
+    }
+}
+
 /// Starts a service monitor.
 ///
 /// # Arguments
@@ -86,23 +132,46 @@ pub fn monitor(
     max_subscribers: usize,
     send_notifications: bool,
     max_listeners: usize,
+    format: Format,
 ) -> Result<()> {
-    let mut monitor = Monitor::<ipc::Service>::new(
-        &MonitorConfig {
-            service_name: service_name.to_string(),
-            publish_events,
-            max_subscribers,
-            send_notifications,
-            max_listeners,
-            include_internal: false,
-        },
-        &Config::global_config(),
+    let monitor_config = MonitorConfig {
+        service_name: service_name.to_string(),
+        publish_events,
+        max_subscribers,
+        send_notifications,
+        max_listeners,
+        include_internal: false,
+    };
+
+    let mut monitor = Monitor::<ipc::Service>::new(&monitor_config, &Config::global_config());
+
+    println!(
+        "{}",
+        format.as_string(&SerializableMonitorConfig::from_config(&monitor_config))?
     );
 
-    info!("Service Monitor (update rate: {}ms)", rate);
-
     loop {
-        monitor.spin();
+        let (added, removed) = monitor.spin();
+
+        for service in added {
+            println!(
+                "{}",
+                format.as_string(&ChangeDetails::new(
+                    ChangeKind::Added,
+                    &service.static_details,
+                ))?,
+            )
+        }
+        for service in removed {
+            println!(
+                "{}",
+                format.as_string(&ChangeDetails::new(
+                    ChangeKind::Removed,
+                    &service.static_details
+                ))?
+            )
+        }
+
         std::thread::sleep(std::time::Duration::from_millis(rate));
     }
 

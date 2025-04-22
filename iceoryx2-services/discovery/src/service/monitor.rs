@@ -16,9 +16,8 @@ use iceoryx2::{
     node::{Node, NodeBuilder},
     port::{notifier::Notifier, publisher::Publisher},
     prelude::ServiceName,
-    service::{static_config::StaticConfig, Service},
+    service::{static_config::StaticConfig, Service, ServiceDetails},
 };
-use iceoryx2_bb_log::info;
 use iceoryx2_services_common::{is_internal_service, INTERNAL_SERVICE_PREFIX};
 
 const SERVICE_DISCOVERY_SERVICE_NAME: &str = "discovery/services/";
@@ -159,24 +158,25 @@ impl<S: Service> Monitor<S> {
     ///
     /// This method checks for added or removed services, publishes discovery events
     /// for these changes, and sends notifications when changes are detected.
-    pub fn spin(&mut self) {
+    ///
+    /// # Returns
+    ///
+    /// A tuple containing:
+    /// - A vector of references to added service details stored in the tracker
+    /// - A vector of removed service details (owned values)
+    pub fn spin(&mut self) -> (Vec<&ServiceDetails<S>>, Vec<ServiceDetails<S>>) {
         // Detect changes
-        let (added, removed) = self.tracker.sync(&self.iceoryx_config);
-        let changes_detected = !added.is_empty() || !removed.is_empty();
+        let (added_ids, removed_services) = self.tracker.sync(&self.iceoryx_config);
+        let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
 
-        // Publish
-        for id in added {
-            if let Some(service) = self.tracker.get(&id) {
+        let mut added_services = Vec::new();
+        for id in &added_ids {
+            if let Some(service) = self.tracker.get(id) {
                 if !self.monitor_config.include_internal
                     && is_internal_service(service.static_details.name())
                 {
                     continue;
                 }
-                info!(
-                    "ADDED {} {}",
-                    service.static_details.messaging_pattern(),
-                    service.static_details.name()
-                );
 
                 if let Some(publisher) = &mut self.publisher {
                     // Clone required since the details are stored in the tracker.
@@ -185,24 +185,25 @@ impl<S: Service> Monitor<S> {
                         sample.write_payload(DiscoveryEvent::Added(service.static_details.clone()));
                     let _ = sample.send();
                 }
+
+                // Collect added services (references, live within the tracker)
+                added_services.push(service);
             }
         }
-        for service in removed {
+
+        // Collect removed services (owned values)
+        for service in &removed_services {
             if !self.monitor_config.include_internal
                 && is_internal_service(service.static_details.name())
             {
                 continue;
             }
-            info!(
-                "REMOVED {} {}",
-                service.static_details.messaging_pattern(),
-                service.static_details.name()
-            );
 
             if let Some(publisher) = &mut self.publisher {
                 // The removed details are not stored in the tracker. Claim ownership.
                 let sample = publisher.loan_uninit().unwrap();
-                let sample = sample.write_payload(DiscoveryEvent::Removed(service.static_details));
+                let sample =
+                    sample.write_payload(DiscoveryEvent::Removed(service.static_details.clone()));
                 let _ = sample.send();
             }
         }
@@ -213,5 +214,7 @@ impl<S: Service> Monitor<S> {
                 let _ = notifier.notify();
             }
         }
+
+        (added_services, removed_services)
     }
 }

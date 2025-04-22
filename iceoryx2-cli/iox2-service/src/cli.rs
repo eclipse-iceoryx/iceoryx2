@@ -61,7 +61,7 @@ pub struct DetailsOptions {
 pub struct MonitorOptions {
     #[clap(
         long,
-        help = "Name of the service monitoring service",
+        help = "Name to use for the service discovery service",
         default_value = "iox2://monitor/services"
     )]
     pub service_name: String,
@@ -74,13 +74,13 @@ pub struct MonitorOptions {
     )]
     pub rate: u64,
 
-    #[clap(long, help = "Do not publish changes")]
+    #[clap(long, help = "Do not publish details of detected changes")]
     pub disable_publish: bool,
 
     #[clap(long, default_value = "10", help = "The maximum number of subscribers")]
     pub max_subscribers: usize,
 
-    #[clap(long, help = "Do not notify of changes")]
+    #[clap(long, help = "Do not notify when changes detected")]
     pub disable_notify: bool,
 
     #[clap(long, default_value = "10", help = "The maximum number of listeners")]
