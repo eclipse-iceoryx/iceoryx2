@@ -54,6 +54,34 @@ pub struct MonitorConfig {
     pub max_listeners: usize,
 }
 
+/// Errors that can occur when creating a service monitor.
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum CreationError {
+    /// Failed to create the underlying node
+    NodeCreationFailure,
+    /// The provided service name is invalid
+    InvalidServiceName,
+    /// Failed to create the service for reasons other than it already existing
+    ServiceCreationFailure,
+    /// The service already exists in the system
+    ServiceAlreadyExists,
+    /// Failed to create the publisher for reasons other than it already existing
+    PublisherCreationError,
+    /// A publisher to the service already exists
+    PublisherAlreadyExists,
+    /// A notifier to the service already exists
+    NotifierAlreadyExists,
+}
+
+/// Errors that can occur during the `spin` operation of the service monitor.
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum SpinError {
+    /// Failed to publish a discovery event
+    PublishFailure,
+    /// Failed to send a notification about service changes
+    NotifyFailure,
+}
+
 impl Default for MonitorConfig {
     fn default() -> Self {
         Self {
@@ -95,34 +123,45 @@ impl<S: Service> Monitor<S> {
     /// # Returns
     ///
     /// A new `Monitor` instance ready to track service changes
-    pub fn new(monitor_config: &MonitorConfig, iceoryx_config: &IceoryxConfig) -> Self {
+    pub fn create(
+        monitor_config: &MonitorConfig,
+        iceoryx_config: &IceoryxConfig,
+    ) -> Result<Self, CreationError> {
         let node = NodeBuilder::new()
             .config(iceoryx_config)
             .create::<S>()
-            .expect("failed to create monitor node");
+            .map_err(|_| CreationError::NodeCreationFailure)?;
 
         let service_name = ServiceName::new(monitor_config.service_name.as_str())
-            .expect("failed to create monitor service name");
+            .map_err(|_| CreationError::InvalidServiceName)?;
 
         let mut publisher = None;
         if monitor_config.publish_events {
             let publish_subscribe = node
                 .service_builder(&service_name)
                 .publish_subscribe::<DiscoveryEvent>()
-                // TODO: Work out how to handle pub-sub config ...
                 .subscriber_max_borrowed_samples(10)
                 .history_size(10)
                 .subscriber_max_buffer_size(10)
                 .max_publishers(1)
                 .max_subscribers(monitor_config.max_subscribers)
                 .create()
-                .expect("failed to create publish-subscribe service");
+                .map_err(|e| {
+                    match e {
+                        iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError::AlreadyExists => CreationError::ServiceAlreadyExists,
+                        iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance => CreationError::ServiceAlreadyExists,
+                        _ => CreationError::ServiceCreationFailure,
+                    }
+                })?;
 
             publisher = Some(
                 publish_subscribe
                     .publisher_builder()
                     .create()
-                    .expect("failed to create publisher"),
+                    .map_err(|e| {match e {
+                        iceoryx2::port::publisher::PublisherCreateError::ExceedsMaxSupportedPublishers => CreationError::PublisherAlreadyExists,
+                        iceoryx2::port::publisher::PublisherCreateError::UnableToCreateDataSegment => CreationError::PublisherCreationError,
+                    }})?
             );
         }
 
@@ -134,24 +173,32 @@ impl<S: Service> Monitor<S> {
                 .max_notifiers(1)
                 .max_listeners(monitor_config.max_listeners)
                 .create()
-                .expect("failed to create event service");
-            let port = event
-                .notifier_builder()
-                .create()
-                .expect("failed to create notifier");
+                .map_err(|e| {
+                    match e {
+                        iceoryx2::service::builder::event::EventCreateError::IsBeingCreatedByAnotherInstance => CreationError::ServiceAlreadyExists,
+                        iceoryx2::service::builder::event::EventCreateError::AlreadyExists => CreationError::ServiceAlreadyExists,
+                        _ => CreationError::ServiceCreationFailure,
+                    }
+                })?;
+
+            let port = event.notifier_builder().create().map_err(|e| match e {
+                iceoryx2::port::notifier::NotifierCreateError::ExceedsMaxSupportedNotifiers => {
+                    CreationError::NotifierAlreadyExists
+                }
+            })?;
             notifier = Some(port);
         }
 
         let tracker = Tracker::<S>::new();
 
-        Monitor::<S> {
+        Ok(Monitor::<S> {
             monitor_config: monitor_config.clone(),
             iceoryx_config: iceoryx_config.clone(),
             _node: node,
             publisher,
             notifier,
             tracker,
-        }
+        })
     }
 
     /// Performs a single iteration of the service monitoring process.
@@ -164,7 +211,7 @@ impl<S: Service> Monitor<S> {
     /// A tuple containing:
     /// - A vector of references to added service details stored in the tracker
     /// - A vector of removed service details (owned values)
-    pub fn spin(&mut self) -> (Vec<&ServiceDetails<S>>, Vec<ServiceDetails<S>>) {
+    pub fn spin(&mut self) -> Result<(Vec<&ServiceDetails<S>>, Vec<ServiceDetails<S>>), SpinError> {
         // Detect changes
         let (added_ids, removed_services) = self.tracker.sync(&self.iceoryx_config);
         let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
@@ -183,15 +230,16 @@ impl<S: Service> Monitor<S> {
                     let sample = publisher.loan_uninit().unwrap();
                     let sample =
                         sample.write_payload(DiscoveryEvent::Added(service.static_details.clone()));
-                    let _ = sample.send();
+                    sample.send().map_err(|e| match e {
+                        _ => SpinError::PublishFailure,
+                    })?;
                 }
 
-                // Collect added services (references, live within the tracker)
+                // Collect references to added services (owned by the tracker)
                 added_services.push(service);
             }
         }
 
-        // Collect removed services (owned values)
         for service in &removed_services {
             if !self.monitor_config.include_internal
                 && is_internal_service(service.static_details.name())
@@ -204,7 +252,9 @@ impl<S: Service> Monitor<S> {
                 let sample = publisher.loan_uninit().unwrap();
                 let sample =
                     sample.write_payload(DiscoveryEvent::Removed(service.static_details.clone()));
-                let _ = sample.send();
+                sample.send().map_err(|e| match e {
+                    _ => SpinError::NotifyFailure,
+                })?;
             }
         }
 
@@ -215,6 +265,6 @@ impl<S: Service> Monitor<S> {
             }
         }
 
-        (added_services, removed_services)
+        Ok((added_services, removed_services))
     }
 }

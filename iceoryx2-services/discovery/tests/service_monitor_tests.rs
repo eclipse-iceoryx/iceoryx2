@@ -42,9 +42,11 @@ mod service_monitor {
             service_name: service_name_string.to_string(),
             include_internal: false,
             publish_events: true,
+            max_subscribers: 1,
             send_notifications: false,
+            max_listeners: 1,
         };
-        let mut sut = Monitor::<ipc::Service>::new(&monitor_config, &iceoryx_config);
+        let mut sut = Monitor::<ipc::Service>::create(&monitor_config, &iceoryx_config).unwrap();
 
         // subscribe to the monitoring service
         let node = NodeBuilder::new()
@@ -71,13 +73,13 @@ mod service_monitor {
                 .unwrap();
             services.push(service);
         }
-        sut.spin();
+        sut.spin().unwrap();
 
         // remove some services
         for _ in 0..NUMBER_OF_SERVICES_REMOVED {
             services.pop();
         }
-        sut.spin();
+        sut.spin().unwrap();
 
         let mut num_added = 0;
         let mut num_removed = 0;
@@ -107,9 +109,11 @@ mod service_monitor {
             service_name: service_name_string.to_string(),
             include_internal: false,
             publish_events: false,
+            max_subscribers: 1,
             send_notifications: true,
+            max_listeners: 1,
         };
-        let mut sut = Monitor::<ipc::Service>::new(&monitor_config, &iceoryx_config);
+        let mut sut = Monitor::<ipc::Service>::create(&monitor_config, &iceoryx_config).unwrap();
 
         // listen to the monitoring service
         let node = NodeBuilder::new()
@@ -128,7 +132,7 @@ mod service_monitor {
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
-        sut.spin();
+        sut.spin().unwrap();
 
         let result = listener.try_wait_one();
         assert_that!(result, is_ok);
@@ -137,7 +141,7 @@ mod service_monitor {
 
         // remove a service
         drop(service);
-        sut.spin();
+        sut.spin().unwrap();
 
         let result = listener.try_wait_one();
         assert_that!(result, is_ok);
@@ -156,9 +160,11 @@ mod service_monitor {
             service_name: service_name_string.to_string(),
             include_internal: true,
             publish_events: true,
+            max_subscribers: 1,
             send_notifications: false,
+            max_listeners: 1,
         };
-        let mut sut = Monitor::<ipc::Service>::new(&monitor_config, &iceoryx_config);
+        let mut sut = Monitor::<ipc::Service>::create(&monitor_config, &iceoryx_config).unwrap();
 
         // subscribe to the monitoring service
         let node = NodeBuilder::new()
@@ -175,7 +181,7 @@ mod service_monitor {
         let subscriber = service.subscriber_builder().create().unwrap();
 
         // check for service changes
-        sut.spin();
+        sut.spin().unwrap();
 
         // verify the addition of this service is announced (as it is an internal service)
         let result = subscriber.receive();

@@ -144,7 +144,8 @@ pub fn monitor(
         include_internal: false,
     };
 
-    let mut monitor = Monitor::<ipc::Service>::new(&monitor_config, &Config::global_config());
+    let mut monitor = Monitor::<ipc::Service>::create(&monitor_config, &Config::global_config())
+        .map_err(|e| anyhow::anyhow!("failed to create service monitor: {:?}", e))?;
 
     println!(
         "{}",
@@ -152,25 +153,30 @@ pub fn monitor(
     );
 
     while !SignalHandler::termination_requested() {
-        let (added, removed) = monitor.spin();
-
-        for service in added {
-            println!(
-                "{}",
-                format.as_string(&ChangeDetails::new(
-                    ChangeKind::Added,
-                    &service.static_details,
-                ))?,
-            )
-        }
-        for service in removed {
-            println!(
-                "{}",
-                format.as_string(&ChangeDetails::new(
-                    ChangeKind::Removed,
-                    &service.static_details
-                ))?
-            )
+        match monitor.spin() {
+            Ok((added, removed)) => {
+                for service in added {
+                    println!(
+                        "{}",
+                        format.as_string(&ChangeDetails::new(
+                            ChangeKind::Added,
+                            &service.static_details,
+                        ))?,
+                    )
+                }
+                for service in removed {
+                    println!(
+                        "{}",
+                        format.as_string(&ChangeDetails::new(
+                            ChangeKind::Removed,
+                            &service.static_details
+                        ))?
+                    )
+                }
+            }
+            Err(e) => {
+                eprintln!("error during spin: {:?}", e);
+            }
         }
 
         std::thread::sleep(std::time::Duration::from_millis(rate));
