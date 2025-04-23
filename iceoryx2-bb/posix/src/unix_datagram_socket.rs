@@ -727,7 +727,7 @@ impl UnixDatagramSender {
     /// If the data was sent it returns true, otherwise false.
     pub fn timed_send(&self, data: &[u8], timeout: Duration) -> Result<(), UnixDatagramSendError> {
         let msg = "Unable to timed send data";
-        fail!(from self, when self.set_non_blocking(true),
+        fail!(from self, when self.set_non_blocking(false),
                 "{} since the socket could not bet set into blocking state.", msg);
         fail!(from self, when  self.set_timeout(timeout),
                 "{} since the socket timeout could not be set.", msg);
@@ -738,7 +738,7 @@ impl UnixDatagramSender {
     /// Blocks until the data was sent.
     pub fn blocking_send(&self, data: &[u8]) -> Result<(), UnixDatagramSendError> {
         let msg = "Unable to blocking send data";
-        fail!(from self, when self.set_non_blocking(true),
+        fail!(from self, when self.set_non_blocking(false),
                 "{} since the socket could not bet set into blocking state.", msg);
         fail!(from self, when  self.set_timeout(BLOCKING_TIMEOUT),
                 "{} since the socket blocking timeout could not be set.", msg);

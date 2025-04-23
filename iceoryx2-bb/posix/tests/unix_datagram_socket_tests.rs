@@ -26,6 +26,7 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 use std::thread;
 use std::time::Instant;
@@ -158,7 +159,9 @@ fn unix_datagram_socket_non_blocking_mode_returns_zero_when_nothing_was_received
 }
 
 #[test]
-fn unix_datagram_socket_blocking_mode_blocks() {
+fn unix_datagram_socket_blocking_receive_blocks() {
+    let _watchdog = Watchdog::new();
+
     create_test_directory();
     let socket_name = generate_socket_name();
     let received_message = AtomicBool::new(false);
@@ -190,7 +193,7 @@ fn unix_datagram_socket_blocking_mode_blocks() {
         thread::sleep(TIMEOUT);
         let received_message_old = received_message.load(Ordering::Relaxed);
         sut_sender.blocking_send(send_data.as_slice()).unwrap();
-        t.join().ok();
+        t.join().unwrap();
 
         assert_that!(received_message_old, eq false);
         assert_that!(received_message.load(Ordering::Relaxed), eq true);
@@ -198,7 +201,87 @@ fn unix_datagram_socket_blocking_mode_blocks() {
 }
 
 #[test]
-fn unix_datagram_socket_timeout_blocks_at_least() {
+fn unix_datagram_socket_blocking_send_blocks() {
+    let _watchdog = Watchdog::new();
+
+    create_test_directory();
+    let socket_name = generate_socket_name();
+    let handle = BarrierHandle::new();
+    let handle_2 = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+    let barrier_2 = BarrierBuilder::new(2).create(&handle_2).unwrap();
+    let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 73u8];
+
+    thread::scope(|s| {
+        let t = s.spawn(|| {
+            barrier.wait();
+            let sut_sender = UnixDatagramSenderBuilder::new(&socket_name)
+                .create()
+                .unwrap();
+
+            while let Ok(true) = sut_sender.try_send(send_data.as_slice()) {}
+
+            let start = Instant::now();
+            barrier_2.wait();
+
+            let result = sut_sender.blocking_send(send_data.as_slice());
+
+            assert_that!(result, is_ok);
+            assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        });
+
+        let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+            .permission(Permission::OWNER_ALL)
+            .creation_mode(CreationMode::PurgeAndCreate)
+            .create()
+            .unwrap();
+        barrier.wait();
+        barrier_2.wait();
+
+        thread::sleep(TIMEOUT);
+
+        let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
+        while let Ok(count) = sut_receiver.try_receive(receive_data.as_mut_slice()) {
+            if count == 0 {
+                break;
+            }
+        }
+
+        t.join().unwrap();
+    });
+}
+
+#[test]
+fn unix_datagram_socket_timed_send_blocks_at_least_for_timeout() {
+    let _watchdog = Watchdog::new();
+
+    create_test_directory();
+    let socket_name = generate_socket_name();
+    let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 173u8];
+
+    let _sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+        .permission(Permission::OWNER_ALL)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    let sut_sender = UnixDatagramSenderBuilder::new(&socket_name)
+        .create()
+        .unwrap();
+
+    while let Ok(true) = sut_sender.try_send(send_data.as_slice()) {}
+
+    let start = Instant::now();
+
+    let result = sut_sender.timed_send(send_data.as_slice(), TIMEOUT);
+
+    assert_that!(result, is_ok);
+    assert_that!(start.elapsed(), time_at_least TIMEOUT);
+}
+
+#[test]
+fn unix_datagram_socket_timeout_receive_blocks_at_least_for_timeout() {
+    let _watchdog = Watchdog::new();
+
     create_test_directory();
     let socket_name = generate_socket_name();
     let handle = BarrierHandle::new();
@@ -226,7 +309,7 @@ fn unix_datagram_socket_timeout_blocks_at_least() {
         let start = Instant::now();
         barrier_2.wait();
 
-        t.join().ok();
+        t.join().unwrap();
 
         assert_that!(start.elapsed(), time_at_least TIMEOUT);
     });
