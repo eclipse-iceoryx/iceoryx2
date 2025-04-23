@@ -13,6 +13,7 @@
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
 use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
@@ -150,7 +151,7 @@ pub fn monitor(
         format.as_string(&SerializableMonitorConfig::from_config(&monitor_config))?
     );
 
-    loop {
+    while !SignalHandler::termination_requested() {
         let (added, removed) = monitor.spin();
 
         for service in added {
@@ -175,5 +176,5 @@ pub fn monitor(
         std::thread::sleep(std::time::Duration::from_millis(rate));
     }
 
-    // Ok(())
+    Ok(())
 }
