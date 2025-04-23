@@ -214,3 +214,15 @@
 
 7. Renamed `AttributeSet::len()`
    into `AttributeSet::number_of_attributes()`
+
+8. Renamed `AttributeSet::get_key_value_len()`
+   into `AttributeSet::number_of_key_values()`
+
+9. Renamed `AttributeSet::get_key_value_at()`
+   into `AttributeSet::key_value()`
+
+9. Renamed `AttributeSet::get_key_values()`
+   into `AttributeSet::iter_key_values()`
+
+10. Renamed `ServiceId::max_len()`
+   into `ServiceId::max_number_of_characters()`

@@ -32,12 +32,12 @@ class AttributeSetView {
     auto number_of_attributes() const -> uint64_t;
 
     /// Returns a [`AttributeView`] at a specific index. The number of indices is returned via
-    /// [`AttributeSetView::len()`].
-    auto at(uint64_t index) const -> AttributeView;
+    /// [`AttributeSetView::number_of_attributes()`].
+    auto operator[](uint64_t index) const -> AttributeView;
 
     /// Returns the number of values stored under a specific key. If the key does not exist it
     /// returns 0.
-    auto get_key_value_len(const Attribute::Key& key) const -> uint64_t;
+    auto number_of_key_values(const Attribute::Key& key) const -> uint64_t;
 
     /// Returns a value of a key at a specific index. The index enumerates the values of the key
     /// if the key has multiple values. The values are always stored at the same position during
@@ -45,11 +45,11 @@ class AttributeSetView {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    auto get_key_value_at(const Attribute::Key& key, uint64_t idx) -> iox::optional<Attribute::Value>;
+    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox::optional<Attribute::Value>;
 
     /// Returns all values to a specific key
-    void get_key_values(const Attribute::Key& key,
-                        const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
+    void iter_key_values(const Attribute::Key& key,
+                         const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 
     /// Creates a copy of the [`AttributeSetView`] that owns the attributes.
     auto to_owned() const -> AttributeSet;
@@ -83,11 +83,11 @@ class AttributeSet {
 
     /// Returns a [`AttributeView`] at a specific index. The number of indices is returned via
     /// [`AttributeSet::len()`].
-    auto at(uint64_t index) const -> AttributeView;
+    auto operator[](uint64_t index) const -> AttributeView;
 
     /// Returns the number of values stored under a specific key. If the key does not exist it
     /// returns 0.
-    auto get_key_value_len(const Attribute::Key& key) const -> uint64_t;
+    auto number_of_key_values(const Attribute::Key& key) const -> uint64_t;
 
     /// Returns a value of a key at a specific index. The index enumerates the values of the key
     /// if the key has multiple values. The values are always stored at the same position during
@@ -95,11 +95,11 @@ class AttributeSet {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    auto get_key_value_at(const Attribute::Key& key, uint64_t idx) -> iox::optional<Attribute::Value>;
+    auto key_value(const Attribute::Key& key, uint64_t idx) -> iox::optional<Attribute::Value>;
 
     /// Returns all values to a specific key
-    void get_key_values(const Attribute::Key& key,
-                        const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
+    void iter_key_values(const Attribute::Key& key,
+                         const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 
   private:
     friend class AttributeSetView;

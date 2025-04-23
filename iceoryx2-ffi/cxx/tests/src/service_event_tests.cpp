@@ -439,12 +439,12 @@ TYPED_TEST(ServiceEventTest, create_with_attributes_sets_attributes) {
     auto attributes_open = service_open.attributes();
 
     ASSERT_THAT(attributes_create.number_of_attributes(), Eq(1));
-    ASSERT_THAT(attributes_create.at(0).key(), Eq(key));
-    ASSERT_THAT(attributes_create.at(0).value(), Eq(value));
+    ASSERT_THAT(attributes_create[0].key(), Eq(key));
+    ASSERT_THAT(attributes_create[0].value(), Eq(value));
 
     ASSERT_THAT(attributes_open.number_of_attributes(), Eq(1));
-    ASSERT_THAT(attributes_open.at(0).key(), Eq(key));
-    ASSERT_THAT(attributes_open.at(0).value(), Eq(value));
+    ASSERT_THAT(attributes_open[0].key(), Eq(key));
+    ASSERT_THAT(attributes_open[0].value(), Eq(value));
 }
 
 TYPED_TEST(ServiceEventTest, open_fails_when_attributes_are_incompatible) {

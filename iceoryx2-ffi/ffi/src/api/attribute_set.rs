@@ -187,7 +187,7 @@ pub unsafe extern "C" fn iox2_attribute_set_number_of_attributes(
 /// * The `handle` must be a valid handle.
 /// * The `index` < [`iox2_attribute_set_number_of_attributes()`].
 #[no_mangle]
-pub unsafe extern "C" fn iox2_attribute_set_at(
+pub unsafe extern "C" fn iox2_attribute_set_index(
     handle: iox2_attribute_set_ptr,
     index: usize,
 ) -> iox2_attribute_h_ref {
@@ -205,7 +205,7 @@ pub unsafe extern "C" fn iox2_attribute_set_at(
 /// * The `handle` must be a valid handle.
 /// * `key` must be non-zero and contain a null-terminated string
 #[no_mangle]
-pub unsafe extern "C" fn iox2_attribute_set_get_key_value_len(
+pub unsafe extern "C" fn iox2_attribute_set_number_of_key_values(
     handle: iox2_attribute_set_ptr,
     key: *const c_char,
 ) -> usize {
@@ -218,7 +218,7 @@ pub unsafe extern "C" fn iox2_attribute_set_get_key_value_len(
         return 0;
     }
 
-    (*handle).get_key_value_len(key.unwrap())
+    (*handle).number_of_key_values(key.unwrap())
 }
 
 /// Returns a value of a key at a specific index. The index enumerates the values of the key
@@ -233,7 +233,7 @@ pub unsafe extern "C" fn iox2_attribute_set_get_key_value_len(
 /// * `buffer` must point to a valid memory location
 /// * `buffer_len` must define the length of the memory pointed by `buffer`
 #[no_mangle]
-pub unsafe extern "C" fn iox2_attribute_set_get_key_value_at(
+pub unsafe extern "C" fn iox2_attribute_set_key_value(
     handle: iox2_attribute_set_ptr,
     key: *const c_char,
     index: usize,
@@ -252,7 +252,7 @@ pub unsafe extern "C" fn iox2_attribute_set_get_key_value_at(
         return;
     }
 
-    if let Some(v) = (*handle).get_key_value_at(key.unwrap(), index) {
+    if let Some(v) = (*handle).key_value(key.unwrap(), index) {
         if let Ok(value) = CString::new(v) {
             core::ptr::copy_nonoverlapping(
                 value.as_ptr(),
@@ -272,7 +272,7 @@ pub unsafe extern "C" fn iox2_attribute_set_get_key_value_at(
 /// * The `key` must be a valid null-terminated string.
 /// * The `callback` must point to a function with the required signature.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_attribute_set_get_key_values(
+pub unsafe extern "C" fn iox2_attribute_set_iter_key_values(
     handle: iox2_attribute_set_ptr,
     key: *const c_char,
     callback: iox2_attribute_set_get_callback,
@@ -288,7 +288,7 @@ pub unsafe extern "C" fn iox2_attribute_set_get_key_values(
 
     let c_str = c_str.unwrap();
 
-    (*handle).get_key_values(c_str, |value| {
+    (*handle).iter_key_values(c_str, |value| {
         if let Ok(value) = CString::new(value) {
             callback(value.as_ptr(), callback_ctx).into()
         } else {

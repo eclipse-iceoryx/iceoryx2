@@ -114,7 +114,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
             EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().c_str()));
 
             auto counter = 0;
-            details.static_details.attributes().get_key_values(key_1, [&](auto& value) -> CallbackProgression {
+            details.static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
                 EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
                 counter++;
                 return CallbackProgression::Continue;
@@ -122,7 +122,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
             EXPECT_THAT(counter, Eq(1));
 
             counter = 0;
-            details.static_details.attributes().get_key_values(key_2, [&](auto& value) -> CallbackProgression {
+            details.static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
                 EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
                 counter++;
                 return CallbackProgression::Continue;
@@ -172,7 +172,7 @@ TYPED_TEST(ServiceTest, details_works) {
     ASSERT_THAT(result.value()->static_details.name(), StrEq(service_name_1.to_string().c_str()));
 
     auto counter = 0;
-    result.value()->static_details.attributes().get_key_values(key_1, [&](auto& value) -> CallbackProgression {
+    result.value()->static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
         EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
         counter++;
         return CallbackProgression::Continue;
@@ -180,7 +180,7 @@ TYPED_TEST(ServiceTest, details_works) {
     EXPECT_THAT(counter, Eq(1));
 
     counter = 0;
-    result.value()->static_details.attributes().get_key_values(key_2, [&](auto& value) -> CallbackProgression {
+    result.value()->static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
         EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
         counter++;
         return CallbackProgression::Continue;
