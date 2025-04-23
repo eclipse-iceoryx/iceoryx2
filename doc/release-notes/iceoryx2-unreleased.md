@@ -11,6 +11,8 @@
     conflicts when merging.
 -->
 
+* Full C/C++ Language bindings for all features
+    [#264](https://github.com/eclipse-iceoryx/iceoryx2/issues/264)
 * Read LogLevel from environment variable
     [#396](https://github.com/eclipse-iceoryx/iceoryx2/issues/396)
 * Lookup config file in default locations

@@ -208,12 +208,12 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
     ));
 }
 
-/// Returnes a [`iox2_attribute_set_h_ref`] to the underlying attribute set.
+/// Returnes a [`iox2_attribute_set_ptr`] to the underlying attribute set.
 ///
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_verifier_h`].
-/// * The `handle` must live at least as long as the returned [`iox2_attribute_set_h_ref`].
+/// * The `handle` must live at least as long as the returned [`iox2_attribute_set_ptr`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
     handle: iox2_attribute_verifier_h_ref,
@@ -224,7 +224,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
     attribute_verifier_struct.value.as_ref().0.attributes()
 }
 
-/// Verifies if the [`iox2_attribute_set_h_ref`] contains all required keys and key-value pairs.
+/// Verifies if the [`iox2_attribute_set_ptr`] contains all required keys and key-value pairs.
 ///
 /// # Safety
 ///

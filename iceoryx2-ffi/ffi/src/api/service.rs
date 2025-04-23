@@ -252,15 +252,13 @@ pub unsafe extern "C" fn iox2_service_details(
             match ipc::Service::details(service_name, config, messaging_pattern) {
                 Ok(None) => {
                     does_exist.write(false);
-                    return IOX2_OK;
+                    IOX2_OK
                 }
-                Err(e) => {
-                    return e.into_c_int();
-                }
+                Err(e) => e.into_c_int(),
                 Ok(Some(v)) => {
                     service_details.write((&v.static_details).into());
                     does_exist.write(true);
-                    return IOX2_OK;
+                    IOX2_OK
                 }
             }
         }
@@ -268,19 +266,17 @@ pub unsafe extern "C" fn iox2_service_details(
             match local::Service::details(service_name, config, messaging_pattern) {
                 Ok(None) => {
                     does_exist.write(false);
-                    return IOX2_OK;
+                    IOX2_OK
                 }
-                Err(e) => {
-                    return e.into_c_int();
-                }
+                Err(e) => e.into_c_int(),
                 Ok(Some(v)) => {
                     service_details.write((&v.static_details).into());
                     does_exist.write(true);
-                    return IOX2_OK;
+                    IOX2_OK
                 }
             }
         }
-    };
+    }
 }
 
 fn list_callback<S: Service>(

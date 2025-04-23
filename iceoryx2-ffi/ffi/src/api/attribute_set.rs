@@ -125,7 +125,7 @@ pub unsafe extern "C" fn iox2_attribute_set_new_clone(
     }
 
     unsafe {
-        (*struct_ptr).value.init((&*source_ptr).clone());
+        (*struct_ptr).value.init((*source_ptr).clone());
     }
 
     *handle_ptr = (*struct_ptr).as_handle();
@@ -148,6 +148,15 @@ pub unsafe extern "C" fn iox2_attribute_set_drop(handle: iox2_attribute_set_h) {
     (attribute_set.deleter)(attribute_set);
 }
 
+/// This function casts a [`iox2_attribute_set_h`] into a [`iox2_attribute_set_ptr`]
+///
+/// Returns a [`iox2_attribute_set_ptr`]
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_attribute_set_new_clone()`]
+/// * The `handle` must be a valid handle.
+/// * The `handle` is still valid after the call to this function.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_cast_attribute_set_ptr(
     handle: iox2_attribute_set_h,

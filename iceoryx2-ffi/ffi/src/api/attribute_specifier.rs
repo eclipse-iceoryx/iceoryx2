@@ -180,12 +180,12 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
     ));
 }
 
-/// Returnes a [`iox2_attribute_set_h_ref`] to the underlying attribute set.
+/// Returnes a [`iox2_attribute_set_ptr`] to the underlying attribute set.
 ///
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
-/// * The `handle` must live at least as long as the returned [`iox2_attribute_set_h_ref`].
+/// * The `handle` must live at least as long as the returned [`iox2_attribute_set_ptr`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_specifier_attributes(
     handle: iox2_attribute_specifier_h_ref,

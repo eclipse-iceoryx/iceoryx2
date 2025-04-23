@@ -142,6 +142,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
     ASSERT_THAT(result.has_value(), Eq(true));
 }
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceTest, details_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -195,4 +196,5 @@ TYPED_TEST(ServiceTest, details_works) {
     ASSERT_THAT(result.has_value(), Eq(true));
     ASSERT_THAT(result->has_value(), Eq(false));
 }
+//NOLINTEND(readability-function-cognitive-complexity)
 } // namespace

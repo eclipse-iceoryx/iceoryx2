@@ -387,18 +387,21 @@ pub unsafe extern "C" fn iox2_port_factory_event_service_id(
     buffer.add(len).write(0);
 }
 
-/// Calls the callback repeatedly with an [`iox2_node_state_e`], [`iox2_node_id_ptr`],
-/// [´iox2_node_name_ptr´] and [`iox2_config_ptr`] for all [`Node`](iceoryx2::node::Node)s that
+/// Calls the callback repeatedly with an [`iox2_node_state_e`](crate::api::iox2_node_state_e),
+/// [`iox2_node_id_ptr`](crate::api::iox2_node_id_ptr),
+/// [´iox2_node_name_ptr´](crate::api::iox2_node_name_ptr) and
+/// [`iox2_config_ptr`](crate::api::iox2_config_ptr) for all [`Node`](iceoryx2::node::Node)s that
 /// have opened the service.
 ///
-/// Returns IOX2_OK on success, an [`iox2_node_list_failure_e`] otherwise.
+/// Returns IOX2_OK on success, an
+/// [`iox2_node_list_failure_e`](crate::api::iox2_node_list_failure_e) otherwise.
 ///
 /// # Safety
 ///
 /// * The `handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
 ///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
-/// * `callback` - A valid callback with [`iox2_node_list_callback`} signature
-/// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
+/// * `callback` - A valid callback with [`iox2_node_list_callback`] signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store information across callback iterations
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_nodes(
     handle: iox2_port_factory_event_h_ref,
