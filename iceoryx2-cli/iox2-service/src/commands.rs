@@ -18,8 +18,8 @@ use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
 use iceoryx2_cli::Format;
-use iceoryx2_services_discovery::service::Monitor;
-use iceoryx2_services_discovery::service::MonitorConfig;
+use iceoryx2_services_discovery::service_discovery::DiscoveryConfig;
+use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
 
 use crate::cli::OutputFilter;
 
@@ -96,7 +96,7 @@ impl ChangeDetails {
 }
 
 #[derive(serde::Serialize)]
-struct SerializableMonitorConfig {
+struct SerializableDiscoveryConfig {
     publish_events: bool,
     max_subscribers: usize,
     send_notifications: bool,
@@ -104,8 +104,8 @@ struct SerializableMonitorConfig {
     include_internal: bool,
 }
 
-impl SerializableMonitorConfig {
-    fn from_config(config: &MonitorConfig) -> Self {
+impl SerializableDiscoveryConfig {
+    fn from_config(config: &DiscoveryConfig) -> Self {
         Self {
             publish_events: config.publish_events,
             max_subscribers: config.max_subscribers,
@@ -124,7 +124,7 @@ impl SerializableMonitorConfig {
 /// * `rate` - The update rate in milliseconds between monitor refreshes
 /// * `publish_events` - Whether to publish events about service changes
 /// * `send_notifications` - Whether to send notifications about service changes
-pub fn monitor(
+pub fn discovery(
     rate: u64,
     publish_events: bool,
     max_subscribers: usize,
@@ -132,7 +132,7 @@ pub fn monitor(
     max_listeners: usize,
     format: Format,
 ) -> Result<()> {
-    let monitor_config = MonitorConfig {
+    let monitor_config = DiscoveryConfig {
         publish_events,
         max_subscribers,
         send_notifications,
@@ -140,16 +140,18 @@ pub fn monitor(
         include_internal: false,
     };
 
-    let mut monitor = Monitor::<ipc::Service>::create(&monitor_config, &Config::global_config())
-        .map_err(|e| anyhow::anyhow!("failed to create service monitor: {:?}", e))?;
+    let mut service =
+        DiscoveryService::<ipc::Service>::create(&monitor_config, &Config::global_config())
+            .map_err(|e| anyhow::anyhow!("failed to create service monitor: {:?}", e))?;
 
+    println!("=== Service Discovery Service Started ===");
     println!(
         "{}",
-        format.as_string(&SerializableMonitorConfig::from_config(&monitor_config))?
+        format.as_string(&SerializableDiscoveryConfig::from_config(&monitor_config))?
     );
 
     while !SignalHandler::termination_requested() {
-        match monitor.spin() {
+        match service.spin() {
             Ok((added, removed)) => {
                 for service in added {
                     println!(

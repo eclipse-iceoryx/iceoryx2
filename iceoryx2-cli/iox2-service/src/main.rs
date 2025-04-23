@@ -65,10 +65,10 @@ fn main() -> Result<()> {
                     error!("Failed to retrieve service details: {}", e);
                 }
             }
-            Action::Monitor(options) => {
+            Action::Discovery(options) => {
                 let should_publish = options.disable_publish == false;
                 let should_notify = options.disable_notify == false;
-                if let Err(_e) = commands::monitor(
+                if let Err(_e) = commands::discovery(
                     options.rate,
                     should_publish,
                     options.max_subscribers,

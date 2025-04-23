@@ -58,7 +58,7 @@ pub struct DetailsOptions {
 }
 
 #[derive(Parser)]
-pub struct MonitorOptions {
+pub struct DiscoveryOptions {
     #[clap(
         short,
         long,
@@ -93,8 +93,8 @@ pub enum Action {
     )]
     Details(DetailsOptions),
     #[clap(
-        about = "Start a service monitor", 
-        help_template = help_template("iox2 service monitor", false)
+        about = "Runs the service discovery service within a process", 
+        help_template = help_template("iox2 service discovery", false)
     )]
-    Monitor(MonitorOptions),
+    Discovery(DiscoveryOptions),
 }

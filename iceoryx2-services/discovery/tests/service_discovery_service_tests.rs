@@ -10,15 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod service_monitor {
+mod service_discovery_service {
 
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
-    use iceoryx2_services_discovery::service::{
-        service_name, DiscoveryEvent, Monitor, MonitorConfig,
+    use iceoryx2_services_discovery::service_discovery::{
+        service_name, DiscoveryConfig, DiscoveryEvent, Service,
     };
 
     fn generate_name() -> ServiceName {
@@ -37,14 +37,14 @@ mod service_monitor {
         let iceoryx_config = generate_isolated_config();
 
         // create a service monitoring service
-        let monitor_config = MonitorConfig {
+        let discovery_config = DiscoveryConfig {
             include_internal: false,
             publish_events: true,
             max_subscribers: 1,
             send_notifications: false,
             max_listeners: 1,
         };
-        let mut sut = Monitor::<ipc::Service>::create(&monitor_config, &iceoryx_config).unwrap();
+        let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
         // subscribe to the monitoring service
         let node = NodeBuilder::new()
@@ -100,14 +100,14 @@ mod service_monitor {
         let iceoryx_config = generate_isolated_config();
 
         // create a service monitoring service
-        let monitor_config = MonitorConfig {
+        let discovery_config = DiscoveryConfig {
             include_internal: false,
             publish_events: false,
             max_subscribers: 1,
             send_notifications: true,
             max_listeners: 1,
         };
-        let mut sut = Monitor::<ipc::Service>::create(&monitor_config, &iceoryx_config).unwrap();
+        let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
         // listen to the monitoring service
         let node = NodeBuilder::new()
@@ -147,14 +147,14 @@ mod service_monitor {
         let iceoryx_config = generate_isolated_config();
 
         // create a service monitoring service
-        let monitor_config = MonitorConfig {
+        let discovery_config = DiscoveryConfig {
             include_internal: true,
             publish_events: true,
             max_subscribers: 1,
             send_notifications: false,
             max_listeners: 1,
         };
-        let mut sut = Monitor::<ipc::Service>::create(&monitor_config, &iceoryx_config).unwrap();
+        let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
         // subscribe to the monitoring service
         let node = NodeBuilder::new()
