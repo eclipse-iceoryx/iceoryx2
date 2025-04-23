@@ -17,8 +17,9 @@ mod service_monitor {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
-    use iceoryx2_services_common::INTERNAL_SERVICE_PREFIX;
-    use iceoryx2_services_discovery::service::{DiscoveryEvent, Monitor, MonitorConfig};
+    use iceoryx2_services_discovery::service::{
+        service_name, DiscoveryEvent, Monitor, MonitorConfig,
+    };
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -36,10 +37,7 @@ mod service_monitor {
         let iceoryx_config = generate_isolated_config();
 
         // create a service monitoring service
-        let service_name_string: String = INTERNAL_SERVICE_PREFIX.to_owned()
-            + "test/service_monitor/publishes_details_of_added_and_removed_services_when_configured";
         let monitor_config = MonitorConfig {
-            service_name: service_name_string.to_string(),
             include_internal: false,
             publish_events: true,
             max_subscribers: 1,
@@ -54,9 +52,8 @@ mod service_monitor {
             .create::<ipc::Service>()
             .unwrap();
 
-        let service_name = ServiceName::new(service_name_string.as_str()).unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name())
             .publish_subscribe::<DiscoveryEvent>()
             .open()
             .unwrap();
@@ -103,10 +100,7 @@ mod service_monitor {
         let iceoryx_config = generate_isolated_config();
 
         // create a service monitoring service
-        let service_name_string: String = INTERNAL_SERVICE_PREFIX.to_owned()
-            + "test/service_monitor/sends_events_for_added_or_removed_services_when_configured";
         let monitor_config = MonitorConfig {
-            service_name: service_name_string.to_string(),
             include_internal: false,
             publish_events: false,
             max_subscribers: 1,
@@ -121,8 +115,7 @@ mod service_monitor {
             .create::<ipc::Service>()
             .unwrap();
 
-        let service_name = ServiceName::new(service_name_string.as_str()).unwrap();
-        let service = node.service_builder(&service_name).event().open().unwrap();
+        let service = node.service_builder(service_name()).event().open().unwrap();
         let listener = service.listener_builder().create().unwrap();
 
         // add a service
@@ -154,10 +147,7 @@ mod service_monitor {
         let iceoryx_config = generate_isolated_config();
 
         // create a service monitoring service
-        let service_name_string: String = INTERNAL_SERVICE_PREFIX.to_owned()
-            + "test/service_monitor/monitors_internal_services_when_configured";
         let monitor_config = MonitorConfig {
-            service_name: service_name_string.to_string(),
             include_internal: true,
             publish_events: true,
             max_subscribers: 1,
@@ -172,9 +162,8 @@ mod service_monitor {
             .create::<ipc::Service>()
             .unwrap();
 
-        let service_name = ServiceName::new(service_name_string.as_str()).unwrap();
         let service = node
-            .service_builder(&service_name)
+            .service_builder(service_name())
             .publish_subscribe::<DiscoveryEvent>()
             .open()
             .unwrap();
@@ -190,7 +179,7 @@ mod service_monitor {
         assert_that!(result, is_some);
         let service = result.unwrap();
         if let DiscoveryEvent::Added(service_info) = service.payload() {
-            assert_that!(service_info.name().to_string(), eq service_name_string);
+            assert_that!(service_info.name().to_string(), eq service_name().as_str());
         } else {
             test_fail!("expected DiscoveryEvent::Added for the internal service")
         }

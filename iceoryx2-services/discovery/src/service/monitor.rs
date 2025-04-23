@@ -20,7 +20,9 @@ use iceoryx2::{
 };
 use iceoryx2_services_common::{is_internal_service, INTERNAL_SERVICE_PREFIX};
 
-const SERVICE_DISCOVERY_SERVICE_NAME: &str = "discovery/services/";
+use once_cell::sync::Lazy;
+
+const SERVICE_NAME: &str = "discovery/services/";
 
 /// Events emitted by the service discovery monitor
 ///
@@ -40,8 +42,6 @@ pub enum DiscoveryEvent {
 /// the behavior of the `Monitor`.
 #[derive(Debug, Clone)]
 pub struct MonitorConfig {
-    /// Custom service name for the monitor
-    pub service_name: String,
     /// Whether to ignore iceoryx-internal services
     pub include_internal: bool,
     /// Whether to publish discovery events
@@ -85,7 +85,6 @@ pub enum SpinError {
 impl Default for MonitorConfig {
     fn default() -> Self {
         Self {
-            service_name: INTERNAL_SERVICE_PREFIX.to_owned() + SERVICE_DISCOVERY_SERVICE_NAME,
             include_internal: true,
             publish_events: true,
             max_subscribers: 10,
@@ -132,7 +131,7 @@ impl<S: Service> Monitor<S> {
             .create::<S>()
             .map_err(|_| CreationError::NodeCreationFailure)?;
 
-        let service_name = ServiceName::new(monitor_config.service_name.as_str())
+        let service_name = ServiceName::new(&(INTERNAL_SERVICE_PREFIX.to_owned() + SERVICE_NAME))
             .map_err(|_| CreationError::InvalidServiceName)?;
 
         let mut publisher = None;
@@ -267,4 +266,23 @@ impl<S: Service> Monitor<S> {
 
         Ok((added_services, removed_services))
     }
+}
+
+/// Returns the service name used by the service discovery service.
+///
+/// # Returns
+///
+/// A reference to the static `ServiceName` instance used for discovery services.
+///
+/// # Panics
+///
+/// This function will panic during the first call if the service name is invalid,
+/// which should never happen with the predefined constants.
+pub fn service_name() -> &'static ServiceName {
+    static SERVICE_NAME_INSTANCE: Lazy<ServiceName> = Lazy::new(|| {
+        ServiceName::new(&(INTERNAL_SERVICE_PREFIX.to_owned() + SERVICE_NAME))
+            .expect("service name is valid")
+    });
+
+    &SERVICE_NAME_INSTANCE
 }

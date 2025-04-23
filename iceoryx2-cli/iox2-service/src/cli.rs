@@ -60,13 +60,6 @@ pub struct DetailsOptions {
 #[derive(Parser)]
 pub struct MonitorOptions {
     #[clap(
-        long,
-        help = "Name to use for the service discovery service",
-        default_value = "iox2://monitor/services"
-    )]
-    pub service_name: String,
-
-    #[clap(
         short,
         long,
         default_value = "1000",

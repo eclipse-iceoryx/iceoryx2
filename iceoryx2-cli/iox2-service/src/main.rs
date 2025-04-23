@@ -69,7 +69,6 @@ fn main() -> Result<()> {
                 let should_publish = options.disable_publish == false;
                 let should_notify = options.disable_notify == false;
                 if let Err(_e) = commands::monitor(
-                    options.service_name.as_str(),
                     options.rate,
                     should_publish,
                     options.max_subscribers,

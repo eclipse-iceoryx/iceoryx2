@@ -97,7 +97,6 @@ impl ChangeDetails {
 
 #[derive(serde::Serialize)]
 struct SerializableMonitorConfig {
-    service_name: String,
     publish_events: bool,
     max_subscribers: usize,
     send_notifications: bool,
@@ -108,7 +107,6 @@ struct SerializableMonitorConfig {
 impl SerializableMonitorConfig {
     fn from_config(config: &MonitorConfig) -> Self {
         Self {
-            service_name: config.service_name.clone(),
             publish_events: config.publish_events,
             max_subscribers: config.max_subscribers,
             send_notifications: config.send_notifications,
@@ -127,7 +125,6 @@ impl SerializableMonitorConfig {
 /// * `publish_events` - Whether to publish events about service changes
 /// * `send_notifications` - Whether to send notifications about service changes
 pub fn monitor(
-    service_name: &str,
     rate: u64,
     publish_events: bool,
     max_subscribers: usize,
@@ -136,7 +133,6 @@ pub fn monitor(
     format: Format,
 ) -> Result<()> {
     let monitor_config = MonitorConfig {
-        service_name: service_name.to_string(),
         publish_events,
         max_subscribers,
         send_notifications,
