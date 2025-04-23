@@ -61,6 +61,12 @@ void AttributeSetView::get_key_values(
     iox2_attribute_set_get_key_values(m_handle, key.c_str(), get_key_values_callback, static_cast<void*>(&ctx));
 }
 
+auto AttributeSetView::to_owned() const -> AttributeSet {
+    iox2_attribute_set_h handle = nullptr;
+    iox2_attribute_set_new_clone(nullptr, m_handle, &handle);
+    return AttributeSet(handle);
+}
+
 /////////////////////////////
 /// END: AttributeSetView
 /////////////////////////////

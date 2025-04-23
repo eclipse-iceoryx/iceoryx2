@@ -20,6 +20,8 @@
 #include <iostream>
 
 namespace iox2 {
+class AttributeSet;
+
 /// Represents all service attributes. They can be set when the service is created.
 ///
 /// @attention The parent from which the view was extracted MUST live longer than the
@@ -48,6 +50,9 @@ class AttributeSetView {
     /// Returns all values to a specific key
     void get_key_values(const Attribute::Key& key,
                         const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
+
+    /// Creates a copy of the [`AttributeSetView`] that owns the attributes.
+    auto to_owned() const -> AttributeSet;
 
   private:
     template <ServiceType, typename, typename>
@@ -97,6 +102,8 @@ class AttributeSet {
                         const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const;
 
   private:
+    friend class AttributeSetView;
+
     explicit AttributeSet(iox2_attribute_set_h handle);
     void drop();
 

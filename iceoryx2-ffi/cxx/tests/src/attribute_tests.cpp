@@ -158,4 +158,20 @@ TEST(AttributeSet, get_key_value_at_works) {
     }
 }
 //NOLINTEND(readability-function-cognitive-complexity)
+
+TEST(AttributeSet, to_owned_works) {
+    auto key = Attribute::Key("your mind becomes a galaxy");
+    auto value_1 = Attribute::Value("shiny and bright");
+    auto value_2 = Attribute::Value("with spice aroma");
+
+    auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
+    auto attributes = attribute_specifer.attributes();
+    auto attributes_owned = attributes.to_owned();
+
+    ASSERT_THAT(attributes_owned.len(), Eq(2));
+    ASSERT_THAT(attributes_owned.at(0).key(), Eq(key));
+    ASSERT_THAT(attributes_owned.at(1).key(), Eq(key));
+    ASSERT_THAT(attributes_owned.at(0).value(), Eq(value_1));
+    ASSERT_THAT(attributes_owned.at(1).value(), Eq(value_2));
+}
 } // namespace
