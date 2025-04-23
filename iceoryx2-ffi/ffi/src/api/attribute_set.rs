@@ -243,9 +243,9 @@ pub unsafe extern "C" fn iox2_attribute_set_get_key_value_at(
     debug_assert!(!buffer.is_null());
     debug_assert!(0 < buffer_len);
 
+    buffer.add(0).write(0);
     let key = CStr::from_ptr(key).to_str();
     if key.is_err() {
-        buffer.add(0).write(0);
         return;
     }
 
