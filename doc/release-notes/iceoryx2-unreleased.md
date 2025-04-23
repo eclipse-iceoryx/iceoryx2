@@ -221,8 +221,8 @@
 9. Renamed `AttributeSet::get_key_value_at()`
    into `AttributeSet::key_value()`
 
-9. Renamed `AttributeSet::get_key_values()`
+10. Renamed `AttributeSet::get_key_values()`
    into `AttributeSet::iter_key_values()`
 
-10. Renamed `ServiceId::max_len()`
+11. Renamed `ServiceId::max_len()`
    into `ServiceId::max_number_of_characters()`

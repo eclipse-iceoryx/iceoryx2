@@ -13,7 +13,7 @@
 #include "iox2/service_id.hpp"
 
 namespace iox2 {
-auto ServiceId::max_len() -> uint64_t {
+auto ServiceId::max_number_of_characters() -> uint64_t {
     return IOX2_SERVICE_ID_LENGTH;
 }
 

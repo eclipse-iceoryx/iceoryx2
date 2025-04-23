@@ -21,7 +21,7 @@ namespace iox2 {
 class ServiceId {
   public:
     /// Returns the maximum string length of a [`ServiceId`]
-    auto max_len() -> uint64_t;
+    auto max_number_of_characters() -> uint64_t;
 
     /// Returns the string value of the [`ServiceId`]
     auto c_str() const -> const char*;
