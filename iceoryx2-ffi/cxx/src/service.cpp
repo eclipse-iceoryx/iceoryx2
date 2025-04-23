@@ -52,8 +52,6 @@ auto Service<S>::details(const ServiceName& service_name,
                                        &raw_static_config,
                                        &does_exist);
 
-    StaticConfig static_config(raw_static_config);
-
     if (result != IOX2_OK) {
         return iox::err(iox::into<ServiceDetailsError>(result));
     }
@@ -62,7 +60,7 @@ auto Service<S>::details(const ServiceName& service_name,
         return iox::ok(iox::optional<ServiceDetails<S>>());
     }
 
-    return iox::ok(iox::optional(ServiceDetails<S> { static_config }));
+    return iox::ok(iox::optional(ServiceDetails<S> { StaticConfig(raw_static_config) }));
 }
 
 template <ServiceType S>

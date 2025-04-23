@@ -18,8 +18,33 @@ StaticConfig::StaticConfig(iox2_static_config_t value)
     : m_value { value } {
 }
 
+StaticConfig::StaticConfig(StaticConfig&& rhs) noexcept
+    : m_value { std::move(rhs.m_value) } {
+    rhs.m_value.attributes = nullptr;
+}
+
+auto StaticConfig::operator=(StaticConfig&& rhs) noexcept -> StaticConfig& {
+    if (this != &rhs) {
+        drop();
+        m_value = std::move(rhs.m_value);
+        rhs.m_value.attributes = nullptr;
+    }
+    return *this;
+}
+
+StaticConfig::~StaticConfig() {
+    drop();
+}
+
+void StaticConfig::drop() {
+    if (m_value.attributes != nullptr) {
+        iox2_attribute_set_drop(m_value.attributes);
+        m_value.attributes = nullptr;
+    }
+}
+
 auto StaticConfig::attributes() const -> AttributeSetView {
-    return AttributeSetView(m_value.attributes);
+    return AttributeSetView(iox2_cast_attribute_set_ptr(m_value.attributes));
 }
 
 auto StaticConfig::id() const -> const char* {

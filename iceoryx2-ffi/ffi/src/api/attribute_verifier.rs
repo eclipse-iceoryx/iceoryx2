@@ -27,7 +27,7 @@ use core::{
 extern crate alloc;
 use alloc::ffi::CString;
 
-use super::iox2_attribute_set_h_ref;
+use super::iox2_attribute_set_ptr;
 
 // BEGIN type definition
 
@@ -217,11 +217,11 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
     handle: iox2_attribute_verifier_h_ref,
-) -> iox2_attribute_set_h_ref {
+) -> iox2_attribute_set_ptr {
     debug_assert!(!handle.is_null());
 
     let attribute_verifier_struct = &mut *handle.as_type();
-    (attribute_verifier_struct.value.as_ref().0.attributes() as *const AttributeSet).cast()
+    attribute_verifier_struct.value.as_ref().0.attributes()
 }
 
 /// Verifies if the [`iox2_attribute_set_h_ref`] contains all required keys and key-value pairs.
@@ -235,7 +235,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
     handle: iox2_attribute_verifier_h_ref,
-    rhs: iox2_attribute_set_h_ref,
+    rhs: iox2_attribute_set_ptr,
     incompatible_key_buffer: *mut c_char,
     incompatible_key_buffer_len: usize,
 ) -> bool {
@@ -245,7 +245,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_verify_requirements(
     let attribute_verifier_struct = &mut *handle.as_type();
     let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    match attribute_verifier.verify_requirements((*rhs).underlying_type()) {
+    match attribute_verifier.verify_requirements(&*rhs) {
         Ok(()) => true,
         Err(incompatible_key) => {
             if let Ok(incompatible_key) = CString::new(incompatible_key) {

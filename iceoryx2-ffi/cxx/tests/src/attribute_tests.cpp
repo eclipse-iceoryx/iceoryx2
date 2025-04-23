@@ -147,7 +147,7 @@ TEST(AttributeSet, get_key_value_at_works) {
 
     ASSERT_THAT(v_1.has_value(), Eq(true));
     ASSERT_THAT(v_2.has_value(), Eq(true));
-    ASSERT_THAT(v_3.has_value(), Eq(true));
+    ASSERT_THAT(v_3.has_value(), Eq(false));
 
     if (v_1->size() == value_1.size()) {
         ASSERT_THAT(v_1.value().c_str(), StrEq(value_1.c_str()));

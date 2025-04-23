@@ -34,7 +34,7 @@ use core::{
 };
 
 use super::{
-    iox2_attribute_set_h_ref, iox2_callback_context, iox2_node_list_callback, iox2_service_name_ptr,
+    iox2_attribute_set_ptr, iox2_callback_context, iox2_node_list_callback, iox2_service_name_ptr,
 };
 
 // BEGIN types definition
@@ -244,19 +244,15 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_subscriber_builder(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_attributes(
     port_factory_handle: iox2_port_factory_pub_sub_h_ref,
-) -> iox2_attribute_set_h_ref {
+) -> iox2_attribute_set_ptr {
     use iceoryx2::prelude::PortFactory;
 
     port_factory_handle.assert_non_null();
 
     let port_factory = &mut *port_factory_handle.as_type();
     match port_factory.service_type {
-        iox2_service_type_e::IPC => {
-            (port_factory.value.as_ref().ipc.attributes() as *const AttributeSet).cast()
-        }
-        iox2_service_type_e::LOCAL => {
-            (port_factory.value.as_ref().local.attributes() as *const AttributeSet).cast()
-        }
+        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.attributes(),
+        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.attributes(),
     }
 }
 
