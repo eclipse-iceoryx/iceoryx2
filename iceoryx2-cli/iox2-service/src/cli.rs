@@ -62,7 +62,7 @@ pub struct DiscoveryOptions {
     #[clap(
         short,
         long,
-        default_value = "1000",
+        default_value = "100",
         help = "Update rate in milliseconds"
     )]
     pub rate: u64,

@@ -144,7 +144,10 @@ pub fn discovery(
         DiscoveryService::<ipc::Service>::create(&monitor_config, &Config::global_config())
             .map_err(|e| anyhow::anyhow!("failed to create service monitor: {:?}", e))?;
 
-    println!("=== Service Discovery Service Started ===");
+    println!(
+        "=== Service Discovery Service Started (rate: {}ms) ===",
+        rate
+    );
     println!(
         "{}",
         format.as_string(&SerializableDiscoveryConfig::from_config(&monitor_config))?
