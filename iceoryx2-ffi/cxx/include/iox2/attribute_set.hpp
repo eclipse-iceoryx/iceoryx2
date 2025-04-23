@@ -29,7 +29,7 @@ class AttributeSet;
 class AttributeSetView {
   public:
     /// Returns the number of [`Attribute`]s stored inside the [`AttributeSet`].
-    auto len() const -> uint64_t;
+    auto number_of_attributes() const -> uint64_t;
 
     /// Returns a [`AttributeView`] at a specific index. The number of indices is returned via
     /// [`AttributeSetView::len()`].
@@ -79,7 +79,7 @@ class AttributeSet {
     ~AttributeSet();
 
     /// Returns the number of [`Attribute`]s stored inside the [`AttributeSet`].
-    auto len() const -> uint64_t;
+    auto number_of_attributes() const -> uint64_t;
 
     /// Returns a [`AttributeView`] at a specific index. The number of indices is returned via
     /// [`AttributeSet::len()`].

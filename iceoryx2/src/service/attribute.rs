@@ -250,6 +250,11 @@ impl AttributeSet {
             .collect()
     }
 
+    /// Returns the number of [`Attribute`]s stored inside the [`AttributeSet`].
+    pub fn number_of_attributes(&self) -> usize {
+        self.iter().len()
+    }
+
     /// Returns the number of values stored under a specific key. If the key does not exist it
     /// returns 0.
     pub fn get_key_value_len(&self, key: &str) -> usize {

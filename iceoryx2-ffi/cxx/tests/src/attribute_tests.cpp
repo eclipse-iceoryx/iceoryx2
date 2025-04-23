@@ -27,7 +27,7 @@ TEST(AttributeVerifier, require_is_listed_in_attributes) {
 
     auto attributes = attribute_verifier.attributes();
 
-    ASSERT_THAT(attributes.len(), Eq(1));
+    ASSERT_THAT(attributes.number_of_attributes(), Eq(1));
     ASSERT_THAT(attributes.at(0).key(), Eq(key));
     ASSERT_THAT(attributes.at(0).value(), Eq(value));
 }
@@ -80,7 +80,7 @@ TEST(AttributeSpecifier, all_defined_attributes_are_set) {
     auto attribute_specifier = AttributeSpecifier().define(key_1, value_1).define(key_2, value_2);
     auto attributes = attribute_specifier.attributes();
 
-    ASSERT_THAT(attributes.len(), Eq(2));
+    ASSERT_THAT(attributes.number_of_attributes(), Eq(2));
     ASSERT_THAT(attributes.at(0).key(), Eq(key_1));
     ASSERT_THAT(attributes.at(0).value(), Eq(value_1));
     ASSERT_THAT(attributes.at(1).key(), Eq(key_2));
@@ -95,7 +95,7 @@ TEST(AttributeSet, all_key_values_can_be_listed) {
     auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
     auto attributes = attribute_specifer.attributes();
 
-    ASSERT_THAT(attributes.len(), Eq(2));
+    ASSERT_THAT(attributes.number_of_attributes(), Eq(2));
     ASSERT_THAT(attributes.at(0).key(), Eq(key));
     ASSERT_THAT(attributes.at(1).key(), Eq(key));
     ASSERT_THAT(attributes.at(0).value(), Eq(value_1));
@@ -168,7 +168,7 @@ TEST(AttributeSet, to_owned_works) {
     auto attributes = attribute_specifer.attributes();
     auto attributes_owned = attributes.to_owned();
 
-    ASSERT_THAT(attributes_owned.len(), Eq(2));
+    ASSERT_THAT(attributes_owned.number_of_attributes(), Eq(2));
     ASSERT_THAT(attributes_owned.at(0).key(), Eq(key));
     ASSERT_THAT(attributes_owned.at(1).key(), Eq(key));
     ASSERT_THAT(attributes_owned.at(0).value(), Eq(value_1));

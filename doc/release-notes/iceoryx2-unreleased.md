@@ -85,6 +85,8 @@
     [#638](https://github.com/eclipse-iceoryx/iceoryx2/issues/638)
 * Reduce indentation in `main.rs` of CLI binaries
     [#646](https://github.com/eclipse-iceoryx/iceoryx2/issues/646)
+* Improve naming in `AttributeSet` methods and `ServiceId`
+    [#697](https://github.com/eclipse-iceoryx/iceoryx2/issues/697)
 
 ### Workflow
 
@@ -209,3 +211,6 @@
 
 6. Renamed `ConnectionFailure::UnableToMapPublishersDataSegment`
    into `ConnectionFailure::UnableToMapSendersDataSegment`
+
+7. Renamed `AttributeSet::len()`
+   into `AttributeSet::number_of_attributes()`

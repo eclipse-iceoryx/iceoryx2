@@ -31,8 +31,8 @@ AttributeSetView::AttributeSetView(iox2_attribute_set_ptr handle)
     : m_handle { handle } {
 }
 
-auto AttributeSetView::len() const -> uint64_t {
-    return iox2_attribute_set_len(m_handle);
+auto AttributeSetView::number_of_attributes() const -> uint64_t {
+    return iox2_attribute_set_number_of_attributes(m_handle);
 }
 
 auto AttributeSetView::at(const uint64_t index) const -> AttributeView {
@@ -114,8 +114,8 @@ void AttributeSet::drop() {
     }
 }
 
-auto AttributeSet::len() const -> uint64_t {
-    return m_view.len();
+auto AttributeSet::number_of_attributes() const -> uint64_t {
+    return m_view.number_of_attributes();
 }
 
 auto AttributeSet::at(const uint64_t index) const -> AttributeView {
@@ -141,7 +141,7 @@ void AttributeSet::get_key_values(const Attribute::Key& key,
 
 auto operator<<(std::ostream& stream, const iox2::AttributeSetView& value) -> std::ostream& {
     stream << "AttributeSetView { ";
-    for (uint64_t idx = 0; idx < value.len(); ++idx) {
+    for (uint64_t idx = 0; idx < value.number_of_attributes(); ++idx) {
         auto attribute = value.at(idx);
         stream << attribute;
     }
@@ -150,7 +150,7 @@ auto operator<<(std::ostream& stream, const iox2::AttributeSetView& value) -> st
 
 auto operator<<(std::ostream& stream, const iox2::AttributeSet& value) -> std::ostream& {
     stream << "AttributeSet { ";
-    for (uint64_t idx = 0; idx < value.len(); ++idx) {
+    for (uint64_t idx = 0; idx < value.number_of_attributes(); ++idx) {
         auto attribute = value.at(idx);
         stream << attribute;
     }

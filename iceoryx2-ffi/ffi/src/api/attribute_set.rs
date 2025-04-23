@@ -166,13 +166,15 @@ pub unsafe extern "C" fn iox2_cast_attribute_set_ptr(
     (*handle.as_type()).value.as_ref()
 }
 
-/// Returns the length of the attribute set.
+/// Returns the number of attributes in the attribute set.
 ///
 /// # Safety
 ///
 /// * The `handle` must be a valid handle.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_attribute_set_len(handle: iox2_attribute_set_ptr) -> usize {
+pub unsafe extern "C" fn iox2_attribute_set_number_of_attributes(
+    handle: iox2_attribute_set_ptr,
+) -> usize {
     debug_assert!(!handle.is_null());
 
     (*handle).iter().len()
@@ -183,14 +185,14 @@ pub unsafe extern "C" fn iox2_attribute_set_len(handle: iox2_attribute_set_ptr) 
 /// # Safety
 ///
 /// * The `handle` must be a valid handle.
-/// * The `index` < [`iox2_attribute_set_len()`].
+/// * The `index` < [`iox2_attribute_set_number_of_attributes()`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_set_at(
     handle: iox2_attribute_set_ptr,
     index: usize,
 ) -> iox2_attribute_h_ref {
     debug_assert!(!handle.is_null());
-    debug_assert!(index < iox2_attribute_set_len(handle));
+    debug_assert!(index < iox2_attribute_set_number_of_attributes(handle));
 
     (&(*handle)[index] as *const Attribute).cast()
 }
