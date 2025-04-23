@@ -24,7 +24,6 @@ use once_cell::sync::Lazy;
 
 const SERVICE_DISCOVERY_SERVICE_NAME: &str = "discovery/services/";
 
-/// TODO: A better name for this
 /// Events emitted by the service discovery service.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)] // Fields used by subscribers
@@ -212,7 +211,11 @@ impl<S: ServiceType> Service<S> {
             notifier = Some(port);
         }
 
-        let tracker = Tracker::<S>::new();
+        let mut tracker = Tracker::<S>::new();
+
+        // TODO: Option to stop initial sync in case user wants to get events
+        //       for all pre-existing services.
+        tracker.sync(iceoryx_config);
 
         Ok(Service::<S> {
             discovery_config: discovery_config.clone(),
@@ -256,7 +259,7 @@ impl<S: ServiceType> Service<S> {
                 self.publish(&Discovery::Added(service.static_details.clone()))
                     .unwrap();
 
-                // Collect references to added services (owned by the tracker)
+                // Keep track of added services to be returned.
                 added_services.push(service);
             }
         }
@@ -274,7 +277,7 @@ impl<S: ServiceType> Service<S> {
         // Notify
         if let Some(notifier) = &mut self.notifier {
             if changes_detected {
-                let _ = notifier.notify();
+                notifier.notify().map_err(|_| SpinError::NotifyFailure)?;
             }
         }
 
@@ -283,6 +286,8 @@ impl<S: ServiceType> Service<S> {
 
     fn publish(&self, discovery: &Discovery) -> Result<(), SpinError> {
         if let Some(publisher) = &self.publisher {
+            // This intermediate struct is inefficient ... need to find a serialization
+            // solution that can serialize directly to the loaned buffer.
             let serialized =
                 serde_json::to_vec(discovery).map_err(|_| SpinError::PublishFailure)?;
 
@@ -291,8 +296,6 @@ impl<S: ServiceType> Service<S> {
                 .map_err(|_| SpinError::PublishFailure)?;
 
             let sample = sample.write_from_slice(serialized.as_slice());
-
-            // Send the sample
             sample.send().map_err(|_| SpinError::PublishFailure)?;
         }
         Ok(())
@@ -319,7 +322,7 @@ impl<S: ServiceType> Service<S> {
 pub fn service_name() -> &'static ServiceName {
     static SERVICE_NAME_INSTANCE: Lazy<ServiceName> = Lazy::new(|| {
         ServiceName::new(&(INTERNAL_SERVICE_PREFIX.to_owned() + SERVICE_DISCOVERY_SERVICE_NAME))
-            .expect("service name is valid")
+            .expect("shouldn't occur: invalid service name for service discovery service")
     });
 
     &SERVICE_NAME_INSTANCE
