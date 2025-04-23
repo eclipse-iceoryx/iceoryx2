@@ -19,6 +19,7 @@
 #include "iox2/attribute_set.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/dynamic_config_publish_subscribe.hpp"
+#include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/node_state.hpp"
@@ -44,10 +45,10 @@ class PortFactoryPublishSubscribe {
     auto operator=(const PortFactoryPublishSubscribe&) -> PortFactoryPublishSubscribe& = delete;
 
     /// Returns the [`ServiceName`] of the service
-    auto name() const -> const ServiceName&;
+    auto name() const -> ServiceNameView;
 
     /// Returns the [`ServiceId`] of the [`Service`]
-    auto service_id() const -> const ServiceId&;
+    auto service_id() const -> ServiceId;
 
     /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> AttributeSetView;
@@ -58,7 +59,7 @@ class PortFactoryPublishSubscribe {
 
     /// Returns the DynamicConfig of the [`Service`].
     /// Contains all dynamic settings, like the current participants etc..
-    auto dynamic_config() const -> const DynamicConfigPublishSubscribe&;
+    auto dynamic_config() const -> DynamicConfigPublishSubscribe;
 
     /// Iterates over all [`Node`]s of the [`Service`]
     /// and calls for every [`Node`] the provided callback. If an error occurs
@@ -121,13 +122,17 @@ inline PortFactoryPublishSubscribe<S, Payload, UserHeader>::~PortFactoryPublishS
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const -> const ServiceName& {
-    IOX_TODO();
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::name() const -> ServiceNameView {
+    const auto* service_name_ptr = iox2_port_factory_pub_sub_service_name(&m_handle);
+    return ServiceNameView(service_name_ptr);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
-inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_id() const -> const ServiceId& {
-    IOX_TODO();
+inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::service_id() const -> ServiceId {
+    iox::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
+    iox2_port_factory_pub_sub_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
+
+    return ServiceId(iox::string<IOX2_SERVICE_ID_LENGTH>(iox::TruncateToCapacity, &buffer[0]));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
@@ -145,15 +150,23 @@ inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::static_config()
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::dynamic_config() const
-    -> const DynamicConfigPublishSubscribe& {
-    IOX_TODO();
+    -> DynamicConfigPublishSubscribe {
+    return DynamicConfigPublishSubscribe(m_handle);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto PortFactoryPublishSubscribe<S, Payload, UserHeader>::nodes(
-    [[maybe_unused]] const iox::function<CallbackProgression(NodeState<S>)>& callback) const
-    -> iox::expected<void, NodeListFailure> {
-    IOX_TODO();
+    const iox::function<CallbackProgression(NodeState<S>)>& callback) const -> iox::expected<void, NodeListFailure> {
+    auto ctx = internal::ctx(callback);
+
+    const auto ret_val =
+        iox2_port_factory_pub_sub_nodes(&m_handle, internal::list_callback<S>, static_cast<void*>(&ctx));
+
+    if (ret_val == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

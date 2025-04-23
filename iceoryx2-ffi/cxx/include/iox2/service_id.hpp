@@ -13,22 +13,30 @@
 #ifndef IOX2_SERVICE_ID_HPP
 #define IOX2_SERVICE_ID_HPP
 
-#include "iox/assertions_addendum.hpp"
+#include "iox/string.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 
 namespace iox2 {
 /// Represents the unique if of a [`Service`].
 class ServiceId {
   public:
     /// Returns the maximum string length of a [`ServiceId`]
-    auto max_len() -> uint64_t {
-        IOX_TODO();
-    }
+    auto max_len() -> uint64_t;
 
     /// Returns the string value of the [`ServiceId`]
-    auto as_str() const -> const char* {
-        IOX_TODO();
-    }
+    auto c_str() const -> const char*;
+
+  private:
+    explicit ServiceId(const iox::string<IOX2_SERVICE_ID_LENGTH>& value);
+
+    template <ServiceType>
+    friend class PortFactoryEvent;
+    template <ServiceType, typename, typename>
+    friend class PortFactoryPublishSubscribe;
+
+    iox::string<IOX2_SERVICE_ID_LENGTH> m_value;
 };
+
 } // namespace iox2
 
 #endif

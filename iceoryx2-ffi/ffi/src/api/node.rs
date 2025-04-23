@@ -410,7 +410,7 @@ pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
     }
 }
 
-fn iox2_node_list_impl<S: Service>(
+pub(crate) fn iox2_node_list_impl<S: Service>(
     node_state: &NodeState<S>,
     callback: iox2_node_list_callback,
     callback_ctx: iox2_callback_context,

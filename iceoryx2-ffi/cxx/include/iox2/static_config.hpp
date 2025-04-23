@@ -20,6 +20,13 @@ namespace iox2 {
 /// Defines a common set of static service configuration details every service shares.
 class StaticConfig {
   public:
+    StaticConfig(const StaticConfig&) = delete;
+    StaticConfig(StaticConfig&& rhs) noexcept;
+    ~StaticConfig();
+
+    auto operator=(const StaticConfig&) -> StaticConfig& = delete;
+    auto operator=(StaticConfig&& rhs) noexcept -> StaticConfig&;
+
     /// Returns the attributes of the [`Service`]
     auto attributes() const -> AttributeSetView;
 
@@ -34,8 +41,11 @@ class StaticConfig {
 
   private:
     template <ServiceType>
+    friend class Service;
+    template <ServiceType>
     friend auto list_callback(const iox2_static_config_t*, void*) -> iox2_callback_progression_e;
     explicit StaticConfig(iox2_static_config_t value);
+    void drop();
 
     iox2_static_config_t m_value;
 };

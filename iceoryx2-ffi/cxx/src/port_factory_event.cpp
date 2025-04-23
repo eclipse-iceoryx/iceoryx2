@@ -11,8 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/port_factory_event.hpp"
-#include "iox/assertions_addendum.hpp"
+#include "iox/uninitialized_array.hpp"
 #include "iox2/iceoryx2.h"
+#include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
 template <ServiceType S>
@@ -56,8 +57,11 @@ auto PortFactoryEvent<S>::name() const -> ServiceNameView {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::service_id() const -> const ServiceId& {
-    IOX_TODO();
+auto PortFactoryEvent<S>::service_id() const -> ServiceId {
+    iox::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
+    iox2_port_factory_event_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
+
+    return ServiceId(iox::string<IOX2_SERVICE_ID_LENGTH>(iox::TruncateToCapacity, &buffer[0]));
 }
 
 template <ServiceType S>
@@ -74,14 +78,22 @@ auto PortFactoryEvent<S>::static_config() const -> StaticConfigEvent {
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::dynamic_config() const -> const DynamicConfigEvent& {
-    IOX_TODO();
+auto PortFactoryEvent<S>::dynamic_config() const -> DynamicConfigEvent {
+    return DynamicConfigEvent(m_handle);
 }
 
 template <ServiceType S>
-auto PortFactoryEvent<S>::nodes([[maybe_unused]] const iox::function<CallbackProgression(NodeState<S>)>& callback) const
+auto PortFactoryEvent<S>::nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
     -> iox::expected<void, NodeListFailure> {
-    IOX_TODO();
+    auto ctx = internal::ctx(callback);
+
+    const auto ret_val = iox2_port_factory_event_nodes(&m_handle, internal::list_callback<S>, static_cast<void*>(&ctx));
+
+    if (ret_val == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType S>

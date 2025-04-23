@@ -69,7 +69,8 @@ pub struct SubscriberDetails {
     pub buffer_size: usize,
 }
 
-/// The dynamic configuration of an [`crate::service::messaging_pattern::MessagingPattern::Event`]
+/// The dynamic configuration of an
+/// [`crate::service::messaging_pattern::MessagingPattern::PublishSubscribe`]
 /// based service. Contains dynamic parameters like the connected endpoints etc..
 #[repr(C)]
 #[derive(Debug)]

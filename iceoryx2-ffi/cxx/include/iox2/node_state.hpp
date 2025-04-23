@@ -102,7 +102,7 @@ class NodeState {
 
   private:
     template <ServiceType>
-    friend auto list_callback(
+    friend auto internal::list_callback(
         iox2_node_state_e, iox2_node_id_ptr, const char*, iox2_node_name_ptr, iox2_config_ptr, iox2_callback_context)
         -> iox2_callback_progression_e;
 

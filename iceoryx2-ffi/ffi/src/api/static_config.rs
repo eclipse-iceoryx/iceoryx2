@@ -23,6 +23,8 @@ use crate::{
     IOX2_SERVICE_ID_LENGTH, IOX2_SERVICE_NAME_LENGTH,
 };
 
+use super::{iox2_attribute_set_h, iox2_attribute_set_new_clone};
+
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub union iox2_static_config_details_t {
@@ -37,12 +39,26 @@ pub struct iox2_static_config_t {
     pub name: [c_char; IOX2_SERVICE_NAME_LENGTH],
     pub messaging_pattern: iox2_messaging_pattern_e,
     pub details: iox2_static_config_details_t,
+    pub attributes: iox2_attribute_set_h,
 }
 
 impl From<&StaticConfig> for iox2_static_config_t {
     fn from(value: &StaticConfig) -> Self {
+        let mut attribute_handle_ptr: iox2_attribute_set_h = core::ptr::null_mut();
+
+        unsafe {
+            iox2_attribute_set_new_clone(
+                core::ptr::null_mut(),
+                value.attributes(),
+                &mut attribute_handle_ptr,
+            )
+        };
+        debug_assert!(!attribute_handle_ptr.is_null());
+
         Self {
             id: core::array::from_fn(|n| {
+                debug_assert!(value.service_id().as_str().len() + 1 < IOX2_SERVICE_ID_LENGTH);
+
                 let raw_service_id = value.service_id().as_str().as_bytes();
                 if n < raw_service_id.len() {
                     raw_service_id[n] as _
@@ -59,6 +75,7 @@ impl From<&StaticConfig> for iox2_static_config_t {
                     0
                 }
             }),
+            attributes: attribute_handle_ptr,
             messaging_pattern: value.messaging_pattern().into(),
             details: {
                 match value.messaging_pattern() {

@@ -532,6 +532,90 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_notifiers(
     }
 }
 
+/// Sets the max nodes for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+/// * `value` - The value to set the max notifiers to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_set_max_nodes(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
+                service_builder.max_nodes(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
+                service_builder.max_nodes(value),
+            ));
+        }
+    }
+}
+
+/// Sets the max event id value for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_event_h_ref`]
+///   obtained by [`iox2_service_builder_event`](crate::iox2_service_builder_event).
+/// * `value` - The value to set the max notifiers to
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_event_set_event_id_max_value(
+    service_builder_handle: iox2_service_builder_event_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_event(
+                service_builder.event_id_max_value(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.event);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_event(
+                service_builder.event_id_max_value(value),
+            ));
+        }
+    }
+}
+
 /// Sets the max listeners for the builder
 ///
 /// # Arguments

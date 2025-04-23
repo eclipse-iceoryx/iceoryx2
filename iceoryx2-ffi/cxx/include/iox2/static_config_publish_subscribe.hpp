@@ -13,6 +13,7 @@
 #ifndef IOX2_STATIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_STATIC_CONFIG_PUBLISH_SUBSCRIBE_HPP
 
+#include "iox2/attribute_set.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/message_type_details.hpp"
 

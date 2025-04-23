@@ -123,7 +123,7 @@ inline auto Subscriber<S, Payload, UserHeader>::id() const -> UniqueSubscriberId
 
 template <ServiceType S, typename Payload, typename UserHeader>
 inline auto Subscriber<S, Payload, UserHeader>::buffer_size() const -> uint64_t {
-    IOX_TODO();
+    return iox2_subscriber_buffer_size(&m_handle);
 }
 
 template <ServiceType S, typename Payload, typename UserHeader>

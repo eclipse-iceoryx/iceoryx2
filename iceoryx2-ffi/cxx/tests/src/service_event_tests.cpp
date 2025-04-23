@@ -92,6 +92,8 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_NOTIFIERS = 5;
     constexpr uint64_t NUMBER_OF_LISTENERS = 7;
+    constexpr uint64_t NUMBER_OF_NODES = 8;
+    constexpr uint64_t MAX_EVENT_ID_VALUE = 9;
     const auto create_event_id = EventId(12);
     const auto dropped_event_id = EventId(13);
     const auto dead_event_id = EventId(14);
@@ -103,6 +105,8 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
                    .event()
                    .max_notifiers(NUMBER_OF_NOTIFIERS)
                    .max_listeners(NUMBER_OF_LISTENERS)
+                   .max_nodes(NUMBER_OF_NODES)
+                   .event_id_max_value(MAX_EVENT_ID_VALUE)
                    .notifier_created_event(create_event_id)
                    .notifier_dropped_event(dropped_event_id)
                    .notifier_dead_event(dead_event_id)
@@ -113,6 +117,8 @@ TYPED_TEST(ServiceEventTest, service_settings_are_applied) {
 
     ASSERT_THAT(static_config.max_notifiers(), Eq(NUMBER_OF_NOTIFIERS));
     ASSERT_THAT(static_config.max_listeners(), Eq(NUMBER_OF_LISTENERS));
+    ASSERT_THAT(static_config.max_nodes(), Eq(NUMBER_OF_NODES));
+    ASSERT_THAT(static_config.event_id_max_value(), Eq(MAX_EVENT_ID_VALUE));
     ASSERT_THAT(static_config.notifier_created_event(), Eq(iox::optional<EventId>(create_event_id)));
     ASSERT_THAT(static_config.notifier_dropped_event(), Eq(iox::optional<EventId>(dropped_event_id)));
     ASSERT_THAT(static_config.notifier_dead_event(), Eq(iox::optional<EventId>(dead_event_id)));
@@ -570,4 +576,79 @@ TYPED_TEST(ServiceEventTest, when_deadline_is_not_missed_notification_works) {
     ASSERT_THAT(result.has_value(), Eq(true));
     ASSERT_THAT(listener.try_wait_one().expect("").has_value(), Eq(true));
 }
+
+TYPED_TEST(ServiceEventTest, number_of_listener_notifier_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+
+    auto service = node.service_builder(service_name).event().create().expect("");
+
+    ASSERT_THAT(service.dynamic_config().number_of_listeners(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_notifiers(), Eq(0));
+    {
+        auto listener = service.listener_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_listeners(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_notifiers(), Eq(0));
+
+        auto notifier = service.notifier_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_listeners(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_notifiers(), Eq(1));
+    }
+    ASSERT_THAT(service.dynamic_config().number_of_listeners(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_notifiers(), Eq(0));
+}
+
+TYPED_TEST(ServiceEventTest, service_id_is_unique_per_service) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name_1 = iox2_testing::generate_service_name();
+    const auto service_name_2 = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+
+    auto service_1_create = node.service_builder(service_name_1).event().create().expect("");
+    auto service_1_open = node.service_builder(service_name_1).event().open().expect("");
+    auto service_2 = node.service_builder(service_name_2).event().create().expect("");
+
+    ASSERT_THAT(service_1_create.service_id().c_str(), StrEq(service_1_open.service_id().c_str()));
+    ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
+}
+
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
+TYPED_TEST(ServiceEventTest, list_service_nodes_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto node_name_1 = NodeName::create("Nala and The HypnoToad").expect("");
+    const auto node_name_2 = NodeName::create("Can they be friends?").expect("");
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");
+    auto node_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().expect("");
+
+    auto sut_1 = node_1.service_builder(service_name).event().create().expect("");
+    auto sut_2 = node_2.service_builder(service_name).event().open().expect("");
+
+    auto counter = 0;
+    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) {
+        counter++;
+        if (node_view.id() == node_1.id()) {
+            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
+        } else {
+            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_2.name().to_string().c_str()));
+        }
+    };
+
+    auto result = sut_1.nodes([&](auto node_state) -> CallbackProgression {
+        node_state.alive(verify_node);
+
+        node_state.dead([](const auto&) { ASSERT_TRUE(false); });
+        node_state.inaccessible([](const auto&) { ASSERT_TRUE(false); });
+        node_state.undefined([](const auto&) { ASSERT_TRUE(false); });
+
+        return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(result.has_value(), Eq(true));
+    ASSERT_THAT(counter, Eq(2));
+}
+//NOLINTEND(readability-function-cognitive-complexity)
 } // namespace

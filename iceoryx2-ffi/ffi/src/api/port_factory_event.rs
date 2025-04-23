@@ -15,18 +15,23 @@
 use crate::api::{
     iox2_port_factory_listener_builder_h, iox2_port_factory_listener_builder_t,
     iox2_port_factory_notifier_builder_h, iox2_port_factory_notifier_builder_t,
-    iox2_service_name_ptr, iox2_service_type_e, AssertNonNullHandle, HandleToType,
+    iox2_service_name_ptr, iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt,
     PortFactoryListenerBuilderUnion, PortFactoryNotifierBuilderUnion,
 };
+use crate::{iox2_node_list_impl, IOX2_OK};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::{event::PortFactory as PortFactoryEvent, PortFactory};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 
-use super::{iox2_attribute_set_h_ref, iox2_static_config_event_t};
+use super::{
+    iox2_attribute_set_ptr, iox2_callback_context, iox2_node_list_callback,
+    iox2_static_config_event_t,
+};
 
 // BEGIN types definition
 
@@ -278,19 +283,153 @@ pub unsafe extern "C" fn iox2_port_factory_event_listener_builder(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_attributes(
     port_factory_handle: iox2_port_factory_event_h_ref,
-) -> iox2_attribute_set_h_ref {
+) -> iox2_attribute_set_ptr {
     use iceoryx2::prelude::PortFactory;
 
     port_factory_handle.assert_non_null();
 
     let port_factory = &mut *port_factory_handle.as_type();
     match port_factory.service_type {
-        iox2_service_type_e::IPC => {
-            (port_factory.value.as_ref().ipc.attributes() as *const AttributeSet).cast()
-        }
-        iox2_service_type_e::LOCAL => {
-            (port_factory.value.as_ref().local.attributes() as *const AttributeSet).cast()
-        }
+        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.attributes(),
+        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.attributes(),
+    }
+}
+
+/// Returns how many listener ports are currently connected.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_number_of_listeners(
+    handle: iox2_port_factory_event_h_ref,
+) -> usize {
+    use iceoryx2::prelude::PortFactory;
+
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .number_of_listeners(),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .number_of_listeners(),
+    }
+}
+
+/// Returns how many notifier ports are currently connected.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)!
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_number_of_notifiers(
+    handle: iox2_port_factory_event_h_ref,
+) -> usize {
+    use iceoryx2::prelude::PortFactory;
+
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .number_of_notifiers(),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .number_of_notifiers(),
+    }
+}
+
+/// Stores the service id in the provided buffer
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_event_open`](crate::iox2_service_builder_event_open) or
+///   [`iox2_service_builder_event_open_or_create`](crate::iox2_service_builder_event_open_or_create)!
+/// * `buffer` must be non-zero and point to a valid memory location
+/// * `buffer_len` must define the actual size of the memory location `buffer` is pointing to
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_service_id(
+    handle: iox2_port_factory_event_h_ref,
+    buffer: *mut c_char,
+    buffer_len: usize,
+) {
+    use iceoryx2::prelude::PortFactory;
+
+    debug_assert!(!buffer.is_null());
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+    let service_id = match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory.value.as_ref().ipc.service_id(),
+        iox2_service_type_e::LOCAL => port_factory.value.as_ref().local.service_id(),
+    };
+
+    let len = buffer_len.min(service_id.as_str().len());
+    core::ptr::copy_nonoverlapping(service_id.as_str().as_ptr(), buffer.cast(), len);
+    buffer.add(len).write(0);
+}
+
+/// Calls the callback repeatedly with an [`iox2_node_state_e`](crate::api::iox2_node_state_e),
+/// [`iox2_node_id_ptr`](crate::api::iox2_node_id_ptr),
+/// [´iox2_node_name_ptr´](crate::api::iox2_node_name_ptr) and
+/// [`iox2_config_ptr`](crate::api::iox2_config_ptr) for all [`Node`](iceoryx2::node::Node)s that
+/// have opened the service.
+///
+/// Returns IOX2_OK on success, an
+/// [`iox2_node_list_failure_e`](crate::api::iox2_node_list_failure_e) otherwise.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_pub_sub_open`](crate::iox2_service_builder_pub_sub_open) or
+///   [`iox2_service_builder_pub_sub_open_or_create`](crate::iox2_service_builder_pub_sub_open_or_create)!
+/// * `callback` - A valid callback with [`iox2_node_list_callback`] signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store information across callback iterations
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_nodes(
+    handle: iox2_port_factory_event_h_ref,
+    callback: iox2_node_list_callback,
+    callback_ctx: iox2_callback_context,
+) -> c_int {
+    use iceoryx2::prelude::PortFactory;
+
+    handle.assert_non_null();
+
+    let port_factory = &mut *handle.as_type();
+
+    let list_result = match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .nodes(|node_state| iox2_node_list_impl(&node_state, callback, callback_ctx)),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .nodes(|node_state| iox2_node_list_impl(&node_state, callback, callback_ctx)),
+    };
+
+    match list_result {
+        Ok(_) => IOX2_OK,
+        Err(e) => e.into_c_int(),
     }
 }
 

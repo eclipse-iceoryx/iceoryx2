@@ -24,7 +24,7 @@ use core::{
     mem::ManuallyDrop,
 };
 
-use super::iox2_attribute_set_h_ref;
+use super::iox2_attribute_set_ptr;
 
 // BEGIN type definition
 
@@ -180,19 +180,19 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
     ));
 }
 
-/// Returnes a [`iox2_attribute_set_h_ref`] to the underlying attribute set.
+/// Returnes a [`iox2_attribute_set_ptr`] to the underlying attribute set.
 ///
 /// # Safety
 ///
 /// * The `handle` must point to an initialized [`iox2_attribute_specifier_h`].
-/// * The `handle` must live at least as long as the returned [`iox2_attribute_set_h_ref`].
+/// * The `handle` must live at least as long as the returned [`iox2_attribute_set_ptr`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_attribute_specifier_attributes(
     handle: iox2_attribute_specifier_h_ref,
-) -> iox2_attribute_set_h_ref {
+) -> iox2_attribute_set_ptr {
     debug_assert!(!handle.is_null());
 
     let attribute_specifier_struct = &mut *handle.as_type();
-    (attribute_specifier_struct.value.as_ref().0.attributes() as *const AttributeSet).cast()
+    attribute_specifier_struct.value.as_ref().0.attributes()
 }
 // END C API

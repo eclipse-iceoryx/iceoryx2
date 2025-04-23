@@ -56,6 +56,56 @@ TYPED_TEST(ServicePublishSubscribeTest, created_service_does_exist) {
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Event).expect(""));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, service_name_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    ASSERT_THAT(sut.name().to_string().c_str(), StrEq(service_name.to_string().c_str()));
+}
+
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
+TYPED_TEST(ServicePublishSubscribeTest, list_service_nodes_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto node_name_1 = NodeName::create("nala is hungry").expect("");
+    const auto node_name_2 = NodeName::create("maybe octo-wolf can help?").expect("");
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node_1 = NodeBuilder().name(node_name_1).create<SERVICE_TYPE>().expect("");
+    auto node_2 = NodeBuilder().name(node_name_2).create<SERVICE_TYPE>().expect("");
+
+    auto sut_1 = node_1.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+    auto sut_2 = node_2.service_builder(service_name).template publish_subscribe<uint64_t>().open().expect("");
+
+    auto counter = 0;
+    auto verify_node = [&](const AliveNodeView<SERVICE_TYPE>& node_view) {
+        counter++;
+        if (node_view.id() == node_1.id()) {
+            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_1.name().to_string().c_str()));
+        } else {
+            ASSERT_THAT(node_view.details()->name().to_string().c_str(), StrEq(node_2.name().to_string().c_str()));
+        }
+    };
+
+    auto result = sut_1.nodes([&](auto node_state) -> CallbackProgression {
+        node_state.alive(verify_node);
+
+        node_state.dead([](const auto&) { ASSERT_TRUE(false); });
+        node_state.inaccessible([](const auto&) { ASSERT_TRUE(false); });
+        node_state.undefined([](const auto&) { ASSERT_TRUE(false); });
+
+        return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(result.has_value(), Eq(true));
+    ASSERT_THAT(counter, Eq(2));
+}
+//NOLINTEND(readability-function-cognitive-complexity)
+
 TYPED_TEST(ServicePublishSubscribeTest, creating_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -300,6 +350,32 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_send_receive_works) {
     ASSERT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, number_of_publishers_subscribers_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    ASSERT_THAT(service.dynamic_config().number_of_publishers(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_subscribers(), Eq(0));
+
+    {
+        auto sut_publisher = service.publisher_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_publishers(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_subscribers(), Eq(0));
+
+        auto sut_subscriber = service.subscriber_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_publishers(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_subscribers(), Eq(1));
+    }
+
+    ASSERT_THAT(service.dynamic_config().number_of_publishers(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_subscribers(), Eq(0));
+}
+
+
 // NOLINTBEGIN(readability-function-cognitive-complexity) : Cognitive complexity of 26 (+1) is OK. Test case is complex.
 TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -510,6 +586,12 @@ TYPED_TEST(ServicePublishSubscribeTest, setting_service_properties_works) {
     ASSERT_THAT(static_config.message_type_details().payload().size(), Eq(sizeof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().alignment(), Eq(alignof(uint64_t)));
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("u64"));
+
+    auto subscriber = service.subscriber_builder().create().expect("");
+    ASSERT_THAT(subscriber.buffer_size(), Eq(SUBSCRIBER_MAX_BUFFER_SIZE));
+
+    auto subscriber_2 = service.subscriber_builder().buffer_size(1).create().expect("");
+    ASSERT_THAT(subscriber_2.buffer_size(), Eq(1));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, safe_overflow_can_be_set) {
@@ -1274,6 +1356,21 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToInnerTypeNameIfPro
 
     auto static_config = service.static_config();
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("Payload"));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, service_id_is_unique_per_service) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    const auto service_name_1 = iox2_testing::generate_service_name();
+    const auto service_name_2 = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+
+    auto service_1_create =
+        node.service_builder(service_name_1).template publish_subscribe<uint64_t>().create().expect("");
+    auto service_1_open = node.service_builder(service_name_1).template publish_subscribe<uint64_t>().open().expect("");
+    auto service_2 = node.service_builder(service_name_2).template publish_subscribe<uint64_t>().create().expect("");
+
+    ASSERT_THAT(service_1_create.service_id().c_str(), StrEq(service_1_open.service_id().c_str()));
+    ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
 }
 // END tests for customizable payload and user header type name
 } // namespace

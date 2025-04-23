@@ -15,6 +15,7 @@
 
 #include "iox/duration.hpp"
 #include "iox/optional.hpp"
+#include "iox2/attribute_set.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/internal/iceoryx2.hpp"
