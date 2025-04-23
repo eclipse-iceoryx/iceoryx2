@@ -46,9 +46,11 @@ auto AttributeSetView::get_key_value_len(const Attribute::Key& key) const -> uin
 auto AttributeSetView::get_key_value_at(const Attribute::Key& key, const uint64_t idx)
     -> iox::optional<Attribute::Value> {
     iox::UninitializedArray<char, Attribute::Value::capacity()> buffer;
-    iox2_attribute_set_get_key_value_at(m_handle, key.c_str(), idx, &buffer[0], Attribute::Value::capacity());
+    bool has_value = false;
+    iox2_attribute_set_get_key_value_at(
+        m_handle, key.c_str(), idx, &buffer[0], Attribute::Value::capacity(), &has_value);
 
-    if (buffer[0] == 0) {
+    if (!has_value) {
         return iox::nullopt;
     }
 

@@ -237,13 +237,14 @@ pub unsafe extern "C" fn iox2_attribute_set_get_key_value_at(
     index: usize,
     buffer: *mut c_char,
     buffer_len: usize,
+    has_value: *mut bool,
 ) {
     debug_assert!(!handle.is_null());
     debug_assert!(!key.is_null());
     debug_assert!(!buffer.is_null());
     debug_assert!(0 < buffer_len);
 
-    buffer.add(0).write(0);
+    *has_value = false;
     let key = CStr::from_ptr(key).to_str();
     if key.is_err() {
         return;
@@ -256,6 +257,7 @@ pub unsafe extern "C" fn iox2_attribute_set_get_key_value_at(
                 buffer,
                 buffer_len.min(value.count_bytes() + 1 /* null terminator */),
             );
+            *has_value = true;
         }
     }
 }
