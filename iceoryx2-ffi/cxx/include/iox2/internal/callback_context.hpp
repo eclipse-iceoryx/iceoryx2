@@ -22,6 +22,24 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2::internal {
+
+/// Building block to provide a type-safe context pointer to a C callback
+/// that has a `void*` context argument.
+/// The context could be hereby a user provided clojure with capture or
+/// any other C++ object.
+///
+/// # Example
+///
+/// ```
+/// void some_c_callback(void* context) {
+///    auto ctx = internal::ctx_cast<SomeType>(context);
+///    ctx->value(); // access underlying my_context_object
+/// }
+///
+/// SomeType my_context_object;
+/// auto ctx = internal::ctx(my_context_object);
+/// some_c_callback(static_cast<void*>(&ctx));
+/// ```
 template <typename T>
 class CallbackContext {
   public:

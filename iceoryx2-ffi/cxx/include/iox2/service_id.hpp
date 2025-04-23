@@ -24,7 +24,7 @@ class ServiceId {
     auto max_len() -> uint64_t;
 
     /// Returns the string value of the [`ServiceId`]
-    auto as_str() const -> const char*;
+    auto c_str() const -> const char*;
 
   private:
     explicit ServiceId(const iox::string<IOX2_SERVICE_ID_LENGTH>& value);

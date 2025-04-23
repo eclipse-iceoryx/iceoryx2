@@ -609,8 +609,8 @@ TYPED_TEST(ServiceEventTest, service_id_is_unique_per_service) {
     auto service_1_open = node.service_builder(service_name_1).event().open().expect("");
     auto service_2 = node.service_builder(service_name_2).event().create().expect("");
 
-    ASSERT_THAT(service_1_create.service_id().as_str(), StrEq(service_1_open.service_id().as_str()));
-    ASSERT_THAT(service_1_create.service_id().as_str(), Not(StrEq(service_2.service_id().as_str())));
+    ASSERT_THAT(service_1_create.service_id().c_str(), StrEq(service_1_open.service_id().c_str()));
+    ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
 }
 
 //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT

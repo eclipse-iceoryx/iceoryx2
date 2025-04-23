@@ -72,10 +72,10 @@ TYPED_TEST(ServiceTest, list_works) {
     auto verify = [&](auto details) -> CallbackProgression {
         if (details.static_details.messaging_pattern() == MessagingPattern::PublishSubscribe) {
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().c_str()));
-            EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().as_str()));
+            EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().c_str()));
         } else {
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().c_str()));
-            EXPECT_THAT(details.static_details.id(), StrEq(sut_2.service_id().as_str()));
+            EXPECT_THAT(details.static_details.id(), StrEq(sut_2.service_id().c_str()));
         }
 
         return CallbackProgression::Continue;
@@ -111,7 +111,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
     auto verify = [&](auto details) -> CallbackProgression {
         if (details.static_details.messaging_pattern() == MessagingPattern::PublishSubscribe) {
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_1.to_string().c_str()));
-            EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().as_str()));
+            EXPECT_THAT(details.static_details.id(), StrEq(sut_1.service_id().c_str()));
 
             auto counter = 0;
             details.static_details.attributes().get_key_values(key_1, [&](auto& value) -> CallbackProgression {
@@ -130,7 +130,7 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
             EXPECT_THAT(counter, Eq(1));
         } else {
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_2.to_string().c_str()));
-            EXPECT_THAT(details.static_details.id(), StrEq(sut_2.service_id().as_str()));
+            EXPECT_THAT(details.static_details.id(), StrEq(sut_2.service_id().c_str()));
         }
 
         return CallbackProgression::Continue;

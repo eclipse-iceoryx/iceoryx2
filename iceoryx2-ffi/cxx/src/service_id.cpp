@@ -17,7 +17,7 @@ auto ServiceId::max_len() -> uint64_t {
     return IOX2_SERVICE_ID_LENGTH;
 }
 
-auto ServiceId::as_str() const -> const char* {
+auto ServiceId::c_str() const -> const char* {
     return m_value.c_str();
 }
 
