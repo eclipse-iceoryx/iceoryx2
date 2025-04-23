@@ -23,6 +23,7 @@ file(GLOB TEST_FILES src/*.cpp)
 add_executable(${PROJECT_NAME} ${TEST_FILES})
 
 target_link_libraries(${PROJECT_NAME} iceoryx2-cxx::static-lib-cxx GTest::gtest GTest::gmock)
+target_compile_options(${PROJECT_NAME} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD 17
