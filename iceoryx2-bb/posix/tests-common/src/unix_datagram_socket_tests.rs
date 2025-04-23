@@ -29,6 +29,7 @@ use iceoryx2_bb_posix::unix_datagram_socket::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_requires;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing_macros::test;
 use iceoryx2_pal_posix::posix::POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA;
 
@@ -131,7 +132,9 @@ pub fn non_blocking_mode_returns_zero_when_nothing_was_received() {
 }
 
 #[test]
-pub fn blocking_mode_blocks() {
+fn blocking_receive_blocks() {
+    let _watchdog = Watchdog::new();
+
     create_test_directory();
     let socket_name = generate_file_path();
     let received_message = AtomicBool::new(false);
@@ -176,7 +179,88 @@ pub fn blocking_mode_blocks() {
 }
 
 #[test]
-pub fn timeout_blocks_at_least() {
+fn blocking_send_blocks() {
+    let _watchdog = Watchdog::new();
+
+    create_test_directory();
+    let socket_name = generate_file_path();
+    let handle = BarrierHandle::new();
+    let handle_2 = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+    let barrier_2 = BarrierBuilder::new(2).create(&handle_2).unwrap();
+    let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 73u8];
+
+    thread_scope(|s| {
+        s.thread_builder().spawn(|| {
+            barrier.wait();
+            let sut_sender = UnixDatagramSenderBuilder::new(&socket_name)
+                .create()
+                .unwrap();
+
+            while let Ok(true) = sut_sender.try_send(send_data.as_slice()) {}
+
+            let start = Time::now().unwrap();
+            barrier_2.wait();
+
+            let result = sut_sender.blocking_send(send_data.as_slice());
+
+            assert_that!(result, is_ok);
+            assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
+        })?;
+
+        let sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+            .permission(Permission::OWNER_ALL)
+            .creation_mode(CreationMode::PurgeAndCreate)
+            .create()
+            .unwrap();
+        barrier.wait();
+        barrier_2.wait();
+
+        nanosleep(TIMEOUT).unwrap();
+
+        let mut receive_data: Vec<u8> = vec![0, 0, 0, 0, 0, 0];
+        while let Ok(count) = sut_receiver.try_receive(receive_data.as_mut_slice()) {
+            if count == 0 {
+                break;
+            }
+        }
+
+        Ok(())
+    })
+    .unwrap();
+}
+
+#[test]
+fn timed_send_blocks_at_least_for_timeout() {
+    let _watchdog = Watchdog::new();
+
+    create_test_directory();
+    let socket_name = generate_file_path();
+    let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 173u8];
+
+    let _sut_receiver = UnixDatagramReceiverBuilder::new(&socket_name)
+        .permission(Permission::OWNER_ALL)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .create()
+        .unwrap();
+    let sut_sender = UnixDatagramSenderBuilder::new(&socket_name)
+        .create()
+        .unwrap();
+
+    while let Ok(true) = sut_sender.try_send(send_data.as_slice()) {}
+
+    let start = Time::now().unwrap();
+
+    let result = sut_sender.timed_send(send_data.as_slice(), TIMEOUT);
+
+    assert_that!(result, is_ok);
+    assert_that!(start.elapsed().unwrap(), time_at_least TIMEOUT);
+}
+
+#[test]
+fn timed_receive_blocks_at_least_for_timeout() {
+    let _watchdog = Watchdog::new();
+
     create_test_directory();
     let socket_name = generate_file_path();
     let handle = BarrierHandle::new();
