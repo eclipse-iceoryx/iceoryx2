@@ -74,7 +74,7 @@ class PortFactoryRequestResponse {
         -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponsePayload>;
 
   private:
-    // template <typename, typename, ServiceType>
+    template <ServiceType, typename, typename, typename, typename>
     friend class ServiceBuilderRequestResponse;
 
     explicit PortFactoryRequestResponse();
