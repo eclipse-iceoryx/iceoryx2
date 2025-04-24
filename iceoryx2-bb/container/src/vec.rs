@@ -183,19 +183,14 @@ pub mod details {
 
         fn deref(&self) -> &Self::Target {
             self.verify_init("deref()");
-            unsafe { core::slice::from_raw_parts((*self.data_ptr.as_ptr()).as_ptr(), self.len) }
+            unsafe { self.as_slice_impl() }
         }
     }
 
     impl<T, Ptr: GenericPointer> DerefMut for MetaVec<T, Ptr> {
         fn deref_mut(&mut self) -> &mut Self::Target {
             self.verify_init("deref_mut()");
-            unsafe {
-                core::slice::from_raw_parts_mut(
-                    (*self.data_ptr.as_mut_ptr()).as_mut_ptr(),
-                    self.len,
-                )
-            }
+            unsafe { self.as_mut_slice_impl() }
         }
     }
 
