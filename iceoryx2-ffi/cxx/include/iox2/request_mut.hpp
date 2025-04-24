@@ -22,6 +22,9 @@
 
 namespace iox2 {
 
+/// The [`RequestMut`] represents the object that contains the payload that the
+/// [`Client`](crate::port::client::Client) sends to the
+/// [`Server`](crate::port::server::Server).
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestHeader,
@@ -41,17 +44,27 @@ class RequestMut {
     auto operator->() const -> const RequestPayload*;
     auto operator->() -> RequestPayload*;
 
+    /// Returns a reference to the iceoryx2 internal
+    /// [`service::header::request_response::RequestHeader`]
     auto header() const -> RequestHeaderRequestResponse&;
 
+    /// Returns a reference to the user defined request header.
     template <typename T = RequestHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestHeader>, T>>
     auto user_header() const -> const T&;
 
+    /// Returns a mutable reference to the user defined request header.
     template <typename T = RequestHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestHeader>, T>>
     auto user_header_mut() -> T&;
 
+    /// Returns a reference to the user defined request payload.
     auto payload() const -> const RequestPayload&;
+
+    /// Returns a mutable reference to the user defined request payload.
     auto payload_mut() -> RequestPayload&;
 
+    /// Sends the [`RequestMut`] to all connected
+    /// [`Server`](crate::port::server::Server)s of the
+    /// [`Service`](crate::service::Service).
     auto send()
         -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                          RequestSendError>;

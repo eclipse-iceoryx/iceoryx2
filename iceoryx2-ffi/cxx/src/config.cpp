@@ -161,8 +161,8 @@ auto Defaults::event() && -> Event {
     return Event(m_config);
 }
 
-auto Defaults::request_response() && -> RequestResonse {
-    return RequestResonse(m_config);
+auto Defaults::request_response() && -> RequestResponse {
+    return RequestResponse(m_config);
 }
 /////////////////////////
 // END: Defaults
@@ -504,117 +504,125 @@ void Node::set_cleanup_dead_nodes_on_destruction(bool value) && {
 /////////////////////////
 
 /////////////////////////
-// BEGIN: RequestResonse
+// BEGIN: RequestResponse
 /////////////////////////
-RequestResonse::RequestResonse(iox2_config_h* config)
+RequestResponse::RequestResponse(iox2_config_h* config)
     : m_config { config } {
 }
 
-auto RequestResonse::enable_safe_overflow_for_requests() && -> bool {
+auto RequestResponse::enable_safe_overflow_for_requests() && -> bool {
     IOX_TODO();
 }
 
-void RequestResonse::set_enable_safe_overflow_for_requests(bool value) && {
+void RequestResponse::set_enable_safe_overflow_for_requests(bool value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::enable_safe_overflow_for_responses() && -> bool {
+auto RequestResponse::enable_safe_overflow_for_responses() && -> bool {
     IOX_TODO();
 }
 
-void RequestResonse::set_enable_safe_overflow_for_responses(bool value) && {
+void RequestResponse::set_enable_safe_overflow_for_responses(bool value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::max_active_requests_per_client() && -> size_t {
+auto RequestResponse::max_active_requests_per_client() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResonse::set_max_active_requests_per_client(size_t value) && {
+void RequestResponse::set_max_active_requests_per_client(size_t value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::max_response_buffer_size() && -> size_t {
+auto RequestResponse::max_response_buffer_size() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResonse::set_max_response_buffer_size(size_t value) && {
+void RequestResponse::set_max_response_buffer_size(size_t value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::max_servers() && -> size_t {
+auto RequestResponse::max_servers() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResonse::set_max_servers(size_t value) && {
+void RequestResponse::set_max_servers(size_t value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::max_clients() && -> size_t {
+auto RequestResponse::max_clients() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResonse::set_max_clients(size_t value) && {
+void RequestResponse::set_max_clients(size_t value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::max_nodes() && -> size_t {
+auto RequestResponse::max_nodes() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResonse::set_max_nodes(size_t value) && {
+void RequestResponse::set_max_nodes(size_t value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::max_borrowed_responses_per_pending_response() && -> size_t {
+auto RequestResponse::max_borrowed_responses_per_pending_response() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResonse::set_max_borrowed_responses_per_pending_response(size_t value) && {
+void RequestResponse::set_max_borrowed_responses_per_pending_response(size_t value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::client_max_loaned_requests() && -> size_t {
+auto RequestResponse::max_loaned_requests() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResonse::set_client_max_loaned_requests(size_t value) && {
+void RequestResponse::set_max_loaned_requests(size_t value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::server_max_loaned_responses_per_request() && -> size_t {
+auto RequestResponse::server_max_loaned_responses_per_request() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResonse::set_server_max_loaned_responses_per_request(size_t value) && {
+void RequestResponse::set_server_max_loaned_responses_per_request(size_t value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::client_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
+auto RequestResponse::client_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
     IOX_TODO();
 }
 
-void RequestResonse::set_client_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
+void RequestResponse::set_client_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::server_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
+auto RequestResponse::server_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
     IOX_TODO();
 }
 
-void RequestResonse::set_server_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
+void RequestResponse::set_server_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
     IOX_TODO();
 }
 
-auto RequestResonse::client_expired_connection_buffer() && -> size_t {
+auto RequestResponse::client_expired_connection_buffer() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResonse::set_client_expired_connection_buffer(size_t value) && {
+void RequestResponse::set_client_expired_connection_buffer(size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::enable_fire_and_forget_requests() && -> bool {
+    IOX_TODO();
+}
+
+void RequestResponse::set_enable_fire_and_forget_requests(bool value) && {
     IOX_TODO();
 }
 /////////////////////////
-// END: RequestResonse
+// END: RequestResponse
 /////////////////////////
 } // namespace config
 } // namespace iox2

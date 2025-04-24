@@ -18,6 +18,15 @@
 
 namespace iox2 {
 
+/// Acquired by a [`ActiveRequest`](crate::active_request::ActiveRequest) with
+///  * [`ActiveRequest::loan_uninit()`](crate::active_request::ActiveRequest::loan_uninit())
+///
+/// It stores the payload of the response that will be sent to the corresponding
+/// [`PendingResponse`](crate::pending_response::PendingResponse) of the
+/// [`Client`](crate::port::client::Client).
+///
+/// If the [`ResponseMutUninit`] is not sent it will reelase the loaned memory when going out of
+/// scope.
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 class ResponseMutUninit {
   public:
@@ -28,17 +37,26 @@ class ResponseMutUninit {
     ResponseMutUninit(const ResponseMutUninit&) = delete;
     auto operator=(const ResponseMutUninit&) -> ResponseMutUninit& = delete;
 
+    /// Returns a reference to the
+    /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
     auto header() const -> ResponseHeaderRequestResponse&;
 
+    /// Returns a reference to the user header of the response.
     template <typename T = ResponseHeader, typename = std::enable_if_t<!std::is_same_v<void, ResponseHeader>, T>>
     auto user_header() const -> const T&;
 
+    /// Returns a mutable reference to the user header of the response.
     template <typename T = ResponseHeader, typename = std::enable_if_t<!std::is_same_v<void, ResponseHeader>, T>>
     auto user_header_mut() -> T&;
 
+    /// Returns a reference to the payload of the response.
     auto payload() const -> const ResponsePayload&;
+
+    /// Returns a mutable reference to the payload of the response.
     auto payload_mut() -> ResponsePayload&;
 
+    /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
+    /// [`ResponseMut`] that is ready to be sent.
     void write_payload(ResponsePayload& value);
 
   private:

@@ -35,18 +35,30 @@ class Client {
     Client(const Client&) noexcept = delete;
     auto operator=(const Client&) noexcept -> Client& = delete;
 
+    /// Returns the [`UniqueClientId`] of the [`Client`]
     auto id() const -> UniqueClientId;
 
+    /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
+    /// if the [`Server`](crate::port::server::Server)s buffer is full.
     auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
 
+    /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
+    /// by default to avoid unnecessary copies.
     auto loan_uninit()
         -> iox::expected<RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                          LoanError>;
 
+    /// Copies the input value into a [`RequestMut`] and sends it. On success it
+    /// returns a [`PendingResponse`] that can be used to receive a stream of
+    /// [`Response`](crate::response::Response)s from the
+    /// [`Server`](crate::port::server::Server).
     auto send_copy(const RequestPayload& value) const
         -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                          RequestSendError>;
 
+    /// Acquires the payload for the request and initializes the underlying memory
+    /// with default. This can be very expensive when the payload is large, therefore
+    /// prefer [`Client::loan_uninit()`] when possible.
     auto loan() -> iox::expected<RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                                  LoanError>;
 

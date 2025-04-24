@@ -16,6 +16,7 @@
 #include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
+/// Request header used by [`MessagingPattern::RequestResponse`]
 class RequestHeaderRequestResponse {
   public:
     RequestHeaderRequestResponse(const RequestHeaderRequestResponse&) = delete;
@@ -24,15 +25,17 @@ class RequestHeaderRequestResponse {
     auto operator=(RequestHeaderRequestResponse&& rhs) noexcept -> RequestHeaderRequestResponse&;
     ~RequestHeaderRequestResponse();
 
+    /// Returns the [`UniqueClientId`] of the source [`Client`].
     auto client_port_id() -> UniqueClientId;
 
   private:
-    // explicit RequestHeaderRequestResponse(iox2_request_header_h handle);
+    explicit RequestHeaderRequestResponse(/*iox2_request_header_h handle*/);
     void drop();
 
     // iox2_request_header_h m_handle = nullptr;
 };
 
+/// Response header used by [`MessagingPattern::RequestResponse`]
 class ResponseHeaderRequestResponse {
   public:
     ResponseHeaderRequestResponse(const ResponseHeaderRequestResponse&) = delete;
@@ -41,10 +44,11 @@ class ResponseHeaderRequestResponse {
     auto operator=(ResponseHeaderRequestResponse&& rhs) noexcept -> ResponseHeaderRequestResponse&;
     ~ResponseHeaderRequestResponse();
 
+    /// Returns the [`UniqueServerId`] of the source [`Server`].
     auto server_port_id() -> UniqueServerId;
 
   private:
-    // explicit ResponseHeaderRequestResponse(iox2_response_header_h handle);
+    explicit ResponseHeaderRequestResponse(/*iox2_response_header_h handle*/);
     void drop();
 
     // iox2_response_header_h m_handle = nullptr;

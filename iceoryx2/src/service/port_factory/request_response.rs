@@ -192,8 +192,8 @@ impl<
         PortFactoryClient::new(self)
     }
 
-    /// Returns a [`PortFactoryClient`] to create a new
-    /// [`crate::port::client::Client`] port.
+    /// Returns a [`PortFactoryServer`] to create a new
+    /// [`crate::port::server::Server`] port.
     ///
     /// # Example
     ///

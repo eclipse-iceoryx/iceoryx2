@@ -29,6 +29,11 @@
 #include "iox2/static_config_request_response.hpp"
 
 namespace iox2 {
+/// The factory for
+/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse).
+/// It can acquire dynamic and static service informations and create
+/// [`crate::port::client::Client`]
+/// or [`crate::port::server::Server`] ports.
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestHeader,
@@ -67,9 +72,13 @@ class PortFactoryRequestResponse {
     auto nodes(const iox::function<CallbackProgression(NodeState<Service>)>& callback) const
         -> iox::expected<void, NodeListFailure>;
 
+    /// Returns a [`PortFactoryClient`] to create a new
+    /// [`crate::port::client::Client`] port.
     auto client_builder() const
         -> PortFactoryClient<Service, RequestPayload, RequestPayload, ResponsePayload, ResponseHeader>;
 
+    /// Returns a [`PortFactoryServer`] to create a new
+    /// [`crate::port::server::Server`] port.
     auto server_builder() const
         -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponsePayload>;
 

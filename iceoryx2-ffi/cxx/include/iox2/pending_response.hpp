@@ -42,16 +42,39 @@ class PendingResponse {
     PendingResponse(const PendingResponse&) = delete;
     auto operator=(const PendingResponse&) -> PendingResponse& = delete;
 
+    auto operator*() const -> const RequestPayload&;
+    auto operator->() const -> const RequestPayload*;
+
+    /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
+    /// received the [`RequestMut`].
     auto receive() -> iox::expected<iox::optional<Response<Service, ResponsePayload, ResponseHeader>>, ReceiveError>;
 
+    /// Returns a reference to the iceoryx2 internal
+    /// [`service::header::request_response::RequestHeader`] of the corresponding
+    /// [`RequestMut`]
     auto header() -> RequestHeaderRequestResponse&;
 
+    /// Returns a reference to the user defined request header of the corresponding
+    /// [`RequestMut`]
     template <typename T = RequestHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestHeader>, T>>
     auto user_header() -> const T&;
 
+    /// Returns a reference to the request payload of the corresponding
+    /// [`RequestMut`]
     auto payload() -> const RequestPayload&;
+
+    /// Returns how many [`Server`](crate::port::server::Server)s received the corresponding
+    /// [`RequestMut`] initially.
     auto number_of_server_connections() const -> size_t;
+
+    /// Returns [`true`] when a [`Server`](crate::port::server::Server) has sent a [`Response`]
+    /// otherwise [`false`].
     auto has_response() -> iox::expected<bool, ConnectionFailure>;
+
+    /// Returns [`true`] until the [`ActiveRequest`](crate::active_request::ActiveRequest)
+    /// goes out of scope on the [`Server`](crate::port::server::Server)s side indicating that the
+    /// [`Server`](crate::port::server::Server) will no longer send [`Response`]s.
+    /// It also returns [`false`] when there are no [`Server`](crate::port::server::Server)s.
     auto is_connected() const -> bool;
 
   private:
@@ -89,6 +112,26 @@ template <ServiceType Service,
 inline PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::
     ~PendingResponse() noexcept {
     drop();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator*() const
+    -> const RequestPayload& {
+    IOX_TODO();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator->() const
+    -> const RequestPayload* {
+    IOX_TODO();
 }
 
 template <ServiceType Service,

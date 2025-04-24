@@ -228,9 +228,9 @@ auto operator<(const UniqueClientId& lhs, const UniqueClientId& rhs) -> bool {
     IOX_TODO();
 }
 
-// UniqueClientId::UniqueClientId(iox2_unique_client_id_h handle)
-//: m_handle { handle } {
-//}
+UniqueClientId::UniqueClientId(/*iox2_unique_client_id_h handle*/) {
+    IOX_TODO();
+}
 
 auto UniqueClientId::bytes() const -> const iox::optional<RawIdType>& {
     // if (!m_raw_id.has_value() && m_handle != nullptr) {
@@ -279,9 +279,9 @@ auto operator<(const UniqueServerId& lhs, const UniqueServerId& rhs) -> bool {
     IOX_TODO();
 }
 
-// UniqueServerId::UniqueServerId(iox2_unique_server_id_h handle)
-//: m_handle { handle } {
-//}
+UniqueServerId::UniqueServerId(/*iox2_unique_server_id_h handle*/) {
+    IOX_TODO();
+}
 
 auto UniqueServerId::bytes() const -> const iox::optional<RawIdType>& {
     // if (!m_raw_id.has_value() && m_handle != nullptr) {

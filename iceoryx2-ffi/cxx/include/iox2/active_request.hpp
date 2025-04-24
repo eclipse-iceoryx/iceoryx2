@@ -42,21 +42,39 @@ class ActiveRequest {
     auto operator*() const -> const RequestPayload&;
     auto operator->() const -> const RequestPayload*;
 
+    /// Loans uninitialized memory for a [`ResponseMut`] where the user can write its payload to.
     auto loan_uninit() -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseHeader>, LoanError>;
 
+    /// Sends a copy of the provided data to the
+    /// [`PendingResponse`](crate::pending_response::PendingResponse) of the corresponding
+    /// [`Client`](crate::port::client::Client).
+    /// This is not a zero-copy API. Use [`ActiveRequest::loan_uninit()`] instead.
     auto send_copy(const ResponsePayload& value) const -> iox::expected<void, SendError>;
 
+    /// Returns a reference to the payload of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
     auto payload() const -> const RequestPayload&;
 
+    /// Returns a reference to the user_header of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
     template <typename T = RequestHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestHeader>, T>>
     auto user_header() const -> const T&;
 
+    /// Returns a reference to the
+    /// [`crate::service::header::request_response::RequestHeader`] of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
     auto header() const -> RequestHeaderRequestResponse&;
 
+    /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
     auto origin() const -> UniqueClientId;
 
+    /// Returns [`true`] until the [`PendingResponse`](crate::pending_response::PendingResponse)
+    /// goes out of scope on the [`Client`](crate::port::client::Client)s side indicating that the
+    /// [`Client`](crate::port::client::Client) no longer receives the [`ResponseMut`].
     auto is_connected() const -> bool;
 
+    /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
+    /// payload to.
     auto loan() -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError>;
 
   private:

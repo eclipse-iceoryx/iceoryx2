@@ -20,6 +20,9 @@
 
 namespace iox2 {
 
+/// A version of the [`RequestMut`] where the payload is not initialized which allows
+/// true zero copy usage. To send a [`RequestMutUninit`] it must be first initialized
+/// and converted into [`RequestMut`] with [`RequestMutUninit::assume_init()`].
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestHeader,
@@ -34,17 +37,26 @@ class RequestMutUninit {
     RequestMutUninit(const RequestMutUninit&) = delete;
     auto operator=(const RequestMutUninit&) -> RequestMutUninit& = delete;
 
+    /// Returns a reference to the iceoryx2 internal
+    /// [`service::header::request_response::RequestHeader`]
     auto header() const -> RequestHeaderRequestResponse&;
 
+    /// Returns a reference to the user defined request header.
     template <typename T = RequestHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestHeader>, T>>
     auto user_header() const -> const T&;
 
+    /// Returns a mutable reference to the user defined request header.
     template <typename T = RequestHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestHeader>, T>>
     auto user_header_mut() -> T&;
 
+    /// Returns a reference to the user defined request payload.
     auto payload() const -> const RequestPayload&;
+
+    /// Returns a mutable reference to the user defined request payload.
     auto payload_mut() -> RequestPayload&;
 
+    /// Copies the provided payload into the uninitialized request and returns
+    /// an initialized [`RequestMut`].
     void write_payload(RequestPayload& value);
 
   private:

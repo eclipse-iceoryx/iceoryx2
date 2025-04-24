@@ -240,7 +240,7 @@ class Event {
 
 /// Default settings for the request response messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
-class RequestResonse {
+class RequestResponse {
     /// Defines if the request buffer of the [`Service`] safely overflows.
     auto enable_safe_overflow_for_requests() && -> bool;
     /// Enables/disables safe overflow for the request buffer.
@@ -283,10 +283,10 @@ class RequestResonse {
     void set_max_borrowed_responses_per_pending_response(size_t value) &&;
     /// Defines how many [`crate::request_mut::RequestMut`] a
     /// [`crate::port::client::Client`] can loan in parallel.
-    auto client_max_loaned_requests() && -> size_t;
+    auto max_loaned_requests() && -> size_t;
     /// Set how many [`crate::request_mut::RequestMut`] a
     /// [`crate::port::client::Client`] can loan in parallel.
-    void set_client_max_loaned_requests(size_t value) &&;
+    void set_max_loaned_requests(size_t value) &&;
     /// Defines how many [`crate::response_mut::ResponseMut`] a [`crate::port::server::Server`] can loan in
     /// parallel per [`crate::active_request::ActiveRequest`].
     auto server_max_loaned_responses_per_request() && -> size_t;
@@ -317,10 +317,27 @@ class RequestResonse {
     /// disconnected from a service and the connection
     /// still contains unconsumed [`Response`](crate::response::Response)s.
     void set_client_expired_connection_buffer(size_t value) &&;
+    /// Allows the [`Server`](crate::port::server::Server) to receive
+    /// [`RequestMut`](crate::response_mut::ResponseMut)s of
+    /// [`Client`](crate::port::client::Client)s that are not interested in a
+    /// [`Response`](crate::response::Response), meaning that the
+    /// [`Server`](crate::port::server::Server) will receive the
+    /// [`RequestMut`](crate::response_mut::ResponseMut) despite the corresponding
+    /// [`PendingResponse`](crate::pending_response::PendingResponse) already went out-of-scope.
+    /// So any [`Response`](crate::response::Response) sent by the
+    /// [`Server`](crate::port::server::Server) would not be received by the corresponding
+    /// [`Client`](crate::port::client::Client)s
+    /// [`PendingResponse`](crate::pending_response::PendingResponse).
+    ///
+    /// Consider enabling this feature if you do not want to loose any
+    /// [`RequestMut`](crate::response_mut::ResponseMut).
+    auto enable_fire_and_forget_requests() && -> bool;
+    /// Set if fire-and-forget feature is enabled
+    void set_enable_fire_and_forget_requests(bool value) &&;
 
   private:
     friend class Defaults;
-    explicit RequestResonse(iox2_config_h* config);
+    explicit RequestResponse(iox2_config_h* config);
 
     iox2_config_h* m_config = nullptr;
 };
@@ -334,7 +351,7 @@ class Defaults {
     /// Returns the event part of the default settings
     auto event() && -> Event;
     /// Returns the request_response part of the default settings
-    auto request_response() && -> RequestResonse;
+    auto request_response() && -> RequestResponse;
 
   private:
     friend class ::iox2::Config;

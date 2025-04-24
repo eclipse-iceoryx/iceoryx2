@@ -18,6 +18,10 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
+/// It stores the payload and can be received by the
+/// [`PendingResponse`](crate::pending_response::PendingResponse) after a
+/// [`RequestMut`](crate::request_mut::RequestMut) was sent to a
+/// [`Server`](crate::port::server::Server) via the [`Client`](crate::port::client::Client).
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 class Response {
   public:
@@ -31,13 +35,19 @@ class Response {
     auto operator*() const -> const ResponsePayload&;
     auto operator->() const -> const ResponsePayload*;
 
+    /// Returns a reference to the
+    /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
     auto header() const -> ResponseHeaderRequestResponse&;
 
+    /// Returns a reference to the user header of the response.
     template <typename T = ResponseHeader, typename = std::enable_if_t<!std::is_same_v<void, ResponseHeader>, T>>
     auto user_header() const -> const T&;
 
+    /// Returns a reference to the payload of the response.
     auto payload() const -> const ResponsePayload&;
 
+    /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server) which sent
+    /// the [`Response`].
     auto origin() const -> UniqueServerId;
 
   private:
