@@ -40,7 +40,7 @@ impl ServiceId {
     }
 
     /// Returns the maximum string length of a [`ServiceId`]
-    pub const fn max_len() -> usize {
+    pub const fn max_number_of_characters() -> usize {
         SERVICE_ID_CAPACITY
     }
 

@@ -31,24 +31,22 @@ AttributeSetView::AttributeSetView(iox2_attribute_set_ptr handle)
     : m_handle { handle } {
 }
 
-auto AttributeSetView::len() const -> uint64_t {
-    return iox2_attribute_set_len(m_handle);
+auto AttributeSetView::number_of_attributes() const -> uint64_t {
+    return iox2_attribute_set_number_of_attributes(m_handle);
 }
 
-auto AttributeSetView::at(const uint64_t index) const -> AttributeView {
-    return AttributeView(iox2_attribute_set_at(m_handle, index));
+auto AttributeSetView::operator[](const uint64_t index) const -> AttributeView {
+    return AttributeView(iox2_attribute_set_index(m_handle, index));
 }
 
-auto AttributeSetView::get_key_value_len(const Attribute::Key& key) const -> uint64_t {
-    return iox2_attribute_set_get_key_value_len(m_handle, key.c_str());
+auto AttributeSetView::number_of_key_values(const Attribute::Key& key) const -> uint64_t {
+    return iox2_attribute_set_number_of_key_values(m_handle, key.c_str());
 }
 
-auto AttributeSetView::get_key_value_at(const Attribute::Key& key, const uint64_t idx)
-    -> iox::optional<Attribute::Value> {
+auto AttributeSetView::key_value(const Attribute::Key& key, const uint64_t idx) -> iox::optional<Attribute::Value> {
     iox::UninitializedArray<char, Attribute::Value::capacity()> buffer;
     bool has_value = false;
-    iox2_attribute_set_get_key_value_at(
-        m_handle, key.c_str(), idx, &buffer[0], Attribute::Value::capacity(), &has_value);
+    iox2_attribute_set_key_value(m_handle, key.c_str(), idx, &buffer[0], Attribute::Value::capacity(), &has_value);
 
     if (!has_value) {
         return iox::nullopt;
@@ -57,10 +55,10 @@ auto AttributeSetView::get_key_value_at(const Attribute::Key& key, const uint64_
     return Attribute::Value(iox::TruncateToCapacity, &buffer[0]);
 }
 
-void AttributeSetView::get_key_values(
+void AttributeSetView::iter_key_values(
     const Attribute::Key& key, const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const {
     auto ctx = internal::ctx(callback);
-    iox2_attribute_set_get_key_values(m_handle, key.c_str(), get_key_values_callback, static_cast<void*>(&ctx));
+    iox2_attribute_set_iter_key_values(m_handle, key.c_str(), get_key_values_callback, static_cast<void*>(&ctx));
 }
 
 auto AttributeSetView::to_owned() const -> AttributeSet {
@@ -114,25 +112,25 @@ void AttributeSet::drop() {
     }
 }
 
-auto AttributeSet::len() const -> uint64_t {
-    return m_view.len();
+auto AttributeSet::number_of_attributes() const -> uint64_t {
+    return m_view.number_of_attributes();
 }
 
-auto AttributeSet::at(const uint64_t index) const -> AttributeView {
-    return m_view.at(index);
+auto AttributeSet::operator[](const uint64_t index) const -> AttributeView {
+    return m_view[index];
 }
 
-auto AttributeSet::get_key_value_len(const Attribute::Key& key) const -> uint64_t {
-    return m_view.get_key_value_len(key);
+auto AttributeSet::number_of_key_values(const Attribute::Key& key) const -> uint64_t {
+    return m_view.number_of_key_values(key);
 }
 
-auto AttributeSet::get_key_value_at(const Attribute::Key& key, const uint64_t idx) -> iox::optional<Attribute::Value> {
-    return m_view.get_key_value_at(key, idx);
+auto AttributeSet::key_value(const Attribute::Key& key, const uint64_t idx) -> iox::optional<Attribute::Value> {
+    return m_view.key_value(key, idx);
 }
 
-void AttributeSet::get_key_values(const Attribute::Key& key,
-                                  const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const {
-    m_view.get_key_values(key, callback);
+void AttributeSet::iter_key_values(const Attribute::Key& key,
+                                   const iox::function<CallbackProgression(const Attribute::Value&)>& callback) const {
+    m_view.iter_key_values(key, callback);
 }
 /////////////////////////////
 /// END: AttributeSet
@@ -141,8 +139,8 @@ void AttributeSet::get_key_values(const Attribute::Key& key,
 
 auto operator<<(std::ostream& stream, const iox2::AttributeSetView& value) -> std::ostream& {
     stream << "AttributeSetView { ";
-    for (uint64_t idx = 0; idx < value.len(); ++idx) {
-        auto attribute = value.at(idx);
+    for (uint64_t idx = 0; idx < value.number_of_attributes(); ++idx) {
+        auto attribute = value[idx];
         stream << attribute;
     }
     return stream;
@@ -150,8 +148,8 @@ auto operator<<(std::ostream& stream, const iox2::AttributeSetView& value) -> st
 
 auto operator<<(std::ostream& stream, const iox2::AttributeSet& value) -> std::ostream& {
     stream << "AttributeSet { ";
-    for (uint64_t idx = 0; idx < value.len(); ++idx) {
-        auto attribute = value.at(idx);
+    for (uint64_t idx = 0; idx < value.number_of_attributes(); ++idx) {
+        auto attribute = value[idx];
         stream << attribute;
     }
     return stream;

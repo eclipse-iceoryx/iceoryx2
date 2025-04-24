@@ -34,8 +34,8 @@ mod attribute {
             .require("key_1", "value_1")
             .require("key_1", "value_2");
 
-        assert_that!(sut.attributes().get_key_value_len("key_1"), eq 2);
-        assert_that!(sut.attributes().get_key_value_len("key_2"), eq 0);
+        assert_that!(sut.attributes().number_of_key_values("key_1"), eq 2);
+        assert_that!(sut.attributes().number_of_key_values("key_2"), eq 0);
     }
 
     #[test]
@@ -44,10 +44,10 @@ mod attribute {
             .require("another_key", "another_value_1")
             .require("another_key", "another_value_2");
 
-        assert_that!(sut.attributes().get_key_value_at("another_key", 0), eq Some("another_value_1"));
-        assert_that!(sut.attributes().get_key_value_at("another_key", 1), eq Some("another_value_2"));
-        assert_that!(sut.attributes().get_key_value_at("another_key", 2), eq None);
-        assert_that!(sut.attributes().get_key_value_at("non_existing_key", 0), eq None);
+        assert_that!(sut.attributes().key_value("another_key", 0), eq Some("another_value_1"));
+        assert_that!(sut.attributes().key_value("another_key", 1), eq Some("another_value_2"));
+        assert_that!(sut.attributes().key_value("another_key", 2), eq None);
+        assert_that!(sut.attributes().key_value("non_existing_key", 0), eq None);
     }
 
     #[test]
@@ -57,7 +57,7 @@ mod attribute {
             .require("wild_ride", "S");
 
         let mut values = vec![];
-        sut.attributes().get_key_values("wild_ride", |v| {
+        sut.attributes().iter_key_values("wild_ride", |v| {
             values.push(v.to_string());
             CallbackProgression::Continue
         });
@@ -73,7 +73,7 @@ mod attribute {
             .require("schwifty", "sisters");
 
         let mut counter = 0;
-        sut.attributes().get_key_values("schwifty", |_| {
+        sut.attributes().iter_key_values("schwifty", |_| {
             counter += 1;
             CallbackProgression::Stop
         });
@@ -88,7 +88,7 @@ mod attribute {
             .require("schwifler", "sisters");
 
         let mut counter = 0;
-        sut.attributes().get_key_values("does not exist", |_| {
+        sut.attributes().iter_key_values("does not exist", |_| {
             counter += 1;
             CallbackProgression::Stop
         });

@@ -14,5 +14,5 @@ use crate::tests::*;
 
 #[test]
 fn ffi_settings_are_equal_to_iceoryx2_settings() {
-    assert_that!(IOX2_SERVICE_ID_LENGTH, eq iceoryx2::service::service_id::ServiceId::max_len());
+    assert_that!(IOX2_SERVICE_ID_LENGTH, eq iceoryx2::service::service_id::ServiceId::max_number_of_characters());
 }

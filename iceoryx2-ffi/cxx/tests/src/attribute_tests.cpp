@@ -27,9 +27,9 @@ TEST(AttributeVerifier, require_is_listed_in_attributes) {
 
     auto attributes = attribute_verifier.attributes();
 
-    ASSERT_THAT(attributes.len(), Eq(1));
-    ASSERT_THAT(attributes.at(0).key(), Eq(key));
-    ASSERT_THAT(attributes.at(0).value(), Eq(value));
+    ASSERT_THAT(attributes.number_of_attributes(), Eq(1));
+    ASSERT_THAT(attributes[0].key(), Eq(key));
+    ASSERT_THAT(attributes[0].value(), Eq(value));
 }
 
 TEST(AttributeVerifier, required_keys_are_listed_in_keys) {
@@ -80,11 +80,11 @@ TEST(AttributeSpecifier, all_defined_attributes_are_set) {
     auto attribute_specifier = AttributeSpecifier().define(key_1, value_1).define(key_2, value_2);
     auto attributes = attribute_specifier.attributes();
 
-    ASSERT_THAT(attributes.len(), Eq(2));
-    ASSERT_THAT(attributes.at(0).key(), Eq(key_1));
-    ASSERT_THAT(attributes.at(0).value(), Eq(value_1));
-    ASSERT_THAT(attributes.at(1).key(), Eq(key_2));
-    ASSERT_THAT(attributes.at(1).value(), Eq(value_2));
+    ASSERT_THAT(attributes.number_of_attributes(), Eq(2));
+    ASSERT_THAT(attributes[0].key(), Eq(key_1));
+    ASSERT_THAT(attributes[0].value(), Eq(value_1));
+    ASSERT_THAT(attributes[1].key(), Eq(key_2));
+    ASSERT_THAT(attributes[1].value(), Eq(value_2));
 }
 
 TEST(AttributeSet, all_key_values_can_be_listed) {
@@ -95,11 +95,11 @@ TEST(AttributeSet, all_key_values_can_be_listed) {
     auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
     auto attributes = attribute_specifer.attributes();
 
-    ASSERT_THAT(attributes.len(), Eq(2));
-    ASSERT_THAT(attributes.at(0).key(), Eq(key));
-    ASSERT_THAT(attributes.at(1).key(), Eq(key));
-    ASSERT_THAT(attributes.at(0).value(), Eq(value_1));
-    ASSERT_THAT(attributes.at(1).value(), Eq(value_2));
+    ASSERT_THAT(attributes.number_of_attributes(), Eq(2));
+    ASSERT_THAT(attributes[0].key(), Eq(key));
+    ASSERT_THAT(attributes[1].key(), Eq(key));
+    ASSERT_THAT(attributes[0].value(), Eq(value_1));
+    ASSERT_THAT(attributes[1].value(), Eq(value_2));
 }
 
 TEST(AttributeSet, all_key_values_can_be_acquired) {
@@ -112,7 +112,7 @@ TEST(AttributeSet, all_key_values_can_be_acquired) {
 
     auto counter = 0;
 
-    attributes.get_key_values(key, [&](const auto& value) -> CallbackProgression {
+    attributes.iter_key_values(key, [&](const auto& value) -> CallbackProgression {
         EXPECT_THAT(value, Eq(values[counter]));
         counter++;
         return CallbackProgression::Continue;
@@ -128,8 +128,8 @@ TEST(AttributeSet, get_key_value_len_works) {
     auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
     auto attributes = attribute_specifer.attributes();
 
-    ASSERT_THAT(attributes.get_key_value_len(key), Eq(2));
-    ASSERT_THAT(attributes.get_key_value_len(empty_key), Eq(0));
+    ASSERT_THAT(attributes.number_of_key_values(key), Eq(2));
+    ASSERT_THAT(attributes.number_of_key_values(empty_key), Eq(0));
 }
 
 //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
@@ -141,9 +141,9 @@ TEST(AttributeSet, get_key_value_at_works) {
     auto attribute_specifer = AttributeSpecifier().define(key, value_1).define(key, value_2);
     auto attributes = attribute_specifer.attributes();
 
-    auto v_1 = attributes.get_key_value_at(key, 0);
-    auto v_2 = attributes.get_key_value_at(key, 1);
-    auto v_3 = attributes.get_key_value_at(key, 2);
+    auto v_1 = attributes.key_value(key, 0);
+    auto v_2 = attributes.key_value(key, 1);
+    auto v_3 = attributes.key_value(key, 2);
 
     ASSERT_THAT(v_1.has_value(), Eq(true));
     ASSERT_THAT(v_2.has_value(), Eq(true));
@@ -168,10 +168,10 @@ TEST(AttributeSet, to_owned_works) {
     auto attributes = attribute_specifer.attributes();
     auto attributes_owned = attributes.to_owned();
 
-    ASSERT_THAT(attributes_owned.len(), Eq(2));
-    ASSERT_THAT(attributes_owned.at(0).key(), Eq(key));
-    ASSERT_THAT(attributes_owned.at(1).key(), Eq(key));
-    ASSERT_THAT(attributes_owned.at(0).value(), Eq(value_1));
-    ASSERT_THAT(attributes_owned.at(1).value(), Eq(value_2));
+    ASSERT_THAT(attributes_owned.number_of_attributes(), Eq(2));
+    ASSERT_THAT(attributes_owned[0].key(), Eq(key));
+    ASSERT_THAT(attributes_owned[1].key(), Eq(key));
+    ASSERT_THAT(attributes_owned[0].value(), Eq(value_1));
+    ASSERT_THAT(attributes_owned[1].value(), Eq(value_2));
 }
 } // namespace

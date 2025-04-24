@@ -341,7 +341,7 @@ mod service_request_response {
 
         let attributes = sut_open.attributes();
         assert_that!(attributes.len(), eq 1);
-        assert_that!(attributes.get_key_value_at(attribute_key, 0), eq Some(attribute_value));
+        assert_that!(attributes.key_value(attribute_key, 0), eq Some(attribute_value));
     }
 
     #[test]

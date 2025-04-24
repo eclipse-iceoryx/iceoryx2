@@ -250,9 +250,14 @@ impl AttributeSet {
             .collect()
     }
 
+    /// Returns the number of [`Attribute`]s stored inside the [`AttributeSet`].
+    pub fn number_of_attributes(&self) -> usize {
+        self.iter().len()
+    }
+
     /// Returns the number of values stored under a specific key. If the key does not exist it
     /// returns 0.
-    pub fn get_key_value_len(&self, key: &str) -> usize {
+    pub fn number_of_key_values(&self, key: &str) -> usize {
         self.get_vec(key).len()
     }
 
@@ -262,7 +267,7 @@ impl AttributeSet {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    pub fn get_key_value_at(&self, key: &str, idx: usize) -> Option<&str> {
+    pub fn key_value(&self, key: &str, idx: usize) -> Option<&str> {
         let v = self.get_vec(key);
         if v.len() <= idx {
             return None;
@@ -272,7 +277,7 @@ impl AttributeSet {
     }
 
     /// Returns all values to a specific key
-    pub fn get_key_values<F: FnMut(&str) -> CallbackProgression>(
+    pub fn iter_key_values<F: FnMut(&str) -> CallbackProgression>(
         &self,
         key: &str,
         mut callback: F,
