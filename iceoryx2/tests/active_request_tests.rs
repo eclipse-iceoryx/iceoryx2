@@ -114,10 +114,9 @@ mod active_request {
         let pending_response = test.client.send_copy(123).unwrap();
 
         let sut = test.server.receive().unwrap().unwrap();
-        let loan = sut.loan_uninit().unwrap();
 
         assert_that!(pending_response.has_response(), eq Ok(false));
-        loan.write_payload(456).send().unwrap();
+        sut.send_copy(456).unwrap();
 
         assert_that!(pending_response.has_response(), eq Ok(true));
     }

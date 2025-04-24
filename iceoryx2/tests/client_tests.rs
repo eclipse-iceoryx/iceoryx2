@@ -661,19 +661,19 @@ mod client {
     #[test]
     fn updates_connections_after_reconnect<Sut: Service>() {
         const RECONNECTIONS: usize = 20;
-        const MAX_SERVER: usize = 4;
+        const MAX_SERVERS: usize = 4;
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
             .service_builder(&service_name)
             .request_response::<usize, u64>()
-            .max_servers(MAX_SERVER)
+            .max_servers(MAX_SERVERS)
             .create()
             .unwrap();
 
         let sut = service.client_builder().create().unwrap();
 
-        for n in 0..MAX_SERVER {
+        for n in 0..MAX_SERVERS {
             for k in 0..RECONNECTIONS {
                 let mut servers = vec![];
                 for _ in 0..n {

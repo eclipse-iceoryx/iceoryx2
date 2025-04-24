@@ -281,6 +281,7 @@ mod service_request_response {
         let test = TestFixture::<Sut>::new(test_args);
 
         for i in 0..ITERATIONS {
+            // reset request-response connection in every iteration
             let pending_response = test.clients[0].send_copy(0).unwrap();
             let active_request = test.servers[0].receive().unwrap().unwrap();
 

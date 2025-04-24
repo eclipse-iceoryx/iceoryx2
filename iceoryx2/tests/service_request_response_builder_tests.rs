@@ -476,9 +476,7 @@ mod service_request_response {
     }
 
     #[test]
-    fn open_fails_when_service_does_has_required_fire_and_forget_behavior_for_requests<
-        Sut: Service,
-    >() {
+    fn open_verifies_fire_and_forget_requests_setting_correctly<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1129,7 +1127,7 @@ mod service_request_response {
     }
 
     #[test]
-    fn custom_respone_alignment_cannot_be_smaller_than_type_alignment<Sut: Service>() {
+    fn custom_response_alignment_cannot_be_smaller_than_type_alignment<Sut: Service>() {
         type ResponsePayload = u64;
 
         let config = generate_isolated_config();
