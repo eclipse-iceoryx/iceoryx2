@@ -67,6 +67,8 @@
     [#608](https://github.com/eclipse-iceoryx/iceoryx2/issues/608)
 * Allow missing legal characters in system type for user- and group-name
     [#677](https://github.com/eclipse-iceoryx/iceoryx2/issues/677)
+* Fix `wait_and_process_once_with_timeout` deadlock
+    [#695](https://github.com/eclipse-iceoryx/iceoryx2/issues/695)
 
 ### Refactoring
 

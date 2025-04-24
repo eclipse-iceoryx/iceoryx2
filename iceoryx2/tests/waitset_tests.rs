@@ -301,6 +301,36 @@ mod waitset {
     }
 
     #[test]
+    fn wait_and_process_once_with_timeout_block_at_each_invocation<S: Service>()
+    where
+        <S::Event as Event>::Listener: SynchronousMultiplexing,
+    {
+        let _watchdog = Watchdog::new_with_timeout(TIMEOUT * 40);
+        let sut = WaitSetBuilder::new().create::<S>().unwrap();
+
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let (listener, _) = create_event::<S>(&node);
+        let _listener_guard = sut.attach_notification(&listener).unwrap();
+
+        for _ in 0..3 {
+            let mut callback_called = false;
+            let start = Instant::now();
+            sut.wait_and_process_once_with_timeout(
+                |_| {
+                    callback_called = true;
+                    CallbackProgression::Continue
+                },
+                TIMEOUT,
+            )
+            .unwrap();
+
+            assert_that!(callback_called, eq false);
+            assert_that!(start.elapsed(), time_at_least TIMEOUT);
+        }
+    }
+
+    #[test]
     fn run_does_block_until_interval_when_user_timeout_is_larger<S: Service>()
     where
         <S::Event as Event>::Listener: SynchronousMultiplexing,

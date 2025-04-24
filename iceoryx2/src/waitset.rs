@@ -897,8 +897,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
         // Collect all triggered file descriptors. We need to collect them first, then reset
         // the deadline and then call the callback, otherwise a long callback may destroy the
         // deadline contract.
-        let reactor_wait_result = if self.deadline_queue.is_empty() || next_timeout == Duration::MAX
-        {
+        let reactor_wait_result = if next_timeout == Duration::MAX {
             self.reactor.blocking_wait(collect_triggered_fds)
         } else {
             self.reactor.timed_wait(collect_triggered_fds, next_timeout)
