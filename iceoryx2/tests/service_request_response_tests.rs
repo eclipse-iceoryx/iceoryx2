@@ -851,6 +851,46 @@ mod service_request_response {
         }
     }
 
+    #[test]
+    fn pending_response_receives_only_responses_from_sent_request<Sut: Service>() {
+        const CONNECTION_ITERATIONS: usize = 6;
+        const SEND_RECEIVE_ITERATIONS: usize = 8;
+        let test_args = Args {
+            number_of_active_requests: 7,
+            ..Default::default()
+        };
+
+        let test = TestFixture::<Sut>::new(test_args);
+
+        for _ in 0..CONNECTION_ITERATIONS {
+            let mut pending_responses = vec![];
+            for n in 0..test_args.number_of_active_requests {
+                pending_responses.push(test.clients[0].send_copy(n * 51).unwrap());
+            }
+
+            let mut active_requests = vec![];
+            for server in &test.servers {
+                while let Some(request) = server.receive().unwrap() {
+                    active_requests.push(request);
+                }
+            }
+
+            for n in 0..SEND_RECEIVE_ITERATIONS {
+                for active_request in &active_requests {
+                    active_request
+                        .send_copy(active_request.payload() + n)
+                        .unwrap();
+                }
+
+                for pending_response in &pending_responses {
+                    let response = pending_response.receive().unwrap().unwrap();
+                    assert_that!(*response.payload(), eq pending_response.payload() + n);
+                    assert_that!(pending_response.receive().unwrap(), is_none);
+                }
+            }
+        }
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
