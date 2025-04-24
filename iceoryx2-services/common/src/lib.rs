@@ -21,6 +21,30 @@
 /// managed by the iceoryx2 system.
 pub const INTERNAL_SERVICE_PREFIX: &str = "iox2://";
 
+/// The serialization format used for data sent on internal iceoryx2 services.
+///
+/// Serialization is required to simplify cross-language support of
+/// internal iceoryx2 services.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum SerializationFormat {
+    /// JavaScript Object Notation format, a lightweight data-interchange format.
+    Json,
+    /// Rusty Object Notation format, a more readable version of JSON with support for Rust types.
+    Ron,
+    /// YAML Ain't Markup Language, a human-friendly data serialization standard.
+    Yaml,
+}
+
+impl std::fmt::Display for SerializationFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SerializationFormat::Json => write!(f, "JSON"),
+            SerializationFormat::Ron => write!(f, "RON"),
+            SerializationFormat::Yaml => write!(f, "YAML"),
+        }
+    }
+}
+
 /// Checks if a service is an internal iceoryx2 service.
 ///
 /// # Arguments

@@ -22,6 +22,8 @@ iceoryx2 = { workspace = true }
 iceoryx2-services-common = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 once_cell = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }

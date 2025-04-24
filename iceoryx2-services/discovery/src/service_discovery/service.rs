@@ -15,20 +15,20 @@ use iceoryx2::{
     config::Config as IceoryxConfig,
     node::{Node, NodeBuilder},
     port::{notifier::Notifier, publisher::Publisher},
-    prelude::ServiceName,
-    service::Service as ServiceType,
-    service::{static_config::StaticConfig, ServiceDetails},
+    prelude::{AllocationStrategy, ServiceName},
+    service::{static_config::StaticConfig, Service as ServiceType, ServiceDetails},
 };
-use iceoryx2_services_common::{is_internal_service, INTERNAL_SERVICE_PREFIX};
+use iceoryx2_services_common::{is_internal_service, SerializationFormat, INTERNAL_SERVICE_PREFIX};
 
 use once_cell::sync::Lazy;
 
 const SERVICE_DISCOVERY_SERVICE_NAME: &str = "discovery/services/";
 
+/// TODO: A better name for this
 /// Events emitted by the service discovery service.
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)] // Fields used by subscribers
-pub enum DiscoveryEvent {
+pub enum Discovery {
     /// A service has been added to the system.
     ///
     /// Contains the static configuration of the newly added service.
@@ -39,6 +39,9 @@ pub enum DiscoveryEvent {
     /// Contains the static configuration of the removed service.
     Removed(StaticConfig),
 }
+
+/// The payload type used for publishing discovery changes
+pub type Payload = [u8];
 
 /// Errors that can occur when creating the service discovery service.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -73,8 +76,8 @@ pub enum SpinError {
 }
 
 /// Configuration for the service discovery service.
-#[derive(Debug, Clone)]
-pub struct DiscoveryConfig {
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Config {
     /// Whether to include iceoryx-internal services in discovery results.
     pub include_internal: bool,
 
@@ -89,9 +92,14 @@ pub struct DiscoveryConfig {
 
     /// The maximum number of listeners to the service permitted.
     pub max_listeners: usize,
+
+    /// The serialization format to use for discovery events.
+    ///
+    /// This determines how service discovery events are serialized when published.
+    pub format: SerializationFormat,
 }
 
-impl Default for DiscoveryConfig {
+impl Default for Config {
     fn default() -> Self {
         Self {
             include_internal: true,
@@ -99,6 +107,7 @@ impl Default for DiscoveryConfig {
             max_subscribers: 10,
             send_notifications: true,
             max_listeners: 10,
+            format: SerializationFormat::Json,
         }
     }
 }
@@ -113,10 +122,10 @@ impl Default for DiscoveryConfig {
 ///
 /// * `S` - The service type that this discovery service operates on.
 pub struct Service<S: ServiceType> {
-    discovery_config: DiscoveryConfig,
+    discovery_config: Config,
     iceoryx_config: IceoryxConfig,
     _node: Node<S>,
-    publisher: Option<Publisher<S, DiscoveryEvent, ()>>,
+    publisher: Option<Publisher<S, [u8], ()>>,
     notifier: Option<Notifier<S>>,
     tracker: Tracker<S>,
 }
@@ -139,7 +148,7 @@ impl<S: ServiceType> Service<S> {
     /// # Errors
     ///
     pub fn create(
-        discovery_config: &DiscoveryConfig,
+        discovery_config: &Config,
         iceoryx_config: &IceoryxConfig,
     ) -> Result<Self, CreationError> {
         let node = NodeBuilder::new()
@@ -151,7 +160,7 @@ impl<S: ServiceType> Service<S> {
         if discovery_config.publish_events {
             let publish_subscribe = node
                 .service_builder(service_name())
-                .publish_subscribe::<DiscoveryEvent>()
+                .publish_subscribe::<Payload>()
                 .subscriber_max_borrowed_samples(10)
                 .history_size(10)
                 .subscriber_max_buffer_size(10)
@@ -169,6 +178,8 @@ impl<S: ServiceType> Service<S> {
             publisher = Some(
                 publish_subscribe
                     .publisher_builder()
+                    .initial_max_slice_len(1024)
+                    .allocation_strategy(AllocationStrategy::PowerOfTwo)
                     .create()
                     .map_err(|e| {match e {
                         iceoryx2::port::publisher::PublisherCreateError::ExceedsMaxSupportedPublishers => CreationError::PublisherAlreadyExists,
@@ -233,6 +244,7 @@ impl<S: ServiceType> Service<S> {
         let (added_ids, removed_services) = self.tracker.sync(&self.iceoryx_config);
         let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
 
+        // Publish
         let mut added_services = Vec::new();
         for id in &added_ids {
             if let Some(service) = self.tracker.get(id) {
@@ -241,16 +253,8 @@ impl<S: ServiceType> Service<S> {
                 {
                     continue;
                 }
-
-                if let Some(publisher) = &mut self.publisher {
-                    // Clone required since the details are stored in the tracker.
-                    let sample = publisher.loan_uninit().unwrap();
-                    let sample =
-                        sample.write_payload(DiscoveryEvent::Added(service.static_details.clone()));
-                    sample.send().map_err(|e| match e {
-                        _ => SpinError::PublishFailure,
-                    })?;
-                }
+                self.publish(&Discovery::Added(service.static_details.clone()))
+                    .unwrap();
 
                 // Collect references to added services (owned by the tracker)
                 added_services.push(service);
@@ -263,16 +267,8 @@ impl<S: ServiceType> Service<S> {
             {
                 continue;
             }
-
-            if let Some(publisher) = &mut self.publisher {
-                // The removed details are not stored in the tracker. Claim ownership.
-                let sample = publisher.loan_uninit().unwrap();
-                let sample =
-                    sample.write_payload(DiscoveryEvent::Removed(service.static_details.clone()));
-                sample.send().map_err(|e| match e {
-                    _ => SpinError::NotifyFailure,
-                })?;
-            }
+            self.publish(&Discovery::Removed(service.static_details.clone()))
+                .unwrap();
         }
 
         // Notify
@@ -283,6 +279,23 @@ impl<S: ServiceType> Service<S> {
         }
 
         Ok((added_services, removed_services))
+    }
+
+    fn publish(&self, discovery: &Discovery) -> Result<(), SpinError> {
+        if let Some(publisher) = &self.publisher {
+            let serialized =
+                serde_json::to_vec(discovery).map_err(|_| SpinError::PublishFailure)?;
+
+            let sample = publisher
+                .loan_slice_uninit(serialized.len())
+                .map_err(|_| SpinError::PublishFailure)?;
+
+            let sample = sample.write_from_slice(serialized.as_slice());
+
+            // Send the sample
+            sample.send().map_err(|_| SpinError::PublishFailure)?;
+        }
+        Ok(())
     }
 }
 

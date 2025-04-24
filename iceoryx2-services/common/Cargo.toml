@@ -18,5 +18,6 @@ path = "src/lib.rs"
 [features]
 
 [dependencies]
+serde = { workspace = true }
 
 [dev-dependencies]

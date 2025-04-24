@@ -468,6 +468,9 @@ dependencies = [
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-log",
  "iceoryx2-bb-system-types",
+ "iceoryx2-services-discovery",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -757,6 +760,8 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-pal-posix",
+ "iceoryx2-services-common",
+ "iceoryx2-services-discovery",
  "ron",
  "serde",
  "serde_json",
@@ -817,6 +822,28 @@ dependencies = [
  "lazy_static",
  "libc",
  "windows-sys 0.48.0",
+]
+
+[[package]]
+name = "iceoryx2-services-common"
+version = "0.5.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "iceoryx2-services-discovery"
+version = "0.5.0"
+dependencies = [
+ "generic-tests",
+ "iceoryx2",
+ "iceoryx2-bb-log",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-services-common",
+ "once_cell",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

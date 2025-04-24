@@ -17,8 +17,9 @@ mod service_discovery_service {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
+    use iceoryx2_services_common::SerializationFormat;
     use iceoryx2_services_discovery::service_discovery::{
-        service_name, DiscoveryConfig, DiscoveryEvent, Service,
+        service_name, Config, Discovery, Payload, Service,
     };
 
     fn generate_name() -> ServiceName {
@@ -37,12 +38,13 @@ mod service_discovery_service {
         let iceoryx_config = generate_isolated_config();
 
         // create a service monitoring service
-        let discovery_config = DiscoveryConfig {
+        let discovery_config = Config {
             include_internal: false,
             publish_events: true,
             max_subscribers: 1,
             send_notifications: false,
             max_listeners: 1,
+            format: SerializationFormat::Json,
         };
         let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
@@ -54,7 +56,7 @@ mod service_discovery_service {
 
         let service = node
             .service_builder(service_name())
-            .publish_subscribe::<DiscoveryEvent>()
+            .publish_subscribe::<Payload>()
             .open()
             .unwrap();
         let subscriber = service.subscriber_builder().create().unwrap();
@@ -82,10 +84,10 @@ mod service_discovery_service {
         let mut num_removed = 0;
         while let Ok(Some(event)) = subscriber.receive() {
             match event.payload() {
-                DiscoveryEvent::Added(_) => {
+                Discovery::Added(_) => {
                     num_added += 1;
                 }
-                DiscoveryEvent::Removed(_) => {
+                Discovery::Removed(_) => {
                     num_removed += 1;
                 }
             }
@@ -100,12 +102,13 @@ mod service_discovery_service {
         let iceoryx_config = generate_isolated_config();
 
         // create a service monitoring service
-        let discovery_config = DiscoveryConfig {
+        let discovery_config = Config {
             include_internal: false,
             publish_events: false,
             max_subscribers: 1,
             send_notifications: true,
             max_listeners: 1,
+            format: SerializationFormat::Json,
         };
         let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
@@ -147,12 +150,13 @@ mod service_discovery_service {
         let iceoryx_config = generate_isolated_config();
 
         // create a service monitoring service
-        let discovery_config = DiscoveryConfig {
+        let discovery_config = Config {
             include_internal: true,
             publish_events: true,
             max_subscribers: 1,
             send_notifications: false,
             max_listeners: 1,
+            format: SerializationFormat::Json,
         };
         let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
@@ -164,7 +168,7 @@ mod service_discovery_service {
 
         let service = node
             .service_builder(service_name())
-            .publish_subscribe::<DiscoveryEvent>()
+            .publish_subscribe::<Payload>()
             .open()
             .unwrap();
         let subscriber = service.subscriber_builder().create().unwrap();
@@ -178,7 +182,7 @@ mod service_discovery_service {
         let result = result.unwrap();
         assert_that!(result, is_some);
         let service = result.unwrap();
-        if let DiscoveryEvent::Added(service_info) = service.payload() {
+        if let Discovery::Added(service_info) = service.payload() {
             assert_that!(service_info.name().to_string(), eq service_name().as_str());
         } else {
             test_fail!("expected DiscoveryEvent::Added for the internal service")

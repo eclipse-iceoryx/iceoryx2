@@ -12,13 +12,14 @@
 
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
-use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
 use iceoryx2_cli::Format;
-use iceoryx2_services_discovery::service_discovery::DiscoveryConfig;
+use iceoryx2_services_common::SerializationFormat;
+use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
+use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
 
 use crate::cli::OutputFilter;
@@ -72,58 +73,6 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
     Ok(())
 }
 
-#[derive(serde::Serialize)]
-enum ChangeKind {
-    Added,
-    Removed,
-}
-
-#[derive(serde::Serialize)]
-struct ChangeDetails {
-    name: String,
-    pattern: String,
-    kind: ChangeKind,
-}
-
-impl ChangeDetails {
-    fn new(kind: ChangeKind, details: &StaticConfig) -> Self {
-        Self {
-            name: details.name().to_string(),
-            pattern: details.messaging_pattern().to_string(),
-            kind,
-        }
-    }
-}
-
-#[derive(serde::Serialize)]
-struct SerializableDiscoveryConfig {
-    publish_events: bool,
-    max_subscribers: usize,
-    send_notifications: bool,
-    max_listeners: usize,
-    include_internal: bool,
-}
-
-impl SerializableDiscoveryConfig {
-    fn from_config(config: &DiscoveryConfig) -> Self {
-        Self {
-            publish_events: config.publish_events,
-            max_subscribers: config.max_subscribers,
-            send_notifications: config.send_notifications,
-            max_listeners: config.max_listeners,
-            include_internal: config.include_internal,
-        }
-    }
-}
-
-/// Starts a service monitor.
-///
-/// # Arguments
-///
-/// * `service_name` - The name of the service monitoring service
-/// * `rate` - The update rate in milliseconds between monitor refreshes
-/// * `publish_events` - Whether to publish events about service changes
-/// * `send_notifications` - Whether to send notifications about service changes
 pub fn discovery(
     rate: u64,
     publish_events: bool,
@@ -132,26 +81,25 @@ pub fn discovery(
     max_listeners: usize,
     format: Format,
 ) -> Result<()> {
-    let monitor_config = DiscoveryConfig {
+    let discovery_config = DiscoveryConfig {
         publish_events,
         max_subscribers,
         send_notifications,
         max_listeners,
         include_internal: false,
+        format: match format {
+            Format::Ron => SerializationFormat::Ron,
+            Format::Json => SerializationFormat::Json,
+            Format::Yaml => SerializationFormat::Yaml,
+        },
     };
 
     let mut service =
-        DiscoveryService::<ipc::Service>::create(&monitor_config, &Config::global_config())
-            .map_err(|e| anyhow::anyhow!("failed to create service monitor: {:?}", e))?;
+        DiscoveryService::<ipc::Service>::create(&discovery_config, &Config::global_config())
+            .map_err(|e| anyhow::anyhow!("failed to create service discovery service: {:?}", e))?;
 
-    println!(
-        "=== Service Discovery Service Started (rate: {}ms) ===",
-        rate
-    );
-    println!(
-        "{}",
-        format.as_string(&SerializableDiscoveryConfig::from_config(&monitor_config))?
-    );
+    println!("=== Service Started (rate: {}ms) ===", rate);
+    println!("{}", format.as_string(&discovery_config)?);
 
     while !SignalHandler::termination_requested() {
         match service.spin() {
@@ -159,19 +107,13 @@ pub fn discovery(
                 for service in added {
                     println!(
                         "{}",
-                        format.as_string(&ChangeDetails::new(
-                            ChangeKind::Added,
-                            &service.static_details,
-                        ))?,
+                        format.as_string(&Discovery::Added(service.static_details.clone()))?,
                     )
                 }
                 for service in removed {
                     println!(
                         "{}",
-                        format.as_string(&ChangeDetails::new(
-                            ChangeKind::Removed,
-                            &service.static_details
-                        ))?
+                        format.as_string(&Discovery::Removed(service.static_details.clone()))?
                     )
                 }
             }
