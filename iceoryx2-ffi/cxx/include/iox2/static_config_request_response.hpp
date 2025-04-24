@@ -12,7 +12,64 @@
 
 #ifndef IOX2_STATIC_CONFIG_REQUEST_RESPONSE_HPP
 #define IOX2_STATIC_CONFIG_REQUEST_RESPONSE_HPP
+
+#include "iox2/message_type_details.hpp"
+
 namespace iox2 {
-class StaticConfigRequestResponse { };
+/// The static configuration of an
+/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
+/// based service. Contains all parameters that do not change during the lifetime of a
+/// [`Service`](crate::service::Service).
+class StaticConfigRequestResponse {
+    /// Returns the request type details of the [`crate::service::Service`].
+    auto request_message_type_details() const -> MessageTypeDetails;
+
+    /// Returns the response type details of the [`crate::service::Service`].
+    auto response_message_type_details() const -> MessageTypeDetails;
+
+    /// Returns true if the request buffer of the [`crate::service::Service`] safely overflows,
+    /// otherwise false. Safe overflow means that the [`crate::port::client::Client`] will
+    /// recycle the oldest requests from the [`crate::port::server::Server`] when its buffer
+    /// is full.
+    auto has_safe_overflow_for_requests() const -> bool;
+
+    /// Returns true if the response buffer of the [`crate::service::Service`] safely overflows,
+    /// otherwise false. Safe overflow means that the [`crate::port::server::Server`] will
+    /// recycle the oldest responses from the [`crate::port::client::Client`] when its buffer
+    /// is full.
+    auto has_safe_overflow_for_responses() const -> bool;
+
+    /// Returns the maximum number of borrowed [`Response`](crate::response::Response)s a
+    /// [`Client`](`crate::port::client::Client`) can hold in
+    /// parallel per [`PendingResponse`](crate::pending_response::PendingResponse)
+    auto max_borrowed_responses_per_pending_responses() const -> uint64_t;
+
+    /// Returns the maximum of active requests a [`crate::port::server::Server`] can hold in
+    /// parallel per [`crate::port::client::Client`].
+    auto max_active_requests_per_client() const -> uint64_t;
+
+    /// Returns the maximum buffer size for responses for an active request.
+    auto max_response_buffer_size() const -> uint64_t;
+
+    /// Returns the maximum number of supported [`crate::port::server::Server`] ports for the
+    /// [`crate::service::Service`].
+    auto max_servers() const -> uint64_t;
+
+    /// Returns the maximum number of supported [`crate::port::client::Client`] ports for the
+    /// [`crate::service::Service`].
+    auto max_clients() const -> uint64_t;
+
+    /// Returns the maximum number of supported [`crate::node::Node`]s for the
+    /// [`crate::service::Service`].
+    auto max_nodes() const -> uint64_t;
+
+  private:
+    template <ServiceType, typename, typename, typename, typename>
+    friend class PortFactoryRequestResponse;
+
+    explicit StaticConfigRequestResponse(/*iox2_static_config_request_response_t value*/);
+
+    // iox2_static_config_request_response_t m_value;
+};
 } // namespace iox2
 #endif
