@@ -174,6 +174,7 @@ pub struct Server<
     ResponseHeader: Debug + ZeroCopySend,
 > {
     shared_state: Arc<SharedServerState<Service>>,
+    max_loaned_responses_per_request: usize,
     enable_fire_and_forget: bool,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -289,6 +290,7 @@ impl<
         };
 
         let new_self = Self {
+            max_loaned_responses_per_request: server_factory.max_loaned_responses_per_request,
             enable_fire_and_forget: service
                 .__internal_state()
                 .static_config
@@ -417,6 +419,8 @@ impl<
                     {
                         let active_request = ActiveRequest {
                             details,
+                            shared_loan_counter: Arc::new(IoxAtomicUsize::new(0)),
+                            max_loan_count: self.max_loaned_responses_per_request,
                             request_id: header.request_id,
                             channel_id: header.channel_id,
                             connection_id,

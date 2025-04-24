@@ -42,8 +42,9 @@
 extern crate alloc;
 
 use alloc::sync::Arc;
-use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref};
+use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref, sync::atomic::Ordering};
 use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_log::{error, fail};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -83,6 +84,8 @@ pub struct ActiveRequest<
         RequestPayload,
     >,
     pub(crate) shared_state: Arc<SharedServerState<Service>>,
+    pub(crate) shared_loan_counter: Arc<IoxAtomicUsize>,
+    pub(crate) max_loan_count: usize,
     pub(crate) details: ChunkDetails<Service>,
     pub(crate) request_id: u64,
     pub(crate) channel_id: ChannelId,
@@ -220,6 +223,26 @@ impl<
         &self,
     ) -> Result<ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>, LoanError>
     {
+        let mut current_loan_count = self.shared_loan_counter.load(Ordering::Relaxed);
+        loop {
+            if self.max_loan_count <= current_loan_count {
+                fail!(from self,
+                with LoanError::ExceedsMaxLoans,
+                "Unable to loan memory for Response since it would exceed the maximum number of loans of {}.",
+                self.max_loan_count);
+            }
+
+            match self.shared_loan_counter.compare_exchange(
+                current_loan_count,
+                current_loan_count + 1,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => break,
+                Err(v) => current_loan_count = v,
+            }
+        }
+
         let chunk = self
             .shared_state
             .response_sender
@@ -251,6 +274,7 @@ impl<
         Ok(ResponseMutUninit {
             response: ResponseMut {
                 ptr,
+                shared_loan_counter: self.shared_loan_counter.clone(),
                 shared_state: self.shared_state.clone(),
                 offset_to_chunk: chunk.offset,
                 channel_id: self.channel_id,

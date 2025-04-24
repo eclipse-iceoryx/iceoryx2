@@ -46,8 +46,10 @@ use core::{
     fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},
+    sync::atomic::Ordering,
 };
 use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::{shm_allocator::PointerOffset, zero_copy_connection::ChannelId};
@@ -78,6 +80,7 @@ pub struct ResponseMut<
         ResponsePayload,
     >,
     pub(crate) shared_state: Arc<SharedServerState<Service>>,
+    pub(crate) shared_loan_counter: Arc<IoxAtomicUsize>,
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
     pub(crate) channel_id: ChannelId,
@@ -117,6 +120,7 @@ impl<
         self.shared_state
             .response_sender
             .return_loaned_sample(self.offset_to_chunk);
+        self.shared_loan_counter.fetch_sub(1, Ordering::Relaxed);
     }
 }
 

@@ -181,6 +181,36 @@ mod server {
     }
 
     #[test]
+    fn can_loan_at_most_max_responses_per_requests<Sut: Service>() {
+        const MAX_LOANS: usize = 5;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .create()
+            .unwrap();
+
+        let sut = service
+            .server_builder()
+            .max_loaned_responses_per_request(MAX_LOANS)
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let _pending_response = client.send_copy(0).unwrap();
+
+        let active_request = sut.receive().unwrap().unwrap();
+
+        let mut loans = vec![];
+        for _ in 0..MAX_LOANS {
+            loans.push(active_request.loan().unwrap());
+        }
+
+        assert_that!(active_request.loan().err(), eq Some(iceoryx2::port::LoanError::ExceedsMaxLoans));
+    }
+
+    #[test]
     fn server_can_hold_specified_amount_of_active_requests_one_client_one_request<Sut: Service>() {
         const MAX_CLIENTS: usize = 1;
         const MAX_ACTIVE_REQUESTS: usize = 1;
