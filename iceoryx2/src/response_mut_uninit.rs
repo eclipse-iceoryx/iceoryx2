@@ -226,7 +226,7 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>
 {
-    /// Writes the provided payload into the [`ResponseMutUninit`] and returns and initialized
+    /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
     ///
     /// ```

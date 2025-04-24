@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         }
 
         counter += 1;
-        // send all other request by using zero copy API
+        // send all other requests by using zero copy API
         let request = client.loan_uninit()?;
         let request = request.write_payload(counter);
 

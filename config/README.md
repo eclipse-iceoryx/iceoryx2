@@ -125,6 +125,7 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.request-response.client-expired-connection-buffer` - [int]:
   Expired connection buffer size of the client. Connections to servers
   are expired when the server disconnected from the service and the
+  connection contains unconsumed responses.
 * `defaults.request-response.enable-fire-and-forget-requests` -
   [`true`|`false`]: Enables the client to send requests without
   expecting a response.
@@ -153,4 +154,3 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.request-response.server-unable-to-deliver-strategy` -
   [`Block`|`DiscardSample`]: Default strategy for non-overflowing setups
   when delivery fails.
-  connection contains unconsumed responses.

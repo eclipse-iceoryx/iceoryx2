@@ -336,7 +336,7 @@ pub struct RequestResonse {
     /// could not deliver the response to the [`Client`](crate::port::client::Client).
     pub server_unable_to_deliver_strategy: UnableToDeliverStrategy,
     /// Defines the size of the internal [`Client`](crate::port::client::Client)
-    /// buffer that contains expired connections. An
+    /// buffer that contains expired connections. A
     /// connection is expired when the [`Server`](crate::port::server::Server)
     /// disconnected from a service and the connection
     /// still contains unconsumed [`Response`](crate::response::Response)s.

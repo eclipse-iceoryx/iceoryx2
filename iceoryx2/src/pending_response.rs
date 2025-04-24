@@ -169,7 +169,7 @@ impl<
         self.request
             .client_shared_state
             .response_receiver
-            .has_at_least_one_channel_the_state(
+            .at_least_one_channel_has_state(
                 self.request.channel_id,
                 self.request.header().request_id,
             )
@@ -204,7 +204,7 @@ impl<
     /// otherwise [`false`].
     pub fn has_response(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.request.client_shared_state.update_connections(),
-                "Some samples are not being received since not all connections to publishers could be established.");
+                "Some responses are not being received since not all connections to the corresponding Server (ActiveRequest) could be established.");
         self.request
             .client_shared_state
             .response_receiver

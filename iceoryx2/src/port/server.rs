@@ -75,6 +75,9 @@ use super::{
     ReceiveError, UniqueServerId,
 };
 
+// All requests are received via one channel with id 0
+const REQUEST_CHANNEL_ID: ChannelId = ChannelId::new(0);
+
 #[derive(Debug)]
 pub(crate) struct SharedServerState<Service: service::Service> {
     pub(crate) response_sender: Sender<Service>,
@@ -349,7 +352,7 @@ impl<
                 "Some requests are not being received since not all connections to clients could be established.");
         self.shared_state
             .request_receiver
-            .has_samples(ChannelId::new(0))
+            .has_samples(REQUEST_CHANNEL_ID)
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
@@ -361,7 +364,7 @@ impl<
 
         self.shared_state
             .request_receiver
-            .receive(ChannelId::new(0))
+            .receive(REQUEST_CHANNEL_ID)
     }
 
     /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a

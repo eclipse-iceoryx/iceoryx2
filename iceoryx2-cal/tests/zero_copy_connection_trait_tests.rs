@@ -1857,7 +1857,7 @@ mod zero_copy_connection {
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_receiver.custom_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+            assert_that!(sut_receiver.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
         }
         drop(sut_receiver);
 
@@ -1868,7 +1868,7 @@ mod zero_copy_connection {
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_sender.custom_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
+            assert_that!(sut_sender.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq INITIAL_CHANNEL_STATE);
         }
         drop(sut_sender);
     }
@@ -1888,7 +1888,7 @@ mod zero_copy_connection {
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_receiver.custom_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CUSTOM_INITIAL_CHANNEL_STATE);
+            assert_that!(sut_receiver.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CUSTOM_INITIAL_CHANNEL_STATE);
         }
         drop(sut_receiver);
 
@@ -1900,7 +1900,7 @@ mod zero_copy_connection {
             .unwrap();
 
         for id in 0..NUMBER_OF_CHANNELS {
-            assert_that!(sut_sender.custom_channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CUSTOM_INITIAL_CHANNEL_STATE);
+            assert_that!(sut_sender.channel_state(ChannelId::new(id)).load(Ordering::Relaxed), eq CUSTOM_INITIAL_CHANNEL_STATE);
         }
         drop(sut_sender);
     }
@@ -1916,19 +1916,19 @@ mod zero_copy_connection {
             .create_receiver()
             .unwrap();
         sut_receiver
-            .custom_channel_state(CHANNEL_ID)
+            .channel_state(CHANNEL_ID)
             .store(456, Ordering::Relaxed);
 
         let sut_sender = Sut::Builder::new(&name)
             .config(&config)
             .create_sender()
             .unwrap();
-        assert_that!(sut_sender.custom_channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 456);
+        assert_that!(sut_sender.channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 456);
         sut_sender
-            .custom_channel_state(CHANNEL_ID)
+            .channel_state(CHANNEL_ID)
             .store(789, Ordering::Relaxed);
 
-        assert_that!(sut_receiver.custom_channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 789);
+        assert_that!(sut_receiver.channel_state(CHANNEL_ID).load(Ordering::Relaxed), eq 789);
     }
 
     #[instantiate_tests(<zero_copy_connection::posix_shared_memory::Connection>)]

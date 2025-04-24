@@ -421,8 +421,7 @@ impl<T: Debug + Send + Sync> Drop for Storage<T> {
         if self.shm.has_ownership() {
             let data = unsafe { &mut (*(self.shm.base_address().as_ptr() as *mut Data<T>)) };
             if data.call_drop_on_destruction {
-                let user_type =
-                    unsafe { &mut (*(self.shm.base_address().as_ptr() as *mut Data<T>)).data };
+                let user_type = &mut data.data;
                 unsafe { core::ptr::drop_in_place(user_type) };
             }
         }

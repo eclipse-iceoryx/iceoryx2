@@ -757,7 +757,7 @@ mod service_request_response {
         assert_that!(sut_create, is_ok);
         let sut_create = sut_create.unwrap();
 
-        assert_that!(sut_create.static_config().enable_fire_and_forget_requests(), eq false);
+        assert_that!(sut_create.static_config().does_support_fire_and_forget_requests(), eq false);
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq false);
         assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 1);
@@ -796,7 +796,7 @@ mod service_request_response {
 
         assert_that!(sut_create.static_config().has_safe_overflow_for_requests(), eq true);
         assert_that!(sut_create.static_config().has_safe_overflow_for_responses(), eq true);
-        assert_that!(sut_create.static_config().enable_fire_and_forget_requests(), eq true);
+        assert_that!(sut_create.static_config().does_support_fire_and_forget_requests(), eq true);
         assert_that!(sut_create.static_config().max_active_requests_per_client(), eq 11);
         assert_that!(sut_create.static_config().max_response_buffer_size(), eq 16);
         assert_that!(sut_create.static_config().max_servers(), eq 17);
@@ -836,7 +836,7 @@ mod service_request_response {
 
         assert_that!(sut_open.static_config().has_safe_overflow_for_requests(), eq false);
         assert_that!(sut_open.static_config().has_safe_overflow_for_responses(), eq false);
-        assert_that!(sut_open.static_config().enable_fire_and_forget_requests(), eq false);
+        assert_that!(sut_open.static_config().does_support_fire_and_forget_requests(), eq false);
         assert_that!(sut_open.static_config().max_active_requests_per_client(), eq 1);
         assert_that!(sut_open.static_config().max_response_buffer_size(), eq 6);
         assert_that!(sut_open.static_config().max_servers(), eq 7);

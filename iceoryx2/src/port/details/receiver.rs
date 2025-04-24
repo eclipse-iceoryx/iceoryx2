@@ -95,7 +95,7 @@ impl<Service: service::Service> Connection<Service> {
 
         let data_segment = fail!(from this,
                                  when data_segment,
-                                "{} since the publishers data segment could not be opened.", msg);
+                                "{} since the sender data segment could not be opened.", msg);
 
         Ok(Self {
             receiver,
@@ -133,11 +133,7 @@ impl<Service: service::Service> Receiver<Service> {
         ret_val
     }
 
-    pub(crate) fn has_at_least_one_channel_the_state(
-        &self,
-        channel_id: ChannelId,
-        state: u64,
-    ) -> bool {
+    pub(crate) fn at_least_one_channel_has_state(&self, channel_id: ChannelId, state: u64) -> bool {
         let mut ret_val = false;
         for i in 0..self.len() {
             if let Some(ref connection) = self.get(i) {
@@ -207,7 +203,7 @@ impl<Service: service::Service> Receiver<Service> {
                     && !unsafe { &mut *to_be_removed_connections.get() }.push(connection.clone())
                 {
                     warn!(from self,
-                    "Expired connection buffer exceeded. A publisher disconnected with undelivered samples that will be discarded. Increase the config entry `defaults.publish-subscribe.subscriber-expired-connection-buffer` to mitigate the problem.");
+                    "Expired connection buffer exceeded. A sender disconnected with undelivered samples that will be discarded. Increase the expired connection buffer to mitigate the problem.");
                 }
             }
         }
@@ -257,7 +253,7 @@ impl<Service: service::Service> Receiver<Service> {
                         Ok(offset) => offset,
                         Err(e) => {
                             fail!(from self, with ReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapSendersDataSegment(e)),
-                                "Unable to register and translate offset from publisher {:?} since the received offset {:?} could not be registered and translated.",
+                                "Unable to register and translate offset from sender {:?} since the received offset {:?} could not be registered and translated.",
                                 connection.sender_port_id, offset);
                         }
                     };

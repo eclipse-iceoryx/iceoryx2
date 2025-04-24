@@ -646,7 +646,7 @@ pub mod details {
             self.storage.get().channels.capacity()
         }
 
-        fn custom_channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
+        fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
             &self.storage.get().channels[channel_id.value()].state
         }
@@ -798,6 +798,15 @@ pub mod details {
         fn segment_id_from_index(&self, index: usize) -> SegmentId {
             let storage = self.storage.get();
             let number_of_segments = storage.number_of_segments as usize;
+            // the segment details contain an entry for every channel in every segment.
+            // so it is in memory a vector of vector where the first index is the
+            // segment id and the second is channel id. this vector is, to make the
+            // relocatable construction easier, mapped to a one dimension vector with the
+            // same memory layout.
+            //
+            // to map an index to a segment id, we need to substract from index the
+            // rounded down value of index which is rounded down to the greatest multiple
+            // of number_of_segments.
             SegmentId::new((index - (index / number_of_segments) * number_of_segments) as u8)
         }
     }
@@ -857,7 +866,7 @@ pub mod details {
             self.storage.get().channels.capacity()
         }
 
-        fn custom_channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
+        fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
             debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
             &self.storage.get().channels[channel_id.value()].state
         }

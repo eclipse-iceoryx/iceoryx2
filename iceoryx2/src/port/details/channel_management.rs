@@ -18,7 +18,7 @@ pub(crate) const INVALID_CHANNEL_STATE: u64 = u64::MAX;
 
 pub(crate) trait ChannelManagement: ZeroCopyPortDetails {
     fn set_channel_state(&self, channel_id: ChannelId, state: u64) -> bool {
-        self.custom_channel_state(channel_id)
+        self.channel_state(channel_id)
             .compare_exchange(
                 INVALID_CHANNEL_STATE,
                 state,
@@ -29,12 +29,11 @@ pub(crate) trait ChannelManagement: ZeroCopyPortDetails {
     }
 
     fn get_channel_state(&self, channel_id: ChannelId) -> u64 {
-        self.custom_channel_state(channel_id)
-            .load(Ordering::Relaxed)
+        self.channel_state(channel_id).load(Ordering::Relaxed)
     }
 
     fn invalidate_channel_state(&self, channel_id: ChannelId, expected_state: u64) {
-        let _ = self.custom_channel_state(channel_id).compare_exchange(
+        let _ = self.channel_state(channel_id).compare_exchange(
             expected_state,
             INVALID_CHANNEL_STATE,
             Ordering::Relaxed,

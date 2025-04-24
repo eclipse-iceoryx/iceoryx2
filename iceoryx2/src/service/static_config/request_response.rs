@@ -32,6 +32,7 @@
 //! println!("request safe overflow: {:?}", req_res.static_config().has_safe_overflow_for_requests());
 //! println!("response safe overflow: {:?}", req_res.static_config().has_safe_overflow_for_responses());
 //! println!("max borrowed responses per pending response: {:?}", req_res.static_config().max_borrowed_responses_per_pending_responses());
+//! println!("does support fire and forget requests: {:?}", req_res.static_config().does_support_fire_and_forget_requests());
 //!
 //! # Ok(())
 //! # }
@@ -152,7 +153,7 @@ impl StaticConfig {
 
     /// Returns true if fire and forget [`RequestMut`](crate::request_mut::RequestMut)s can be
     /// sent from the [`Client`](crate::port::client::Client), otherwise false.
-    pub fn enable_fire_and_forget_requests(&self) -> bool {
+    pub fn does_support_fire_and_forget_requests(&self) -> bool {
         self.enable_fire_and_forget_requests
     }
 

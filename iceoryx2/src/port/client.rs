@@ -173,9 +173,13 @@ impl<Service: service::Service> ClientSharedState<Service> {
         self.prepare_channel_to_receive_responses(channel_id, request_id);
 
         self.active_request_counter.fetch_add(1, Ordering::Relaxed);
-        Ok(self
-            .request_sender
-            .deliver_offset(offset, sample_size, ChannelId::new(0))?)
+        Ok(self.request_sender.deliver_offset(
+            offset,
+            sample_size,
+            // All requests are delivered on the same channel, therefore we can use
+            // ChannelId::new(0).
+            ChannelId::new(0),
+        )?)
     }
 
     pub(crate) fn update_connections(
@@ -340,6 +344,11 @@ impl<
             sender_max_borrowed_samples: static_config.max_loaned_requests,
             unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
             message_type_details: static_config.request_message_type_details.clone(),
+            // all requests are sent via one channel, only the responses require different
+            // channels to guarantee that one response does not fill the buffer of another
+            // response.
+            // but the requests have one shared buffer that the user can configure, therefore
+            // one channel suffices
             number_of_channels: 1,
         };
 

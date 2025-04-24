@@ -160,7 +160,7 @@ pub trait ZeroCopyPortDetails {
     fn max_borrowed_samples(&self) -> usize;
     fn max_supported_shared_memory_segments(&self) -> u8;
     fn is_connected(&self) -> bool;
-    fn custom_channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64;
+    fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64;
 }
 
 pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {

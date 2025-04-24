@@ -59,7 +59,7 @@ use crate::{
 };
 
 /// Acquired by a [`ActiveRequest`](crate::active_request::ActiveRequest) with
-///  * [`ActiveRequest::loan_uninit()`](crate::active_request::ActiveRequest::loan_uninit())
+///  * [`ActiveRequest::loan()`](crate::active_request::ActiveRequest::loan())
 ///
 /// It stores the payload of the response that will be sent to the corresponding
 /// [`PendingResponse`](crate::pending_response::PendingResponse) of the
@@ -261,7 +261,7 @@ impl<
         self.ptr.as_payload_ref()
     }
 
-    /// Returns a reference to the payload of the response.
+    /// Returns a mutable reference to the payload of the response.
     ///
     /// ```
     /// use iceoryx2::prelude::*;

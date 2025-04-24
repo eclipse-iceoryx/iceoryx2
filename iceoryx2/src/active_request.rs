@@ -191,7 +191,7 @@ impl<
         )
     }
 
-    /// Loans uninitialized memory for a [`ResponseMut`] where the user can writes its payload to.
+    /// Loans uninitialized memory for a [`ResponseMut`] where the user can write its payload to.
     ///
     /// # Example
     ///
@@ -331,7 +331,7 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    /// Loans default initialized memory for a [`ResponseMut`] where the user can writes its
+    /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
     ///
     /// # Example

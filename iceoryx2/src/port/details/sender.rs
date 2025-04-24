@@ -74,7 +74,7 @@ impl<Service: service::Service> Connection<Service> {
         );
         if this.receiver_max_buffer_size < buffer_size {
             fail!(from this, with ZeroCopyCreationError::IncompatibleBufferSize,
-                "{} since the subscribers buffer size {} exceeds the services max subscriber buffer size of {}.",
+                "{} since the receiver buffer size {} exceeds the max receiver buffer size of {}.",
                 msg, buffer_size, this.receiver_max_buffer_size);
         }
 
@@ -183,18 +183,18 @@ impl<Service: service::Service> Sender<Service> {
                         DegradationAction::Ignore => (),
                         DegradationAction::Warn => {
                             error!(from self,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                        "While delivering the sample: {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
                         DegradationAction::Fail => {
                             fail!(from self, with SendError::ConnectionCorrupted,
-                                        "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                        "While delivering the sample: {:?} a corrupted connection was detected with receiver {:?}.",
                                         offset, connection.receiver_port_id);
                         }
                     },
                     None => {
                         error!(from self,
-                                    "While delivering the sample: {:?} a corrupted connection was detected with subscriber {:?}.",
+                                    "While delivering the sample: {:?} a corrupted connection was detected with receiver {:?}.",
                                     offset, connection.receiver_port_id);
                     }
                 },
@@ -413,7 +413,7 @@ impl<Service: service::Service> Sender<Service> {
                 Ok(()) => match &self.get(index) {
                     Some(connection) => establish_new_connection_call(connection),
                     None => {
-                        fatal_panic!(from self, "This should never happen! Unable to acquire previously created subscriber connection.")
+                        fatal_panic!(from self, "This should never happen! Unable to acquire previously created receiver connection.")
                     }
                 },
                 Err(e) => match &self.degradation_callback {
