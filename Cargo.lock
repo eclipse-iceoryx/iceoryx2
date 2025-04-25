@@ -760,7 +760,6 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-cal",
  "iceoryx2-pal-posix",
- "iceoryx2-services-common",
  "iceoryx2-services-discovery",
  "ron",
  "serde",

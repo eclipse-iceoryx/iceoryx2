@@ -18,7 +18,7 @@ use iceoryx2::{
     prelude::{AllocationStrategy, ServiceName},
     service::{static_config::StaticConfig, Service as ServiceType, ServiceDetails},
 };
-use iceoryx2_services_common::{is_internal_service, SerializationFormat, INTERNAL_SERVICE_PREFIX};
+use iceoryx2_services_common::{is_internal_service, INTERNAL_SERVICE_PREFIX};
 
 use once_cell::sync::Lazy;
 
@@ -91,11 +91,6 @@ pub struct Config {
 
     /// The maximum number of listeners to the service permitted.
     pub max_listeners: usize,
-
-    /// The serialization format to use for discovery events.
-    ///
-    /// This determines how service discovery events are serialized when published.
-    pub format: SerializationFormat,
 }
 
 impl Default for Config {
@@ -106,7 +101,6 @@ impl Default for Config {
             max_subscribers: 10,
             send_notifications: true,
             max_listeners: 10,
-            format: SerializationFormat::Json,
         }
     }
 }

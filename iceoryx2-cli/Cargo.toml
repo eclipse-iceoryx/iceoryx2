@@ -39,7 +39,6 @@ name = "iceoryx2_cli"
 path = "lib/src/lib.rs"
 
 [dependencies]
-iceoryx2-services-common = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 iceoryx2 = { workspace = true }
 iceoryx2-bb-log = { workspace = true }

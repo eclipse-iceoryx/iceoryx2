@@ -17,7 +17,6 @@ use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
 use iceoryx2_cli::Format;
-use iceoryx2_services_common::SerializationFormat;
 use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
 use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
@@ -87,11 +86,6 @@ pub fn discovery(
         send_notifications,
         max_listeners,
         include_internal: false,
-        format: match format {
-            Format::Ron => SerializationFormat::Ron,
-            Format::Json => SerializationFormat::Json,
-            Format::Yaml => SerializationFormat::Yaml,
-        },
     };
 
     let mut service =

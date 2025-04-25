@@ -44,7 +44,6 @@ mod service_discovery_service {
             max_subscribers: 1,
             send_notifications: false,
             max_listeners: 1,
-            format: SerializationFormat::Json,
         };
         let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
@@ -82,8 +81,9 @@ mod service_discovery_service {
 
         let mut num_added = 0;
         let mut num_removed = 0;
-        while let Ok(Some(event)) = subscriber.receive() {
-            match event.payload() {
+        while let Ok(Some(bytes)) = subscriber.receive() {
+            let discovery = serde_json::from_slice(&bytes).unwrap();
+            match discovery {
                 Discovery::Added(_) => {
                     num_added += 1;
                 }
@@ -108,7 +108,6 @@ mod service_discovery_service {
             max_subscribers: 1,
             send_notifications: true,
             max_listeners: 1,
-            format: SerializationFormat::Json,
         };
         let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
@@ -181,8 +180,10 @@ mod service_discovery_service {
         assert_that!(result, is_ok);
         let result = result.unwrap();
         assert_that!(result, is_some);
-        let service = result.unwrap();
-        if let Discovery::Added(service_info) = service.payload() {
+        let bytes = result.unwrap();
+        let discovery = serde_json::from_slice(&bytes).unwrap();
+
+        if let Discovery::Added(service_info) = discovery {
             assert_that!(service_info.name().to_string(), eq service_name().as_str());
         } else {
             test_fail!("expected DiscoveryEvent::Added for the internal service")
