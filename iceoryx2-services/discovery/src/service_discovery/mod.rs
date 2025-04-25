@@ -29,7 +29,8 @@
 //! events/notifications.
 //!
 //! ```rust,no_run
-//! use iceoryx2_services_discovery::service_discovery::{Service, DiscoveryConfig};
+//! use iceoryx2_services_discovery::service_discovery::Service;
+//! use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
 //! use iceoryx2::prelude::*;
 //!
 //! // Create a service discovery service

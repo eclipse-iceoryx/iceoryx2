@@ -17,7 +17,6 @@ mod service_discovery_service {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
-    use iceoryx2_services_common::SerializationFormat;
     use iceoryx2_services_discovery::service_discovery::{
         service_name, Config, Discovery, Payload, Service,
     };
@@ -39,6 +38,7 @@ mod service_discovery_service {
 
         // create a service monitoring service
         let discovery_config = Config {
+            sync_on_initialization: true,
             include_internal: false,
             publish_events: true,
             max_subscribers: 1,
@@ -103,6 +103,7 @@ mod service_discovery_service {
 
         // create a service monitoring service
         let discovery_config = Config {
+            sync_on_initialization: true,
             include_internal: false,
             publish_events: false,
             max_subscribers: 1,
@@ -150,12 +151,12 @@ mod service_discovery_service {
 
         // create a service monitoring service
         let discovery_config = Config {
+            sync_on_initialization: false,
             include_internal: true,
             publish_events: true,
             max_subscribers: 1,
             send_notifications: false,
             max_listeners: 1,
-            format: SerializationFormat::Json,
         };
         let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 

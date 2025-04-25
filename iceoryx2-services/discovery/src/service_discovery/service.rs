@@ -77,6 +77,11 @@ pub enum SpinError {
 /// Configuration for the service discovery service.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Config {
+    /// Whether or not to synchronize the discvery state on initialization.
+    ///
+    /// If enabled, updates for all pre-existing services will not be sent.
+    pub sync_on_initialization: bool,
+
     /// Whether to include iceoryx-internal services in discovery results.
     pub include_internal: bool,
 
@@ -96,6 +101,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            sync_on_initialization: true,
             include_internal: true,
             publish_events: true,
             max_subscribers: 10,
@@ -207,9 +213,9 @@ impl<S: ServiceType> Service<S> {
 
         let mut tracker = Tracker::<S>::new();
 
-        // TODO: Option to stop initial sync in case user wants to get events
-        //       for all pre-existing services.
-        tracker.sync(iceoryx_config);
+        if discovery_config.sync_on_initialization {
+            tracker.sync(iceoryx_config);
+        }
 
         Ok(Service::<S> {
             discovery_config: discovery_config.clone(),

@@ -85,6 +85,7 @@ pub fn discovery(
         max_subscribers,
         send_notifications,
         max_listeners,
+        sync_on_initialization: true,
         include_internal: false,
     };
 
