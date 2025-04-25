@@ -20,8 +20,10 @@ use core::time::Duration;
 
 pub use crate::shared_memory::PointerOffset;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 pub use iceoryx2_bb_system_types::file_name::*;
 pub use iceoryx2_bb_system_types::path::Path;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ZeroCopyPortRemoveError {
@@ -111,15 +113,15 @@ impl core::fmt::Display for ZeroCopyReleaseError {
 
 impl core::error::Error for ZeroCopyReleaseError {}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ZeroCopySend)]
 pub struct ChannelId(usize);
 
 impl ChannelId {
-    pub fn new(value: usize) -> Self {
+    pub const fn new(value: usize) -> Self {
         Self(value)
     }
 
-    pub fn value(&self) -> usize {
+    pub const fn value(&self) -> usize {
         self.0
     }
 }
@@ -130,6 +132,7 @@ pub const DEFAULT_MAX_BORROWED_SAMPLES_PER_CHANNEL: usize = 4;
 pub const DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS: u8 = 1;
 pub const DEFAULT_NUMBER_OF_CHANNELS: usize = 1;
 pub const DEFAULT_NUMBER_OF_SAMPLES_PER_SEGMENT: usize = 8;
+pub const INITIAL_CHANNEL_STATE: u64 = 0;
 
 pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<C> {
     fn buffer_size(self, value: usize) -> Self;
@@ -138,6 +141,7 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
     fn max_supported_shared_memory_segments(self, value: u8) -> Self;
     fn number_of_samples_per_segment(self, value: usize) -> Self;
     fn number_of_channels(self, value: usize) -> Self;
+    fn initial_channel_state(self, value: u64) -> Self;
     /// The timeout defines how long the [`ZeroCopyConnectionBuilder`] should wait for
     /// concurrent
     /// [`ZeroCopyConnectionBuilder::create_sender()`] or
@@ -150,11 +154,13 @@ pub trait ZeroCopyConnectionBuilder<C: ZeroCopyConnection>: NamedConceptBuilder<
 }
 
 pub trait ZeroCopyPortDetails {
+    fn number_of_channels(&self) -> usize;
     fn buffer_size(&self) -> usize;
     fn has_enabled_safe_overflow(&self) -> bool;
     fn max_borrowed_samples(&self) -> usize;
     fn max_supported_shared_memory_segments(&self) -> u8;
     fn is_connected(&self) -> bool;
+    fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64;
 }
 
 pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
@@ -193,6 +199,7 @@ pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept {
         ptr: PointerOffset,
         channel_id: ChannelId,
     ) -> Result<(), ZeroCopyReleaseError>;
+    fn borrow_count(&self, channel_id: ChannelId) -> usize;
 }
 
 pub trait ZeroCopyConnection: Debug + Sized + NamedConceptMgmt {

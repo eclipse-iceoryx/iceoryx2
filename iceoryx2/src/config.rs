@@ -314,7 +314,12 @@ pub struct RequestResonse {
     pub enable_safe_overflow_for_responses: bool,
     /// The maximum of [`crate::active_request::ActiveRequest`]s a [`crate::port::server::Server`] can hold in parallel per [`crate::port::client::Client`].
     pub max_active_requests_per_client: usize,
-    /// The maximum buffer size for [`crate::response::Response`]s for a [`crate::pending_response::PendingResponse`].
+    /// The maximum buffer size for [`crate::response::Response`]s for a [`crate::pending_response::PendingResponse`]
+    /// for each [`Server`](crate::port::server::Server) connection.
+    /// In a multi [`Server`](crate::port::server::Server) scenario every
+    /// [`Response`](crate::response::Response) stream from every
+    /// [`Server`](crate::port::server::Server) has the same buffer size resulting in a total
+    /// buffer size of `NUMBER_OF_SERVERS * max_response_buffer_size`
     pub max_response_buffer_size: usize,
     /// The maximum amount of supported [`crate::port::server::Server`]
     pub max_servers: usize,
@@ -326,7 +331,7 @@ pub struct RequestResonse {
     /// The maximum amount of borrowed [`crate::response::Response`] per [`crate::pending_response::PendingResponse`] on the [`crate::port::client::Client`] side.
     pub max_borrowed_responses_per_pending_response: usize,
     /// Defines how many [`crate::request_mut::RequestMut`] a [`crate::port::client::Client`] can loan in parallel.
-    pub client_max_loaned_requests: usize,
+    pub max_loaned_requests: usize,
     /// Defines how many [`crate::response_mut::ResponseMut`] a [`crate::port::server::Server`] can loan in parallel per [`crate::active_request::ActiveRequest`].
     pub server_max_loaned_responses_per_request: usize,
     /// Defines the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
@@ -335,6 +340,27 @@ pub struct RequestResonse {
     /// Defines the [`UnableToDeliverStrategy`] when a [`Server`](crate::port::server::Server)
     /// could not deliver the response to the [`Client`](crate::port::client::Client).
     pub server_unable_to_deliver_strategy: UnableToDeliverStrategy,
+    /// Defines the size of the internal [`Client`](crate::port::client::Client)
+    /// buffer that contains expired connections. A
+    /// connection is expired when the [`Server`](crate::port::server::Server)
+    /// disconnected from a service and the connection
+    /// still contains unconsumed [`Response`](crate::response::Response)s.
+    pub client_expired_connection_buffer: usize,
+    /// Allows the [`Server`](crate::port::server::Server) to receive
+    /// [`RequestMut`](crate::response_mut::ResponseMut)s of
+    /// [`Client`](crate::port::client::Client)s that are not interested in a
+    /// [`Response`](crate::response::Response), meaning that the
+    /// [`Server`](crate::port::server::Server) will receive the
+    /// [`RequestMut`](crate::response_mut::ResponseMut) despite the corresponding
+    /// [`PendingResponse`](crate::pending_response::PendingResponse) already went out-of-scope.
+    /// So any [`Response`](crate::response::Response) sent by the
+    /// [`Server`](crate::port::server::Server) would not be received by the corresponding
+    /// [`Client`](crate::port::client::Client)s
+    /// [`PendingResponse`](crate::pending_response::PendingResponse).
+    ///
+    /// Consider enabling this feature if you do not want to loose any
+    /// [`RequestMut`](crate::response_mut::ResponseMut).
+    pub enable_fire_and_forget_requests: bool,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -388,10 +414,12 @@ impl Default for Config {
                     max_clients: 8,
                     max_nodes: 20,
                     max_borrowed_responses_per_pending_response: 2,
-                    client_max_loaned_requests: 2,
+                    max_loaned_requests: 2,
                     server_max_loaned_responses_per_request: 2,
                     client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+                    client_expired_connection_buffer: 128,
+                    enable_fire_and_forget_requests: true,
                 },
                 publish_subscribe: PublishSubscribe {
                     max_subscribers: 8,

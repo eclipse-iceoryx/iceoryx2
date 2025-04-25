@@ -119,6 +119,16 @@ Adjusting `global` settings ensures a non-interfering setup.
 
 ### Service: Request Response Messaging Pattern
 
+* `defaults.request-response.client-unable-to-deliver-strategy` -
+  [`Block`|`DiscardSample`]: Default strategy for non-overflowing setups
+  when delivery fails.
+* `defaults.request-response.client-expired-connection-buffer` - [int]:
+  Expired connection buffer size of the client. Connections to servers
+  are expired when the server disconnected from the service and the
+  connection contains unconsumed responses.
+* `defaults.request-response.enable-fire-and-forget-requests` -
+  [`true`|`false`]: Enables the client to send requests without
+  expecting a response.
 * `defaults.request-response.enable-safe-overflow-for-requests` -
   [`true`|`false`]: Defines if the request buffer of the service safely
   overflows.
@@ -130,14 +140,17 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.request-response.max-borrowed-responses-per-pending-response` -
   [int]: The maximum number of borrowed responses a client can hold in
   parallel per pending response.
+* `defaults.request-response.max-clients` - [int]:
+  The maximum amount of supported clients.
+* `defaults.request-response.max-nodes` - [int]:
+  The maximum amount of supported nodes. Defines indirectly how many
+  processes can open the service at the same time.
 * `defaults.request-response.max-response-buffer-size` - [int]:
   The maximum buffer size for responses for an active request.
 * `defaults.request-response.max-request-buffer-size` - [int]:
   The maximum buffer size for requests for a server.
 * `defaults.request-response.max-servers` - [int]:
   The maximum amount of supported servers.
-* `defaults.request-response.max-clients` - [int]:
-  The maximum amount of supported clients.
-* `defaults.request-response.max-nodes` - [int]:
-  The maximum amount of supported nodes. Defines indirectly how many
-  processes can open the service at the same time.
+* `defaults.request-response.server-unable-to-deliver-strategy` -
+  [`Block`|`DiscardSample`]: Default strategy for non-overflowing setups
+  when delivery fails.

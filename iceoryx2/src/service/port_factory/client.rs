@@ -22,7 +22,6 @@
 //!     .open_or_create()?;
 //!
 //! let client = request_response.client_builder()
-//!                     .max_loaned_requests(6)
 //!                     .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
 //!                     .create()?;
 //!
@@ -37,6 +36,7 @@ use crate::{
     service,
 };
 use core::fmt::Debug;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 
 /// Defines a failure that can occur when a [`Client`] is created with
@@ -67,10 +67,10 @@ impl core::error::Error for ClientCreateError {}
 pub struct PortFactoryClient<
     'factory,
     Service: service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<
         Service,
@@ -79,18 +79,18 @@ pub struct PortFactoryClient<
         ResponsePayload,
         ResponseHeader,
     >,
-    pub(crate) max_loaned_requests: usize,
     pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
-    pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) request_degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
 }
 
 impl<
         'factory,
         Service: service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     >
     PortFactoryClient<
         'factory,
@@ -121,8 +121,8 @@ impl<
         Self {
             factory,
             unable_to_deliver_strategy: defs.client_unable_to_deliver_strategy,
-            max_loaned_requests: defs.client_max_loaned_requests,
-            degradation_callback: None,
+            request_degradation_callback: None,
+            response_degradation_callback: None,
         }
     }
 
@@ -135,24 +135,37 @@ impl<
         self
     }
 
-    /// Defines how many requests the [`Client`] can loan in parallel.
-    pub fn max_loaned_requests(mut self, value: usize) -> Self {
-        self.max_loaned_requests = value;
-        self
-    }
-
-    /// Sets the [`DegradationCallback`] of the [`Client`]. Whenever a connection to a
+    /// Sets the [`DegradationCallback`] for sending [`RequestMut`](crate::request_mut::RequestMut)
+    /// from the [`Client`]. Whenever a connection to a
     /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
     /// is called and depending on the returned [`DegradationAction`] measures will be taken.
-    pub fn set_degradation_callback<
+    pub fn set_request_degradation_callback<
         F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
     >(
         mut self,
         callback: Option<F>,
     ) -> Self {
         match callback {
-            Some(c) => self.degradation_callback = Some(DegradationCallback::new(c)),
-            None => self.degradation_callback = None,
+            Some(c) => self.request_degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.request_degradation_callback = None,
+        }
+
+        self
+    }
+
+    /// Sets the [`DegradationCallback`] for receiving [`Response`](crate::response::Response)s
+    /// from a [`Server`](crate::port::server::Server). Whenever a connection to a
+    /// [`Server`](crate::port::server::Server) is corrupted or it seems to be dead, this callback
+    /// is called and depending on the returned [`DegradationAction`] measures will be taken.
+    pub fn set_response_degradation_callback<
+        F: Fn(&service::static_config::StaticConfig, u128, u128) -> DegradationAction + 'static,
+    >(
+        mut self,
+        callback: Option<F>,
+    ) -> Self {
+        match callback {
+            Some(c) => self.response_degradation_callback = Some(DegradationCallback::new(c)),
+            None => self.response_degradation_callback = None,
         }
 
         self

@@ -294,6 +294,17 @@ pub mod details {
             true
         }
 
+        unsafe fn remove_impl(&mut self, index: usize) -> T {
+            self.verify_init("remove()");
+            debug_assert!(index < self.len());
+
+            let ptr = self.as_mut_ptr().add(index);
+            let value = core::ptr::read(ptr);
+            core::ptr::copy(ptr.add(1), ptr, self.len - index - 1);
+            self.len -= 1;
+            value
+        }
+
         unsafe fn pop_impl(&mut self) -> Option<T> {
             if self.is_empty() {
                 return None;
@@ -329,7 +340,7 @@ pub mod details {
     }
 
     impl<T> MetaVec<T, GenericOwningPointer> {
-        /// Creates a new [`Queue`] with the provided capacity
+        /// Creates a new [`Vec`] with the provided capacity
         pub fn new(capacity: usize) -> Self {
             Self {
                 data_ptr: OwningPointer::<MaybeUninit<T>>::new_with_alloc(capacity),
@@ -338,6 +349,16 @@ pub mod details {
                 is_initialized: IoxAtomicBool::new(true),
                 _phantom_data: PhantomData,
             }
+        }
+
+        /// Creates a new [`Vec`] with the provided capacity and fills it by
+        /// using the provided callback
+        pub fn from_fn<F: FnMut(usize) -> T>(capacity: usize, mut callback: F) -> Self {
+            let mut new_self = Self::new(capacity);
+            for n in 0..capacity {
+                new_self.push(callback(n));
+            }
+            new_self
         }
 
         /// Adds an element at the end of the vector. If the vector is full and the element cannot be
@@ -371,6 +392,11 @@ pub mod details {
         /// it returns [`None`].
         pub fn pop(&mut self) -> Option<T> {
             unsafe { self.pop_impl() }
+        }
+
+        /// Removes the element at the provided index and returns it.
+        pub fn remove(&mut self, index: usize) -> T {
+            unsafe { self.remove_impl(index) }
         }
 
         /// Removes all elements from the vector
@@ -453,6 +479,16 @@ pub mod details {
         ///
         pub unsafe fn pop(&mut self) -> Option<T> {
             self.pop_impl()
+        }
+
+        /// Removes the element at the provided index and returns it.
+        ///
+        /// # Safety
+        ///
+        ///  * [`RelocatableVec::init()`] must be called once before
+        ///
+        pub unsafe fn remove(&mut self, index: usize) -> T {
+            unsafe { self.remove_impl(index) }
         }
 
         /// Removes all elements from the vector
@@ -679,6 +715,11 @@ impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
     /// it returns [`None`].
     pub fn pop(&mut self) -> Option<T> {
         unsafe { self.state.pop() }
+    }
+
+    /// Removes the element at the provided index and returns it.
+    pub fn remove(&mut self, index: usize) -> T {
+        unsafe { self.state.remove(index) }
     }
 
     /// Removes all elements from the vector

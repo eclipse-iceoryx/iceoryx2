@@ -18,7 +18,7 @@ pub mod details {
     use core::sync::atomic::Ordering;
     use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU8, IoxAtomicUsize};
+    use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
 
     use crate::dynamic_storage::{
         DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
@@ -157,6 +157,7 @@ pub mod details {
     struct Channel {
         submission_queue: RelocatableSafelyOverflowingIndexQueue,
         completion_queue: RelocatableIndexQueue,
+        state: IoxAtomicU64,
     }
 
     impl Channel {
@@ -168,6 +169,7 @@ pub mod details {
                 completion_queue: unsafe {
                     RelocatableIndexQueue::new_uninit(completion_queue_capacity)
                 },
+                state: IoxAtomicU64::new(INITIAL_CHANNEL_STATE),
             }
         }
 
@@ -361,6 +363,7 @@ pub mod details {
         number_of_samples_per_segment: usize,
         number_of_segments: u8,
         number_of_channels: usize,
+        initial_channel_state: u64,
         timeout: Duration,
         config: Configuration<Storage>,
     }
@@ -393,8 +396,12 @@ pub mod details {
         .config(&self.config.dynamic_storage_config)
         .timeout(self.timeout)
         .supplementary_size(supplementary_size)
+        .call_drop_on_destruction(false)
         .initializer(|data, allocator| {
             unsafe { data.init(allocator, self.submission_queue_size(), self.completion_queue_size())};
+            for channel in data.channels.iter() {
+                channel.state.store(self.initial_channel_state, Ordering::Relaxed);
+            }
 
             true
         })
@@ -506,6 +513,7 @@ pub mod details {
                 number_of_segments: DEFAULT_MAX_SUPPORTED_SHARED_MEMORY_SEGMENTS,
                 number_of_channels: DEFAULT_NUMBER_OF_CHANNELS,
                 config: Configuration::default(),
+                initial_channel_state: INITIAL_CHANNEL_STATE,
                 timeout: Duration::ZERO,
             }
         }
@@ -521,6 +529,11 @@ pub mod details {
     {
         fn max_supported_shared_memory_segments(mut self, value: u8) -> Self {
             self.number_of_segments = value.clamp(1, u8::MAX);
+            self
+        }
+
+        fn initial_channel_state(mut self, value: u64) -> Self {
+            self.initial_channel_state = value;
             self
         }
 
@@ -627,6 +640,15 @@ pub mod details {
 
         fn is_connected(&self) -> bool {
             self.storage.get().is_connected()
+        }
+
+        fn number_of_channels(&self) -> usize {
+            self.storage.get().channels.capacity()
+        }
+
+        fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
+            &self.storage.get().channels[channel_id.value()].state
         }
     }
 
@@ -765,10 +787,43 @@ pub mod details {
                 segment_details.used_chunk_list.remove_all(|index| {
                     callback(PointerOffset::from_offset_and_segment_id(
                         index * segment_details.sample_size.load(Ordering::Relaxed),
-                        SegmentId::new(n as u8),
+                        self.segment_id_from_index(n),
                     ))
                 });
             }
+        }
+    }
+
+    impl<Storage: DynamicStorage<SharedManagementData>> Sender<Storage> {
+        fn segment_id_from_index(&self, index: usize) -> SegmentId {
+            let storage = self.storage.get();
+            let number_of_segments = storage.number_of_segments as usize;
+            // the segment details contain an entry for every channel in every segment.
+            // so it is in memory a vector of vector where the first index is the
+            // channel id and the second is the segment id. this vector is, to make the
+            // relocatable construction easier, mapped to a one dimension vector with the
+            // same memory layout.
+            //
+            // example for 3 segments and 4 channels
+            //
+            // index       segment id      channel id
+            // 0           0               0
+            // 1           1               0
+            // 2           2               0
+            // 3           0               1
+            // 4           1               1
+            // 5           2               1
+            // 6           0               2
+            // 7           1               2
+            // 8           2               2
+            // 9           0               3
+            // 10          1               3
+            // 11          2               3
+            //
+            // to map an index to a segment id, we need to substract from index the
+            // rounded down value of index which is rounded down to the greatest multiple
+            // of number_of_segments.
+            SegmentId::new((index - (index / number_of_segments) * number_of_segments) as u8)
         }
     }
 
@@ -822,6 +877,15 @@ pub mod details {
         fn is_connected(&self) -> bool {
             self.storage.get().is_connected()
         }
+
+        fn number_of_channels(&self) -> usize {
+            self.storage.get().channels.capacity()
+        }
+
+        fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64 {
+            debug_assert!(channel_id.value() < self.storage.get().channels.capacity());
+            &self.storage.get().channels[channel_id.value()].state
+        }
     }
 
     impl<Storage: DynamicStorage<SharedManagementData>> ZeroCopyReceiver for Receiver<Storage> {
@@ -855,6 +919,10 @@ pub mod details {
                     Ok(Some(PointerOffset::from_value(v)))
                 }
             }
+        }
+
+        fn borrow_count(&self, channel_id: ChannelId) -> usize {
+            *self.borrow_counter(channel_id)
         }
 
         fn release(

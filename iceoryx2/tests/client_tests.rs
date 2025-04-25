@@ -20,7 +20,6 @@ mod client {
     use iceoryx2::port::client::RequestSendError;
     use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
-    use iceoryx2::service::port_factory::request_response::PortFactory;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
@@ -32,18 +31,6 @@ mod client {
     fn create_node<Sut: Service>() -> Node<Sut> {
         let config = generate_isolated_config();
         NodeBuilder::new().config(&config).create::<Sut>().unwrap()
-    }
-
-    fn create_node_and_service<Sut: Service>() -> (Node<Sut>, PortFactory<Sut, u64, (), u64, ()>) {
-        let service_name = generate_service_name();
-        let node = create_node::<Sut>();
-        let service = node
-            .service_builder(&service_name)
-            .request_response::<u64, u64>()
-            .create()
-            .unwrap();
-
-        (node, service)
     }
 
     #[test]
@@ -67,7 +54,7 @@ mod client {
     }
 
     #[test]
-    fn send_request_via_disconnected_client_fails<Sut: Service>() {
+    fn send_request_via_disconnected_client_works<Sut: Service>() {
         let service_name = generate_service_name();
         let node = create_node::<Sut>();
         let service = node
@@ -81,21 +68,23 @@ mod client {
         let request = sut.loan().unwrap();
         drop(sut);
 
-        let result = request.send();
-        assert_that!(result.err(), eq Some(RequestSendError::SendError(iceoryx2::port::SendError::ConnectionBrokenSinceSenderNoLongerExists)));
+        assert_that!(request.send(), is_ok);
     }
 
     #[test]
     fn can_loan_at_most_max_supported_amount_of_requests<Sut: Service>() {
         const MAX_LOANED_REQUESTS: usize = 29;
         const ITERATIONS: usize = 3;
-        let (_node, service) = create_node_and_service::<Sut>();
-
-        let sut = service
-            .client_builder()
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
             .max_loaned_requests(MAX_LOANED_REQUESTS)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         for _ in 0..ITERATIONS {
             let mut requests = vec![];
@@ -123,14 +112,11 @@ mod client {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .max_active_requests_per_client(MAX_PENDING_RESPONSES)
-            .create()
-            .unwrap();
-
-        let sut = service
-            .client_builder()
             .max_loaned_requests(MAX_LOANED_REQUESTS)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         for _ in 0..ITERATIONS {
             let mut pending_responses = vec![];
@@ -281,13 +267,17 @@ mod client {
 
     #[test]
     fn sending_requests_reduces_loan_counter<Sut: Service>() {
-        let (_node, service) = create_node_and_service::<Sut>();
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
 
-        let sut = service
-            .client_builder()
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
             .max_loaned_requests(1)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         let request = sut.loan().unwrap();
 
@@ -302,13 +292,17 @@ mod client {
 
     #[test]
     fn dropping_requests_reduces_loan_counter<Sut: Service>() {
-        let (_node, service) = create_node_and_service::<Sut>();
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
 
-        let sut = service
-            .client_builder()
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
             .max_loaned_requests(1)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         let request = sut.loan().unwrap();
 
@@ -331,14 +325,11 @@ mod client {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .request_payload_alignment(Alignment::new(ALIGNMENT).unwrap())
-            .create()
-            .unwrap();
-
-        let sut = service
-            .client_builder()
             .max_loaned_requests(MAX_LOAN)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         let mut requests = vec![];
 
@@ -394,14 +385,11 @@ mod client {
             .max_clients(1)
             .max_servers(max_servers)
             .max_active_requests_per_client(max_active_requests_per_client)
-            .create()
-            .unwrap();
-
-        let sut = service
-            .client_builder()
             .max_loaned_requests(max_loaned_requests)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         let mut servers = vec![];
         for _ in 0..max_servers {
@@ -514,7 +502,7 @@ mod client {
         );
     }
 
-    fn retrieve_channel_capacity_is_never_exceeded_impl<Sut: Service>(
+    fn completion_channel_capacity_is_never_exceeded_impl<Sut: Service>(
         max_active_requests_per_client: usize,
         max_servers: usize,
         max_loaned_requests: usize,
@@ -529,14 +517,11 @@ mod client {
             .max_clients(1)
             .max_servers(max_servers)
             .max_active_requests_per_client(max_active_requests_per_client)
-            .create()
-            .unwrap();
-
-        let sut = service
-            .client_builder()
             .max_loaned_requests(max_loaned_requests)
             .create()
             .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
 
         let mut servers = vec![];
         for _ in 0..max_servers {
@@ -573,12 +558,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_huge_active_requests<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_huge_active_requests<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 100;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
@@ -586,12 +571,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_huge_max_servers<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_huge_max_servers<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 100;
         const MAX_LOANED_REQUESTS: usize = 1;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
@@ -599,12 +584,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_huge_max_loaned_requests<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_huge_max_loaned_requests<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 100;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
@@ -612,12 +597,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_huge_values<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 23;
         const MAX_SERVERS: usize = 12;
         const MAX_LOANED_REQUESTS: usize = 10;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
@@ -625,12 +610,12 @@ mod client {
     }
 
     #[test]
-    fn retrieve_channel_capacity_is_never_exceeded_with_smallest_possible_values<Sut: Service>() {
+    fn completion_channel_capacity_is_never_exceeded_with_smallest_possible_values<Sut: Service>() {
         const MAX_ACTIVE_REQUEST_PER_CLIENT: usize = 1;
         const MAX_SERVERS: usize = 1;
         const MAX_LOANED_REQUESTS: usize = 1;
 
-        retrieve_channel_capacity_is_never_exceeded_impl::<Sut>(
+        completion_channel_capacity_is_never_exceeded_impl::<Sut>(
             MAX_ACTIVE_REQUEST_PER_CLIENT,
             MAX_SERVERS,
             MAX_LOANED_REQUESTS,
@@ -669,6 +654,41 @@ mod client {
 
                 // disconnect all servers by dropping them
                 drop(servers);
+            }
+        }
+    }
+
+    #[test]
+    fn updates_connections_after_reconnect<Sut: Service>() {
+        const RECONNECTIONS: usize = 20;
+        const MAX_SERVERS: usize = 4;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<usize, u64>()
+            .max_servers(MAX_SERVERS)
+            .create()
+            .unwrap();
+
+        let sut = service.client_builder().create().unwrap();
+
+        for n in 0..MAX_SERVERS {
+            for k in 0..RECONNECTIONS {
+                let mut servers = vec![];
+                for _ in 0..n {
+                    servers.push(service.server_builder().create().unwrap());
+                }
+
+                for server in &servers {
+                    assert_that!(server.has_requests(), eq Ok(false));
+                }
+                let _pending_response = sut.send_copy(n + k).unwrap();
+
+                for server in &servers {
+                    assert_that!(server.has_requests(), eq Ok(true));
+                    assert_that!(*server.receive().unwrap().unwrap(), eq n + k);
+                }
             }
         }
     }

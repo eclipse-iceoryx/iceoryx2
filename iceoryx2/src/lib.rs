@@ -323,6 +323,8 @@ pub mod response;
 /// [`Client`](crate::port::client::Client)
 pub mod response_mut;
 
+pub mod response_mut_uninit;
+
 /// The payload that is received by a [`Subscriber`](crate::port::subscriber::Subscriber).
 pub mod sample;
 

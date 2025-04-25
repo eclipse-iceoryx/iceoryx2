@@ -71,6 +71,7 @@ const FINAL_PERMISSIONS: Permission = Permission::ALL;
 #[derive(Debug)]
 pub struct Builder<'builder, T: Send + Sync + Debug> {
     storage_name: FileName,
+    call_drop_on_destruction: bool,
     supplementary_size: usize,
     has_ownership: bool,
     config: Configuration<T>,
@@ -101,6 +102,7 @@ impl<T: Send + Sync + Debug> Clone for Configuration<T> {
 #[repr(C)]
 struct Data<T: Send + Sync + Debug> {
     version: IoxAtomicU64,
+    call_drop_on_destruction: bool,
     data: T,
 }
 
@@ -157,6 +159,7 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
 impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'_, T> {
     fn new(storage_name: &FileName) -> Self {
         Self {
+            call_drop_on_destruction: true,
             has_ownership: true,
             storage_name: *storage_name,
             supplementary_size: 0,
@@ -291,6 +294,10 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
         unsafe { version_ptr.write(IoxAtomicU64::new(0)) };
 
         unsafe { core::ptr::addr_of_mut!((*value).data).write(initial_value) };
+        unsafe {
+            core::ptr::addr_of_mut!((*value).call_drop_on_destruction)
+                .write(self.call_drop_on_destruction)
+        };
 
         let supplementary_start =
             (shm.base_address().as_ptr() as usize + core::mem::size_of::<Data<T>>()) as *mut u8;
@@ -340,6 +347,11 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
 impl<'builder, T: Send + Sync + Debug> DynamicStorageBuilder<'builder, T, Storage<T>>
     for Builder<'builder, T>
 {
+    fn call_drop_on_destruction(mut self, value: bool) -> Self {
+        self.call_drop_on_destruction = value;
+        self
+    }
+
     fn has_ownership(mut self, value: bool) -> Self {
         self.has_ownership = value;
         self
@@ -407,8 +419,11 @@ unsafe impl<T: Debug + Send + Sync> Sync for Storage<T> {}
 impl<T: Debug + Send + Sync> Drop for Storage<T> {
     fn drop(&mut self) {
         if self.shm.has_ownership() {
-            let data = unsafe { &mut (*(self.shm.base_address().as_ptr() as *mut Data<T>)).data };
-            unsafe { core::ptr::drop_in_place(data) };
+            let data = unsafe { &mut (*(self.shm.base_address().as_ptr() as *mut Data<T>)) };
+            if data.call_drop_on_destruction {
+                let user_type = &mut data.data;
+                unsafe { core::ptr::drop_in_place(user_type) };
+            }
         }
     }
 }

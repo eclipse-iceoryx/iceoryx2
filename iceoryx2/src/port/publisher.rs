@@ -129,6 +129,7 @@ use core::sync::atomic::Ordering;
 use core::{marker::PhantomData, mem::MaybeUninit};
 use iceoryx2_bb_container::queue::Queue;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{debug, fail, warn};
@@ -183,7 +184,7 @@ struct OffsetAndSize {
 }
 
 #[derive(Debug)]
-pub(crate) struct PublisherBackend<Service: service::Service> {
+pub(crate) struct PublisherSharedState<Service: service::Service> {
     config: LocalPublisherConfig,
     service_state: Arc<ServiceState<Service>>,
 
@@ -193,7 +194,7 @@ pub(crate) struct PublisherBackend<Service: service::Service> {
     is_active: IoxAtomicBool,
 }
 
-impl<Service: service::Service> PublisherBackend<Service> {
+impl<Service: service::Service> PublisherSharedState<Service> {
     fn add_sample_to_history(&self, offset: PointerOffset, sample_size: usize) {
         match &self.history {
             None => (),
@@ -304,7 +305,8 @@ impl<Service: service::Service> PublisherBackend<Service> {
             "{} since the connections could not be updated.", msg);
 
         self.add_sample_to_history(offset, sample_size);
-        self.sender.deliver_offset(offset, sample_size)
+        self.sender
+            .deliver_offset(offset, sample_size, ChannelId::new(0))
     }
 }
 
@@ -312,21 +314,27 @@ impl<Service: service::Service> PublisherBackend<Service> {
 #[derive(Debug)]
 pub struct Publisher<
     Service: service::Service,
-    Payload: Debug + ?Sized + 'static,
-    UserHeader: Debug,
+    Payload: Debug + ZeroCopySend + ?Sized + 'static,
+    UserHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) backend: Arc<PublisherBackend<Service>>,
+    pub(crate) publisher_shared_state: Arc<PublisherSharedState<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Drop
-    for Publisher<Service, Payload, UserHeader>
+impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Drop for Publisher<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
+        self.publisher_shared_state
+            .is_active
+            .store(false, Ordering::Relaxed);
         if let Some(handle) = self.dynamic_publisher_handle {
-            self.backend
+            self.publisher_shared_state
                 .service_state
                 .dynamic_storage
                 .get()
@@ -336,8 +344,11 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> Drop
     }
 }
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
-    Publisher<Service, Payload, UserHeader>
+impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Publisher<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
         service: &Service,
@@ -405,7 +416,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
-        let backend = Arc::new(PublisherBackend {
+        let publisher_shared_state = Arc::new(PublisherSharedState {
             is_active: IoxAtomicBool::new(true),
             service_state: service.__internal_state().clone(),
             sender: Sender {
@@ -435,6 +446,7 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
                 sender_max_borrowed_samples: config.max_loaned_samples,
                 unable_to_deliver_strategy: config.unable_to_deliver_strategy,
                 message_type_details: static_config.message_type_details.clone(),
+                number_of_channels: 1,
             },
             config,
             subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
@@ -445,13 +457,13 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
         });
 
         let mut new_self = Self {
-            backend,
+            publisher_shared_state,
             dynamic_publisher_handle: None,
             _payload: PhantomData,
             _user_header: PhantomData,
         };
 
-        if let Err(e) = new_self.backend.force_update_connections() {
+        if let Err(e) = new_self.publisher_shared_state.force_update_connections() {
             warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
         }
 
@@ -481,26 +493,33 @@ impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug>
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`]
     pub fn id(&self) -> UniquePublisherId {
-        UniquePublisherId(UniqueSystemId::from(self.backend.sender.sender_port_id))
+        UniquePublisherId(UniqueSystemId::from(
+            self.publisher_shared_state.sender.sender_port_id,
+        ))
     }
 
     /// Returns the strategy the [`Publisher`] follows when a [`SampleMut`] cannot be delivered
     /// since the [`Subscriber`](crate::port::subscriber::Subscriber)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
-        self.backend.sender.unable_to_deliver_strategy
+        self.publisher_shared_state
+            .sender
+            .unable_to_deliver_strategy
     }
 
     /// Returns the maximum initial slice length configured for this [`Publisher`].
     pub fn initial_max_slice_len(&self) -> usize {
-        self.backend.config.initial_max_slice_len
+        self.publisher_shared_state.config.initial_max_slice_len
     }
 }
 
 ////////////////////////
 // BEGIN: typed API
 ////////////////////////
-impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
-    Publisher<Service, Payload, UserHeader>
+impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Publisher<Service, Payload, UserHeader>
 {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
     /// On success it returns the number of [`crate::port::subscriber::Subscriber`]s that received
@@ -563,9 +582,9 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
         &self,
     ) -> Result<SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>, LoanError> {
         let chunk = self
-            .backend
+            .publisher_shared_state
             .sender
-            .allocate(self.backend.sender.sample_layout(1))?;
+            .allocate(self.publisher_shared_state.sender.sample_layout(1))?;
         let header_ptr = chunk.header as *mut Header;
         unsafe { header_ptr.write(Header::new(self.id(), 1)) };
 
@@ -574,7 +593,7 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
         };
         Ok(
             SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
-                &self.backend,
+                &self.publisher_shared_state,
                 sample,
                 chunk.offset,
                 chunk.size,
@@ -583,8 +602,11 @@ impl<Service: service::Service, Payload: Debug + Sized, UserHeader: Debug>
     }
 }
 
-impl<Service: service::Service, Payload: Default + Debug + Sized, UserHeader: Debug>
-    Publisher<Service, Payload, UserHeader>
+impl<
+        Service: service::Service,
+        Payload: Default + Debug + ZeroCopySend + Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Publisher<Service, Payload, UserHeader>
 {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initialize it with the default value. This can be a performance hit and [`Publisher::loan_uninit`]
@@ -624,8 +646,11 @@ impl<Service: service::Service, Payload: Default + Debug + Sized, UserHeader: De
 ////////////////////////
 // BEGIN: sliced API
 ////////////////////////
-impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
-    Publisher<Service, [Payload], UserHeader>
+impl<
+        Service: service::Service,
+        Payload: Default + Debug + ZeroCopySend,
+        UserHeader: Debug + ZeroCopySend,
+    > Publisher<Service, [Payload], UserHeader>
 {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
     /// and initializes all slice elements with the default value. This can be a performance hit
@@ -667,8 +692,11 @@ impl<Service: service::Service, Payload: Default + Debug, UserHeader: Debug>
     }
 }
 
-impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
-    Publisher<Service, [Payload], UserHeader>
+impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend,
+        UserHeader: Debug + ZeroCopySend,
+    > Publisher<Service, [Payload], UserHeader>
 {
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
@@ -712,8 +740,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
         slice_len: usize,
         underlying_number_of_slice_elements: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, LoanError> {
-        let max_slice_len = self.backend.config.initial_max_slice_len;
-        if self.backend.config.allocation_strategy == AllocationStrategy::Static
+        let max_slice_len = self.publisher_shared_state.config.initial_max_slice_len;
+        if self.publisher_shared_state.config.allocation_strategy == AllocationStrategy::Static
             && max_slice_len < slice_len
         {
             fail!(from self, with LoanError::ExceedsMaxLoanSize,
@@ -721,8 +749,8 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
                 slice_len, max_slice_len);
         }
 
-        let sample_layout = self.backend.sender.sample_layout(slice_len);
-        let chunk = self.backend.sender.allocate(sample_layout)?;
+        let sample_layout = self.publisher_shared_state.sender.sample_layout(slice_len);
+        let chunk = self.publisher_shared_state.sender.allocate(sample_layout)?;
         let header_ptr = chunk.header as *mut Header;
         unsafe { header_ptr.write(Header::new(self.id(), slice_len as _)) };
 
@@ -739,7 +767,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
 
         Ok(
             SampleMutUninit::<Service, [MaybeUninit<Payload>], UserHeader>::new(
-                &self.backend,
+                &self.publisher_shared_state,
                 sample,
                 chunk.offset,
                 chunk.size,
@@ -748,7 +776,7 @@ impl<Service: service::Service, Payload: Debug, UserHeader: Debug>
     }
 }
 
-impl<Service: service::Service, UserHeader: Debug>
+impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
     Publisher<Service, [CustomPayloadMarker], UserHeader>
 {
     /// # Safety
@@ -766,21 +794,29 @@ impl<Service: service::Service, UserHeader: Debug>
     {
         // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
         debug_assert!(
-            slice_len == 1 || self.backend.sender.payload_type_variant() == TypeVariant::Dynamic
+            slice_len == 1
+                || self.publisher_shared_state.sender.payload_type_variant()
+                    == TypeVariant::Dynamic
         );
 
-        self.loan_slice_uninit_impl(slice_len, self.backend.sender.payload_size() * slice_len)
+        self.loan_slice_uninit_impl(
+            slice_len,
+            self.publisher_shared_state.sender.payload_size() * slice_len,
+        )
     }
 }
 ////////////////////////
 // END: sliced API
 ////////////////////////
 
-impl<Service: service::Service, Payload: Debug + ?Sized, UserHeader: Debug> UpdateConnections
-    for Publisher<Service, Payload, UserHeader>
+impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > UpdateConnections for Publisher<Service, Payload, UserHeader>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        self.backend.update_connections()
+        self.publisher_shared_state.update_connections()
     }
 }
 

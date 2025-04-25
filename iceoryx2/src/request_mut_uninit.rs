@@ -37,6 +37,8 @@
 //! # }
 //! ```
 
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+
 use crate::{request_mut::RequestMut, service};
 use core::{fmt::Debug, mem::MaybeUninit};
 
@@ -46,10 +48,10 @@ use core::{fmt::Debug, mem::MaybeUninit};
 #[repr(transparent)]
 pub struct RequestMutUninit<
     Service: crate::service::Service,
-    RequestPayload: Debug,
-    RequestHeader: Debug,
-    ResponsePayload: Debug,
-    ResponseHeader: Debug,
+    RequestPayload: Debug + ZeroCopySend,
+    RequestHeader: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend,
+    ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) request:
         RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
@@ -57,32 +59,24 @@ pub struct RequestMutUninit<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "RequestMutUninit<{}, {}, {}, {}, {}> {{ }}",
-            core::any::type_name::<Service>(),
-            core::any::type_name::<RequestPayload>(),
-            core::any::type_name::<RequestHeader>(),
-            core::any::type_name::<ResponsePayload>(),
-            core::any::type_name::<ResponseHeader>()
-        )
+        write!(f, "RequestMutUninit {{  request: {:?} }}", self.request)
     }
 }
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Returns a reference to the iceoryx2 internal
@@ -114,10 +108,10 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug,
-        RequestHeader: Debug,
-        ResponsePayload: Debug,
-        ResponseHeader: Debug,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
     >
     RequestMutUninit<
         Service,

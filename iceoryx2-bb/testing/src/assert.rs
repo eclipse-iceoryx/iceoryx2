@@ -72,6 +72,17 @@ macro_rules! assert_that {
             }
         }
     };
+    ($lhs:expr, aligned_to $rhs:expr) => {
+        {
+            let lval = $lhs as usize;
+            let rval = $rhs as usize;
+            let act_result = lval % rval;
+
+            if !(act_result == 0) {
+                assert_that!(message $lhs, $rhs, lval, rval, "aligned to");
+            }
+        }
+    };
     ($lhs:expr, mod $rhs:expr, is $result:expr) => {
         {
             let lval = &$lhs;
