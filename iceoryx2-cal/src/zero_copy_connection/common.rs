@@ -800,9 +800,25 @@ pub mod details {
             let number_of_segments = storage.number_of_segments as usize;
             // the segment details contain an entry for every channel in every segment.
             // so it is in memory a vector of vector where the first index is the
-            // segment id and the second is channel id. this vector is, to make the
+            // channel id and the second is the segment id. this vector is, to make the
             // relocatable construction easier, mapped to a one dimension vector with the
             // same memory layout.
+            //
+            // example for 3 segments and 4 channels
+            //
+            // index       segment id      channel id
+            // 0           0               0
+            // 1           1               0
+            // 2           2               0
+            // 3           0               1
+            // 4           1               1
+            // 5           2               1
+            // 6           0               2
+            // 7           1               2
+            // 8           2               2
+            // 9           0               3
+            // 10          1               3
+            // 11          2               3
             //
             // to map an index to a segment id, we need to substract from index the
             // rounded down value of index which is rounded down to the greatest multiple
