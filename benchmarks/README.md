@@ -30,7 +30,7 @@ The benchmark quantifies two scenarios:
 
 1. The latency between a `Client` sending a request and a `Server` receiving it.
 2. The latency of a response stream from an established request-response
-   connection. So sending a stream of responses from an `ActiveRequest` to the
+   connection, i.e. sending a stream of responses from an `ActiveRequest` to the
    corresponding `PendingResponse`.
 
 In the setup, a bidirectional connection is

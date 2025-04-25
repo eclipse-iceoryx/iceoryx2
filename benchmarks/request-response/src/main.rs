@@ -244,10 +244,10 @@ struct Args {
     /// The cpu core that shall be used by participant 2
     #[clap(long, default_value_t = 1)]
     cpu_core_participant_2: usize,
-    /// The number of additional publishers per service in the setup.
+    /// The number of additional servers per service in the setup.
     #[clap(long, default_value_t = 0)]
     number_of_additional_servers: usize,
-    /// The number of additional subscribers per service in the setup.
+    /// The number of additional clients per service in the setup.
     #[clap(long, default_value_t = 0)]
     number_of_additional_clients: usize,
 }
