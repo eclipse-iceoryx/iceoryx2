@@ -24,9 +24,10 @@ being limited to just one.
 
 The `Client` uses the following approach:
 
-1. Loans memory and acquires a `RequestMut`.
-2. Writes the payload and user header into the `RequestMut`.
-3. Sends the `RequestMut` to the `Server` and receives a `PendingResponse`
+1. Sends first request by using the slower copy API and then enters a loop.
+2. Inside the loop: Loans memory and acquires a `RequestMut`.
+3. Writes the payload and user header into the `RequestMut`.
+4. Sends the `RequestMut` to the `Server` and receives a `PendingResponse`
    object. The `PendingResponse` can be used to:
    * Receive `Response`s for this specific `RequestMut`.
    * Signal the `Server` that the `Client` is no longer interested in data by
@@ -47,8 +48,14 @@ The `Server` uses the following approach:
      of scope.
    * Check whether the corresponding `PendingResponse` on the `Client` side
      is still connected.
-3. Loans memory via the `ActiveRequest` for a `ResponseMut` to send a response
-   to this specific request.
+3. Send one `Response` by using the slower copy API.
+4. Loans memory via the `ActiveRequest` for a `ResponseMut` to send a response.
+
+Sending multiple responses demonstrates the streaming API. The `ActiveRequest`
+and the `PendingResponse` can call `is_connected()` to see if the corresponding
+counterpart is still sending/receiving responses. As soon as the
+`ActiveRequest` or `PendingResponse` went out-of-scope `is_connected()` will
+return `false`.
 
 In this example, both the client and server print the received and sent data
 to the console.
