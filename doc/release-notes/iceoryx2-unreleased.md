@@ -41,6 +41,9 @@
     [#653](https://github.com/eclipse-iceoryx/iceoryx2/issues/653)
 * Add benchmark for request-response
     [#687](https://github.com/eclipse-iceoryx/iceoryx2/issues/687)
+* Introduce a "service discovery service", which applications can
+    subscribe and listen to for updates in service landscape
+    [#674](https://github.com/eclipse-iceoryx/iceoryx2/issues/674)
 
 ### Bugfixes
 
@@ -114,6 +117,9 @@
 
 * Add simplified attribute value accessors
     [#590](https://github.com/eclipse-iceoryx/iceoryx2/issues/590)
+
+* Add CLI to launch service discovery service
+    [#674](https://github.com/eclipse-iceoryx/iceoryx2/issues/674)
 
 ### API Breaking Changes
 
