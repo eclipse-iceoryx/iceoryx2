@@ -184,7 +184,7 @@ impl<
     ///
     /// let mut response = active_request.loan_uninit()?;
     /// response.payload_mut().write(123);
-    /// println!("default payload {:?}", *response.payload());
+    /// println!("payload: {:?}", *response.payload());
     ///
     /// # Ok(())
     /// # }

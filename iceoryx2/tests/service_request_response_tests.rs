@@ -869,10 +869,8 @@ mod service_request_response {
             }
 
             let mut active_requests = vec![];
-            for server in &test.servers {
-                while let Some(request) = server.receive().unwrap() {
-                    active_requests.push(request);
-                }
+            while let Some(request) = test.servers[0].receive().unwrap() {
+                active_requests.push(request);
             }
 
             for n in 0..SEND_RECEIVE_ITERATIONS {
