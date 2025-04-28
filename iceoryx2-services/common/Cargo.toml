@@ -15,9 +15,6 @@ version = { workspace = true }
 name = "iceoryx2_services_common"
 path = "src/lib.rs"
 
-[features]
-
 [dependencies]
-serde = { workspace = true }
 
 [dev-dependencies]

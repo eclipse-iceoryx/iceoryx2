@@ -71,8 +71,10 @@ rust_binary(
     srcs = glob(["iox2-service/src/**/*.rs"]),
     deps = [
         ":iceoryx2-cli",
+        "//iceoryx2-services/discovery:iceoryx2-services-discovery",
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "@crate_index//:anyhow",
         "@crate_index//:better-panic",
         "@crate_index//:clap",

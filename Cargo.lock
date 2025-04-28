@@ -826,9 +826,6 @@ dependencies = [
 [[package]]
 name = "iceoryx2-services-common"
 version = "0.5.0"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "iceoryx2-services-discovery"
@@ -836,7 +833,6 @@ version = "0.5.0"
 dependencies = [
  "generic-tests",
  "iceoryx2",
- "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-services-common",
