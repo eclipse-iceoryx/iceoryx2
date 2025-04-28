@@ -32,6 +32,10 @@ impl RequestHeader {
     pub fn client_port_id(&self) -> UniqueClientId {
         self.client_port_id
     }
+
+    pub fn number_of_elements(&self) -> u64 {
+        self.number_of_elements
+    }
 }
 
 /// Response header used by

@@ -199,15 +199,20 @@ impl<
         mut self,
         mut initializer: F,
     ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
-        todo!()
+        for (i, element) in self.payload_mut().iter_mut().enumerate() {
+            element.write(initializer(i));
+        }
+
+        // SAFETY: this is safe since the payload was initialized on the line above
+        unsafe { self.assume_init() }
     }
 }
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + Copy + ZeroCopySend,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + Copy + ZeroCopySend + ?Sized,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     >
     RequestMutUninit<
@@ -222,6 +227,9 @@ impl<
         mut self,
         value: &[RequestPayload],
     ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
-        todo!()
+        self.payload_mut().copy_from_slice(unsafe {
+            core::mem::transmute::<&[RequestPayload], &[MaybeUninit<RequestPayload>]>(value)
+        });
+        unsafe { self.assume_init() }
     }
 }

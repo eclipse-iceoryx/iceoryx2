@@ -378,6 +378,37 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+    fn create_active_request(
+        &self,
+        details: ChunkDetails<Service>,
+        chunk: Chunk,
+        connection_id: usize,
+    ) -> ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    {
+        let header =
+            unsafe { &*(chunk.header as *const service::header::request_response::RequestHeader) };
+
+        ActiveRequest {
+            details,
+            shared_loan_counter: Arc::new(IoxAtomicUsize::new(0)),
+            max_loan_count: self.max_loaned_responses_per_request,
+            request_id: header.request_id,
+            channel_id: header.channel_id,
+            connection_id,
+            shared_state: self.shared_state.clone(),
+            ptr: unsafe {
+                RawSample::new_unchecked(
+                    chunk.header.cast(),
+                    chunk.user_header.cast(),
+                    chunk.payload.cast::<RequestPayload>(),
+                )
+            },
+
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
+    }
+
     /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
     /// [`Client`](crate::port::client::Client) and returns an [`ActiveRequest`] which
     /// can be used to respond.
@@ -426,24 +457,8 @@ impl<
                         .response_sender
                         .get_connection_id_of(header.client_port_id.value())
                     {
-                        let active_request = ActiveRequest {
-                            details,
-                            shared_loan_counter: Arc::new(IoxAtomicUsize::new(0)),
-                            max_loan_count: self.max_loaned_responses_per_request,
-                            request_id: header.request_id,
-                            channel_id: header.channel_id,
-                            connection_id,
-                            shared_state: self.shared_state.clone(),
-                            ptr: unsafe {
-                                RawSample::new_unchecked(
-                                    chunk.header.cast(),
-                                    chunk.user_header.cast(),
-                                    chunk.payload.cast::<RequestPayload>(),
-                                )
-                            },
-                            _response_payload: PhantomData,
-                            _response_header: PhantomData,
-                        };
+                        let active_request =
+                            self.create_active_request(details, chunk, connection_id);
 
                         if !self.enable_fire_and_forget && !active_request.is_connected() {
                             continue;
@@ -466,6 +481,40 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > Server<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
+    fn create_active_request(
+        &self,
+        details: ChunkDetails<Service>,
+        chunk: Chunk,
+        connection_id: usize,
+    ) -> ActiveRequest<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+    {
+        let header =
+            unsafe { &*(chunk.header as *const service::header::request_response::RequestHeader) };
+        let number_of_elements = (*header).number_of_elements();
+
+        ActiveRequest {
+            details,
+            shared_loan_counter: Arc::new(IoxAtomicUsize::new(0)),
+            max_loan_count: self.max_loaned_responses_per_request,
+            request_id: header.request_id,
+            channel_id: header.channel_id,
+            connection_id,
+            shared_state: self.shared_state.clone(),
+            ptr: unsafe {
+                RawSample::new_slice_unchecked(
+                    chunk.header.cast(),
+                    chunk.user_header.cast(),
+                    core::slice::from_raw_parts(
+                        chunk.payload.cast::<RequestPayload>(),
+                        number_of_elements as _,
+                    ),
+                )
+            },
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
+    }
+
     pub fn receive(
         &self,
     ) -> Result<
@@ -480,6 +529,30 @@ impl<
         >,
         ReceiveError,
     > {
-        todo!()
+        loop {
+            match self.receive_impl()? {
+                Some((details, chunk)) => {
+                    let header = unsafe {
+                        &*(chunk.header as *const service::header::request_response::RequestHeader)
+                    };
+
+                    if let Some(connection_id) = self
+                        .shared_state
+                        .response_sender
+                        .get_connection_id_of(header.client_port_id.value())
+                    {
+                        let active_request =
+                            self.create_active_request(details, chunk, connection_id);
+
+                        if !self.enable_fire_and_forget && !active_request.is_connected() {
+                            continue;
+                        }
+
+                        return Ok(Some(active_request));
+                    }
+                }
+                None => return Ok(None),
+            }
+        }
     }
 }
