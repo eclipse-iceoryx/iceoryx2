@@ -39,6 +39,8 @@
     [#643](https://github.com/eclipse-iceoryx/iceoryx2/issues/643)
 * Expose set_log_level_from_env* APIs to C++
     [#653](https://github.com/eclipse-iceoryx/iceoryx2/issues/653)
+* Add benchmark for request-response
+    [#687](https://github.com/eclipse-iceoryx/iceoryx2/issues/687)
 
 ### Bugfixes
 

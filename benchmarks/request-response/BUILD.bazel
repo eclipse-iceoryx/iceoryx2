@@ -20,7 +20,7 @@ filegroup(
 )
 
 rust_binary(
-    name = "benchmark-publish-subscribe",
+    name = "benchmark-request-response",
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",
