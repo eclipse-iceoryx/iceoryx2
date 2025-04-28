@@ -309,12 +309,11 @@ impl<
 
         let global_config = service.__internal_state().shared_node.config();
         let segment_name = data_segment_name(client_port_id.value());
-        let data_segment_type = DataSegmentType::Static;
-        let max_number_of_segments =
-            DataSegment::<Service>::max_number_of_segments(data_segment_type);
         let data_segment_type = DataSegmentType::new_from_allocation_strategy(
             client_factory.config.allocation_strategy,
         );
+        let max_number_of_segments =
+            DataSegment::<Service>::max_number_of_segments(data_segment_type);
 
         let sample_layout = static_config
             .request_message_type_details

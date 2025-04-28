@@ -49,6 +49,7 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::service::naming_scheme::data_segment_name;
+use crate::service::port_factory::server::LocalServerConfig;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
@@ -80,6 +81,7 @@ const REQUEST_CHANNEL_ID: ChannelId = ChannelId::new(0);
 
 #[derive(Debug)]
 pub(crate) struct SharedServerState<Service: service::Service> {
+    pub(crate) config: LocalServerConfig,
     pub(crate) response_sender: Sender<Service>,
     server_handle: UnsafeCell<Option<ContainerHandle>>,
     request_receiver: Receiver<Service>,
@@ -247,16 +249,30 @@ impl<
         };
 
         let global_config = service.__internal_state().shared_node.config();
-        let data_segment_type = DataSegmentType::Static;
+        let data_segment_type = DataSegmentType::new_from_allocation_strategy(
+            server_factory.config.allocation_strategy,
+        );
         let segment_name = data_segment_name(server_port_id.value());
         let max_number_of_segments =
             DataSegment::<Service>::max_number_of_segments(data_segment_type);
-        let data_segment = DataSegment::<Service>::create_static_segment(
-            &segment_name,
-            static_config.response_message_type_details.sample_layout(1),
-            global_config,
-            number_of_responses,
-        );
+        let sample_layout = static_config
+            .response_message_type_details
+            .sample_layout(server_factory.config.initial_max_slice_len);
+        let data_segment = match data_segment_type {
+            DataSegmentType::Static => DataSegment::<Service>::create_static_segment(
+                &segment_name,
+                static_config.response_message_type_details.sample_layout(1),
+                global_config,
+                number_of_responses,
+            ),
+            DataSegmentType::Dynamic => DataSegment::<Service>::create_dynamic_segment(
+                &segment_name,
+                sample_layout,
+                global_config,
+                number_of_responses,
+                server_factory.config.allocation_strategy,
+            ),
+        };
 
         let data_segment = fail!(from origin,
             when data_segment,
@@ -264,7 +280,14 @@ impl<
             "{} since the server data segment could not be created.", msg);
 
         let response_sender = Sender {
-            segment_states: vec![SegmentState::new(number_of_responses)],
+            segment_states: {
+                let mut v =
+                    std::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
+                for _ in 0..max_number_of_segments {
+                    v.push(SegmentState::new(number_of_responses))
+                }
+                v
+            },
             data_segment,
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))
@@ -284,7 +307,7 @@ impl<
             service_state: service.__internal_state().clone(),
             tagger: CyclicTagger::new(),
             loan_counter: IoxAtomicUsize::new(0),
-            unable_to_deliver_strategy: server_factory.unable_to_deliver_strategy,
+            unable_to_deliver_strategy: server_factory.config.unable_to_deliver_strategy,
             message_type_details: static_config.response_message_type_details.clone(),
             number_of_channels: number_of_requests_per_client,
         };
@@ -297,6 +320,7 @@ impl<
                 .request_response()
                 .enable_fire_and_forget_requests,
             shared_state: Arc::new(SharedServerState {
+                config: server_factory.config,
                 request_receiver,
                 client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
                 server_handle: UnsafeCell::new(None),
@@ -327,6 +351,9 @@ impl<
                     server_port_id,
                     request_buffer_size: static_config.max_active_requests_per_client,
                     number_of_responses,
+                    max_slice_len: server_factory.config.initial_max_slice_len,
+                    data_segment_type,
+                    max_number_of_segments,
                 }) {
                 Some(v) => Some(v),
                 None => {
