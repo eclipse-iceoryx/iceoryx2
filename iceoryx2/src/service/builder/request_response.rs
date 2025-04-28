@@ -17,6 +17,7 @@ use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::OpenDynamicStorageFailure;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
+use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::{self, header, static_config};
 use crate::service::{builder, dynamic_config, Service};
@@ -27,6 +28,7 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
+use super::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
 use super::{ServiceState, RETRY_LIMIT};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
@@ -223,6 +225,10 @@ pub struct Builder<
     base: builder::BuilderWithServiceType<ServiceType>,
     override_request_alignment: Option<usize>,
     override_response_alignment: Option<usize>,
+    override_request_payload_type: Option<TypeDetail>,
+    override_response_payload_type: Option<TypeDetail>,
+    override_request_header_type: Option<TypeDetail>,
+    override_response_header_type: Option<TypeDetail>,
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
     verify_max_active_requests_per_client: bool,
@@ -253,6 +259,10 @@ impl<
             base,
             override_request_alignment: None,
             override_response_alignment: None,
+            override_request_header_type: None,
+            override_request_payload_type: None,
+            override_response_header_type: None,
+            override_response_payload_type: None,
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
             verify_max_loaned_requests: false,
@@ -1421,5 +1431,48 @@ impl<
     > {
         self.prepare_message_type_details();
         self.create_impl(attributes)
+    }
+}
+
+impl<ServiceType: Service>
+    Builder<
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+        ServiceType,
+    >
+{
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_request_payload_type_details(
+        mut self,
+        value: &TypeDetail,
+    ) -> Self {
+        self.override_request_payload_type = Some(value.clone());
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_response_payload_type_details(
+        mut self,
+        value: &TypeDetail,
+    ) -> Self {
+        self.override_response_payload_type = Some(value.clone());
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_request_header_type_details(mut self, value: &TypeDetail) -> Self {
+        self.override_request_header_type = Some(value.clone());
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_response_header_type_details(
+        mut self,
+        value: &TypeDetail,
+    ) -> Self {
+        self.override_response_header_type = Some(value.clone());
+        self
     }
 }
