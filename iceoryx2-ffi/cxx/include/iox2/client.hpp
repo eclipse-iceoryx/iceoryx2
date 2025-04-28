@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef CLIENT_HPP
-#define CLIENT_HPP
+#ifndef IOX2_CLIENT_HPP
+#define IOX2_CLIENT_HPP
 
 #include "iox/expected.hpp"
 #include "iox2/request_mut_uninit.hpp"
@@ -84,9 +84,8 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline auto
-Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(Client&& rhs) noexcept
-    -> Client& {
+inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
+    [[maybe_unused]] Client&& rhs) noexcept -> Client& {
     IOX_TODO();
 }
 
@@ -137,7 +136,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::send_copy(
-    const RequestPayload& value) const
+    [[maybe_unused]] const RequestPayload& value) const
     -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                      RequestSendError> {
     IOX_TODO();

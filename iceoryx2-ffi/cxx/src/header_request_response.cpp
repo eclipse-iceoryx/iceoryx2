@@ -65,4 +65,3 @@ void ResponseHeaderRequestResponse::drop() {
 }
 
 } // namespace iox2
-

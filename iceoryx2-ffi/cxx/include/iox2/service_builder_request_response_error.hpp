@@ -147,4 +147,3 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
 
 } // namespace iox2
 #endif
-

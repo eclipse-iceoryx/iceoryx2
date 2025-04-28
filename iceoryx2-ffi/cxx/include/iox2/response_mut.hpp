@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef RESPONSE_MUT_HPP
-#define RESPONSE_MUT_HPP
+#ifndef IOX2_RESPONSE_MUT_HPP
+#define IOX2_RESPONSE_MUT_HPP
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
@@ -85,7 +85,8 @@ inline ResponseMut<Service, ResponsePayload, ResponseHeader>::ResponseMut(Respon
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto ResponseMut<Service, ResponsePayload, ResponseHeader>::operator=(ResponseMut&& rhs) noexcept
+inline auto
+ResponseMut<Service, ResponsePayload, ResponseHeader>::operator=([[maybe_unused]] ResponseMut&& rhs) noexcept
     -> ResponseMut& {
     IOX_TODO();
 }
@@ -160,4 +161,3 @@ inline void ResponseMut<Service, ResponsePayload, ResponseHeader>::drop() {
 } // namespace iox2
 
 #endif
-

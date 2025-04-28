@@ -136,11 +136,11 @@ class ServiceBuilderRequestResponse {
     template <ServiceType>
     friend class ServiceBuilder;
 
-    explicit ServiceBuilderRequestResponse(/*iox2_service_builder_h handle*/);
+    explicit ServiceBuilderRequestResponse(iox2_service_builder_h handle);
 
     void set_parameters();
 
-    // iox2_service_builder_pub_sub_h m_handle = nullptr;
+    iox2_service_builder_pub_sub_h m_handle = nullptr;
 };
 
 template <typename RequestPayload,
@@ -191,7 +191,7 @@ template <typename RequestPayload,
           typename ResponseHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
-    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
+    open_or_create_with_attributes([[maybe_unused]] const AttributeVerifier& required_attributes) && -> iox::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestResponseOpenOrCreateError> {
     IOX_TODO();
@@ -216,7 +216,7 @@ template <typename RequestPayload,
           ServiceType S>
 inline auto
 ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::open_with_attributes(
-    const AttributeVerifier& required_attributes) && -> iox::
+    [[maybe_unused]] const AttributeVerifier& required_attributes) && -> iox::
     expected<PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
              RequestResponseOpenError> {
     IOX_TODO();
@@ -240,7 +240,7 @@ template <typename RequestPayload,
           typename ResponseHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
-    create_with_attributes(const AttributeVerifier& attributes) && -> iox::expected<
+    create_with_attributes([[maybe_unused]] const AttributeVerifier& attributes) && -> iox::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestResponseCreateError> {
     IOX_TODO();
@@ -252,7 +252,7 @@ template <typename RequestPayload,
           typename ResponseHeader,
           ServiceType S>
 inline ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
-    ServiceBuilderRequestResponse(/*iox2_service_builder_h handle*/) {
+    ServiceBuilderRequestResponse([[maybe_unused]] iox2_service_builder_h handle) {
     IOX_TODO();
 }
 

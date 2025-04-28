@@ -20,6 +20,9 @@ auto operator<<(std::ostream& stream, const iox2::MessagingPattern& value) -> st
     case iox2::MessagingPattern::Event:
         stream << "iox2::MessagingPattern::Event";
         break;
+    case iox2::MessagingPattern::RequestResponse:
+        stream << "iox2::MessagingPattern::RequestResponse";
+        break;
     }
     return stream;
 }

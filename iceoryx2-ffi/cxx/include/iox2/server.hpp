@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef IOX2_SERVER_HPP
+#define IOX2_SERVER_HPP
 
 #include "iox/expected.hpp"
 #include "iox2/active_request.hpp"
@@ -72,9 +72,8 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline auto
-Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(Server&& rhs) noexcept
-    -> Server& {
+inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
+    [[maybe_unused]] Server&& rhs) noexcept -> Server& {
     IOX_TODO();
 }
 
@@ -137,4 +136,3 @@ inline void Server<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
 }
 } // namespace iox2
 #endif
-

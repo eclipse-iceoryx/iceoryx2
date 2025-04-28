@@ -83,7 +83,7 @@ class PortFactoryRequestResponse {
         -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponsePayload>;
 
   private:
-    template <ServiceType, typename, typename, typename, typename>
+    template <typename, typename, typename, typename, ServiceType>
     friend class ServiceBuilderRequestResponse;
 
     explicit PortFactoryRequestResponse();
@@ -107,7 +107,7 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    PortFactoryRequestResponse&& rhs) noexcept -> PortFactoryRequestResponse& {
+    [[maybe_unused]] PortFactoryRequestResponse&& rhs) noexcept -> PortFactoryRequestResponse& {
     IOX_TODO();
 }
 
@@ -182,7 +182,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::nodes(
-    const iox::function<CallbackProgression(NodeState<Service>)>& callback) const
+    [[maybe_unused]] const iox::function<CallbackProgression(NodeState<Service>)>& callback) const
     -> iox::expected<void, NodeListFailure> {
     IOX_TODO();
 }
@@ -231,4 +231,3 @@ PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePaylo
 } // namespace iox2
 
 #endif
-

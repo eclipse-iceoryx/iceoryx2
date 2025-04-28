@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef HEADER_REQUEST_RESPONSE_HPP
-#define HEADER_REQUEST_RESPONSE_HPP
+#ifndef IOX2_HEADER_REQUEST_RESPONSE_HPP
+#define IOX2_HEADER_REQUEST_RESPONSE_HPP
 
 #include "iox2/unique_port_id.hpp"
 
@@ -54,6 +54,4 @@ class ResponseHeaderRequestResponse {
     // iox2_response_header_h m_handle = nullptr;
 };
 } // namespace iox2
-
 #endif
-

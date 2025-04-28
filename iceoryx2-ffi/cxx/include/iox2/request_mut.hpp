@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef REQUEST_MUT_HPP
-#define REQUEST_MUT_HPP
+#ifndef IOX2_REQUEST_MUT_HPP
+#define IOX2_REQUEST_MUT_HPP
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
@@ -70,7 +70,7 @@ class RequestMut {
                          RequestSendError>;
 
   private:
-    template <ServiceType, typename, typename>
+    template <ServiceType, typename, typename, typename, typename>
     friend class RequestMutUninit;
 
     explicit RequestMut();
@@ -96,7 +96,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    RequestMut&& rhs) noexcept -> RequestMut& {
+    [[maybe_unused]] RequestMut&& rhs) noexcept -> RequestMut& {
     IOX_TODO();
 }
 
@@ -233,4 +233,3 @@ inline void RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, 
 } // namespace iox2
 
 #endif
-

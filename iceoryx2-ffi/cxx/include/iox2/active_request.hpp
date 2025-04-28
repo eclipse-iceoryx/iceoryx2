@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef ACTIVE_REQUEST_HPP
-#define ACTIVE_REQUEST_HPP
+#ifndef IOX2_ACTIVE_REQUEST_HPP
+#define IOX2_ACTIVE_REQUEST_HPP
 
 #include "iox2/response_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
@@ -100,7 +100,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    ActiveRequest&& rhs) noexcept -> ActiveRequest& {
+    [[maybe_unused]] ActiveRequest&& rhs) noexcept -> ActiveRequest& {
     IOX_TODO();
 }
 
@@ -150,7 +150,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::send_copy(
-    const ResponsePayload& value) const -> iox::expected<void, SendError> {
+    [[maybe_unused]] const ResponsePayload& value) const -> iox::expected<void, SendError> {
     IOX_TODO();
 }
 

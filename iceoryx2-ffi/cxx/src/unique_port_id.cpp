@@ -203,14 +203,7 @@ UniqueClientId::UniqueClientId(UniqueClientId&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-auto UniqueClientId::operator=(UniqueClientId&& rhs) noexcept -> UniqueClientId& {
-    // if (this != &rhs) {
-    // drop();
-    // m_handle = std::move(rhs.m_handle);
-    // rhs.m_handle = nullptr;
-    //}
-
-    // return *this;
+auto UniqueClientId::operator=([[maybe_unused]] UniqueClientId&& rhs) noexcept -> UniqueClientId& {
     IOX_TODO();
 }
 
@@ -218,35 +211,23 @@ UniqueClientId::~UniqueClientId() {
     drop();
 }
 
-auto operator==(const UniqueClientId& lhs, const UniqueClientId& rhs) -> bool {
-    // return iox2_unique_client_id_eq(&lhs.m_handle, &rhs.m_handle);
+auto operator==([[maybe_unused]] const UniqueClientId& lhs, [[maybe_unused]] const UniqueClientId& rhs) -> bool {
     IOX_TODO();
 }
 
-auto operator<(const UniqueClientId& lhs, const UniqueClientId& rhs) -> bool {
-    // return iox2_unique_client_id_less(&lhs.m_handle, &rhs.m_handle);
+auto operator<([[maybe_unused]] const UniqueClientId& lhs, [[maybe_unused]] const UniqueClientId& rhs) -> bool {
     IOX_TODO();
 }
 
-UniqueClientId::UniqueClientId(/*iox2_unique_client_id_h handle*/) {
+UniqueClientId::UniqueClientId(/* iox2_unique_client_id_h handle*/) {
     IOX_TODO();
 }
 
 auto UniqueClientId::bytes() const -> const iox::optional<RawIdType>& {
-    // if (!m_raw_id.has_value() && m_handle != nullptr) {
-    // RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
-    // iox2_unique_client_id_value(m_handle, bytes.data(), bytes.size());
-    // m_raw_id.emplace(std::move(bytes));
-    //}
-    // return m_raw_id;
     IOX_TODO();
 };
 
 void UniqueClientId::drop() {
-    // if (m_handle != nullptr) {
-    // iox2_unique_client_id_drop(m_handle);
-    // m_handle = nullptr;
-    //}
     IOX_TODO();
 }
 
@@ -254,14 +235,7 @@ UniqueServerId::UniqueServerId(UniqueServerId&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-auto UniqueServerId::operator=(UniqueServerId&& rhs) noexcept -> UniqueServerId& {
-    // if (this != &rhs) {
-    // drop();
-    // m_handle = std::move(rhs.m_handle);
-    // rhs.m_handle = nullptr;
-    //}
-
-    // return *this;
+auto UniqueServerId::operator=([[maybe_unused]] UniqueServerId&& rhs) noexcept -> UniqueServerId& {
     IOX_TODO();
 }
 
@@ -269,13 +243,11 @@ UniqueServerId::~UniqueServerId() {
     drop();
 }
 
-auto operator==(const UniqueServerId& lhs, const UniqueServerId& rhs) -> bool {
-    // return iox2_unique_server_id_eq(&lhs.m_handle, &rhs.m_handle);
+auto operator==([[maybe_unused]] const UniqueServerId& lhs, [[maybe_unused]] const UniqueServerId& rhs) -> bool {
     IOX_TODO();
 }
 
-auto operator<(const UniqueServerId& lhs, const UniqueServerId& rhs) -> bool {
-    // return iox2_unique_server_id_less(&lhs.m_handle, &rhs.m_handle);
+auto operator<([[maybe_unused]] const UniqueServerId& lhs, [[maybe_unused]] const UniqueServerId& rhs) -> bool {
     IOX_TODO();
 }
 
@@ -284,20 +256,10 @@ UniqueServerId::UniqueServerId(/*iox2_unique_server_id_h handle*/) {
 }
 
 auto UniqueServerId::bytes() const -> const iox::optional<RawIdType>& {
-    // if (!m_raw_id.has_value() && m_handle != nullptr) {
-    // RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
-    // iox2_unique_server_id_value(m_handle, bytes.data(), bytes.size());
-    // m_raw_id.emplace(std::move(bytes));
-    //}
-    // return m_raw_id;
     IOX_TODO();
 };
 
 void UniqueServerId::drop() {
-    // if (m_handle != nullptr) {
-    // iox2_unique_server_id_drop(m_handle);
-    // m_handle = nullptr;
-    //}
     IOX_TODO();
 }
 } // namespace iox2

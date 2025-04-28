@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef RESPONSE_HPP
-#define RESPONSE_HPP
+#ifndef IOX2_RESPONSE_HPP
+#define IOX2_RESPONSE_HPP
 
 #include "header_request_response.hpp"
 #include "iox/assertions_addendum.hpp"
@@ -62,7 +62,8 @@ inline Response<Service, ResponsePayload, ResponseHeader>::Response(Response&& r
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::operator=(Response&& rhs) noexcept -> Response& {
+inline auto Response<Service, ResponsePayload, ResponseHeader>::operator=([[maybe_unused]] Response&& rhs) noexcept
+    -> Response& {
     IOX_TODO();
 }
 

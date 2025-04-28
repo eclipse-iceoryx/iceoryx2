@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef PENDING_RESPONSE_HPP
-#define PENDING_RESPONSE_HPP
+#ifndef IOX2_PENDING_RESPONSE_HPP
+#define IOX2_PENDING_RESPONSE_HPP
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
@@ -100,7 +100,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    PendingResponse&& rhs) noexcept -> PendingResponse& {
+    [[maybe_unused]] PendingResponse&& rhs) noexcept -> PendingResponse& {
     IOX_TODO();
 }
 

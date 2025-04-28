@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef REQUEST_MUT_UNINIT_HPP
-#define REQUEST_MUT_UNINIT_HPP
+#ifndef IOX2_REQUEST_MUT_UNINIT_HPP
+#define IOX2_REQUEST_MUT_UNINIT_HPP
 
 #include "iox/assertions_addendum.hpp"
 #include "iox2/header_request_response.hpp"
@@ -126,7 +126,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline void RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::write_payload(
-    RequestPayload& value) {
+    [[maybe_unused]] RequestPayload& value) {
     IOX_TODO();
 }
 
@@ -152,4 +152,3 @@ inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePay
 } // namespace iox2
 
 #endif
-

@@ -514,7 +514,7 @@ auto RequestResponse::enable_safe_overflow_for_requests() && -> bool {
     IOX_TODO();
 }
 
-void RequestResponse::set_enable_safe_overflow_for_requests(bool value) && {
+void RequestResponse::set_enable_safe_overflow_for_requests([[maybe_unused]] bool value) && {
     IOX_TODO();
 }
 
@@ -522,7 +522,7 @@ auto RequestResponse::enable_safe_overflow_for_responses() && -> bool {
     IOX_TODO();
 }
 
-void RequestResponse::set_enable_safe_overflow_for_responses(bool value) && {
+void RequestResponse::set_enable_safe_overflow_for_responses([[maybe_unused]] bool value) && {
     IOX_TODO();
 }
 
@@ -530,7 +530,7 @@ auto RequestResponse::max_active_requests_per_client() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResponse::set_max_active_requests_per_client(size_t value) && {
+void RequestResponse::set_max_active_requests_per_client([[maybe_unused]] size_t value) && {
     IOX_TODO();
 }
 
@@ -538,7 +538,7 @@ auto RequestResponse::max_response_buffer_size() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResponse::set_max_response_buffer_size(size_t value) && {
+void RequestResponse::set_max_response_buffer_size([[maybe_unused]] size_t value) && {
     IOX_TODO();
 }
 
@@ -546,7 +546,7 @@ auto RequestResponse::max_servers() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResponse::set_max_servers(size_t value) && {
+void RequestResponse::set_max_servers([[maybe_unused]] size_t value) && {
     IOX_TODO();
 }
 
@@ -554,7 +554,7 @@ auto RequestResponse::max_clients() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResponse::set_max_clients(size_t value) && {
+void RequestResponse::set_max_clients([[maybe_unused]] size_t value) && {
     IOX_TODO();
 }
 
@@ -562,7 +562,7 @@ auto RequestResponse::max_nodes() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResponse::set_max_nodes(size_t value) && {
+void RequestResponse::set_max_nodes([[maybe_unused]] size_t value) && {
     IOX_TODO();
 }
 
@@ -570,7 +570,7 @@ auto RequestResponse::max_borrowed_responses_per_pending_response() && -> size_t
     IOX_TODO();
 }
 
-void RequestResponse::set_max_borrowed_responses_per_pending_response(size_t value) && {
+void RequestResponse::set_max_borrowed_responses_per_pending_response([[maybe_unused]] size_t value) && {
     IOX_TODO();
 }
 
@@ -578,7 +578,7 @@ auto RequestResponse::max_loaned_requests() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResponse::set_max_loaned_requests(size_t value) && {
+void RequestResponse::set_max_loaned_requests([[maybe_unused]] size_t value) && {
     IOX_TODO();
 }
 
@@ -586,7 +586,7 @@ auto RequestResponse::server_max_loaned_responses_per_request() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResponse::set_server_max_loaned_responses_per_request(size_t value) && {
+void RequestResponse::set_server_max_loaned_responses_per_request([[maybe_unused]] size_t value) && {
     IOX_TODO();
 }
 
@@ -594,7 +594,7 @@ auto RequestResponse::client_unable_to_deliver_strategy() && -> UnableToDeliverS
     IOX_TODO();
 }
 
-void RequestResponse::set_client_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
+void RequestResponse::set_client_unable_to_deliver_strategy([[maybe_unused]] UnableToDeliverStrategy value) && {
     IOX_TODO();
 }
 
@@ -602,7 +602,7 @@ auto RequestResponse::server_unable_to_deliver_strategy() && -> UnableToDeliverS
     IOX_TODO();
 }
 
-void RequestResponse::set_server_unable_to_deliver_strategy(UnableToDeliverStrategy value) && {
+void RequestResponse::set_server_unable_to_deliver_strategy([[maybe_unused]] UnableToDeliverStrategy value) && {
     IOX_TODO();
 }
 
@@ -610,7 +610,7 @@ auto RequestResponse::client_expired_connection_buffer() && -> size_t {
     IOX_TODO();
 }
 
-void RequestResponse::set_client_expired_connection_buffer(size_t value) && {
+void RequestResponse::set_client_expired_connection_buffer([[maybe_unused]] size_t value) && {
     IOX_TODO();
 }
 
@@ -618,7 +618,7 @@ auto RequestResponse::enable_fire_and_forget_requests() && -> bool {
     IOX_TODO();
 }
 
-void RequestResponse::set_enable_fire_and_forget_requests(bool value) && {
+void RequestResponse::set_enable_fire_and_forget_requests([[maybe_unused]] bool value) && {
     IOX_TODO();
 }
 /////////////////////////
