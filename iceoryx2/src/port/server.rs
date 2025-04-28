@@ -131,8 +131,8 @@ impl<Service: service::Service> SharedServerState<Service> {
                     SenderDetails {
                         port_id: details.client_port_id.value(),
                         number_of_samples: details.number_of_requests,
-                        max_number_of_segments: 1,
-                        data_segment_type: DataSegmentType::Static,
+                        max_number_of_segments: details.max_number_of_segments,
+                        data_segment_type: details.data_segment_type,
                     },
                 );
                 result = result.and(inner_result);

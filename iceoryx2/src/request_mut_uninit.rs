@@ -195,7 +195,7 @@ impl<
         core::mem::transmute(self.request)
     }
 
-    pub fn write_from_fn<F: FnMut(usize) -> ResponsePayload>(
+    pub fn write_from_fn<F: FnMut(usize) -> RequestPayload>(
         mut self,
         mut initializer: F,
     ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {

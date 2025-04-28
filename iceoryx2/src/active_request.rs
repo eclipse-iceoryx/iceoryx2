@@ -291,6 +291,7 @@ impl<
                         self.shared_state.response_sender.sender_port_id,
                     )),
                     request_id: self.request_id,
+                    number_of_elements: 1,
                 },
             )
         };

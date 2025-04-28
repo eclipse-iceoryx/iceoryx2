@@ -23,6 +23,7 @@ pub struct RequestHeader {
     pub(crate) client_port_id: UniqueClientId,
     pub(crate) channel_id: ChannelId,
     pub(crate) request_id: u64,
+    pub(crate) number_of_elements: u64,
 }
 
 impl RequestHeader {
@@ -40,6 +41,7 @@ impl RequestHeader {
 pub struct ResponseHeader {
     pub(crate) server_port_id: UniqueServerId,
     pub(crate) request_id: u64,
+    pub(crate) number_of_elements: u64,
 }
 
 impl ResponseHeader {
