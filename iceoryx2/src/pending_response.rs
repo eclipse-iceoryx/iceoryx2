@@ -303,7 +303,37 @@ impl<
     pub fn receive(
         &self,
     ) -> Result<Option<Response<Service, [ResponsePayload], ResponseHeader>>, ReceiveError> {
-        todo!()
+        loop {
+            match self.receive_impl()? {
+                None => return Ok(None),
+                Some((details, chunk)) => {
+                    let header = unsafe {
+                        &*(chunk.header as *const service::header::request_response::ResponseHeader)
+                    };
+
+                    let response = Response {
+                        details,
+                        channel_id: self.request.channel_id,
+                        ptr: unsafe {
+                            RawSample::new_slice_unchecked(
+                                chunk.header.cast(),
+                                chunk.user_header.cast(),
+                                core::slice::from_raw_parts(
+                                    chunk.payload.cast::<ResponsePayload>(),
+                                    header.number_of_elements() as _,
+                                ),
+                            )
+                        },
+                    };
+
+                    if response.header().request_id != self.request.header().request_id {
+                        continue;
+                    }
+
+                    return Ok(Some(response));
+                }
+            }
+        }
     }
 }
 
@@ -325,6 +355,44 @@ impl<
         &self,
     ) -> Result<Option<Response<Service, [CustomPayloadMarker], ResponseHeader>>, ReceiveError>
     {
-        todo!()
+        loop {
+            match self.receive_impl()? {
+                None => return Ok(None),
+                Some((details, chunk)) => {
+                    let header = unsafe {
+                        &*(chunk.header as *const service::header::request_response::ResponseHeader)
+                    };
+
+                    let number_of_elements = (*header).number_of_elements();
+                    let number_of_bytes = number_of_elements as usize
+                        * self
+                            .request
+                            .client_shared_state
+                            .response_receiver
+                            .payload_size();
+
+                    let response = Response {
+                        details,
+                        channel_id: self.request.channel_id,
+                        ptr: unsafe {
+                            RawSample::new_slice_unchecked(
+                                chunk.header.cast(),
+                                chunk.user_header.cast(),
+                                core::slice::from_raw_parts(
+                                    chunk.payload.cast::<CustomPayloadMarker>(),
+                                    number_of_bytes as _,
+                                ),
+                            )
+                        },
+                    };
+
+                    if response.header().request_id != self.request.header().request_id {
+                        continue;
+                    }
+
+                    return Ok(Some(response));
+                }
+            }
+        }
     }
 }

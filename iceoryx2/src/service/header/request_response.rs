@@ -54,4 +54,8 @@ impl ResponseHeader {
     pub fn server_port_id(&self) -> UniqueServerId {
         self.server_port_id
     }
+
+    pub fn number_of_elements(&self) -> u64 {
+        self.number_of_elements
+    }
 }
