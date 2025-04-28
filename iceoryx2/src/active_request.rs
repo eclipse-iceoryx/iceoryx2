@@ -60,7 +60,7 @@ use crate::{
     raw_sample::{RawSample, RawSampleMut},
     response_mut::ResponseMut,
     response_mut_uninit::ResponseMutUninit,
-    service,
+    service::{self, builder::publish_subscribe::CustomPayloadMarker},
 };
 
 /// Represents a one-to-one connection to a [`Client`](crate::port::client::Client)
@@ -73,9 +73,9 @@ use crate::{
 /// [`Response`](crate::response::Response)s.
 pub struct ActiveRequest<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<
@@ -96,9 +96,9 @@ pub struct ActiveRequest<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -121,9 +121,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Deref
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -136,9 +136,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Drop
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -169,9 +169,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -194,6 +194,42 @@ impl<
         )
     }
 
+    /// Returns a reference to the payload of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn payload(&self) -> &RequestPayload {
+        self.ptr.as_payload_ref()
+    }
+
+    /// Returns a reference to the user_header of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn user_header(&self) -> &RequestHeader {
+        self.ptr.as_user_header_ref()
+    }
+
+    /// Returns a reference to the
+    /// [`crate::service::header::request_response::RequestHeader`] of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn header(&self) -> &crate::service::header::request_response::RequestHeader {
+        self.ptr.as_header_ref()
+    }
+
+    /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
+    pub fn origin(&self) -> UniqueClientId {
+        UniqueClientId(UniqueSystemId::from(self.details.origin))
+    }
+}
+
+////////////////////////
+// BEGIN: typed API
+////////////////////////
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
     /// Loans uninitialized memory for a [`ResponseMut`] where the user can write its payload to.
     ///
     /// # Example
@@ -321,37 +357,13 @@ impl<
 
         response.write_payload(value).send()
     }
-
-    /// Returns a reference to the payload of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn payload(&self) -> &RequestPayload {
-        self.ptr.as_payload_ref()
-    }
-
-    /// Returns a reference to the user_header of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn user_header(&self) -> &RequestHeader {
-        self.ptr.as_user_header_ref()
-    }
-
-    /// Returns a reference to the
-    /// [`crate::service::header::request_response::RequestHeader`] of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn header(&self) -> &crate::service::header::request_response::RequestHeader {
-        self.ptr.as_header_ref()
-    }
-
-    /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
-    pub fn origin(&self) -> UniqueClientId {
-        UniqueClientId(UniqueSystemId::from(self.details.origin))
-    }
 }
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + Default + ZeroCopySend,
+        ResponsePayload: Debug + Default + ZeroCopySend + Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -388,3 +400,70 @@ impl<
             .write_payload(ResponsePayload::default()))
     }
 }
+////////////////////////
+// END: typed API
+////////////////////////
+
+////////////////////////
+// BEGIN: sliced API
+////////////////////////
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + Default + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+{
+    pub fn loan_slice(
+        &self,
+        number_of_elements: usize,
+    ) -> Result<ResponseMut<Service, [ResponsePayload], ResponseHeader>, LoanError> {
+        todo!()
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+{
+    pub fn loan_slice_uninit(
+        &self,
+        number_of_elements: usize,
+    ) -> Result<ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>, LoanError>
+    {
+        todo!()
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    ActiveRequest<
+        Service,
+        [CustomPayloadMarker],
+        RequestHeader,
+        [CustomPayloadMarker],
+        ResponseHeader,
+    >
+{
+    #[doc(hidden)]
+    pub unsafe fn loan_custom_payload(
+        &self,
+        slice_len: usize,
+    ) -> Result<
+        ResponseMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], ResponseHeader>,
+        LoanError,
+    > {
+        todo!()
+    }
+}
+////////////////////////
+// END: sliced API
+////////////////////////

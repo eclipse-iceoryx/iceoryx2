@@ -202,7 +202,7 @@ impl<Header, UserHeader, Payload> Clone for RawSampleMut<Header, UserHeader, Pay
 
 impl<Header, UserHeader, Payload> Copy for RawSampleMut<Header, UserHeader, Payload> {}
 
-impl<Header, UserHeader, Payload> fmt::Debug for RawSampleMut<Header, UserHeader, Payload> {
+impl<Header, UserHeader, Payload: ?Sized> fmt::Debug for RawSampleMut<Header, UserHeader, Payload> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

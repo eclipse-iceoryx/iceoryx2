@@ -71,7 +71,7 @@ use crate::{
 /// scope.
 pub struct ResponseMut<
     Service: service::Service,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) ptr: RawSampleMut<
@@ -91,7 +91,7 @@ pub struct ResponseMut<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
@@ -112,7 +112,7 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Drop for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
@@ -126,7 +126,7 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Deref for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
@@ -138,7 +138,7 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > DerefMut for ResponseMut<Service, ResponsePayload, ResponseHeader>
 {
@@ -149,7 +149,7 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > ResponseMut<Service, ResponsePayload, ResponseHeader>
 {

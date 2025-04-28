@@ -59,7 +59,7 @@ use core::{fmt::Debug, mem::MaybeUninit};
 /// The generic parameter `Payload` is actually [`core::mem::MaybeUninit<Payload>`].
 pub struct ResponseMutUninit<
     Service: service::Service,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) response: ResponseMut<Service, ResponsePayload, ResponseHeader>,
@@ -67,7 +67,7 @@ pub struct ResponseMutUninit<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
@@ -78,7 +78,7 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
 {
@@ -290,5 +290,46 @@ impl<
     pub unsafe fn assume_init(self) -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         core::mem::transmute(self.response)
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>
+{
+    pub unsafe fn assume_init(self) -> ResponseMut<Service, [ResponsePayload], ResponseHeader> {
+        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
+        core::mem::transmute(self.response)
+    }
+
+    pub fn write_from_fn<F: FnMut(usize) -> ResponsePayload>(
+        mut self,
+        mut initializer: F,
+    ) -> ResponseMut<Service, [ResponsePayload], ResponseHeader> {
+        for (i, element) in self.payload_mut().iter_mut().enumerate() {
+            element.write(initializer(i));
+        }
+
+        // SAFETY: this is safe since the payload was initialized on the line above
+        unsafe { self.assume_init() }
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + Copy + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>
+{
+    pub fn write_from_slice(
+        mut self,
+        value: &[ResponsePayload],
+    ) -> ResponseMut<Service, [ResponsePayload], ResponseHeader> {
+        self.payload_mut().copy_from_slice(unsafe {
+            core::mem::transmute::<&[ResponsePayload], &[MaybeUninit<ResponsePayload>]>(value)
+        });
+        unsafe { self.assume_init() }
     }
 }
