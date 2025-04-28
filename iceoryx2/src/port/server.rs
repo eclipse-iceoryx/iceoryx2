@@ -48,6 +48,7 @@ use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::service::builder::publish_subscribe::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
 use crate::{
@@ -513,11 +514,11 @@ impl<
         details: ChunkDetails<Service>,
         chunk: Chunk,
         connection_id: usize,
+        number_of_elements: usize,
     ) -> ActiveRequest<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
     {
         let header =
             unsafe { &*(chunk.header as *const service::header::request_response::RequestHeader) };
-        let number_of_elements = (*header).number_of_elements();
 
         ActiveRequest {
             details,
@@ -568,8 +569,68 @@ impl<
                         .response_sender
                         .get_connection_id_of(header.client_port_id.value())
                     {
-                        let active_request =
-                            self.create_active_request(details, chunk, connection_id);
+                        let active_request = self.create_active_request(
+                            details,
+                            chunk,
+                            connection_id,
+                            header.number_of_elements() as _,
+                        );
+
+                        if !self.enable_fire_and_forget && !active_request.is_connected() {
+                            continue;
+                        }
+
+                        return Ok(Some(active_request));
+                    }
+                }
+                None => return Ok(None),
+            }
+        }
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Server<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    pub unsafe fn receive_custom_payload(
+        &self,
+    ) -> Result<
+        Option<
+            ActiveRequest<
+                Service,
+                [CustomPayloadMarker],
+                RequestHeader,
+                ResponsePayload,
+                ResponseHeader,
+            >,
+        >,
+        ReceiveError,
+    > {
+        loop {
+            match self.receive_impl()? {
+                Some((details, chunk)) => {
+                    let header = unsafe {
+                        &*(chunk.header as *const service::header::request_response::RequestHeader)
+                    };
+                    let number_of_elements = (*header).number_of_elements();
+                    let number_of_bytes = number_of_elements as usize
+                        * self.shared_state.request_receiver.payload_size();
+
+                    if let Some(connection_id) = self
+                        .shared_state
+                        .response_sender
+                        .get_connection_id_of(header.client_port_id.value())
+                    {
+                        let active_request = self.create_active_request(
+                            details,
+                            chunk,
+                            connection_id,
+                            number_of_bytes,
+                        );
 
                         if !self.enable_fire_and_forget && !active_request.is_connected() {
                             continue;
