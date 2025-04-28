@@ -48,9 +48,9 @@ use core::{fmt::Debug, mem::MaybeUninit};
 #[repr(transparent)]
 pub struct RequestMutUninit<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) request:
@@ -59,9 +59,9 @@ pub struct RequestMutUninit<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -73,9 +73,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -108,9 +108,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     >
     RequestMutUninit<
@@ -170,5 +170,58 @@ impl<
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         core::mem::transmute(self.request)
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    RequestMutUninit<
+        Service,
+        [MaybeUninit<RequestPayload>],
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+    pub unsafe fn assume_init(
+        self,
+    ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
+        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
+        core::mem::transmute(self.request)
+    }
+
+    pub fn write_from_fn<F: FnMut(usize) -> ResponsePayload>(
+        mut self,
+        mut initializer: F,
+    ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
+        todo!()
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + Copy + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    RequestMutUninit<
+        Service,
+        [MaybeUninit<RequestPayload>],
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+    pub fn write_from_slice(
+        mut self,
+        value: &[RequestPayload],
+    ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
+        todo!()
     }
 }

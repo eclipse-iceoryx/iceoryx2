@@ -61,6 +61,7 @@ use crate::{
     request_mut_uninit::RequestMutUninit,
     service::{
         self,
+        builder::publish_subscribe::CustomPayloadMarker,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
         naming_scheme::data_segment_name,
         port_factory::client::{ClientCreateError, PortFactoryClient},
@@ -249,9 +250,9 @@ impl<Service: service::Service> ClientSharedState<Service> {
 #[derive(Debug)]
 pub struct Client<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     client_port_id: UniqueClientId,
@@ -265,9 +266,9 @@ pub struct Client<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -440,7 +441,19 @@ impl<
             .request_sender
             .unable_to_deliver_strategy
     }
+}
 
+////////////////////////
+// BEGIN: typed API
+////////////////////////
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
     /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
     /// by default to avoid unnecessary copies.
     ///
@@ -585,7 +598,7 @@ impl<
         Service: service::Service,
         RequestPayload: Debug + Default + ZeroCopySend,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -627,3 +640,75 @@ impl<
         Ok(self.loan_uninit()?.write_payload(RequestPayload::default()))
     }
 }
+
+////////////////////////
+// END: typed API
+////////////////////////
+
+////////////////////////
+// BEGIN: sliced API
+////////////////////////
+impl<
+        Service: service::Service,
+        RequestPayload: Default + Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    pub fn loan_slice(
+        &self,
+        number_of_elements: usize,
+    ) -> Result<
+        RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>,
+        LoanError,
+    > {
+        todo!()
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    pub fn loan_slice_uninit(
+        &self,
+        number_of_elements: usize,
+    ) -> Result<
+        RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>,
+        LoanError,
+    > {
+        todo!()
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Client<Service, [CustomPayloadMarker], RequestHeader, [CustomPayloadMarker], ResponseHeader>
+{
+    #[doc(hidden)]
+    pub fn loan_custom_payload(
+        &self,
+        number_of_elements: usize,
+    ) -> Result<
+        RequestMut<
+            Service,
+            [CustomPayloadMarker],
+            RequestHeader,
+            [CustomPayloadMarker],
+            ResponseHeader,
+        >,
+        LoanError,
+    > {
+        todo!()
+    }
+}
+////////////////////////
+// END: sliced API
+////////////////////////

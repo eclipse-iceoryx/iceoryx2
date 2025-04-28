@@ -168,9 +168,9 @@ impl<Service: service::Service> SharedServerState<Service> {
 #[derive(Debug)]
 pub struct Server<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     shared_state: Arc<SharedServerState<Service>>,
@@ -184,9 +184,9 @@ pub struct Server<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -368,7 +368,16 @@ impl<
             .request_receiver
             .receive(REQUEST_CHANNEL_ID)
     }
+}
 
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
     /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
     /// [`Client`](crate::port::client::Client) and returns an [`ActiveRequest`] which
     /// can be used to respond.
@@ -446,5 +455,31 @@ impl<
                 None => return Ok(None),
             }
         }
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Server<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    pub fn receive(
+        &self,
+    ) -> Result<
+        Option<
+            ActiveRequest<
+                Service,
+                [RequestPayload],
+                RequestHeader,
+                ResponsePayload,
+                ResponseHeader,
+            >,
+        >,
+        ReceiveError,
+    > {
+        todo!()
     }
 }

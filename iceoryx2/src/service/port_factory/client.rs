@@ -67,9 +67,9 @@ impl core::error::Error for ClientCreateError {}
 pub struct PortFactoryClient<
     'factory,
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<
@@ -87,9 +87,9 @@ pub struct PortFactoryClient<
 impl<
         'factory,
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     >
     PortFactoryClient<

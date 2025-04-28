@@ -65,9 +65,9 @@ impl core::error::Error for ServerCreateError {}
 pub struct PortFactoryServer<
     'factory,
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<
@@ -87,9 +87,9 @@ pub struct PortFactoryServer<
 impl<
         'factory,
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     >
     PortFactoryServer<
