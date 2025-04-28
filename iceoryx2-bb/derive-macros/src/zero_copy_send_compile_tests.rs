@@ -15,6 +15,15 @@
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[derive(ZeroCopySend)]
+/// struct Foo(u16);
+/// ```
+#[cfg(doctest)]
+fn zero_copy_send_derive_does_not_work_when_type_is_not_annotated_with_repr_c() {}
+
+/// ``` compile_fail
+/// use iceoryx2_bb_derive_macros::ZeroCopySend;
+///
 /// struct Foo(u16);
 ///
 /// #[derive(ZeroCopySend)]
@@ -165,6 +174,7 @@ fn zero_copy_send_derive_does_not_work_with_non_string_literal_attribute() {}
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// enum TestEnum {
 ///     Variant1,
@@ -190,6 +200,7 @@ fn zero_copy_send_derive_works_for_enum_with_various_variant_types() {}
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// enum TestEnum<T: ZeroCopySend, U: ZeroCopySend> {
 ///     Variant1,
@@ -227,11 +238,13 @@ fn zero_copy_send_derive_works_for_empty_enum() {}
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// struct InnerStruct {
 ///     field: u32,
 /// }
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// enum TestEnum {
 ///     Variant1,

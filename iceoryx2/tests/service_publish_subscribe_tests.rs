@@ -38,6 +38,7 @@ mod service_publish_subscribe {
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
     #[derive(Debug, ZeroCopySend)]
+    #[repr(C)]
     struct SomeUserHeader {
         value: [u64; 1024],
     }

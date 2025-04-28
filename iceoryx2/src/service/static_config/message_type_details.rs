@@ -22,6 +22,7 @@ use crate::constants::MAX_TYPE_NAME_LENGTH;
 
 /// Defines if the type is a slice with a runtime-size ([`TypeVariant::Dynamic`])
 /// or if its a type that satisfies [`Sized`] ([`TypeVariant::FixedSize`]).
+#[repr(C)]
 #[derive(
     Default, Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize,
 )]
