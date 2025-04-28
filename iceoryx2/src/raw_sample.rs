@@ -108,7 +108,7 @@ impl<Header, UserHeader, Payload> Clone for RawSample<Header, UserHeader, Payloa
 
 impl<Header, UserHeader, Payload> Copy for RawSample<Header, UserHeader, Payload> {}
 
-impl<Header, UserHeader, Payload> fmt::Debug for RawSample<Header, UserHeader, Payload> {
+impl<Header, UserHeader, Payload: ?Sized> fmt::Debug for RawSample<Header, UserHeader, Payload> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,

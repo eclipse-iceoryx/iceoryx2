@@ -66,6 +66,7 @@ use crate::port::details::chunk::Chunk;
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::update_connections::ConnectionFailure;
 use crate::raw_sample::RawSample;
+use crate::service::builder::publish_subscribe::CustomPayloadMarker;
 use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
 
 /// Represents an active connection to all [`Server`](crate::port::server::Server)
@@ -77,9 +78,9 @@ use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, ser
 /// [`Server`](crate::port::server::Server)s are informed.
 pub struct PendingResponse<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) request:
@@ -92,9 +93,9 @@ pub struct PendingResponse<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Drop
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -110,9 +111,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Deref
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -125,9 +126,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -148,9 +149,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -221,7 +222,16 @@ impl<
             .response_receiver
             .receive(self.request.channel_id)
     }
+}
 
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
     /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
     /// received the [`RequestMut`].
     ///
@@ -279,5 +289,42 @@ impl<
                 }
             }
         }
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > PendingResponse<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+{
+    pub fn receive(
+        &self,
+    ) -> Result<Option<Response<Service, [ResponsePayload], ResponseHeader>>, ReceiveError> {
+        todo!()
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    PendingResponse<
+        Service,
+        [CustomPayloadMarker],
+        RequestHeader,
+        [CustomPayloadMarker],
+        ResponseHeader,
+    >
+{
+    #[doc(hidden)]
+    pub fn receive_custom_payload(
+        &self,
+    ) -> Result<Option<Response<Service, [CustomPayloadMarker], ResponseHeader>>, ReceiveError>
+    {
+        todo!()
     }
 }
