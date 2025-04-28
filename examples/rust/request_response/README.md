@@ -26,7 +26,7 @@ The `Client` uses the following approach:
 
 1. Sends first request by using the slower copy API and then enters a loop.
 2. Inside the loop: Loans memory and acquires a `RequestMut`.
-3. Writes the payload and user header into the `RequestMut`.
+3. Writes the payload into the `RequestMut`.
 4. Sends the `RequestMut` to the `Server` and receives a `PendingResponse`
    object. The `PendingResponse` can be used to:
    * Receive `Response`s for this specific `RequestMut`.
@@ -48,7 +48,7 @@ The `Server` uses the following approach:
      of scope.
    * Check whether the corresponding `PendingResponse` on the `Client` side
      is still connected.
-3. Send one `Response` by using the slower copy API.
+3. Sends one `Response` by using the slower copy API.
 4. Loans memory via the `ActiveRequest` for a `ResponseMut` to send a response.
 
 Sending multiple responses demonstrates the streaming API. The `ActiveRequest`
