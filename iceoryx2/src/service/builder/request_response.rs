@@ -1053,7 +1053,7 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
             ResponsePayload,
             ResponseHeader,
@@ -1075,7 +1075,7 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
             ResponsePayload,
             ResponseHeader,
@@ -1083,8 +1083,7 @@ impl<
         RequestResponseOpenOrCreateError,
     > {
         self.prepare_message_type_details();
-        //self.open_or_create_impl(required_attributes)
-        todo!()
+        self.open_or_create_impl(required_attributes)
     }
 
     /// Opens an existing [`Service`].
@@ -1093,7 +1092,7 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
             ResponsePayload,
             ResponseHeader,
@@ -1111,7 +1110,7 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
             ResponsePayload,
             ResponseHeader,
@@ -1119,8 +1118,7 @@ impl<
         RequestResponseOpenError,
     > {
         self.prepare_message_type_details();
-        //self.open_impl(required_attributes)
-        todo!()
+        self.open_impl(required_attributes)
     }
 
     /// Creates a new [`Service`].
@@ -1129,7 +1127,7 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
             ResponsePayload,
             ResponseHeader,
@@ -1146,7 +1144,7 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
             ResponsePayload,
             ResponseHeader,
@@ -1154,8 +1152,7 @@ impl<
         RequestResponseCreateError,
     > {
         self.prepare_message_type_details();
-        //self.create_impl(attributes)
-        todo!()
+        self.create_impl(attributes)
     }
 }
 
@@ -1190,9 +1187,9 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseOpenOrCreateError,
@@ -1212,16 +1209,15 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseOpenOrCreateError,
     > {
         self.prepare_message_type_details();
-        //self.open_or_create_impl(required_attributes)
-        todo!()
+        self.open_or_create_impl(required_attributes)
     }
 
     /// Opens an existing [`Service`].
@@ -1230,9 +1226,9 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseOpenError,
@@ -1248,16 +1244,15 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseOpenError,
     > {
         self.prepare_message_type_details();
-        //self.open_impl(required_attributes)
-        todo!()
+        self.open_impl(required_attributes)
     }
 
     /// Creates a new [`Service`].
@@ -1266,9 +1261,9 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseCreateError,
@@ -1283,16 +1278,15 @@ impl<
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
-            RequestPayload,
+            [RequestPayload],
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseCreateError,
     > {
         self.prepare_message_type_details();
-        //self.create_impl(attributes)
-        todo!()
+        self.create_impl(attributes)
     }
 }
 
@@ -1329,7 +1323,7 @@ impl<
             ServiceType,
             RequestPayload,
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseOpenOrCreateError,
@@ -1351,14 +1345,13 @@ impl<
             ServiceType,
             RequestPayload,
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseOpenOrCreateError,
     > {
         self.prepare_message_type_details();
-        //self.open_or_create_impl(required_attributes)
-        todo!()
+        self.open_or_create_impl(required_attributes)
     }
 
     /// Opens an existing [`Service`].
@@ -1369,7 +1362,7 @@ impl<
             ServiceType,
             RequestPayload,
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseOpenError,
@@ -1387,14 +1380,13 @@ impl<
             ServiceType,
             RequestPayload,
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseOpenError,
     > {
         self.prepare_message_type_details();
-        //self.open_impl(required_attributes)
-        todo!()
+        self.open_impl(required_attributes)
     }
 
     /// Creates a new [`Service`].
@@ -1405,7 +1397,7 @@ impl<
             ServiceType,
             RequestPayload,
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseCreateError,
@@ -1422,13 +1414,12 @@ impl<
             ServiceType,
             RequestPayload,
             RequestHeader,
-            ResponsePayload,
+            [ResponsePayload],
             ResponseHeader,
         >,
         RequestResponseCreateError,
     > {
         self.prepare_message_type_details();
-        //self.create_impl(attributes)
-        todo!()
+        self.create_impl(attributes)
     }
 }
