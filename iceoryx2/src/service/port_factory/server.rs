@@ -38,6 +38,7 @@ use crate::{
 use core::fmt::Debug;
 use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
 
 /// Defines a failure that can occur when a [`Server`] is created with
 /// [`crate::service::port_factory::server::PortFactoryServer`].
@@ -196,5 +197,31 @@ impl<
         Ok(fail!(from origin,
               when Server::new(self),
               "Failed to create new Server port."))
+    }
+}
+
+impl<
+        'factory,
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    PortFactoryServer<
+        'factory,
+        Service,
+        RequestPayload,
+        RequestHeader,
+        [ResponsePayload],
+        ResponseHeader,
+    >
+{
+    pub fn initial_max_slice_len(mut self, value: usize) -> Self {
+        todo!()
+    }
+
+    pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
+        todo!()
     }
 }
