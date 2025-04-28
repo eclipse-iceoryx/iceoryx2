@@ -214,9 +214,9 @@ enum ServiceAvailabilityState {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Builder<
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
     ServiceType: Service,
 > {
@@ -241,9 +241,9 @@ pub struct Builder<
 }
 
 impl<
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
         ServiceType: Service,
     > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
@@ -861,19 +861,7 @@ impl<
         }
     }
 
-    fn prepare_message_type_details(&mut self) {
-        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
-            header::request_response::RequestHeader,
-            RequestHeader,
-            RequestPayload,
-        >(TypeVariant::FixedSize);
-
-        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
-            header::request_response::ResponseHeader,
-            ResponseHeader,
-            ResponsePayload,
-        >(TypeVariant::FixedSize);
-
+    fn prepare_message_type_alignment(&mut self) {
         if let Some(alignment) = self.override_request_alignment {
             self.config_details_mut()
                 .request_message_type_details
@@ -897,6 +885,31 @@ impl<
                 .alignment
                 .max(alignment);
         }
+    }
+}
+
+impl<
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+        ServiceType: Service,
+    > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+{
+    fn prepare_message_type_details(&mut self) {
+        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+            header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >(TypeVariant::FixedSize);
+
+        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+            header::request_response::ResponseHeader,
+            ResponseHeader,
+            ResponsePayload,
+        >(TypeVariant::FixedSize);
+
+        self.prepare_message_type_alignment();
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1006,5 +1019,416 @@ impl<
     > {
         self.prepare_message_type_details();
         self.create_impl(attributes)
+    }
+}
+
+impl<
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+        ServiceType: Service,
+    > Builder<[RequestPayload], RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+{
+    fn prepare_message_type_details(&mut self) {
+        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+            header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >(TypeVariant::Dynamic);
+
+        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+            header::request_response::ResponseHeader,
+            ResponseHeader,
+            ResponsePayload,
+        >(TypeVariant::FixedSize);
+
+        self.prepare_message_type_alignment();
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
+    pub fn open_or_create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes.
+    ///
+    /// If the [`Service`] already exists all attribute requirements must be satisfied,
+    /// and service payload type must be the same, otherwise the open process will fail.
+    /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
+    pub fn open_or_create_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.prepare_message_type_details();
+        //self.open_or_create_impl(required_attributes)
+        todo!()
+    }
+
+    /// Opens an existing [`Service`].
+    pub fn open(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.open_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    pub fn open_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.prepare_message_type_details();
+        //self.open_impl(required_attributes)
+        todo!()
+    }
+
+    /// Creates a new [`Service`].
+    pub fn create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.create_with_attributes(&AttributeSpecifier::new())
+    }
+
+    /// Creates a new [`Service`] with a set of attributes.
+    pub fn create_with_attributes(
+        mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.prepare_message_type_details();
+        //self.create_impl(attributes)
+        todo!()
+    }
+}
+
+impl<
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+        ServiceType: Service,
+    > Builder<[RequestPayload], RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
+{
+    fn prepare_message_type_details(&mut self) {
+        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+            header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >(TypeVariant::Dynamic);
+
+        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+            header::request_response::ResponseHeader,
+            ResponseHeader,
+            ResponsePayload,
+        >(TypeVariant::Dynamic);
+
+        self.prepare_message_type_alignment();
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
+    pub fn open_or_create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes.
+    ///
+    /// If the [`Service`] already exists all attribute requirements must be satisfied,
+    /// and service payload type must be the same, otherwise the open process will fail.
+    /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
+    pub fn open_or_create_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.prepare_message_type_details();
+        //self.open_or_create_impl(required_attributes)
+        todo!()
+    }
+
+    /// Opens an existing [`Service`].
+    pub fn open(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.open_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    pub fn open_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.prepare_message_type_details();
+        //self.open_impl(required_attributes)
+        todo!()
+    }
+
+    /// Creates a new [`Service`].
+    pub fn create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.create_with_attributes(&AttributeSpecifier::new())
+    }
+
+    /// Creates a new [`Service`] with a set of attributes.
+    pub fn create_with_attributes(
+        mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.prepare_message_type_details();
+        //self.create_impl(attributes)
+        todo!()
+    }
+}
+
+impl<
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+        ServiceType: Service,
+    > Builder<RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
+{
+    fn prepare_message_type_details(&mut self) {
+        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+            header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >(TypeVariant::FixedSize);
+
+        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+            header::request_response::ResponseHeader,
+            ResponseHeader,
+            ResponsePayload,
+        >(TypeVariant::Dynamic);
+
+        self.prepare_message_type_alignment();
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
+    pub fn open_or_create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes.
+    ///
+    /// If the [`Service`] already exists all attribute requirements must be satisfied,
+    /// and service payload type must be the same, otherwise the open process will fail.
+    /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
+    pub fn open_or_create_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.prepare_message_type_details();
+        //self.open_or_create_impl(required_attributes)
+        todo!()
+    }
+
+    /// Opens an existing [`Service`].
+    pub fn open(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.open_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    pub fn open_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.prepare_message_type_details();
+        //self.open_impl(required_attributes)
+        todo!()
+    }
+
+    /// Creates a new [`Service`].
+    pub fn create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.create_with_attributes(&AttributeSpecifier::new())
+    }
+
+    /// Creates a new [`Service`] with a set of attributes.
+    pub fn create_with_attributes(
+        mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.prepare_message_type_details();
+        //self.create_impl(attributes)
+        todo!()
     }
 }
