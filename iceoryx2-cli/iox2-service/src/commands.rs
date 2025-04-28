@@ -90,7 +90,7 @@ pub fn discovery(
     };
 
     let mut service =
-        DiscoveryService::<ipc::Service>::create(&discovery_config, &Config::global_config())
+        DiscoveryService::<ipc::Service>::create(&discovery_config, Config::global_config())
             .map_err(|e| anyhow::anyhow!("failed to create service discovery service: {:?}", e))?;
 
     println!("=== Service Started (rate: {}ms) ===", rate);

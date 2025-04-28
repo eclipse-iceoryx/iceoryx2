@@ -66,8 +66,8 @@ fn main() -> Result<()> {
                 }
             }
             Action::Discovery(options) => {
-                let should_publish = options.disable_publish == false;
-                let should_notify = options.disable_notify == false;
+                let should_publish = !options.disable_publish;
+                let should_notify = !options.disable_notify;
                 if let Err(_e) = commands::discovery(
                     options.rate,
                     should_publish,

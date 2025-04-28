@@ -242,6 +242,8 @@ impl<S: ServiceType> Service<S> {
     ///
     /// Returns a `SpinError` if there was an error publishing events or sending
     /// notifications.
+    #[allow(clippy::type_complexity)] // Using a type alias for return value is less clear in this
+                                      // case IMO
     pub fn spin(&mut self) -> Result<(Vec<&ServiceDetails<S>>, Vec<ServiceDetails<S>>), SpinError> {
         // Detect changes
         let (added_ids, removed_services) = self.tracker.sync(&self.iceoryx_config);

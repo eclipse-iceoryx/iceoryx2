@@ -29,6 +29,12 @@ pub struct Tracker<S: Service> {
     services: HashMap<ServiceId, ServiceDetails<S>>,
 }
 
+impl<S: Service> Default for Tracker<S> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<S: Service> Tracker<S> {
     /// Create a new Monitor instance.
     pub fn new() -> Self {
@@ -51,9 +57,9 @@ impl<S: Service> Tracker<S> {
     ///
     /// A tuple containing:
     /// * A vector of service IDs that were newly discovered, details are stored in the tracker and
-    /// retrievable with `Tracker::get()`
+    ///   retrievable with `Tracker::get()`
     /// * A vector of service details for services that are no longer available, these details are
-    /// no longer stored in the tracker
+    ///   no longer stored in the tracker
     pub fn sync(&mut self, config: &Config) -> (Vec<ServiceId>, Vec<ServiceDetails<S>>) {
         let mut discovered_ids = HashSet::<ServiceId>::new();
         let mut added_ids = Vec::<ServiceId>::new();
