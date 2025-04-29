@@ -28,27 +28,32 @@
 //! configuration, and then periodically call its `spin` method to process service changes and emit
 //! events/notifications.
 //!
-//! ```rust,no_run
+//! ```no_run
 //! use iceoryx2_services_discovery::service_discovery::Service;
 //! use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
 //! use iceoryx2::prelude::*;
 //!
-//! // Create a service discovery service
-//! let config = DiscoveryConfig::default();
-//! let mut service = Service::<ipc::Service>::create(&config, &Config::global_config()).expect("Failed to create service");
+//! fn main() -> Result<(), Box<dyn core::error::Error>> {
 //!
-//! // Periodically process service changes
-//! loop {
-//!     match service.spin() {
-//!         Ok((added, removed)) => {
-//!             println!("Added {} services, removed {} services", added.len(), removed.len());
+//!     // Create a service discovery service
+//!     let config = DiscoveryConfig::default();
+//!     let mut service = Service::<ipc::Service>::create(&config, &Config::global_config()).expect("Failed to create service");
+//!
+//!     // Periodically process service changes
+//!     loop {
+//!         match service.spin() {
+//!             Ok((added, removed)) => {
+//!                 println!("Added {} services, removed {} services", added.len(), removed.len());
+//!             }
+//!             Err(e) => {
+//!                 eprintln!("Error spinning service: {:?}", e);
+//!                 break;
+//!             }
 //!         }
-//!         Err(e) => {
-//!             eprintln!("Error spinning service: {:?}", e);
-//!             break;
-//!         }
+//!         // Sleep or do other work...
 //!     }
-//!     // Sleep or do other work...
+//!
+//!     Ok(())
 //! }
 
 /// A service discovery service that tracks and publishes information about services in the system.
