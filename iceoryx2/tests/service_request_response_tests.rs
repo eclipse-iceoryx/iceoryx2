@@ -20,7 +20,7 @@ mod service_request_response {
     use iceoryx2::prelude::{PortFactory, *};
     use iceoryx2::service::builder::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
-    use iceoryx2::{active_request, testing::*};
+    use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
 
     #[derive(Clone, Copy)]
@@ -901,7 +901,7 @@ mod service_request_response {
         type_details.size = 1024;
         type_details.alignment = 1024;
 
-        let service = unsafe {
+        let service_1 = unsafe {
             node.service_builder(&service_name)
                 .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
                 .request_user_header::<CustomHeaderMarker>()
@@ -910,14 +910,27 @@ mod service_request_response {
                 .create()
                 .unwrap()
         };
+        let service_2 = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_request_payload_type_details(&type_details)
+                .open()
+                .unwrap()
+        };
 
-        let server = service.server_builder().create().unwrap();
-        let client = service.client_builder().create().unwrap();
+        let server = service_1.server_builder().create().unwrap();
+        let client = service_2.client_builder().create().unwrap();
 
-        let request = unsafe { client.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
+        let mut request = unsafe { client.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
         assert_that!(request.payload(), len type_details.size);
         assert_that!((request.payload().as_ptr() as usize % type_details.alignment), eq 0);
         assert_that!(request.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+        let payload_ptr = request.payload_mut().as_mut_ptr() as *mut u8;
+        for n in 0..type_details.size {
+            unsafe { payload_ptr.add(n).write((n % 255) as u8) };
+        }
 
         let _pending_response = unsafe { request.assume_init().send().unwrap() };
 
@@ -925,6 +938,10 @@ mod service_request_response {
         assert_that!(active_request.payload(), len type_details.size);
         assert_that!((active_request.payload().as_ptr() as usize % type_details.alignment), eq 0);
         assert_that!(active_request.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+        let payload_ptr = active_request.payload().as_ptr() as *const u8;
+        for n in 0..type_details.size {
+            assert_that!(unsafe { *payload_ptr.add(n) }, eq(n % 255) as u8);
+        }
     }
 
     #[test]
@@ -937,7 +954,7 @@ mod service_request_response {
         type_details.size = 512;
         type_details.alignment = 256;
 
-        let service = unsafe {
+        let service_1 = unsafe {
             node.service_builder(&service_name)
                 .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
                 .request_user_header::<CustomHeaderMarker>()
@@ -946,15 +963,24 @@ mod service_request_response {
                 .create()
                 .unwrap()
         };
+        let service_2 = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_response_payload_type_details(&type_details)
+                .open()
+                .unwrap()
+        };
 
-        let server = service.server_builder().create().unwrap();
-        let client = service.client_builder().create().unwrap();
+        let server = service_1.server_builder().create().unwrap();
+        let client = service_2.client_builder().create().unwrap();
 
         let request = unsafe { client.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
         let pending_response = unsafe { request.assume_init().send().unwrap() };
         let active_request = unsafe { server.receive_custom_payload().unwrap().unwrap() };
 
-        let response = unsafe {
+        let mut response = unsafe {
             active_request
                 .loan_custom_payload(NUMBER_OF_ELEMENTS)
                 .unwrap()
@@ -962,12 +988,114 @@ mod service_request_response {
         assert_that!(response.payload(), len type_details.size);
         assert_that!((response.payload().as_ptr() as usize % type_details.alignment), eq 0);
         assert_that!(response.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+        let payload_ptr = response.payload_mut().as_mut_ptr() as *mut u8;
+        for n in 0..type_details.size {
+            unsafe { payload_ptr.add(n).write((n % 89) as u8) };
+        }
+
         unsafe { response.assume_init().send().unwrap() };
 
         let response = unsafe { pending_response.receive_custom_payload().unwrap().unwrap() };
         assert_that!(response.payload(), len type_details.size);
         assert_that!((response.payload().as_ptr() as usize % type_details.alignment), eq 0);
         assert_that!(response.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+        let payload_ptr = response.payload().as_ptr() as *const u8;
+        for n in 0..type_details.size {
+            assert_that!(unsafe { *payload_ptr.add(n) }, eq(n % 255) as u8);
+        }
+    }
+
+    #[test]
+    fn sending_requests_with_custom_header_works<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        type_details.size = 2048;
+        type_details.alignment = 8;
+
+        let service_1 = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_request_header_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+        let service_2 = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_request_header_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let server = service_1.server_builder().create().unwrap();
+        let client = service_2.client_builder().create().unwrap();
+
+        let mut request = unsafe { client.loan_custom_payload(1).unwrap() };
+        let header_ptr = (request.user_header_mut() as *mut CustomHeaderMarker) as *mut u8;
+        for n in 0..type_details.size {
+            unsafe { header_ptr.add(n).write((n % 231) as u8) };
+        }
+        let _pending_response = unsafe { request.assume_init().send().unwrap() };
+
+        let active_request = unsafe { server.receive_custom_payload().unwrap().unwrap() };
+        let header_ptr = (active_request.user_header() as *const CustomHeaderMarker) as *const u8;
+        for n in 0..type_details.size {
+            assert_that!(unsafe { *header_ptr.add(n) }, eq(n % 231) as u8);
+        }
+    }
+
+    #[test]
+    fn sending_responses_with_custom_header_works<Sut: Service>() {
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        type_details.size = 4096;
+        type_details.alignment = 32;
+
+        let service_1 = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_response_header_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+        let service_2 = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_response_header_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let server = service_1.server_builder().create().unwrap();
+        let client = service_2.client_builder().create().unwrap();
+
+        let request = unsafe { client.loan_custom_payload(1).unwrap() };
+        let pending_response = unsafe { request.assume_init().send().unwrap() };
+        let active_request = unsafe { server.receive_custom_payload().unwrap().unwrap() };
+
+        let mut response = unsafe { active_request.loan_custom_payload(1).unwrap() };
+        let header_ptr = (response.user_header_mut() as *mut CustomHeaderMarker) as *mut u8;
+        for n in 0..type_details.size {
+            unsafe { header_ptr.add(n).write((n % 229) as u8) };
+        }
+
+        let response = unsafe { pending_response.receive_custom_payload().unwrap().unwrap() };
+        let header_ptr = (response.user_header() as *const CustomHeaderMarker) as *const u8;
+        for n in 0..type_details.size {
+            assert_that!(unsafe { *header_ptr.add(n) }, eq(n % 229) as u8);
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
