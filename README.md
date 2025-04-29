@@ -185,6 +185,53 @@ cargo run --example publish_subscribe_publisher
 cargo run --example publish_subscribe_subscriber
 ```
 
+### Request Response
+
+This minimal example showcases a client sending the number 1234 every second,
+while a subscriber efficiently receives and prints the data.
+
+#### client.rs
+
+```rust
+use core::time::Duration;
+use iceoryx2::prelude::*;
+
+const CYCLE_TIME: Duration = Duration::from_secs(1);
+
+fn main() -> Result<(), Box<dyn core::error::Error>> {
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+
+    let service = node
+        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .request_response::<u64, u64>()
+        .open_or_create()?;
+
+    let client = service.client_builder().create()?;
+
+    // send first request
+    let request = client.loan_uninit()?;
+    let request = request.write_payload(1234);
+    let mut pending_response = request.send()?;
+
+    while node.wait(CYCLE_TIME).is_ok() {
+        // acquire all responses to our request from our buffer that were sent by the servers
+        while let Some(response) = pending_response.receive()? {
+            println!("  received response: {:?}", *response);
+        }
+
+        // send another request
+        let request = client.loan_uninit()?;
+        let request = request.write_payload(counter);
+        pending_response = request.send()?;
+   }
+
+    Ok(())
+}
+```
+
+#### server.rs
+
+
 ### Events
 
 This minimal example showcases how push-notifications can be realized by using
