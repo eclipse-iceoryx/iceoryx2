@@ -12,7 +12,6 @@
 
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
-use iceoryx2_bb_posix::signal::SignalHandler;
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
@@ -96,29 +95,45 @@ pub fn discovery(
     println!("=== Service Started (rate: {}ms) ===", rate);
     println!("{}", format.as_string(&discovery_config)?);
 
-    while !SignalHandler::termination_requested() {
-        match service.spin() {
-            Ok((added, removed)) => {
-                for service in added {
-                    println!(
-                        "{}",
-                        format.as_string(&Discovery::Added(service.static_details.clone()))?,
-                    )
+    let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+    let guard = waitset
+        .attach_interval(core::time::Duration::from_millis(rate))
+        .map_err(|e| anyhow::anyhow!("failed to attach interval to waitset: {:?}", e))?;
+    let attachment = WaitSetAttachmentId::from_guard(&guard);
+
+    let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
+        if attachment_id == attachment {
+            match service.spin() {
+                Ok((added, removed)) => {
+                    for service in added {
+                        println!(
+                            "{}",
+                            format
+                                .as_string(&Discovery::Added(service.static_details.clone()))
+                                .unwrap_or_default(),
+                        )
+                    }
+                    for service in removed {
+                        println!(
+                            "{}",
+                            format
+                                .as_string(&Discovery::Removed(service.static_details.clone()))
+                                .unwrap_or_default()
+                        )
+                    }
                 }
-                for service in removed {
-                    println!(
-                        "{}",
-                        format.as_string(&Discovery::Removed(service.static_details.clone()))?
-                    )
+                Err(e) => {
+                    eprintln!("error during spin: {:?}", e);
                 }
-            }
-            Err(e) => {
-                eprintln!("error during spin: {:?}", e);
             }
         }
 
-        std::thread::sleep(std::time::Duration::from_millis(rate));
-    }
+        CallbackProgression::Continue
+    };
+
+    waitset
+        .wait_and_process(on_event)
+        .map_err(|e| anyhow::anyhow!("error waiting on waitset: {:?}", e))?;
 
     Ok(())
 }
