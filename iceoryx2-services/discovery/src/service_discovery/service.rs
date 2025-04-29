@@ -47,11 +47,8 @@ pub enum CreationError {
     /// Failed to create the underlying node.
     NodeCreationFailure,
 
-    /// Failed to create the service for reasons other than it already existing.
+    /// Failed to create the service.
     ServiceCreationFailure,
-
-    /// The service already exists in the system.
-    ServiceAlreadyExists,
 
     /// Failed to create the publisher for reasons other than it already existing.
     PublisherCreationError,
@@ -192,14 +189,8 @@ impl<S: ServiceType> Service<S> {
                 .history_size(discovery_config.history_size)
                 .max_subscribers(discovery_config.max_subscribers)
                 .max_publishers(1)
-                .create()
-                .map_err(|e| {
-                    match e {
-                        iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError::AlreadyExists => CreationError::ServiceAlreadyExists,
-                        iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance => CreationError::ServiceAlreadyExists,
-                        _ => CreationError::ServiceCreationFailure,
-                    }
-                })?;
+                .open_or_create()
+                .map_err(|_| CreationError::ServiceCreationFailure)?;
 
             publisher = Some(
                 publish_subscribe
@@ -221,14 +212,8 @@ impl<S: ServiceType> Service<S> {
                 .event()
                 .max_listeners(discovery_config.max_listeners)
                 .max_notifiers(1)
-                .create()
-                .map_err(|e| {
-                    match e {
-                        iceoryx2::service::builder::event::EventCreateError::IsBeingCreatedByAnotherInstance => CreationError::ServiceAlreadyExists,
-                        iceoryx2::service::builder::event::EventCreateError::AlreadyExists => CreationError::ServiceAlreadyExists,
-                        _ => CreationError::ServiceCreationFailure,
-                    }
-                })?;
+                .open_or_create()
+                .map_err(|_| CreationError::ServiceCreationFailure)?;
 
             let port = event.notifier_builder().create().map_err(|e| match e {
                 iceoryx2::port::notifier::NotifierCreateError::ExceedsMaxSupportedNotifiers => {

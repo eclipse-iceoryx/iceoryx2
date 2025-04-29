@@ -57,18 +57,18 @@ fn main() -> Result<()> {
         match action {
             Action::List(options) => {
                 if let Err(e) = commands::list(options.filter, cli.format) {
-                    error!("Failed to list services: {}", e);
+                    error!("failed to list services: {}", e);
                 }
             }
             Action::Details(options) => {
                 if let Err(e) = commands::details(options.service, options.filter, cli.format) {
-                    error!("Failed to retrieve service details: {}", e);
+                    error!("failed to retrieve service details: {}", e);
                 }
             }
             Action::Discovery(options) => {
                 let should_publish = !options.disable_publish;
                 let should_notify = !options.disable_notify;
-                if let Err(_e) = commands::discovery(
+                if let Err(e) = commands::discovery(
                     options.rate,
                     should_publish,
                     options.max_subscribers,
@@ -76,7 +76,7 @@ fn main() -> Result<()> {
                     options.max_listeners,
                     cli.format,
                 ) {
-                    error!("Failed to start service monitor")
+                    error!("failed to run service discovery: {:#}", e)
                 }
             }
         }

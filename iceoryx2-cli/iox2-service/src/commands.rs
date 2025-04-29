@@ -91,7 +91,7 @@ pub fn discovery(
 
     let mut service =
         DiscoveryService::<ipc::Service>::create(&discovery_config, Config::global_config())
-            .map_err(|e| anyhow::anyhow!("failed to create service discovery service: {:?}", e))?;
+            .map_err(|e| anyhow::anyhow!("failed to create service: {:?}", e))?;
 
     println!("=== Service Started (rate: {}ms) ===", rate);
 
@@ -120,7 +120,7 @@ pub fn discovery(
                 )
             };
             if let Err(e) = service.spin(on_added, on_removed) {
-                eprintln!("Error while spinning service: {:?}", e);
+                eprintln!("error while spinning service: {:?}", e);
             }
         }
 
