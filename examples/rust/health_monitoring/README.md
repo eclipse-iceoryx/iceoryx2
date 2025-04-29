@@ -41,8 +41,6 @@ This example is more advanced and consists of four components:
   +-------------+-------------------+-----------------+
 ```
 
-## Running The Example
-
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must be compatible with shared
 > memory. Specifically, it must:
@@ -57,9 +55,11 @@ This example is more advanced and consists of four components:
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
 
+## How to Run
+
 For this example, you need to open five separate terminals.
 
-## Terminal 1: Central Daemon - Create All Communication Resources
+### Terminal 1: Central Daemon - Create All Communication Resources
 
 Run the central daemon, which sets up all communication resources and monitors
 processes.
@@ -68,7 +68,7 @@ processes.
 cargo run --example health_monitoring_central_daemon
 ```
 
-## Terminal 2: Publisher 1
+### Terminal 2: Publisher 1
 
 Run the first publisher, which sends data on `service_1`.
 
@@ -76,7 +76,7 @@ Run the first publisher, which sends data on `service_1`.
 cargo run --example health_monitoring_publisher_1
 ```
 
-## Terminal 3: Publisher 2
+### Terminal 3: Publisher 2
 
 Run the second publisher, which sends data on `service_2`.
 
@@ -84,7 +84,7 @@ Run the second publisher, which sends data on `service_2`.
 cargo run --example health_monitoring_publisher_2
 ```
 
-## Terminal 4: Subscriber
+### Terminal 4: Subscriber
 
 Run the subscriber, which listens to both `service_1` and `service_2`.
 
@@ -92,7 +92,7 @@ Run the subscriber, which listens to both `service_1` and `service_2`.
 cargo run --example health_monitoring_subscriber
 ```
 
-## Terminal 5: Simulate Process Crashes
+### Terminal 5: Simulate Process Crashes
 
 Send a `SIGKILL` signal to `publisher_1` to simulate a fatal crash. This
 ensures that the process is unable to clean up any resources.
@@ -123,8 +123,9 @@ Feel free to run multiple instances of publisher or subscriber processes
 simultaneously to explore how iceoryx2 handles publisher-subscriber
 communication efficiently.
 
-You may hit the maximum supported number of ports when too many publisher or
-subscriber processes run. Take a look at the [iceoryx2 config](../../../config)
-to set the limits globally or at the
-[API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
-to set them for a single service.
+> [!TIP]
+> You may hit the maximum supported number of ports when too many publisher or
+> subscriber processes run. Take a look at the
+> [iceoryx2 config](../../../config) to set the limits globally or at the
+> [API of the Service builder](https://docs.rs/iceoryx2/latest/iceoryx2/service/index.html)
+> to set them for a single service.

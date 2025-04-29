@@ -1,7 +1,5 @@
 # Event Multiplexing
 
-## Running The Example
-
 > [!CAUTION]
 > The WaitSet wakes up as soon as there is data to read. If the data
 > is not consumed in the callback, the WaitSet will immediately wake
@@ -22,6 +20,11 @@ the `-e` option.
 In the example below, we are waiting for events on the services `fuu` and
 `bar`. Service `fuu` is notified with event ID `123`, and service `bar` is
 notified with event ID `456`.
+
+## How to Run
+
+To see this in action, open three separate terminals and run the following
+commands:
 
 ### Terminal 1
 
