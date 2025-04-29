@@ -67,13 +67,13 @@ pub struct DiscoveryOptions {
     )]
     pub rate: u64,
 
-    #[clap(long, help = "Do not publish details of detected changes")]
+    #[clap(long, help = "Do not publish discovered services")]
     pub disable_publish: bool,
 
     #[clap(long, default_value = "10", help = "The maximum number of subscribers")]
     pub max_subscribers: usize,
 
-    #[clap(long, help = "Do not notify when changes detected")]
+    #[clap(long, help = "Do not notify of discovered services")]
     pub disable_notify: bool,
 
     #[clap(long, default_value = "10", help = "The maximum number of listeners")]
