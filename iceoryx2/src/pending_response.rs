@@ -351,7 +351,7 @@ impl<
     >
 {
     #[doc(hidden)]
-    pub fn receive_custom_payload(
+    pub unsafe fn receive_custom_payload(
         &self,
     ) -> Result<Option<Response<Service, [CustomPayloadMarker], ResponseHeader>>, ReceiveError>
     {

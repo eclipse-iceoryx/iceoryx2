@@ -18,7 +18,9 @@ mod service_request_response {
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
     use iceoryx2::prelude::{PortFactory, *};
-    use iceoryx2::testing::*;
+    use iceoryx2::service::builder::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+    use iceoryx2::{active_request, testing::*};
     use iceoryx2_bb_testing::assert_that;
 
     #[derive(Clone, Copy)]
@@ -887,6 +889,85 @@ mod service_request_response {
                 }
             }
         }
+    }
+
+    #[test]
+    fn sending_requests_with_custom_payload_works<Sut: Service>() {
+        const NUMBER_OF_ELEMENTS: usize = 1;
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        type_details.size = 1024;
+        type_details.alignment = 1024;
+
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_request_payload_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let server = service.server_builder().create().unwrap();
+        let client = service.client_builder().create().unwrap();
+
+        let request = unsafe { client.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
+        assert_that!(request.payload(), len type_details.size);
+        assert_that!((request.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(request.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+
+        let _pending_response = unsafe { request.assume_init().send().unwrap() };
+
+        let active_request = unsafe { server.receive_custom_payload().unwrap().unwrap() };
+        assert_that!(active_request.payload(), len type_details.size);
+        assert_that!((active_request.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(active_request.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+    }
+
+    #[test]
+    fn sending_response_with_custom_payload_works<Sut: Service>() {
+        const NUMBER_OF_ELEMENTS: usize = 1;
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        type_details.size = 512;
+        type_details.alignment = 256;
+
+        let service = unsafe {
+            node.service_builder(&service_name)
+                .request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
+                .request_user_header::<CustomHeaderMarker>()
+                .response_user_header::<CustomHeaderMarker>()
+                .__internal_set_response_payload_type_details(&type_details)
+                .create()
+                .unwrap()
+        };
+
+        let server = service.server_builder().create().unwrap();
+        let client = service.client_builder().create().unwrap();
+
+        let request = unsafe { client.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
+        let pending_response = unsafe { request.assume_init().send().unwrap() };
+        let active_request = unsafe { server.receive_custom_payload().unwrap().unwrap() };
+
+        let response = unsafe {
+            active_request
+                .loan_custom_payload(NUMBER_OF_ELEMENTS)
+                .unwrap()
+        };
+        assert_that!(response.payload(), len type_details.size);
+        assert_that!((response.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(response.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
+        unsafe { response.assume_init().send().unwrap() };
+
+        let response = unsafe { pending_response.receive_custom_payload().unwrap().unwrap() };
+        assert_that!(response.payload(), len type_details.size);
+        assert_that!((response.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(response.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

@@ -871,7 +871,31 @@ impl<
         }
     }
 
-    fn prepare_message_type_alignment(&mut self) {
+    fn prepare_message_type(&mut self) {
+        if let Some(details) = &self.override_request_payload_type {
+            self.config_details_mut()
+                .request_message_type_details
+                .payload = details.clone();
+        }
+
+        if let Some(details) = &self.override_request_header_type {
+            self.config_details_mut()
+                .request_message_type_details
+                .user_header = details.clone();
+        }
+
+        if let Some(details) = &self.override_response_payload_type {
+            self.config_details_mut()
+                .response_message_type_details
+                .payload = details.clone();
+        }
+
+        if let Some(details) = &self.override_response_header_type {
+            self.config_details_mut()
+                .response_message_type_details
+                .user_header = details.clone();
+        }
+
         if let Some(alignment) = self.override_request_alignment {
             self.config_details_mut()
                 .request_message_type_details
@@ -919,7 +943,7 @@ impl<
             ResponsePayload,
         >(TypeVariant::FixedSize);
 
-        self.prepare_message_type_alignment();
+        self.prepare_message_type();
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1053,7 +1077,7 @@ impl<
             ResponsePayload,
         >(TypeVariant::FixedSize);
 
-        self.prepare_message_type_alignment();
+        self.prepare_message_type();
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1187,7 +1211,7 @@ impl<
             ResponsePayload,
         >(TypeVariant::Dynamic);
 
-        self.prepare_message_type_alignment();
+        self.prepare_message_type();
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1321,7 +1345,7 @@ impl<
             ResponsePayload,
         >(TypeVariant::Dynamic);
 
-        self.prepare_message_type_alignment();
+        self.prepare_message_type();
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
