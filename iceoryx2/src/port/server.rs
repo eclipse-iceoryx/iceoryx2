@@ -262,7 +262,7 @@ impl<
         let data_segment = match data_segment_type {
             DataSegmentType::Static => DataSegment::<Service>::create_static_segment(
                 &segment_name,
-                static_config.response_message_type_details.sample_layout(1),
+                sample_layout,
                 global_config,
                 number_of_responses,
             ),
