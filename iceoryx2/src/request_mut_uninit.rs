@@ -188,6 +188,44 @@ impl<
         ResponseHeader,
     >
 {
+    /// When the payload is manually populated by using
+    /// [`RequestMutUninit::payload_mut()`], then this function can be used
+    /// to convert it into the initialized [`RequestMut`] version.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[u64], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 13;
+    /// let mut request = client.loan_slice_uninit(slice_length)?;
+    /// for element in request.payload_mut() {
+    ///     element.write(1234);
+    /// }
+    /// // we have written the payload, initialize the request
+    /// let request = unsafe { request.assume_init() };
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// # Safety
+    ///
+    /// The caller must ensure that [`core::mem::MaybeUninit<Payload>`] really is initialized.
+    /// Sending the content when it is not fully initialized causes immediate undefined behavior.
     pub unsafe fn assume_init(
         self,
     ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
@@ -195,6 +233,38 @@ impl<
         core::mem::transmute(self.request)
     }
 
+    /// Writes the payload to the [`RequestMutUninit`] and labels the [`RequestMutUninit`] as
+    /// initialized
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[u64], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 13;
+    /// let mut request = client.loan_slice_uninit(slice_length)?;
+    /// for element in request.payload_mut() {
+    ///     element.write(1234);
+    /// }
+    /// let request = unsafe { request.assume_init() };
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn write_from_fn<F: FnMut(usize) -> RequestPayload>(
         mut self,
         mut initializer: F,
@@ -223,6 +293,34 @@ impl<
         ResponseHeader,
     >
 {
+    /// Writes the payload by mem copying the provided slice into the [`RequestMutUninit`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[u64], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 3;
+    /// let mut request = client.loan_slice_uninit(slice_length)?;
+    /// let request = request.write_from_slice(&vec![1,2,3]);
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn write_from_slice(
         mut self,
         value: &[RequestPayload],
