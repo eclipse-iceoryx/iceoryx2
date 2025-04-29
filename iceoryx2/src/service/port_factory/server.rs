@@ -212,21 +212,13 @@ impl<
 }
 
 impl<
-        'factory,
         Service: service::Service,
         RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
         ResponsePayload: Debug + ZeroCopySend,
         ResponseHeader: Debug + ZeroCopySend,
     >
-    PortFactoryServer<
-        'factory,
-        Service,
-        RequestPayload,
-        RequestHeader,
-        [ResponsePayload],
-        ResponseHeader,
-    >
+    PortFactoryServer<'_, Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`ActiveRequest::loan_slice()`](crate::active_request::ActiveRequest::loan_slice()) or

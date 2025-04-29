@@ -354,7 +354,7 @@ impl<
             data_segment,
             segment_states: {
                 let mut v =
-                    std::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
+                    alloc::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
                 for _ in 0..max_number_of_segments {
                     v.push(SegmentState::new(number_of_requests))
                 }
@@ -690,6 +690,41 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
+    /// Loans/allocates a [`RequestMut`] from the underlying data segment of the [`Client`]
+    /// and initializes all slice elements with the default value. This can be a performance hit
+    /// and [`Client::loan_slice_uninit()`] can be used to loan a slice of
+    /// [`core::mem::MaybeUninit<Payload>`].
+    ///
+    /// On failure it returns [`LoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[u64], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 13;
+    /// let mut request = client.loan_slice(slice_length)?;
+    /// for element in request.payload_mut() {
+    ///     *element = 1234;
+    /// }
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn loan_slice(
         &self,
         slice_len: usize,
@@ -710,6 +745,42 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
+    /// Loans/allocates a [`RequestMutUninit`] from the underlying data segment of the [`Client`].
+    /// The user has to initialize the payload before it can be sent.
+    ///
+    /// On failure it returns [`LoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[u64], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 13;
+    /// let mut request = client.loan_slice_uninit(slice_length)?;
+    /// for element in request.payload_mut() {
+    ///     element.write(1234);
+    /// }
+    /// // we have written the payload, initialize the request
+    /// let request = unsafe { request.assume_init() };
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn loan_slice_uninit(
         &self,
         slice_len: usize,
@@ -727,6 +798,7 @@ impl<
         unsafe { self.loan_slice_uninit_impl(slice_len, slice_len) }
     }
 
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     unsafe fn loan_slice_uninit_impl(
         &self,
         slice_len: usize,
@@ -817,6 +889,7 @@ impl<
     > Client<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
 {
     #[doc(hidden)]
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub unsafe fn loan_custom_payload(
         &self,
         slice_len: usize,

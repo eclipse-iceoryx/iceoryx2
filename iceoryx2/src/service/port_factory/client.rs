@@ -198,21 +198,13 @@ impl<
 }
 
 impl<
-        'factory,
         Service: service::Service,
         RequestPayload: Debug + ZeroCopySend,
         RequestHeader: Debug + ZeroCopySend,
         ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     >
-    PortFactoryClient<
-        'factory,
-        Service,
-        [RequestPayload],
-        RequestHeader,
-        ResponsePayload,
-        ResponseHeader,
-    >
+    PortFactoryClient<'_, Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Sets the maximum slice length that a user can allocate with
     /// [`Client::loan_slice()`] or [`Client::loan_slice_uninit()`].

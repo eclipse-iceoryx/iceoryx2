@@ -1215,6 +1215,7 @@ impl<
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn open_or_create(
         self,
     ) -> Result<
@@ -1236,6 +1237,7 @@ impl<
     /// If the [`Service`] already exists all attribute requirements must be satisfied,
     /// and service payload type must be the same, otherwise the open process will fail.
     /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn open_or_create_with_attributes(
         mut self,
         required_attributes: &AttributeVerifier,
@@ -1254,6 +1256,7 @@ impl<
     }
 
     /// Opens an existing [`Service`].
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn open(
         self,
     ) -> Result<
@@ -1271,6 +1274,7 @@ impl<
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn open_with_attributes(
         mut self,
         required_attributes: &AttributeVerifier,
@@ -1289,6 +1293,7 @@ impl<
     }
 
     /// Creates a new [`Service`].
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn create(
         self,
     ) -> Result<
@@ -1305,6 +1310,7 @@ impl<
     }
 
     /// Creates a new [`Service`] with a set of attributes.
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn create_with_attributes(
         mut self,
         attributes: &AttributeSpecifier,

@@ -283,7 +283,7 @@ impl<
         let response_sender = Sender {
             segment_states: {
                 let mut v =
-                    std::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
+                    alloc::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
                 for _ in 0..max_number_of_segments {
                     v.push(SegmentState::new(number_of_responses))
                 }
@@ -570,6 +570,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn receive(
         &self,
     ) -> Result<
@@ -624,6 +625,7 @@ impl<
     > Server<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
 {
     #[doc(hidden)]
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub unsafe fn receive_custom_payload(
         &self,
     ) -> Result<
