@@ -299,11 +299,72 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>
 {
+    /// Converts the [`ResponseMutUninit`] into [`ResponseMut`]. This shall be done after the
+    /// payload was written into the [`ResponseMutUninit`].
+    ///
+    /// # Safety
+    ///
+    ///  * Must ensure that the payload was properly initialized.
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever6".try_into()?)
+    /// #     .request_response::<u64, [u64]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder()
+    ///                       .initial_max_slice_len(32)
+    ///                       .create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// let slice_length = 13;
+    /// let mut response = active_request.loan_slice_uninit(slice_length)?;
+    /// for element in response.payload_mut() {
+    ///     element.write(1234);
+    /// }
+    /// // this is fine since the payload was initialized to 789
+    /// let response = unsafe { response.assume_init() };
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub unsafe fn assume_init(self) -> ResponseMut<Service, [ResponsePayload], ResponseHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         core::mem::transmute(self.response)
     }
 
+    /// Writes the payload to the [`ResponseMutUninit`] and labels the [`ResponseMutUninit`] as
+    /// initialized
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever6".try_into()?)
+    /// #     .request_response::<u64, [usize]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder()
+    ///                       .initial_max_slice_len(32)
+    ///                       .create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// let slice_length = 13;
+    /// let mut response = active_request.loan_slice_uninit(slice_length)?;
+    /// let response = response.write_from_fn(|index| index * 2 + 3);
+    /// response.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn write_from_fn<F: FnMut(usize) -> ResponsePayload>(
         mut self,
         mut initializer: F,
@@ -323,6 +384,32 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>
 {
+    /// Writes the payload by mem copying the provided slice into the [`ResponseMutUninit`].
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever6".try_into()?)
+    /// #     .request_response::<u64, [u64]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// # let server = service.server_builder()
+    ///                       .initial_max_slice_len(32)
+    ///                       .create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// # let active_request = server.receive()?.unwrap();
+    ///
+    /// let slice_length = 4;
+    /// let mut response = active_request.loan_slice_uninit(slice_length)?;
+    /// let response = response.write_from_slice(&vec![1, 2, 3, 4]);
+    /// response.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn write_from_slice(
         mut self,
         value: &[ResponsePayload],

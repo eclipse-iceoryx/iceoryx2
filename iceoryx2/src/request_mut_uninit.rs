@@ -246,7 +246,7 @@ impl<
     /// #
     /// let service = node
     ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
-    ///    .request_response::<[u64], u64>()
+    ///    .request_response::<[usize], u64>()
     ///    .open_or_create()?;
     ///
     /// let client = service.client_builder()
@@ -255,10 +255,7 @@ impl<
     ///
     /// let slice_length = 13;
     /// let mut request = client.loan_slice_uninit(slice_length)?;
-    /// for element in request.payload_mut() {
-    ///     element.write(1234);
-    /// }
-    /// let request = unsafe { request.assume_init() };
+    /// let request = request.write_from_fn(|index| index + 123);
     ///
     /// let pending_response = request.send()?;
     ///
