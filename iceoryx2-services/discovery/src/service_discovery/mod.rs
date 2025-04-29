@@ -39,17 +39,16 @@
 //!     let config = DiscoveryConfig::default();
 //!     let mut service = Service::<ipc::Service>::create(&config, &Config::global_config()).expect("Failed to create service");
 //!
+//!     let on_added = |service: &ServiceDetails<ipc::Service>| {
+//!         // ...process added services
+//!     };
+//!     let on_removed = |service: &ServiceDetails<ipc::Service>| {
+//!         // ...process removed services
+//!     };
+//!
 //!     // Periodically process service changes
 //!     loop {
-//!         match service.spin() {
-//!             Ok((added, removed)) => {
-//!                 println!("Added {} services, removed {} services", added.len(), removed.len());
-//!             }
-//!             Err(e) => {
-//!                 eprintln!("Error spinning service: {:?}", e);
-//!                 break;
-//!             }
-//!         }
+//!         service.spin(on_added, on_removed)?;
 //!         // Sleep or do other work...
 //!     }
 //!

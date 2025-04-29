@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use anyhow::anyhow;
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
 use iceoryx2_cli::filter::Filter;
@@ -97,33 +98,29 @@ pub fn discovery(
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
     let guard = waitset
         .attach_interval(core::time::Duration::from_millis(rate))
-        .map_err(|e| anyhow::anyhow!("failed to attach interval to waitset: {:?}", e))?;
+        .map_err(|e| anyhow!("failed to attach interval to waitset: {:?}", e))?;
     let attachment = WaitSetAttachmentId::from_guard(&guard);
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if attachment_id == attachment {
-            match service.spin() {
-                Ok((added, removed)) => {
-                    for service in added {
-                        println!(
-                            "{}",
-                            format
-                                .as_string(&Discovery::Added(service.static_details.clone()))
-                                .unwrap_or_default(),
-                        )
-                    }
-                    for service in removed {
-                        println!(
-                            "{}",
-                            format
-                                .as_string(&Discovery::Removed(service.static_details.clone()))
-                                .unwrap_or_default()
-                        )
-                    }
-                }
-                Err(e) => {
-                    eprintln!("error during spin: {:?}", e);
-                }
+            let on_added = |service: &ServiceDetails<ipc::Service>| {
+                println!(
+                    "{}",
+                    format
+                        .as_string(&Discovery::Added(service.static_details.clone()))
+                        .unwrap_or_default()
+                )
+            };
+            let on_removed = |service: &ServiceDetails<ipc::Service>| {
+                println!(
+                    "{}",
+                    format
+                        .as_string(&Discovery::Removed(service.static_details.clone()))
+                        .unwrap_or_default()
+                )
+            };
+            if let Err(e) = service.spin(on_added, on_removed) {
+                eprintln!("Error while spinning service: {:?}", e);
             }
         }
 
@@ -132,7 +129,7 @@ pub fn discovery(
 
     waitset
         .wait_and_process(on_event)
-        .map_err(|e| anyhow::anyhow!("error waiting on waitset: {:?}", e))?;
+        .map_err(|e| anyhow!("error waiting on waitset: {:?}", e))?;
 
     Ok(())
 }

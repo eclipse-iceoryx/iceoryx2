@@ -64,6 +64,14 @@ pub enum CreationError {
     NotifierAlreadyExists,
 }
 
+impl core::fmt::Display for CreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "CreationError::{:?}", self)
+    }
+}
+
+impl core::error::Error for CreationError {}
+
 /// Errors that can occur during the spin operation of the service discovery service.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SpinError {
@@ -73,6 +81,14 @@ pub enum SpinError {
     /// Failed to send a notification about service changes.
     NotifyFailure,
 }
+
+impl core::fmt::Display for SpinError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "SpinError::{:?}", self)
+    }
+}
+
+impl core::error::Error for SpinError {}
 
 /// Configuration for the service discovery service.
 #[derive(Debug, Clone)]
@@ -242,27 +258,35 @@ impl<S: ServiceType> Service<S> {
     /// Processes service changes and emits events/notifications.
     ///
     /// This function should be called periodically to detect changes in the service
-    /// landscape and emit appropriate events and notifications.
+    /// landscape and emit appropriate events and notifications. When services are
+    /// added or removed, the provided callback functions are invoked.
+    ///
+    /// # Parameters
+    ///
+    /// * `on_added` - Callback function that is called for each service that was added
+    /// * `on_removed` - Callback function that is called for each service that was removed
     ///
     /// # Returns
     ///
-    /// A result containing a tuple of:
-    /// - A vector of references to services that were added since the last call
-    /// - A vector of services that were removed since the last call
+    /// A result containing `()` if successful.
     ///
     /// # Errors
     ///
     /// Returns a `SpinError` if there was an error publishing events or sending
     /// notifications.
-    #[allow(clippy::type_complexity)] // Using a type alias for return value is less clear in this
-                                      // case IMO
-    pub fn spin(&mut self) -> Result<(Vec<&ServiceDetails<S>>, Vec<ServiceDetails<S>>), SpinError> {
+    pub fn spin<
+        FAddedService: FnMut(&ServiceDetails<S>),
+        FRemovedService: FnMut(&ServiceDetails<S>),
+    >(
+        &mut self,
+        mut on_added: FAddedService,
+        mut on_removed: FRemovedService,
+    ) -> Result<(), SpinError> {
         // Detect changes
         let (added_ids, removed_services) = self.tracker.sync(&self.iceoryx_config);
         let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
 
         // Publish
-        let mut added_services = Vec::new();
         for id in &added_ids {
             if let Some(service) = self.tracker.get(id) {
                 if !self.discovery_config.include_internal
@@ -272,9 +296,7 @@ impl<S: ServiceType> Service<S> {
                 }
                 self.publish(&Discovery::Added(service.static_details.clone()))
                     .unwrap();
-
-                // Keep track of added services to be returned.
-                added_services.push(service);
+                on_added(service);
             }
         }
 
@@ -286,6 +308,7 @@ impl<S: ServiceType> Service<S> {
             }
             self.publish(&Discovery::Removed(service.static_details.clone()))
                 .unwrap();
+            on_removed(service);
         }
 
         // Notify
@@ -295,7 +318,7 @@ impl<S: ServiceType> Service<S> {
             }
         }
 
-        Ok((added_services, removed_services))
+        Ok(())
     }
 
     fn publish(&self, discovery: &Discovery) -> Result<(), SpinError> {

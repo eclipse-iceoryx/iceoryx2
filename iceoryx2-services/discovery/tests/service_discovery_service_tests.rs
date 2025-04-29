@@ -44,6 +44,7 @@ mod service_discovery_service {
             max_subscribers: 1,
             send_notifications: false,
             max_listeners: 1,
+            ..Default::default()
         };
         let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
@@ -71,13 +72,13 @@ mod service_discovery_service {
                 .unwrap();
             services.push(service);
         }
-        sut.spin().unwrap();
+        sut.spin(|_| {}, |_| {}).unwrap();
 
         // remove some services
         for _ in 0..NUMBER_OF_SERVICES_REMOVED {
             services.pop();
         }
-        sut.spin().unwrap();
+        sut.spin(|_| {}, |_| {}).unwrap();
 
         let mut num_added = 0;
         let mut num_removed = 0;
@@ -109,6 +110,7 @@ mod service_discovery_service {
             max_subscribers: 1,
             send_notifications: true,
             max_listeners: 1,
+            ..Default::default()
         };
         let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
@@ -128,7 +130,7 @@ mod service_discovery_service {
             .publish_subscribe::<u64>()
             .create()
             .unwrap();
-        sut.spin().unwrap();
+        sut.spin(|_| {}, |_| {}).unwrap();
 
         let result = listener.try_wait_one();
         assert_that!(result, is_ok);
@@ -137,7 +139,7 @@ mod service_discovery_service {
 
         // remove a service
         drop(service);
-        sut.spin().unwrap();
+        sut.spin(|_| {}, |_| {}).unwrap();
 
         let result = listener.try_wait_one();
         assert_that!(result, is_ok);
@@ -157,6 +159,7 @@ mod service_discovery_service {
             max_subscribers: 1,
             send_notifications: false,
             max_listeners: 1,
+            ..Default::default()
         };
         let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
 
@@ -174,7 +177,7 @@ mod service_discovery_service {
         let subscriber = service.subscriber_builder().create().unwrap();
 
         // check for service changes
-        sut.spin().unwrap();
+        sut.spin(|_| {}, |_| {}).unwrap();
 
         // verify the addition of this service is announced (as it is an internal service)
         let result = subscriber.receive();
