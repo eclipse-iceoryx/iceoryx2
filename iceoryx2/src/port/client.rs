@@ -220,8 +220,8 @@ impl<Service: service::Service> ClientSharedState<Service> {
                     h.index() as usize,
                     SenderDetails {
                         port_id: port.server_port_id.value(),
-                        max_number_of_segments: 1,
-                        data_segment_type: DataSegmentType::Static,
+                        max_number_of_segments: port.max_number_of_segments,
+                        data_segment_type: port.data_segment_type,
                         number_of_samples: port.number_of_responses,
                     },
                 );
