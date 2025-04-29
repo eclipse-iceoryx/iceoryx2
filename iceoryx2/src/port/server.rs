@@ -543,6 +543,33 @@ impl<
         }
     }
 
+    /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
+    /// [`Client`](crate::port::client::Client) and returns an [`ActiveRequest`] which
+    /// can be used to respond.
+    /// If no [`RequestMut`](crate::request_mut::RequestMut)s were received it
+    /// returns [`None`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///     .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///     .request_response::<[u64], u64>()
+    ///     .open_or_create()?;
+    ///
+    /// let server = service.server_builder().create()?;
+    ///
+    /// while let Some(active_request) = server.receive()? {
+    ///     println!("received request: {:?}", active_request);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn receive(
         &self,
     ) -> Result<
@@ -596,6 +623,7 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > Server<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
 {
+    #[doc(hidden)]
     pub unsafe fn receive_custom_payload(
         &self,
     ) -> Result<

@@ -428,6 +428,39 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
+    /// Loans/allocates a [`ResponseMut`] from the underlying data segment of the
+    /// [`Server`](crate::port::server::Server)
+    /// and initializes all slice elements with the default value. This can be a performance hit
+    /// and [`ActiveRequest::loan_slice_uninit()`] can be used to loan a slice of
+    /// [`core::mem::MaybeUninit<Payload>`].
+    ///
+    /// On failure it returns [`LoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever6".try_into()?)
+    /// #     .request_response::<u64, [usize]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// let server = service.server_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// let active_request = server.receive()?.unwrap();
+    ///
+    /// let slice_length = 13;
+    /// let mut response = active_request.loan_slice(slice_length)?;
+    /// response.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn loan_slice(
         &self,
         slice_len: usize,
@@ -445,6 +478,41 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
+    /// Loans/allocates a [`ResponseMutUninit`] from the underlying data segment of the
+    /// [`Server`](crate::port::server::Server).
+    /// The user has to initialize the payload before it can be sent.
+    ///
+    /// On failure it returns [`LoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever6".try_into()?)
+    /// #     .request_response::<u64, [usize]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// let server = service.server_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// let active_request = server.receive()?.unwrap();
+    ///
+    /// let slice_length = 13;
+    /// let mut response = active_request.loan_slice_uninit(slice_length)?;
+    /// for element in response.payload_mut() {
+    ///     element.write(1234);
+    /// }
+    /// let response = unsafe { response.assume_init() };
+    /// response.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn loan_slice_uninit(
         &self,
         slice_len: usize,

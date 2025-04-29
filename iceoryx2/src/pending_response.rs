@@ -300,6 +300,36 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > PendingResponse<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
+    /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
+    /// received the [`RequestMut`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, [usize]>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// # let request = client.loan_uninit()?;
+    /// # let request = request.write_payload(0);
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// if let Some(response) = pending_response.receive()? {
+    ///     println!("received response: {:?}", response);
+    /// }
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn receive(
         &self,
     ) -> Result<Option<Response<Service, [ResponsePayload], ResponseHeader>>, ReceiveError> {
