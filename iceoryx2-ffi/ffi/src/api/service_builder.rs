@@ -16,11 +16,11 @@ use crate::api::{iox2_service_type_e, AssertNonNullHandle, HandleToType};
 use crate::{iox2_service_builder_pub_sub_set_user_header_type_details, iox2_type_variant_e};
 
 use iceoryx2::prelude::*;
-use iceoryx2::service::builder::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::builder::{
     event::Builder as ServiceBuilderEvent, publish_subscribe::Builder as ServiceBuilderPubSub,
     Builder as ServiceBuilderBase,
 };
+use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 

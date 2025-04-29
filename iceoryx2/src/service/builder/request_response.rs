@@ -28,8 +28,7 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use super::publish_subscribe::{CustomHeaderMarker, CustomPayloadMarker};
-use super::{ServiceState, RETRY_LIMIT};
+use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState, RETRY_LIMIT};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.

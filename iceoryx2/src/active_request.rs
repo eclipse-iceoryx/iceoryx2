@@ -67,8 +67,7 @@ use crate::{
     response_mut::ResponseMut,
     response_mut_uninit::ResponseMutUninit,
     service::{
-        self, builder::publish_subscribe::CustomPayloadMarker,
-        static_config::message_type_details::TypeVariant,
+        self, builder::CustomPayloadMarker, static_config::message_type_details::TypeVariant,
     },
 };
 

@@ -228,11 +228,19 @@ impl<
         ResponseHeader,
     >
 {
+    /// Sets the maximum slice length that a user can allocate with
+    /// [`ActiveRequest::loan_slice()`](crate::active_request::ActiveRequest::loan_slice()) or
+    /// [`ActiveRequest::loan_slice_uninit()`](crate::active_request::ActiveRequest::loan_slice_uninit()).
     pub fn initial_max_slice_len(mut self, value: usize) -> Self {
         self.config.initial_max_slice_len = value;
         self
     }
 
+    /// Defines the allocation strategy that is used when the provided
+    /// [`PortFactoryServer::initial_max_slice_len()`] is exhausted. This happens when the user
+    /// acquires a more than max slice len in
+    /// [`ActiveRequest::loan_slice()`](crate::active_request::ActiveRequest::loan_slice()) or
+    /// [`ActiveRequest::loan_slice_uninit()`](crate::active_request::ActiveRequest::loan_slice_uninit()).
     pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
         self.config.allocation_strategy = value;
         self

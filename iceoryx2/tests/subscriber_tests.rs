@@ -13,7 +13,7 @@
 #[generic_tests::define]
 mod subscriber {
     use iceoryx2::port::ReceiveError;
-    use iceoryx2::service::builder::publish_subscribe::CustomPayloadMarker;
+    use iceoryx2::service::builder::CustomPayloadMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use std::collections::HashSet;
 

@@ -64,7 +64,7 @@ use crate::{
     request_mut_uninit::RequestMutUninit,
     service::{
         self,
-        builder::publish_subscribe::CustomPayloadMarker,
+        builder::CustomPayloadMarker,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
         header,
         naming_scheme::data_segment_name,

@@ -30,6 +30,7 @@ use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::static_config::*;
 use core::fmt::Debug;
 use core::marker::PhantomData;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
@@ -62,6 +63,16 @@ enum ServiceState {
     HangsInCreation,
     Corrupted,
 }
+
+#[repr(C)]
+#[derive(Debug, ZeroCopySend)]
+#[doc(hidden)]
+pub struct CustomHeaderMarker {}
+
+#[repr(C)]
+#[derive(Debug, ZeroCopySend)]
+#[doc(hidden)]
+pub struct CustomPayloadMarker(u8);
 
 enum_gen! {
 #[doc(hidden)]

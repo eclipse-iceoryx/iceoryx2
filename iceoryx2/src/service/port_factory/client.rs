@@ -214,11 +214,17 @@ impl<
         ResponseHeader,
     >
 {
+    /// Sets the maximum slice length that a user can allocate with
+    /// [`Client::loan_slice()`] or [`Client::loan_slice_uninit()`].
     pub fn initial_max_slice_len(mut self, value: usize) -> Self {
         self.config.initial_max_slice_len = value;
         self
     }
 
+    /// Defines the allocation strategy that is used when the provided
+    /// [`PortFactoryClient::initial_max_slice_len()`] is exhausted. This happens when the user
+    /// acquires a more than max slice len in [`Client::loan_slice()`] or
+    /// [`Client::loan_slice_uninit()`].
     pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
         self.config.allocation_strategy = value;
         self

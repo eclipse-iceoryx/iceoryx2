@@ -110,7 +110,7 @@ use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::prelude::UnableToDeliverStrategy;
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
-use crate::service::builder::publish_subscribe::CustomPayloadMarker;
+use crate::service::builder::CustomPayloadMarker;
 use crate::service::config_scheme::{connection_config, data_segment_config};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
