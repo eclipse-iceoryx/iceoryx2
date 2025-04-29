@@ -75,7 +75,7 @@ pub enum SpinError {
 }
 
 /// Configuration for the service discovery service.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Config {
     /// Whether or not to synchronize the discvery state on initialization.
     ///
@@ -91,6 +91,15 @@ pub struct Config {
     /// The maximum number of subscribers to the service permitted.
     pub max_subscribers: usize,
 
+    /// The maximum number of samples the subscriber retains in its buffer.
+    pub max_buffer_size: usize,
+
+    /// The maximum number of samples subscribers are permitted to hold loans for.
+    pub max_borrrowed_samples: usize,
+
+    /// The number of older samples the subscriber can request from the service when starting.
+    pub history_size: usize,
+
     /// Whether to send notifications on changes.
     pub send_notifications: bool,
 
@@ -105,6 +114,9 @@ impl Default for Config {
             include_internal: true,
             publish_events: true,
             max_subscribers: 10,
+            max_buffer_size: 10,
+            history_size: 10,
+            max_borrrowed_samples: 10,
             send_notifications: true,
             max_listeners: 10,
         }
@@ -160,11 +172,11 @@ impl<S: ServiceType> Service<S> {
             let publish_subscribe = node
                 .service_builder(service_name())
                 .publish_subscribe::<Payload>()
-                .subscriber_max_borrowed_samples(10)
-                .history_size(10)
-                .subscriber_max_buffer_size(10)
-                .max_publishers(1)
+                .subscriber_max_buffer_size(discovery_config.max_buffer_size)
+                .subscriber_max_borrowed_samples(discovery_config.max_borrrowed_samples)
+                .history_size(discovery_config.history_size)
                 .max_subscribers(discovery_config.max_subscribers)
+                .max_publishers(1)
                 .create()
                 .map_err(|e| {
                     match e {
@@ -192,8 +204,8 @@ impl<S: ServiceType> Service<S> {
             let event = node
                 .service_builder(service_name())
                 .event()
-                .max_notifiers(1)
                 .max_listeners(discovery_config.max_listeners)
+                .max_notifiers(1)
                 .create()
                 .map_err(|e| {
                     match e {

@@ -84,8 +84,8 @@ pub fn discovery(
         max_subscribers,
         send_notifications,
         max_listeners,
-        sync_on_initialization: true,
         include_internal: false,
+        ..Default::default()
     };
 
     let mut service =
@@ -93,7 +93,6 @@ pub fn discovery(
             .map_err(|e| anyhow::anyhow!("failed to create service discovery service: {:?}", e))?;
 
     println!("=== Service Started (rate: {}ms) ===", rate);
-    println!("{}", format.as_string(&discovery_config)?);
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
     let guard = waitset
