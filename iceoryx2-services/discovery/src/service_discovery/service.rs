@@ -18,7 +18,6 @@ use iceoryx2::{
     prelude::{AllocationStrategy, ServiceName},
     service::{static_config::StaticConfig, Service as ServiceType, ServiceDetails},
 };
-use iceoryx2_services_common::{is_internal_service, INTERNAL_SERVICE_PREFIX};
 
 use once_cell::sync::Lazy;
 
@@ -290,7 +289,7 @@ impl<S: ServiceType> Service<S> {
         for id in &added_ids {
             if let Some(service) = self.tracker.get(id) {
                 if !self.discovery_config.include_internal
-                    && is_internal_service(service.static_details.name())
+                    && ServiceName::is_internal(service.static_details.name())
                 {
                     continue;
                 }
@@ -302,7 +301,7 @@ impl<S: ServiceType> Service<S> {
 
         for service in &removed_services {
             if !self.discovery_config.include_internal
-                && is_internal_service(service.static_details.name())
+                && ServiceName::is_internal(service.static_details.name())
             {
                 continue;
             }
@@ -358,7 +357,7 @@ impl<S: ServiceType> Service<S> {
 ///
 pub fn service_name() -> &'static ServiceName {
     static SERVICE_NAME_INSTANCE: Lazy<ServiceName> = Lazy::new(|| {
-        ServiceName::new(&(INTERNAL_SERVICE_PREFIX.to_owned() + SERVICE_DISCOVERY_SERVICE_NAME))
+        ServiceName::__internal_new(SERVICE_DISCOVERY_SERVICE_NAME)
             .expect("shouldn't occur: invalid service name for service discovery service")
     });
 

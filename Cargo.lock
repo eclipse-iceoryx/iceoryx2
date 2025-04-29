@@ -824,10 +824,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-services-common"
-version = "0.5.0"
-
-[[package]]
 name = "iceoryx2-services-discovery"
 version = "0.5.0"
 dependencies = [
@@ -835,7 +831,6 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
- "iceoryx2-services-common",
  "once_cell",
  "serde",
  "serde_json",

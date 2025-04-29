@@ -24,7 +24,6 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",
-        "//iceoryx2-services/common:iceoryx2-services-common",
         "@crate_index//:once_cell",
         "@crate_index//:serde",
         "@crate_index//:serde_json",

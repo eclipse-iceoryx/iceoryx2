@@ -25,6 +25,13 @@
 use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use serde::{de::Visitor, Deserialize, Serialize};
 
+/// Prefix used to identify internal iceoryx2 services.
+///
+/// This prefix is used to distinguish between user-defined services and internal
+/// iceoryx2 services. Services with this prefix are considered internal and are
+/// managed by the iceoryx2 system.
+pub const INTERNAL_SERVICE_PREFIX: &str = "iox2://";
+
 /// The name of a [`Service`](crate::service::Service).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ServiceName {
@@ -32,8 +39,19 @@ pub struct ServiceName {
 }
 
 impl ServiceName {
-    /// Creates a new [`ServiceName`]. The name is not allowed to be empty.
+    /// Creates a new [`ServiceName`].
+    ///
+    /// The name is not allowed to be empty nor be prefixed with "iox2://".
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
+        if Self::is_internal(name) {
+            return Err(SemanticStringError::InvalidContent);
+        }
+
+        Self::__internal_new(name)
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_new(name: &str) -> Result<Self, SemanticStringError> {
         if name.is_empty() {
             return Err(SemanticStringError::InvalidContent);
         }
@@ -44,6 +62,11 @@ impl ServiceName {
     /// Returns a str reference to the [`ServiceName`]
     pub fn as_str(&self) -> &str {
         &self.value
+    }
+
+    /// Checks if a service is an internal iceoryx2 service.
+    pub fn is_internal(name: &str) -> bool {
+        name.starts_with(INTERNAL_SERVICE_PREFIX)
     }
 }
 
