@@ -75,6 +75,8 @@
     [#695](https://github.com/eclipse-iceoryx/iceoryx2/issues/695)
 * Fix Miri issues with MetaVec due to temporary borrow
     [#682](https://github.com/eclipse-iceoryx/iceoryx2/issues/682)
+* Do not set default log level for cargo
+    [#711](https://github.com/eclipse-iceoryx/iceoryx2/issues/711)
 
 ### Refactoring
 
