@@ -14,6 +14,9 @@
 //!
 //! ## Publish-Subscribe
 //!
+//! For a detailed documentation see the
+//! [`publish_subscribe::Builder`](crate::service::builder::publish_subscribe::Builder)
+//!
 //! ```
 //! use iceoryx2::prelude::*;
 //!
@@ -39,7 +42,41 @@
 //! # }
 //! ```
 //!
+//! ## Request-Response
+//!
+//! For a detailed documentation see the
+//! [`request_response::Builder`](crate::service::builder::request_response::Builder)
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! let service = node.service_builder(&"ReqResQos".try_into()?)
+//!     .request_response::<u64, u64>()
+//!     // various QoS
+//!     .request_payload_alignment(Alignment::new(128).unwrap())
+//!     .response_payload_alignment(Alignment::new(128).unwrap())
+//!     .enable_safe_overflow_for_requests(true)
+//!     .enable_safe_overflow_for_responses(true)
+//!     .enable_fire_and_forget_requests(true)
+//!     .max_active_requests_per_client(2)
+//!     .max_loaned_requests(1)
+//!     .max_response_buffer_size(4)
+//!     .max_servers(2)
+//!     .max_clients(10)
+//!     // if the service already exists, open it, otherwise create it
+//!     .open_or_create()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! ## Event
+//!
+//! For a detailed documentation see the
+//! [`event::Builder`](crate::service::builder::event::Builder)
 //!
 //! ```
 //! use iceoryx2::prelude::*;
@@ -66,6 +103,10 @@
 //!
 //! ## Service With Custom Configuration
 //!
+//! An individual [`Config`](crate::config::Config) can be attached when the
+//! [`Node`](crate::node::Node) is created and it will be used for every construct created using
+//! this [`Node`](crate::node::Node).
+//!
 //! ```
 //! use iceoryx2::prelude::*;
 //! use iceoryx2_bb_system_types::path::*;
@@ -87,7 +128,9 @@
 //! # }
 //! ```
 //!
-//! ## Publish-Subscribe With Custom Service Attributes
+//! ## Service With Custom Service Attributes
+//!
+//! Every [`Service`](crate::service::Service) can be created with a set of attributes.
 //!
 //! ```
 //! use iceoryx2::prelude::*;
