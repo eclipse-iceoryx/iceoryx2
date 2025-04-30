@@ -15,6 +15,7 @@
 
 #include "iox2/service_builder_event.hpp"
 #include "iox2/service_builder_publish_subscribe.hpp"
+#include "iox2/service_builder_request_response.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
@@ -38,6 +39,15 @@ class ServiceBuilder {
     /// [`MessagingPattern::Event`] [`Service`].
     auto event() && -> ServiceBuilderEvent<S>;
 
+    /// Create a new builder to create a
+    /// [`MessagingPattern::RequestResponse`] [`Service`].
+    template <typename RequestPayload, typename RequestHeader, typename ResponsePayload, typename ResponseHeader>
+    auto request_response() && -> ServiceBuilderRequestResponse<RequestPayload,
+                                                                RequestHeader,
+                                                                ResponsePayload,
+                                                                ResponseHeader,
+                                                                S>;
+
   private:
     template <ServiceType>
     friend class Node;
@@ -60,6 +70,16 @@ template <ServiceType S>
 template <typename Payload>
 inline auto ServiceBuilder<S>::publish_subscribe() && -> ServiceBuilderPublishSubscribe<Payload, void, S> {
     return ServiceBuilderPublishSubscribe<Payload, void, S> { m_handle };
+}
+
+template <ServiceType S>
+template <typename RequestPayload, typename RequestHeader, typename ResponsePayload, typename ResponseHeader>
+inline auto ServiceBuilder<S>::request_response() && -> ServiceBuilderRequestResponse<RequestPayload,
+                                                                                      RequestHeader,
+                                                                                      ResponsePayload,
+                                                                                      ResponseHeader,
+                                                                                      S> {
+    IOX_TODO();
 }
 } // namespace iox2
 #endif

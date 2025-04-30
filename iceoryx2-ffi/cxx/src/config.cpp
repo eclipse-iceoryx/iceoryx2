@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/config.hpp"
+#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 /////////////////////////
@@ -158,6 +159,10 @@ auto Defaults::publish_subscribe() && -> PublishSubscribe {
 
 auto Defaults::event() && -> Event {
     return Event(m_config);
+}
+
+auto Defaults::request_response() && -> RequestResponse {
+    return RequestResponse(m_config);
 }
 /////////////////////////
 // END: Defaults
@@ -496,6 +501,128 @@ void Node::set_cleanup_dead_nodes_on_destruction(bool value) && {
 }
 /////////////////////////
 // END: Node
+/////////////////////////
+
+/////////////////////////
+// BEGIN: RequestResponse
+/////////////////////////
+RequestResponse::RequestResponse(iox2_config_h* config)
+    : m_config { config } {
+}
+
+auto RequestResponse::enable_safe_overflow_for_requests() && -> bool {
+    IOX_TODO();
+}
+
+void RequestResponse::set_enable_safe_overflow_for_requests([[maybe_unused]] bool value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::enable_safe_overflow_for_responses() && -> bool {
+    IOX_TODO();
+}
+
+void RequestResponse::set_enable_safe_overflow_for_responses([[maybe_unused]] bool value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::max_active_requests_per_client() && -> size_t {
+    IOX_TODO();
+}
+
+void RequestResponse::set_max_active_requests_per_client([[maybe_unused]] size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::max_response_buffer_size() && -> size_t {
+    IOX_TODO();
+}
+
+void RequestResponse::set_max_response_buffer_size([[maybe_unused]] size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::max_servers() && -> size_t {
+    IOX_TODO();
+}
+
+void RequestResponse::set_max_servers([[maybe_unused]] size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::max_clients() && -> size_t {
+    IOX_TODO();
+}
+
+void RequestResponse::set_max_clients([[maybe_unused]] size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::max_nodes() && -> size_t {
+    IOX_TODO();
+}
+
+void RequestResponse::set_max_nodes([[maybe_unused]] size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::max_borrowed_responses_per_pending_response() && -> size_t {
+    IOX_TODO();
+}
+
+void RequestResponse::set_max_borrowed_responses_per_pending_response([[maybe_unused]] size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::max_loaned_requests() && -> size_t {
+    IOX_TODO();
+}
+
+void RequestResponse::set_max_loaned_requests([[maybe_unused]] size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::server_max_loaned_responses_per_request() && -> size_t {
+    IOX_TODO();
+}
+
+void RequestResponse::set_server_max_loaned_responses_per_request([[maybe_unused]] size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::client_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
+    IOX_TODO();
+}
+
+void RequestResponse::set_client_unable_to_deliver_strategy([[maybe_unused]] UnableToDeliverStrategy value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::server_unable_to_deliver_strategy() && -> UnableToDeliverStrategy {
+    IOX_TODO();
+}
+
+void RequestResponse::set_server_unable_to_deliver_strategy([[maybe_unused]] UnableToDeliverStrategy value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::client_expired_connection_buffer() && -> size_t {
+    IOX_TODO();
+}
+
+void RequestResponse::set_client_expired_connection_buffer([[maybe_unused]] size_t value) && {
+    IOX_TODO();
+}
+
+auto RequestResponse::enable_fire_and_forget_requests() && -> bool {
+    IOX_TODO();
+}
+
+void RequestResponse::set_enable_fire_and_forget_requests([[maybe_unused]] bool value) && {
+    IOX_TODO();
+}
+/////////////////////////
+// END: RequestResponse
 /////////////////////////
 } // namespace config
 } // namespace iox2

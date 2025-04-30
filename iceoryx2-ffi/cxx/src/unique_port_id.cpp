@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/unique_port_id.hpp"
+#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 UniquePublisherId::UniquePublisherId(UniquePublisherId&& rhs) noexcept {
@@ -196,5 +197,69 @@ void UniqueListenerId::drop() {
         iox2_unique_listener_id_drop(m_handle);
         m_handle = nullptr;
     }
+}
+
+UniqueClientId::UniqueClientId(UniqueClientId&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+auto UniqueClientId::operator=([[maybe_unused]] UniqueClientId&& rhs) noexcept -> UniqueClientId& {
+    IOX_TODO();
+}
+
+UniqueClientId::~UniqueClientId() {
+    drop();
+}
+
+auto operator==([[maybe_unused]] const UniqueClientId& lhs, [[maybe_unused]] const UniqueClientId& rhs) -> bool {
+    IOX_TODO();
+}
+
+auto operator<([[maybe_unused]] const UniqueClientId& lhs, [[maybe_unused]] const UniqueClientId& rhs) -> bool {
+    IOX_TODO();
+}
+
+UniqueClientId::UniqueClientId(/* iox2_unique_client_id_h handle*/) {
+    IOX_TODO();
+}
+
+auto UniqueClientId::bytes() const -> const iox::optional<RawIdType>& {
+    IOX_TODO();
+};
+
+void UniqueClientId::drop() {
+    IOX_TODO();
+}
+
+UniqueServerId::UniqueServerId(UniqueServerId&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+auto UniqueServerId::operator=([[maybe_unused]] UniqueServerId&& rhs) noexcept -> UniqueServerId& {
+    IOX_TODO();
+}
+
+UniqueServerId::~UniqueServerId() {
+    drop();
+}
+
+auto operator==([[maybe_unused]] const UniqueServerId& lhs, [[maybe_unused]] const UniqueServerId& rhs) -> bool {
+    IOX_TODO();
+}
+
+auto operator<([[maybe_unused]] const UniqueServerId& lhs, [[maybe_unused]] const UniqueServerId& rhs) -> bool {
+    IOX_TODO();
+}
+
+UniqueServerId::UniqueServerId(/*iox2_unique_server_id_h handle*/) {
+    IOX_TODO();
+}
+
+auto UniqueServerId::bytes() const -> const iox::optional<RawIdType>& {
+    IOX_TODO();
+};
+
+void UniqueServerId::drop() {
+    IOX_TODO();
 }
 } // namespace iox2

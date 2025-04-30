@@ -71,6 +71,32 @@ enum class ReceiveError : uint8_t {
     /// Failures when mapping the corresponding data segment
     UnableToMapSendersDataSegment
 };
+
+/// Failure that can be emitted when a [`RequestMut`] is sent.
+enum class RequestSendError : uint8_t {
+    /// Sending this [`RequestMut`] exceeds the maximum supported amount of active
+    /// requests. When a [`PendingResponse`] object is released another [`RequestMut`]
+    /// can be sent.
+    ExceedsMaxActiveRequests,
+    /// Send was called but the corresponding port went already out of scope.
+    ConnectionBrokenSinceSenderNoLongerExists,
+    /// A connection between two ports has been corrupted.
+    ConnectionCorrupted,
+    /// The data segment does not have any more memory left
+    LoanErrorOutOfMemory,
+    /// The maximum amount of data a user can borrow is
+    /// defined in [`crate::config::Config`]. When this is exceeded those calls will fail.
+    LoanErrorExceedsMaxLoans,
+    /// The provided slice size exceeds the configured max slice size.
+    /// To send data with this size a new port has to be created with as a larger slice size or the
+    /// port must be configured with an
+    /// [`AllocationStrategy`](iceoryx2_cal::shm_allocator::AllocationStrategy).
+    LoanErrorExceedsMaxLoanSize,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    LoanErrorInternalFailure,
+    /// A failure occurred while establishing a connection to the ports counterpart port.
+    ConnectionError,
+};
 } // namespace iox2
 
 #endif

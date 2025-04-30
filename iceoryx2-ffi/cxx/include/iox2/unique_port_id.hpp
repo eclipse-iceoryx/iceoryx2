@@ -119,6 +119,54 @@ class UniqueListenerId {
     mutable iox::optional<RawIdType> m_raw_id;
 };
 
+/// The system-wide unique id of a [`Client`].
+class UniqueClientId {
+  public:
+    UniqueClientId(const UniqueClientId&) = delete;
+    UniqueClientId(UniqueClientId&& rhs) noexcept;
+    auto operator=(const UniqueClientId& rhs) -> UniqueClientId& = delete;
+    auto operator=(UniqueClientId&& rhs) noexcept -> UniqueClientId&;
+    ~UniqueClientId();
+
+    auto bytes() const -> const iox::optional<RawIdType>&;
+
+  private:
+    template <ServiceType, typename, typename, typename, typename>
+    friend class Client;
+    friend auto operator==(const UniqueClientId&, const UniqueClientId&) -> bool;
+    friend auto operator<(const UniqueClientId&, const UniqueClientId&) -> bool;
+
+    explicit UniqueClientId(/*iox2_unique_client_id_h handle*/);
+    void drop();
+
+    // iox2_unique_client_id_h m_handle = nullptr;
+    mutable iox::optional<RawIdType> m_raw_id;
+};
+
+/// The system-wide unique id of a [`Server`].
+class UniqueServerId {
+  public:
+    UniqueServerId(const UniqueServerId&) = delete;
+    UniqueServerId(UniqueServerId&& rhs) noexcept;
+    auto operator=(const UniqueServerId& rhs) -> UniqueServerId& = delete;
+    auto operator=(UniqueServerId&& rhs) noexcept -> UniqueServerId&;
+    ~UniqueServerId();
+
+    auto bytes() const -> const iox::optional<RawIdType>&;
+
+  private:
+    template <ServiceType, typename, typename, typename, typename>
+    friend class Server;
+    friend auto operator==(const UniqueServerId&, const UniqueServerId&) -> bool;
+    friend auto operator<(const UniqueServerId&, const UniqueServerId&) -> bool;
+
+    explicit UniqueServerId(/*iox2_unique_server_id_h handle*/);
+    void drop();
+
+    // iox2_unique_server_id_h m_handle = nullptr;
+    mutable iox::optional<RawIdType> m_raw_id;
+};
+
 auto operator==(const UniquePublisherId& lhs, const UniquePublisherId& rhs) -> bool;
 auto operator<(const UniquePublisherId& lhs, const UniquePublisherId& rhs) -> bool;
 auto operator==(const UniqueSubscriberId& lhs, const UniqueSubscriberId& rhs) -> bool;
@@ -127,6 +175,10 @@ auto operator==(const UniqueNotifierId& lhs, const UniqueNotifierId& rhs) -> boo
 auto operator<(const UniqueNotifierId& lhs, const UniqueNotifierId& rhs) -> bool;
 auto operator==(const UniqueListenerId& lhs, const UniqueListenerId& rhs) -> bool;
 auto operator<(const UniqueListenerId& lhs, const UniqueListenerId& rhs) -> bool;
+auto operator==(const UniqueClientId& lhs, const UniqueClientId& rhs) -> bool;
+auto operator<(const UniqueClientId& lhs, const UniqueClientId& rhs) -> bool;
+auto operator==(const UniqueServerId& lhs, const UniqueServerId& rhs) -> bool;
+auto operator<(const UniqueServerId& lhs, const UniqueServerId& rhs) -> bool;
 
 } // namespace iox2
 

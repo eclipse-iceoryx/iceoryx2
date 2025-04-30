@@ -31,6 +31,11 @@ enum class MessagingPattern : uint8_t {
     /// ability to sleep until a signal/event arrives.
     /// Building block to realize push-notifications.
     Event,
+
+    /// Bidirectional communication pattern where the
+    /// [`Client`](crate::port::client::Client) sends arbitrary data in form of requests to the
+    /// [`Server`](crate::port::server::Server) and receives a stream of responses.
+    RequestResponse,
 };
 } // namespace iox2
 

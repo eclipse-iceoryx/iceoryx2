@@ -14,6 +14,7 @@
 #define IOX2_ENUM_TRANSLATION_HPP
 
 #include "iox/assertions.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/into.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/callback_progression.hpp"
@@ -233,6 +234,8 @@ constexpr auto from<iox2::MessagingPattern, iox2_messaging_pattern_e>(const iox2
         return iox2_messaging_pattern_e_PUBLISH_SUBSCRIBE;
     case iox2::MessagingPattern::Event:
         return iox2_messaging_pattern_e_EVENT;
+    case iox2::MessagingPattern::RequestResponse:
+        IOX_TODO();
     }
 
     IOX_UNREACHABLE();
