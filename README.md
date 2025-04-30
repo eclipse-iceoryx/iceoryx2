@@ -259,6 +259,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     Ok(())
 }
 ```
+
 This example is a simplified version of the
 [request response example](examples/rust/request_response/). You can execute it
 by opening two terminals and calling:

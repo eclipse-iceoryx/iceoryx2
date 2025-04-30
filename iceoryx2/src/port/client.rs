@@ -12,6 +12,8 @@
 
 //! # Example
 //!
+//! ## Typed API
+//!
 //! ```
 //! use iceoryx2::prelude::*;
 //!
@@ -23,7 +25,10 @@
 //!    .request_response::<u64, u64>()
 //!    .open_or_create()?;
 //!
-//! let client = service.client_builder().create()?;
+//! let client = service.client_builder()
+//!    // defines behavior when server queue is full in an non-overflowing service
+//!    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!    .create()?;
 //!
 //! let request = client.loan_uninit()?;
 //! let request = request.write_payload(1829);

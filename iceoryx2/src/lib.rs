@@ -118,7 +118,8 @@
 //! ## Request-Reponse
 //!
 //! This is a simple request-response example where a client sends a request, and the server
-//! responds with multiple replies.
+//! responds with multiple replies until the processes are gracefully terminated by the user
+//! with `CTRL+C`
 //!
 //! **Client (Process 1)**
 //!
