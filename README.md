@@ -251,7 +251,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(active_request) = server.receive()? {
             let response = active_request.loan_uninit()?;
-            let response = response.write_payload(456)
+            let response = response.write_payload(456);
             response.send()?;
         }
     }

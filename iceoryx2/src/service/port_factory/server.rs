@@ -25,7 +25,7 @@
 //!
 //! let server = request_response
 //!    .server_builder()
-//!    // defines behavior when client queue is full in an non-overflowing service
+//!    // defines behavior when client queue is full in a non-overflowing service
 //!    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
 //!    .create()?;
 //!

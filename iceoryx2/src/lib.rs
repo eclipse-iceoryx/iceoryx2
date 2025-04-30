@@ -115,7 +115,7 @@
 //! # }
 //! ```
 //!
-//! ## Request-Reponse
+//! ## Request-Response
 //!
 //! This is a simple request-response example where a client sends a request, and the server
 //! responds with multiple replies until the processes are gracefully terminated by the user

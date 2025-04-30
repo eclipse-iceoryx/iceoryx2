@@ -103,7 +103,7 @@
 //!
 //! ## Service With Custom Configuration
 //!
-//! A individual [`Config`](crate::config::Config) can be attached when the
+//! An individual [`Config`](crate::config::Config) can be attached when the
 //! [`Node`](crate::node::Node) is created and it will be used for every construct created using
 //! this [`Node`](crate::node::Node).
 //!
