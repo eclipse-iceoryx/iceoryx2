@@ -20,6 +20,9 @@ use std::collections::{HashMap, HashSet};
 /// Errors that can occur during service synchronization.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SyncError {
+    /// The caller does not have permissions to look up services.
+    InsufficientPermissions,
+
     /// Failure looking up services present in the iceoryx2 system.
     ServiceLookupFailure,
 }
@@ -85,7 +88,12 @@ impl<S: Service> Tracker<S> {
             }
             CallbackProgression::Continue
         })
-        .map_err(|_| SyncError::ServiceLookupFailure)?;
+        .map_err(|e| match e {
+            iceoryx2::service::ServiceListError::InsufficientPermissions => {
+                SyncError::InsufficientPermissions
+            }
+            iceoryx2::service::ServiceListError::InternalError => SyncError::ServiceLookupFailure,
+        })?;
 
         // Get the details of the services not discovered
         let mut removed_services = Vec::new();

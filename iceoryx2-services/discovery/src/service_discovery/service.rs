@@ -44,6 +44,9 @@ pub type Payload = [u8];
 /// Errors that can occur when creating the service discovery service.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
+    /// The caller does not have sufficient permissions to create the service.
+    InsufficientPermissions,
+
     /// Failed to create the underlying node.
     NodeCreationFailure,
 
@@ -74,7 +77,10 @@ impl core::error::Error for CreationError {}
 /// Errors that can occur during the spin operation of the service discovery service.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SpinError {
-    /// Failed to sync services.
+    /// The caller does not have sufficient permissions to execute the service.
+    InsufficientPermissions,
+
+    /// Failed to sync services with the iceoryx2 system.
     SyncFailure,
 
     /// Failed to publish a discovery event.
@@ -232,9 +238,10 @@ impl<S: ServiceType> Service<S> {
         let mut tracker = Tracker::<S>::new();
 
         if discovery_config.sync_on_initialization {
-            tracker
-                .sync(iceoryx_config)
-                .map_err(|_| CreationError::SyncFailure)?;
+            tracker.sync(iceoryx_config).map_err(|e| match e {
+                super::SyncError::InsufficientPermissions => CreationError::InsufficientPermissions,
+                super::SyncError::ServiceLookupFailure => CreationError::SyncFailure,
+            })?;
         }
 
         Ok(Service::<S> {
@@ -275,10 +282,13 @@ impl<S: ServiceType> Service<S> {
         mut on_removed: FRemovedService,
     ) -> Result<(), SpinError> {
         // Detect changes
-        let (added_ids, removed_services) = self
-            .tracker
-            .sync(&self.iceoryx_config)
-            .map_err(|_| SpinError::SyncFailure)?;
+        let (added_ids, removed_services) =
+            self.tracker
+                .sync(&self.iceoryx_config)
+                .map_err(|e| match e {
+                    super::SyncError::InsufficientPermissions => SpinError::InsufficientPermissions,
+                    super::SyncError::ServiceLookupFailure => SpinError::SyncFailure,
+                })?;
         let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
 
         // Publish
@@ -318,6 +328,8 @@ impl<S: ServiceType> Service<S> {
         if let Some(publisher) = &self.publisher {
             // This intermediate struct is inefficient ... need to find a serialization
             // solution that can serialize directly to the loaned buffer.
+            //
+            // See: https://github.com/eclipse-iceoryx/iceoryx2/issues/708
             let serialized =
                 serde_json::to_vec(discovery).map_err(|_| SpinError::PublishFailure)?;
 
