@@ -48,9 +48,9 @@ use core::{fmt::Debug, mem::MaybeUninit};
 #[repr(transparent)]
 pub struct RequestMutUninit<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) request:
@@ -59,9 +59,9 @@ pub struct RequestMutUninit<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -73,9 +73,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -108,9 +108,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     >
     RequestMutUninit<
@@ -170,5 +170,161 @@ impl<
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
         core::mem::transmute(self.request)
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    RequestMutUninit<
+        Service,
+        [MaybeUninit<RequestPayload>],
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+    /// When the payload is manually populated by using
+    /// [`RequestMutUninit::payload_mut()`], then this function can be used
+    /// to convert it into the initialized [`RequestMut`] version.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[u64], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 13;
+    /// let mut request = client.loan_slice_uninit(slice_length)?;
+    /// for element in request.payload_mut() {
+    ///     element.write(1234);
+    /// }
+    /// // we have written the payload, initialize the request
+    /// let request = unsafe { request.assume_init() };
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    /// # Safety
+    ///
+    /// The caller must ensure that [`core::mem::MaybeUninit<Payload>`] really is initialized.
+    /// Sending the content when it is not fully initialized causes immediate undefined behavior.
+    pub unsafe fn assume_init(
+        self,
+    ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
+        // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
+        core::mem::transmute(self.request)
+    }
+
+    /// Writes the payload to the [`RequestMutUninit`] and labels the [`RequestMutUninit`] as
+    /// initialized
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[usize], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 13;
+    /// let mut request = client.loan_slice_uninit(slice_length)?;
+    /// let request = request.write_from_fn(|index| index + 123);
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn write_from_fn<F: FnMut(usize) -> RequestPayload>(
+        mut self,
+        mut initializer: F,
+    ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
+        for (i, element) in self.payload_mut().iter_mut().enumerate() {
+            element.write(initializer(i));
+        }
+
+        // SAFETY: this is safe since the payload was initialized on the line above
+        unsafe { self.assume_init() }
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + Copy + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    RequestMutUninit<
+        Service,
+        [MaybeUninit<RequestPayload>],
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+    /// Writes the payload by mem copying the provided slice into the [`RequestMutUninit`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[u64], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 3;
+    /// let mut request = client.loan_slice_uninit(slice_length)?;
+    /// let request = request.write_from_slice(&vec![1,2,3]);
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn write_from_slice(
+        mut self,
+        value: &[RequestPayload],
+    ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
+        self.payload_mut().copy_from_slice(unsafe {
+            core::mem::transmute::<&[RequestPayload], &[MaybeUninit<RequestPayload>]>(value)
+        });
+        unsafe { self.assume_init() }
     }
 }

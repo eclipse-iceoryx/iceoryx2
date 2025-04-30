@@ -62,9 +62,9 @@ use crate::{
 /// [`Server`](crate::port::server::Server).
 pub struct RequestMut<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) ptr: RawSampleMut<
@@ -83,9 +83,9 @@ pub struct RequestMut<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -111,9 +111,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -138,9 +138,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Deref
     for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -153,9 +153,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > DerefMut
     for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -167,9 +167,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {

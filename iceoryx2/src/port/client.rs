@@ -38,7 +38,8 @@ extern crate alloc;
 
 use alloc::sync::Arc;
 use core::{
-    cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit, sync::atomic::Ordering,
+    any::TypeId, cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit,
+    sync::atomic::Ordering,
 };
 use iceoryx2_bb_container::{queue::Queue, vec::Vec};
 
@@ -48,7 +49,9 @@ use iceoryx2_bb_elementary::{
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::{
-    dynamic_storage::DynamicStorage, shm_allocator::PointerOffset, zero_copy_connection::ChannelId,
+    dynamic_storage::DynamicStorage,
+    shm_allocator::{AllocationStrategy, PointerOffset},
+    zero_copy_connection::ChannelId,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, IoxAtomicUsize};
 
@@ -61,9 +64,12 @@ use crate::{
     request_mut_uninit::RequestMutUninit,
     service::{
         self,
+        builder::CustomPayloadMarker,
         dynamic_config::request_response::{ClientDetails, ServerDetails},
+        header,
         naming_scheme::data_segment_name,
-        port_factory::client::{ClientCreateError, PortFactoryClient},
+        port_factory::client::{ClientCreateError, LocalClientConfig, PortFactoryClient},
+        static_config::message_type_details::TypeVariant,
     },
 };
 
@@ -118,6 +124,7 @@ impl core::error::Error for RequestSendError {}
 
 #[derive(Debug)]
 pub(crate) struct ClientSharedState<Service: service::Service> {
+    pub(crate) config: LocalClientConfig,
     pub(crate) request_sender: Sender<Service>,
     pub(crate) response_receiver: Receiver<Service>,
     client_handle: UnsafeCell<Option<ContainerHandle>>,
@@ -213,8 +220,8 @@ impl<Service: service::Service> ClientSharedState<Service> {
                     h.index() as usize,
                     SenderDetails {
                         port_id: port.server_port_id.value(),
-                        max_number_of_segments: 1,
-                        data_segment_type: DataSegmentType::Static,
+                        max_number_of_segments: port.max_number_of_segments,
+                        data_segment_type: port.data_segment_type,
                         number_of_samples: port.number_of_responses,
                     },
                 );
@@ -249,9 +256,9 @@ impl<Service: service::Service> ClientSharedState<Service> {
 #[derive(Debug)]
 pub struct Client<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     client_port_id: UniqueClientId,
@@ -265,9 +272,9 @@ pub struct Client<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -302,15 +309,31 @@ impl<
 
         let global_config = service.__internal_state().shared_node.config();
         let segment_name = data_segment_name(client_port_id.value());
-        let data_segment_type = DataSegmentType::Static;
+        let data_segment_type = DataSegmentType::new_from_allocation_strategy(
+            client_factory.config.allocation_strategy,
+        );
         let max_number_of_segments =
             DataSegment::<Service>::max_number_of_segments(data_segment_type);
-        let data_segment = DataSegment::<Service>::create_static_segment(
-            &segment_name,
-            static_config.request_message_type_details.sample_layout(1),
-            global_config,
-            number_of_requests,
-        );
+
+        let sample_layout = static_config
+            .request_message_type_details
+            .sample_layout(client_factory.config.initial_max_slice_len);
+
+        let data_segment = match data_segment_type {
+            DataSegmentType::Static => DataSegment::<Service>::create_static_segment(
+                &segment_name,
+                sample_layout,
+                global_config,
+                number_of_requests,
+            ),
+            DataSegmentType::Dynamic => DataSegment::<Service>::create_dynamic_segment(
+                &segment_name,
+                sample_layout,
+                global_config,
+                number_of_requests,
+                client_factory.config.allocation_strategy,
+            ),
+        };
 
         let data_segment = fail!(from origin,
             when data_segment,
@@ -322,11 +345,21 @@ impl<
             node_id: *service.__internal_state().shared_node.id(),
             number_of_requests,
             response_buffer_size: static_config.max_response_buffer_size,
+            max_slice_len: client_factory.config.initial_max_slice_len,
+            data_segment_type,
+            max_number_of_segments,
         };
 
         let request_sender = Sender {
             data_segment,
-            segment_states: vec![SegmentState::new(number_of_requests)],
+            segment_states: {
+                let mut v =
+                    alloc::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
+                for _ in 0..max_number_of_segments {
+                    v.push(SegmentState::new(number_of_requests))
+                }
+                v
+            },
             sender_port_id: client_port_id.value(),
             shared_node: service.__internal_state().shared_node.clone(),
             connections: (0..server_list.capacity())
@@ -342,7 +375,7 @@ impl<
             tagger: CyclicTagger::new(),
             loan_counter: IoxAtomicUsize::new(0),
             sender_max_borrowed_samples: static_config.max_loaned_requests,
-            unable_to_deliver_strategy: client_factory.unable_to_deliver_strategy,
+            unable_to_deliver_strategy: client_factory.config.unable_to_deliver_strategy,
             message_type_details: static_config.request_message_type_details.clone(),
             // all requests are sent via one channel, only the responses require different
             // channels to guarantee that one response does not fill the buffer of another
@@ -378,6 +411,7 @@ impl<
         let new_self = Self {
             request_id_counter: IoxAtomicU64::new(0),
             client_shared_state: Arc::new(ClientSharedState {
+                config: client_factory.config,
                 client_handle: UnsafeCell::new(None),
                 available_channel_ids: {
                     let mut queue = Queue::new(number_of_requests);
@@ -440,7 +474,19 @@ impl<
             .request_sender
             .unable_to_deliver_strategy
     }
+}
 
+////////////////////////
+// BEGIN: typed API
+////////////////////////
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
     /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
     /// by default to avoid unnecessary copies.
     ///
@@ -531,6 +577,7 @@ impl<
                     client_port_id: self.id(),
                     channel_id,
                     request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
+                    number_of_elements: 1,
                 },
             )
         };
@@ -585,7 +632,7 @@ impl<
         Service: service::Service,
         RequestPayload: Debug + Default + ZeroCopySend,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -627,3 +674,251 @@ impl<
         Ok(self.loan_uninit()?.write_payload(RequestPayload::default()))
     }
 }
+
+////////////////////////
+// END: typed API
+////////////////////////
+
+////////////////////////
+// BEGIN: sliced API
+////////////////////////
+impl<
+        Service: service::Service,
+        RequestPayload: Default + Debug + ZeroCopySend + 'static,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Loans/allocates a [`RequestMut`] from the underlying data segment of the [`Client`]
+    /// and initializes all slice elements with the default value. This can be a performance hit
+    /// and [`Client::loan_slice_uninit()`] can be used to loan a slice of
+    /// [`core::mem::MaybeUninit<Payload>`].
+    ///
+    /// On failure it returns [`LoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[u64], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 13;
+    /// let mut request = client.loan_slice(slice_length)?;
+    /// for element in request.payload_mut() {
+    ///     *element = 1234;
+    /// }
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn loan_slice(
+        &self,
+        slice_len: usize,
+    ) -> Result<
+        RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>,
+        LoanError,
+    > {
+        let request = self.loan_slice_uninit(slice_len)?;
+        Ok(request.write_from_fn(|_| RequestPayload::default()))
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + 'static,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Loans/allocates a [`RequestMutUninit`] from the underlying data segment of the [`Client`].
+    /// The user has to initialize the payload before it can be sent.
+    ///
+    /// On failure it returns [`LoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///    .request_response::<[u64], u64>()
+    ///    .open_or_create()?;
+    ///
+    /// let client = service.client_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    ///
+    /// let slice_length = 13;
+    /// let mut request = client.loan_slice_uninit(slice_length)?;
+    /// for element in request.payload_mut() {
+    ///     element.write(1234);
+    /// }
+    /// // we have written the payload, initialize the request
+    /// let request = unsafe { request.assume_init() };
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub fn loan_slice_uninit(
+        &self,
+        slice_len: usize,
+    ) -> Result<
+        RequestMutUninit<
+            Service,
+            [MaybeUninit<RequestPayload>],
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        LoanError,
+    > {
+        debug_assert!(TypeId::of::<RequestPayload>() != TypeId::of::<CustomPayloadMarker>());
+        unsafe { self.loan_slice_uninit_impl(slice_len, slice_len) }
+    }
+
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    unsafe fn loan_slice_uninit_impl(
+        &self,
+        slice_len: usize,
+        underlying_number_of_slice_elements: usize,
+    ) -> Result<
+        RequestMutUninit<
+            Service,
+            [MaybeUninit<RequestPayload>],
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        LoanError,
+    > {
+        let max_slice_len = self.client_shared_state.config.initial_max_slice_len;
+
+        if self.client_shared_state.config.allocation_strategy == AllocationStrategy::Static
+            && max_slice_len < slice_len
+        {
+            fail!(from self, with LoanError::ExceedsMaxLoanSize,
+                "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
+                slice_len, max_slice_len);
+        }
+
+        let request_layout = self
+            .client_shared_state
+            .request_sender
+            .sample_layout(slice_len);
+        let chunk = self
+            .client_shared_state
+            .request_sender
+            .allocate(request_layout)?;
+
+        let channel_id =
+            match unsafe { &mut *self.client_shared_state.available_channel_ids.get() }.pop() {
+                Some(channel_id) => channel_id,
+                None => {
+                    fatal_panic!(from self,
+                    "This should never happen! There are no more available response channels.");
+                }
+            };
+
+        let header_ptr = chunk.header as *mut header::request_response::RequestHeader;
+        unsafe {
+            header_ptr.write(header::request_response::RequestHeader {
+                client_port_id: self.id(),
+                channel_id,
+                request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
+                number_of_elements: slice_len as _,
+            })
+        };
+
+        let ptr = unsafe {
+            RawSampleMut::<
+                service::header::request_response::RequestHeader,
+                RequestHeader,
+                [MaybeUninit<RequestPayload>],
+            >::new_unchecked(
+                chunk.header.cast(),
+                chunk.user_header.cast(),
+                core::slice::from_raw_parts_mut(
+                    chunk.payload.cast(),
+                    underlying_number_of_slice_elements,
+                ),
+            )
+        };
+
+        Ok(RequestMutUninit {
+            request: RequestMut {
+                ptr,
+                sample_size: chunk.size,
+                channel_id,
+                offset_to_chunk: chunk.offset,
+                client_shared_state: self.client_shared_state.clone(),
+                _response_payload: PhantomData,
+                _response_header: PhantomData,
+                was_sample_sent: IoxAtomicBool::new(false),
+            },
+        })
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Client<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    #[doc(hidden)]
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub unsafe fn loan_custom_payload(
+        &self,
+        slice_len: usize,
+    ) -> Result<
+        RequestMutUninit<
+            Service,
+            [MaybeUninit<CustomPayloadMarker>],
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        LoanError,
+    > {
+        // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
+        debug_assert!(
+            slice_len == 1
+                || self
+                    .client_shared_state
+                    .request_sender
+                    .payload_type_variant()
+                    == TypeVariant::Dynamic
+        );
+
+        self.loan_slice_uninit_impl(
+            slice_len,
+            self.client_shared_state.request_sender.payload_size() * slice_len,
+        )
+    }
+}
+////////////////////////
+// END: sliced API
+////////////////////////

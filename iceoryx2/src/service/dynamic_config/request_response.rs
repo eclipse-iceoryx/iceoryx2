@@ -18,7 +18,10 @@ use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 
 use crate::{
     node::NodeId,
-    port::port_identifiers::{UniqueClientId, UniquePortId, UniqueServerId},
+    port::{
+        details::data_segment::DataSegmentType,
+        port_identifiers::{UniqueClientId, UniquePortId, UniqueServerId},
+    },
 };
 
 use super::PortCleanupAction;
@@ -30,6 +33,9 @@ pub struct ServerDetails {
     pub server_port_id: UniqueServerId,
     pub request_buffer_size: usize,
     pub number_of_responses: usize,
+    pub max_slice_len: usize,
+    pub data_segment_type: DataSegmentType,
+    pub max_number_of_segments: u8,
 }
 
 #[doc(hidden)]
@@ -40,6 +46,9 @@ pub struct ClientDetails {
     pub node_id: NodeId,
     pub number_of_requests: usize,
     pub response_buffer_size: usize,
+    pub max_slice_len: usize,
+    pub data_segment_type: DataSegmentType,
+    pub max_number_of_segments: u8,
 }
 
 #[repr(C)]

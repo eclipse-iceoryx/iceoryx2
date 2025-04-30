@@ -42,13 +42,19 @@
 extern crate alloc;
 
 use alloc::sync::Arc;
-use core::{fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref, sync::atomic::Ordering};
+use core::{
+    any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref,
+    sync::atomic::Ordering,
+};
 use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_log::{error, fail};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError};
+use iceoryx2_cal::{
+    shm_allocator::AllocationStrategy,
+    zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError},
+};
 
 use crate::{
     port::{
@@ -60,7 +66,9 @@ use crate::{
     raw_sample::{RawSample, RawSampleMut},
     response_mut::ResponseMut,
     response_mut_uninit::ResponseMutUninit,
-    service,
+    service::{
+        self, builder::CustomPayloadMarker, static_config::message_type_details::TypeVariant,
+    },
 };
 
 /// Represents a one-to-one connection to a [`Client`](crate::port::client::Client)
@@ -73,9 +81,9 @@ use crate::{
 /// [`Response`](crate::response::Response)s.
 pub struct ActiveRequest<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<
@@ -96,9 +104,9 @@ pub struct ActiveRequest<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -121,9 +129,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Deref
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -136,9 +144,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Drop
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -169,9 +177,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -194,6 +202,64 @@ impl<
         )
     }
 
+    /// Returns a reference to the payload of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn payload(&self) -> &RequestPayload {
+        self.ptr.as_payload_ref()
+    }
+
+    /// Returns a reference to the user_header of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn user_header(&self) -> &RequestHeader {
+        self.ptr.as_user_header_ref()
+    }
+
+    /// Returns a reference to the
+    /// [`crate::service::header::request_response::RequestHeader`] of the received
+    /// [`RequestMut`](crate::request_mut::RequestMut)
+    pub fn header(&self) -> &crate::service::header::request_response::RequestHeader {
+        self.ptr.as_header_ref()
+    }
+
+    /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
+    pub fn origin(&self) -> UniqueClientId {
+        UniqueClientId(UniqueSystemId::from(self.details.origin))
+    }
+
+    fn increment_loan_counter(&self) -> Result<(), LoanError> {
+        let mut current_loan_count = self.shared_loan_counter.load(Ordering::Relaxed);
+        loop {
+            if self.max_loan_count <= current_loan_count {
+                fail!(from self,
+                with LoanError::ExceedsMaxLoans,
+                "Unable to loan memory for Response since it would exceed the maximum number of loans of {}.",
+                self.max_loan_count);
+            }
+
+            match self.shared_loan_counter.compare_exchange(
+                current_loan_count,
+                current_loan_count + 1,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => return Ok(()),
+                Err(v) => current_loan_count = v,
+            }
+        }
+    }
+}
+
+////////////////////////
+// BEGIN: typed API
+////////////////////////
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
     /// Loans uninitialized memory for a [`ResponseMut`] where the user can write its payload to.
     ///
     /// # Example
@@ -223,25 +289,7 @@ impl<
         &self,
     ) -> Result<ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>, LoanError>
     {
-        let mut current_loan_count = self.shared_loan_counter.load(Ordering::Relaxed);
-        loop {
-            if self.max_loan_count <= current_loan_count {
-                fail!(from self,
-                with LoanError::ExceedsMaxLoans,
-                "Unable to loan memory for Response since it would exceed the maximum number of loans of {}.",
-                self.max_loan_count);
-            }
-
-            match self.shared_loan_counter.compare_exchange(
-                current_loan_count,
-                current_loan_count + 1,
-                Ordering::Relaxed,
-                Ordering::Relaxed,
-            ) {
-                Ok(_) => break,
-                Err(v) => current_loan_count = v,
-            }
-        }
+        self.increment_loan_counter()?;
 
         let chunk = self
             .shared_state
@@ -255,6 +303,7 @@ impl<
                         self.shared_state.response_sender.sender_port_id,
                     )),
                     request_id: self.request_id,
+                    number_of_elements: 1,
                 },
             )
         };
@@ -321,37 +370,13 @@ impl<
 
         response.write_payload(value).send()
     }
-
-    /// Returns a reference to the payload of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn payload(&self) -> &RequestPayload {
-        self.ptr.as_payload_ref()
-    }
-
-    /// Returns a reference to the user_header of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn user_header(&self) -> &RequestHeader {
-        self.ptr.as_user_header_ref()
-    }
-
-    /// Returns a reference to the
-    /// [`crate::service::header::request_response::RequestHeader`] of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn header(&self) -> &crate::service::header::request_response::RequestHeader {
-        self.ptr.as_header_ref()
-    }
-
-    /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
-    pub fn origin(&self) -> UniqueClientId {
-        UniqueClientId(UniqueSystemId::from(self.details.origin))
-    }
 }
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + Default + ZeroCopySend,
+        ResponsePayload: Debug + Default + ZeroCopySend + Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -388,3 +413,215 @@ impl<
             .write_payload(ResponsePayload::default()))
     }
 }
+////////////////////////
+// END: typed API
+////////////////////////
+
+////////////////////////
+// BEGIN: sliced API
+////////////////////////
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + Default + ZeroCopySend + 'static,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+{
+    /// Loans/allocates a [`ResponseMut`] from the underlying data segment of the
+    /// [`Server`](crate::port::server::Server)
+    /// and initializes all slice elements with the default value. This can be a performance hit
+    /// and [`ActiveRequest::loan_slice_uninit()`] can be used to loan a slice of
+    /// [`core::mem::MaybeUninit<Payload>`].
+    ///
+    /// On failure it returns [`LoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever6".try_into()?)
+    /// #     .request_response::<u64, [usize]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// let server = service.server_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// let active_request = server.receive()?.unwrap();
+    ///
+    /// let slice_length = 13;
+    /// let mut response = active_request.loan_slice(slice_length)?;
+    /// response.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn loan_slice(
+        &self,
+        slice_len: usize,
+    ) -> Result<ResponseMut<Service, [ResponsePayload], ResponseHeader>, LoanError> {
+        let response = self.loan_slice_uninit(slice_len)?;
+        Ok(response.write_from_fn(|_| ResponsePayload::default()))
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + 'static,
+        ResponseHeader: Debug + ZeroCopySend,
+    > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+{
+    /// Loans/allocates a [`ResponseMutUninit`] from the underlying data segment of the
+    /// [`Server`](crate::port::server::Server).
+    /// The user has to initialize the payload before it can be sent.
+    ///
+    /// On failure it returns [`LoanError`] describing the failure.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node.service_builder(&"Whatever6".try_into()?)
+    /// #     .request_response::<u64, [usize]>()
+    /// #     .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    /// let server = service.server_builder()
+    ///                     .initial_max_slice_len(32)
+    ///                     .create()?;
+    /// # let pending_response = client.send_copy(0)?;
+    /// let active_request = server.receive()?.unwrap();
+    ///
+    /// let slice_length = 13;
+    /// let mut response = active_request.loan_slice_uninit(slice_length)?;
+    /// for element in response.payload_mut() {
+    ///     element.write(1234);
+    /// }
+    /// let response = unsafe { response.assume_init() };
+    /// response.send()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn loan_slice_uninit(
+        &self,
+        slice_len: usize,
+    ) -> Result<ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>, LoanError>
+    {
+        debug_assert!(TypeId::of::<ResponsePayload>() != TypeId::of::<CustomPayloadMarker>());
+        unsafe { self.loan_slice_uninit_impl(slice_len, slice_len) }
+    }
+
+    unsafe fn loan_slice_uninit_impl(
+        &self,
+        slice_len: usize,
+        underlying_number_of_slice_elements: usize,
+    ) -> Result<ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>, LoanError>
+    {
+        let max_slice_len = self.shared_state.config.initial_max_slice_len;
+
+        if self.shared_state.config.allocation_strategy == AllocationStrategy::Static
+            && max_slice_len < slice_len
+        {
+            fail!(from self, with LoanError::ExceedsMaxLoanSize,
+                "Unable to loan slice with {} elements since it would exceed the max supported slice length of {}.",
+                slice_len, max_slice_len);
+        }
+
+        self.increment_loan_counter()?;
+
+        let response_layout = self.shared_state.response_sender.sample_layout(slice_len);
+        let chunk = self
+            .shared_state
+            .response_sender
+            .allocate(response_layout)?;
+
+        unsafe {
+            (chunk.header as *mut service::header::request_response::ResponseHeader).write(
+                service::header::request_response::ResponseHeader {
+                    server_port_id: UniqueServerId(UniqueSystemId::from(
+                        self.shared_state.response_sender.sender_port_id,
+                    )),
+                    request_id: self.request_id,
+                    number_of_elements: slice_len as _,
+                },
+            )
+        };
+
+        let ptr = unsafe {
+            RawSampleMut::<
+                service::header::request_response::ResponseHeader,
+                ResponseHeader,
+                [MaybeUninit<ResponsePayload>],
+            >::new_unchecked(
+                chunk.header.cast(),
+                chunk.user_header.cast(),
+                core::slice::from_raw_parts_mut(
+                    chunk.payload.cast(),
+                    underlying_number_of_slice_elements,
+                ),
+            )
+        };
+
+        Ok(ResponseMutUninit {
+            response: ResponseMut {
+                ptr,
+                shared_loan_counter: self.shared_loan_counter.clone(),
+                shared_state: self.shared_state.clone(),
+                offset_to_chunk: chunk.offset,
+                channel_id: self.channel_id,
+                connection_id: self.connection_id,
+                sample_size: chunk.size,
+                _response_payload: PhantomData,
+                _response_header: PhantomData,
+            },
+        })
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    ActiveRequest<
+        Service,
+        [CustomPayloadMarker],
+        RequestHeader,
+        [CustomPayloadMarker],
+        ResponseHeader,
+    >
+{
+    #[doc(hidden)]
+    pub unsafe fn loan_custom_payload(
+        &self,
+        slice_len: usize,
+    ) -> Result<
+        ResponseMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], ResponseHeader>,
+        LoanError,
+    > {
+        // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
+        debug_assert!(
+            slice_len == 1
+                || self.shared_state.response_sender.payload_type_variant() == TypeVariant::Dynamic
+        );
+
+        self.loan_slice_uninit_impl(
+            slice_len,
+            self.shared_state.response_sender.payload_size() * slice_len,
+        )
+    }
+}
+////////////////////////
+// END: sliced API
+////////////////////////

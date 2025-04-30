@@ -66,6 +66,7 @@ use crate::port::details::chunk::Chunk;
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::update_connections::ConnectionFailure;
 use crate::raw_sample::RawSample;
+use crate::service::builder::CustomPayloadMarker;
 use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
 
 /// Represents an active connection to all [`Server`](crate::port::server::Server)
@@ -77,9 +78,9 @@ use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, ser
 /// [`Server`](crate::port::server::Server)s are informed.
 pub struct PendingResponse<
     Service: crate::service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) request:
@@ -92,9 +93,9 @@ pub struct PendingResponse<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Drop
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -110,9 +111,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Deref
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -125,9 +126,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug
     for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -148,9 +149,9 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -221,7 +222,16 @@ impl<
             .response_receiver
             .receive(self.request.channel_id)
     }
+}
 
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
     /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
     /// received the [`RequestMut`].
     ///
@@ -267,6 +277,141 @@ impl<
                                 chunk.header.cast(),
                                 chunk.user_header.cast(),
                                 chunk.payload.cast::<ResponsePayload>(),
+                            )
+                        },
+                    };
+
+                    if response.header().request_id != self.request.header().request_id {
+                        continue;
+                    }
+
+                    return Ok(Some(response));
+                }
+            }
+        }
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > PendingResponse<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+{
+    /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
+    /// received the [`RequestMut`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// # let service = node
+    /// #    .service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #    .request_response::<u64, [usize]>()
+    /// #    .open_or_create()?;
+    /// #
+    /// # let client = service.client_builder().create()?;
+    ///
+    /// # let request = client.loan_uninit()?;
+    /// # let request = request.write_payload(0);
+    ///
+    /// let pending_response = request.send()?;
+    ///
+    /// if let Some(response) = pending_response.receive()? {
+    ///     println!("received response: {:?}", response);
+    /// }
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn receive(
+        &self,
+    ) -> Result<Option<Response<Service, [ResponsePayload], ResponseHeader>>, ReceiveError> {
+        loop {
+            match self.receive_impl()? {
+                None => return Ok(None),
+                Some((details, chunk)) => {
+                    let header = unsafe {
+                        &*(chunk.header as *const service::header::request_response::ResponseHeader)
+                    };
+
+                    let response = Response {
+                        details,
+                        channel_id: self.request.channel_id,
+                        ptr: unsafe {
+                            RawSample::new_slice_unchecked(
+                                chunk.header.cast(),
+                                chunk.user_header.cast(),
+                                core::slice::from_raw_parts(
+                                    chunk.payload.cast::<ResponsePayload>(),
+                                    header.number_of_elements() as _,
+                                ),
+                            )
+                        },
+                    };
+
+                    if response.header().request_id != self.request.header().request_id {
+                        continue;
+                    }
+
+                    return Ok(Some(response));
+                }
+            }
+        }
+    }
+}
+
+impl<
+        Service: crate::service::Service,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    PendingResponse<
+        Service,
+        [CustomPayloadMarker],
+        RequestHeader,
+        [CustomPayloadMarker],
+        ResponseHeader,
+    >
+{
+    #[doc(hidden)]
+    pub unsafe fn receive_custom_payload(
+        &self,
+    ) -> Result<Option<Response<Service, [CustomPayloadMarker], ResponseHeader>>, ReceiveError>
+    {
+        loop {
+            match self.receive_impl()? {
+                None => return Ok(None),
+                Some((details, chunk)) => {
+                    let header = unsafe {
+                        &*(chunk.header as *const service::header::request_response::ResponseHeader)
+                    };
+
+                    let number_of_elements = (*header).number_of_elements();
+                    let number_of_bytes = number_of_elements as usize
+                        * self
+                            .request
+                            .client_shared_state
+                            .response_receiver
+                            .payload_size();
+
+                    let response = Response {
+                        details,
+                        channel_id: self.request.channel_id,
+                        ptr: unsafe {
+                            RawSample::new_slice_unchecked(
+                                chunk.header.cast(),
+                                chunk.user_header.cast(),
+                                core::slice::from_raw_parts(
+                                    chunk.payload.cast::<CustomPayloadMarker>(),
+                                    number_of_bytes as _,
+                                ),
                             )
                         },
                     };

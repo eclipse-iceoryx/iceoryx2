@@ -48,7 +48,9 @@ use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::service::builder::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
+use crate::service::port_factory::server::LocalServerConfig;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
@@ -80,6 +82,7 @@ const REQUEST_CHANNEL_ID: ChannelId = ChannelId::new(0);
 
 #[derive(Debug)]
 pub(crate) struct SharedServerState<Service: service::Service> {
+    pub(crate) config: LocalServerConfig,
     pub(crate) response_sender: Sender<Service>,
     server_handle: UnsafeCell<Option<ContainerHandle>>,
     request_receiver: Receiver<Service>,
@@ -131,8 +134,8 @@ impl<Service: service::Service> SharedServerState<Service> {
                     SenderDetails {
                         port_id: details.client_port_id.value(),
                         number_of_samples: details.number_of_requests,
-                        max_number_of_segments: 1,
-                        data_segment_type: DataSegmentType::Static,
+                        max_number_of_segments: details.max_number_of_segments,
+                        data_segment_type: details.data_segment_type,
                     },
                 );
                 result = result.and(inner_result);
@@ -168,9 +171,9 @@ impl<Service: service::Service> SharedServerState<Service> {
 #[derive(Debug)]
 pub struct Server<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     shared_state: Arc<SharedServerState<Service>>,
@@ -184,9 +187,9 @@ pub struct Server<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
@@ -247,16 +250,30 @@ impl<
         };
 
         let global_config = service.__internal_state().shared_node.config();
-        let data_segment_type = DataSegmentType::Static;
+        let data_segment_type = DataSegmentType::new_from_allocation_strategy(
+            server_factory.config.allocation_strategy,
+        );
         let segment_name = data_segment_name(server_port_id.value());
         let max_number_of_segments =
             DataSegment::<Service>::max_number_of_segments(data_segment_type);
-        let data_segment = DataSegment::<Service>::create_static_segment(
-            &segment_name,
-            static_config.response_message_type_details.sample_layout(1),
-            global_config,
-            number_of_responses,
-        );
+        let sample_layout = static_config
+            .response_message_type_details
+            .sample_layout(server_factory.config.initial_max_slice_len);
+        let data_segment = match data_segment_type {
+            DataSegmentType::Static => DataSegment::<Service>::create_static_segment(
+                &segment_name,
+                sample_layout,
+                global_config,
+                number_of_responses,
+            ),
+            DataSegmentType::Dynamic => DataSegment::<Service>::create_dynamic_segment(
+                &segment_name,
+                sample_layout,
+                global_config,
+                number_of_responses,
+                server_factory.config.allocation_strategy,
+            ),
+        };
 
         let data_segment = fail!(from origin,
             when data_segment,
@@ -264,7 +281,14 @@ impl<
             "{} since the server data segment could not be created.", msg);
 
         let response_sender = Sender {
-            segment_states: vec![SegmentState::new(number_of_responses)],
+            segment_states: {
+                let mut v =
+                    alloc::vec::Vec::<SegmentState>::with_capacity(max_number_of_segments as usize);
+                for _ in 0..max_number_of_segments {
+                    v.push(SegmentState::new(number_of_responses))
+                }
+                v
+            },
             data_segment,
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))
@@ -284,7 +308,7 @@ impl<
             service_state: service.__internal_state().clone(),
             tagger: CyclicTagger::new(),
             loan_counter: IoxAtomicUsize::new(0),
-            unable_to_deliver_strategy: server_factory.unable_to_deliver_strategy,
+            unable_to_deliver_strategy: server_factory.config.unable_to_deliver_strategy,
             message_type_details: static_config.response_message_type_details.clone(),
             number_of_channels: number_of_requests_per_client,
         };
@@ -297,6 +321,7 @@ impl<
                 .request_response()
                 .enable_fire_and_forget_requests,
             shared_state: Arc::new(SharedServerState {
+                config: server_factory.config,
                 request_receiver,
                 client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
                 server_handle: UnsafeCell::new(None),
@@ -327,6 +352,9 @@ impl<
                     server_port_id,
                     request_buffer_size: static_config.max_active_requests_per_client,
                     number_of_responses,
+                    max_slice_len: server_factory.config.initial_max_slice_len,
+                    data_segment_type,
+                    max_number_of_segments,
                 }) {
                 Some(v) => Some(v),
                 None => {
@@ -367,6 +395,46 @@ impl<
         self.shared_state
             .request_receiver
             .receive(REQUEST_CHANNEL_ID)
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn create_active_request(
+        &self,
+        details: ChunkDetails<Service>,
+        chunk: Chunk,
+        connection_id: usize,
+    ) -> ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+    {
+        let header =
+            unsafe { &*(chunk.header as *const service::header::request_response::RequestHeader) };
+
+        ActiveRequest {
+            details,
+            shared_loan_counter: Arc::new(IoxAtomicUsize::new(0)),
+            max_loan_count: self.max_loaned_responses_per_request,
+            request_id: header.request_id,
+            channel_id: header.channel_id,
+            connection_id,
+            shared_state: self.shared_state.clone(),
+            ptr: unsafe {
+                RawSample::new_unchecked(
+                    chunk.header.cast(),
+                    chunk.user_header.cast(),
+                    chunk.payload.cast::<RequestPayload>(),
+                )
+            },
+
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
     }
 
     /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
@@ -417,24 +485,182 @@ impl<
                         .response_sender
                         .get_connection_id_of(header.client_port_id.value())
                     {
-                        let active_request = ActiveRequest {
+                        let active_request =
+                            self.create_active_request(details, chunk, connection_id);
+
+                        if !self.enable_fire_and_forget && !active_request.is_connected() {
+                            continue;
+                        }
+
+                        return Ok(Some(active_request));
+                    }
+                }
+                None => return Ok(None),
+            }
+        }
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Server<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn create_active_request(
+        &self,
+        details: ChunkDetails<Service>,
+        chunk: Chunk,
+        connection_id: usize,
+        number_of_elements: usize,
+    ) -> ActiveRequest<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+    {
+        let header =
+            unsafe { &*(chunk.header as *const service::header::request_response::RequestHeader) };
+
+        ActiveRequest {
+            details,
+            shared_loan_counter: Arc::new(IoxAtomicUsize::new(0)),
+            max_loan_count: self.max_loaned_responses_per_request,
+            request_id: header.request_id,
+            channel_id: header.channel_id,
+            connection_id,
+            shared_state: self.shared_state.clone(),
+            ptr: unsafe {
+                RawSample::new_slice_unchecked(
+                    chunk.header.cast(),
+                    chunk.user_header.cast(),
+                    core::slice::from_raw_parts(
+                        chunk.payload.cast::<RequestPayload>(),
+                        number_of_elements as _,
+                    ),
+                )
+            },
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
+    }
+
+    /// Receives a [`RequestMut`](crate::request_mut::RequestMut) that was sent by a
+    /// [`Client`](crate::port::client::Client) and returns an [`ActiveRequest`] which
+    /// can be used to respond.
+    /// If no [`RequestMut`](crate::request_mut::RequestMut)s were received it
+    /// returns [`None`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// #
+    /// let service = node
+    ///     .service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///     .request_response::<[u64], u64>()
+    ///     .open_or_create()?;
+    ///
+    /// let server = service.server_builder().create()?;
+    ///
+    /// while let Some(active_request) = server.receive()? {
+    ///     println!("received request: {:?}", active_request);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub fn receive(
+        &self,
+    ) -> Result<
+        Option<
+            ActiveRequest<
+                Service,
+                [RequestPayload],
+                RequestHeader,
+                ResponsePayload,
+                ResponseHeader,
+            >,
+        >,
+        ReceiveError,
+    > {
+        loop {
+            match self.receive_impl()? {
+                Some((details, chunk)) => {
+                    let header = unsafe {
+                        &*(chunk.header as *const service::header::request_response::RequestHeader)
+                    };
+
+                    if let Some(connection_id) = self
+                        .shared_state
+                        .response_sender
+                        .get_connection_id_of(header.client_port_id.value())
+                    {
+                        let active_request = self.create_active_request(
                             details,
-                            shared_loan_counter: Arc::new(IoxAtomicUsize::new(0)),
-                            max_loan_count: self.max_loaned_responses_per_request,
-                            request_id: header.request_id,
-                            channel_id: header.channel_id,
+                            chunk,
                             connection_id,
-                            shared_state: self.shared_state.clone(),
-                            ptr: unsafe {
-                                RawSample::new_unchecked(
-                                    chunk.header.cast(),
-                                    chunk.user_header.cast(),
-                                    chunk.payload.cast::<RequestPayload>(),
-                                )
-                            },
-                            _response_payload: PhantomData,
-                            _response_header: PhantomData,
-                        };
+                            header.number_of_elements() as _,
+                        );
+
+                        if !self.enable_fire_and_forget && !active_request.is_connected() {
+                            continue;
+                        }
+
+                        return Ok(Some(active_request));
+                    }
+                }
+                None => return Ok(None),
+            }
+        }
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Server<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    #[doc(hidden)]
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub unsafe fn receive_custom_payload(
+        &self,
+    ) -> Result<
+        Option<
+            ActiveRequest<
+                Service,
+                [CustomPayloadMarker],
+                RequestHeader,
+                ResponsePayload,
+                ResponseHeader,
+            >,
+        >,
+        ReceiveError,
+    > {
+        loop {
+            match self.receive_impl()? {
+                Some((details, chunk)) => {
+                    let header = unsafe {
+                        &*(chunk.header as *const service::header::request_response::RequestHeader)
+                    };
+                    let number_of_elements = (*header).number_of_elements();
+                    let number_of_bytes = number_of_elements as usize
+                        * self.shared_state.request_receiver.payload_size();
+
+                    if let Some(connection_id) = self
+                        .shared_state
+                        .response_sender
+                        .get_connection_id_of(header.client_port_id.value())
+                    {
+                        let active_request = self.create_active_request(
+                            details,
+                            chunk,
+                            connection_id,
+                            number_of_bytes,
+                        );
 
                         if !self.enable_fire_and_forget && !active_request.is_connected() {
                             continue;

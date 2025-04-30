@@ -1144,6 +1144,87 @@ mod service_request_response {
         assert_that!(sut.static_config().response_message_type_details().payload.alignment, eq core::mem::align_of::<ResponsePayload>());
     }
 
+    #[test]
+    fn create_service_with_request_slice_type_works<Sut: Service>() {
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open_fail = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleRequestType));
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .open();
+        assert_that!(sut_open, is_ok);
+    }
+
+    #[test]
+    fn create_service_with_response_slice_type_works<Sut: Service>() {
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u64]>()
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open_fail = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .open();
+        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleResponseType));
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u64]>()
+            .open();
+        assert_that!(sut_open, is_ok);
+    }
+
+    #[test]
+    fn create_service_with_request_and_response_slice_type_works<Sut: Service>() {
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut_create = node
+            .service_builder(&service_name)
+            .request_response::<[u64], [u64]>()
+            .create();
+        assert_that!(sut_create, is_ok);
+
+        let sut_open_fail = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .open();
+        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleResponseType));
+
+        let sut_open_fail = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u64]>()
+            .open();
+        assert_that!(sut_open_fail.err(), eq Some(RequestResponseOpenError::IncompatibleRequestType));
+
+        let sut_open = node
+            .service_builder(&service_name)
+            .request_response::<[u64], [u64]>()
+            .open();
+        assert_that!(sut_open, is_ok);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

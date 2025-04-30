@@ -38,6 +38,7 @@ use crate::{
 use core::fmt::Debug;
 use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
 
 /// Defines a failure that can occur when a [`Client`] is created with
 /// [`crate::service::port_factory::client::PortFactoryClient`].
@@ -60,6 +61,13 @@ impl core::fmt::Display for ClientCreateError {
 
 impl core::error::Error for ClientCreateError {}
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct LocalClientConfig {
+    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) initial_max_slice_len: usize,
+    pub(crate) allocation_strategy: AllocationStrategy,
+}
+
 /// Factory to create a new [`Client`] port/endpoint for
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 /// based communication.
@@ -67,11 +75,14 @@ impl core::error::Error for ClientCreateError {}
 pub struct PortFactoryClient<
     'factory,
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
+    pub(crate) config: LocalClientConfig,
+    pub(crate) request_degradation_callback: Option<DegradationCallback<'static>>,
+    pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) factory: &'factory PortFactory<
         Service,
         RequestPayload,
@@ -79,17 +90,14 @@ pub struct PortFactoryClient<
         ResponsePayload,
         ResponseHeader,
     >,
-    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
-    pub(crate) request_degradation_callback: Option<DegradationCallback<'static>>,
-    pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
 }
 
 impl<
         'factory,
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     >
     PortFactoryClient<
@@ -119,10 +127,14 @@ impl<
             .request_response;
 
         Self {
-            factory,
-            unable_to_deliver_strategy: defs.client_unable_to_deliver_strategy,
+            config: LocalClientConfig {
+                unable_to_deliver_strategy: defs.client_unable_to_deliver_strategy,
+                initial_max_slice_len: 1,
+                allocation_strategy: AllocationStrategy::Static,
+            },
             request_degradation_callback: None,
             response_degradation_callback: None,
+            factory,
         }
     }
 
@@ -131,7 +143,7 @@ impl<
     /// [`RequestMut`](crate::request_mut::RequestMut) since
     /// its internal buffer is full.
     pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
-        self.unable_to_deliver_strategy = value;
+        self.config.unable_to_deliver_strategy = value;
         self
     }
 
@@ -182,5 +194,31 @@ impl<
         Ok(fail!(from origin,
               when Client::new(self),
               "Failed to create new Client port."))
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    PortFactoryClient<'_, Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
+    /// Sets the maximum slice length that a user can allocate with
+    /// [`Client::loan_slice()`] or [`Client::loan_slice_uninit()`].
+    pub fn initial_max_slice_len(mut self, value: usize) -> Self {
+        self.config.initial_max_slice_len = value;
+        self
+    }
+
+    /// Defines the allocation strategy that is used when the provided
+    /// [`PortFactoryClient::initial_max_slice_len()`] is exhausted. This happens when the user
+    /// acquires a more than max slice len in [`Client::loan_slice()`] or
+    /// [`Client::loan_slice_uninit()`].
+    pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
+        self.config.allocation_strategy = value;
+        self
     }
 }

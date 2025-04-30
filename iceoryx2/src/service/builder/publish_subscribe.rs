@@ -23,7 +23,6 @@ use crate::service::port_factory::publish_subscribe;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use builder::RETRY_LIMIT;
-use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::{alignment::Alignment, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
@@ -35,17 +34,7 @@ use self::{
     message_type_details::{MessageTypeDetails, TypeDetail, TypeVariant},
 };
 
-use super::{OpenDynamicStorageFailure, ServiceState};
-
-#[repr(C)]
-#[derive(Debug, ZeroCopySend)]
-#[doc(hidden)]
-pub struct CustomHeaderMarker {}
-
-#[repr(C)]
-#[derive(Debug, ZeroCopySend)]
-#[doc(hidden)]
-pub struct CustomPayloadMarker(u8);
+use super::{CustomHeaderMarker, CustomPayloadMarker, OpenDynamicStorageFailure, ServiceState};
 
 /// Errors that can occur when an existing [`MessagingPattern::PublishSubscribe`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]

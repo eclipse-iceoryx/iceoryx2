@@ -159,6 +159,8 @@ mod client {
                     .create()
                     .unwrap();
 
+                assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::Block);
+
                 let request = sut.send_copy(123);
                 assert_that!(request, is_ok);
                 drop(request);
@@ -196,6 +198,8 @@ mod client {
             .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
             .create()
             .unwrap();
+
+        assert_that!(sut.unable_to_deliver_strategy(), eq UnableToDeliverStrategy::DiscardSample);
 
         let request = sut.send_copy(123);
         assert_that!(request, is_ok);

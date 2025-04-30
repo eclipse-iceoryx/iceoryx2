@@ -61,9 +61,9 @@ use super::{client::PortFactoryClient, nodes, server::PortFactoryServer};
 #[derive(Debug)]
 pub struct PortFactory<
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) service: Service,
@@ -75,9 +75,9 @@ pub struct PortFactory<
 
 unsafe impl<
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Send
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -96,9 +96,9 @@ unsafe impl<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > crate::service::port_factory::PortFactory
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -148,9 +148,9 @@ impl<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {

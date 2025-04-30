@@ -23,6 +23,7 @@ pub struct RequestHeader {
     pub(crate) client_port_id: UniqueClientId,
     pub(crate) channel_id: ChannelId,
     pub(crate) request_id: u64,
+    pub(crate) number_of_elements: u64,
 }
 
 impl RequestHeader {
@@ -30,6 +31,19 @@ impl RequestHeader {
     /// which sent the [`RequestMut`](crate::request_mut::RequestMut)
     pub fn client_port_id(&self) -> UniqueClientId {
         self.client_port_id
+    }
+
+    /// Returns how many elements are stored inside the requests's payload.
+    ///
+    /// # Details when using
+    /// [`CustomPayloadMarker`](crate::service::builder::CustomPayloadMarker)
+    ///
+    /// In this case the number of elements relates to the element defined in the
+    /// [`MessageTypeDetails`](crate::service::static_config::message_type_details::MessageTypeDetails).
+    /// When the element has a `payload.size == 40` and the `RequestMut::payload().len() == 120` it
+    /// means that it contains 3 elements (3 * 40 == 120).
+    pub fn number_of_elements(&self) -> u64 {
+        self.number_of_elements
     }
 }
 
@@ -40,6 +54,7 @@ impl RequestHeader {
 pub struct ResponseHeader {
     pub(crate) server_port_id: UniqueServerId,
     pub(crate) request_id: u64,
+    pub(crate) number_of_elements: u64,
 }
 
 impl ResponseHeader {
@@ -47,5 +62,18 @@ impl ResponseHeader {
     /// which sent the [`Response`](crate::response::Response)
     pub fn server_port_id(&self) -> UniqueServerId {
         self.server_port_id
+    }
+
+    /// Returns how many elements are stored inside the response's payload.
+    ///
+    /// # Details when using
+    /// [`CustomPayloadMarker`](crate::service::builder::CustomPayloadMarker)
+    ///
+    /// In this case the number of elements relates to the element defined in the
+    /// [`MessageTypeDetails`](crate::service::static_config::message_type_details::MessageTypeDetails).
+    /// When the element has a `payload.size == 40` and the `ResponseMut::payload().len() == 120` it
+    /// means that it contains 3 elements (3 * 40 == 120).
+    pub fn number_of_elements(&self) -> u64 {
+        self.number_of_elements
     }
 }

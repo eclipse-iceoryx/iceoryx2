@@ -17,6 +17,7 @@ use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::OpenDynamicStorageFailure;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
+use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::{self, header, static_config};
 use crate::service::{builder, dynamic_config, Service};
@@ -27,7 +28,7 @@ use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::{StaticStorage, StaticStorageCreateError, StaticStorageLocked};
 
 use super::message_type_details::{MessageTypeDetails, TypeVariant};
-use super::{ServiceState, RETRY_LIMIT};
+use super::{CustomHeaderMarker, CustomPayloadMarker, ServiceState, RETRY_LIMIT};
 
 /// Errors that can occur when an existing [`MessagingPattern::RequestResponse`] [`Service`] shall
 /// be opened.
@@ -214,15 +215,19 @@ enum ServiceAvailabilityState {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Builder<
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
     ServiceType: Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
     override_request_alignment: Option<usize>,
     override_response_alignment: Option<usize>,
+    override_request_payload_type: Option<TypeDetail>,
+    override_response_payload_type: Option<TypeDetail>,
+    override_request_header_type: Option<TypeDetail>,
+    override_response_header_type: Option<TypeDetail>,
     verify_enable_safe_overflow_for_requests: bool,
     verify_enable_safe_overflow_for_responses: bool,
     verify_max_active_requests_per_client: bool,
@@ -241,9 +246,9 @@ pub struct Builder<
 }
 
 impl<
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
         ServiceType: Service,
     > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
@@ -253,6 +258,10 @@ impl<
             base,
             override_request_alignment: None,
             override_response_alignment: None,
+            override_request_header_type: None,
+            override_request_payload_type: None,
+            override_response_header_type: None,
+            override_response_payload_type: None,
             verify_enable_safe_overflow_for_requests: false,
             verify_enable_safe_overflow_for_responses: false,
             verify_max_loaned_requests: false,
@@ -861,18 +870,30 @@ impl<
         }
     }
 
-    fn prepare_message_type_details(&mut self) {
-        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
-            header::request_response::RequestHeader,
-            RequestHeader,
-            RequestPayload,
-        >(TypeVariant::FixedSize);
+    fn prepare_message_type(&mut self) {
+        if let Some(details) = &self.override_request_payload_type {
+            self.config_details_mut()
+                .request_message_type_details
+                .payload = details.clone();
+        }
 
-        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
-            header::request_response::ResponseHeader,
-            ResponseHeader,
-            ResponsePayload,
-        >(TypeVariant::FixedSize);
+        if let Some(details) = &self.override_request_header_type {
+            self.config_details_mut()
+                .request_message_type_details
+                .user_header = details.clone();
+        }
+
+        if let Some(details) = &self.override_response_payload_type {
+            self.config_details_mut()
+                .response_message_type_details
+                .payload = details.clone();
+        }
+
+        if let Some(details) = &self.override_response_header_type {
+            self.config_details_mut()
+                .response_message_type_details
+                .user_header = details.clone();
+        }
 
         if let Some(alignment) = self.override_request_alignment {
             self.config_details_mut()
@@ -897,6 +918,31 @@ impl<
                 .alignment
                 .max(alignment);
         }
+    }
+}
+
+impl<
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+        ServiceType: Service,
+    > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+{
+    fn prepare_message_type_details(&mut self) {
+        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+            header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >(TypeVariant::FixedSize);
+
+        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+            header::request_response::ResponseHeader,
+            ResponseHeader,
+            ResponsePayload,
+        >(TypeVariant::FixedSize);
+
+        self.prepare_message_type();
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -1006,5 +1052,456 @@ impl<
     > {
         self.prepare_message_type_details();
         self.create_impl(attributes)
+    }
+}
+
+impl<
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+        ServiceType: Service,
+    > Builder<[RequestPayload], RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+{
+    fn prepare_message_type_details(&mut self) {
+        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+            header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >(TypeVariant::Dynamic);
+
+        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+            header::request_response::ResponseHeader,
+            ResponseHeader,
+            ResponsePayload,
+        >(TypeVariant::FixedSize);
+
+        self.prepare_message_type();
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
+    pub fn open_or_create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes.
+    ///
+    /// If the [`Service`] already exists all attribute requirements must be satisfied,
+    /// and service payload type must be the same, otherwise the open process will fail.
+    /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
+    pub fn open_or_create_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.prepare_message_type_details();
+        self.open_or_create_impl(required_attributes)
+    }
+
+    /// Opens an existing [`Service`].
+    pub fn open(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.open_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    pub fn open_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.prepare_message_type_details();
+        self.open_impl(required_attributes)
+    }
+
+    /// Creates a new [`Service`].
+    pub fn create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.create_with_attributes(&AttributeSpecifier::new())
+    }
+
+    /// Creates a new [`Service`] with a set of attributes.
+    pub fn create_with_attributes(
+        mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            ResponsePayload,
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.prepare_message_type_details();
+        self.create_impl(attributes)
+    }
+}
+
+impl<
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+        ServiceType: Service,
+    > Builder<[RequestPayload], RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
+{
+    fn prepare_message_type_details(&mut self) {
+        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+            header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >(TypeVariant::Dynamic);
+
+        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+            header::request_response::ResponseHeader,
+            ResponseHeader,
+            ResponsePayload,
+        >(TypeVariant::Dynamic);
+
+        self.prepare_message_type();
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub fn open_or_create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes.
+    ///
+    /// If the [`Service`] already exists all attribute requirements must be satisfied,
+    /// and service payload type must be the same, otherwise the open process will fail.
+    /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub fn open_or_create_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.prepare_message_type_details();
+        self.open_or_create_impl(required_attributes)
+    }
+
+    /// Opens an existing [`Service`].
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub fn open(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.open_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub fn open_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.prepare_message_type_details();
+        self.open_impl(required_attributes)
+    }
+
+    /// Creates a new [`Service`].
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub fn create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.create_with_attributes(&AttributeSpecifier::new())
+    }
+
+    /// Creates a new [`Service`] with a set of attributes.
+    #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
+    pub fn create_with_attributes(
+        mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            [RequestPayload],
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.prepare_message_type_details();
+        self.create_impl(attributes)
+    }
+}
+
+impl<
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+        ServiceType: Service,
+    > Builder<RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader, ServiceType>
+{
+    fn prepare_message_type_details(&mut self) {
+        self.config_details_mut().request_message_type_details = MessageTypeDetails::from::<
+            header::request_response::RequestHeader,
+            RequestHeader,
+            RequestPayload,
+        >(TypeVariant::FixedSize);
+
+        self.config_details_mut().response_message_type_details = MessageTypeDetails::from::<
+            header::request_response::ResponseHeader,
+            ResponseHeader,
+            ResponsePayload,
+        >(TypeVariant::Dynamic);
+
+        self.prepare_message_type();
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created.
+    pub fn open_or_create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.open_or_create_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
+    /// created. It defines a set of attributes.
+    ///
+    /// If the [`Service`] already exists all attribute requirements must be satisfied,
+    /// and service payload type must be the same, otherwise the open process will fail.
+    /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
+    pub fn open_or_create_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseOpenOrCreateError,
+    > {
+        self.prepare_message_type_details();
+        self.open_or_create_impl(required_attributes)
+    }
+
+    /// Opens an existing [`Service`].
+    pub fn open(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.open_with_attributes(&AttributeVerifier::new())
+    }
+
+    /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    pub fn open_with_attributes(
+        mut self,
+        required_attributes: &AttributeVerifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseOpenError,
+    > {
+        self.prepare_message_type_details();
+        self.open_impl(required_attributes)
+    }
+
+    /// Creates a new [`Service`].
+    pub fn create(
+        self,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.create_with_attributes(&AttributeSpecifier::new())
+    }
+
+    /// Creates a new [`Service`] with a set of attributes.
+    pub fn create_with_attributes(
+        mut self,
+        attributes: &AttributeSpecifier,
+    ) -> Result<
+        request_response::PortFactory<
+            ServiceType,
+            RequestPayload,
+            RequestHeader,
+            [ResponsePayload],
+            ResponseHeader,
+        >,
+        RequestResponseCreateError,
+    > {
+        self.prepare_message_type_details();
+        self.create_impl(attributes)
+    }
+}
+
+impl<ServiceType: Service>
+    Builder<
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+        ServiceType,
+    >
+{
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_request_payload_type_details(
+        mut self,
+        value: &TypeDetail,
+    ) -> Self {
+        self.override_request_payload_type = Some(value.clone());
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_response_payload_type_details(
+        mut self,
+        value: &TypeDetail,
+    ) -> Self {
+        self.override_response_payload_type = Some(value.clone());
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_request_header_type_details(mut self, value: &TypeDetail) -> Self {
+        self.override_request_header_type = Some(value.clone());
+        self
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_response_header_type_details(
+        mut self,
+        value: &TypeDetail,
+    ) -> Self {
+        self.override_response_header_type = Some(value.clone());
+        self
     }
 }

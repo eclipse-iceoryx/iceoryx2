@@ -57,7 +57,7 @@ use crate::service;
 /// [`Server`](crate::port::server::Server) via the [`Client`](crate::port::client::Client).
 pub struct Response<
     Service: crate::service::Service,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<
@@ -71,7 +71,7 @@ pub struct Response<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Drop for Response<Service, ResponsePayload, ResponseHeader>
 {
@@ -99,7 +99,7 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Debug for Response<Service, ResponsePayload, ResponseHeader>
 {
@@ -117,7 +117,7 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Deref for Response<Service, ResponsePayload, ResponseHeader>
 {
@@ -129,7 +129,7 @@ impl<
 
 impl<
         Service: crate::service::Service,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Response<Service, ResponsePayload, ResponseHeader>
 {

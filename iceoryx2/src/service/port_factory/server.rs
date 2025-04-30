@@ -38,6 +38,14 @@ use crate::{
 use core::fmt::Debug;
 use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_cal::shm_allocator::AllocationStrategy;
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct LocalServerConfig {
+    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
+    pub(crate) initial_max_slice_len: usize,
+    pub(crate) allocation_strategy: AllocationStrategy,
+}
 
 /// Defines a failure that can occur when a [`Server`] is created with
 /// [`crate::service::port_factory::server::PortFactoryServer`].
@@ -65,9 +73,9 @@ impl core::error::Error for ServerCreateError {}
 pub struct PortFactoryServer<
     'factory,
     Service: service::Service,
-    RequestPayload: Debug + ZeroCopySend,
+    RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
-    ResponsePayload: Debug + ZeroCopySend,
+    ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<
@@ -78,8 +86,8 @@ pub struct PortFactoryServer<
         ResponseHeader,
     >,
 
+    pub(crate) config: LocalServerConfig,
     pub(crate) max_loaned_responses_per_request: usize,
-    pub(crate) unable_to_deliver_strategy: UnableToDeliverStrategy,
     pub(crate) request_degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
 }
@@ -87,9 +95,9 @@ pub struct PortFactoryServer<
 impl<
         'factory,
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     >
     PortFactoryServer<
@@ -121,7 +129,11 @@ impl<
         Self {
             factory,
             max_loaned_responses_per_request: defs.server_max_loaned_responses_per_request,
-            unable_to_deliver_strategy: defs.server_unable_to_deliver_strategy,
+            config: LocalServerConfig {
+                unable_to_deliver_strategy: defs.server_unable_to_deliver_strategy,
+                initial_max_slice_len: 1,
+                allocation_strategy: AllocationStrategy::Static,
+            },
             request_degradation_callback: None,
             response_degradation_callback: None,
         }
@@ -132,7 +144,7 @@ impl<
     /// [`Response`](crate::response::Response) since
     /// its internal buffer is full.
     pub fn unable_to_deliver_strategy(mut self, value: UnableToDeliverStrategy) -> Self {
-        self.unable_to_deliver_strategy = value;
+        self.config.unable_to_deliver_strategy = value;
         self
     }
 
@@ -196,5 +208,33 @@ impl<
         Ok(fail!(from origin,
               when Server::new(self),
               "Failed to create new Server port."))
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    >
+    PortFactoryServer<'_, Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+{
+    /// Sets the maximum slice length that a user can allocate with
+    /// [`ActiveRequest::loan_slice()`](crate::active_request::ActiveRequest::loan_slice()) or
+    /// [`ActiveRequest::loan_slice_uninit()`](crate::active_request::ActiveRequest::loan_slice_uninit()).
+    pub fn initial_max_slice_len(mut self, value: usize) -> Self {
+        self.config.initial_max_slice_len = value;
+        self
+    }
+
+    /// Defines the allocation strategy that is used when the provided
+    /// [`PortFactoryServer::initial_max_slice_len()`] is exhausted. This happens when the user
+    /// acquires a more than max slice len in
+    /// [`ActiveRequest::loan_slice()`](crate::active_request::ActiveRequest::loan_slice()) or
+    /// [`ActiveRequest::loan_slice_uninit()`](crate::active_request::ActiveRequest::loan_slice_uninit()).
+    pub fn allocation_strategy(mut self, value: AllocationStrategy) -> Self {
+        self.config.allocation_strategy = value;
+        self
     }
 }
