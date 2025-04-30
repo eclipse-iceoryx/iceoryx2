@@ -17,6 +17,13 @@ use iceoryx2::{
 };
 use std::collections::{HashMap, HashSet};
 
+/// Errors that can occur during service synchronization.
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum SyncError {
+    /// Failure looking up services present in the iceoryx2 system.
+    ServiceLookupFailure,
+}
+
 /// A tracker for monitoring services of a specific type.
 ///
 /// The `Tracker` keeps track of services in the system, allowing for discovery
@@ -60,11 +67,14 @@ impl<S: Service> Tracker<S> {
     ///   retrievable with `Tracker::get()`
     /// * A vector of service details for services that are no longer available, these details are
     ///   no longer stored in the tracker
-    pub fn sync(&mut self, config: &Config) -> (Vec<ServiceId>, Vec<ServiceDetails<S>>) {
+    pub fn sync(
+        &mut self,
+        config: &Config,
+    ) -> Result<(Vec<ServiceId>, Vec<ServiceDetails<S>>), SyncError> {
         let mut discovered_ids = HashSet::<ServiceId>::new();
         let mut added_ids = Vec::<ServiceId>::new();
 
-        let _ = S::list(config, |service| {
+        S::list(config, |service| {
             let id = service.static_details.service_id().clone();
             discovered_ids.insert(id.clone());
 
@@ -74,7 +84,8 @@ impl<S: Service> Tracker<S> {
                 added_ids.push(id);
             }
             CallbackProgression::Continue
-        });
+        })
+        .map_err(|_| SyncError::ServiceLookupFailure)?;
 
         // Get the details of the services not discovered
         let mut removed_services = Vec::new();
@@ -91,7 +102,7 @@ impl<S: Service> Tracker<S> {
             }
         }
 
-        (added_ids, removed_services)
+        Ok((added_ids, removed_services))
     }
 
     /// Retrieves service details for a specific service ID if tracked.

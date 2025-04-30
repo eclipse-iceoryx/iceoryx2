@@ -49,7 +49,7 @@ mod service_discovery_tracker {
         }
 
         // verify added services are detected
-        let (added, _) = sut.sync(&config);
+        let (added, _) = sut.sync(&config).expect("failed to sync tracker");
 
         assert_that!(added.len(), eq NUMBER_OF_SERVICES_ADDED);
         for service in &services {
@@ -57,7 +57,7 @@ mod service_discovery_tracker {
         }
 
         // verify added services are not detected again in subsequent sync
-        let (added, removed) = sut.sync(&config);
+        let (added, removed) = sut.sync(&config).expect("failed to sync tracker");
         assert_that!(added.len(), eq 0);
         assert_that!(removed.len(), eq 0);
     }
@@ -84,7 +84,7 @@ mod service_discovery_tracker {
             services.push(service);
         }
 
-        let (added, _) = sut.sync(&config);
+        let (added, _) = sut.sync(&config).expect("failed to sync tracker");
         assert_that!(added.len(), eq NUMBER_OF_SERVICES_ADDED);
 
         // remove some services by dropping them
@@ -96,7 +96,7 @@ mod service_discovery_tracker {
         }
 
         // verify the dropped services are detected as removed
-        let (_, removed) = sut.sync(&config);
+        let (_, removed) = sut.sync(&config).expect("failed to sync tracker");
         assert_that!(removed.len(), eq NUMBER_OF_SERVICES_REMOVED);
         for service in removed {
             assert_that!(removed_ids, contains * service.static_details.service_id());

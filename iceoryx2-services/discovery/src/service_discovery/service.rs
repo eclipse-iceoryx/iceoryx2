@@ -50,6 +50,9 @@ pub enum CreationError {
     /// Failed to create the service.
     ServiceCreationFailure,
 
+    /// Failed to sync services.
+    SyncFailure,
+
     /// Failed to create the publisher for reasons other than it already existing.
     PublisherCreationError,
 
@@ -71,6 +74,9 @@ impl core::error::Error for CreationError {}
 /// Errors that can occur during the spin operation of the service discovery service.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SpinError {
+    /// Failed to sync services.
+    SyncFailure,
+
     /// Failed to publish a discovery event.
     PublishFailure,
 
@@ -226,7 +232,9 @@ impl<S: ServiceType> Service<S> {
         let mut tracker = Tracker::<S>::new();
 
         if discovery_config.sync_on_initialization {
-            tracker.sync(iceoryx_config);
+            tracker
+                .sync(iceoryx_config)
+                .map_err(|_| CreationError::SyncFailure)?;
         }
 
         Ok(Service::<S> {
@@ -267,7 +275,10 @@ impl<S: ServiceType> Service<S> {
         mut on_removed: FRemovedService,
     ) -> Result<(), SpinError> {
         // Detect changes
-        let (added_ids, removed_services) = self.tracker.sync(&self.iceoryx_config);
+        let (added_ids, removed_services) = self
+            .tracker
+            .sync(&self.iceoryx_config)
+            .map_err(|_| SpinError::SyncFailure)?;
         let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
 
         // Publish
@@ -278,8 +289,7 @@ impl<S: ServiceType> Service<S> {
                 {
                     continue;
                 }
-                self.publish(&Discovery::Added(service.static_details.clone()))
-                    .unwrap();
+                self.publish(&Discovery::Added(service.static_details.clone()))?;
                 on_added(service);
             }
         }
@@ -290,8 +300,7 @@ impl<S: ServiceType> Service<S> {
             {
                 continue;
             }
-            self.publish(&Discovery::Removed(service.static_details.clone()))
-                .unwrap();
+            self.publish(&Discovery::Removed(service.static_details.clone()))?;
             on_removed(service);
         }
 
