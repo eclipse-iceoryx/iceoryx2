@@ -1,5 +1,28 @@
 # Frequently Asked Questions - iceoryx Developer Edition
 
+## Set `LogLevel::Trace` as default
+
+During development, a detailed log output is often required. Therefore, the log
+level should default to `LogLevel::Trace`. All iceoryx2 examples use the call
+`set_log_level_from_env_or(LogLevel::Info)` to allow overriding the default.
+
+Users can override the log level in the following ways:
+
+1. **Environment variable**
+   Set the variable in the terminal:
+   ```bash
+   export IOX2_LOG_LEVEL="Trace"
+   ```
+
+2. **Cargo environment configuration**
+   Define `IOX2_LOG_LEVEL` in `$GITROOT$/.cargo/config.toml` or globally in
+   `~/.cargo/config.toml` by adding:
+
+   ```toml
+   [env]
+   IOX2_LOG_LEVEL = "Trace"
+   ```
+
 ## Tests marked with `#[should_panic]` attribute do not panic in release builds
 
 This usually happens when the panic is triggert via a `debug_assert` macro.
