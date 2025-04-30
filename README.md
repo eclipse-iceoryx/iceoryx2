@@ -187,8 +187,9 @@ cargo run --example publish_subscribe_subscriber
 
 ### Request Response
 
-This minimal example showcases a client sending the number 1234 every second,
-while a subscriber efficiently receives and prints the data.
+This example showcases a client sending a request with the number 123 every
+second, while a server responds with the number 456 as soon as it receives
+the request.
 
 #### client.rs
 
@@ -221,7 +222,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         // send another request
         let request = client.loan_uninit()?;
-        let request = request.write_payload(counter);
+        let request = request.write_payload(123);
         pending_response = request.send()?;
    }
 
@@ -231,6 +232,48 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
 #### server.rs
 
+```rust
+use core::time::Duration;
+use iceoryx2::prelude::*;
+
+const CYCLE_TIME: Duration = Duration::from_millis(100);
+
+fn main() -> Result<(), Box<dyn core::error::Error>> {
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+
+    let service = node
+        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .request_response::<u64, u64>()
+        .open_or_create()?;
+
+    let server = service.server_builder().create()?;
+
+    while node.wait(CYCLE_TIME).is_ok() {
+        while let Some(active_request) = server.receive()? {
+            let response = active_request.loan_uninit()?;
+            let response = response.write_payload(456)
+            response.send()?;
+        }
+    }
+
+    Ok(())
+}
+```
+This example is a simplified version of the
+[request response example](examples/rust/request_response/). You can execute it
+by opening two terminals and calling:
+
+**Terminal 1:**
+
+```sh
+cargo run --example request_response_client
+```
+
+**Terminal 2:**
+
+```sh
+cargo run --example request_response_server
+```
 
 ### Events
 
