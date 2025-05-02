@@ -1,13 +1,16 @@
 # Request-Response With Dynamic Data (Slice Of Shared Memory Compatible Types)
 
 > [!CAUTION]
-> Every payload you transmit with iceoryx2 must be compatible with shared
-> memory. Specifically, it must:
+> Every payload you transmit with iceoryx2 must implement [`ZeroCopySend`] to
+> be compatible with shared memory.
+> Usually, you can use the derive-macro `#[derive(ZeroCopySend)]` for most
+> types. If you implement it manually you must ensure that the payload type:
 >
-> * be self contained, no heap, no pointers to external sources
-> * have a uniform memory representation -> `#[repr(C)]`
-> * not use pointers to manage their internal structure
-> * the type and its members don't implement `Drop` explicitly
+> * is self contained, no heap, no pointers to external sources
+> * has a uniform memory representation -> `#[repr(C)]`
+> * does not use pointers to manage their internal structure
+> * and its members don't implement `Drop` explicitly
+> * has a `'static` lifetime
 >
 > Data types like `String` or `Vec` will cause undefined behavior and may
 > result in segmentation faults. We provide alternative data types that are
