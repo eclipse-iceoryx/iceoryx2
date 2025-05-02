@@ -13,7 +13,7 @@
 use iceoryx2::{
     config::Config,
     prelude::CallbackProgression,
-    service::{service_id::ServiceId, Service, ServiceDetails},
+    service::{service_id::ServiceId, Service, ServiceDetails, ServiceListError},
 };
 use std::collections::{HashMap, HashSet};
 
@@ -25,6 +25,15 @@ pub enum SyncError {
 
     /// Failure looking up services present in the iceoryx2 system.
     ServiceLookupFailure,
+}
+
+impl From<ServiceListError> for SyncError {
+    fn from(error: ServiceListError) -> Self {
+        match error {
+            ServiceListError::InsufficientPermissions => Self::InsufficientPermissions,
+            ServiceListError::InternalError => Self::ServiceLookupFailure,
+        }
+    }
 }
 
 /// A tracker for monitoring services of a specific type.
@@ -87,12 +96,6 @@ impl<S: Service> Tracker<S> {
                 added_ids.push(id);
             }
             CallbackProgression::Continue
-        })
-        .map_err(|e| match e {
-            iceoryx2::service::ServiceListError::InsufficientPermissions => {
-                SyncError::InsufficientPermissions
-            }
-            iceoryx2::service::ServiceListError::InternalError => SyncError::ServiceLookupFailure,
         })?;
 
         // Get the details of the services not discovered

@@ -10,13 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::service_discovery::Tracker;
+use crate::service_discovery::{SyncError, Tracker};
 use iceoryx2::{
     config::Config as IceoryxConfig,
-    node::{Node, NodeBuilder},
-    port::{notifier::Notifier, publisher::Publisher},
+    node::{Node, NodeBuilder, NodeCreationFailure},
+    port::{
+        notifier::{Notifier, NotifierCreateError, NotifierNotifyError},
+        publisher::{Publisher, PublisherCreateError},
+        LoanError, SendError,
+    },
     prelude::{AllocationStrategy, ServiceName},
-    service::{static_config::StaticConfig, Service as ServiceType, ServiceDetails},
+    service::{
+        builder::{
+            event::EventOpenOrCreateError, publish_subscribe::PublishSubscribeOpenOrCreateError,
+        },
+        static_config::StaticConfig,
+        Service as ServiceType, ServiceDetails,
+    },
 };
 
 use once_cell::sync::Lazy;
@@ -74,6 +84,52 @@ impl core::fmt::Display for CreationError {
 
 impl core::error::Error for CreationError {}
 
+impl From<NodeCreationFailure> for CreationError {
+    fn from(_: NodeCreationFailure) -> Self {
+        CreationError::NodeCreationFailure
+    }
+}
+
+impl From<PublishSubscribeOpenOrCreateError> for CreationError {
+    fn from(_: PublishSubscribeOpenOrCreateError) -> Self {
+        CreationError::ServiceCreationFailure
+    }
+}
+
+impl From<PublisherCreateError> for CreationError {
+    fn from(error: PublisherCreateError) -> Self {
+        match error {
+            PublisherCreateError::ExceedsMaxSupportedPublishers => {
+                CreationError::PublisherAlreadyExists
+            }
+            PublisherCreateError::UnableToCreateDataSegment => {
+                CreationError::PublisherCreationError
+            }
+        }
+    }
+}
+
+impl From<EventOpenOrCreateError> for CreationError {
+    fn from(_: EventOpenOrCreateError) -> Self {
+        CreationError::ServiceCreationFailure
+    }
+}
+
+impl From<NotifierCreateError> for CreationError {
+    fn from(_: NotifierCreateError) -> Self {
+        CreationError::NotifierAlreadyExists
+    }
+}
+
+impl From<SyncError> for CreationError {
+    fn from(error: SyncError) -> Self {
+        match error {
+            SyncError::InsufficientPermissions => CreationError::InsufficientPermissions,
+            SyncError::ServiceLookupFailure => CreationError::SyncFailure,
+        }
+    }
+}
+
 /// Errors that can occur during the spin operation of the service discovery service.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum SpinError {
@@ -97,6 +153,33 @@ impl core::fmt::Display for SpinError {
 }
 
 impl core::error::Error for SpinError {}
+
+impl From<SyncError> for SpinError {
+    fn from(error: SyncError) -> Self {
+        match error {
+            SyncError::InsufficientPermissions => SpinError::InsufficientPermissions,
+            SyncError::ServiceLookupFailure => SpinError::SyncFailure,
+        }
+    }
+}
+
+impl From<LoanError> for SpinError {
+    fn from(_: LoanError) -> Self {
+        SpinError::PublishFailure
+    }
+}
+
+impl From<SendError> for SpinError {
+    fn from(_: SendError) -> Self {
+        SpinError::PublishFailure
+    }
+}
+
+impl From<NotifierNotifyError> for SpinError {
+    fn from(_: NotifierNotifyError) -> Self {
+        SpinError::NotifyFailure
+    }
+}
 
 /// Configuration for the service discovery service.
 #[derive(Debug, Clone)]
@@ -186,10 +269,7 @@ impl<S: ServiceType> Service<S> {
         discovery_config: &Config,
         iceoryx_config: &IceoryxConfig,
     ) -> Result<Self, CreationError> {
-        let node = NodeBuilder::new()
-            .config(iceoryx_config)
-            .create::<S>()
-            .map_err(|_| CreationError::NodeCreationFailure)?;
+        let node = NodeBuilder::new().config(iceoryx_config).create::<S>()?;
 
         let mut publisher = None;
         if discovery_config.publish_events {
@@ -201,19 +281,14 @@ impl<S: ServiceType> Service<S> {
                 .history_size(discovery_config.history_size)
                 .max_subscribers(discovery_config.max_subscribers)
                 .max_publishers(1)
-                .open_or_create()
-                .map_err(|_| CreationError::ServiceCreationFailure)?;
+                .open_or_create()?;
 
             publisher = Some(
                 publish_subscribe
                     .publisher_builder()
                     .initial_max_slice_len(1024)
                     .allocation_strategy(AllocationStrategy::PowerOfTwo)
-                    .create()
-                    .map_err(|e| {match e {
-                        iceoryx2::port::publisher::PublisherCreateError::ExceedsMaxSupportedPublishers => CreationError::PublisherAlreadyExists,
-                        iceoryx2::port::publisher::PublisherCreateError::UnableToCreateDataSegment => CreationError::PublisherCreationError,
-                    }})?
+                    .create()?,
             );
         }
 
@@ -224,24 +299,16 @@ impl<S: ServiceType> Service<S> {
                 .event()
                 .max_listeners(discovery_config.max_listeners)
                 .max_notifiers(1)
-                .open_or_create()
-                .map_err(|_| CreationError::ServiceCreationFailure)?;
+                .open_or_create()?;
 
-            let port = event.notifier_builder().create().map_err(|e| match e {
-                iceoryx2::port::notifier::NotifierCreateError::ExceedsMaxSupportedNotifiers => {
-                    CreationError::NotifierAlreadyExists
-                }
-            })?;
+            let port = event.notifier_builder().create()?;
             notifier = Some(port);
         }
 
         let mut tracker = Tracker::<S>::new();
 
         if discovery_config.sync_on_initialization {
-            tracker.sync(iceoryx_config).map_err(|e| match e {
-                super::SyncError::InsufficientPermissions => CreationError::InsufficientPermissions,
-                super::SyncError::ServiceLookupFailure => CreationError::SyncFailure,
-            })?;
+            tracker.sync(iceoryx_config)?;
         }
 
         Ok(Service::<S> {
@@ -282,13 +349,7 @@ impl<S: ServiceType> Service<S> {
         mut on_removed: FRemovedService,
     ) -> Result<(), SpinError> {
         // Detect changes
-        let (added_ids, removed_services) =
-            self.tracker
-                .sync(&self.iceoryx_config)
-                .map_err(|e| match e {
-                    super::SyncError::InsufficientPermissions => SpinError::InsufficientPermissions,
-                    super::SyncError::ServiceLookupFailure => SpinError::SyncFailure,
-                })?;
+        let (added_ids, removed_services) = self.tracker.sync(&self.iceoryx_config)?;
         let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
 
         // Publish
@@ -317,7 +378,7 @@ impl<S: ServiceType> Service<S> {
         // Notify
         if let Some(notifier) = &mut self.notifier {
             if changes_detected {
-                notifier.notify().map_err(|_| SpinError::NotifyFailure)?;
+                notifier.notify()?;
             }
         }
 
@@ -333,12 +394,10 @@ impl<S: ServiceType> Service<S> {
             let serialized =
                 serde_json::to_vec(discovery).map_err(|_| SpinError::PublishFailure)?;
 
-            let sample = publisher
-                .loan_slice_uninit(serialized.len())
-                .map_err(|_| SpinError::PublishFailure)?;
+            let sample = publisher.loan_slice_uninit(serialized.len())?;
 
             let sample = sample.write_from_slice(serialized.as_slice());
-            sample.send().map_err(|_| SpinError::PublishFailure)?;
+            sample.send()?;
         }
         Ok(())
     }
