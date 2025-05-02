@@ -1,4 +1,4 @@
-# Request-Response
+# Request-Response With Dynamic Data (Slice Of Shared Memory Compatible Types)
 
 > [!CAUTION]
 > Every payload you transmit with iceoryx2 must implement [`ZeroCopySend`] to
@@ -18,17 +18,32 @@
 > [complex data type example](../complex_data_types) for guidance on how to
 > use them.
 
-This example demonstrates the request-response messaging pattern between two
-separate processes using iceoryx2. A key feature of request-response in
-iceoryx2 is that the `Client` can receive a stream of responses instead of
-being limited to just one.
+This example demonstrates the dynamic memory request-response messaging pattern
+between two separate processes using iceoryx2. A service with the request and
+response payload type of an `u8` slice is created, and every client and server
+can define a slice length hint they support for communication with
+`initial_max_slice_len`. The client sends a request with
+increasing size every second containing a piece of dynamic data. On the
+receiving end, the server checks for new data and sends a response with
+increasing memory size.
+
+The `initial_max_slice_len` hint and the `AllocationStrategy` set by the
+client and server will define how memory is reallocated when
+
+* [`Client::loan_slice()`], [`Client::loan_slice_uninit()`] on the client
+  side or
+* [`ActiveRequest::loan_slice()`], [`ActiveRequest::loan_slice_uninit()`] on
+  the server side
+
+request more memory than it is available.
 
 ## Client Side
 
 The `Client` uses the following approach:
 
-1. Sends first request by using the slower copy API and then enters a loop.
-2. Inside the loop: Loans memory and acquires a `RequestMut`.
+1. Sends first request and then enters a loop.
+2. Inside the loop: Loans an increasing amount of memory and acquires a
+  `RequestMut`.
 3. Writes the payload into the `RequestMut`.
 4. Sends the `RequestMut` to the `Server` and receives a `PendingResponse`
    object. The `PendingResponse` can be used to:
@@ -51,16 +66,10 @@ The `Server` uses the following approach:
      of scope.
    * Check whether the corresponding `PendingResponse` on the `Client` side
      is still connected.
-3. Sends one `Response` by using the slower copy API.
-4. Loans memory via the `ActiveRequest` for a `ResponseMut` to send a response.
+3. Loans an increasing amount of memory via the `ActiveRequest` for a
+  `ResponseMut` to send a response.
 
-Sending multiple responses demonstrates the streaming API. The `ActiveRequest`
-and the `PendingResponse` can call `is_connected()` to see if the corresponding
-counterpart is still sending/receiving responses. As soon as the
-`ActiveRequest` or `PendingResponse` went out-of-scope `is_connected()` will
-return `false`.
-
-In this example, both the client and server print the received and sent data
+In this example, both the client and server print the amount of received bytes
 to the console.
 
 ## How to Run
@@ -71,13 +80,13 @@ following commands:
 ### Terminal 1
 
 ```sh
-cargo run --example request_response_server
+cargo run --example request_response_dyn_server
 ```
 
 ### Terminal 2
 
 ```sh
-cargo run --example request_response_client
+cargo run --example request_response_dyn_client
 ```
 
 Feel free to run multiple instances of the client or server processes

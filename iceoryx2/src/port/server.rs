@@ -12,6 +12,8 @@
 
 //! # Example
 //!
+//! ## Typed API
+//!
 //! ```
 //! use iceoryx2::prelude::*;
 //!
@@ -23,10 +25,49 @@
 //!     .request_response::<u64, u64>()
 //!     .open_or_create()?;
 //!
-//! let server = service.server_builder().create()?;
+//! let server = service.server_builder()
+//!    // defines behavior when client queue is full in a non-overflowing service
+//!    .unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample)
+//!    .create()?;
 //!
 //! while let Some(active_request) = server.receive()? {
 //!     println!("received request: {:?}", *active_request);
+//!     let response = active_request.loan_uninit()?;
+//!     let response = response.write_payload(871238);
+//!     response.send()?;
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Slice API
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! #
+//! let service = node
+//!     .service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .request_response::<u64, [usize]>()
+//!     .open_or_create()?;
+//!
+//! let server = service.server_builder()
+//!     // provides a hint for the max slice len, 128 means we want at
+//!     // list a slice of 128 `usize`
+//!     .initial_max_slice_len(128)
+//!     // The underlying sample size will be increased with a power of two strategy
+//!     // when [`ActiveRequest::loan_slice()`] or [`ActiveRequest::loan_slice_uninit()`]
+//!     // requires more memory than available.
+//!     .create()?;
+//!
+//! let number_of_elements = 10;
+//! while let Some(active_request) = server.receive()? {
+//!     println!("received request: {:?}", *active_request);
+//!     let response = active_request.loan_slice_uninit(number_of_elements)?;
+//!     let response = response.write_from_fn(|idx| idx * 3 + 4);
+//!     response.send()?;
 //! }
 //! # Ok(())
 //! # }

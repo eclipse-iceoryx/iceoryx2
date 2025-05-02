@@ -135,6 +135,16 @@ path = "rust/request_response/server.rs"
 name = "request_response_client"
 path = "rust/request_response/client.rs"
 
+# request_response_dynamic_data
+
+[[example]]
+name = "request_response_dyn_server"
+path = "rust/request_response_dynamic_data/server.rs"
+
+[[example]]
+name = "request_response_dyn_client"
+path = "rust/request_response_dynamic_data/client.rs"
+
 # service attributes
 
 [[example]]
