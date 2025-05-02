@@ -43,11 +43,16 @@ impl ServiceName {
     ///
     /// The name is not allowed to be empty nor be prefixed with "iox2://".
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
-        if Self::is_internal(name) {
+        if Self::has_iox2_prefix(name) {
             return Err(SemanticStringError::InvalidContent);
         }
 
         Self::__internal_new(name)
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_new_prefixed(name: &str) -> Result<Self, SemanticStringError> {
+        Self::__internal_new(&(INTERNAL_SERVICE_PREFIX.to_owned() + name))
     }
 
     #[doc(hidden)]
@@ -65,7 +70,7 @@ impl ServiceName {
     }
 
     /// Checks if a service is an internal iceoryx2 service.
-    pub fn is_internal(name: &str) -> bool {
+    pub fn has_iox2_prefix(name: &str) -> bool {
         name.starts_with(INTERNAL_SERVICE_PREFIX)
     }
 }
@@ -80,7 +85,7 @@ impl TryInto<ServiceName> for &str {
     type Error = SemanticStringError;
 
     fn try_into(self) -> Result<ServiceName, Self::Error> {
-        ServiceName::new(self)
+        ServiceName::__internal_new(self)
     }
 }
 
@@ -117,7 +122,7 @@ impl Visitor<'_> for ServiceNameVisitor {
     where
         E: serde::de::Error,
     {
-        match ServiceName::new(v) {
+        match ServiceName::__internal_new(v) {
             Ok(v) => Ok(v),
             Err(v) => Err(E::custom(format!("invalid service name provided {:?}.", v))),
         }

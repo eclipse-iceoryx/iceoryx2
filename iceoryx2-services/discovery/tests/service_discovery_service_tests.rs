@@ -57,7 +57,7 @@ mod service_discovery_service {
         let service = node
             .service_builder(service_name())
             .publish_subscribe::<Payload>()
-            .open()
+            .open_or_create()
             .unwrap();
         let subscriber = service.subscriber_builder().create().unwrap();
 
@@ -120,7 +120,11 @@ mod service_discovery_service {
             .create::<ipc::Service>()
             .unwrap();
 
-        let service = node.service_builder(service_name()).event().open().unwrap();
+        let service = node
+            .service_builder(service_name())
+            .event()
+            .open_or_create()
+            .unwrap();
         let listener = service.listener_builder().create().unwrap();
 
         // add a service
@@ -172,7 +176,7 @@ mod service_discovery_service {
         let service = node
             .service_builder(service_name())
             .publish_subscribe::<Payload>()
-            .open()
+            .open_or_create()
             .unwrap();
         let subscriber = service.subscriber_builder().create().unwrap();
 

@@ -31,7 +31,7 @@ use iceoryx2::{
 
 use once_cell::sync::Lazy;
 
-const SERVICE_DISCOVERY_SERVICE_NAME: &str = "discovery/services/";
+const SERVICE_NAME: &str = "discovery/services/";
 
 /// Events emitted by the service discovery service.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -262,9 +262,6 @@ impl<S: ServiceType> Service<S> {
     /// # Returns
     ///
     /// A result containing either the created service or an error if creation failed.
-    ///
-    /// # Errors
-    ///
     pub fn create(
         discovery_config: &Config,
         iceoryx_config: &IceoryxConfig,
@@ -356,7 +353,7 @@ impl<S: ServiceType> Service<S> {
         for id in &added_ids {
             if let Some(service) = self.tracker.get(id) {
                 if !self.discovery_config.include_internal
-                    && ServiceName::is_internal(service.static_details.name())
+                    && ServiceName::has_iox2_prefix(service.static_details.name())
                 {
                     continue;
                 }
@@ -367,7 +364,7 @@ impl<S: ServiceType> Service<S> {
 
         for service in &removed_services {
             if !self.discovery_config.include_internal
-                && ServiceName::is_internal(service.static_details.name())
+                && ServiceName::has_iox2_prefix(service.static_details.name())
             {
                 continue;
             }
@@ -417,12 +414,9 @@ impl<S: ServiceType> Service<S> {
 ///
 /// This function will panic during the first call if the service name is invalid,
 /// which should never happen with the predefined constants.
-///
-/// # Examples
-///
 pub fn service_name() -> &'static ServiceName {
     static SERVICE_NAME_INSTANCE: Lazy<ServiceName> = Lazy::new(|| {
-        ServiceName::__internal_new(SERVICE_DISCOVERY_SERVICE_NAME)
+        ServiceName::__internal_new_prefixed(SERVICE_NAME)
             .expect("shouldn't occur: invalid service name for service discovery service")
     });
 
