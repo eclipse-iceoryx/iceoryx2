@@ -218,7 +218,7 @@ pub(crate) unsafe fn create_type_details(
 
     Ok(TypeDetail {
         variant: type_variant.into(),
-        type_name,
+        type_name: type_name.as_str().into(),
         size,
         alignment,
     })
