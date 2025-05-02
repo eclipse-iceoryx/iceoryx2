@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let mut counter = 0;
 
     while node.wait(CYCLE_TIME).is_ok() {
-        let required_memory_size = (counter + 1) * (counter + 1);
+        let required_memory_size = 1_000_000.min((counter + 1) * (counter + 1));
         let sample = publisher.loan_slice_uninit(required_memory_size)?;
         let sample = sample.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
 

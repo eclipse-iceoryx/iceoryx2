@@ -38,16 +38,22 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter = 0;
 
-    let mut required_memory_size = 1;
-    let request = client.loan_slice_uninit(required_memory_size)?;
-    let request = request.write_from_fn(|_| 0);
-    let mut pending_response = request.send()?;
+    loop {
+        counter += 1;
 
-    while node.wait(CYCLE_TIME).is_ok() {
+        let required_memory_size = 1_000_000.min((counter + 1) * (counter + 1));
+        let request = client.loan_slice_uninit(required_memory_size)?;
+        let request = request.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
+        let pending_response = request.send()?;
+
         println!(
             "send request {} with {} bytes ...",
             counter, required_memory_size
         );
+
+        if !node.wait(CYCLE_TIME).is_ok() {
+            break;
+        }
 
         // acquire all responses to our request from our buffer that were sent by the servers
         while let Some(response) = pending_response.receive()? {
@@ -56,14 +62,6 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                 response.payload().len()
             );
         }
-
-        counter += 1;
-        // send all other requests by using zero copy API
-        required_memory_size = (counter + 1) * (counter + 1);
-        let request = client.loan_slice_uninit(required_memory_size)?;
-        let request = request.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
-
-        pending_response = request.send()?;
     }
 
     println!("exit");
