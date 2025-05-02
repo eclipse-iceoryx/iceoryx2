@@ -29,6 +29,7 @@ increasing memory size.
 
 The `initial_max_slice_len` hint and the `AllocationStrategy` set by the
 client and server will define how memory is reallocated when
+
 * [`Client::loan_slice()`], [`Client::loan_slice_uninit()`] on the client
   side or
 * [`ActiveRequest::loan_slice()`], [`ActiveRequest::loan_slice_uninit()`] on

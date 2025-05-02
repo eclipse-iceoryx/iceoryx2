@@ -38,7 +38,39 @@
 //! # Ok(())
 //! # }
 //! ```
-
+//!
+//! ## Slice API
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! let service = node
+//!    .service_builder(&"My/Funk/ServiceName".try_into()?)
+//!    .request_response::<[usize], u64>()
+//!    .open_or_create()?;
+//!
+//! let client = service.client_builder()
+//!     // provides a hint for the max slice len, 128 means we want at
+//!     // list a slice of 128 `usize`
+//!     .initial_max_slice_len(128)
+//!     // The underlying sample size will be increased with a power of two strategy
+//!     // when [`Client::loan_slice()`] or [`Client::loan_slice_uninit()`] requires more
+//!     // memory than available.
+//!     .allocation_strategy(AllocationStrategy::PowerOfTwo)
+//!    .create()?;
+//!
+//! let number_of_elements = 10;
+//! let request = client.loan_slice_uninit(number_of_elements)?;
+//! let request = request.write_from_fn(|idx| idx * 2 + 1);
+//!
+//! let pending_response = request.send()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 extern crate alloc;
 
 use alloc::sync::Arc;
