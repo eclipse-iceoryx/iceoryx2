@@ -22,7 +22,11 @@
 //! # }
 //! ```
 
-use iceoryx2_bb_container::semantic_string::SemanticStringError;
+use crate::constants::MAX_SERVICE_NAME_LENGTH;
+use iceoryx2_bb_container::byte_string::{
+    FixedSizeByteString, FixedSizeByteStringModificationError,
+};
+
 use serde::{de::Visitor, Deserialize, Serialize};
 
 /// Prefix used to identify internal iceoryx2 services.
@@ -32,41 +36,73 @@ use serde::{de::Visitor, Deserialize, Serialize};
 /// managed by the iceoryx2 system.
 pub const INTERNAL_SERVICE_PREFIX: &str = "iox2://";
 
+/// Errors that can occur when creating a [`ServiceName`].
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub enum ServiceNameError {
+    /// The service name has invalid content (e.g., empty string).
+    InvalidContent,
+    /// The service name exceeds the maximum allowed length.
+    ExceedsMaximumLength,
+}
+
+impl core::fmt::Display for ServiceNameError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "ServiceNameError::{:?}", self)
+    }
+}
+
+impl core::error::Error for ServiceNameError {}
+
+impl From<FixedSizeByteStringModificationError> for ServiceNameError {
+    fn from(error: FixedSizeByteStringModificationError) -> Self {
+        match error {
+            FixedSizeByteStringModificationError::InsertWouldExceedCapacity => {
+                ServiceNameError::ExceedsMaximumLength
+            }
+        }
+    }
+}
+
+type ServiceNameByteString = FixedSizeByteString<MAX_SERVICE_NAME_LENGTH>;
+
 /// The name of a [`Service`](crate::service::Service).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ServiceName {
-    value: String,
+    value: ServiceNameByteString,
 }
 
 impl ServiceName {
     /// Creates a new [`ServiceName`].
     ///
     /// The name is not allowed to be empty nor be prefixed with "iox2://".
-    pub fn new(name: &str) -> Result<Self, SemanticStringError> {
+    pub fn new(name: &str) -> Result<Self, ServiceNameError> {
         if Self::has_iox2_prefix(name) {
-            return Err(SemanticStringError::InvalidContent);
+            return Err(ServiceNameError::InvalidContent);
         }
 
         Self::__internal_new(name)
     }
 
     #[doc(hidden)]
-    pub fn __internal_new_prefixed(name: &str) -> Result<Self, SemanticStringError> {
+    pub fn __internal_new_prefixed(name: &str) -> Result<Self, ServiceNameError> {
         Self::__internal_new(&(INTERNAL_SERVICE_PREFIX.to_owned() + name))
     }
 
     #[doc(hidden)]
-    pub fn __internal_new(name: &str) -> Result<Self, SemanticStringError> {
+    pub fn __internal_new(name: &str) -> Result<Self, ServiceNameError> {
         if name.is_empty() {
-            return Err(SemanticStringError::InvalidContent);
+            return Err(ServiceNameError::InvalidContent);
         }
 
-        Ok(Self { value: name.into() })
+        let value =
+            ServiceNameByteString::from_bytes(name.as_bytes()).map_err(ServiceNameError::from)?;
+
+        Ok(Self { value })
     }
 
     /// Returns a str reference to the [`ServiceName`]
     pub fn as_str(&self) -> &str {
-        &self.value
+        core::str::from_utf8(self.value.as_bytes()).unwrap()
     }
 
     /// Checks if a service is an internal iceoryx2 service.
@@ -82,7 +118,7 @@ impl core::fmt::Display for ServiceName {
 }
 
 impl TryInto<ServiceName> for &str {
-    type Error = SemanticStringError;
+    type Error = ServiceNameError;
 
     fn try_into(self) -> Result<ServiceName, Self::Error> {
         ServiceName::__internal_new(self)
