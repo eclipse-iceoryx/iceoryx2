@@ -11,3 +11,5 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub const MAX_SERVICE_NAME_LENGTH: usize = 255;
+
+pub const MAX_ATTRIBUTES: usize = 16;
