@@ -12,8 +12,11 @@
 
 use core::alloc::Layout;
 
+use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_elementary::{math::align, zero_copy_send::ZeroCopySend};
 use serde::{Deserialize, Serialize};
+
+use crate::constants::MAX_TYPE_NAME_LENGTH;
 
 /// Defines if the type is a slice with a runtime-size ([`TypeVariant::Dynamic`])
 /// or if its a type that satisfies [`Sized`] ([`TypeVariant::FixedSize`]).
@@ -41,13 +44,15 @@ pub enum TypeVariant {
     Dynamic,
 }
 
+type TypeNameString = FixedSizeByteString<MAX_TYPE_NAME_LENGTH>;
+
 /// Contains all type details required to connect to a [`crate::service::Service`]
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub struct TypeDetail {
     /// The [`TypeVariant`] of the type
     pub variant: TypeVariant,
     /// Contains the name of the underlying type.
-    pub type_name: String,
+    pub type_name: TypeNameString,
     /// The size of the underlying type calculated by [`core::mem::size_of`].
     pub size: usize,
     /// The ABI-required minimum alignment of the underlying type calculated by [`core::mem::align_of`].
@@ -60,7 +65,7 @@ impl TypeDetail {
     pub fn __internal_new<T: ZeroCopySend>(variant: TypeVariant) -> Self {
         Self {
             variant,
-            type_name: unsafe { T::type_name().to_string() },
+            type_name: unsafe { TypeNameString::from_str(T::type_name()).unwrap() },
             size: core::mem::size_of::<T>(),
             alignment: core::mem::align_of::<T>(),
         }
@@ -156,19 +161,19 @@ mod tests {
         let expected = MessageTypeDetails{
             header:  TypeDetail{
                 variant: TypeVariant::FixedSize,
-                type_name: "i32".to_string(),
+                type_name: "i32".into(),
                 size: 4,
                 alignment: 4, // i32 uses 4 bytes, so its aliment is always 4 no matter x32 or x64.
             },
             user_header: TypeDetail{
                 variant: TypeVariant::FixedSize,
-                type_name: "i64".to_string(),
+                type_name: "i64".into(),
                 size: 8,
                 alignment: ALIGNMENT,
             },
             payload: TypeDetail{
                 variant: TypeVariant::FixedSize,
-                type_name: "iceoryx2::service::static_config::message_type_details::tests::test_from::MyPayload".to_string(),
+                type_name: "iceoryx2::service::static_config::message_type_details::tests::test_from::MyPayload".into(),
                 size: 16,
                 alignment: ALIGNMENT,
             },
@@ -179,19 +184,19 @@ mod tests {
         let expected = MessageTypeDetails {
             header: TypeDetail {
                 variant: TypeVariant::FixedSize,
-                type_name: "i32".to_string(),
+                type_name: "i32".into(),
                 size: 4,
                 alignment: 4,
             },
             user_header: TypeDetail {
                 variant: TypeVariant::FixedSize,
-                type_name: "bool".to_string(),
+                type_name: "bool".into(),
                 size: 1,
                 alignment: 1,
             },
             payload: TypeDetail {
                 variant: TypeVariant::Dynamic,
-                type_name: "i64".to_string(),
+                type_name: "i64".into(),
                 size: 8,
                 alignment: ALIGNMENT,
             },
@@ -337,19 +342,19 @@ mod tests {
         let right = MessageTypeDetails {
             header: TypeDetail {
                 variant: TypeVariant::FixedSize,
-                type_name: "i64".to_string(),
+                type_name: "i64".into(),
                 size: 8,
                 alignment: ALIGNMENT,
             },
             user_header: TypeDetail {
                 variant: TypeVariant::FixedSize,
-                type_name: "i64".to_string(),
+                type_name: "i64".into(),
                 size: 8,
                 alignment: 2 * ALIGNMENT,
             },
             payload: TypeDetail {
                 variant: TypeVariant::FixedSize,
-                type_name: "i64".to_string(),
+                type_name: "i64".into(),
                 size: 8,
                 alignment: 2 * ALIGNMENT,
             },
@@ -372,19 +377,19 @@ mod tests {
         let right = MessageTypeDetails {
             header: TypeDetail {
                 variant: TypeVariant::FixedSize,
-                type_name: "i64".to_string(),
+                type_name: "i64".into(),
                 size: 8,
                 alignment: ALIGNMENT,
             },
             user_header: TypeDetail {
                 variant: TypeVariant::FixedSize,
-                type_name: "i64".to_string(),
+                type_name: "i64".into(),
                 size: 8,
                 alignment: 2 * ALIGNMENT,
             },
             payload: TypeDetail {
                 variant: TypeVariant::FixedSize,
-                type_name: "i64".to_string(),
+                type_name: "i64".into(),
                 size: 8,
                 alignment: 2 * ALIGNMENT,
             },
