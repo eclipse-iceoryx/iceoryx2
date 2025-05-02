@@ -57,7 +57,7 @@ static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashMap<FilePath, StorageEntry>>> = Laz
     result.unwrap()
 });
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
     suffix: FileName,
     prefix: FileName,
@@ -76,7 +76,7 @@ impl Default for Configuration {
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = *value;
+        self.prefix = value.clone();
         self
     }
 
@@ -85,12 +85,12 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = *value;
+        self.suffix = value.clone();
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path = *value;
+        self.path = value.clone();
         self
     }
 
@@ -237,13 +237,13 @@ pub struct NotifierBuilder {
 impl NamedConceptBuilder<EventImpl> for NotifierBuilder {
     fn new(name: &FileName) -> Self {
         Self {
-            name: *name,
+            name: name.clone(),
             config: Configuration::default(),
         }
     }
 
     fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }
@@ -441,13 +441,13 @@ pub struct ListenerBuilder {
 impl NamedConceptBuilder<EventImpl> for ListenerBuilder {
     fn new(name: &FileName) -> Self {
         Self {
-            name: *name,
+            name: name.clone(),
             config: Configuration::default(),
         }
     }
 
     fn config(mut self, config: &<EventImpl as super::NamedConceptMgmt>::Configuration) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }

@@ -165,7 +165,7 @@ pub fn generate_global() -> Result<()> {
 
 pub fn generate_local() -> Result<()> {
     let user = iceoryx2_bb_posix::user::User::from_self().unwrap();
-    let mut user_config = *user.config_dir();
+    let mut user_config = user.config_dir().clone();
     user_config.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;
     let filepath = FilePath::from_path_and_file(
         &user_config,

@@ -143,7 +143,7 @@ impl Group {
     /// Create an group object from a given group-name. If the group-name does not exist an error will
     /// be returned
     pub fn from_name(group_name: &GroupName) -> Result<Group, GroupError> {
-        Group::from(Source::GroupName(*group_name))
+        Group::from(Source::GroupName(group_name.clone()))
     }
 
     /// Return the group id

@@ -92,7 +92,7 @@ impl Default for Configuration {
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = *value;
+        self.prefix = value.clone();
         self
     }
 
@@ -101,12 +101,12 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = *value;
+        self.suffix = value.clone();
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path = *value;
+        self.path = value.clone();
         self
     }
 
@@ -288,7 +288,7 @@ impl NamedConceptBuilder<Storage> for Builder {
     fn new(storage_name: &FileName) -> Self {
         Self {
             has_ownership: true,
-            name: *storage_name,
+            name: storage_name.clone(),
             config: Configuration::default(),
         }
     }

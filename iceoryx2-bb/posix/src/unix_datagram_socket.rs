@@ -502,7 +502,7 @@ impl UnixDatagramSocket {
         }
 
         Ok(Self {
-            name: *name,
+            name: name.clone(),
             is_non_blocking: IoxAtomicBool::new(false),
             file_descriptor: FileDescriptor::new(raw_fd).unwrap(),
         })
@@ -518,7 +518,7 @@ pub struct UnixDatagramSenderBuilder {
 
 impl UnixDatagramSenderBuilder {
     pub fn new(name: &FilePath) -> Self {
-        Self { name: *name }
+        Self { name: name.clone() }
     }
 
     /// Creates a new [`UnixDatagramSender`].
@@ -769,7 +769,7 @@ pub struct UnixDatagramReceiverBuilder {
 impl UnixDatagramReceiverBuilder {
     pub fn new(name: &FilePath) -> Self {
         Self {
-            name: *name,
+            name: name.clone(),
             permission: Permission::OWNER_ALL,
             creation_mode: CreationMode::CreateExclusive,
         }

@@ -26,7 +26,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct FileReferenceSetId(usize);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 #[repr(C)]
 struct Entry {
     name: Option<FileName>,
@@ -96,7 +96,7 @@ impl FileReferenceSet {
 
         unsafe {
             self.entries[id].get().write(Entry {
-                name: Some(*name),
+                name: Some(name.clone()),
                 offset,
                 len,
             })
@@ -117,7 +117,7 @@ impl FileReferenceSet {
             }
 
             if self.counter[i].increment_ref_counter_when_exist() {
-                if unsafe { &*self.entries[i].get() }.name == Some(*name)
+                if unsafe { &*self.entries[i].get() }.name == Some(name.clone())
                     && !self.decision_counter[i].does_value_win(current_decision_count)
                 {
                     if self.counter[i].is_initialized() {
@@ -196,7 +196,7 @@ impl FileReferenceSet {
     }
 
     pub(crate) fn get_name(&self, id: FileReferenceSetId) -> FileName {
-        unsafe { &*self.entries[id.0].get() }.name.unwrap()
+        unsafe { &*self.entries[id.0].get() }.name.clone().unwrap()
     }
 
     pub(crate) fn get_payload(&self, id: FileReferenceSetId, base_address: usize) -> &[u8] {
@@ -224,7 +224,7 @@ impl FileReferenceSet {
     fn find_entry(&self, name: &FileName) -> Option<FileReferenceSetId> {
         for id in 0..self.ids.capacity() as usize {
             if self.counter[id].increment_ref_counter_when_initialized() {
-                if unsafe { *self.entries[id].get() }.name == Some(*name) {
+                if unsafe { &*self.entries[id].get() }.name == Some(name.clone()) {
                     return Some(FileReferenceSetId(id));
                 }
 

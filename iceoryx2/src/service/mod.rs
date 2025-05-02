@@ -401,7 +401,7 @@ pub(crate) mod internal {
     fn send_dead_node_signal<S: Service>(service_id: &ServiceId, config: &config::Config) {
         let origin = "send_dead_node_signal()";
 
-        let service_details = match details::<S>(config, &service_id.0.into()) {
+        let service_details = match details::<S>(config, &service_id.0.clone().into()) {
             Ok(Some(service_details)) => service_details,
             Ok(None) => return,
             Err(e) => {
@@ -558,7 +558,9 @@ pub(crate) mod internal {
             };
 
             if remove_service {
-                match unsafe { remove_static_service_config::<S>(config, &service_id.0.into()) } {
+                match unsafe {
+                    remove_static_service_config::<S>(config, &service_id.0.clone().into())
+                } {
                     Ok(_) => {
                         debug!(from origin, "Remove unused service.");
                         dynamic_config.acquire_ownership()
@@ -819,7 +821,7 @@ fn open_dynamic_config<S: Service>(
                     DynamicConfig,
                 >>::Builder<'_> as NamedConceptBuilder<
                     S::DynamicStorage,
-                >>::new(&service_id.0.into())
+                >>::new(&service_id.0.clone().into())
                     .config(&dynamic_config_storage_config::<S>(config))
                 .has_ownership(false)
                 .open() {
@@ -850,7 +852,7 @@ pub(crate) fn remove_service_tag<S: Service>(
 
     match unsafe {
         <S::StaticStorage as NamedConceptMgmt>::remove_cfg(
-            &service_id.0.into(),
+            &service_id.0.clone().into(),
             &service_tag_config::<S>(config, node_id),
         )
     } {

@@ -35,7 +35,7 @@ semantic_string! {
     })
   },
   normalize: |this: &Base64Url| {
-      *this
+      this.clone()
   }
 }
 

@@ -40,7 +40,7 @@ static PROCESS_LOCAL_STORAGE: Lazy<Mutex<HashSet<FilePath>>> = Lazy::new(|| {
     result.unwrap()
 });
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
     suffix: FileName,
     prefix: FileName,
@@ -59,7 +59,7 @@ impl Default for Configuration {
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = *value;
+        self.prefix = value.clone();
         self
     }
 
@@ -68,7 +68,7 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = *value;
+        self.suffix = value.clone();
         self
     }
 
@@ -77,7 +77,7 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path_hint = *value;
+        self.path_hint = value.clone();
         self
     }
 
@@ -240,7 +240,7 @@ pub struct Builder {
 impl NamedConceptBuilder<ProcessLocalMonitoring> for Builder {
     fn new(name: &FileName) -> Self {
         Self {
-            name: *name,
+            name: name.clone(),
             config: Configuration::default(),
         }
     }
@@ -249,7 +249,7 @@ impl NamedConceptBuilder<ProcessLocalMonitoring> for Builder {
         mut self,
         config: &<ProcessLocalMonitoring as NamedConceptMgmt>::Configuration,
     ) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }

@@ -184,14 +184,14 @@ pub struct Global {
 impl Global {
     /// The absolute path to the service directory where all static service infos are stored
     pub fn service_dir(&self) -> Path {
-        let mut path = *self.root_path();
+        let mut path = self.root_path().clone();
         path.add_path_entry(&self.service.directory).unwrap();
         path
     }
 
     /// The absolute path to the node directory where all node details are stored
     pub fn node_dir(&self) -> Path {
-        let mut path = *self.root_path();
+        let mut path = self.root_path().clone();
         path.add_path_entry(&self.node.directory).unwrap();
         path
     }
@@ -212,11 +212,11 @@ impl Global {
     pub fn set_root_path(&mut self, value: &Path) {
         #[cfg(target_os = "windows")]
         {
-            self.root_path_windows = *value;
+            self.root_path_windows = value.clone();
         }
         #[cfg(not(target_os = "windows"))]
         {
-            self.root_path_unix = *value;
+            self.root_path_unix = value.clone();
         }
     }
 }
@@ -502,7 +502,7 @@ impl Config {
                          when iceoryx2_bb_posix::user::User::from_self(),
                          with ConfigIterationFailure::UnableToAcquireCurrentUserDetails,
                          "{} since the current user details could not be acquired.", msg);
-            let mut user_config = *user.config_dir();
+            let mut user_config = user.config_dir().clone();
             fail!(from origin,
                 when user_config.add_path_entry(&Self::relative_config_path()),
                 with ConfigIterationFailure::TooLongUserConfigDirectory,

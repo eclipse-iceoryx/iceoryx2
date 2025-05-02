@@ -149,7 +149,7 @@ mod shared_memory_directory {
         let mut names = vec![];
         for _ in 0..NUMBER_OF_INSTANCES {
             let name = generate_name();
-            names.push(name);
+            names.push(name.clone());
 
             let _sut = SharedMemoryDirectoryCreator::new(&name)
                 .size(1024 * 1024)
@@ -289,7 +289,7 @@ mod shared_memory_directory {
         let mut file_names = vec![];
         for _ in 0..sut.file_capacity() {
             let file_name = generate_name();
-            file_names.push(file_name);
+            file_names.push(file_name.clone());
             let _file = sut
                 .new_file(Layout::new::<u8>())
                 .unwrap()
@@ -332,7 +332,7 @@ mod shared_memory_directory {
         let mut counter = 0u8;
         for _ in 0..sut_1.file_capacity() {
             let file_name = generate_name();
-            files.push(file_name);
+            files.push(file_name.clone());
 
             assert_that!(sut_1.does_file_exist(&file_name), eq false);
 

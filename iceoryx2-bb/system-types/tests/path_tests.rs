@@ -227,7 +227,7 @@ mod unix {
         let mut sut = Path::new(b"/fuu/").unwrap();
         assert_that!(sut.insert_bytes(5, "🧐".as_bytes()), is_ok);
         assert_that!(sut.insert_bytes(5, "🧐".as_bytes()), is_ok);
-        assert_that!(Into::<String>::into(sut), eq "/fuu/🧐🧐");
+        assert_that!(Into::<String>::into(&sut), eq "/fuu/🧐🧐");
 
         assert_that!(sut.remove(7), eq Err(SemanticStringError::InvalidContent));
         assert_that!(sut.pop(), eq Err(SemanticStringError::InvalidContent));

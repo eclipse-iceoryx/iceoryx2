@@ -31,7 +31,7 @@ use iceoryx2_bb_system_types::base64url::Base64Url;
 pub mod sha1;
 
 /// Represents the value of the hash.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HashValue {
     value: Base64Url,
 }

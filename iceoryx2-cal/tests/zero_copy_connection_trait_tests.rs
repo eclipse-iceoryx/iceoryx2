@@ -1806,11 +1806,15 @@ mod zero_copy_connection {
         };
 
         std::thread::scope(|s| {
+            let tname_1 = name_1.clone();
+            let tname_2 = name_2.clone();
             s.spawn(move || {
                 barrier_1.wait();
                 for _ in 0..ITERATIONS {
-                    let sut_sender = Sut::Builder::new(&name_1).config(&config_1).create_sender();
-                    let sut_receiver = Sut::Builder::new(&name_2)
+                    let sut_sender = Sut::Builder::new(&tname_1)
+                        .config(&config_1)
+                        .create_sender();
+                    let sut_receiver = Sut::Builder::new(&tname_2)
                         .config(&config_1)
                         .create_receiver();
 

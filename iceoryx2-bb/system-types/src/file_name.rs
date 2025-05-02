@@ -61,7 +61,7 @@ fn invalid_content(value: &[u8]) -> bool {
 }
 
 fn normalize(this: &FileName) -> FileName {
-    *this
+    this.clone()
 }
 
 semantic_string! {
@@ -74,7 +74,7 @@ semantic_string! {
   normalize: normalize
 }
 
-#[derive(Debug, Clone, Copy, Eq)]
+#[derive(Debug, Clone, Eq)]
 pub struct RestrictedFileName<const CAPACITY: usize> {
     value: iceoryx2_bb_container::byte_string::FixedSizeByteString<CAPACITY>,
 }
@@ -169,7 +169,7 @@ impl<const CAPACITY: usize> iceoryx2_bb_container::semantic_string::SemanticStri
     }
 
     fn normalize(&self) -> Self {
-        *self
+        self.clone()
     }
 
     unsafe fn new_unchecked(bytes: &[u8]) -> Self {

@@ -256,7 +256,7 @@ const FINAL_PERMISSION: Permission = Permission::OWNER_ALL;
 const OWNER_LOCK_SUFFIX: &[u8] = b"_owner_lock";
 
 fn generate_owner_lock_path(path: &FilePath) -> Result<FilePath, SemanticStringError> {
-    let mut owner_lock_path = *path;
+    let mut owner_lock_path = path.clone();
     owner_lock_path.push_bytes(OWNER_LOCK_SUFFIX)?;
     Ok(owner_lock_path)
 }
@@ -565,7 +565,7 @@ impl ProcessMonitor {
 
         let new_self = Self {
             file: core::cell::Cell::new(None),
-            path: *path,
+            path: path.clone(),
             owner_lock_path,
         };
 
