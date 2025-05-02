@@ -239,13 +239,13 @@
    into `ServiceId::max_number_of_characters()`
 
 12. The following types no longer implement `Copy`
-   (the only implement `Clone`).
+   (the only implement `Clone`):
 
-   * `FixedSizeByteString`
-   * `SemanticString`
-   * `Base64URL`
-   * `FileName`
-   * `FilePath`
-   * `GroupName`
-   * `UserName`
-   * `ServiceId`
+* `FixedSizeByteString`
+* `SemanticString`
+* `Base64URL`
+* `FileName`
+* `FilePath`
+* `GroupName`
+* `UserName`
+* `ServiceId`

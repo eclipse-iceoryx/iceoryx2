@@ -435,7 +435,7 @@ impl Drop for File {
                 None => {
                     warn!(from self, "Files created from file descriptors cannot remove themselves.")
                 }
-                Some(p) => match File::remove(&p) {
+                Some(p) => match File::remove(p) {
                     Ok(false) | Err(_) => {
                         warn!(from self, "Failed to remove owned file");
                     }
@@ -724,7 +724,7 @@ impl File {
                 warn!(from self, "Files created from file descriptors cannot remove themselves.");
                 Ok(false)
             }
-            Some(p) => File::remove(&p),
+            Some(p) => File::remove(p),
         }
     }
 

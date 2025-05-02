@@ -55,7 +55,7 @@
 //!   // callable shall convert the content to a uniform representation.
 //!   // Example: The path to `/tmp` can be also expressed as `/tmp/` or `////tmp////`
 //!   normalize: |this: &GroupName| {
-//!       *this
+//!       this.clone()
 //!   }
 //! }
 //! ```
