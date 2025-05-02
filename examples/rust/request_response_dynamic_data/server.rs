@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
 
-    let mut counter = 0;
+    let mut counter = 1;
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(active_request) = server.receive()? {
             println!(
@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                 active_request.payload().len()
             );
 
-            let required_memory_size = 1_000_000.min((counter + 1) * (counter + 1));
+            let required_memory_size = 1_000_000.min(counter * counter);
             let response = active_request.loan_slice_uninit(required_memory_size)?;
             let response = response.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
             println!("  send response with {} bytes", response.payload().len());

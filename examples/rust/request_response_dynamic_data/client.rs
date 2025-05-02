@@ -36,12 +36,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
 
-    let mut counter = 0;
+    let mut counter = 1;
 
     loop {
-        counter += 1;
-
-        let required_memory_size = 1_000_000.min((counter + 1) * (counter + 1));
+        let required_memory_size = 1_000_000.min(counter * counter);
         let request = client.loan_slice_uninit(required_memory_size)?;
         let request = request.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
         let pending_response = request.send()?;
@@ -62,6 +60,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                 response.payload().len()
             );
         }
+
+        counter += 1;
     }
 
     println!("exit");
