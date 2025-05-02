@@ -98,8 +98,11 @@
 //! ```
 
 use core::ops::Deref;
+use iceoryx2_bb_container::vec::FixedSizeVec;
 use iceoryx2_bb_elementary::CallbackProgression;
 use serde::{Deserialize, Serialize};
+
+use crate::constants::MAX_ATTRIBUTES;
 
 /// Represents a single service attribute (key-value) pair that can be defined when the service
 /// is being created.
@@ -217,9 +220,11 @@ impl AttributeVerifier {
     }
 }
 
+type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
+
 /// Represents all service attributes. They can be set when the service is created.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct AttributeSet(Vec<Attribute>);
+pub struct AttributeSet(AttributeStorage);
 
 impl Deref for AttributeSet {
     type Target = [Attribute];
@@ -231,7 +236,7 @@ impl Deref for AttributeSet {
 
 impl AttributeSet {
     pub(crate) fn new() -> Self {
-        Self(Vec::new())
+        Self(AttributeStorage::new())
     }
 
     pub(crate) fn add(&mut self, key: &str, value: &str) {

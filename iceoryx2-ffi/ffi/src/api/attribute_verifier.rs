@@ -47,7 +47,7 @@ impl AttributeVerifierType {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<AttributeVerifier>
 pub struct iox2_attribute_verifier_storage_t {
-    internal: [u8; 48], // magic number obtained with size_of::<Option<AttributeVerifier>>()
+    internal: [u8; 824], // magic number obtained with size_of::<Option<AttributeVerifier>>()
 }
 
 #[repr(C)]
