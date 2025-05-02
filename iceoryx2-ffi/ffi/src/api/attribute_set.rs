@@ -31,7 +31,7 @@ use super::{
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<AttributeSet>
 pub struct iox2_attribute_set_storage_t {
-    internal: [u8; 808], // magic number obtained with size_of::<Option<AttributeSet>>()
+    internal: [u8; 5672], // magic number obtained with size_of::<Option<AttributeSet>>()
 }
 
 #[repr(C)]

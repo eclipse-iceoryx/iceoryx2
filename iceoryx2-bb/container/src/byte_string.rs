@@ -202,6 +202,18 @@ impl<const CAPACITY: usize> PartialEq<&[u8]> for FixedSizeByteString<CAPACITY> {
     }
 }
 
+impl<const CAPACITY: usize> PartialEq<&str> for FixedSizeByteString<CAPACITY> {
+    fn eq(&self, other: &&str) -> bool {
+        *self.as_bytes() == *other.as_bytes()
+    }
+}
+
+impl<const CAPACITY: usize> PartialEq<FixedSizeByteString<CAPACITY>> for &str {
+    fn eq(&self, other: &FixedSizeByteString<CAPACITY>) -> bool {
+        *self.as_bytes() == *other.as_bytes()
+    }
+}
+
 impl<const CAPACITY: usize, const OTHER_CAPACITY: usize> PartialEq<[u8; OTHER_CAPACITY]>
     for FixedSizeByteString<CAPACITY>
 {
@@ -246,6 +258,18 @@ impl<const CAPACITY: usize, const BYTE_CAPACITY: usize> From<&[u8; BYTE_CAPACITY
 
         let mut new_self = Self::new();
         new_self.push_bytes(value).unwrap();
+        new_self
+    }
+}
+
+impl<const CAPACITY: usize> From<&str> for FixedSizeByteString<CAPACITY> {
+    fn from(value: &str) -> Self {
+        if CAPACITY < value.len() {
+            fatal_panic!(from "FixedSizeByteString::from<&str>()", "The string does not fit into the FixedSizeByteString");
+        }
+
+        let mut new_self = Self::new();
+        new_self.push_bytes(value.as_bytes()).unwrap();
         new_self
     }
 }
@@ -336,6 +360,17 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
         new_self
     }
 
+    /// Creates a new [`FixedSizeByteString`] from a string slice
+    pub fn from_str(s: &str) -> Result<Self, FixedSizeByteStringModificationError> {
+        Self::from_bytes(s.as_bytes())
+    }
+
+    /// Creates a new [`FixedSizeByteString`] from a string slice. If the string slice does not fit
+    /// into the [`FixedSizeByteString`] it will be truncated.
+    pub fn from_str_truncated(s: &str) -> Self {
+        Self::from_bytes_truncated(s.as_bytes())
+    }
+
     /// Creates a new byte string from a given null-terminated string
     ///
     /// # Safety
@@ -382,6 +417,15 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
         unsafe { core::slice::from_raw_parts_mut(self.data[0].as_mut_ptr(), self.len) }
     }
 
+    /// Returns the content as a string slice if the bytes are valid UTF-8
+    pub fn as_str(&self) -> Result<&str, core::str::Utf8Error> {
+        core::str::from_utf8(self.as_bytes())
+    }
+
+    /// Returns the content as a string slice without checking for valid UTF-8
+    pub unsafe fn as_str_unchecked(&self) -> &str {
+        core::str::from_utf8_unchecked(self.as_bytes())
+    }
     /// Returns the capacity of the string
     pub const fn capacity(&self) -> usize {
         CAPACITY

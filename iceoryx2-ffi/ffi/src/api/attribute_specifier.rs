@@ -44,7 +44,7 @@ impl AttributeSpecifierType {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<AttributeSpecifier>
 pub struct iox2_attribute_specifier_storage_t {
-    internal: [u8; 808], // magic number obtained with size_of::<Option<AttributeSpecifier>>()
+    internal: [u8; 5672], // magic number obtained with size_of::<Option<AttributeSpecifier>>()
 }
 
 #[repr(C)]
