@@ -98,29 +98,35 @@
 //! ```
 
 use core::ops::Deref;
-use iceoryx2_bb_container::vec::FixedSizeVec;
+use iceoryx2_bb_container::{byte_string::FixedSizeByteString, vec::FixedSizeVec};
 use iceoryx2_bb_elementary::CallbackProgression;
 use serde::{Deserialize, Serialize};
 
-use crate::constants::MAX_ATTRIBUTES;
+use crate::constants::{MAX_ATTRIBUTES, MAX_ATTRIBUTE_KEY_LENGTH, MAX_ATTRIBUTE_VALUE_LENGTH};
+
+type AttributeKeyString = FixedSizeByteString<MAX_ATTRIBUTE_KEY_LENGTH>;
+type AttributeValueString = FixedSizeByteString<MAX_ATTRIBUTE_VALUE_LENGTH>;
+
+type KeyStorage = FixedSizeVec<AttributeKeyString, MAX_ATTRIBUTES>;
+type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
 
 /// Represents a single service attribute (key-value) pair that can be defined when the service
 /// is being created.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, PartialOrd, Ord)]
 pub struct Attribute {
-    key: String,
-    value: String,
+    key: AttributeKeyString,
+    value: AttributeValueString,
 }
 
 impl Attribute {
     /// Acquires the service attribute key
     pub fn key(&self) -> &str {
-        &self.key
+        self.key.as_str().unwrap()
     }
 
     /// Acquires the service attribute value
     pub fn value(&self) -> &str {
-        &self.value
+        self.value.as_str().unwrap()
     }
 }
 
@@ -157,14 +163,14 @@ impl AttributeSpecifier {
 #[derive(Debug)]
 pub struct AttributeVerifier {
     attribute_set: AttributeSet,
-    required_keys: Vec<String>,
+    required_keys: KeyStorage,
 }
 
 impl Default for AttributeVerifier {
     fn default() -> Self {
         Self {
             attribute_set: AttributeSet::new(),
-            required_keys: Vec::new(),
+            required_keys: KeyStorage::new(),
         }
     }
 }
@@ -193,34 +199,39 @@ impl AttributeVerifier {
     }
 
     /// Returns the underlying required keys
-    pub fn keys(&self) -> &Vec<String> {
-        &self.required_keys
+    pub fn keys(&self) -> &[AttributeKeyString] {
+        self.required_keys.as_slice()
     }
 
     /// Verifies if the [`AttributeSet`] contains all required keys and key-value pairs.
     pub fn verify_requirements(&self, rhs: &AttributeSet) -> Result<(), &str> {
-        let is_subset = |lhs: Vec<&str>, rhs: Vec<&str>| lhs.iter().all(|v| rhs.contains(v));
-
         for attribute in self.attributes().iter() {
-            let lhs_values = self.attribute_set.get_vec(&attribute.key);
-            let rhs_values = rhs.get_vec(&attribute.key);
+            let key = attribute.key.as_str().unwrap();
+            let value = attribute.value.as_str().unwrap();
 
-            if !is_subset(lhs_values, rhs_values) {
-                return Err(&attribute.key);
+            // Check if the required key-value pair exists in the target AttributeSet
+            let value_exists = rhs.iter().any(|attr| {
+                attr.key.as_str().unwrap() == key && attr.value.as_str().unwrap() == value
+            });
+
+            if !value_exists {
+                return Err(key);
             }
         }
 
         for key in self.keys() {
-            if rhs.get_vec(key).is_empty() {
-                return Err(key);
+            let key_str = key.as_str().unwrap();
+            // Check if the key exists in the target AttributeSet
+            let key_exists = rhs.iter().any(|attr| attr.key.as_str().unwrap() == key_str);
+
+            if !key_exists {
+                return Err(key_str);
             }
         }
 
         Ok(())
     }
 }
-
-type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
 
 /// Represents all service attributes. They can be set when the service is created.
 #[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
@@ -247,14 +258,6 @@ impl AttributeSet {
         self.0.sort();
     }
 
-    fn get_vec(&self, key: &str) -> Vec<&str> {
-        self.0
-            .iter()
-            .filter(|p| p.key == key)
-            .map(|p| p.value.as_str())
-            .collect()
-    }
-
     /// Returns the number of [`Attribute`]s stored inside the [`AttributeSet`].
     pub fn number_of_attributes(&self) -> usize {
         self.iter().len()
@@ -263,7 +266,7 @@ impl AttributeSet {
     /// Returns the number of values stored under a specific key. If the key does not exist it
     /// returns 0.
     pub fn number_of_key_values(&self, key: &str) -> usize {
-        self.get_vec(key).len()
+        self.iter().filter(|element| element.key() == key).count()
     }
 
     /// Returns a value of a key at a specific index. The index enumerates the values of the key
@@ -273,26 +276,25 @@ impl AttributeSet {
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
     pub fn key_value(&self, key: &str, idx: usize) -> Option<&str> {
-        let v = self.get_vec(key);
-        if v.len() <= idx {
-            return None;
-        }
-
-        Some(self.get_vec(key)[idx])
+        self.0
+            .iter()
+            .filter(|attr| attr.key.as_str().unwrap() == key)
+            .map(|attr| attr.value.as_str().unwrap())
+            .nth(idx)
     }
 
-    /// Returns all values to a specific key
+    /// Iterates over all values of a specific key
     pub fn iter_key_values<F: FnMut(&str) -> CallbackProgression>(
         &self,
         key: &str,
         mut callback: F,
     ) {
-        for element in self.0.iter() {
+        for element in self.iter() {
             if element.key != key {
                 continue;
             }
 
-            if callback(&element.value) == CallbackProgression::Stop {
+            if callback(element.value.as_str().unwrap()) == CallbackProgression::Stop {
                 break;
             }
         }
