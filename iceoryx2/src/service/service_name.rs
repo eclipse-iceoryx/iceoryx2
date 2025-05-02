@@ -63,12 +63,12 @@ impl From<FixedSizeByteStringModificationError> for ServiceNameError {
     }
 }
 
-type ServiceNameByteString = FixedSizeByteString<MAX_SERVICE_NAME_LENGTH>;
+type ServiceNameString = FixedSizeByteString<MAX_SERVICE_NAME_LENGTH>;
 
 /// The name of a [`Service`](crate::service::Service).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ServiceName {
-    value: ServiceNameByteString,
+    value: ServiceNameString,
 }
 
 impl ServiceName {
@@ -94,15 +94,14 @@ impl ServiceName {
             return Err(ServiceNameError::InvalidContent);
         }
 
-        let value =
-            ServiceNameByteString::from_bytes(name.as_bytes()).map_err(ServiceNameError::from)?;
+        let value = ServiceNameString::from_str(name).map_err(ServiceNameError::from)?;
 
         Ok(Self { value })
     }
 
     /// Returns a str reference to the [`ServiceName`]
     pub fn as_str(&self) -> &str {
-        core::str::from_utf8(self.value.as_bytes()).unwrap()
+        self.value.as_str().unwrap()
     }
 
     /// Checks if a service is an internal iceoryx2 service.
@@ -179,6 +178,6 @@ impl Serialize for ServiceName {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(core::str::from_utf8(self.as_bytes()).unwrap())
+        serializer.serialize_str(self.as_str())
     }
 }
