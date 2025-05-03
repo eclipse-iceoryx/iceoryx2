@@ -21,14 +21,157 @@ use core::{
     slice,
 };
 
-use iceoryx2::{prelude::Alignment, service::static_config::message_type_details::TypeDetail};
+use iceoryx2::service::builder::request_response::{
+    Builder, RequestResponseCreateError, RequestResponseOpenOrCreateError,
+};
+use iceoryx2::service::port_factory::request_response::PortFactory;
+use iceoryx2::service::static_config::message_type_details::TypeDetail;
+use iceoryx2::{prelude::*, service::builder::request_response::RequestResponseOpenError};
+use iceoryx2_bb_elementary::AsCStr;
+use iceoryx2_ffi_macros::CStrRepr;
 
 use crate::{
-    api::{AssertNonNullHandle, HandleToType, ServiceBuilderUnion},
+    api::{
+        AssertNonNullHandle, HandleToType, PortFactoryRequestResponseUnion, ServiceBuilderUnion,
+    },
     iox2_service_type_e, iox2_type_detail_error_e, IOX2_OK,
 };
 
-use super::{c_size_t, iox2_service_builder_request_response_h_ref, iox2_type_variant_e};
+use super::{
+    c_size_t, iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref,
+    iox2_port_factory_request_response_h, iox2_port_factory_request_response_t,
+    iox2_service_builder_request_response_h, iox2_service_builder_request_response_h_ref,
+    iox2_type_variant_e, IntoCInt, PayloadFfi, UserHeaderFfi,
+};
+
+// BEGIN types definition
+#[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_request_response_open_or_create_error_e {
+    #[CStr = "does not exist"]
+    O_DOES_NOT_EXIST = IOX2_OK as isize + 1,
+    #[CStr = "does not support requested amount of client request loans"]
+    O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_CLIENT_REQUEST_LOANS,
+    #[CStr = "does not support requested amount of active requests per client"]
+    O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_ACTIVE_REQUESTS_PER_CLIENT,
+    #[CStr = "does not support requested response buffer size"]
+    O_DOES_NOT_SUPPORT_REQUESTED_RESPONSE_BUFFER_SIZE,
+    #[CStr = "does not support requested amount of servers"]
+    O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_SERVERS,
+    #[CStr = "does not support requested amount of clients"]
+    O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_CLIENTS,
+    #[CStr = "does not support requested amount of nodes"]
+    O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES,
+    #[CStr = "does not support requested amount of borrowed responses per pending response"]
+    O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_BORROWED_RESPONSES_PER_PENDING_RESPONSE,
+    #[CStr = "exceeds max number of nodes"]
+    O_EXCEEDS_MAX_NUMBER_OF_NODES,
+    #[CStr = "hangs in creation"]
+    O_HANGS_IN_CREATION,
+    #[CStr = "incompatible request type"]
+    O_INCOMPATIBLE_REQUEST_TYPE,
+    #[CStr = "incompatible response type"]
+    O_INCOMPATIBLE_RESPONSE_TYPE,
+    #[CStr = "incompatible attributes"]
+    O_INCOMPATIBLE_ATTRIBUTES,
+    #[CStr = "incompatible messaging pattern"]
+    O_INCOMPATIBLE_MESSAGING_PATTERN,
+    #[CStr = "incompatible overflow behavior for requests"]
+    O_INCOMPATIBLE_OVERFLOW_BEHAVIOR_FOR_REQUESTS,
+    #[CStr = "incompatible overflow behavior for responses"]
+    O_INCOMPATIBLE_OVERFLOW_BEHAVIOR_FOR_RESPONSES,
+    #[CStr = "incompatible behavior for fire and forget requests"]
+    O_INCOMPATIBLE_BEHAVIOR_FOR_FIRE_AND_FORGET_REQUESTS,
+    #[CStr = "insufficient permissions"]
+    O_INSUFFICIENT_PERMISSIONS,
+    #[CStr = "internal failure"]
+    O_INTERNAL_FAILURE,
+    #[CStr = "is marked for destruction"]
+    O_IS_MARKED_FOR_DESTRUCTION,
+    #[CStr = "service in corrupted state"]
+    O_SERVICE_IN_CORRUPTED_STATE,
+    #[CStr = "already exists"]
+    C_ALREADY_EXISTS,
+    #[CStr = "internal failure"]
+    C_INTERNAL_FAILURE,
+    #[CStr = "is being created by another instance"]
+    C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE,
+    #[CStr = "insufficient permissions"]
+    C_INSUFFICIENT_PERMISSIONS,
+    #[CStr = "hangs in creation"]
+    C_HANGS_IN_CREATION,
+    #[CStr = "service in corrupted state"]
+    C_SERVICE_IN_CORRUPTED_STATE,
+    #[CStr = "system in flux"]
+    SYSTEM_IN_FLUX,
+}
+
+impl IntoCInt for RequestResponseOpenError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            RequestResponseOpenError::DoesNotExist => iox2_request_response_open_or_create_error_e::O_DOES_NOT_EXIST,
+            RequestResponseOpenError::DoesNotSupportRequestedAmountOfClientRequestLoans => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_CLIENT_REQUEST_LOANS,
+            RequestResponseOpenError::DoesNotSupportRequestedAmountOfActiveRequestsPerClient => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_ACTIVE_REQUESTS_PER_CLIENT,
+            RequestResponseOpenError::DoesNotSupportRequestedResponseBufferSize => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_RESPONSE_BUFFER_SIZE,
+            RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_SERVERS,
+            RequestResponseOpenError::DoesNotSupportRequestedAmountOfClients => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_CLIENTS,
+            RequestResponseOpenError::DoesNotSupportRequestedAmountOfNodes => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES,
+            RequestResponseOpenError::DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse => iox2_request_response_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_BORROWED_RESPONSES_PER_PENDING_RESPONSE,
+            RequestResponseOpenError::ExceedsMaxNumberOfNodes => iox2_request_response_open_or_create_error_e::O_EXCEEDS_MAX_NUMBER_OF_NODES,
+            RequestResponseOpenError::HangsInCreation => iox2_request_response_open_or_create_error_e::O_HANGS_IN_CREATION,
+            RequestResponseOpenError::IncompatibleRequestType => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_REQUEST_TYPE,
+            RequestResponseOpenError::IncompatibleResponseType => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_RESPONSE_TYPE,
+            RequestResponseOpenError::IncompatibleAttributes => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_ATTRIBUTES,
+            RequestResponseOpenError::IncompatibleMessagingPattern => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_MESSAGING_PATTERN,
+            RequestResponseOpenError::IncompatibleOverflowBehaviorForRequests => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_OVERFLOW_BEHAVIOR_FOR_REQUESTS,
+            RequestResponseOpenError::IncompatibleOverflowBehaviorForResponses => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_OVERFLOW_BEHAVIOR_FOR_RESPONSES,
+            RequestResponseOpenError::IncompatibleBehaviorForFireAndForgetRequests => iox2_request_response_open_or_create_error_e::O_INCOMPATIBLE_BEHAVIOR_FOR_FIRE_AND_FORGET_REQUESTS,
+            RequestResponseOpenError::InsufficientPermissions => iox2_request_response_open_or_create_error_e::O_INSUFFICIENT_PERMISSIONS,
+            RequestResponseOpenError::InternalFailure => iox2_request_response_open_or_create_error_e::O_INTERNAL_FAILURE,
+            RequestResponseOpenError::IsMarkedForDestruction => iox2_request_response_open_or_create_error_e::O_IS_MARKED_FOR_DESTRUCTION,
+            RequestResponseOpenError::ServiceInCorruptedState => iox2_request_response_open_or_create_error_e::O_SERVICE_IN_CORRUPTED_STATE,
+        }) as c_int
+    }
+}
+
+impl IntoCInt for RequestResponseCreateError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            RequestResponseCreateError::AlreadyExists => {
+                iox2_request_response_open_or_create_error_e::C_ALREADY_EXISTS
+            }
+            RequestResponseCreateError::InternalFailure => {
+                iox2_request_response_open_or_create_error_e::C_INTERNAL_FAILURE
+            }
+            RequestResponseCreateError::IsBeingCreatedByAnotherInstance => {
+                iox2_request_response_open_or_create_error_e::C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE
+            }
+            RequestResponseCreateError::InsufficientPermissions => {
+                iox2_request_response_open_or_create_error_e::C_INSUFFICIENT_PERMISSIONS
+            }
+            RequestResponseCreateError::HangsInCreation => {
+                iox2_request_response_open_or_create_error_e::C_HANGS_IN_CREATION
+            }
+            RequestResponseCreateError::ServiceInCorruptedState => {
+                iox2_request_response_open_or_create_error_e::C_SERVICE_IN_CORRUPTED_STATE
+            }
+        }) as c_int
+    }
+}
+
+impl IntoCInt for RequestResponseOpenOrCreateError {
+    fn into_c_int(self) -> c_int {
+        match self {
+            RequestResponseOpenOrCreateError::RequestResponseOpenError(e) => e.into_c_int(),
+            RequestResponseOpenOrCreateError::RequestResponseCreateError(e) => e.into_c_int(),
+            RequestResponseOpenOrCreateError::SystemInFlux => {
+                iox2_request_response_open_or_create_error_e::SYSTEM_IN_FLUX as c_int
+            }
+        }
+    }
+}
+
+// END types definition
 
 pub(crate) unsafe fn create_type_details(
     type_variant: iox2_type_variant_e,
@@ -608,4 +751,197 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_response_payload_
             ));
         }
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_open_or_create(
+    service_builder_handle: iox2_service_builder_request_response_h,
+    port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_request_response_h,
+) -> c_int {
+    iox2_service_builder_request_response_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open_or_create(),
+        |service_builder| service_builder.open_or_create(),
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_open_or_create_with_attributes(
+    service_builder_handle: iox2_service_builder_request_response_h,
+    attribute_verifier_handle: iox2_attribute_verifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_request_response_h,
+) -> c_int {
+    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+
+    iox2_service_builder_request_response_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+        |service_builder| service_builder.open_or_create_with_attributes(attribute_verifier),
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_open(
+    service_builder_handle: iox2_service_builder_request_response_h,
+    port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_request_response_h,
+) -> c_int {
+    iox2_service_builder_request_response_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open(),
+        |service_builder| service_builder.open(),
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_open_with_attributes(
+    service_builder_handle: iox2_service_builder_request_response_h,
+    attribute_verifier_handle: iox2_attribute_verifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_request_response_h,
+) -> c_int {
+    let attribute_verifier_struct = &mut *attribute_verifier_handle.as_type();
+    let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
+
+    iox2_service_builder_request_response_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.open_with_attributes(attribute_verifier),
+        |service_builder| service_builder.open_with_attributes(attribute_verifier),
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_create(
+    service_builder_handle: iox2_service_builder_request_response_h,
+    port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_request_response_h,
+) -> c_int {
+    iox2_service_builder_request_response_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.create(),
+        |service_builder| service_builder.create(),
+    )
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_create_with_attributes(
+    service_builder_handle: iox2_service_builder_request_response_h,
+    attribute_specifier_handle: iox2_attribute_specifier_h_ref,
+    port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_request_response_h,
+) -> c_int {
+    let attribute_specifier_struct = &mut *attribute_specifier_handle.as_type();
+    let attribute_specifier = &attribute_specifier_struct.value.as_ref().0;
+
+    iox2_service_builder_request_response_open_create_impl(
+        service_builder_handle,
+        port_factory_struct_ptr,
+        port_factory_handle_ptr,
+        |service_builder| service_builder.create_with_attributes(attribute_specifier),
+        |service_builder| service_builder.create_with_attributes(attribute_specifier),
+    )
+}
+
+unsafe fn iox2_service_builder_request_response_open_create_impl<E: IntoCInt>(
+    service_builder_handle: iox2_service_builder_request_response_h,
+    port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
+    port_factory_handle_ptr: *mut iox2_port_factory_request_response_h,
+    func_ipc: impl FnOnce(
+        Builder<PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi, ipc::Service>,
+    ) -> Result<
+        PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        E,
+    >,
+    func_local: impl FnOnce(
+        Builder<PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi, local::Service>,
+    ) -> Result<
+        PortFactory<local::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        E,
+    >,
+) -> c_int {
+    service_builder_handle.assert_non_null();
+    debug_assert!(!port_factory_handle_ptr.is_null());
+
+    let init_port_factory_struct_ptr =
+        |port_factory_struct_ptr: *mut iox2_port_factory_request_response_t| {
+            let mut port_factory_struct_ptr = port_factory_struct_ptr;
+            fn no_op(_: *mut iox2_port_factory_request_response_t) {}
+            let mut deleter: fn(*mut iox2_port_factory_request_response_t) = no_op;
+            if port_factory_struct_ptr.is_null() {
+                port_factory_struct_ptr = iox2_port_factory_request_response_t::alloc();
+                deleter = iox2_port_factory_request_response_t::dealloc;
+            }
+            debug_assert!(!port_factory_struct_ptr.is_null());
+
+            (port_factory_struct_ptr, deleter)
+        };
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+    let service_type = service_builder_struct.service_type;
+    let service_builder = service_builder_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| {
+            panic!("Trying to use an invalid 'iox2_service_builder_request_response_h'!");
+        });
+    (service_builder_struct.deleter)(service_builder_struct);
+
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+
+            match func_ipc(service_builder) {
+                Ok(port_factory) => {
+                    let (port_factory_struct_ptr, deleter) =
+                        init_port_factory_struct_ptr(port_factory_struct_ptr);
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryRequestResponseUnion::new_ipc(port_factory),
+                        deleter,
+                    );
+                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder = ManuallyDrop::into_inner(service_builder.local);
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+
+            match func_local(service_builder) {
+                Ok(port_factory) => {
+                    let (port_factory_struct_ptr, deleter) =
+                        init_port_factory_struct_ptr(port_factory_struct_ptr);
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryRequestResponseUnion::new_local(port_factory),
+                        deleter,
+                    );
+                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+    }
+
+    IOX2_OK
 }
