@@ -21,7 +21,7 @@ use core::{
     slice,
 };
 
-use iceoryx2::service::static_config::message_type_details::TypeDetail;
+use iceoryx2::{prelude::Alignment, service::static_config::message_type_details::TypeDetail};
 
 use crate::{
     api::{AssertNonNullHandle, HandleToType, ServiceBuilderUnion},
@@ -228,4 +228,384 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_set_response_payl
     }
 
     IOX2_OK
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_enable_fire_and_forget_requests(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: bool,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.enable_fire_and_forget_requests(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.enable_fire_and_forget_requests(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_enable_safe_overflow_for_requests(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: bool,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.enable_safe_overflow_for_requests(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.enable_safe_overflow_for_requests(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_enable_safe_overflow_for_responses(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: bool,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.enable_safe_overflow_for_responses(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.enable_safe_overflow_for_responses(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_max_active_requests_per_client(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.max_active_requests_per_client(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.max_active_requests_per_client(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_max_borrowed_responses_per_pending_response(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.max_borrowed_responses_per_pending_response(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.max_borrowed_responses_per_pending_response(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_max_clients(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.max_clients(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.max_clients(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_max_loaned_requests(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.max_loaned_requests(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.max_loaned_requests(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_set_max_nodes(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.max_nodes(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.max_nodes(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_max_response_buffer_size(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.max_response_buffer_size(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.max_response_buffer_size(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_max_servers(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.max_servers(value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.max_servers(value),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_request_payload_alignment(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.request_payload_alignment(
+                    Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
+                ),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.request_payload_alignment(
+                    Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
+                ),
+            ));
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response_response_payload_alignment(
+    service_builder_handle: iox2_service_builder_request_response_h_ref,
+    value: c_size_t,
+) {
+    service_builder_handle.assert_non_null();
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder.response_payload_alignment(
+                    Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
+                ),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.request_response);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder.response_payload_alignment(
+                    Alignment::new(value).unwrap_or(Alignment::new_unchecked(8)),
+                ),
+            ));
+        }
+    }
 }
