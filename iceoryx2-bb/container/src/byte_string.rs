@@ -96,6 +96,10 @@ impl<const CAPACITY: usize> Clone for FixedSizeByteString<CAPACITY> {
             core::ptr::copy_nonoverlapping(self.data.as_ptr(), new_self.data.as_mut_ptr(), self.len)
         };
 
+        if self.len < CAPACITY {
+            new_self.data[self.len].write(0);
+        }
+
         new_self
     }
 }
