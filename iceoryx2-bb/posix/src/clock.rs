@@ -24,6 +24,7 @@
 use crate::system_configuration::Feature;
 use crate::{config::DEFAULT_CLOCK_MODE, handle_errno};
 use core::time::Duration;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_posix::posix::errno::Errno;
@@ -64,7 +65,7 @@ impl From<TimeError> for NanosleepError {
 }
 
 /// Represents different low level clocks.
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 #[repr(i32)]
 pub enum ClockType {
     /// represents a steady clock which does not change when the system time
@@ -180,7 +181,9 @@ impl TimeBuilder {
 }
 
 /// Represents time under a specified [`ClockType`]
-#[derive(Default, Clone, Copy, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+#[derive(
+    Default, Clone, Copy, Eq, PartialEq, Hash, Debug, ZeroCopySend, Serialize, Deserialize,
+)]
 pub struct Time {
     pub(crate) clock_type: ClockType,
     pub(crate) seconds: u64,

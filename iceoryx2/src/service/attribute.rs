@@ -99,6 +99,7 @@
 
 use core::ops::Deref;
 use iceoryx2_bb_container::{byte_string::FixedSizeByteString, vec::FixedSizeVec};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use serde::{Deserialize, Serialize};
 
@@ -112,7 +113,8 @@ type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
 
 /// Represents a single service attribute (key-value) pair that can be defined when the service
 /// is being created.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub struct Attribute {
     key: AttributeKeyString,
     value: AttributeValueString,
@@ -234,7 +236,8 @@ impl AttributeVerifier {
 }
 
 /// Represents all service attributes. They can be set when the service is created.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub struct AttributeSet(AttributeStorage);
 
 impl Deref for AttributeSet {

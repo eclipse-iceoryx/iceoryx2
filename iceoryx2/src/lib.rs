@@ -421,7 +421,6 @@
 #[cfg(doctest)]
 mod compiletests;
 
-///
 pub(crate) mod constants;
 
 /// Handles iceoryx2s global configuration

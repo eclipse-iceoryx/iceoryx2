@@ -23,9 +23,11 @@
 //! ```
 
 use crate::constants::MAX_SERVICE_NAME_LENGTH;
+
 use iceoryx2_bb_container::byte_string::{
     FixedSizeByteString, FixedSizeByteStringModificationError,
 };
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 
 use serde::{de::Visitor, Deserialize, Serialize};
 
@@ -66,7 +68,8 @@ impl From<FixedSizeByteStringModificationError> for ServiceNameError {
 type ServiceNameString = FixedSizeByteString<MAX_SERVICE_NAME_LENGTH>;
 
 /// The name of a [`Service`](crate::service::Service).
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ZeroCopySend)]
+#[repr(C)]
 pub struct ServiceName {
     value: ServiceNameString,
 }

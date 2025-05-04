@@ -28,6 +28,7 @@ pub mod request_response;
 
 pub mod messaging_pattern;
 
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::hash::Hash;
 use serde::{Deserialize, Serialize};
@@ -39,7 +40,8 @@ use self::messaging_pattern::MessagingPattern;
 use super::{attribute::AttributeSet, service_id::ServiceId, service_name::ServiceName};
 
 /// Defines a common set of static service configuration details every service shares.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub struct StaticConfig {
     service_id: ServiceId,
     service_name: ServiceName,
