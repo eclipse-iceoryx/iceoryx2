@@ -99,6 +99,8 @@
     [#646](https://github.com/eclipse-iceoryx/iceoryx2/issues/646)
 * Improve naming in `AttributeSet` methods and `ServiceId`
     [#697](https://github.com/eclipse-iceoryx/iceoryx2/issues/697)
+* Implement `ZeroCopySend` for `StaticConfig` and its nested types
+    [#707](https://github.com/eclipse-iceoryx/iceoryx2/issues/707)
 * Efficient `Clone` for `FixedSizeByteString`
     [#717](https://github.com/eclipse-iceoryx/iceoryx2/issues/717)
 
@@ -244,7 +246,10 @@
 11. Renamed `ServiceId::max_len()`
    into `ServiceId::max_number_of_characters()`
 
-12. The following types no longer implement `Copy`
+12. Methods of `ServiceName` return a `ServiceNameError` instead of
+   a `SemanticStringError`
+
+15. The following types no longer implement `Copy`
    (the only implement `Clone`):
 
 * `FixedSizeByteString`
