@@ -105,6 +105,8 @@
     [#646](https://github.com/eclipse-iceoryx/iceoryx2/issues/646)
 * Improve naming in `AttributeSet` methods and `ServiceId`
     [#697](https://github.com/eclipse-iceoryx/iceoryx2/issues/697)
+* Implement `ZeroCopySend` for `StaticConfig` and its nested types
+    [#707](https://github.com/eclipse-iceoryx/iceoryx2/issues/707)
 * Efficient `Clone` for `FixedSizeByteString`
     [#717](https://github.com/eclipse-iceoryx/iceoryx2/issues/717)
 * Use Rust's native endian swapping
@@ -257,7 +259,12 @@
    `.data`.
 
 13. The following types no longer implement `Copy`
-   (the only implement `Clone`):
+
+14. Methods of `ServiceName` return a `ServiceNameError` instead of
+   a `SemanticStringError`
+
+15. The following types no longer implement `Copy`
+   (they only implement `Clone`):
 
 * `FixedSizeByteString`
 * `SemanticString`
