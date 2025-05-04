@@ -14,20 +14,23 @@ use colored::*;
 
 pub fn help_template(cli_name: &str, show_external_commands: bool) -> String {
     let mut template = format!(
-        "{{about}}\n\n{}{}{}[OPTIONS] [COMMAND]\n\n{}\n{{options}}\n\n{}\n{{subcommands}}",
+        "{{about}}\n\n{}{}{}[OPTIONS] [COMMAND]\n\n{}\n{{options}}",
         "Usage: ".bright_green().bold(),
         cli_name.bold(),
         " ".bold(),
         "Options:".bright_green().bold(),
-        "Commands:".bright_green().bold()
     );
 
     if show_external_commands {
         template.push_str(&format!(
-            "\n{}{}",
+            "\n\n{}\n{{subcommands}}\n{}{}",
+            "Commands:".bright_green().bold(),
             "  ...            ".bold(),
             "See external installed commands with --list"
         ));
+    } else {
+        // Only add subcommands section without the "Commands:" header
+        template.push_str("\n\n{{subcommands}}");
     }
 
     template

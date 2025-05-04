@@ -11,6 +11,7 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
+iceoryx2-services-discovery = { workspace = true }
 iceoryx2 = { workspace = true }
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
@@ -20,6 +21,8 @@ iceoryx2-bb-system-types = { workspace = true }
 
 [dev-dependencies]
 clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [lib]
 name = "examples_common"
@@ -36,6 +39,10 @@ path = "rust/complex_data_types/complex_data_types.rs"
 [[example]]
 name = "discovery"
 path = "rust/discovery/discovery.rs"
+
+[[example]]
+name = "discovery_service"
+path = "rust/discovery_service/discovery_service.rs"
 
 # event
 

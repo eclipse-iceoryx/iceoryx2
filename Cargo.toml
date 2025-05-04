@@ -22,6 +22,8 @@ members = [
     "iceoryx2-pal/posix/",
     "iceoryx2-pal/configuration/",
 
+    "iceoryx2-services/discovery",
+
     "iceoryx2-cli",
 
     "examples",
@@ -73,6 +75,8 @@ iceoryx2-ffi = { version = "0.5.0", path = "iceoryx2-ffi/ffi" }
 iceoryx2-ffi-macros = { version = "0.5.0", path = "iceoryx2-ffi/ffi-macros" }
 
 iceoryx2 = { version = "0.5.0", path = "iceoryx2/" }
+
+iceoryx2-services-discovery = { version = "0.5.0", path = "iceoryx2-services/discovery"}
 
 iceoryx2-cli = { version = "0.5.0", path = "iceoryx2_cli/"}
 

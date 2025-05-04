@@ -57,10 +57,44 @@ pub struct DetailsOptions {
     pub filter: OutputFilter,
 }
 
+#[derive(Parser)]
+pub struct DiscoveryOptions {
+    #[clap(
+        short,
+        long,
+        default_value = "100",
+        help = "Update rate in milliseconds"
+    )]
+    pub rate: u64,
+
+    #[clap(long, help = "Do not publish discovered services")]
+    pub disable_publish: bool,
+
+    #[clap(long, default_value = "10", help = "The maximum number of subscribers")]
+    pub max_subscribers: usize,
+
+    #[clap(long, help = "Do not notify of discovered services")]
+    pub disable_notify: bool,
+
+    #[clap(long, default_value = "10", help = "The maximum number of listeners")]
+    pub max_listeners: usize,
+}
+
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "List all services")]
+    #[clap(
+        about = "List all services",
+        help_template = help_template("iox2 service list", false)
+    )]
     List(ListOptions),
-    #[clap(about = "Show service details")]
+    #[clap(
+        about = "Show service details",
+        help_template = help_template("iox2 service details", false)
+    )]
     Details(DetailsOptions),
+    #[clap(
+        about = "Runs the service discovery service within a process", 
+        help_template = help_template("iox2 service discovery", false)
+    )]
+    Discovery(DiscoveryOptions),
 }

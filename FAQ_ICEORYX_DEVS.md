@@ -55,3 +55,16 @@ Error: Some manifests are not being tracked. Please add the following labels to 
 
 It seems a new crate is added to the root `Cargo.toml` and bazel is complaining
 that it is not added to the `WORKSPACE.bazel` file for the `crate_index` target.
+
+## The bazel build fails to find a Cargo.toml file for a newly added crate
+
+Assuming a new crate `bar` located in directory `iceoryx2-foo`, the end of the
+error message will be in the form:
+
+```ascii
+Caused by:
+        failed to read `/home/runner/.bazel/sandbox/processwrapper-sandbox/2/execroot/_main/iceoryx2-foo/bar/Cargo.toml`\n\nCaused by:\n  No such file or directory (os error 2)\n"
+```
+
+This is fixed by adding the new crate to the `filegroup` in `BUILD.bazel` in
+the project root.

@@ -23,24 +23,28 @@ use iceoryx2::service::ServiceDetails as IceoryxServiceDetails;
 use iceoryx2::service::ServiceDynamicDetails as IceoryxServiceDynamicDetails;
 use iceoryx2_pal_posix::posix::pid_t;
 
-#[derive(serde::Serialize, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(serde::Serialize, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ServiceDescriptor {
     PublishSubscribe(String),
     Event(String),
+    RequestResponse(String),
     Undefined(String),
 }
 
-impl<T> From<IceoryxServiceDetails<T>> for ServiceDescriptor
+impl<T> From<&IceoryxServiceDetails<T>> for ServiceDescriptor
 where
     T: IceoryxService,
 {
-    fn from(service: IceoryxServiceDetails<T>) -> Self {
+    fn from(service: &IceoryxServiceDetails<T>) -> Self {
         match service.static_details.messaging_pattern() {
             IceoryxMessagingPattern::PublishSubscribe(_) => {
                 ServiceDescriptor::PublishSubscribe(service.static_details.name().to_string())
             }
             IceoryxMessagingPattern::Event(_) => {
                 ServiceDescriptor::Event(service.static_details.name().to_string())
+            }
+            IceoryxMessagingPattern::RequestResponse(_) => {
+                ServiceDescriptor::RequestResponse(service.static_details.name().to_string())
             }
             _ => ServiceDescriptor::Undefined("Undefined".to_string()),
         }

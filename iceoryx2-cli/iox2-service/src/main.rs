@@ -19,12 +19,13 @@ mod cli;
 mod commands;
 mod filter;
 
-use anyhow::{anyhow, Result};
-use clap::CommandFactory;
+use anyhow::Result;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_bb_log::error;
+use iceoryx2_bb_log::set_log_level_from_env_or;
+use iceoryx2_bb_log::LogLevel;
 
 fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
@@ -40,24 +41,45 @@ fn main() -> Result<()> {
             .install();
     }
 
-    set_log_level(LogLevel::Warn);
+    set_log_level_from_env_or(LogLevel::Warn);
 
-    let cli = Cli::try_parse().map_err(|e| anyhow!("{}", e))?;
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(e) => {
+            // --help and --version is treated as a parse error by clap
+            // printing the error is actually printing the result of those commands ...
+            let _ = e.print();
+            return Ok(());
+        }
+    };
+
     if let Some(action) = cli.action {
         match action {
             Action::List(options) => {
                 if let Err(e) = commands::list(options.filter, cli.format) {
-                    eprintln!("Failed to list services: {}", e);
+                    error!("failed to list services: {}", e);
                 }
             }
             Action::Details(options) => {
                 if let Err(e) = commands::details(options.service, options.filter, cli.format) {
-                    eprintln!("Failed to retrieve service details: {}", e);
+                    error!("failed to retrieve service details: {}", e);
+                }
+            }
+            Action::Discovery(options) => {
+                let should_publish = !options.disable_publish;
+                let should_notify = !options.disable_notify;
+                if let Err(e) = commands::discovery(
+                    options.rate,
+                    should_publish,
+                    options.max_subscribers,
+                    should_notify,
+                    options.max_listeners,
+                    cli.format,
+                ) {
+                    error!("failed to run service discovery: {:#}", e)
                 }
             }
         }
-    } else {
-        Cli::command().print_help().expect("Failed to print help");
     }
 
     Ok(())
