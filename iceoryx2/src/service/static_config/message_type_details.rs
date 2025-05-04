@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::alloc::Layout;
+use core::str::FromStr;
 
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_derive_macros::ZeroCopySend;

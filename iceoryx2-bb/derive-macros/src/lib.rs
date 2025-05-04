@@ -136,11 +136,11 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 ///     Circle(f64),
 ///     Rectangle { width: f64, height: f64 },
 /// }
-/// 
+///
 /// let shape1 = Shape::Point;
 /// let shape2 = Shape::Circle(5.0);
 /// let shape3 = Shape::Rectangle { width: 10.0, height: 20.0 };
-/// 
+///
 /// needs_zero_copy_send_type(&shape1);
 /// needs_zero_copy_send_type(&shape2);
 /// needs_zero_copy_send_type(&shape3);
@@ -226,7 +226,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
         Data::Enum(ref data_enum) => {
             let variant_checks = data_enum.variants.iter().map(|variant| {
                 let variant_name = &variant.ident;
-                
+
                 match &variant.fields {
                     Fields::Named(fields) => {
                         let field_checks = fields.named.iter().map(|f| {
@@ -238,7 +238,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                                 }
                             }
                         });
-                        
+
                         if fields.named.is_empty() {
                             quote! {
                                 Self::#variant_name { .. } => {}
@@ -256,20 +256,20 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                             let field_names = (0..fields.unnamed.len())
                                 .map(|i| syn::Ident::new(&format!("field_{}", i), proc_macro2::Span::call_site()))
                                 .collect::<Vec<_>>();
-                            
+
                             let field_pattern = if field_names.is_empty() {
                                 quote! {}
                             } else {
                                 quote! { (#(#field_names),*) }
                             };
-                            
+
                             // dummy call to ensure at compile-time that all fields of the variant implement ZeroCopySend
                             let field_checks = field_names.iter().map(|field_name| {
                                 quote! {
                                     iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(#field_name);
                                 }
                             });
-                            
+
                             quote! {
                                 Self::#variant_name #field_pattern => {
                                     #(#field_checks)*
@@ -284,17 +284,17 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     }
                 }
             });
-            
+
             quote! {
                 fn __is_zero_copy_send(&self) {
                     match self {
                         #(#variant_checks)*
                     }
                 }
-                
+
                 #type_name_impl
             }
-        },
+        }
         _ => {
             return quote! {compile_error!("ZeroCopySend can only be implemented for structs and enums");}
                 .into();

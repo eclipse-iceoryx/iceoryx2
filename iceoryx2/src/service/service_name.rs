@@ -22,8 +22,9 @@
 //! # }
 //! ```
 
-use crate::constants::MAX_SERVICE_NAME_LENGTH;
+use core::str::FromStr;
 
+use crate::constants::MAX_SERVICE_NAME_LENGTH;
 use iceoryx2_bb_container::byte_string::{
     FixedSizeByteString, FixedSizeByteStringModificationError,
 };
