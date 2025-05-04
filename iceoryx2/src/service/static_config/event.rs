@@ -35,10 +35,12 @@
 use core::time::Duration;
 
 use crate::{config, prelude::EventId};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_posix::clock::Time;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub(crate) struct Deadline {
     pub(crate) creation_time: Time,
     pub(crate) value: Duration,
@@ -47,7 +49,8 @@ pub(crate) struct Deadline {
 /// The static configuration of an [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event)
 /// based service. Contains all parameters that do not change during the lifetime of a
 /// [`Service`](crate::service::Service).
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub struct StaticConfig {
     pub(crate) max_notifiers: usize,
     pub(crate) max_listeners: usize,

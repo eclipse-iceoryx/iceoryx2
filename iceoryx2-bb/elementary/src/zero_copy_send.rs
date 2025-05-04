@@ -84,6 +84,8 @@ unsafe impl ZeroCopySend for IoxAtomicI64 {}
 
 unsafe impl ZeroCopySend for () {}
 
+unsafe impl ZeroCopySend for core::time::Duration {}
+
 unsafe impl<T: ZeroCopySend> ZeroCopySend for [T] {}
 unsafe impl<T: ZeroCopySend, const N: usize> ZeroCopySend for [T; N] {}
 unsafe impl<T: ZeroCopySend> ZeroCopySend for Option<T> {}

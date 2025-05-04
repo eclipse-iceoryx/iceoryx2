@@ -13,6 +13,7 @@
 use core::alloc::Layout;
 
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::{math::align, zero_copy_send::ZeroCopySend};
 use serde::{Deserialize, Serialize};
 
@@ -20,7 +21,9 @@ use crate::constants::MAX_TYPE_NAME_LENGTH;
 
 /// Defines if the type is a slice with a runtime-size ([`TypeVariant::Dynamic`])
 /// or if its a type that satisfies [`Sized`] ([`TypeVariant::FixedSize`]).
-#[derive(Default, Debug, Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(
+    Default, Debug, Clone, Copy, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize,
+)]
 pub enum TypeVariant {
     #[default]
     /// A type notated by [`#[repr(C)]`](https://doc.rust-lang.org/reference/type-layout.html#reprc).
@@ -47,7 +50,8 @@ pub enum TypeVariant {
 type TypeNameString = FixedSizeByteString<MAX_TYPE_NAME_LENGTH>;
 
 /// Contains all type details required to connect to a [`crate::service::Service`]
-#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub struct TypeDetail {
     /// The [`TypeVariant`] of the type
     pub variant: TypeVariant,
@@ -73,7 +77,8 @@ impl TypeDetail {
 }
 
 /// Contains all type information to the header and payload type.
-#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub struct MessageTypeDetails {
     /// The [`TypeDetail`] of the header of a message, the first iceoryx2 internal part.
     pub header: TypeDetail,

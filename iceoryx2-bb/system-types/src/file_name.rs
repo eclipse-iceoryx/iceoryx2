@@ -28,6 +28,7 @@
 //! ```
 
 pub use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::{static_assert_ge, static_assert_le};
 
 use core::hash::{Hash, Hasher};
@@ -74,7 +75,8 @@ semantic_string! {
   normalize: normalize
 }
 
-#[derive(Debug, Clone, Eq)]
+#[derive(Debug, Clone, Eq, ZeroCopySend)]
+#[repr(C)]
 pub struct RestrictedFileName<const CAPACITY: usize> {
     value: iceoryx2_bb_container::byte_string::FixedSizeByteString<CAPACITY>,
 }
