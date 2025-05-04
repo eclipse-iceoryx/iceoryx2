@@ -29,6 +29,7 @@
 //! println!("removed byte {}", some_string.remove(0));
 //! ```
 
+use core::str::FromStr;
 use core::{
     cmp::Ordering,
     fmt::{Debug, Display},
@@ -360,11 +361,6 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
         new_self
     }
 
-    /// Creates a new [`FixedSizeByteString`] from a string slice
-    pub fn from_str(s: &str) -> Result<Self, FixedSizeByteStringModificationError> {
-        Self::from_bytes(s.as_bytes())
-    }
-
     /// Creates a new [`FixedSizeByteString`] from a string slice. If the string slice does not fit
     /// into the [`FixedSizeByteString`] it will be truncated.
     pub fn from_str_truncated(s: &str) -> Self {
@@ -423,6 +419,11 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
     }
 
     /// Returns the content as a string slice without checking for valid UTF-8
+    ///
+    /// # Safety
+    ///
+    ///  * must be valid utf-8
+    ///
     pub unsafe fn as_str_unchecked(&self) -> &str {
         core::str::from_utf8_unchecked(self.as_bytes())
     }
@@ -709,5 +710,13 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
         if self.len < CAPACITY {
             self.data[self.len].write(0u8);
         }
+    }
+}
+
+impl<const CAPACITY: usize> FromStr for FixedSizeByteString<CAPACITY> {
+    type Err = FixedSizeByteStringModificationError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_bytes(s.as_bytes())
     }
 }
