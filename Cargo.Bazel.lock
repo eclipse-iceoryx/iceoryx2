@@ -1,5 +1,5 @@
 {
-  "checksum": "a13cb82c1641028420d3d35612dab3d76b5d1282b765294d1cb8fc56ad4fd269",
+  "checksum": "4a4d60b7630fb79557ace463de8bcbde50946dfffa743dd64cac229ecb6afcbc",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -3557,31 +3557,6 @@
           ],
           "selects": {}
         }
-      },
-      "license": "MIT OR Apache-2.0"
-    },
-    "iceoryx2-services-common 0.5.0": {
-      "name": "iceoryx2-services-common",
-      "version": "0.5.0",
-      "repository": null,
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "iceoryx2_services_common",
-            "crate_root": "src/lib.rs",
-            "srcs": [
-              "**/*.rs"
-            ]
-          }
-        }
-      ],
-      "library_target_name": "iceoryx2_services_common",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2021",
-        "version": "0.5.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -7885,7 +7860,6 @@
     "iceoryx2-pal-concurrency-sync 0.5.0": "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal-configuration 0.5.0": "iceoryx2-pal/configuration",
     "iceoryx2-pal-posix 0.5.0": "iceoryx2-pal/posix",
-    "iceoryx2-services-common 0.5.0": "iceoryx2-services/common",
     "iceoryx2-services-discovery 0.5.0": "iceoryx2-services/discovery"
   },
   "conditions": {
