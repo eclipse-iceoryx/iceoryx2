@@ -26,7 +26,7 @@ use iceoryx2_cli::Format;
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 service", false),
+    help_template = help_template("iox2 service", true, false),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -84,17 +84,17 @@ pub struct DiscoveryOptions {
 pub enum Action {
     #[clap(
         about = "List all services",
-        help_template = help_template("iox2 service list", false)
+        help_template = help_template("iox2 service list", false, false)
     )]
     List(ListOptions),
     #[clap(
         about = "Show service details",
-        help_template = help_template("iox2 service details", false)
+        help_template = help_template("iox2 service details", false, false)
     )]
     Details(DetailsOptions),
     #[clap(
         about = "Runs the service discovery service within a process", 
-        help_template = help_template("iox2 service discovery", false)
+        help_template = help_template("iox2 service discovery", false, false)
     )]
     Discovery(DiscoveryOptions),
 }

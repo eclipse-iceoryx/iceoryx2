@@ -27,7 +27,7 @@ use iceoryx2_cli::Format;
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 node", false),
+    help_template = help_template("iox2 node", true, false),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -60,8 +60,8 @@ pub struct DetailsOptions {
 
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "List all nodes")]
+    #[clap(about = "List all nodes", help_template = help_template("iox2 node list", false, false))]
     List(ListOptions),
-    #[clap(about = "Show node details")]
+    #[clap(about = "Show node details", help_template = help_template("iox2 node details", false, false))]
     Details(DetailsOptions),
 }
