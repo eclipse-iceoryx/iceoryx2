@@ -99,6 +99,8 @@
     [#646](https://github.com/eclipse-iceoryx/iceoryx2/issues/646)
 * Improve naming in `AttributeSet` methods and `ServiceId`
     [#697](https://github.com/eclipse-iceoryx/iceoryx2/issues/697)
+* Efficient `Clone` for `FixedSizeByteString`
+    [#717](https://github.com/eclipse-iceoryx/iceoryx2/issues/717)
 
 ### Workflow
 
@@ -241,3 +243,15 @@
 
 11. Renamed `ServiceId::max_len()`
    into `ServiceId::max_number_of_characters()`
+
+12. The following types no longer implement `Copy`
+   (the only implement `Clone`):
+
+* `FixedSizeByteString`
+* `SemanticString`
+* `Base64URL`
+* `FileName`
+* `FilePath`
+* `GroupName`
+* `UserName`
+* `ServiceId`

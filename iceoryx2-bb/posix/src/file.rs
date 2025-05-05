@@ -277,7 +277,7 @@ impl FileBuilder {
     /// Creates a new FileBuilder and sets the path of the file which should be opened.
     pub fn new(file_path: &FilePath) -> Self {
         FileBuilder {
-            file_path: *file_path,
+            file_path: file_path.clone(),
             access_mode: AccessMode::Read,
             permission: Permission::OWNER_ALL,
             has_ownership: false,
@@ -431,11 +431,11 @@ pub struct File {
 impl Drop for File {
     fn drop(&mut self) {
         if self.has_ownership {
-            match self.path {
+            match &self.path {
                 None => {
                     warn!(from self, "Files created from file descriptors cannot remove themselves.")
                 }
-                Some(p) => match File::remove(&p) {
+                Some(p) => match File::remove(p) {
                     Ok(false) | Err(_) => {
                         warn!(from self, "Failed to remove owned file");
                     }
@@ -489,7 +489,7 @@ impl File {
 
         if let Some(v) = file_descriptor {
             return Ok(File {
-                path: Some(config.file_path),
+                path: Some(config.file_path.clone()),
                 file_descriptor: v,
                 has_ownership: config.has_ownership,
             });
@@ -719,12 +719,12 @@ impl File {
 
     /// Deletes the file managed by self
     pub fn remove_self(self) -> Result<bool, FileRemoveError> {
-        match self.path {
+        match &self.path {
             None => {
                 warn!(from self, "Files created from file descriptors cannot remove themselves.");
                 Ok(false)
             }
-            Some(p) => File::remove(&p),
+            Some(p) => File::remove(p),
         }
     }
 

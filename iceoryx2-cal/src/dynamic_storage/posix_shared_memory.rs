@@ -91,9 +91,9 @@ pub struct Configuration<T: Send + Sync + Debug> {
 impl<T: Send + Sync + Debug> Clone for Configuration<T> {
     fn clone(&self) -> Self {
         Self {
-            suffix: self.suffix,
-            prefix: self.prefix,
-            path: self.path,
+            suffix: self.suffix.clone(),
+            prefix: self.prefix.clone(),
+            path: self.path.clone(),
             _data: PhantomData,
         }
     }
@@ -121,7 +121,7 @@ impl<T: Send + Sync + Debug> DynamicStorageConfiguration<T> for Configuration<T>
 
 impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = *value;
+        self.prefix = value.clone();
         self
     }
 
@@ -130,12 +130,12 @@ impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = *value;
+        self.suffix = value.clone();
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path = *value;
+        self.path = value.clone();
         self
     }
 
@@ -161,7 +161,7 @@ impl<T: Send + Sync + Debug> NamedConceptBuilder<Storage<T>> for Builder<'_, T> 
         Self {
             call_drop_on_destruction: true,
             has_ownership: true,
-            storage_name: *storage_name,
+            storage_name: storage_name.clone(),
             supplementary_size: 0,
             config: Configuration::default(),
             timeout: Duration::ZERO,
@@ -246,7 +246,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
 
         Ok(Storage {
             shm,
-            name: self.storage_name,
+            name: self.storage_name.clone(),
             _phantom_data: PhantomData,
         })
     }
@@ -338,7 +338,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
 
         Ok(Storage {
             shm,
-            name: self.storage_name,
+            name: self.storage_name.clone(),
             _phantom_data: PhantomData,
         })
     }

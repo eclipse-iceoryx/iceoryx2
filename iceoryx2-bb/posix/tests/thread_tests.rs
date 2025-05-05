@@ -39,7 +39,7 @@ fn thread_set_name_works() {
     };
 
     barrier.wait();
-    let name = *thread.get_name().unwrap();
+    let name = thread.get_name().unwrap().clone();
     barrier.wait();
     drop(thread);
 

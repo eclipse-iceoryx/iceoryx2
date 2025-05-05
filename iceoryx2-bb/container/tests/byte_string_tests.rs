@@ -307,23 +307,23 @@ mod fixed_size_byte_string {
     fn strip_prefix_works() {
         let sut = unsafe { Sut::new_unchecked(b"msla:0123_lerata.fuu") };
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_prefix(b"bkasjdkas120ie19jdkasjdksjd"), eq false);
         assert_that!(sut_clone, eq sut);
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_prefix(b"msla:"), eq true);
         assert_that!(sut_clone, eq b"0123_lerata.fuu");
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_prefix(b"m"), eq true);
         assert_that!(sut_clone, eq b"sla:0123_lerata.fuu");
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_prefix(b"sla"), eq false);
         assert_that!(sut_clone, eq sut);
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_prefix(b"fuu"), eq false);
         assert_that!(sut_clone, eq sut);
     }
@@ -332,23 +332,23 @@ mod fixed_size_byte_string {
     fn strip_suffix_works() {
         let sut = unsafe { Sut::new_unchecked(b"msla:0123_lerata.fuu") };
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_suffix(b"bkaslqwsd0jdkasjdkasjdksjd"), eq false);
         assert_that!(sut_clone, eq sut);
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_suffix(b".fuu"), eq true);
         assert_that!(sut_clone, eq b"msla:0123_lerata");
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_suffix(b"u"), eq true);
         assert_that!(sut_clone, eq b"msla:0123_lerata.fu");
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_suffix(b"fu"), eq false);
         assert_that!(sut_clone, eq sut);
 
-        let mut sut_clone = sut;
+        let mut sut_clone = sut.clone();
         assert_that!(sut_clone.strip_suffix(b"msla"), eq false);
         assert_that!(sut_clone, eq sut);
     }

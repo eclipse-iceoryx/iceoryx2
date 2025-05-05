@@ -546,7 +546,10 @@ impl<Service: service::Service> DeadNodeView<Service> {
                     debug!(from self,
                         "{msg} since the service itself is corrupted. Trying to remove the corrupted remainders of the service.");
                     match unsafe {
-                        remove_static_service_config::<Service>(config, &service_id.0.into())
+                        remove_static_service_config::<Service>(
+                            config,
+                            &service_id.0.clone().into(),
+                        )
                     } {
                         Ok(v) => {
                             if let Err(e) =

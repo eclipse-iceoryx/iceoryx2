@@ -23,7 +23,7 @@ pub use iceoryx2_bb_system_types::file_name::FileName;
 
 const MAX_BATCH_SIZE: usize = 512;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
     suffix: FileName,
     prefix: FileName,
@@ -42,7 +42,7 @@ impl Default for Configuration {
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = *value;
+        self.prefix = value.clone();
         self
     }
 
@@ -51,12 +51,12 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = *value;
+        self.suffix = value.clone();
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path = *value;
+        self.path = value.clone();
         self
     }
 
@@ -90,14 +90,16 @@ impl NamedConceptMgmt for EventImpl {
     ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
         crate::communication_channel::unix_datagram::Channel::<TriggerId>::does_exist_cfg(
             name,
-            &(*cfg).into(),
+            &(cfg.clone()).into(),
         )
     }
 
     fn list_cfg(
         cfg: &Self::Configuration,
     ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
-        crate::communication_channel::unix_datagram::Channel::<TriggerId>::list_cfg(&(*cfg).into())
+        crate::communication_channel::unix_datagram::Channel::<TriggerId>::list_cfg(
+            &(cfg.clone()).into(),
+        )
     }
 
     unsafe fn remove_cfg(
@@ -106,7 +108,7 @@ impl NamedConceptMgmt for EventImpl {
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
         crate::communication_channel::unix_datagram::Channel::<TriggerId>::remove_cfg(
             name,
-            &(*cfg).into(),
+            &(cfg.clone()).into(),
         )
     }
 
@@ -173,13 +175,13 @@ pub struct NotifierBuilder {
 impl NamedConceptBuilder<EventImpl> for NotifierBuilder {
     fn new(name: &FileName) -> Self {
         Self {
-            name: *name,
+            name: name.clone(),
             config: Configuration::default(),
         }
     }
 
     fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }
@@ -337,13 +339,13 @@ pub struct ListenerBuilder {
 impl NamedConceptBuilder<EventImpl> for ListenerBuilder {
     fn new(name: &FileName) -> Self {
         Self {
-            name: *name,
+            name: name.clone(),
             config: Configuration::default(),
         }
     }
 
     fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }

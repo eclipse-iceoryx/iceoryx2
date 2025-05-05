@@ -417,10 +417,11 @@ mod dynamic_storage {
         let barrier_2 = barrier_1.clone();
 
         std::thread::scope(|s| {
+            let tstorage_name = storage_name.clone();
             let config_1 = config.clone();
             s.spawn(move || {
                 barrier_1.wait();
-                let _sut = Sut::Builder::new(&storage_name)
+                let _sut = Sut::Builder::new(&tstorage_name)
                     .config(&config_1)
                     .supplementary_size(0)
                     .has_ownership(false)
@@ -433,11 +434,12 @@ mod dynamic_storage {
                     .unwrap();
             });
 
+            let tstorage_name = storage_name.clone();
             let config_2 = config.clone();
             s.spawn(move || {
                 barrier_2.wait();
                 loop {
-                let sut2 = Sut::Builder::new(&storage_name).config(&config_2).open();
+                let sut2 = Sut::Builder::new(&tstorage_name).config(&config_2).open();
                 if sut2.is_err() {
                     let err = sut2.err().unwrap();
                     assert_that!(err == DynamicStorageOpenError::DoesNotExist || err == DynamicStorageOpenError::InitializationNotYetFinalized, eq true);
@@ -465,10 +467,11 @@ mod dynamic_storage {
         let _watchdog = Watchdog::new();
 
         std::thread::scope(|s| {
+            let tstorage_name = storage_name.clone();
             let config_1 = config.clone();
             let barrier_1 = barrier.clone();
             s.spawn(move || {
-                let _sut = Sut::Builder::new(&storage_name)
+                let _sut = Sut::Builder::new(&tstorage_name)
                     .config(&config_1)
                     .supplementary_size(0)
                     .initializer(|_, _| {
@@ -814,7 +817,7 @@ mod dynamic_storage {
                     .create(TestData::new(123))
                     .unwrap(),
             );
-            testdata_storages_names.push(storage_name);
+            testdata_storages_names.push(storage_name.clone());
 
             u64_storages.push(
                 WrongTypeSut::Builder::new(&storage_name)

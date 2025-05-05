@@ -62,7 +62,7 @@ impl TestFixture {
 
         let file = FilePath::from_path_and_file(directory, &file).unwrap();
 
-        self.files.push(file);
+        self.files.push(file.clone());
 
         FileBuilder::new(&file)
             .creation_mode(CreationMode::PurgeAndCreate)
@@ -71,7 +71,7 @@ impl TestFixture {
     }
 
     fn create_dir(&mut self, directory: &Path) -> Directory {
-        let mut directory = *directory;
+        let mut directory = directory.clone();
         let mut file = FileName::new(b"dir_tests_").unwrap();
         file.push_bytes(
             UniqueSystemId::new()
@@ -83,7 +83,7 @@ impl TestFixture {
         .unwrap();
         directory.add_path_entry(&file.into()).unwrap();
 
-        self.directories.push(directory);
+        self.directories.push(directory.clone());
 
         Directory::create(&directory, Permission::OWNER_ALL).unwrap()
     }
@@ -101,7 +101,7 @@ impl TestFixture {
                     .as_bytes(),
             )
             .unwrap();
-        self.directories.push(directory);
+        self.directories.push(directory.clone());
 
         directory
     }

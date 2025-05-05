@@ -147,7 +147,7 @@ pub mod details {
     {
         fn new(name: &FileName) -> Self {
             Self {
-                name: *name,
+                name: name.clone(),
                 config: Configuration::default(),
                 size: 0,
                 timeout: Duration::ZERO,

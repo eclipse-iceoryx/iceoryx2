@@ -46,7 +46,7 @@ pub struct SharedMemoryDirectoryCreator {
 impl SharedMemoryDirectoryCreator {
     pub fn new(name: &FileName) -> Self {
         Self {
-            name: *name,
+            name: name.clone(),
             size: 0,
             is_persistent: false,
         }

@@ -193,7 +193,7 @@ impl ThreadBuilder {
     /// Sets the name of the thread. It is not allowed to be longer than
     /// [`crate::config::MAX_THREAD_NAME_LENGTH`] and must consist of ASCII characters only.
     pub fn name(mut self, value: &ThreadName) -> Self {
-        self.name = *value;
+        self.name = value.clone();
         self
     }
 
@@ -409,7 +409,7 @@ impl ThreadBuilder {
         unsafe {
             startup_args.write(ThreadStartupArgs {
                 callback: f,
-                name: self.name,
+                name: self.name.clone(),
                 _data: PhantomData,
             });
         }
@@ -447,7 +447,7 @@ impl ThreadBuilder {
 
         Ok(Thread::new(ThreadHandle {
             handle,
-            name: UnsafeCell::new(self.name),
+            name: UnsafeCell::new(self.name.clone()),
         }))
     }
 }

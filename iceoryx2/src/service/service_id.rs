@@ -30,9 +30,10 @@ impl ServiceId {
         messaging_pattern: MessagingPattern,
     ) -> Self {
         let pattern_and_service = (messaging_pattern as u32).to_string() + service_name.as_str();
-        let value = *Hasher::new(pattern_and_service.as_bytes())
+        let value = Hasher::new(pattern_and_service.as_bytes())
             .value()
-            .as_base64url();
+            .as_base64url()
+            .clone();
 
         Self(fatal_panic!(from "ServiceId::new()",
                    when RestrictedFileName::new(&value),

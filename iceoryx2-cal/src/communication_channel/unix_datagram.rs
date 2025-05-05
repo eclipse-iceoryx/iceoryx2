@@ -27,7 +27,7 @@ use crate::static_storage::file::{
     NamedConceptRemoveError,
 };
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
     suffix: FileName,
     prefix: FileName,
@@ -46,7 +46,7 @@ impl Default for Configuration {
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = *value;
+        self.prefix = value.clone();
         self
     }
 
@@ -55,12 +55,12 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = *value;
+        self.suffix = value.clone();
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path_hint = *value;
+        self.path_hint = value.clone();
         self
     }
 
@@ -182,7 +182,7 @@ pub struct Creator<T: Copy + Debug> {
 impl<T: Copy + Debug> NamedConceptBuilder<Channel<T>> for Creator<T> {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            channel_name: *channel_name,
+            channel_name: channel_name.clone(),
             enable_safe_overflow: false,
             buffer_size: DEFAULT_RECEIVER_BUFFER_SIZE,
             config: Configuration::default(),
@@ -191,7 +191,7 @@ impl<T: Copy + Debug> NamedConceptBuilder<Channel<T>> for Creator<T> {
     }
 
     fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }
@@ -284,14 +284,14 @@ impl<T: Copy + Debug> Connector<T> {
 impl<T: Copy + Debug> NamedConceptBuilder<Channel<T>> for Connector<T> {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            channel_name: *channel_name,
+            channel_name: channel_name.clone(),
             config: Configuration::default(),
             _phantom_data: PhantomData,
         }
     }
 
     fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }

@@ -43,7 +43,7 @@ pub mod details {
         has_listener: IoxAtomicBool,
     }
 
-    #[derive(Copy, PartialEq, Eq)]
+    #[derive(PartialEq, Eq)]
     pub struct Configuration<
         Tracker: IdTracker,
         WaitMechanism: SignalMechanism,
@@ -117,9 +117,9 @@ pub mod details {
     {
         fn clone(&self) -> Self {
             Self {
-                suffix: self.suffix,
-                prefix: self.prefix,
-                path: self.path,
+                suffix: self.suffix.clone(),
+                prefix: self.prefix.clone(),
+                path: self.path.clone(),
                 _tracker: PhantomData,
                 _wait_mechanism: PhantomData,
                 _storage: PhantomData,
@@ -134,7 +134,7 @@ pub mod details {
         > NamedConceptConfiguration for Configuration<Tracker, WaitMechanism, Storage>
     {
         fn prefix(mut self, value: &FileName) -> Self {
-            self.prefix = *value;
+            self.prefix = value.clone();
             self
         }
 
@@ -143,12 +143,12 @@ pub mod details {
         }
 
         fn suffix(mut self, value: &FileName) -> Self {
-            self.suffix = *value;
+            self.suffix = value.clone();
             self
         }
 
         fn path_hint(mut self, value: &Path) -> Self {
-            self.path = *value;
+            self.path = value.clone();
             self
         }
 
@@ -320,7 +320,7 @@ pub mod details {
     {
         fn new(name: &FileName) -> Self {
             Self {
-                name: *name,
+                name: name.clone(),
                 creation_timeout: Duration::ZERO,
                 config: Configuration::default(),
             }
@@ -555,7 +555,7 @@ pub mod details {
     {
         fn new(name: &FileName) -> Self {
             Self {
-                name: *name,
+                name: name.clone(),
                 config: Configuration::default(),
                 trigger_id_max: TRIGGER_ID_DEFAULT_MAX,
             }

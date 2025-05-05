@@ -135,7 +135,7 @@ pub struct SharedMemoryBuilder {
 impl SharedMemoryBuilder {
     pub fn new(name: &FileName) -> Self {
         SharedMemoryBuilder {
-            name: *name,
+            name: name.clone(),
             size: 0,
             is_memory_locked: false,
             permission: Permission::OWNER_ALL,
@@ -289,7 +289,7 @@ impl SharedMemoryCreationBuilder {
         };
 
         let mut shm = SharedMemory {
-            name: self.config.name,
+            name: self.config.name.clone(),
             base_address: core::ptr::null_mut::<u8>(),
             size: self.config.size,
             has_ownership: IoxAtomicBool::new(self.config.has_ownership),

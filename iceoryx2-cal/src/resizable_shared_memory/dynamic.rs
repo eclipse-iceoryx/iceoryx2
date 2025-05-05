@@ -125,7 +125,7 @@ where
     fn new(name: &FileName) -> Self {
         Self {
             config: ViewConfig {
-                base_name: *name,
+                base_name: name.clone(),
                 shm: Shm::Configuration::default(),
                 shm_builder_timeout: Duration::ZERO,
                 _data: PhantomData,
@@ -195,7 +195,7 @@ where
     fn new(name: &FileName) -> Self {
         Self {
             config: MemoryConfig {
-                base_name: *name,
+                base_name: name.clone(),
                 allocator_config_hint: Allocator::Configuration::default(),
                 shm: Shm::Configuration::default(),
             },
@@ -492,7 +492,7 @@ where
     fn managment_segment_name(base_name: &FileName) -> FileName {
         let origin = "resizable_shared_memory::DynamicMemory::managment_segment_name()";
         let msg = "Unable to construct management segment name";
-        let mut adjusted_name = *base_name;
+        let mut adjusted_name = base_name.clone();
         fatal_panic!(from origin, when adjusted_name.push_bytes(SEGMENT_ID_SEPARATOR),
                         "This should never happen! {msg} since it would result in an invalid file name.");
         fatal_panic!(from origin, when adjusted_name.push_bytes(MANAGEMENT_SUFFIX),
@@ -501,7 +501,7 @@ where
     }
 
     fn extract_name_from_management_segment(name: &FileName) -> Option<FileName> {
-        let mut name = *name;
+        let mut name = name.clone();
         if let Ok(true) = name.strip_suffix(MANAGEMENT_SUFFIX) {
             if let Ok(true) = name.strip_suffix(SEGMENT_ID_SEPARATOR) {
                 return Some(name);
@@ -527,7 +527,7 @@ where
                 return None;
             }
 
-            let mut raw_segment_id = *name.as_string();
+            let mut raw_segment_id = name.as_string().clone();
             raw_segment_id.remove_range(0, segment_id_start_pos);
 
             // check nymber of digits
@@ -545,7 +545,7 @@ where
                 return None;
             }
 
-            let mut name = *name;
+            let mut name = name.clone();
             fatal_panic!(from origin,
                 when name.remove_range(pos, name.len() - pos),
                 "This should never happen! {msg} since the shared memory segment is an invalid file name without the segment id suffix.");
@@ -592,7 +592,7 @@ where
         segment_id: SegmentId,
     ) -> Shm::Builder {
         let msg = "This should never happen! Unable to create additional shared memory segment since it would result in an invalid shared memory name.";
-        let mut adjusted_name = *base_name;
+        let mut adjusted_name = base_name.clone();
         fatal_panic!(from config, when adjusted_name.push_bytes(SEGMENT_ID_SEPARATOR), "{msg}");
         fatal_panic!(from config, when adjusted_name.push_bytes(segment_id.value().to_string().as_bytes()), "{msg}");
         Shm::Builder::new(&adjusted_name).config(config)

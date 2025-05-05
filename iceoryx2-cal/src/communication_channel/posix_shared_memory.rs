@@ -38,20 +38,20 @@ impl NamedConceptMgmt for Channel {
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptDoesExistError> {
-        SharedMemory::does_exist_cfg(name, &(*cfg).into())
+        SharedMemory::does_exist_cfg(name, &(cfg.clone()).into())
     }
 
     fn list_cfg(
         cfg: &Self::Configuration,
     ) -> Result<Vec<FileName>, crate::static_storage::file::NamedConceptListError> {
-        SharedMemory::list_cfg(&(*cfg).into())
+        SharedMemory::list_cfg(&(cfg.clone()).into())
     }
 
     unsafe fn remove_cfg(
         name: &FileName,
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::static_storage::file::NamedConceptRemoveError> {
-        SharedMemory::remove_cfg(name, &(*cfg).into())
+        SharedMemory::remove_cfg(name, &(cfg.clone()).into())
     }
 
     fn remove_path_hint(_value: &Path) -> Result<(), NamedConceptPathHintRemoveError> {
@@ -74,7 +74,7 @@ impl CommunicationChannel<u64> for Channel {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Configuration {
     suffix: FileName,
     prefix: FileName,
@@ -102,7 +102,7 @@ impl From<Configuration> for dynamic_storage::posix_shared_memory::Configuration
 
 impl NamedConceptConfiguration for Configuration {
     fn prefix(mut self, value: &FileName) -> Self {
-        self.prefix = *value;
+        self.prefix = value.clone();
         self
     }
 
@@ -111,12 +111,12 @@ impl NamedConceptConfiguration for Configuration {
     }
 
     fn suffix(mut self, value: &FileName) -> Self {
-        self.suffix = *value;
+        self.suffix = value.clone();
         self
     }
 
     fn path_hint(mut self, value: &Path) -> Self {
-        self.path_hint = *value;
+        self.path_hint = value.clone();
         self
     }
 
@@ -140,7 +140,7 @@ pub struct Creator {
 impl NamedConceptBuilder<Channel> for Creator {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            channel_name: *channel_name,
+            channel_name: channel_name.clone(),
             enable_safe_overflow: false,
             buffer_size: DEFAULT_RECEIVER_BUFFER_SIZE,
             config: Configuration::default(),
@@ -148,7 +148,7 @@ impl NamedConceptBuilder<Channel> for Creator {
     }
 
     fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }
@@ -167,7 +167,7 @@ impl CommunicationChannelCreator<u64, Channel> for Creator {
     fn create_receiver(self) -> Result<Receiver, CommunicationChannelCreateError> {
         let msg = "Unable to create communication channel";
         let shared_memory = match SharedMemoryBuilder::new(&self.channel_name)
-            .config(&self.config.into())
+            .config(&self.config.clone().into())
             .supplementary_size(SafelyOverflowingIndexQueue::const_memory_size(
                 self.buffer_size,
             ))
@@ -202,13 +202,13 @@ pub struct Connector {
 impl NamedConceptBuilder<Channel> for Connector {
     fn new(channel_name: &FileName) -> Self {
         Self {
-            channel_name: *channel_name,
+            channel_name: channel_name.clone(),
             config: Configuration::default(),
         }
     }
 
     fn config(mut self, config: &Configuration) -> Self {
-        self.config = *config;
+        self.config = config.clone();
         self
     }
 }
@@ -218,7 +218,7 @@ impl CommunicationChannelConnector<u64, Channel> for Connector {
         let msg = "Unable to try open communication channel";
 
         match SharedMemoryBuilder::new(&self.channel_name)
-            .config(&self.config.into())
+            .config(&self.config.clone().into())
             .open()
         {
             Ok(shared_memory) => Ok(Sender { shared_memory }),
