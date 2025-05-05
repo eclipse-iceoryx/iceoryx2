@@ -469,8 +469,6 @@ dependencies = [
  "iceoryx2-bb-log",
  "iceoryx2-bb-system-types",
  "iceoryx2-services-discovery",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -830,11 +828,11 @@ version = "0.5.0"
 dependencies = [
  "generic-tests",
  "iceoryx2",
+ "iceoryx2-bb-elementary",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "once_cell",
  "serde",
- "serde_json",
 ]
 
 [[package]]

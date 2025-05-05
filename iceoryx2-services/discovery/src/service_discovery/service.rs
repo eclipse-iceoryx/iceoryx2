@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::service_discovery::{SyncError, Tracker};
+use iceoryx2::prelude::ZeroCopySend;
 use iceoryx2::{
     config::Config as IceoryxConfig,
     node::{Node, NodeBuilder, NodeCreationFailure},
@@ -19,7 +20,7 @@ use iceoryx2::{
         publisher::{Publisher, PublisherCreateError},
         LoanError, SendError,
     },
-    prelude::{AllocationStrategy, ServiceName},
+    prelude::ServiceName,
     service::{
         builder::{
             event::EventOpenOrCreateError, publish_subscribe::PublishSubscribeOpenOrCreateError,
@@ -34,8 +35,9 @@ use once_cell::sync::Lazy;
 const SERVICE_NAME: &str = "discovery/services/";
 
 /// Events emitted by the service discovery service.
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, ZeroCopySend, serde::Serialize, serde::Deserialize)]
 #[allow(dead_code)] // Fields used by subscribers
+#[repr(C)]
 pub enum Discovery {
     /// A service has been added to the system.
     ///
@@ -49,7 +51,7 @@ pub enum Discovery {
 }
 
 /// The payload type used for publishing discovery changes
-pub type Payload = [u8];
+pub type Payload = Discovery;
 
 /// Errors that can occur when creating the service discovery service.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -243,7 +245,7 @@ pub struct Service<S: ServiceType> {
     discovery_config: Config,
     iceoryx_config: IceoryxConfig,
     _node: Node<S>,
-    publisher: Option<Publisher<S, [u8], ()>>,
+    publisher: Option<Publisher<S, Payload, ()>>,
     notifier: Option<Notifier<S>>,
     tracker: Tracker<S>,
 }
@@ -280,13 +282,7 @@ impl<S: ServiceType> Service<S> {
                 .max_publishers(1)
                 .open_or_create()?;
 
-            publisher = Some(
-                publish_subscribe
-                    .publisher_builder()
-                    .initial_max_slice_len(1024)
-                    .allocation_strategy(AllocationStrategy::PowerOfTwo)
-                    .create()?,
-            );
+            publisher = Some(publish_subscribe.publisher_builder().create()?);
         }
 
         let mut notifier = None;
@@ -357,7 +353,12 @@ impl<S: ServiceType> Service<S> {
                 {
                     continue;
                 }
-                self.publish(&Discovery::Added(service.static_details.clone()))?;
+                if let Some(publisher) = &self.publisher {
+                    let sample = publisher.loan_uninit()?;
+                    let sample =
+                        sample.write_payload(Discovery::Added(service.static_details.clone()));
+                    sample.send()?;
+                }
                 on_added(service);
             }
         }
@@ -368,7 +369,12 @@ impl<S: ServiceType> Service<S> {
             {
                 continue;
             }
-            self.publish(&Discovery::Removed(service.static_details.clone()))?;
+            if let Some(publisher) = &self.publisher {
+                let sample = publisher.loan_uninit()?;
+                let sample =
+                    sample.write_payload(Discovery::Removed(service.static_details.clone()));
+                sample.send()?;
+            }
             on_removed(service);
         }
 
@@ -379,23 +385,6 @@ impl<S: ServiceType> Service<S> {
             }
         }
 
-        Ok(())
-    }
-
-    fn publish(&self, discovery: &Discovery) -> Result<(), SpinError> {
-        if let Some(publisher) = &self.publisher {
-            // This intermediate struct is inefficient ... need to find a serialization
-            // solution that can serialize directly to the loaned buffer.
-            //
-            // See: https://github.com/eclipse-iceoryx/iceoryx2/issues/708
-            let serialized =
-                serde_json::to_vec(discovery).map_err(|_| SpinError::PublishFailure)?;
-
-            let sample = publisher.loan_slice_uninit(serialized.len())?;
-
-            let sample = sample.write_from_slice(serialized.as_slice());
-            sample.send()?;
-        }
         Ok(())
     }
 }
