@@ -23,7 +23,7 @@ use anyhow::Result;
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Cli;
-use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_bb_log::{set_log_level_from_env_or, LogLevel};
 
 fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
             .install();
     }
 
-    set_log_level(LogLevel::Warn);
+    set_log_level_from_env_or(LogLevel::Warn);
 
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,
