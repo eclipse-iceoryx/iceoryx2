@@ -20,10 +20,13 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use super::iox2_service_type_e;
 use super::iox2_unable_to_deliver_strategy_e;
+use super::iox2_unique_client_id_h;
+use super::iox2_unique_client_id_t;
 use super::AssertNonNullHandle;
 use super::HandleToType;
 use super::PayloadFfi;
 use super::UserHeaderFfi;
+use core::ffi::c_int;
 
 // BEGIN types definition
 pub(super) union ClientUnion {
@@ -137,5 +140,62 @@ pub unsafe extern "C" fn iox2_client_unable_to_deliver_strategy(
             .unable_to_deliver_strategy()
             .into(),
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_client_initial_max_slice_len(handle: iox2_client_h_ref) -> c_int {
+    handle.assert_non_null();
+
+    let client = &mut *handle.as_type();
+    match client.service_type {
+        iox2_service_type_e::IPC => client.value.as_mut().ipc.initial_max_slice_len() as c_int,
+        iox2_service_type_e::LOCAL => client.value.as_mut().local.initial_max_slice_len() as c_int,
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_client_id(
+    handle: iox2_client_h_ref,
+    id_struct_ptr: *mut iox2_unique_client_id_t,
+    id_handle_ptr: *mut iox2_unique_client_id_h,
+) {
+    handle.assert_non_null();
+    debug_assert!(!id_handle_ptr.is_null());
+
+    fn no_op(_: *mut iox2_unique_client_id_t) {}
+    let mut deleter: fn(*mut iox2_unique_client_id_t) = no_op;
+    let mut storage_ptr = id_struct_ptr;
+    if id_struct_ptr.is_null() {
+        deleter = iox2_unique_client_id_t::dealloc;
+        storage_ptr = iox2_unique_client_id_t::alloc();
+    }
+    debug_assert!(!storage_ptr.is_null());
+
+    let client = &mut *handle.as_type();
+
+    let id = match client.service_type {
+        iox2_service_type_e::IPC => client.value.as_mut().ipc.id(),
+        iox2_service_type_e::LOCAL => client.value.as_mut().local.id(),
+    };
+
+    (*storage_ptr).init(id, deleter);
+    *id_handle_ptr = (*storage_ptr).as_handle();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_client_drop(client_handle: iox2_client_h) {
+    client_handle.assert_non_null();
+
+    let client = &mut *client_handle.as_type();
+
+    match client.service_type {
+        iox2_service_type_e::IPC => {
+            ManuallyDrop::drop(&mut client.value.as_mut().ipc);
+        }
+        iox2_service_type_e::LOCAL => {
+            ManuallyDrop::drop(&mut client.value.as_mut().local);
+        }
+    }
+    (client.deleter)(client);
 }
 // END C API
