@@ -30,6 +30,9 @@ rust_library(
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
         "@crate_index//:serde",
     ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+    ]
 )
 
 rust_test_suite(

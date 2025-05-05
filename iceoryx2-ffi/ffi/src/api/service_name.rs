@@ -18,8 +18,10 @@ use crate::api::{
 use crate::c_size_t;
 
 use iceoryx2::prelude::*;
+use iceoryx2::service::service_name::ServiceNameError;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_bb_elementary::AsCStr;
+use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
 
 use core::ffi::{c_char, c_int};
 use core::{slice, str};
@@ -27,9 +29,27 @@ use core::{slice, str};
 // BEGIN type definition
 
 #[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_service_name_error_e {
+    INVALID_CONTENT = IOX2_OK as isize + 1,
+    EXCEEDS_MAXIMUM_LENGTH,
+}
+
+impl IntoCInt for ServiceNameError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            ServiceNameError::InvalidContent => iox2_service_name_error_e::INVALID_CONTENT,
+            ServiceNameError::ExceedsMaximumLength => {
+                iox2_service_name_error_e::EXCEEDS_MAXIMUM_LENGTH
+            }
+        }) as c_int
+    }
+}
+
+#[repr(C)]
 #[repr(align(8))] // alignment of Option<ServiceName>
 pub struct iox2_service_name_storage_t {
-    internal: [u8; 24], // magic number obtained with size_of::<Option<ServiceName>>()
+    internal: [u8; 272], // magic number obtained with size_of::<Option<ServiceName>>()
 }
 
 #[repr(C)]

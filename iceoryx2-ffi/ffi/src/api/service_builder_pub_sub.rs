@@ -299,7 +299,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_detai
 
     let value = TypeDetail {
         variant: type_variant.into(),
-        type_name,
+        type_name: type_name.as_str().into(),
         size,
         alignment,
     };
@@ -376,7 +376,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
 
     let value = TypeDetail {
         variant: type_variant.into(),
-        type_name,
+        type_name: type_name.as_str().into(),
         size,
         alignment,
     };

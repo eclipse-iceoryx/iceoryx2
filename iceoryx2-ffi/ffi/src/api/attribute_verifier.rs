@@ -47,7 +47,7 @@ impl AttributeVerifierType {
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<AttributeVerifier>
 pub struct iox2_attribute_verifier_storage_t {
-    internal: [u8; 48], // magic number obtained with size_of::<Option<AttributeVerifier>>()
+    internal: [u8; 6984], // magic number obtained with size_of::<Option<AttributeVerifier>>()
 }
 
 #[repr(C)]
@@ -221,7 +221,11 @@ pub unsafe extern "C" fn iox2_attribute_verifier_attributes(
     debug_assert!(!handle.is_null());
 
     let attribute_verifier_struct = &mut *handle.as_type();
-    attribute_verifier_struct.value.as_ref().0.attributes()
+    attribute_verifier_struct
+        .value
+        .as_ref()
+        .0
+        .required_attributes()
 }
 
 /// Verifies if the [`iox2_attribute_set_ptr`] contains all required keys and key-value pairs.
@@ -274,7 +278,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_number_of_keys(
     debug_assert!(!handle.is_null());
     let attribute_verifier_struct = &mut *handle.as_type();
     let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
-    attribute_verifier.keys().len()
+    attribute_verifier.required_keys().len()
 }
 
 /// Returns the length of a required key at a specific key index.
@@ -292,8 +296,8 @@ pub unsafe extern "C" fn iox2_attribute_verifier_key_len(
     let attribute_verifier_struct = &mut *handle.as_type();
     let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    debug_assert!(key_index < attribute_verifier.keys().len());
-    attribute_verifier.keys()[key_index].len()
+    debug_assert!(key_index < attribute_verifier.required_keys().len());
+    attribute_verifier.required_keys()[key_index].len()
 }
 
 /// Copies the key value at a specific key index into the provided buffer.
@@ -315,9 +319,9 @@ pub unsafe extern "C" fn iox2_attribute_verifier_key(
     let attribute_verifier_struct = &mut *handle.as_type();
     let attribute_verifier = &attribute_verifier_struct.value.as_ref().0;
 
-    debug_assert!(key_index < attribute_verifier.keys().len());
+    debug_assert!(key_index < attribute_verifier.required_keys().len());
 
-    if let Ok(key) = CString::new(attribute_verifier.keys()[key_index].as_bytes()) {
+    if let Ok(key) = CString::new(attribute_verifier.required_keys()[key_index].as_bytes()) {
         let copied_length = key_value_buffer_len.min(key.as_bytes_with_nul().len());
 
         core::ptr::copy_nonoverlapping(
