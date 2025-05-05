@@ -336,7 +336,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenOrCreateError> {
         let msg = "Unable to open or create event service";
 
@@ -351,11 +351,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
             retry_count += 1;
 
             match self.base.is_service_available(msg)? {
-                Some(_) => return Ok(self.open_with_attributes(required_attributes)?),
+                Some(_) => return Ok(self.open_with_attributes(verifier)?),
                 None => {
-                    match self.create_impl(&AttributeSpecifier(
-                        required_attributes.attributes().clone(),
-                    )) {
+                    match self
+                        .create_impl(&AttributeSpecifier(verifier.required_attributes().clone()))
+                    {
                         Ok(factory) => return Ok(factory),
                         Err(EventCreateError::AlreadyExists)
                         | Err(EventCreateError::IsBeingCreatedByAnotherInstance) => {
@@ -377,7 +377,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<event::PortFactory<ServiceType>, EventOpenError> {
         let msg = "Unable to open event service";
 
@@ -390,7 +390,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 }
                 Some((static_config, static_storage)) => {
                     let event_static_config =
-                        self.verify_service_configuration(&static_config, required_attributes)?;
+                        self.verify_service_configuration(&static_config, verifier)?;
 
                     let service_tag = self
                         .base

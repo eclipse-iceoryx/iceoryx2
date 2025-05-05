@@ -171,7 +171,7 @@
        .open_or_create()?;
    ```
 
-2. Renamed `PublisherLoanError` into `LoanError`
+2. Renamed `PublisherLoanError` to `LoanError`
 
    ```rust
    // old
@@ -189,7 +189,7 @@
    };
    ```
 
-3. Renamed `PublisherSendError` into `SendError`
+3. Renamed `PublisherSendError` to `SendError`
 
    ```rust
    // old
@@ -207,7 +207,7 @@
    };
    ```
 
-4. Renamed `SubscriberReceiveError` into `ReceiveError`
+4. Renamed `SubscriberReceiveError` to `ReceiveError`
 
    ```rust
    // old
@@ -226,27 +226,33 @@
    ```
 
 5. Renamed `PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists`
-   into `SendError::ConnectionBrokenSinceSenderNoLongerExists`
+   to `SendError::ConnectionBrokenSinceSenderNoLongerExists`
 
 6. Renamed `ConnectionFailure::UnableToMapPublishersDataSegment`
-   into `ConnectionFailure::UnableToMapSendersDataSegment`
+   to `ConnectionFailure::UnableToMapSendersDataSegment`
 
 7. Renamed `AttributeSet::len()`
-   into `AttributeSet::number_of_attributes()`
+   to `AttributeSet::number_of_attributes()`
 
 8. Renamed `AttributeSet::get_key_value_len()`
-   into `AttributeSet::number_of_key_values()`
+   to `AttributeSet::number_of_key_values()`
 
 9. Renamed `AttributeSet::get_key_value_at()`
-   into `AttributeSet::key_value()`
+   to `AttributeSet::key_value()`
 
 10. Renamed `AttributeSet::get_key_values()`
-   into `AttributeSet::iter_key_values()`
+   to `AttributeSet::iter_key_values()`
 
 11. Renamed `ServiceId::max_len()`
-   into `ServiceId::max_number_of_characters()`
+   to `ServiceId::max_number_of_characters()`
 
-12. Methods of `ServiceName` return a `ServiceNameError` instead of
+12. Renamed `AttributeVerifier::keys()`
+   to `AttributeVerifier::required_keys()`
+
+13. Renamed `AttributeVerifier::attributes()`
+   to `AttributeVerifier::required_attributes()`
+
+14. Methods of `ServiceName` return a `ServiceNameError` instead of
    a `SemanticStringError`
 
 15. The following types no longer implement `Copy`

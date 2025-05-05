@@ -98,6 +98,8 @@
 //! ```
 
 use core::ops::Deref;
+use core::str::FromStr;
+
 use iceoryx2_bb_container::{byte_string::FixedSizeByteString, vec::FixedSizeVec};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -121,6 +123,15 @@ pub struct Attribute {
 }
 
 impl Attribute {
+    /// Creates an attribute instance
+    pub fn new(key: &str, value: &str) -> Self {
+        Self {
+            key: AttributeKeyString::from_str(key).expect("attribute key length within constraint"),
+            value: AttributeValueString::from_str(value)
+                .expect("attribute value length within constraint"),
+        }
+    }
+
     /// Acquires the service attribute key
     pub fn key(&self) -> &str {
         self.key.as_str().unwrap()
@@ -164,14 +175,14 @@ impl AttributeSpecifier {
 /// is opened.
 #[derive(Debug)]
 pub struct AttributeVerifier {
-    attribute_set: AttributeSet,
+    required_attributes: AttributeSet,
     required_keys: KeyStorage,
 }
 
 impl Default for AttributeVerifier {
     fn default() -> Self {
         Self {
-            attribute_set: AttributeSet::new(),
+            required_attributes: AttributeSet::new(),
             required_keys: KeyStorage::new(),
         }
     }
@@ -185,7 +196,7 @@ impl AttributeVerifier {
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.
     pub fn require(mut self, key: &str, value: &str) -> Self {
-        self.attribute_set.add(key, value);
+        self.required_attributes.add(key, value);
         self
     }
 
@@ -196,38 +207,40 @@ impl AttributeVerifier {
     }
 
     /// Returns the underlying required [`AttributeSet`]
-    pub fn attributes(&self) -> &AttributeSet {
-        &self.attribute_set
+    pub fn required_attributes(&self) -> &AttributeSet {
+        &self.required_attributes
     }
 
     /// Returns the underlying required keys
-    pub fn keys(&self) -> &[AttributeKeyString] {
+    pub fn required_keys(&self) -> &[AttributeKeyString] {
         self.required_keys.as_slice()
     }
 
     /// Verifies if the [`AttributeSet`] contains all required keys and key-value pairs.
     pub fn verify_requirements(&self, rhs: &AttributeSet) -> Result<(), &str> {
-        for attribute in self.attributes().iter() {
-            let key = attribute.key.as_str().unwrap();
-            let value = attribute.value.as_str().unwrap();
+        // Implementation utilizes nested loops, however since MAX_ATTRIBUTES is small and
+        // the method is not expected to be used in a hot path, performance should be fine.
 
-            // Check if the required key-value pair exists in the target AttributeSet
-            let value_exists = rhs.iter().any(|attr| {
-                attr.key.as_str().unwrap() == key && attr.value.as_str().unwrap() == value
-            });
+        // Check if the required key-value pair exists in the target AttributeSet.
+        for attribute in self.required_attributes().iter() {
+            let key = &attribute.key;
+            let value = &attribute.value;
 
-            if !value_exists {
-                return Err(key);
+            let attribute_present = rhs
+                .iter()
+                .any(|attr| attr.key == *key && attr.value == *value);
+
+            if !attribute_present {
+                return Err(key.as_str().unwrap());
             }
         }
 
-        for key in self.keys() {
-            let key_str = key.as_str().unwrap();
-            // Check if the key exists in the target AttributeSet
-            let key_exists = rhs.iter().any(|attr| attr.key.as_str().unwrap() == key_str);
+        // Ensure keys without values are also present in the target AttributeSet.
+        for key in self.required_keys() {
+            let key_exists = rhs.iter().any(|attr| attr.key == *key);
 
             if !key_exists {
-                return Err(key_str);
+                return Err(key.as_str().unwrap());
             }
         }
 
@@ -254,10 +267,7 @@ impl AttributeSet {
     }
 
     pub(crate) fn add(&mut self, key: &str, value: &str) {
-        self.0.push(Attribute {
-            key: key.into(),
-            value: value.into(),
-        });
+        self.0.push(Attribute::new(key, value));
         self.0.sort();
     }
 
@@ -281,7 +291,7 @@ impl AttributeSet {
     pub fn key_value(&self, key: &str, idx: usize) -> Option<&str> {
         self.0
             .iter()
-            .filter(|attr| attr.key.as_str().unwrap() == key)
+            .filter(|attr| attr.key == key)
             .map(|attr| attr.value.as_str().unwrap())
             .nth(idx)
     }

@@ -416,16 +416,15 @@ impl<
     fn verify_service_configuration(
         &self,
         existing_settings: &static_config::StaticConfig,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<static_config::publish_subscribe::StaticConfig, PublishSubscribeOpenError> {
         let msg = "Unable to open publish subscribe service";
 
         let existing_attributes = existing_settings.attributes();
-        if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
-        {
+        if let Err(incompatible_key) = verifier.verify_requirements(existing_attributes) {
             fail!(from self, with PublishSubscribeOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key \"{}\". The following attributes {:?} are required but the service has the attributes {:?}.",
-                msg, incompatible_key, required_attributes, existing_attributes);
+                msg, incompatible_key, verifier, existing_attributes);
         }
 
         let required_settings = self.base.service_config.publish_subscribe();
@@ -684,7 +683,7 @@ impl<
 
     fn open_or_create_impl(
         mut self,
-        attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenOrCreateError,
@@ -702,13 +701,15 @@ impl<
             retry_count += 1;
 
             match self.is_service_available(msg)? {
-                Some(_) => match self.open_impl(attributes) {
+                Some(_) => match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
                     Err(PublishSubscribeOpenError::DoesNotExist) => continue,
                     Err(e) => return Err(e.into()),
                 },
                 None => {
-                    match self.create_impl(&AttributeSpecifier(attributes.attributes().clone())) {
+                    match self
+                        .create_impl(&AttributeSpecifier(verifier.required_attributes().clone()))
+                    {
                         Ok(factory) => return Ok(factory),
                         Err(PublishSubscribeCreateError::AlreadyExists)
                         | Err(PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance) => {
@@ -796,13 +797,13 @@ impl<
     /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenOrCreateError,
     > {
         self.prepare_config_details();
-        self.open_or_create_impl(required_attributes)
+        self.open_or_create_impl(verifier)
     }
 
     /// Opens an existing [`Service`].
@@ -819,13 +820,13 @@ impl<
     /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         publish_subscribe::PortFactory<ServiceType, Payload, UserHeader>,
         PublishSubscribeOpenError,
     > {
         self.prepare_config_details();
-        self.open_impl(required_attributes)
+        self.open_impl(verifier)
     }
 
     /// Creates a new [`Service`].
