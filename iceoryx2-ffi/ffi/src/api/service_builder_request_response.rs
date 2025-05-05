@@ -173,6 +173,13 @@ impl IntoCInt for RequestResponseOpenOrCreateError {
 
 // END types definition
 
+#[no_mangle]
+pub unsafe extern "C" fn iox2_request_response_open_or_create_error_string(
+    error: iox2_request_response_open_or_create_error_e,
+) -> *const c_char {
+    error.as_const_cstr().as_ptr() as *const c_char
+}
+
 pub(crate) unsafe fn create_type_details(
     type_variant: iox2_type_variant_e,
     type_name_str: *const c_char,
