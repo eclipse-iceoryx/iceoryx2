@@ -19,6 +19,7 @@ use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use super::iox2_service_type_e;
+use super::iox2_unable_to_deliver_strategy_e;
 use super::AssertNonNullHandle;
 use super::HandleToType;
 use super::PayloadFfi;
@@ -111,5 +112,30 @@ impl HandleToType for iox2_client_h_ref {
         unsafe { *self as *mut _ as _ }
     }
 }
-
 // END types definition
+
+// BEGIN C API
+#[no_mangle]
+pub unsafe extern "C" fn iox2_client_unable_to_deliver_strategy(
+    handle: iox2_client_h_ref,
+) -> iox2_unable_to_deliver_strategy_e {
+    handle.assert_non_null();
+
+    let client = &mut *handle.as_type();
+
+    match client.service_type {
+        iox2_service_type_e::IPC => client
+            .value
+            .as_mut()
+            .ipc
+            .unable_to_deliver_strategy()
+            .into(),
+        iox2_service_type_e::LOCAL => client
+            .value
+            .as_mut()
+            .local
+            .unable_to_deliver_strategy()
+            .into(),
+    }
+}
+// END C API

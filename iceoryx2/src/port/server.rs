@@ -661,6 +661,20 @@ impl<
 
 impl<
         Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Server<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
+{
+    /// Returns the maximum initial slice length configured for this [`Server`].
+    pub fn initial_max_slice_len(&self) -> usize {
+        self.shared_state.config.initial_max_slice_len
+    }
+}
+
+impl<
+        Service: service::Service,
         RequestHeader: Debug + ZeroCopySend,
         ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,

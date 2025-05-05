@@ -22,7 +22,7 @@ use super::{
     iox2_unable_to_deliver_strategy_e, IntoCInt, PayloadFfi, UserHeaderFfi,
 };
 use super::{AssertNonNullHandle, HandleToType};
-use core::ffi::{c_char, c_int};
+use core::ffi::c_int;
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::server::{PortFactoryServer, ServerCreateError};
 use iceoryx2_bb_elementary::static_assert::*;
