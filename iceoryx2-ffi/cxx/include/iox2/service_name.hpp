@@ -46,6 +46,8 @@ class ServiceNameView {
     friend class PortFactoryEvent;
     template <ServiceType, typename, typename>
     friend class PortFactoryPublishSubscribe;
+    template <ServiceType, typename, typename, typename, typename>
+    friend class PortFactoryRequestResponse;
 
     explicit ServiceNameView(iox2_service_name_ptr ptr);
     iox2_service_name_ptr m_ptr = nullptr;

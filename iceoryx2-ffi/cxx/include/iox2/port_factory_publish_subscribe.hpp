@@ -13,7 +13,6 @@
 #ifndef IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_PORTFACTORY_PUBLISH_SUBSCRIBE_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox2/attribute_set.hpp"

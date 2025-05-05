@@ -15,9 +15,15 @@
 
 #include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
+#include "iox/layout.hpp"
+#include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/internal/service_builder_publish_subscribe_internal.hpp"
+#include "iox2/payload_info.hpp"
 #include "iox2/port_factory_request_response.hpp"
 #include "iox2/service_builder_request_response_error.hpp"
+#include "iox2/service_type.hpp"
 
 namespace iox2 {
 template <typename RequestPayload,
@@ -78,6 +84,13 @@ class ServiceBuilderRequestResponse {
     /// existing [`Service`] is opened it defines how many borrows must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_borrowed_responses_per_pending_response);
 
+    /// If the [`Service`] is created it defines how many [`RequestMut`](`crate::request_mut::RequestMut`) a
+    /// [`Client`](`crate::port::client::Client`) can loan in parallel.
+    IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_requests);
+
+    /// If the [`Service`] is created, defines the fire-and-forget behavior of the service for requests.
+    IOX_BUILDER_OPTIONAL(bool, enable_fire_and_forget_requests);
+
   public:
     /// Sets the request user header type of the [`Service`].
     template <typename NewRequestHeader>
@@ -128,7 +141,7 @@ class ServiceBuilderRequestResponse {
         RequestResponseCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
-    auto create_with_attributes(const AttributeVerifier& attributes) && -> iox::expected<
+    auto create_with_attributes(const AttributeSpecifier& attributes) && -> iox::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestResponseCreateError>;
 
@@ -140,8 +153,134 @@ class ServiceBuilderRequestResponse {
 
     void set_parameters();
 
-    iox2_service_builder_pub_sub_h m_handle = nullptr;
+    template <typename PayloadType>
+    auto get_payload_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType>;
+
+    template <typename PayloadType>
+    auto get_payload_type_name() -> internal::FromNonSlice<PayloadType>;
+
+    template <typename PayloadType>
+    auto get_payload_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType>;
+
+    template <typename PayloadType>
+    auto get_payload_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType>;
+
+    template <typename UserHeaderType>
+    auto get_user_header_type_name() ->
+        typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
+
+    template <typename UserHeaderType>
+    auto get_user_header_type_name() ->
+        typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
+
+    iox2_service_builder_request_response_h m_handle = nullptr;
 };
+
+template <typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader,
+          ServiceType S>
+template <typename PayloadType>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+    get_payload_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
+    return PayloadType::IOX2_TYPE_NAME;
+}
+
+// NOLINTBEGIN(readability-function-size) : template alternative is less readable
+template <typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader,
+          ServiceType S>
+template <typename PayloadType>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+    get_payload_type_name() -> internal::FromNonSlice<PayloadType> {
+    if (std::is_same_v<PayloadType, uint8_t>) {
+        return "u8";
+    }
+    if (std::is_same_v<PayloadType, uint16_t>) {
+        return "u16";
+    }
+    if (std::is_same_v<PayloadType, uint32_t>) {
+        return "u32";
+    }
+    if (std::is_same_v<PayloadType, uint64_t>) {
+        return "u64";
+    }
+    if (std::is_same_v<PayloadType, int8_t>) {
+        return "i8";
+    }
+    if (std::is_same_v<PayloadType, int16_t>) {
+        return "i16";
+    }
+    if (std::is_same_v<PayloadType, int32_t>) {
+        return "i32";
+    }
+    if (std::is_same_v<PayloadType, int64_t>) {
+        return "i64";
+    }
+    if (std::is_same_v<PayloadType, float>) {
+        return "f32";
+    }
+    if (std::is_same_v<PayloadType, double>) {
+        return "f64";
+    }
+    if (std::is_same_v<PayloadType, bool>) {
+        return "bool";
+    }
+    return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
+}
+// NOLINTEND(readability-function-size)
+
+template <typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader,
+          ServiceType S>
+template <typename PayloadType>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+    get_payload_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
+    return PayloadType::ValueType::IOX2_TYPE_NAME;
+}
+
+template <typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader,
+          ServiceType S>
+template <typename PayloadType>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+    get_payload_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
+    return get_payload_type_name<typename PayloadType::ValueType>();
+}
+
+template <typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader,
+          ServiceType S>
+template <typename UserHeaderType>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+    get_user_header_type_name() ->
+    typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
+    return UserHeaderType::IOX2_TYPE_NAME;
+}
+
+template <typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader,
+          ServiceType S>
+template <typename UserHeaderType>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+    get_user_header_type_name() ->
+    typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
+    if (std::is_void_v<UserHeaderType>) {
+        return "()"; // no user header provided
+    }
+    return typeid(UserHeaderType).name();
+}
 
 template <typename RequestPayload,
           typename RequestHeader,
@@ -155,7 +294,12 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, Respons
                                                               ResponsePayload,
                                                               ResponseHeader,
                                                               S>&& {
-    IOX_TODO();
+    return std::move(
+        // required here since we just change the template header type but the builder structure stays the same
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        *reinterpret_cast<
+            ServiceBuilderRequestResponse<RequestPayload, NewRequestHeader, ResponsePayload, ResponseHeader, S>*>(
+            this));
 }
 
 template <typename RequestPayload,
@@ -170,7 +314,12 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, Respons
                                                                ResponsePayload,
                                                                NewResponseHeader,
                                                                S>&& {
-    IOX_TODO();
+    return std::move(
+        // required here since we just change the template header type but the builder structure stays the same
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+        *reinterpret_cast<
+            ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, NewResponseHeader, S>*>(
+            this));
 }
 
 template <typename RequestPayload,
@@ -182,7 +331,17 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, Respons
     open_or_create() && -> iox::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestResponseOpenOrCreateError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_request_response_h port_factory_handle {};
+    auto result = iox2_service_builder_request_response_open_or_create(m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+            port_factory_handle));
+    }
+
+    return iox::err(iox::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -191,10 +350,21 @@ template <typename RequestPayload,
           typename ResponseHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
-    open_or_create_with_attributes([[maybe_unused]] const AttributeVerifier& required_attributes) && -> iox::expected<
+    open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestResponseOpenOrCreateError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_request_response_h port_factory_handle {};
+    auto result = iox2_service_builder_request_response_open_or_create_with_attributes(
+        m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+            port_factory_handle));
+    }
+
+    return iox::err(iox::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -206,7 +376,17 @@ inline auto
 ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::open() && -> iox::
     expected<PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
              RequestResponseOpenError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_request_response_h port_factory_handle {};
+    auto result = iox2_service_builder_request_response_open(m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+            port_factory_handle));
+    }
+
+    return iox::err(iox::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -216,10 +396,21 @@ template <typename RequestPayload,
           ServiceType S>
 inline auto
 ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::open_with_attributes(
-    [[maybe_unused]] const AttributeVerifier& required_attributes) && -> iox::
+    const AttributeVerifier& required_attributes) && -> iox::
     expected<PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
              RequestResponseOpenError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_request_response_h port_factory_handle {};
+    auto result = iox2_service_builder_request_response_open_with_attributes(
+        m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+            port_factory_handle));
+    }
+
+    return iox::err(iox::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
@@ -231,7 +422,17 @@ inline auto
 ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::create() && -> iox::
     expected<PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
              RequestResponseCreateError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_request_response_h port_factory_handle {};
+    auto result = iox2_service_builder_request_response_create(m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+            port_factory_handle));
+    }
+
+    return iox::err(iox::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -240,10 +441,21 @@ template <typename RequestPayload,
           typename ResponseHeader,
           ServiceType S>
 inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
-    create_with_attributes([[maybe_unused]] const AttributeVerifier& attributes) && -> iox::expected<
+    create_with_attributes(const AttributeSpecifier& attributes) && -> iox::expected<
         PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestResponseCreateError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_request_response_h port_factory_handle {};
+    auto result = iox2_service_builder_request_response_create_with_attributes(
+        m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+            port_factory_handle));
+    }
+
+    return iox::err(iox::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,
@@ -252,8 +464,8 @@ template <typename RequestPayload,
           typename ResponseHeader,
           ServiceType S>
 inline ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
-    ServiceBuilderRequestResponse([[maybe_unused]] iox2_service_builder_h handle) {
-    IOX_TODO();
+    ServiceBuilderRequestResponse(iox2_service_builder_h handle)
+    : m_handle { iox2_service_builder_request_response(handle) } {
 }
 
 template <typename RequestPayload,
@@ -263,7 +475,111 @@ template <typename RequestPayload,
           ServiceType S>
 inline void
 ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::set_parameters() {
-    IOX_TODO();
+    m_request_payload_alignment.and_then(
+        [&](auto value) { iox2_service_builder_request_response_request_payload_alignment(&m_handle, value); });
+    m_response_payload_alignment.and_then(
+        [&](auto value) { iox2_service_builder_request_response_response_payload_alignment(&m_handle, value); });
+    m_enable_safe_overflow_for_requests.and_then(
+        [&](auto value) { iox2_service_builder_request_response_enable_safe_overflow_for_requests(&m_handle, value); });
+    m_enable_safe_overflow_for_responses.and_then([&](auto value) {
+        iox2_service_builder_request_response_enable_safe_overflow_for_responses(&m_handle, value);
+    });
+    m_max_active_requests_per_client.and_then(
+        [&](auto value) { iox2_service_builder_request_response_max_active_requests_per_client(&m_handle, value); });
+    m_max_response_buffer_size.and_then(
+        [&](auto value) { iox2_service_builder_request_response_max_response_buffer_size(&m_handle, value); });
+    m_max_servers.and_then([&](auto value) { iox2_service_builder_request_response_max_servers(&m_handle, value); });
+    m_max_clients.and_then([&](auto value) { iox2_service_builder_request_response_max_clients(&m_handle, value); });
+    m_max_nodes.and_then([&](auto value) { iox2_service_builder_request_response_set_max_nodes(&m_handle, value); });
+    m_max_borrowed_responses_per_pending_response.and_then([&](auto value) {
+        iox2_service_builder_request_response_max_borrowed_responses_per_pending_response(&m_handle, value);
+    });
+    m_max_loaned_requests.and_then(
+        [&](auto value) { iox2_service_builder_request_response_max_loaned_requests(&m_handle, value); });
+    m_enable_fire_and_forget_requests.and_then(
+        [&](auto value) { iox2_service_builder_request_response_enable_fire_and_forget_requests(&m_handle, value); });
+
+    // request payload type details
+    using RequestValueType = typename PayloadInfo<RequestPayload>::ValueType;
+    auto type_variant_request_payload =
+        iox::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+
+    const auto* request_payload_type_name = get_payload_type_name<RequestPayload>();
+    const auto request_payload_type_name_len = strlen(request_payload_type_name);
+    const auto request_payload_type_size = sizeof(RequestValueType);
+    const auto request_payload_type_align = alignof(RequestValueType);
+
+    const auto request_payload_result =
+        iox2_service_builder_request_response_set_request_payload_type_details(&m_handle,
+                                                                               type_variant_request_payload,
+                                                                               request_payload_type_name,
+                                                                               request_payload_type_name_len,
+                                                                               request_payload_type_size,
+                                                                               request_payload_type_align);
+
+    if (request_payload_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the RequestPayload-Type.");
+    }
+
+    // response payload type details
+    using ResponseValueType = typename PayloadInfo<ResponsePayload>::ValueType;
+    auto type_variant_response_payload =
+        iox::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
+
+    const auto* response_payload_type_name = get_payload_type_name<ResponsePayload>();
+    const auto response_payload_type_name_len = strlen(response_payload_type_name);
+    const auto response_payload_type_size = sizeof(ResponseValueType);
+    const auto response_payload_type_align = alignof(ResponseValueType);
+
+    const auto response_payload_result =
+        iox2_service_builder_request_response_set_response_payload_type_details(&m_handle,
+                                                                                type_variant_response_payload,
+                                                                                response_payload_type_name,
+                                                                                response_payload_type_name_len,
+                                                                                response_payload_type_size,
+                                                                                response_payload_type_align);
+
+    if (response_payload_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the ResponsePayload-Type.");
+    }
+
+    // request header type details
+    const auto request_header_layout = iox::Layout::from<RequestHeader>();
+    const auto* request_header_type_name = get_user_header_type_name<RequestHeader>();
+    const auto request_header_type_name_len = strlen(request_header_type_name);
+    const auto request_header_type_size = request_header_layout.size();
+    const auto request_header_type_align = request_header_layout.alignment();
+
+    const auto request_header_result =
+        iox2_service_builder_request_response_set_request_header_type_details(&m_handle,
+                                                                              iox2_type_variant_e_FIXED_SIZE,
+                                                                              request_header_type_name,
+                                                                              request_header_type_name_len,
+                                                                              request_header_type_size,
+                                                                              request_header_type_align);
+
+    if (request_header_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the Request-Header-Type.");
+    }
+
+    // response header type details
+    const auto response_header_layout = iox::Layout::from<ResponseHeader>();
+    const auto* response_header_type_name = get_user_header_type_name<ResponseHeader>();
+    const auto response_header_type_name_len = strlen(response_header_type_name);
+    const auto response_header_type_size = response_header_layout.size();
+    const auto response_header_type_align = response_header_layout.alignment();
+
+    const auto response_header_result =
+        iox2_service_builder_request_response_set_response_header_type_details(&m_handle,
+                                                                               iox2_type_variant_e_FIXED_SIZE,
+                                                                               response_header_type_name,
+                                                                               response_header_type_name_len,
+                                                                               response_header_type_size,
+                                                                               response_header_type_align);
+
+    if (response_header_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the Response-Header-Type.");
+    }
 }
 } // namespace iox2
 #endif

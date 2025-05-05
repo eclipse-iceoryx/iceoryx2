@@ -15,6 +15,8 @@
 
 #include "iox/slice.hpp"
 
+// TODO: rename?
+
 namespace iox2::internal {
 template <typename Payload, typename = void>
 struct HasPayloadTypeNameMember : std::false_type { };

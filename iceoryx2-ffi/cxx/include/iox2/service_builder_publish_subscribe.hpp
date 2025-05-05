@@ -214,10 +214,10 @@ template <typename Payload, typename UserHeader, ServiceType S>
 template <typename UserHeaderType>
 inline auto ServiceBuilderPublishSubscribe<Payload, UserHeader, S>::get_user_header_type_name() ->
     typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    if (std::is_void_v<UserHeader>) {
+    if (std::is_void_v<UserHeaderType>) {
         return "()"; // no user header provided
     }
-    return typeid(UserHeader).name();
+    return typeid(UserHeaderType).name();
 }
 
 template <typename Payload, typename UserHeader, ServiceType S>

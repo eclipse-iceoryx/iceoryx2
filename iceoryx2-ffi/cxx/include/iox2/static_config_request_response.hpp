@@ -21,6 +21,7 @@ namespace iox2 {
 /// based service. Contains all parameters that do not change during the lifetime of a
 /// [`Service`](crate::service::Service).
 class StaticConfigRequestResponse {
+  public:
     /// Returns the request type details of the [`crate::service::Service`].
     auto request_message_type_details() const -> MessageTypeDetails;
 
@@ -51,6 +52,14 @@ class StaticConfigRequestResponse {
     /// Returns the maximum buffer size for responses for an active request.
     auto max_response_buffer_size() const -> uint64_t;
 
+    /// Returns the maximum number of [`RequestMut`](crate::request_mut::RequestMut) a
+    /// [`Client`](crate::port::client::Client) can loan in parallel.
+    auto max_loaned_requests() const -> uint64_t;
+
+    /// Returns true if fire and forget [`RequestMut`](crate::request_mut::RequestMut)s can be
+    /// sent from the [`Client`](crate::port::client::Client), otherwise false.
+    auto does_support_fire_and_forget_requests() const -> bool;
+
     /// Returns the maximum number of supported [`crate::port::server::Server`] ports for the
     /// [`crate::service::Service`].
     auto max_servers() const -> uint64_t;
@@ -67,9 +76,9 @@ class StaticConfigRequestResponse {
     template <ServiceType, typename, typename, typename, typename>
     friend class PortFactoryRequestResponse;
 
-    explicit StaticConfigRequestResponse(/*iox2_static_config_request_response_t value*/);
+    explicit StaticConfigRequestResponse(iox2_static_config_request_response_t value);
 
-    // iox2_static_config_request_response_t m_value;
+    iox2_static_config_request_response_t m_value;
 };
 } // namespace iox2
 #endif

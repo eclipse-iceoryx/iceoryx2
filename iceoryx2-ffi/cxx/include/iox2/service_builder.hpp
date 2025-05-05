@@ -41,12 +41,8 @@ class ServiceBuilder {
 
     /// Create a new builder to create a
     /// [`MessagingPattern::RequestResponse`] [`Service`].
-    template <typename RequestPayload, typename RequestHeader, typename ResponsePayload, typename ResponseHeader>
-    auto request_response() && -> ServiceBuilderRequestResponse<RequestPayload,
-                                                                RequestHeader,
-                                                                ResponsePayload,
-                                                                ResponseHeader,
-                                                                S>;
+    template <typename RequestPayload, typename ResponsePayload>
+    auto request_response() && -> ServiceBuilderRequestResponse<RequestPayload, void, ResponsePayload, void, S>;
 
   private:
     template <ServiceType>
@@ -73,13 +69,10 @@ inline auto ServiceBuilder<S>::publish_subscribe() && -> ServiceBuilderPublishSu
 }
 
 template <ServiceType S>
-template <typename RequestPayload, typename RequestHeader, typename ResponsePayload, typename ResponseHeader>
-inline auto ServiceBuilder<S>::request_response() && -> ServiceBuilderRequestResponse<RequestPayload,
-                                                                                      RequestHeader,
-                                                                                      ResponsePayload,
-                                                                                      ResponseHeader,
-                                                                                      S> {
-    IOX_TODO();
+template <typename RequestPayload, typename ResponsePayload>
+inline auto ServiceBuilder<
+    S>::request_response() && -> ServiceBuilderRequestResponse<RequestPayload, void, ResponsePayload, void, S> {
+    return ServiceBuilderRequestResponse<RequestPayload, void, ResponsePayload, void, S> { m_handle };
 }
 } // namespace iox2
 #endif

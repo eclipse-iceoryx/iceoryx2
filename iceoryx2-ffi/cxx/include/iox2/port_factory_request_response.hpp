@@ -19,6 +19,8 @@
 #include "iox2/attribute_set.hpp"
 #include "iox2/callback_progression.hpp"
 #include "iox2/dynamic_config_request_response.hpp"
+#include "iox2/internal/callback_context.hpp"
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_failure_enums.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_client.hpp"
@@ -49,10 +51,10 @@ class PortFactoryRequestResponse {
     auto operator=(const PortFactoryRequestResponse&) -> PortFactoryRequestResponse& = delete;
 
     /// Returns the [`ServiceName`] of the service
-    auto name() const -> const ServiceName&;
+    auto name() const -> ServiceNameView;
 
     /// Returns the [`ServiceId`] of the [`Service`]
-    auto service_id() const -> const ServiceId&;
+    auto service_id() const -> ServiceId;
 
     /// Returns the attributes defined in the [`Service`]
     auto attributes() const -> AttributeSetView;
@@ -86,8 +88,10 @@ class PortFactoryRequestResponse {
     template <typename, typename, typename, typename, ServiceType>
     friend class ServiceBuilderRequestResponse;
 
-    explicit PortFactoryRequestResponse();
+    explicit PortFactoryRequestResponse(iox2_port_factory_request_response_h handle);
     void drop();
+
+    iox2_port_factory_request_response_h m_handle = nullptr;
 };
 
 template <ServiceType Service,
@@ -107,8 +111,14 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    [[maybe_unused]] PortFactoryRequestResponse&& rhs) noexcept -> PortFactoryRequestResponse& {
-    IOX_TODO();
+    PortFactoryRequestResponse&& rhs) noexcept -> PortFactoryRequestResponse& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 template <ServiceType Service,
@@ -128,8 +138,9 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::name() const
-    -> const ServiceName& {
-    IOX_TODO();
+    -> ServiceNameView {
+    const auto* service_name_ptr = iox2_port_factory_request_response_service_name(&m_handle);
+    return ServiceNameView(service_name_ptr);
 }
 
 template <ServiceType Service,
@@ -139,8 +150,11 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::service_id() const
-    -> const ServiceId& {
-    IOX_TODO();
+    -> ServiceId {
+    iox::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
+    iox2_port_factory_request_response_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
+
+    return ServiceId(iox::string<IOX2_SERVICE_ID_LENGTH>(iox::TruncateToCapacity, &buffer[0]));
 }
 
 template <ServiceType Service,
@@ -151,7 +165,7 @@ template <ServiceType Service,
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::attributes() const
     -> AttributeSetView {
-    IOX_TODO();
+    return AttributeSetView(iox2_port_factory_request_response_attributes(&m_handle));
 }
 
 template <ServiceType Service,
@@ -162,7 +176,10 @@ template <ServiceType Service,
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::static_config()
     const -> StaticConfigRequestResponse {
-    IOX_TODO();
+    iox2_static_config_request_response_t static_config {};
+    iox2_port_factory_request_response_static_config(&m_handle, &static_config);
+
+    return StaticConfigRequestResponse(static_config);
 }
 
 template <ServiceType Service,
@@ -182,9 +199,18 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::nodes(
-    [[maybe_unused]] const iox::function<CallbackProgression(NodeState<Service>)>& callback) const
+    const iox::function<CallbackProgression(NodeState<Service>)>& callback) const
     -> iox::expected<void, NodeListFailure> {
-    IOX_TODO();
+    auto ctx = internal::ctx(callback);
+
+    const auto ret_val =
+        iox2_port_factory_request_response_nodes(&m_handle, internal::list_callback<Service>, static_cast<void*>(&ctx));
+
+    if (ret_val == IOX2_OK) {
+        return iox::ok();
+    }
+
+    return iox::err(iox::into<NodeListFailure>(ret_val));
 }
 
 template <ServiceType Service,
@@ -215,8 +241,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::
-    PortFactoryRequestResponse() {
-    IOX_TODO();
+    PortFactoryRequestResponse(iox2_port_factory_request_response_h handle)
+    : m_handle { handle } {
 }
 
 template <ServiceType Service,
@@ -226,7 +252,10 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline void
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_port_factory_request_response_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 } // namespace iox2
 

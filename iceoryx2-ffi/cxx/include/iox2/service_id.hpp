@@ -33,6 +33,8 @@ class ServiceId {
     friend class PortFactoryEvent;
     template <ServiceType, typename, typename>
     friend class PortFactoryPublishSubscribe;
+    template <ServiceType, typename, typename, typename, typename>
+    friend class PortFactoryRequestResponse;
 
     iox::string<IOX2_SERVICE_ID_LENGTH> m_value;
 };
