@@ -20,12 +20,12 @@ mod attribute {
     fn attribute_returns_correct_key_value() {
         let sut = AttributeVerifier::new().require("key_1", "value_1");
 
-        for entry in sut.attributes().iter() {
+        for entry in sut.required_attributes().iter() {
             assert_that!(entry.key(), eq "key_1");
             assert_that!(entry.value(), eq "value_1");
         }
 
-        assert_that!(sut.attributes().iter(), len 1);
+        assert_that!(sut.required_attributes().iter(), len 1);
     }
 
     #[test]
@@ -34,8 +34,8 @@ mod attribute {
             .require("key_1", "value_1")
             .require("key_1", "value_2");
 
-        assert_that!(sut.attributes().number_of_key_values("key_1"), eq 2);
-        assert_that!(sut.attributes().number_of_key_values("key_2"), eq 0);
+        assert_that!(sut.required_attributes().number_of_key_values("key_1"), eq 2);
+        assert_that!(sut.required_attributes().number_of_key_values("key_2"), eq 0);
     }
 
     #[test]
@@ -44,10 +44,10 @@ mod attribute {
             .require("another_key", "another_value_1")
             .require("another_key", "another_value_2");
 
-        assert_that!(sut.attributes().key_value("another_key", 0), eq Some("another_value_1"));
-        assert_that!(sut.attributes().key_value("another_key", 1), eq Some("another_value_2"));
-        assert_that!(sut.attributes().key_value("another_key", 2), eq None);
-        assert_that!(sut.attributes().key_value("non_existing_key", 0), eq None);
+        assert_that!(sut.required_attributes().key_value("another_key", 0), eq Some("another_value_1"));
+        assert_that!(sut.required_attributes().key_value("another_key", 1), eq Some("another_value_2"));
+        assert_that!(sut.required_attributes().key_value("another_key", 2), eq None);
+        assert_that!(sut.required_attributes().key_value("non_existing_key", 0), eq None);
     }
 
     #[test]
@@ -57,7 +57,7 @@ mod attribute {
             .require("wild_ride", "S");
 
         let mut values = vec![];
-        sut.attributes().iter_key_values("wild_ride", |v| {
+        sut.required_attributes().iter_key_values("wild_ride", |v| {
             values.push(v.to_string());
             CallbackProgression::Continue
         });
@@ -73,7 +73,7 @@ mod attribute {
             .require("schwifty", "sisters");
 
         let mut counter = 0;
-        sut.attributes().iter_key_values("schwifty", |_| {
+        sut.required_attributes().iter_key_values("schwifty", |_| {
             counter += 1;
             CallbackProgression::Stop
         });
@@ -88,10 +88,11 @@ mod attribute {
             .require("schwifler", "sisters");
 
         let mut counter = 0;
-        sut.attributes().iter_key_values("does not exist", |_| {
-            counter += 1;
-            CallbackProgression::Stop
-        });
+        sut.required_attributes()
+            .iter_key_values("does not exist", |_| {
+                counter += 1;
+                CallbackProgression::Stop
+            });
 
         assert_that!(counter, eq 0);
     }
