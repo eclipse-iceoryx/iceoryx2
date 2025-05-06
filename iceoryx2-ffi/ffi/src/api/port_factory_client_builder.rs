@@ -20,7 +20,7 @@ use super::{
 use super::{AssertNonNullHandle, HandleToType};
 use crate::api::ClientUnion;
 use crate::IOX2_OK;
-use core::ffi::c_int;
+use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::client::{ClientCreateError, PortFactoryClient};
@@ -170,6 +170,13 @@ impl HandleToType for iox2_port_factory_client_builder_h_ref {
 // END type definition
 
 // BEGIN C API
+#[no_mangle]
+pub unsafe extern "C" fn iox2_client_create_error_string(
+    error: iox2_client_create_error_e,
+) -> *const c_char {
+    error.as_const_cstr().as_ptr() as *const c_char
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_client_builder_set_allocation_strategy(
     port_factory_handle: iox2_port_factory_client_builder_h_ref,

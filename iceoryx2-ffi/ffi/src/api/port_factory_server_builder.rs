@@ -22,7 +22,7 @@ use super::{
     iox2_unable_to_deliver_strategy_e, IntoCInt, PayloadFfi, UserHeaderFfi,
 };
 use super::{AssertNonNullHandle, HandleToType};
-use core::ffi::c_int;
+use core::ffi::{c_char, c_int};
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::server::{PortFactoryServer, ServerCreateError};
 use iceoryx2_bb_elementary::static_assert::*;
@@ -171,6 +171,12 @@ impl HandleToType for iox2_port_factory_server_builder_h_ref {
 // END type definition
 
 // BEGIN C API
+#[no_mangle]
+pub unsafe extern "C" fn iox2_server_create_error_string(
+    error: iox2_server_create_error_e,
+) -> *const c_char {
+    error.as_const_cstr().as_ptr() as *const c_char
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_server_builder_set_allocation_strategy(
