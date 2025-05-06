@@ -17,6 +17,7 @@ use clap::Subcommand;
 use iceoryx2_cli::filter::MessagingPatternFilter;
 use iceoryx2_cli::help_template;
 use iceoryx2_cli::Format;
+use iceoryx2_cli::HelpOptions;
 
 #[derive(Parser)]
 #[command(
@@ -26,7 +27,7 @@ use iceoryx2_cli::Format;
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 service", true, false),
+    help_template = help_template("iox2 service", HelpOptions::PrintCommandSection),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -84,17 +85,17 @@ pub struct DiscoveryOptions {
 pub enum Action {
     #[clap(
         about = "List all services",
-        help_template = help_template("iox2 service list", false, false)
+        help_template = help_template("iox2 service list", HelpOptions::DontPrintCommandSection)
     )]
     List(ListOptions),
     #[clap(
         about = "Show service details",
-        help_template = help_template("iox2 service details", false, false)
+        help_template = help_template("iox2 service details", HelpOptions::DontPrintCommandSection)
     )]
     Details(DetailsOptions),
     #[clap(
         about = "Runs the service discovery service within a process", 
-        help_template = help_template("iox2 service discovery", false, false)
+        help_template = help_template("iox2 service discovery", HelpOptions::DontPrintCommandSection)
     )]
     Discovery(DiscoveryOptions),
 }

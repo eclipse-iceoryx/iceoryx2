@@ -12,7 +12,13 @@
 
 use colored::*;
 
-pub fn help_template(cli_name: &str, show_commands: bool, show_external_commands: bool) -> String {
+pub enum HelpOptions {
+    DontPrintCommandSection,
+    PrintCommandSection,
+    PrintHintForInstalledCommands,
+}
+
+pub fn help_template(cli_name: &str, command_help: HelpOptions) -> String {
     let mut template = format!(
         "{{about}}\n\n{}{}{}[OPTIONS] [COMMAND]\n\n{}\n{{options}}",
         "Usage: ".bright_green().bold(),
@@ -21,19 +27,22 @@ pub fn help_template(cli_name: &str, show_commands: bool, show_external_commands
         "Options:".bright_green().bold(),
     );
 
-    if show_commands {
-        template.push_str(&format!(
-            "\n\n{}\n{{subcommands}}",
-            "Commands:".bright_green().bold(),
-        ));
-
-        if show_external_commands {
+    match command_help {
+        HelpOptions::PrintCommandSection | HelpOptions::PrintHintForInstalledCommands => {
             template.push_str(&format!(
-                "\n{}{}",
-                "  ...            ".bold(),
-                "See external installed commands with --list"
+                "\n\n{}\n{{subcommands}}",
+                "Commands:".bright_green().bold(),
             ));
+
+            if let HelpOptions::PrintHintForInstalledCommands = command_help {
+                template.push_str(&format!(
+                    "\n{}{}",
+                    "  ...            ".bold(),
+                    "See external installed commands with --list"
+                ));
+            }
         }
+        HelpOptions::DontPrintCommandSection => {}
     }
 
     template
