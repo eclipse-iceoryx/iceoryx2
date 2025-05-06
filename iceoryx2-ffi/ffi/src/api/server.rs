@@ -24,9 +24,7 @@ use core::ffi::c_int;
 use core::mem::ManuallyDrop;
 use iceoryx2::{port::server::Server, prelude::*};
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
-use iceoryx2_ffi_macros::CStrRepr;
 
 // BEGIN types definition
 pub(super) union ServerUnion {
