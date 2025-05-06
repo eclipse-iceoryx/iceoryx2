@@ -333,4 +333,20 @@ pub unsafe extern "C" fn iox2_pending_response_receive(
     IOX2_OK
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn iox2_pending_response_drop(handle: iox2_pending_response_h) {
+    debug_assert!(!handle.is_null());
+
+    let pending_response = &mut *handle.as_type();
+
+    match pending_response.service_type {
+        iox2_service_type_e::IPC => {
+            ManuallyDrop::drop(&mut pending_response.value.as_mut().ipc);
+        }
+        iox2_service_type_e::LOCAL => {
+            ManuallyDrop::drop(&mut pending_response.value.as_mut().local);
+        }
+    }
+    (pending_response.deleter)(pending_response);
+}
 // END C API
