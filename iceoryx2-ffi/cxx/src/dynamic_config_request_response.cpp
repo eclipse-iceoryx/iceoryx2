@@ -11,18 +11,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/dynamic_config_request_response.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 auto DynamicConfigRequestResponse::number_of_clients() const -> uint64_t {
-    IOX_TODO();
+    return iox2_port_factory_request_response_dynamic_config_number_of_clients(&m_handle);
 }
 
 auto DynamicConfigRequestResponse::number_of_servers() const -> uint64_t {
-    IOX_TODO();
+    return iox2_port_factory_request_response_dynamic_config_number_of_servers(&m_handle);
 }
 
-DynamicConfigRequestResponse::DynamicConfigRequestResponse(/*iox2_port_factory_pub_sub_h handle*/) {
-    IOX_TODO();
+DynamicConfigRequestResponse::DynamicConfigRequestResponse(iox2_port_factory_request_response_h handle)
+    : m_handle(handle) {
 }
 } // namespace iox2

@@ -22,6 +22,8 @@ enum class ServerCreateError : uint8_t {
     /// The maximum amount of [`Server`]s supported by the [`Service`](crate::service::Service)
     /// is already connected.
     ExceedsMaxSupportedServers,
+    /// The datasegment in which the payload of the [`Server`] is stored, could not be created.
+    UnableToCreateDataSegment,
 };
 } // namespace iox2
 #endif

@@ -13,7 +13,6 @@
 #ifndef IOX2_PORTFACTORY_REQUEST_RESPONSE_HPP
 #define IOX2_PORTFACTORY_REQUEST_RESPONSE_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/function.hpp"
 #include "iox2/attribute_set.hpp"
@@ -65,7 +64,7 @@ class PortFactoryRequestResponse {
 
     /// Returns the DynamicConfig of the [`Service`].
     /// Contains all dynamic settings, like the current participants etc..
-    auto dynamic_config() const -> const DynamicConfigRequestResponse&;
+    auto dynamic_config() const -> DynamicConfigRequestResponse;
 
     /// Iterates over all [`Node`]s of the [`Service`]
     /// and calls for every [`Node`] the provided callback. If an error occurs
@@ -77,12 +76,12 @@ class PortFactoryRequestResponse {
     /// Returns a [`PortFactoryClient`] to create a new
     /// [`crate::port::client::Client`] port.
     auto client_builder() const
-        -> PortFactoryClient<Service, RequestPayload, RequestPayload, ResponsePayload, ResponseHeader>;
+        -> PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>;
 
     /// Returns a [`PortFactoryServer`] to create a new
     /// [`crate::port::server::Server`] port.
     auto server_builder() const
-        -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponsePayload>;
+        -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>;
 
   private:
     template <typename, typename, typename, typename, ServiceType>
@@ -189,8 +188,8 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::dynamic_config()
-    const -> const DynamicConfigRequestResponse& {
-    IOX_TODO();
+    const -> DynamicConfigRequestResponse {
+    return DynamicConfigRequestResponse(m_handle);
 }
 
 template <ServiceType Service,
@@ -220,8 +219,9 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::client_builder()
-    const -> PortFactoryClient<Service, RequestPayload, RequestPayload, ResponsePayload, ResponseHeader> {
-    IOX_TODO();
+    const -> PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
+    return PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+        iox2_port_factory_request_response_client_builder(&m_handle, nullptr));
 }
 
 template <ServiceType Service,
@@ -231,8 +231,9 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto
 PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::server_builder()
-    const -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponsePayload> {
-    IOX_TODO();
+    const -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
+    return PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+        iox2_port_factory_request_response_server_builder(&m_handle, nullptr));
 }
 
 template <ServiceType Service,

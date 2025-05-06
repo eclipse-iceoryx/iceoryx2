@@ -36,9 +36,6 @@ class PortFactoryClient {
     /// its internal buffer is full.
     IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
 
-    /// Defines how many requests the [`Client`] can loan in parallel.
-    IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_requests);
-
   public:
     PortFactoryClient(const PortFactoryClient&) = delete;
     PortFactoryClient(PortFactoryClient&&) = default;
@@ -54,9 +51,9 @@ class PortFactoryClient {
     template <ServiceType, typename, typename, typename, typename>
     friend class PortFactoryRequestResponse;
 
-    explicit PortFactoryClient(/*iox2_port_factory_client_builder_h handle*/);
+    explicit PortFactoryClient(iox2_port_factory_client_builder_h handle);
 
-    // iox2_port_factory_client_builder_h m_handle = nullptr;
+    iox2_port_factory_client_builder_h m_handle = nullptr;
 };
 
 template <ServiceType Service,
@@ -67,7 +64,19 @@ template <ServiceType Service,
 inline auto
 PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::create() && -> iox::
     expected<Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>, ClientCreateError> {
-    IOX_TODO();
+    m_unable_to_deliver_strategy.and_then([&](auto value) {
+        iox2_port_factory_client_builder_unable_to_deliver_strategy(
+            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
+    });
+
+    iox2_client_h client_handle {};
+    auto result = iox2_port_factory_client_builder_create(m_handle, nullptr, &client_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(client_handle));
+    }
+
+    return iox::err(iox::into<ClientCreateError>(result));
 }
 
 template <ServiceType Service,
@@ -76,8 +85,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::PortFactoryClient(
-    /*iox2_port_factory_client_builder_h handle*/) {
-    IOX_TODO();
+    iox2_port_factory_client_builder_h handle)
+    : m_handle { handle } {
 }
 } // namespace iox2
 #endif

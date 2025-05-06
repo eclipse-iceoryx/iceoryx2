@@ -56,9 +56,9 @@ class PortFactoryServer {
     template <ServiceType, typename, typename, typename, typename>
     friend class PortFactoryRequestResponse;
 
-    explicit PortFactoryServer(/*iox2_port_factory_server_builder_h handle*/);
+    explicit PortFactoryServer(iox2_port_factory_server_builder_h handle);
 
-    // iox2_port_factory_server_builder_h m_handle = nullptr;
+    iox2_port_factory_server_builder_h m_handle = nullptr;
 };
 
 template <ServiceType Service,
@@ -69,7 +69,21 @@ template <ServiceType Service,
 inline auto
 PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::create() && -> iox::
     expected<Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>, ServerCreateError> {
-    IOX_TODO();
+    m_unable_to_deliver_strategy.and_then([&](auto value) {
+        iox2_port_factory_server_builder_unable_to_deliver_strategy(
+            &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
+    });
+    m_max_loaned_responses_per_request.and_then(
+        [&](auto value) { iox2_port_factory_server_builder_set_max_loaned_responses_per_request(&m_handle, value); });
+
+    iox2_server_h server_handle {};
+    auto result = iox2_port_factory_server_builder_create(m_handle, nullptr, &server_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(server_handle));
+    }
+
+    return iox::err(iox::into<ServerCreateError>(result));
 }
 
 template <ServiceType Service,
@@ -78,8 +92,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::PortFactoryServer(
-    /*iox2_port_factory_server_builder_h handle*/) {
-    IOX_TODO();
+    iox2_port_factory_server_builder_h handle)
+    : m_handle { handle } {
 }
 } // namespace iox2
 #endif

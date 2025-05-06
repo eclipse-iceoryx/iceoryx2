@@ -63,11 +63,14 @@ class Client {
                                  LoanError>;
 
   private:
-    explicit Client() noexcept;
+    template <ServiceType, typename, typename, typename, typename>
+    friend class PortFactoryClient;
+
+    explicit Client(iox2_client_h handle) noexcept;
 
     void drop();
 
-    // iox2_client_h m_handle = nullptr;
+    iox2_client_h m_handle = nullptr;
 };
 
 template <ServiceType Service,
@@ -84,9 +87,16 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    [[maybe_unused]] Client&& rhs) noexcept -> Client& {
-    IOX_TODO();
+inline auto
+Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(Client&& rhs) noexcept
+    -> Client& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 template <ServiceType Service,
@@ -157,8 +167,9 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::Client() noexcept {
-    IOX_TODO();
+inline Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::Client(
+    iox2_client_h handle) noexcept
+    : m_handle { handle } {
 }
 
 template <ServiceType Service,
@@ -167,7 +178,10 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline void Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_client_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 } // namespace iox2
 

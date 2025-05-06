@@ -13,7 +13,9 @@
 #ifndef IOX2_DYNAMIC_CONFIG_REQUEST_RESPONSE_HPP
 #define IOX2_DYNAMIC_CONFIG_REQUEST_RESPONSE_HPP
 
+#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/service_type.hpp"
+
 #include <cstdint>
 
 namespace iox2 {
@@ -39,9 +41,9 @@ class DynamicConfigRequestResponse {
     template <ServiceType, typename, typename, typename, typename>
     friend class PortFactoryRequestResponse;
 
-    explicit DynamicConfigRequestResponse(/*iox2_port_factory_pub_sub_h handle*/);
+    explicit DynamicConfigRequestResponse(iox2_port_factory_request_response_h handle);
 
-    // iox2_port_factory_pub_sub_h m_handle = nullptr;
+    iox2_port_factory_request_response_h m_handle = nullptr;
 };
 } // namespace iox2
 #endif

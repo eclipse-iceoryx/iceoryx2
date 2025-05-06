@@ -17,6 +17,7 @@
 #include "iox/into.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/callback_progression.hpp"
+#include "iox2/client_error.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
@@ -29,6 +30,7 @@
 #include "iox2/port_error.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/semantic_string.hpp"
+#include "iox2/server_error.hpp"
 #include "iox2/service_builder_event_error.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_builder_request_response_error.hpp"
@@ -1109,6 +1111,68 @@ from<iox2::RequestResponseOpenOrCreateError, const char*>(const iox2::RequestRes
     -> const char* {
     return iox2_request_response_open_or_create_error_string(
         iox::into<iox2_request_response_open_or_create_error_e>(value));
+}
+
+template <>
+constexpr auto from<int, iox2::ClientCreateError>(const int value) noexcept -> iox2::ClientCreateError {
+    const auto error = static_cast<iox2_client_create_error_e>(value);
+    switch (error) {
+    case iox2_client_create_error_e_EXCEEDS_MAX_SUPPORTED_CLIENTS:
+        return iox2::ClientCreateError::ExceedsMaxSupportedClients;
+    case iox2_client_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT:
+        return iox2::ClientCreateError::UnableToCreateDataSegment;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::ClientCreateError, iox2_client_create_error_e>(const iox2::ClientCreateError value) noexcept
+    -> iox2_client_create_error_e {
+    switch (value) {
+    case iox2::ClientCreateError::ExceedsMaxSupportedClients:
+        return iox2_client_create_error_e_EXCEEDS_MAX_SUPPORTED_CLIENTS;
+    case iox2::ClientCreateError::UnableToCreateDataSegment:
+        return iox2_client_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+inline auto from<iox2::ClientCreateError, const char*>(const iox2::ClientCreateError value) noexcept -> const char* {
+    return iox2_client_create_error_string(iox::into<iox2_client_create_error_e>(value));
+}
+
+template <>
+constexpr auto from<int, iox2::ServerCreateError>(const int value) noexcept -> iox2::ServerCreateError {
+    const auto error = static_cast<iox2_server_create_error_e>(value);
+    switch (error) {
+    case iox2_server_create_error_e_EXCEEDS_MAX_SUPPORTED_SERVERS:
+        return iox2::ServerCreateError::ExceedsMaxSupportedServers;
+    case iox2_server_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT:
+        return iox2::ServerCreateError::UnableToCreateDataSegment;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::ServerCreateError, iox2_server_create_error_e>(const iox2::ServerCreateError value) noexcept
+    -> iox2_server_create_error_e {
+    switch (value) {
+    case iox2::ServerCreateError::ExceedsMaxSupportedServers:
+        return iox2_server_create_error_e_EXCEEDS_MAX_SUPPORTED_SERVERS;
+    case iox2::ServerCreateError::UnableToCreateDataSegment:
+        return iox2_server_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+inline auto from<iox2::ServerCreateError, const char*>(const iox2::ServerCreateError value) noexcept -> const char* {
+    return iox2_server_create_error_string(iox::into<iox2_server_create_error_e>(value));
 }
 
 template <>

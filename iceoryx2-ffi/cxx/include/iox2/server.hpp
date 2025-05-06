@@ -53,9 +53,14 @@ class Server {
     auto has_requests() const -> iox::expected<bool, ConnectionFailure>;
 
   private:
-    explicit Server() noexcept;
+    template <ServiceType, typename, typename, typename, typename>
+    friend class PortFactoryServer;
+
+    explicit Server(iox2_server_h handle) noexcept;
 
     void drop();
+
+    iox2_server_h m_handle = nullptr;
 };
 
 template <ServiceType Service,
@@ -72,9 +77,16 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    [[maybe_unused]] Server&& rhs) noexcept -> Server& {
-    IOX_TODO();
+inline auto
+Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(Server&& rhs) noexcept
+    -> Server& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 template <ServiceType Service,
@@ -122,8 +134,9 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::Server() noexcept {
-    IOX_TODO();
+inline Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::Server(
+    iox2_server_h handle) noexcept
+    : m_handle { handle } {
 }
 
 template <ServiceType Service,
@@ -132,7 +145,10 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline void Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_server_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 } // namespace iox2
 #endif

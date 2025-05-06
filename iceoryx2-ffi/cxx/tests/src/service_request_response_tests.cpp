@@ -320,6 +320,32 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_with_incompatible_server_requi
     ASSERT_THAT(service_fail.error(), Eq(RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, number_of_clients_servers_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+
+    ASSERT_THAT(service.dynamic_config().number_of_clients(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_servers(), Eq(0));
+
+    {
+        auto sut_client = service.client_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_clients(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_servers(), Eq(0));
+
+        auto sut_server = service.server_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_clients(), Eq(1));
+        ASSERT_THAT(service.dynamic_config().number_of_servers(), Eq(1));
+    }
+
+    ASSERT_THAT(service.dynamic_config().number_of_clients(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_servers(), Eq(0));
+}
+
 TYPED_TEST(ServiceRequestResponseTest, create_with_attributes_sets_attributes) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
