@@ -12,6 +12,7 @@
 
 #![allow(non_camel_case_types)]
 
+use crate::api::PendingResponseUnion;
 use crate::api::{
     c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, UserHeaderFfi,
     IOX2_OK,
@@ -29,6 +30,8 @@ use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
 use core::ffi::{c_int, c_void};
 use core::mem::ManuallyDrop;
 
+use super::iox2_pending_response_h;
+use super::iox2_pending_response_t;
 use super::{iox2_request_header_h, iox2_request_header_t, PayloadFfi, UninitPayloadFfi};
 
 // BEGIN types definition
@@ -380,11 +383,30 @@ pub unsafe extern "C" fn iox2_request_mut_payload(
 /// # Safety
 ///
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
-/// * `number_of_recipients`, can be null or must point to a valid [`c_size_t`] to store the number
-///   of subscribers that received the sample
+/// * The `pending_response_handle_ptr` is pointing to a valid [`iox2_pending_response_mut_h`].
+///
 #[no_mangle]
-pub unsafe extern "C" fn iox2_request_mut_send(handle: iox2_request_mut_h) -> c_int {
+pub unsafe extern "C" fn iox2_request_mut_send(
+    handle: iox2_request_mut_h,
+    pending_response_struct_ptr: *mut iox2_pending_response_t,
+    pending_response_handle_ptr: *mut iox2_pending_response_h,
+) -> c_int {
     debug_assert!(!handle.is_null());
+    debug_assert!(!pending_response_handle_ptr.is_null());
+
+    let init_pending_response_struct_ptr =
+        |pending_response_struct_ptr: *mut iox2_pending_response_t| {
+            let mut pending_response_struct_ptr = pending_response_struct_ptr;
+            fn no_op(_: *mut iox2_pending_response_t) {}
+            let mut deleter: fn(*mut iox2_pending_response_t) = no_op;
+            if pending_response_struct_ptr.is_null() {
+                pending_response_struct_ptr = iox2_pending_response_t::alloc();
+                deleter = iox2_pending_response_t::dealloc;
+            }
+            debug_assert!(!pending_response_struct_ptr.is_null());
+
+            (pending_response_struct_ptr, deleter)
+        };
 
     let request_struct = &mut *handle.as_type();
     let service_type = request_struct.service_type;
@@ -400,28 +422,38 @@ pub unsafe extern "C" fn iox2_request_mut_send(handle: iox2_request_mut_h) -> c_
         iox2_service_type_e::IPC => {
             let request = ManuallyDrop::into_inner(request.ipc);
             match request.assume_init().send() {
-                Ok(v) => {
-                    todo!()
+                Ok(pending_response) => {
+                    let (pending_response_struct_ptr, deleter) =
+                        init_pending_response_struct_ptr(pending_response_struct_ptr);
+                    (*pending_response_struct_ptr).init(
+                        service_type,
+                        PendingResponseUnion::new_ipc(pending_response),
+                        deleter,
+                    );
+                    *pending_response_handle_ptr = (*pending_response_struct_ptr).as_handle();
+                    IOX2_OK
                 }
-                Err(e) => {
-                    return e.into_c_int();
-                }
+                Err(e) => e.into_c_int(),
             }
         }
         iox2_service_type_e::LOCAL => {
             let request = ManuallyDrop::into_inner(request.local);
             match request.assume_init().send() {
-                Ok(v) => {
-                    todo!()
+                Ok(pending_response) => {
+                    let (pending_response_struct_ptr, deleter) =
+                        init_pending_response_struct_ptr(pending_response_struct_ptr);
+                    (*pending_response_struct_ptr).init(
+                        service_type,
+                        PendingResponseUnion::new_local(pending_response),
+                        deleter,
+                    );
+                    *pending_response_handle_ptr = (*pending_response_struct_ptr).as_handle();
+                    IOX2_OK
                 }
-                Err(e) => {
-                    return e.into_c_int();
-                }
+                Err(e) => e.into_c_int(),
             }
         }
     }
-
-    IOX2_OK
 }
 
 /// This function needs to be called to destroy the sample!
