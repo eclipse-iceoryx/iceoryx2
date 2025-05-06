@@ -72,6 +72,8 @@
     [#605](https://github.com/eclipse-iceoryx/iceoryx2/issues/605)
 * LogLevel is considered for custom loggers.
     [#608](https://github.com/eclipse-iceoryx/iceoryx2/issues/608)
+* CLI argument parse failure handled gracefully, CLI help template used consistently
+    [#646](https://github.com/eclipse-iceoryx/iceoryx2/issues/646)
 * Allow missing legal characters in system type for user- and group-name
     [#677](https://github.com/eclipse-iceoryx/iceoryx2/issues/677)
 * Fix `wait_and_process_once_with_timeout` deadlock

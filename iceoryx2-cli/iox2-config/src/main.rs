@@ -13,7 +13,7 @@
 mod cli;
 mod commands;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
@@ -22,7 +22,7 @@ use cli::ConfigGenerate;
 use cli::ConfigShow;
 use cli::GenerateSubcommand;
 use cli::ShowSubcommand;
-use iceoryx2_bb_log::{set_log_level, LogLevel};
+use iceoryx2_bb_log::{set_log_level_from_env_or, LogLevel};
 
 #[cfg(not(debug_assertions))]
 use human_panic::setup_panic;
@@ -43,9 +43,18 @@ fn main() -> Result<()> {
             .install();
     }
 
-    set_log_level(LogLevel::Warn);
+    set_log_level_from_env_or(LogLevel::Warn);
 
-    let cli = Cli::try_parse().map_err(|e| anyhow!("{}", e))?;
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(e) => {
+            // --help and --version is treated as a parse error by clap
+            // printing the error is actually printing the result of those commands ...
+            let _ = e.print();
+            return Ok(());
+        }
+    };
+
     if let Some(action) = cli.action {
         match action {
             Action::Show { subcommand } => match subcommand {
