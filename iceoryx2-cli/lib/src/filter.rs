@@ -115,19 +115,33 @@ impl Filter<NodeState<Service>> for StateFilter {
 pub enum MessagingPatternFilter {
     PublishSubscribe,
     Event,
+    RequestResponse,
     #[default]
     All,
 }
 
 impl Filter<ServiceDetails<Service>> for MessagingPatternFilter {
     fn matches(&self, service: &ServiceDetails<Service>) -> bool {
-        matches!(
-            (self, &service.static_details.messaging_pattern()),
-            (
-                MessagingPatternFilter::PublishSubscribe,
-                MessagingPattern::PublishSubscribe(_)
-            ) | (MessagingPatternFilter::Event, MessagingPattern::Event(_))
-                | (MessagingPatternFilter::All, _)
-        )
+        match self {
+            MessagingPatternFilter::All => true,
+            MessagingPatternFilter::PublishSubscribe => {
+                matches!(
+                    service.static_details.messaging_pattern(),
+                    MessagingPattern::PublishSubscribe(_)
+                )
+            }
+            MessagingPatternFilter::Event => {
+                matches!(
+                    service.static_details.messaging_pattern(),
+                    MessagingPattern::Event(_)
+                )
+            }
+            MessagingPatternFilter::RequestResponse => {
+                matches!(
+                    service.static_details.messaging_pattern(),
+                    MessagingPattern::RequestResponse(_)
+                )
+            }
+        }
     }
 }
