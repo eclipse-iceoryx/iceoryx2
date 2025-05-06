@@ -131,9 +131,9 @@ mod pending_response {
         let active_request = test.server_1.receive().unwrap().unwrap();
         active_request.send_copy(8).unwrap();
 
-        assert_that!(sut.has_response(), eq Ok(true));
+        assert_that!(sut.has_response(), eq true);
         assert_that!(sut.receive().unwrap(), is_some);
-        assert_that!(sut.has_response(), eq Ok(false));
+        assert_that!(sut.has_response(), eq false);
         assert_that!(sut.receive().unwrap(), is_none);
     }
 

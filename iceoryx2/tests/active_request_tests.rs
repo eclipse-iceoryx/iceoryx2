@@ -102,10 +102,10 @@ mod active_request {
         let sut = test.server.receive().unwrap().unwrap();
         let loan = sut.loan_uninit().unwrap();
 
-        assert_that!(pending_response.has_response(), eq Ok(false));
+        assert_that!(pending_response.has_response(), eq false);
         loan.write_payload(456).send().unwrap();
 
-        assert_that!(pending_response.has_response(), eq Ok(true));
+        assert_that!(pending_response.has_response(), eq true);
     }
 
     #[test]
@@ -115,10 +115,10 @@ mod active_request {
 
         let sut = test.server.receive().unwrap().unwrap();
 
-        assert_that!(pending_response.has_response(), eq Ok(false));
+        assert_that!(pending_response.has_response(), eq false);
         sut.send_copy(456).unwrap();
 
-        assert_that!(pending_response.has_response(), eq Ok(true));
+        assert_that!(pending_response.has_response(), eq true);
     }
 
     #[test]
@@ -129,11 +129,11 @@ mod active_request {
         let sut = test.server.receive().unwrap().unwrap();
         let mut loan = sut.loan().unwrap();
 
-        assert_that!(pending_response.has_response(), eq Ok(false));
+        assert_that!(pending_response.has_response(), eq false);
         *loan = 456;
         loan.send().unwrap();
 
-        assert_that!(pending_response.has_response(), eq Ok(true));
+        assert_that!(pending_response.has_response(), eq true);
     }
 
     #[test]

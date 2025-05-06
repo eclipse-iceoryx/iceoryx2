@@ -422,9 +422,10 @@ impl<
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.shared_state.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
-        self.shared_state
+        Ok(self
+            .shared_state
             .request_receiver
-            .has_samples(REQUEST_CHANNEL_ID)
+            .has_samples(REQUEST_CHANNEL_ID))
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {

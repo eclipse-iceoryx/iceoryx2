@@ -21,7 +21,9 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
-use super::{iox2_service_type_e, AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi};
+use super::{
+    c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi,
+};
 
 pub(super) union PendingResponseUnion {
     ipc: ManuallyDrop<
@@ -126,3 +128,56 @@ impl HandleToType for iox2_pending_response_h_ref {
 }
 
 // END type definition
+
+// BEGIN C API
+#[no_mangle]
+pub unsafe extern "C" fn iox2_pending_response_is_connected(
+    handle: iox2_pending_response_h_ref,
+) -> bool {
+    handle.assert_non_null();
+
+    let pending_response = &mut *handle.as_type();
+
+    match pending_response.service_type {
+        iox2_service_type_e::IPC => pending_response.value.as_ref().ipc.is_connected(),
+        iox2_service_type_e::LOCAL => pending_response.value.as_ref().local.is_connected(),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_pending_response_number_of_server_connections(
+    handle: iox2_pending_response_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let pending_response = &mut *handle.as_type();
+
+    match pending_response.service_type {
+        iox2_service_type_e::IPC => pending_response
+            .value
+            .as_ref()
+            .ipc
+            .number_of_server_connections(),
+        iox2_service_type_e::LOCAL => pending_response
+            .value
+            .as_ref()
+            .local
+            .number_of_server_connections(),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_pending_response_has_response(
+    handle: iox2_pending_response_h_ref,
+) -> bool {
+    handle.assert_non_null();
+
+    let pending_response = &mut *handle.as_type();
+
+    match pending_response.service_type {
+        iox2_service_type_e::IPC => pending_response.value.as_ref().ipc.has_response(),
+        iox2_service_type_e::LOCAL => pending_response.value.as_ref().local.has_response(),
+    }
+}
+
+// END C API
