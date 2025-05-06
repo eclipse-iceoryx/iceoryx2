@@ -18,6 +18,12 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use crate::api::IntoCInt;
+use crate::api::RequestMutUninitUnion;
+use crate::IOX2_OK;
+
+use super::iox2_request_mut_h;
+use super::iox2_request_mut_t;
 use super::iox2_service_type_e;
 use super::iox2_unable_to_deliver_strategy_e;
 use super::iox2_unique_client_id_h;
@@ -180,6 +186,73 @@ pub unsafe extern "C" fn iox2_client_id(
 
     (*storage_ptr).init(id, deleter);
     *id_handle_ptr = (*storage_ptr).as_handle();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_client_loan_slice_uninit(
+    client_handle: iox2_client_h_ref,
+    request_struct_ptr: *mut iox2_request_mut_t,
+    request_handle_ptr: *mut iox2_request_mut_h,
+    number_of_elements: usize,
+) -> c_int {
+    client_handle.assert_non_null();
+    debug_assert!(!request_handle_ptr.is_null());
+
+    *request_handle_ptr = core::ptr::null_mut();
+
+    let init_request_struct_ptr = |request_struct_ptr: *mut iox2_request_mut_t| {
+        let mut request_struct_ptr = request_struct_ptr;
+        fn no_op(_: *mut iox2_request_mut_t) {}
+        let mut deleter: fn(*mut iox2_request_mut_t) = no_op;
+        if request_struct_ptr.is_null() {
+            request_struct_ptr = iox2_request_mut_t::alloc();
+            deleter = iox2_request_mut_t::dealloc;
+        }
+        debug_assert!(!request_struct_ptr.is_null());
+
+        (request_struct_ptr, deleter)
+    };
+
+    let client = &mut *client_handle.as_type();
+
+    match client.service_type {
+        iox2_service_type_e::IPC => match client
+            .value
+            .as_ref()
+            .ipc
+            .loan_custom_payload(number_of_elements)
+        {
+            Ok(request) => {
+                let (request_struct_ptr, deleter) = init_request_struct_ptr(request_struct_ptr);
+                (*request_struct_ptr).init(
+                    client.service_type,
+                    RequestMutUninitUnion::new_ipc(request),
+                    deleter,
+                );
+                *request_handle_ptr = (*request_struct_ptr).as_handle();
+                IOX2_OK
+            }
+            Err(error) => error.into_c_int(),
+        },
+        iox2_service_type_e::LOCAL => match client
+            .value
+            .as_ref()
+            .local
+            .loan_custom_payload(number_of_elements)
+        {
+            Ok(request) => {
+                let (request_struct_ptr, deleter) = init_request_struct_ptr(request_struct_ptr);
+                (*request_struct_ptr).init(
+                    client.service_type,
+                    RequestMutUninitUnion::new_local(request),
+                    deleter,
+                );
+                *request_handle_ptr = (*request_struct_ptr).as_handle();
+                IOX2_OK
+            }
+            Err(error) => error.into_c_int(),
+        },
+    }
 }
 
 #[no_mangle]
