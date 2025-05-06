@@ -19,6 +19,7 @@ use iceoryx2_ffi_macros::CStrRepr;
 
 use core::ffi::{c_char, c_int, c_void};
 
+mod active_request;
 mod attribute;
 mod attribute_set;
 mod attribute_specifier;
@@ -79,6 +80,7 @@ mod waitset_attachment_id;
 mod waitset_builder;
 mod waitset_guard;
 
+pub use active_request::*;
 pub use attribute::*;
 pub use attribute_set::*;
 pub use attribute_specifier::*;

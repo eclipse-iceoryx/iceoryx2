@@ -662,7 +662,7 @@ impl<
 
 impl<
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
         ResponsePayload: Debug + ZeroCopySend,
         ResponseHeader: Debug + ZeroCopySend,

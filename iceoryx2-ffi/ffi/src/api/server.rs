@@ -12,8 +12,15 @@
 
 #![allow(non_camel_case_types)]
 
-use super::{iox2_service_type_e, AssertNonNullHandle, HandleToType};
+use crate::api::{ActiveRequestUnion, IntoCInt};
+use crate::IOX2_OK;
+
+use super::{
+    c_size_t, iox2_active_request_h, iox2_active_request_t, iox2_service_type_e,
+    iox2_unique_server_id_h, iox2_unique_server_id_t, AssertNonNullHandle, HandleToType,
+};
 use super::{PayloadFfi, UserHeaderFfi};
+use core::ffi::c_int;
 use core::mem::ManuallyDrop;
 use iceoryx2::{port::server::Server, prelude::*};
 use iceoryx2_bb_elementary::static_assert::*;
@@ -110,3 +117,151 @@ impl HandleToType for iox2_server_h_ref {
 }
 
 // END types definition
+
+// BEGIN C API
+#[no_mangle]
+pub unsafe extern "C" fn iox2_server_id(
+    handle: iox2_server_h_ref,
+    id_struct_ptr: *mut iox2_unique_server_id_t,
+    id_handle_ptr: *mut iox2_unique_server_id_h,
+) {
+    handle.assert_non_null();
+    debug_assert!(!id_handle_ptr.is_null());
+
+    fn no_op(_: *mut iox2_unique_server_id_t) {}
+    let mut deleter: fn(*mut iox2_unique_server_id_t) = no_op;
+    let mut storage_ptr = id_struct_ptr;
+    if id_struct_ptr.is_null() {
+        deleter = iox2_unique_server_id_t::dealloc;
+        storage_ptr = iox2_unique_server_id_t::alloc();
+    }
+    debug_assert!(!storage_ptr.is_null());
+
+    let server = &mut *handle.as_type();
+
+    let id = match server.service_type {
+        iox2_service_type_e::IPC => server.value.as_mut().ipc.id(),
+        iox2_service_type_e::LOCAL => server.value.as_mut().local.id(),
+    };
+
+    (*storage_ptr).init(id, deleter);
+    *id_handle_ptr = (*storage_ptr).as_handle();
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_server_has_requests(
+    handle: iox2_server_h_ref,
+    result_ptr: *mut bool,
+) -> c_int {
+    handle.assert_non_null();
+    debug_assert!(!result_ptr.is_null());
+
+    let server = &mut *handle.as_type();
+
+    match server.service_type {
+        iox2_service_type_e::IPC => match server.value.as_ref().ipc.has_requests() {
+            Ok(v) => {
+                *result_ptr = v;
+                IOX2_OK
+            }
+            Err(error) => error.into_c_int(),
+        },
+        iox2_service_type_e::LOCAL => match server.value.as_ref().local.has_requests() {
+            Ok(v) => {
+                *result_ptr = v;
+                IOX2_OK
+            }
+            Err(error) => error.into_c_int(),
+        },
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_server_initial_max_slice_len(handle: iox2_server_h_ref) -> c_size_t {
+    handle.assert_non_null();
+
+    let server = &mut *handle.as_type();
+
+    match server.service_type {
+        iox2_service_type_e::IPC => server.value.as_ref().ipc.initial_max_slice_len(),
+        iox2_service_type_e::LOCAL => server.value.as_ref().local.initial_max_slice_len(),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_server_receive(
+    server_handle: iox2_server_h_ref,
+    active_request_struct_ptr: *mut iox2_active_request_t,
+    active_request_handle_ptr: *mut iox2_active_request_h,
+) -> c_int {
+    server_handle.assert_non_null();
+    debug_assert!(!active_request_handle_ptr.is_null());
+
+    *active_request_handle_ptr = core::ptr::null_mut();
+
+    let init_active_request_struct_ptr = |active_request_struct_ptr: *mut iox2_active_request_t| {
+        let mut active_request_struct_ptr = active_request_struct_ptr;
+        fn no_op(_: *mut iox2_active_request_t) {}
+        let mut deleter: fn(*mut iox2_active_request_t) = no_op;
+        if active_request_struct_ptr.is_null() {
+            active_request_struct_ptr = iox2_active_request_t::alloc();
+            deleter = iox2_active_request_t::dealloc;
+        }
+        debug_assert!(!active_request_struct_ptr.is_null());
+
+        (active_request_struct_ptr, deleter)
+    };
+
+    let server = &mut *server_handle.as_type();
+
+    match server.service_type {
+        iox2_service_type_e::IPC => match server.value.as_ref().ipc.receive_custom_payload() {
+            Ok(Some(active_request)) => {
+                let (active_request_struct_ptr, deleter) =
+                    init_active_request_struct_ptr(active_request_struct_ptr);
+                (*active_request_struct_ptr).init(
+                    server.service_type,
+                    ActiveRequestUnion::new_ipc(active_request),
+                    deleter,
+                );
+                *active_request_handle_ptr = (*active_request_struct_ptr).as_handle();
+            }
+            Ok(None) => (),
+            Err(error) => return error.into_c_int(),
+        },
+        iox2_service_type_e::LOCAL => match server.value.as_ref().local.receive_custom_payload() {
+            Ok(Some(active_request)) => {
+                let (active_request_struct_ptr, deleter) =
+                    init_active_request_struct_ptr(active_request_struct_ptr);
+                (*active_request_struct_ptr).init(
+                    server.service_type,
+                    ActiveRequestUnion::new_local(active_request),
+                    deleter,
+                );
+                *active_request_handle_ptr = (*active_request_struct_ptr).as_handle();
+            }
+            Ok(None) => (),
+            Err(error) => return error.into_c_int(),
+        },
+    }
+
+    IOX2_OK
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_server_drop(handle: iox2_server_h) {
+    handle.assert_non_null();
+
+    let server = &mut *handle.as_type();
+
+    match server.service_type {
+        iox2_service_type_e::IPC => {
+            ManuallyDrop::drop(&mut server.value.as_mut().ipc);
+        }
+        iox2_service_type_e::LOCAL => {
+            ManuallyDrop::drop(&mut server.value.as_mut().local);
+        }
+    }
+    (server.deleter)(server);
+}
+// END C API
