@@ -14,16 +14,21 @@
 
 // BEGIN types definition
 
-use core::{ffi::c_void, mem::ManuallyDrop};
+use core::{ffi::c_int, ffi::c_void, mem::ManuallyDrop};
 
 use iceoryx2::pending_response::PendingResponse;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use crate::{
+    api::{IntoCInt, ResponseUnion},
+    IOX2_OK,
+};
+
 use super::{
-    c_size_t, iox2_request_header_h, iox2_request_header_t, iox2_service_type_e,
-    AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi,
+    c_size_t, iox2_request_header_h, iox2_request_header_t, iox2_response_h, iox2_response_t,
+    iox2_service_type_e, AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi,
 };
 
 pub(super) union PendingResponseUnion {
@@ -257,6 +262,75 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
             .header()
             .number_of_elements() as c_size_t;
     }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_pending_response_receive(
+    handle: iox2_pending_response_h_ref,
+    response_struct_ptr: *mut iox2_response_t,
+    response_handle_ptr: *mut iox2_response_h,
+) -> c_int {
+    handle.assert_non_null();
+    debug_assert!(!response_handle_ptr.is_null());
+
+    *response_handle_ptr = core::ptr::null_mut();
+
+    let init_response_struct_ptr = |response_struct_ptr: *mut iox2_response_t| {
+        let mut response_struct_ptr = response_struct_ptr;
+        fn no_op(_: *mut iox2_response_t) {}
+        let mut deleter: fn(*mut iox2_response_t) = no_op;
+        if response_struct_ptr.is_null() {
+            response_struct_ptr = iox2_response_t::alloc();
+            deleter = iox2_response_t::dealloc;
+        }
+        debug_assert!(!response_struct_ptr.is_null());
+
+        (response_struct_ptr, deleter)
+    };
+
+    let pending_response = &mut *handle.as_type();
+
+    match pending_response.service_type {
+        iox2_service_type_e::IPC => {
+            match pending_response.value.as_ref().ipc.receive_custom_payload() {
+                Ok(Some(response)) => {
+                    let (response_struct_ptr, deleter) =
+                        init_response_struct_ptr(response_struct_ptr);
+                    (*response_struct_ptr).init(
+                        pending_response.service_type,
+                        ResponseUnion::new_ipc(response),
+                        deleter,
+                    );
+                    *response_handle_ptr = (*response_struct_ptr).as_handle();
+                }
+                Ok(None) => (),
+                Err(error) => return error.into_c_int(),
+            }
+        }
+        iox2_service_type_e::LOCAL => {
+            match pending_response
+                .value
+                .as_ref()
+                .local
+                .receive_custom_payload()
+            {
+                Ok(Some(response)) => {
+                    let (response_struct_ptr, deleter) =
+                        init_response_struct_ptr(response_struct_ptr);
+                    (*response_struct_ptr).init(
+                        pending_response.service_type,
+                        ResponseUnion::new_local(response),
+                        deleter,
+                    );
+                    *response_handle_ptr = (*response_struct_ptr).as_handle();
+                }
+                Ok(None) => (),
+                Err(error) => return error.into_c_int(),
+            }
+        }
+    }
+
+    IOX2_OK
 }
 
 // END C API
