@@ -12,7 +12,9 @@
 
 #![allow(non_camel_case_types)]
 
+use core::ffi::c_void;
 use core::mem::ManuallyDrop;
+use iceoryx2::pending_response::PendingResponse;
 use iceoryx2::port::client::Client;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
@@ -22,8 +24,11 @@ use crate::api::IntoCInt;
 use crate::api::RequestMutUninitUnion;
 use crate::IOX2_OK;
 
+use super::iox2_pending_response_h;
+use super::iox2_pending_response_t;
 use super::iox2_request_mut_h;
 use super::iox2_request_mut_t;
+use super::iox2_request_send_error_e;
 use super::iox2_service_type_e;
 use super::iox2_unable_to_deliver_strategy_e;
 use super::iox2_unique_client_id_h;
@@ -31,6 +36,7 @@ use super::iox2_unique_client_id_t;
 use super::AssertNonNullHandle;
 use super::HandleToType;
 use super::PayloadFfi;
+use super::PendingResponseUnion;
 use super::UserHeaderFfi;
 use core::ffi::c_int;
 
@@ -251,6 +257,101 @@ pub unsafe extern "C" fn iox2_client_loan_slice_uninit(
                 IOX2_OK
             }
             Err(error) => error.into_c_int(),
+        },
+    }
+}
+
+unsafe fn send_copy<S: Service>(
+    client: &Client<S, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+    data_ptr: *const c_void,
+    size_of_element: usize,
+    number_of_elements: usize,
+) -> Result<PendingResponse<S, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>, c_int> {
+    let mut request = match client.loan_custom_payload(number_of_elements) {
+        Ok(request) => request,
+        Err(e) => return Err(e.into_c_int()),
+    };
+
+    let data_len = size_of_element * number_of_elements;
+    if request.payload().len() < data_len {
+        return Err(iox2_request_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE as c_int);
+    }
+
+    let request_ptr = request.payload_mut().as_mut_ptr();
+    core::ptr::copy_nonoverlapping(data_ptr, request_ptr.cast(), data_len);
+    match request.assume_init().send() {
+        Ok(pending_response) => Ok(pending_response),
+        Err(e) => Err(e.into_c_int()),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_client_send_copy(
+    client_handle: iox2_client_h_ref,
+    data_ptr: *const c_void,
+    size_of_element: usize,
+    number_of_elements: usize,
+    pending_response_struct_ptr: *mut iox2_pending_response_t,
+    pending_response_handle_ptr: *mut iox2_pending_response_h,
+) -> c_int {
+    client_handle.assert_non_null();
+    debug_assert!(!data_ptr.is_null());
+    debug_assert!(size_of_element != 0);
+
+    let client = &mut *client_handle.as_type();
+
+    let init_pending_response_struct_ptr =
+        |pending_response_struct_ptr: *mut iox2_pending_response_t| {
+            let mut pending_response_struct_ptr = pending_response_struct_ptr;
+            fn no_op(_: *mut iox2_pending_response_t) {}
+            let mut deleter: fn(*mut iox2_pending_response_t) = no_op;
+            if pending_response_struct_ptr.is_null() {
+                pending_response_struct_ptr = iox2_pending_response_t::alloc();
+                deleter = iox2_pending_response_t::dealloc;
+            }
+            debug_assert!(!pending_response_struct_ptr.is_null());
+
+            (pending_response_struct_ptr, deleter)
+        };
+
+    match client.service_type {
+        iox2_service_type_e::IPC => match send_copy(
+            &client.value.as_mut().ipc,
+            data_ptr,
+            size_of_element,
+            number_of_elements,
+        ) {
+            Ok(pending_response) => {
+                let (pending_response_struct_ptr, deleter) =
+                    init_pending_response_struct_ptr(pending_response_struct_ptr);
+                (*pending_response_struct_ptr).init(
+                    client.service_type,
+                    PendingResponseUnion::new_ipc(pending_response),
+                    deleter,
+                );
+                *pending_response_handle_ptr = (*pending_response_struct_ptr).as_handle();
+                IOX2_OK
+            }
+            Err(e) => e,
+        },
+        iox2_service_type_e::LOCAL => match send_copy(
+            &client.value.as_mut().local,
+            data_ptr,
+            size_of_element,
+            number_of_elements,
+        ) {
+            Ok(pending_response) => {
+                let (pending_response_struct_ptr, deleter) =
+                    init_pending_response_struct_ptr(pending_response_struct_ptr);
+                (*pending_response_struct_ptr).init(
+                    client.service_type,
+                    PendingResponseUnion::new_local(pending_response),
+                    deleter,
+                );
+                *pending_response_handle_ptr = (*pending_response_struct_ptr).as_handle();
+                IOX2_OK
+            }
+            Err(e) => e,
         },
     }
 }
