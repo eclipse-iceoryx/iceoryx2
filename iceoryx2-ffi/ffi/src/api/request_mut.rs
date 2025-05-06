@@ -17,10 +17,14 @@ use crate::api::{
     IOX2_OK,
 };
 
+use iceoryx2::port::client::RequestSendError;
+use iceoryx2::port::LoanError;
+use iceoryx2::port::SendError;
 use iceoryx2::prelude::*;
 use iceoryx2::request_mut_uninit::RequestMutUninit;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_ffi_macros::iceoryx2_ffi;
+use iceoryx2_bb_elementary::AsCStr;
+use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
 
 use core::ffi::{c_int, c_void};
 use core::mem::ManuallyDrop;
@@ -28,6 +32,49 @@ use core::mem::ManuallyDrop;
 use super::{iox2_request_header_h, iox2_request_header_t, PayloadFfi, UninitPayloadFfi};
 
 // BEGIN types definition
+#[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_request_send_error_e {
+    CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS = IOX2_OK as isize + 1,
+    CONNECTION_CORRUPTED,
+    LOAN_ERROR_OUT_OF_MEMORY,
+    LOAN_ERROR_EXCEEDS_MAX_LOANS,
+    LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE,
+    LOAN_ERROR_INTERNAL_FAILURE,
+    CONNECTION_ERROR,
+    EXCEEDS_MAX_ACTIVE_REQUESTS,
+}
+
+impl IntoCInt for RequestSendError {
+    fn into_c_int(self) -> c_int {
+        (match self {
+            RequestSendError::SendError(SendError::ConnectionBrokenSinceSenderNoLongerExists) => {
+                iox2_request_send_error_e::CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS
+            }
+            RequestSendError::SendError(SendError::ConnectionCorrupted) => {
+                iox2_request_send_error_e::CONNECTION_CORRUPTED
+            }
+            RequestSendError::SendError(SendError::LoanError(LoanError::OutOfMemory)) => {
+                iox2_request_send_error_e::LOAN_ERROR_OUT_OF_MEMORY
+            }
+            RequestSendError::SendError(SendError::LoanError(LoanError::ExceedsMaxLoans)) => {
+                iox2_request_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOANS
+            }
+            RequestSendError::SendError(SendError::LoanError(LoanError::ExceedsMaxLoanSize)) => {
+                iox2_request_send_error_e::LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE
+            }
+            RequestSendError::SendError(SendError::LoanError(LoanError::InternalFailure)) => {
+                iox2_request_send_error_e::LOAN_ERROR_INTERNAL_FAILURE
+            }
+            RequestSendError::SendError(SendError::ConnectionError(_)) => {
+                iox2_request_send_error_e::CONNECTION_ERROR
+            }
+            RequestSendError::ExceedsMaxActiveRequests => {
+                iox2_request_send_error_e::EXCEEDS_MAX_ACTIVE_REQUESTS
+            }
+        }) as c_int
+    }
+}
 
 pub(super) union RequestMutUninitUnion {
     ipc: ManuallyDrop<
@@ -336,10 +383,7 @@ pub unsafe extern "C" fn iox2_request_mut_payload(
 /// * `number_of_recipients`, can be null or must point to a valid [`c_size_t`] to store the number
 ///   of subscribers that received the sample
 #[no_mangle]
-pub unsafe extern "C" fn iox2_request_mut_send(
-    handle: iox2_request_mut_h,
-    number_of_recipients: *mut c_size_t,
-) -> c_int {
+pub unsafe extern "C" fn iox2_request_mut_send(handle: iox2_request_mut_h) -> c_int {
     debug_assert!(!handle.is_null());
 
     let request_struct = &mut *handle.as_type();
@@ -352,34 +396,30 @@ pub unsafe extern "C" fn iox2_request_mut_send(
         .unwrap_or_else(|| panic!("Trying to send an already sent request!"));
     (request_struct.deleter)(request_struct);
 
-    // match service_type {
-    //     iox2_service_type_e::IPC => {
-    //         let request = ManuallyDrop::into_inner(request.ipc);
-    //         match request.assume_init().send() {
-    //             Ok(v) => {
-    //                 if !number_of_recipients.is_null() {
-    //                     *number_of_recipients = v;
-    //                 }
-    //             }
-    //             Err(e) => {
-    //                 return e.into_c_int();
-    //             }
-    //         }
-    //     }
-    //     iox2_service_type_e::LOCAL => {
-    //         let request = ManuallyDrop::into_inner(request.local);
-    //         match request.assume_init().send() {
-    //             Ok(v) => {
-    //                 if !number_of_recipients.is_null() {
-    //                     *number_of_recipients = v;
-    //                 }
-    //             }
-    //             Err(e) => {
-    //                 return e.into_c_int();
-    //             }
-    //         }
-    //     }
-    // }
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let request = ManuallyDrop::into_inner(request.ipc);
+            match request.assume_init().send() {
+                Ok(v) => {
+                    todo!()
+                }
+                Err(e) => {
+                    return e.into_c_int();
+                }
+            }
+        }
+        iox2_service_type_e::LOCAL => {
+            let request = ManuallyDrop::into_inner(request.local);
+            match request.assume_init().send() {
+                Ok(v) => {
+                    todo!()
+                }
+                Err(e) => {
+                    return e.into_c_int();
+                }
+            }
+        }
+    }
 
     IOX2_OK
 }
