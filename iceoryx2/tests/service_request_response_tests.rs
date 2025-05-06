@@ -316,9 +316,9 @@ mod service_request_response {
         let active_request_1 = test.servers[0].receive().unwrap().unwrap();
 
         let p0 = *active_request_0.payload();
-        let id0 = active_request_0.header().client_port_id();
+        let id0 = active_request_0.header().client_id();
         let p1 = *active_request_1.payload();
-        let id1 = active_request_1.header().client_port_id();
+        let id1 = active_request_1.header().client_id();
 
         assert_that!(test.clients[p0].id(), eq id0);
         assert_that!(test.clients[p1].id(), eq id1);
@@ -344,9 +344,9 @@ mod service_request_response {
         let response1 = pending_response.receive().unwrap().unwrap();
 
         let p0 = *response0.payload();
-        let id0 = response0.header().server_port_id();
+        let id0 = response0.header().server_id();
         let p1 = *response1.payload();
-        let id1 = response1.header().server_port_id();
+        let id1 = response1.header().server_id();
 
         assert_that!(test.servers[p0].id(), eq id0);
         assert_that!(test.servers[p1].id(), eq id1);
