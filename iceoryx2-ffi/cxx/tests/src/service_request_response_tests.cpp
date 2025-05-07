@@ -224,6 +224,123 @@ TYPED_TEST(ServiceRequestResponseTest, open_or_create_existing_service_with_wron
     ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleResponseType));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, send_copy_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+
+    auto sut_client = service.client_builder().create().expect("");
+
+    const uint64_t payload = 123;
+    auto pending_response = sut_client.send_copy(payload);
+    ASSERT_FALSE(pending_response.has_error());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_uninit_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+
+    auto sut_client = service.client_builder().create().expect("");
+
+    auto request = sut_client.loan_uninit();
+    ASSERT_FALSE(request.has_error());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    struct Payload {
+        uint64_t p { 3 };
+    };
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template request_response<Payload, uint64_t>().create().expect("");
+
+    auto sut_client = service.client_builder().create().expect("");
+
+    auto request = sut_client.loan();
+    ASSERT_FALSE(request.has_error());
+    EXPECT_THAT(request.value().payload().p, Eq(3));
+}
+
+struct DummyData {
+    static constexpr uint64_t DEFAULT_VALUE_A = 42;
+    static constexpr bool DEFAULT_VALUE_Z { false };
+    uint64_t a { DEFAULT_VALUE_A };
+    bool z { DEFAULT_VALUE_Z };
+};
+
+TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<iox::Slice<DummyData>, uint64_t>()
+                       .create()
+                       .expect("");
+
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+
+    iox::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox::ZeroedBuffer> elements;
+    for (auto& item : elements) {
+        new (&item) DummyData {};
+    }
+    auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
+    auto pending_response = sut_client.send_slice_copy(payload);
+    ASSERT_FALSE(pending_response.has_error());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<iox::Slice<DummyData>, uint64_t>()
+                       .create()
+                       .expect("");
+
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+
+    auto request = sut_client.loan_slice_uninit(SLICE_MAX_LENGTH);
+    ASSERT_FALSE(request.has_error());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_slice_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr auto SLICE_MAX_LENGTH = 10;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<iox::Slice<DummyData>, uint64_t>()
+                       .create()
+                       .expect("");
+
+    auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+
+    auto request = sut_client.loan_slice(SLICE_MAX_LENGTH);
+    ASSERT_FALSE(request.has_error());
+}
+
 TYPED_TEST(ServiceRequestResponseTest, setting_service_properties_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_NODES = 10;
@@ -318,6 +435,41 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_with_incompatible_server_requi
 
     ASSERT_TRUE(service_fail.has_error());
     ASSERT_THAT(service_fail.error(), Eq(RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, client_applies_unable_to_deliver_strategy) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+
+    auto sut_client_1 =
+        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::Block).create().expect("");
+    auto sut_client_2 =
+        service.client_builder().unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample).create().expect("");
+
+    ASSERT_THAT(sut_client_1.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::Block));
+    ASSERT_THAT(sut_client_2.unable_to_deliver_strategy(), Eq(UnableToDeliverStrategy::DiscardSample));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, client_applies_initial_max_slice_length) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    constexpr uint64_t INITIAL_MAX_SLICE_LEN = 1990;
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
+                       .create()
+                       .expect("");
+
+    auto sut_client = service.client_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().expect("");
+
+    ASSERT_THAT(sut_client.initial_max_slice_len(), Eq(INITIAL_MAX_SLICE_LEN));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, number_of_clients_servers_works) {

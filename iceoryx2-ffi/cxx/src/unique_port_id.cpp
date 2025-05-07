@@ -219,8 +219,8 @@ auto operator<([[maybe_unused]] const UniqueClientId& lhs, [[maybe_unused]] cons
     IOX_TODO();
 }
 
-UniqueClientId::UniqueClientId(/* iox2_unique_client_id_h handle*/) {
-    IOX_TODO();
+UniqueClientId::UniqueClientId(iox2_unique_client_id_h handle)
+    : m_handle { handle } {
 }
 
 auto UniqueClientId::bytes() const -> const iox::optional<RawIdType>& {

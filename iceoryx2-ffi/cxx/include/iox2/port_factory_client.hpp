@@ -36,6 +36,9 @@ class PortFactoryClient {
     /// its internal buffer is full.
     IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
 
+    /// Sets the maximum number of elements that can be loaned in a slice.
+    IOX_BUILDER_OPTIONAL(uint64_t, initial_max_slice_len);
+
   public:
     PortFactoryClient(const PortFactoryClient&) = delete;
     PortFactoryClient(PortFactoryClient&&) = default;
@@ -68,6 +71,8 @@ PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, Respo
         iox2_port_factory_client_builder_unable_to_deliver_strategy(
             &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
     });
+    m_initial_max_slice_len.and_then(
+        [&](auto value) { iox2_port_factory_client_builder_set_initial_max_slice_len(&m_handle, value); });
 
     iox2_client_h client_handle {};
     auto result = iox2_port_factory_client_builder_create(m_handle, nullptr, &client_handle);

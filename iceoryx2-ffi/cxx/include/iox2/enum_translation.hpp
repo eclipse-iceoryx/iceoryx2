@@ -1499,6 +1499,61 @@ inline auto from<iox2::LoanError, const char*>(const iox2::LoanError value) noex
 }
 
 template <>
+constexpr auto from<int, iox2::RequestSendError>(const int value) noexcept -> iox2::RequestSendError {
+    const auto error = static_cast<iox2_request_send_error_e>(value);
+    switch (error) {
+    case iox2_request_send_error_e_EXCEEDS_MAX_ACTIVE_REQUESTS:
+        return iox2::RequestSendError::ExceedsMaxActiveRequests;
+    case iox2_request_send_error_e_CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS:
+        return iox2::RequestSendError::ConnectionBrokenSinceSenderNoLongerExists;
+    case iox2_request_send_error_e_CONNECTION_CORRUPTED:
+        return iox2::RequestSendError::ConnectionCorrupted;
+    case iox2_request_send_error_e_LOAN_ERROR_OUT_OF_MEMORY:
+        return iox2::RequestSendError::LoanErrorOutOfMemory;
+    case iox2_request_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANS:
+        return iox2::RequestSendError::LoanErrorExceedsMaxLoans;
+    case iox2_request_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE:
+        return iox2::RequestSendError::LoanErrorExceedsMaxLoanSize;
+    case iox2_request_send_error_e_LOAN_ERROR_INTERNAL_FAILURE:
+        return iox2::RequestSendError::LoanErrorInternalFailure;
+    case iox2_request_send_error_e_CONNECTION_ERROR:
+        return iox2::RequestSendError::ConnectionError;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+constexpr auto from<iox2::RequestSendError, iox2_request_send_error_e>(const iox2::RequestSendError value) noexcept
+    -> iox2_request_send_error_e {
+    switch (value) {
+    case iox2::RequestSendError::ExceedsMaxActiveRequests:
+        return iox2_request_send_error_e_EXCEEDS_MAX_ACTIVE_REQUESTS;
+    case iox2::RequestSendError::ConnectionBrokenSinceSenderNoLongerExists:
+        return iox2_request_send_error_e_CONNECTION_BROKEN_SINCE_SENDER_NO_LONGER_EXISTS;
+    case iox2::RequestSendError::ConnectionCorrupted:
+        return iox2_request_send_error_e_CONNECTION_CORRUPTED;
+    case iox2::RequestSendError::LoanErrorOutOfMemory:
+        return iox2_request_send_error_e_LOAN_ERROR_OUT_OF_MEMORY;
+    case iox2::RequestSendError::LoanErrorExceedsMaxLoans:
+        return iox2_request_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOANS;
+    case iox2::RequestSendError::LoanErrorExceedsMaxLoanSize:
+        return iox2_request_send_error_e_LOAN_ERROR_EXCEEDS_MAX_LOAN_SIZE;
+    case iox2::RequestSendError::LoanErrorInternalFailure:
+        return iox2_request_send_error_e_LOAN_ERROR_INTERNAL_FAILURE;
+    case iox2::RequestSendError::ConnectionError:
+        return iox2_request_send_error_e_CONNECTION_ERROR;
+    }
+
+    IOX_UNREACHABLE();
+}
+
+template <>
+inline auto from<iox2::RequestSendError, const char*>(const iox2::RequestSendError value) noexcept -> const char* {
+    return iox2_request_send_error_string(iox::into<iox2_request_send_error_e>(value));
+}
+
+template <>
 constexpr auto from<int, iox2::TypeVariant>(const int value) noexcept -> iox2::TypeVariant {
     const auto variant = static_cast<iox2_type_variant_e>(value);
     switch (variant) {

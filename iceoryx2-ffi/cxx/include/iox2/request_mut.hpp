@@ -15,7 +15,10 @@
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
+#include "iox/slice.hpp"
 #include "iox2/header_request_response.hpp"
+#include "iox2/internal/iceoryx2.hpp"
+#include "iox2/payload_info.hpp"
 #include "iox2/pending_response.hpp"
 #include "iox2/port_error.hpp"
 #include "iox2/service_type.hpp"
@@ -30,7 +33,10 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) 'm_request' is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class RequestMut {
+    using ValueType = typename PayloadInfo<RequestPayload>::ValueType;
+
   public:
     RequestMut(RequestMut&& rhs) noexcept;
     auto operator=(RequestMut&& rhs) noexcept -> RequestMut&;
@@ -57,10 +63,18 @@ class RequestMut {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the user defined request payload.
+    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const RequestPayload&;
 
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload() const -> iox::ImmutableSlice<ValueType>;
+
     /// Returns a mutable reference to the user defined request payload.
+    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> RequestPayload&;
+
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload_mut() -> iox::MutableSlice<ValueType>;
 
     /// Sends the [`RequestMut`] to all connected
     /// [`Server`](crate::port::server::Server)s of the
@@ -71,15 +85,18 @@ class RequestMut {
 
   private:
     template <ServiceType, typename, typename, typename, typename>
+    friend class Client;
+    template <ServiceType, typename, typename, typename, typename>
     friend class RequestMutUninit;
 
-    explicit RequestMut();
+    explicit RequestMut() = default;
     void drop();
 
-    // iox2_request_mut_t m_response;
-    // iox2_request_mut_h m_handle = nullptr;
+    iox2_request_mut_t m_request;
+    iox2_request_mut_h m_handle = nullptr;
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_request will be initialized in the move assignment operator
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestHeader,
@@ -90,14 +107,26 @@ inline RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, Respo
     *this = std::move(rhs);
 }
 
+namespace internal {
+extern "C" {
+void iox2_request_mut_move(iox2_request_mut_t*, iox2_request_mut_t*, iox2_request_mut_h*);
+}
+} // namespace internal
+
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    [[maybe_unused]] RequestMut&& rhs) noexcept -> RequestMut& {
-    IOX_TODO();
+    RequestMut&& rhs) noexcept -> RequestMut& {
+    if (this != &rhs) {
+        drop();
+
+        internal::iox2_request_mut_move(&rhs.m_request, &m_request, &m_handle);
+        rhs.m_handle = nullptr;
+    }
+    return *this;
 }
 
 template <ServiceType Service,
@@ -186,8 +215,22 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+template <typename T, typename>
 inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
     -> const RequestPayload& {
+    const void* ptr = nullptr;
+    iox2_request_mut_payload(&m_handle, &ptr, nullptr);
+    return *static_cast<const RequestPayload*>(ptr);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
+    -> iox::ImmutableSlice<ValueType> {
     IOX_TODO();
 }
 
@@ -196,9 +239,26 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+template <typename T, typename>
 inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload_mut()
     -> RequestPayload& {
-    IOX_TODO();
+    void* ptr = nullptr;
+    iox2_request_mut_payload_mut(&m_handle, &ptr, nullptr);
+    return *static_cast<RequestPayload*>(ptr);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload_mut()
+    -> iox::MutableSlice<ValueType> {
+    void* ptr = nullptr;
+    size_t number_of_elements = 0;
+    iox2_request_mut_payload_mut(&m_handle, &ptr, &number_of_elements);
+    return iox::MutableSlice<ValueType>(static_cast<ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType Service,
@@ -217,17 +277,11 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::RequestMut() {
-    IOX_TODO();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestHeader,
-          typename ResponsePayload,
-          typename ResponseHeader>
 inline void RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_request_mut_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 } // namespace iox2

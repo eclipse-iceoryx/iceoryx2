@@ -14,6 +14,8 @@
 #define IOX2_CLIENT_HPP
 
 #include "iox/expected.hpp"
+#include "iox/slice.hpp"
+#include "iox2/payload_info.hpp"
 #include "iox2/request_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -27,6 +29,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 class Client {
+    using ValueType = typename PayloadInfo<RequestPayload>::ValueType;
+
   public:
     Client(Client&& rhs) noexcept;
     auto operator=(Client&& rhs) noexcept -> Client&;
@@ -42,25 +46,44 @@ class Client {
     /// if the [`Server`](crate::port::server::Server)s buffer is full.
     auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
 
-    /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
-    /// by default to avoid unnecessary copies.
-    auto loan_uninit()
-        -> iox::expected<RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-                         LoanError>;
+    /// Returns the maximum number of elements that can be loaned in a slice.
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto initial_max_slice_len() const -> uint64_t;
 
     /// Copies the input value into a [`RequestMut`] and sends it. On success it
     /// returns a [`PendingResponse`] that can be used to receive a stream of
     /// [`Response`](crate::response::Response)s from the
     /// [`Server`](crate::port::server::Server).
-    auto send_copy(const RequestPayload& value) const
+    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    auto send_copy(const RequestPayload& payload) const
         -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                          RequestSendError>;
+
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const
+        -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+                         RequestSendError>;
+
+    /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
+    /// by default to avoid unnecessary copies.
+    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    auto loan_uninit()
+        -> iox::expected<RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+                         LoanError>;
+
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto loan_slice_uninit(uint64_t number_of_elements)
+        -> iox::expected<RequestMutUninit<Service, T, RequestHeader, ResponsePayload, ResponseHeader>, LoanError>;
 
     /// Acquires the payload for the request and initializes the underlying memory
     /// with default. This can be very expensive when the payload is large, therefore
     /// prefer [`Client::loan_uninit()`] when possible.
-    auto loan() -> iox::expected<RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-                                 LoanError>;
+    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    auto loan() -> iox::expected<RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader>, LoanError>;
+
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto loan_slice(uint64_t number_of_elements)
+        -> iox::expected<RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader>, LoanError>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -115,7 +138,9 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::id() const
     -> UniqueClientId {
-    IOX_TODO();
+    iox2_unique_client_id_h id_handle = nullptr;
+    iox2_client_id(&m_handle, nullptr, &id_handle);
+    return UniqueClientId { id_handle };
 }
 
 template <ServiceType Service,
@@ -126,7 +151,7 @@ template <ServiceType Service,
 inline auto
 Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::unable_to_deliver_strategy() const
     -> UnableToDeliverStrategy {
-    IOX_TODO();
+    return iox::into<UnableToDeliverStrategy>(static_cast<int>(iox2_client_unable_to_deliver_strategy(&m_handle)));
 }
 
 template <ServiceType Service,
@@ -134,10 +159,29 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+template <typename T, typename>
+inline auto
+Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::initial_max_slice_len() const
+    -> uint64_t {
+    return iox2_client_initial_max_slice_len(&m_handle);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::loan_uninit()
     -> iox::expected<RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                      LoanError> {
-    IOX_TODO();
+    RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> request;
+    auto result =
+        iox2_client_loan_slice_uninit(&m_handle, &request.m_request.m_request, &request.m_request.m_handle, 1);
+    if (result == IOX2_OK) {
+        return iox::ok(std::move(request));
+    }
+    return iox::err(iox::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -145,11 +189,41 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+template <typename T, typename>
+inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::loan_slice_uninit(
+    uint64_t number_of_elements)
+    -> iox::expected<RequestMutUninit<Service, T, RequestHeader, ResponsePayload, ResponseHeader>, LoanError> {
+    RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> request;
+    auto result = iox2_client_loan_slice_uninit(
+        &m_handle, &request.m_request.m_request, &request.m_request.m_handle, number_of_elements);
+    if (result == IOX2_OK) {
+        return iox::ok(std::move(request));
+    }
+    return iox::err(iox::into<LoanError>(result));
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::send_copy(
-    [[maybe_unused]] const RequestPayload& value) const
+    const RequestPayload& payload) const
     -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                      RequestSendError> {
-    IOX_TODO();
+    static_assert(std::is_trivially_copyable_v<RequestPayload>);
+
+    iox2_pending_response_h pending_response_handle {};
+    auto result = iox2_client_send_copy(
+        &m_handle, static_cast<const void*>(&payload), sizeof(RequestPayload), 1, nullptr, &pending_response_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+            pending_response_handle));
+    }
+
+    return iox::err(iox::into<RequestSendError>(result));
 }
 
 template <ServiceType Service,
@@ -157,9 +231,64 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+template <typename T, typename>
+inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::send_slice_copy(
+    iox::ImmutableSlice<ValueType>& payload) const
+    -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+                     RequestSendError> {
+    iox2_pending_response_h pending_response_handle {};
+    auto result = iox2_client_send_copy(&m_handle,
+                                        payload.data(),
+                                        sizeof(typename RequestPayload::ValueType),
+                                        payload.number_of_elements(),
+                                        nullptr,
+                                        &pending_response_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+            pending_response_handle));
+    }
+
+    return iox::err(iox::into<RequestSendError>(result));
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::loan()
-    -> iox::expected<RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>, LoanError> {
-    IOX_TODO();
+    -> iox::expected<RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader>, LoanError> {
+    auto request = loan_uninit();
+    if (request.has_error()) {
+        return iox::err(request.error());
+    }
+
+    new (&request->payload_mut()) RequestPayload();
+    return iox::ok(assume_init(std::move(*request)));
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto
+Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::loan_slice(uint64_t number_of_elements)
+    -> iox::expected<RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader>, LoanError> {
+    auto request_uninit = loan_slice_uninit(number_of_elements);
+    if (request_uninit.has_error()) {
+        return iox::err(request_uninit.error());
+    }
+
+    auto request_init = std::move(request_uninit.value());
+    for (auto& item : request_init.payload_mut()) {
+        new (&item) ValueType();
+    }
+
+    return iox::ok(assume_init(std::move(request_init)));
 }
 
 template <ServiceType Service,

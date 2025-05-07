@@ -29,6 +29,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 class RequestMutUninit {
+    using ValueType = typename PayloadInfo<RequestPayload>::ValueType;
+
   public:
     RequestMutUninit(RequestMutUninit&& rhs) noexcept = default;
     auto operator=(RequestMutUninit&& rhs) noexcept -> RequestMutUninit& = default;
@@ -50,19 +52,37 @@ class RequestMutUninit {
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the user defined request payload.
+    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const RequestPayload&;
 
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload() const -> iox::ImmutableSlice<ValueType>;
+
     /// Returns a mutable reference to the user defined request payload.
+    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> RequestPayload&;
+
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload_mut() -> iox::MutableSlice<ValueType>;
 
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
     void write_payload(RequestPayload& value);
 
   private:
-    explicit RequestMutUninit();
+    template <ServiceType, typename, typename, typename, typename>
+    friend class Client;
 
-    auto assume_init() -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>;
+    explicit RequestMutUninit() = default;
+
+    template <ServiceType S,
+              typename RequestPayloadT,
+              typename RequestHeaderT,
+              typename ResponsePayloadT,
+              typename ResponseHeaderT>
+    friend auto
+    assume_init(RequestMutUninit<S, RequestPayloadT, RequestHeaderT, ResponsePayloadT, ResponseHeaderT>&& self)
+        -> RequestMut<S, RequestPayloadT, RequestHeaderT, ResponsePayloadT, ResponseHeaderT>;
 
     RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> m_request;
 };
@@ -105,6 +125,7 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+template <typename T, typename>
 inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
     -> const RequestPayload& {
     IOX_TODO();
@@ -115,9 +136,32 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+template <typename T, typename>
+inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
+    -> iox::ImmutableSlice<ValueType> {
+    IOX_TODO();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
 inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload_mut()
     -> RequestPayload& {
-    IOX_TODO();
+    return m_request.payload_mut();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload_mut()
+    -> iox::MutableSlice<ValueType> {
+    return m_request.payload_mut();
 }
 
 template <ServiceType Service,
@@ -135,18 +179,10 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::RequestMutUninit() {
-    IOX_TODO();
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestHeader,
-          typename ResponsePayload,
-          typename ResponseHeader>
-inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::assume_init()
+inline auto
+assume_init(RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>&& self)
     -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-    IOX_TODO();
+    return std::move(self.m_request);
 }
 
 } // namespace iox2

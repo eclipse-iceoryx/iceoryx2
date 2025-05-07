@@ -78,10 +78,15 @@ class PendingResponse {
     auto is_connected() const -> bool;
 
   private:
-    explicit PendingResponse() noexcept;
+    template <ServiceType, typename, typename, typename, typename>
+    friend class Client;
+
+    explicit PendingResponse(iox2_pending_response_h handle) noexcept;
 
     void drop();
     void close();
+
+    iox2_pending_response_h m_handle = nullptr;
 };
 
 template <ServiceType Service,
@@ -100,8 +105,14 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    [[maybe_unused]] PendingResponse&& rhs) noexcept -> PendingResponse& {
-    IOX_TODO();
+    PendingResponse&& rhs) noexcept -> PendingResponse& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 template <ServiceType Service,
@@ -211,9 +222,9 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::
-    PendingResponse() noexcept {
-    IOX_TODO();
+inline PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::PendingResponse(
+    iox2_pending_response_h handle) noexcept
+    : m_handle { handle } {
 }
 
 template <ServiceType Service,
@@ -222,7 +233,10 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline void PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_pending_response_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 template <ServiceType Service,

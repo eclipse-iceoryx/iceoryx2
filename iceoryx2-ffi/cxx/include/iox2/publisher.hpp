@@ -85,7 +85,7 @@ class Publisher {
     template <typename T = Payload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements) -> iox::expected<SampleMut<S, T, UserHeader>, LoanError>;
 
-    /// Loans/allocates a [`SampleMut`] from the underlying data segment of the [`Publisher`].
+    /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns [`LoanError`] describing the failure.
