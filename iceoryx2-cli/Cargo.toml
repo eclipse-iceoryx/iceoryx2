@@ -30,11 +30,16 @@ path = "iox2-service/src/main.rs"
 name = "iox2-config"
 path = "iox2-config/src/main.rs"
 
+[[bin]]
+name = "iox2-tunnel"
+path = "iox2-tunnel/src/main.rs"
+
 [lib]
 name = "iceoryx2_cli"
 path = "lib/src/lib.rs"
 
 [dependencies]
+iceoryx2-tunnels-zenoh = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 iceoryx2 = { workspace = true }
 iceoryx2-bb-log = { workspace = true }

@@ -796,6 +796,7 @@ dependencies = [
  "iceoryx2-pal-posix",
  "iceoryx2-pal-testing",
  "iceoryx2-services-discovery",
+ "iceoryx2-tunnels-zenoh",
  "ron",
  "serde",
  "serde_json",
@@ -889,6 +890,20 @@ dependencies = [
  "iceoryx2-pal-testing",
  "once_cell",
  "serde",
+]
+
+[[package]]
+name = "iceoryx2-tunnels-common"
+version = "0.6.1"
+dependencies = [
+ "iceoryx2",
+]
+
+[[package]]
+name = "iceoryx2-tunnels-zenoh"
+version = "0.6.1"
+dependencies = [
+ "iceoryx2",
 ]
 
 [[package]]

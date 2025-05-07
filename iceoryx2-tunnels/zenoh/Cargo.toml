@@ -1,0 +1,22 @@
+
+[package]
+name = "iceoryx2-tunnels-zenoh"
+description = "iceoryx2: tunnel over zenoh"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+readme = "../README.md"
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[lib]
+name = "iceoryx2_tunnels_zenoh"
+path = "src/lib.rs"
+
+[dependencies]
+iceoryx2 = { workspace = true }
+
+[dev-dependencies]
