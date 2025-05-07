@@ -13,6 +13,7 @@
 #ifndef IOX2_RESPONSE_MUT_UNINIT_HPP
 #define IOX2_RESPONSE_MUT_UNINIT_HPP
 
+#include "iox/slice.hpp"
 #include "iox2/response_mut.hpp"
 #include "iox2/service_type.hpp"
 
@@ -57,12 +58,18 @@ class ResponseMutUninit {
 
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
-    void write_payload(ResponsePayload& value);
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
+    void write_payload(ResponsePayload&& payload);
 
   private:
-    explicit ResponseMutUninit();
+    template <ServiceType, typename, typename, typename, typename>
+    friend class ActiveRequest;
 
-    auto assume_init() -> ResponseMut<Service, ResponsePayload, ResponseHeader>;
+    template <ServiceType S, typename ResponsePayloadT, typename ResponseHeaderT>
+    friend auto assume_init(ResponseMutUninit<S, ResponsePayloadT, ResponseHeaderT>&& self)
+        -> ResponseMut<S, ResponsePayloadT, ResponseHeaderT>;
+
+    explicit ResponseMutUninit() = default;
 
     ResponseMut<Service, ResponsePayload, ResponseHeader> m_response;
 };
@@ -92,24 +99,19 @@ inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::payload
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::payload_mut() -> ResponsePayload& {
-    IOX_TODO();
+    return m_response.payload_mut();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline void
-ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::write_payload([[maybe_unused]] ResponsePayload& value) {
-    IOX_TODO();
+template <typename T, typename>
+inline void ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::write_payload(ResponsePayload&& payload) {
+    new (&payload_mut()) ResponsePayload(std::forward<T>(payload));
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::ResponseMutUninit() {
-    IOX_TODO();
-}
-
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::assume_init()
+inline auto assume_init(ResponseMutUninit<Service, ResponsePayload, ResponseHeader>&& self)
     -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
-    IOX_TODO();
+    return std::move(self.m_response);
 }
 
 } // namespace iox2

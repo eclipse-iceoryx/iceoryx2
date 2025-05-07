@@ -31,6 +31,7 @@ namespace iox2 {
 /// If the [`ResponseMut`] is not sent it will reelase the loaned memory when going out of
 /// scope.
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) 'm_response' is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class ResponseMut {
   public:
     ResponseMut(ResponseMut&& rhs) noexcept;
@@ -63,32 +64,48 @@ class ResponseMut {
     /// Returns a mutable reference to the payload of the response.
     auto payload_mut() -> ResponsePayload&;
 
-    /// Sends a [`ResponseMut`] to the corresponding
-    /// [`PendingResponse`](crate::pending_response::PendingResponse) of the
-    /// [`Client`](crate::port::client::Client).
-    auto send() -> iox::expected<void, SendError>;
-
   private:
     template <ServiceType, typename, typename>
     friend class ResponseMutUninit;
+    template <ServiceType, typename, typename, typename, typename>
+    friend class ActiveRequest;
 
-    explicit ResponseMut();
+    /// Sends a [`ResponseMut`] to the corresponding
+    /// [`PendingResponse`](crate::pending_response::PendingResponse) of the
+    /// [`Client`](crate::port::client::Client).
+    template <ServiceType S, typename ResponsePayloadT, typename ResponseHeaderT>
+    friend auto send(ResponseMut<S, ResponsePayloadT, ResponseHeaderT>&& response) -> iox::expected<void, SendError>;
+
+    explicit ResponseMut() = default;
     void drop();
 
-    // iox2_response_mut_t m_response;
-    // iox2_response_mut_h m_handle = nullptr;
+    iox2_response_mut_t m_response;
+    iox2_response_mut_h m_handle = nullptr;
 };
 
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_response will be initialized in the move assignment operator
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 inline ResponseMut<Service, ResponsePayload, ResponseHeader>::ResponseMut(ResponseMut&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
+namespace internal {
+extern "C" {
+void iox2_response_mut_move(iox2_response_mut_t*, iox2_response_mut_t*, iox2_response_mut_h*);
+}
+} // namespace internal
+
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto
-ResponseMut<Service, ResponsePayload, ResponseHeader>::operator=([[maybe_unused]] ResponseMut&& rhs) noexcept
+inline auto ResponseMut<Service, ResponsePayload, ResponseHeader>::operator=(ResponseMut&& rhs) noexcept
     -> ResponseMut& {
-    IOX_TODO();
+    if (this != &rhs) {
+        drop();
+
+        internal::iox2_response_mut_move(&rhs.m_response, &m_response, &m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
@@ -140,22 +157,28 @@ inline auto ResponseMut<Service, ResponsePayload, ResponseHeader>::payload() con
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 inline auto ResponseMut<Service, ResponsePayload, ResponseHeader>::payload_mut() -> ResponsePayload& {
-    IOX_TODO();
+    void* ptr = nullptr;
+    iox2_response_mut_payload_mut(&m_handle, &ptr, nullptr);
+    return *static_cast<ResponsePayload*>(ptr);
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto ResponseMut<Service, ResponsePayload, ResponseHeader>::send() -> iox::expected<void, SendError> {
-    IOX_TODO();
-}
+inline auto send(ResponseMut<Service, ResponsePayload, ResponseHeader>&& response) -> iox::expected<void, SendError> {
+    auto result = iox2_response_mut_send(response.m_handle);
+    response.m_handle = nullptr;
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline ResponseMut<Service, ResponsePayload, ResponseHeader>::ResponseMut() {
-    IOX_TODO();
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+    return iox::err(iox::into<SendError>(result));
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 inline void ResponseMut<Service, ResponsePayload, ResponseHeader>::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_response_mut_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 } // namespace iox2

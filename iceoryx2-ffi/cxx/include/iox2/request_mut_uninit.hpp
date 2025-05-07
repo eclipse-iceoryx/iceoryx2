@@ -67,7 +67,8 @@ class RequestMutUninit {
 
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
-    void write_payload(RequestPayload& value);
+    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
+    void write_payload(RequestPayload&& payload);
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -169,9 +170,10 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+template <typename T, typename>
 inline void RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::write_payload(
-    [[maybe_unused]] RequestPayload& value) {
-    IOX_TODO();
+    RequestPayload&& payload) {
+    new (&payload_mut()) RequestPayload(std::forward<T>(payload));
 }
 
 template <ServiceType Service,

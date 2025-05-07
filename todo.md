@@ -1,5 +1,15 @@
 # TODO
 
+## C++ binding for request response
+
+* finish tests in service_request_response_tests.cpp, i.e. at least `send_slice_copy_and_receive_works`
+  and `loan_slice_uninit_write_payload_send_and_receive_works` (see TODOs there)
+* finish slice API, mainly RequestMut/ResponseMut
+* search for `IOX_TODO()`, implement logic (should be mainly getter methods in 
+  `ActiveRequest`, `PendingResponse`, `RequestMut`, `RequestMutUninit`, `Response`,
+  `ResponseMut`, `ResponseMutUninit`) and write tests
+* implement `IOX_TODO`s in unique_port_id.cpp
+
 ## POSIX
 
 * Windows stat.rs, allowed to fail if file no longer exists

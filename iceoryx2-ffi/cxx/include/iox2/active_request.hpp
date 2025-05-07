@@ -49,7 +49,7 @@ class ActiveRequest {
     /// [`PendingResponse`](crate::pending_response::PendingResponse) of the corresponding
     /// [`Client`](crate::port::client::Client).
     /// This is not a zero-copy API. Use [`ActiveRequest::loan_uninit()`] instead.
-    auto send_copy(const ResponsePayload& value) const -> iox::expected<void, SendError>;
+    auto send_copy(const ResponsePayload& payload) const -> iox::expected<void, SendError>;
 
     /// Returns a reference to the payload of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
@@ -152,7 +152,13 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::loan_uninit()
     -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseHeader>, LoanError> {
-    IOX_TODO();
+    ResponseMutUninit<Service, ResponsePayload, ResponseHeader> response;
+    auto result = iox2_active_request_loan_slice_uninit(
+        &m_handle, &response.m_response.m_response, &response.m_response.m_handle, 1);
+    if (result == IOX2_OK) {
+        return iox::ok(std::move(response));
+    }
+    return iox::err(iox::into<LoanError>(result));
 }
 
 template <ServiceType Service,
@@ -161,8 +167,15 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::send_copy(
-    [[maybe_unused]] const ResponsePayload& value) const -> iox::expected<void, SendError> {
-    IOX_TODO();
+    const ResponsePayload& payload) const -> iox::expected<void, SendError> {
+    static_assert(std::is_trivially_copyable_v<ResponsePayload>);
+
+    auto result =
+        iox2_active_request_send_copy(&m_handle, static_cast<const void*>(&payload), sizeof(ResponsePayload), 1);
+    if (result == IOX2_OK) {
+        return iox::ok();
+    }
+    return iox::err(iox::into<SendError>(result));
 }
 
 template <ServiceType Service,
@@ -172,7 +185,11 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
     -> const RequestPayload& {
-    IOX_TODO();
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_active_request_payload(&m_handle, &ptr, &number_of_elements);
+    return *static_cast<const RequestPayload*>(ptr);
 }
 
 template <ServiceType Service,

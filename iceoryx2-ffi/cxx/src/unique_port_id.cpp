@@ -243,8 +243,8 @@ UniqueServerId::~UniqueServerId() {
     drop();
 }
 
-auto operator==([[maybe_unused]] const UniqueServerId& lhs, [[maybe_unused]] const UniqueServerId& rhs) -> bool {
-    IOX_TODO();
+auto operator==(const UniqueServerId& lhs, const UniqueServerId& rhs) -> bool {
+    return iox2_unique_server_id_eq(&lhs.m_handle, &rhs.m_handle);
 }
 
 auto operator<([[maybe_unused]] const UniqueServerId& lhs, [[maybe_unused]] const UniqueServerId& rhs) -> bool {

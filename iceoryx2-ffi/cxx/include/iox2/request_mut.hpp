@@ -76,18 +76,23 @@ class RequestMut {
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> iox::MutableSlice<ValueType>;
 
-    /// Sends the [`RequestMut`] to all connected
-    /// [`Server`](crate::port::server::Server)s of the
-    /// [`Service`](crate::service::Service).
-    auto send()
-        -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-                         RequestSendError>;
-
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Client;
     template <ServiceType, typename, typename, typename, typename>
     friend class RequestMutUninit;
+
+    /// Sends the [`RequestMut`] to all connected
+    /// [`Server`](crate::port::server::Server)s of the
+    /// [`Service`](crate::service::Service).
+    template <ServiceType S,
+              typename RequestPayloadT,
+              typename RequestHeaderT,
+              typename ResponsePayloadT,
+              typename ResponseHeaderT>
+    friend auto send(RequestMut<S, RequestPayloadT, RequestHeaderT, ResponsePayloadT, ResponseHeaderT>&& request)
+        -> iox::expected<PendingResponse<S, RequestPayloadT, RequestHeaderT, ResponsePayloadT, ResponseHeaderT>,
+                         RequestSendError>;
 
     explicit RequestMut() = default;
     void drop();
@@ -266,10 +271,18 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::send()
+inline auto send(RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>&& request)
     -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                      RequestSendError> {
-    IOX_TODO();
+    iox2_pending_response_h pending_response_handle {};
+    auto result = iox2_request_mut_send(request.m_handle, nullptr, &pending_response_handle);
+    request.m_handle = nullptr;
+
+    if (result == IOX2_OK) {
+        return iox::ok(PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+            pending_response_handle));
+    }
+    return iox::err(iox::into<RequestSendError>(result));
 }
 
 template <ServiceType Service,

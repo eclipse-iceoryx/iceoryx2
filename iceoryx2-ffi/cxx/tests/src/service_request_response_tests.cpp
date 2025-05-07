@@ -243,11 +243,20 @@ TYPED_TEST(ServiceRequestResponseTest, send_copy_and_receive_works) {
     auto has_requests = sut_server.has_requests();
     ASSERT_FALSE(has_requests.has_error());
     EXPECT_TRUE(has_requests.value());
-    auto active_request = sut_server.receive();
-    ASSERT_FALSE(active_request.has_error());
+    auto active_request = sut_server.receive().expect("");
+    ASSERT_TRUE(active_request.has_value());
+    EXPECT_THAT(active_request->payload(), Eq(payload));
+
+    const uint64_t response_payload = 234;
+    auto sent_response = active_request->send_copy(response_payload);
+    ASSERT_FALSE(sent_response.has_error());
+
+    auto received_response = pending_response->receive().expect("");
+    ASSERT_TRUE(received_response.has_value());
+    EXPECT_THAT(received_response->payload(), Eq(response_payload));
 }
 
-TYPED_TEST(ServiceRequestResponseTest, loan_uninit_works) {
+TYPED_TEST(ServiceRequestResponseTest, loan_uninit_write_payload_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -257,9 +266,28 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_works) {
         node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
 
     auto sut_client = service.client_builder().create().expect("");
+    auto sut_server = service.server_builder().create().expect("");
 
-    auto request = sut_client.loan_uninit();
-    ASSERT_FALSE(request.has_error());
+    auto request_uninit = sut_client.loan_uninit().expect("");
+    uint64_t request_payload = 3;
+    request_uninit.write_payload(std::move(request_payload));
+    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
+
+    auto has_requests = sut_server.has_requests();
+    ASSERT_FALSE(has_requests.has_error());
+    EXPECT_TRUE(has_requests.value());
+    auto active_request = sut_server.receive().expect("");
+    ASSERT_TRUE(active_request.has_value());
+    EXPECT_THAT(active_request->payload(), Eq(request_payload));
+
+    uint64_t response_payload = 4;
+    auto response_uninit = active_request->loan_uninit().expect("");
+    response_uninit.write_payload(std::move(response_payload));
+    send(assume_init(std::move(response_uninit))).expect("");
+
+    auto received_response = pending_response.receive().expect("");
+    ASSERT_TRUE(received_response.has_value());
+    EXPECT_THAT(received_response->payload(), Eq(response_payload));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, loan_works) {
@@ -289,7 +317,7 @@ struct DummyData {
     bool z { DEFAULT_VALUE_Z };
 };
 
-TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_works) {
+TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
 
@@ -302,6 +330,7 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_works) {
                        .expect("");
 
     auto sut_client = service.client_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
+    auto sut_server = service.server_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
 
     iox::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox::ZeroedBuffer> elements;
     for (auto& item : elements) {
@@ -310,9 +339,31 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_works) {
     auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
     auto pending_response = sut_client.send_slice_copy(payload);
     ASSERT_FALSE(pending_response.has_error());
+
+    auto has_requests = sut_server.has_requests();
+    ASSERT_FALSE(has_requests.has_error());
+    EXPECT_TRUE(has_requests.value());
+    auto active_request = sut_server.receive().expect("");
+    ASSERT_TRUE(active_request.has_value());
+    auto received_request = std::move(active_request.value());
+
+    auto iterations = 0;
+    for (const auto& item : received_request.payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A));
+        ASSERT_THAT(item.z, Eq(DummyData::DEFAULT_VALUE_Z));
+        ++iterations;
+    }
+
+    // TODO: make the next two lines pass
+    EXPECT_THAT(received_request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
+
+    // TODO:
+    // active_request->send_slice_copy(response_payload)
+    // check pending_response->receive()
 }
 
-TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_works) {
+TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
 
@@ -328,6 +379,12 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_works) {
 
     auto request = sut_client.loan_slice_uninit(SLICE_MAX_LENGTH);
     ASSERT_FALSE(request.has_error());
+
+    // TODO:
+    // send DummyData
+    // check received data in ActiveRequest
+    // active_request->loan_slice_uninit(SLICE_MAX_LENGTH)
+    // send response and check it on PendingResponse side
 }
 
 TYPED_TEST(ServiceRequestResponseTest, loan_slice_works) {

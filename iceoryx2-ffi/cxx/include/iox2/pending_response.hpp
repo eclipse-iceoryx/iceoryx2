@@ -21,6 +21,9 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
+template <ServiceType, typename, typename, typename, typename>
+class RequestMut;
+
 /// Represents an active connection to all [`Server`](crate::port::server::Server)
 /// that received the [`RequestMut`]. The
 /// [`Client`](crate::port::client::Client) can use it to receive the corresponding
@@ -80,6 +83,14 @@ class PendingResponse {
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Client;
+    template <ServiceType S,
+              typename RequestPayloadT,
+              typename RequestHeaderT,
+              typename ResponsePayloadT,
+              typename ResponseHeaderT>
+    friend auto send(RequestMut<S, RequestPayloadT, RequestHeaderT, ResponsePayloadT, ResponseHeaderT>&& request)
+        -> iox::expected<PendingResponse<S, RequestPayloadT, RequestHeaderT, ResponsePayloadT, ResponseHeaderT>,
+                         RequestSendError>;
 
     explicit PendingResponse(iox2_pending_response_h handle) noexcept;
 
@@ -152,7 +163,17 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::receive()
     -> iox::expected<iox::optional<Response<Service, ResponsePayload, ResponseHeader>>, ReceiveError> {
-    IOX_TODO();
+    iox2_response_h response_handle {};
+    auto result = iox2_pending_response_receive(&m_handle, nullptr, &response_handle);
+
+    if (result == IOX2_OK) {
+        if (response_handle != nullptr) {
+            Response<Service, ResponsePayload, ResponseHeader> response(response_handle);
+            return iox::ok(iox::optional<Response<Service, ResponsePayload, ResponseHeader>>(std::move(response)));
+        }
+        return iox::ok(iox::optional<Response<Service, ResponsePayload, ResponseHeader>>(iox::nullopt));
+    }
+    return iox::err(iox::into<ReceiveError>(result));
 }
 
 template <ServiceType Service,

@@ -51,9 +51,14 @@ class Response {
     auto origin() const -> UniqueServerId;
 
   private:
-    explicit Response() noexcept;
+    template <ServiceType, typename, typename, typename, typename>
+    friend class PendingResponse;
+
+    explicit Response(iox2_response_h handle) noexcept;
 
     void drop();
+
+    iox2_response_h m_handle = nullptr;
 };
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
@@ -62,9 +67,14 @@ inline Response<Service, ResponsePayload, ResponseHeader>::Response(Response&& r
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::operator=([[maybe_unused]] Response&& rhs) noexcept
-    -> Response& {
-    IOX_TODO();
+inline auto Response<Service, ResponsePayload, ResponseHeader>::operator=(Response&& rhs) noexcept -> Response& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
@@ -95,7 +105,10 @@ inline auto Response<Service, ResponsePayload, ResponseHeader>::user_header() co
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 inline auto Response<Service, ResponsePayload, ResponseHeader>::payload() const -> const ResponsePayload& {
-    IOX_TODO();
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+    iox2_response_payload(&m_handle, &ptr, &number_of_elements);
+    return *static_cast<const ResponsePayload*>(ptr);
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
@@ -104,13 +117,16 @@ inline auto Response<Service, ResponsePayload, ResponseHeader>::origin() const -
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline Response<Service, ResponsePayload, ResponseHeader>::Response() noexcept {
-    IOX_TODO();
+inline Response<Service, ResponsePayload, ResponseHeader>::Response(iox2_response_h handle) noexcept
+    : m_handle(handle) {
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 inline void Response<Service, ResponsePayload, ResponseHeader>::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_response_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 } // namespace iox2
 
