@@ -164,7 +164,8 @@ impl StaticConfig {
         }
     }
 
-    pub(crate) fn publish_subscribe(&self) -> &publish_subscribe::StaticConfig {
+    ///
+    pub fn publish_subscribe(&self) -> &publish_subscribe::StaticConfig {
         match &self.messaging_pattern {
             MessagingPattern::PublishSubscribe(ref v) => v,
             m => {
