@@ -110,6 +110,41 @@ impl HandleToType for iox2_response_h_ref {
 // END type definition
 
 // BEGIN C API
+
+/// cbindgen:ignore
+/// Internal API - do not use
+/// # Safety
+///
+/// * `source_struct_ptr` must not be `null` and the struct it is pointing to must be initialized and valid, i.e. not moved or dropped.
+/// * `dest_struct_ptr` must not be `null` and the struct it is pointing to must not contain valid data, i.e. initialized. It can be moved or dropped, though.
+/// * `dest_handle_ptr` must not be `null`
+#[doc(hidden)]
+#[no_mangle]
+pub unsafe extern "C" fn iox2_response_move(
+    source_struct_ptr: *mut iox2_response_t,
+    dest_struct_ptr: *mut iox2_response_t,
+    dest_handle_ptr: *mut iox2_response_h,
+) {
+    debug_assert!(!source_struct_ptr.is_null());
+    debug_assert!(!dest_struct_ptr.is_null());
+    debug_assert!(!dest_handle_ptr.is_null());
+
+    let source = &mut *source_struct_ptr;
+    let dest = &mut *dest_struct_ptr;
+
+    dest.service_type = source.service_type;
+    dest.value.init(
+        source
+            .value
+            .as_option_mut()
+            .take()
+            .expect("Source must have a valid response"),
+    );
+    dest.deleter = source.deleter;
+
+    *dest_handle_ptr = (*dest_struct_ptr).as_handle();
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_header(
     handle: iox2_response_h_ref,

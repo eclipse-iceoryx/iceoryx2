@@ -191,7 +191,9 @@ impl HandleToType for iox2_request_mut_h_ref {
 
 // BEGIN C API
 #[no_mangle]
-pub unsafe extern "C" fn iox2_request_send_error_string(error: iox2_request_send_error_e) -> *const c_char {
+pub unsafe extern "C" fn iox2_request_send_error_string(
+    error: iox2_request_send_error_e,
+) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
 
@@ -222,7 +224,7 @@ pub unsafe extern "C" fn iox2_request_mut_move(
             .value
             .as_option_mut()
             .take()
-            .expect("Source must have a valid sample"),
+            .expect("Source must have a valid request"),
     );
     dest.deleter = source.deleter;
 
