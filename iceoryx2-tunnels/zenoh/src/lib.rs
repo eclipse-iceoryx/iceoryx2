@@ -10,20 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub struct ZenohTunnel {}
+mod data_stream;
+mod tunnel;
 
-impl ZenohTunnel {
-    pub fn new() -> Self {
-        Self {}
-    }
-
-    pub fn setup(&mut self) {
-        println!("Zenoh Tunnel UP")
-    }
-
-    pub fn spin(&mut self) {}
-
-    pub fn shutdown(&mut self) {
-        println!("Zenoh Tunnel DOWN")
-    }
-}
+pub use data_stream::*;
+pub use tunnel::*;

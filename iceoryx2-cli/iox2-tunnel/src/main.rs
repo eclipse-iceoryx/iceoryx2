@@ -54,8 +54,8 @@ fn main() -> Result<()> {
             Transport::Zenoh(_options) => {
                 const RATE_MS: u64 = 100;
 
-                let mut tunnel = ZenohTunnel::new();
-                tunnel.setup();
+                let mut tunnel = ZenohTunnel::new(iceoryx2::config::Config::default());
+                tunnel.initialize();
 
                 let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
                 let guard = waitset.attach_interval(core::time::Duration::from_millis(RATE_MS))?;
@@ -63,7 +63,8 @@ fn main() -> Result<()> {
 
                 let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
                     if id == tick {
-                        tunnel.spin();
+                        tunnel.discover();
+                        tunnel.propagate();
                     }
                     CallbackProgression::Continue
                 };
