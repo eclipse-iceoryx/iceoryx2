@@ -27,7 +27,7 @@ use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
 
-use core::ffi::{c_int, c_void};
+use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 
 use super::iox2_pending_response_h;
@@ -190,6 +190,10 @@ impl HandleToType for iox2_request_mut_h_ref {
 // END type definition
 
 // BEGIN C API
+#[no_mangle]
+pub unsafe extern "C" fn iox2_request_send_error_string(error: iox2_request_send_error_e) -> *const c_char {
+    error.as_const_cstr().as_ptr() as *const c_char
+}
 
 /// cbindgen:ignore
 /// Internal API - do not use
