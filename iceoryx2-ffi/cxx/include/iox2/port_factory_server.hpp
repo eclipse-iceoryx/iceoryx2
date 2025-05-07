@@ -41,6 +41,9 @@ class PortFactoryServer {
     /// [`ActiveRequest`](crate::active_request::ActiveRequest).
     IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_responses_per_request);
 
+    /// Sets the maximum initial slice length configured for this [`Server`].
+    IOX_BUILDER_OPTIONAL(uint64_t, initial_max_slice_len);
+
   public:
     PortFactoryServer(const PortFactoryServer&) = delete;
     PortFactoryServer(PortFactoryServer&&) = default;
@@ -75,6 +78,8 @@ PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, Respo
     });
     m_max_loaned_responses_per_request.and_then(
         [&](auto value) { iox2_port_factory_server_builder_set_max_loaned_responses_per_request(&m_handle, value); });
+    m_initial_max_slice_len.and_then(
+        [&](auto value) { iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, value); });
 
     iox2_server_h server_handle {};
     auto result = iox2_port_factory_server_builder_create(m_handle, nullptr, &server_handle);

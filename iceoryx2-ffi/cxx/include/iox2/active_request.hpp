@@ -78,10 +78,15 @@ class ActiveRequest {
     auto loan() -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError>;
 
   private:
-    explicit ActiveRequest() noexcept;
+    template <ServiceType, typename, typename, typename, typename>
+    friend class Server;
+
+    explicit ActiveRequest(iox2_active_request_h handle) noexcept;
 
     void drop();
     void finish();
+
+    iox2_active_request_h m_handle = nullptr;
 };
 
 template <ServiceType Service,
@@ -100,8 +105,14 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
-    [[maybe_unused]] ActiveRequest&& rhs) noexcept -> ActiveRequest& {
-    IOX_TODO();
+    ActiveRequest&& rhs) noexcept -> ActiveRequest& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 template <ServiceType Service,
@@ -220,9 +231,9 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
-inline ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::
-    ActiveRequest() noexcept {
-    IOX_TODO();
+inline ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::ActiveRequest(
+    iox2_active_request_h handle) noexcept
+    : m_handle(handle) {
 }
 
 template <ServiceType Service,
@@ -231,7 +242,10 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline void ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_active_request_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 template <ServiceType Service,

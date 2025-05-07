@@ -160,10 +160,10 @@ class UniqueServerId {
     friend auto operator==(const UniqueServerId&, const UniqueServerId&) -> bool;
     friend auto operator<(const UniqueServerId&, const UniqueServerId&) -> bool;
 
-    explicit UniqueServerId(/*iox2_unique_server_id_h handle*/);
+    explicit UniqueServerId(iox2_unique_server_id_h handle);
     void drop();
 
-    // iox2_unique_server_id_h m_handle = nullptr;
+    iox2_unique_server_id_h m_handle = nullptr;
     mutable iox::optional<RawIdType> m_raw_id;
 };
 

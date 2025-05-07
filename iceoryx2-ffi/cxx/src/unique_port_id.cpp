@@ -251,8 +251,8 @@ auto operator<([[maybe_unused]] const UniqueServerId& lhs, [[maybe_unused]] cons
     IOX_TODO();
 }
 
-UniqueServerId::UniqueServerId(/*iox2_unique_server_id_h handle*/) {
-    IOX_TODO();
+UniqueServerId::UniqueServerId(iox2_unique_server_id_h handle)
+    : m_handle { handle } {
 }
 
 auto UniqueServerId::bytes() const -> const iox::optional<RawIdType>& {

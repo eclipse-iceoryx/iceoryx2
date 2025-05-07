@@ -224,7 +224,7 @@ TYPED_TEST(ServiceRequestResponseTest, open_or_create_existing_service_with_wron
     ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenOrCreateError::OpenIncompatibleResponseType));
 }
 
-TYPED_TEST(ServiceRequestResponseTest, send_copy_works) {
+TYPED_TEST(ServiceRequestResponseTest, send_copy_and_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -234,10 +234,17 @@ TYPED_TEST(ServiceRequestResponseTest, send_copy_works) {
         node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
 
     auto sut_client = service.client_builder().create().expect("");
+    auto sut_server = service.server_builder().create().expect("");
 
     const uint64_t payload = 123;
     auto pending_response = sut_client.send_copy(payload);
     ASSERT_FALSE(pending_response.has_error());
+
+    auto has_requests = sut_server.has_requests();
+    ASSERT_FALSE(has_requests.has_error());
+    EXPECT_TRUE(has_requests.value());
+    auto active_request = sut_server.receive();
+    ASSERT_FALSE(active_request.has_error());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, loan_uninit_works) {
@@ -435,6 +442,23 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_with_incompatible_server_requi
 
     ASSERT_TRUE(service_fail.has_error());
     ASSERT_THAT(service_fail.error(), Eq(RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, server_applies_initial_max_slice_length) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    constexpr uint64_t INITIAL_MAX_SLICE_LEN = 1990;
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                       .create()
+                       .expect("");
+
+    auto sut_server = service.server_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().expect("");
+
+    ASSERT_THAT(sut_server.initial_max_slice_len(), Eq(INITIAL_MAX_SLICE_LEN));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, client_applies_unable_to_deliver_strategy) {

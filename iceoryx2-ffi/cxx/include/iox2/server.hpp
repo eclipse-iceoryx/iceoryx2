@@ -14,6 +14,7 @@
 #define IOX2_SERVER_HPP
 
 #include "iox/expected.hpp"
+#include "iox/slice.hpp"
 #include "iox2/active_request.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -45,6 +46,10 @@ class Server {
     auto receive() -> iox::expected<
         iox::optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
         ReceiveError>;
+
+    /// Returns the maximum initial slice length configured for this [`Server`].
+    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto initial_max_slice_len() const -> uint64_t;
 
     /// Returns the [`UniqueServerId`] of the [`Server`]
     auto id() const -> UniqueServerId;
@@ -106,7 +111,34 @@ template <ServiceType Service,
 inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::receive() -> iox::expected<
     iox::optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>,
     ReceiveError> {
-    IOX_TODO();
+    iox2_active_request_h active_request_handle {};
+    auto result = iox2_server_receive(&m_handle, nullptr, &active_request_handle);
+
+    if (result == IOX2_OK) {
+        if (active_request_handle != nullptr) {
+            ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> active_request(
+                active_request_handle);
+            return iox::ok(
+                iox::optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
+                    std::move(active_request)));
+        }
+        return iox::ok(
+            iox::optional<ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>>(
+                iox::nullopt));
+    }
+    return iox::err(iox::into<ReceiveError>(result));
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto
+Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::initial_max_slice_len() const
+    -> uint64_t {
+    return iox2_server_initial_max_slice_len(&m_handle);
 }
 
 template <ServiceType Service,
@@ -116,7 +148,9 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::id() const
     -> UniqueServerId {
-    IOX_TODO();
+    iox2_unique_server_id_h id_handle = nullptr;
+    iox2_server_id(&m_handle, nullptr, &id_handle);
+    return UniqueServerId { id_handle };
 }
 
 template <ServiceType Service,
@@ -126,7 +160,14 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::has_requests() const
     -> iox::expected<bool, ConnectionFailure> {
-    IOX_TODO();
+    bool has_requests_result = false;
+    auto result = iox2_server_has_requests(&m_handle, &has_requests_result);
+
+    if (result == IOX2_OK) {
+        return iox::ok(has_requests_result);
+    }
+
+    return iox::err(iox::into<ConnectionFailure>(result));
 }
 
 template <ServiceType Service,
