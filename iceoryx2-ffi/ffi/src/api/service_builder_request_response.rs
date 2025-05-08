@@ -173,6 +173,20 @@ impl IntoCInt for RequestResponseOpenOrCreateError {
 
 // END types definition
 
+/// Returns a string literal describing the provided [`iox2_request_response_open_or_create_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_request_response_open_or_create_error_string(
     error: iox2_request_response_open_or_create_error_e,
@@ -210,6 +224,25 @@ pub(crate) unsafe fn create_type_details(
     })
 }
 
+/// Sets the request header type details for the builder
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_pub_sub_h_ref`]
+///   obtained by [`iox2_service_builder_pub_sub`](crate::iox2_service_builder_pub_sub).
+/// * `type_variant` - The [`iox2_type_variant_e`] for the payload
+/// * `type_name_str` - Must string for the type name.
+/// * `type_name_len` - The length of the type name string, not including a null
+/// * `size` - The size of the payload
+/// * `alignment` - The alignment of the payload
+///
+/// Returns IOX2_OK on success, an [`iox2_type_detail_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * `service_builder_handle` must be valid handles
+/// * `type_name_str` must be a valid pointer to an utf8 string
+/// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_request_response_set_request_header_type_details(
     service_builder_handle: iox2_service_builder_request_response_h_ref,
