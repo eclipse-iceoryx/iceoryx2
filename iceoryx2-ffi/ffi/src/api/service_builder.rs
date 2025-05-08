@@ -402,6 +402,17 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
     service_builder_handle as *mut _ as _
 }
 
+/// This function transform the [`iox2_service_builder_h`] to a request-response service builder.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
+///
+/// Returns a [`iox2_service_builder_request_response_h`] for the request-response service builder
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_request_response(
     service_builder_handle: iox2_service_builder_h,
