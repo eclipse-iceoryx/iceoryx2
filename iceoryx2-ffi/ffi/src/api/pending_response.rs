@@ -137,7 +137,7 @@ impl HandleToType for iox2_pending_response_h_ref {
 
 // BEGIN C API
 
-/// Returns true if the corresponding active response is still connected and responses can send
+/// Returns true if the corresponding active request is still connected and responses can send
 /// further responses, otherwise false.
 ///
 /// # Arguments
