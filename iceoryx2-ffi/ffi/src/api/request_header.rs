@@ -110,8 +110,7 @@ pub unsafe extern "C" fn iox2_request_header_drop(handle: iox2_request_header_h)
 ///
 /// # Arguments
 ///
-/// * `handle` is valid, non-null and was initialized with
-///   [`iox2_request_header()`](crate::iox2_request_header)
+/// * `handle` is valid, non-null and is initialized
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_client_id_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_client_id_h`].
@@ -149,15 +148,14 @@ pub unsafe extern "C" fn iox2_request_header_client_id(
 
 /// Returns the number of elements of the payload.
 /// The element size is defined via this call when creating a new service
-/// [`crate::iox2_service_builder_request_response_set_request_type_details()`].
+/// [`crate::iox2_service_builder_request_response_set_request_payload_type_details()`].
 /// So if the payload is defined with alignment 8 and size 16 and this function returns 5. It
 /// means that the payload consists of 5 elements of size 16 and every element is 8 byte aligned.
 /// Therefore, the payload pointer points to a memory region with 5 * 16 = 80 bytes.
 ///
 /// # Arguments
 ///
-/// * `handle` is valid, non-null and was initialized with
-///   [`iox2_request_header()`](crate::iox2_request_header)
+/// * `handle` is valid, non-null and initialized
 ///
 /// # Safety
 ///

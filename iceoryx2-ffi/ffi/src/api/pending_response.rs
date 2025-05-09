@@ -330,7 +330,7 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `response_handle_ptr` - An uninitialized or dangling [`iox2_response_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
 ///
-/// Returns IOX2_OK on success, an [`iox2_receive_error_e`] otherwise.
+/// Returns IOX2_OK on success, an [`iox2_receive_error_e`](crate::iox2_receive_error_e) otherwise.
 /// Attention, an empty subscriber queue is not an error and even with IOX2_OK it is possible to get a NULL in `response_handle_ptr`.
 ///
 /// # Safety

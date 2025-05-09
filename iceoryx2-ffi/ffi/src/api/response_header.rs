@@ -153,7 +153,7 @@ pub unsafe extern "C" fn iox2_response_header_server_id(
 
 /// Returns the number of elements of the payload.
 /// The element size is defined via this call when creating a new service
-/// [`crate::iox2_service_builder_response_response_set_response_type_details()`].
+/// [`crate::iox2_service_builder_request_response_set_response_payload_type_details()`].
 /// So if the payload is defined with alignment 8 and size 16 and this function returns 5. It
 /// means that the payload consists of 5 elements of size 16 and every element is 8 byte aligned.
 /// Therefore, the payload pointer points to a memory region with 5 * 16 = 80 bytes.

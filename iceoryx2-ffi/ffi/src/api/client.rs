@@ -239,7 +239,7 @@ pub unsafe extern "C" fn iox2_client_id(
 /// * `request_handle_ptr` - An uninitialized or dangling [`iox2_request_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
 /// * `number_of_elements` - The number of elements to loan from the clients's payload segment
 ///
-/// Return [`IOX2_OK`] on success, otherwise [`iox2_loan_error_e`].
+/// Return [`IOX2_OK`] on success, otherwise [`iox2_loan_error_e`](crate::iox2_loan_error_e).
 ///
 /// # Safety
 ///
@@ -349,7 +349,7 @@ unsafe fn send_copy<S: Service>(
 /// * `size_of_element` the size of the payload in bytes
 /// * `number_of_elements` the number of elements in the payload
 ///
-/// Return [`IOX2_OK`] on success, otherwise [`iox2_send_error_e`].
+/// Return [`IOX2_OK`] on success, otherwise [`iox2_send_error_e`](crate::iox2_send_error_e).
 ///
 /// # Safety
 ///

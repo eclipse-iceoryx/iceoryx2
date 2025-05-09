@@ -271,7 +271,7 @@ pub unsafe extern "C" fn iox2_active_request_payload(
 /// * `response_handle_ptr` - An uninitialized or dangling [`iox2_response_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
 /// * `number_of_elements` - The number of elements to loan from the server's payload segment
 ///
-/// Return [`IOX2_OK`] on success, otherwise [`iox2_loan_error_e`].
+/// Return [`IOX2_OK`] on success, otherwise [`iox2_loan_error_e`](crate::iox2_loan_error_e).
 ///
 /// # Safety
 ///

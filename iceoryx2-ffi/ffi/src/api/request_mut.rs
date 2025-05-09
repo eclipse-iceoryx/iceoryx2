@@ -404,7 +404,7 @@ pub unsafe extern "C" fn iox2_request_mut_payload(
 /// # Safety
 ///
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
-/// * The `pending_response_handle_ptr` is pointing to a valid [`iox2_pending_response_mut_h`].
+/// * The `pending_response_handle_ptr` is pointing to a valid [`iox2_pending_response_h`].
 ///
 #[no_mangle]
 pub unsafe extern "C" fn iox2_request_mut_send(
