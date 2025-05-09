@@ -130,6 +130,19 @@ impl HandleToType for iox2_client_h_ref {
 // END types definition
 
 // BEGIN C API
+
+/// Returns the strategy the client follows when a request cannot be delivered
+/// since the servers buffer is full.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
+///
+/// Returns [`iox2_unable_to_deliver_strategy_e`].
+///
+/// # Safety
+///
+/// * `handle` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_client_unable_to_deliver_strategy(
     handle: iox2_client_h_ref,
@@ -154,6 +167,15 @@ pub unsafe extern "C" fn iox2_client_unable_to_deliver_strategy(
     }
 }
 
+/// Returns the initial max slice len with which the client was created.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
+///
+/// # Safety
+///
+/// * `handle` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_client_initial_max_slice_len(handle: iox2_client_h_ref) -> c_int {
     handle.assert_non_null();
@@ -165,6 +187,19 @@ pub unsafe extern "C" fn iox2_client_initial_max_slice_len(handle: iox2_client_h
     }
 }
 
+/// Returns the unique port id of the client.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
+/// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_client_id_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `id_handle_ptr` valid pointer to a [`iox2_unique_client_id_h`].
+///
+/// # Safety
+///
+/// * `handle` is valid and non-null
+/// * `id` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_client_id(
     handle: iox2_client_h_ref,
@@ -194,6 +229,22 @@ pub unsafe extern "C" fn iox2_client_id(
     *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
+/// Loans memory from the clients data segment.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
+/// * `request_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_request_mut_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `request_handle_ptr` - An uninitialized or dangling [`iox2_request_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
+/// * `number_of_elements` - The number of elements to loan from the clients's payload segment
+///
+/// Return [`IOX2_OK`] on success, otherwise [`iox2_loan_error_e`].
+///
+/// # Safety
+///
+/// * `client_handle` is valid and non-null
+/// * The `request_handle_ptr` is pointing to a valid [`iox2_request_mut_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_client_loan_slice_uninit(
     client_handle: iox2_client_h_ref,
@@ -285,6 +336,27 @@ unsafe fn send_copy<S: Service>(
     }
 }
 
+/// Sends a copy of the provided data via the client and provides a [`iox2_pending_response_h`]
+/// to receive the corresponding responses.
+///
+/// # Arguments
+///
+/// * `handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
+/// * `pending_response_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_pending_response_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `pending_response_handle_ptr` - An uninitialized or dangling [`iox2_pending_response_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
+/// * `data_ptr` pointer to the payload that shall be transmitted
+/// * `size_of_element` the size of the payload in bytes
+/// * `number_of_elements` the number of elements in the payload
+///
+/// Return [`IOX2_OK`] on success, otherwise [`iox2_send_error_e`].
+///
+/// # Safety
+///
+/// * `client_handle` is valid and non-null
+/// * `data_ptr` non-null pointer to a valid position in memory
+/// * `data_len` the size of the payload memory
+/// * The `pending_response_handle_ptr` is pointing to a valid [`iox2_pending_response_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_client_send_copy(
     client_handle: iox2_client_h_ref,
@@ -356,6 +428,17 @@ pub unsafe extern "C" fn iox2_client_send_copy(
     }
 }
 
+/// This function needs to be called to destroy the client!
+///
+/// # Arguments
+///
+/// * `client_handle` - A valid [`iox2_client_h`]
+///
+/// # Safety
+///
+/// * The `client_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_client_t`] can be re-used with a call to
+///   [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_client_drop(client_handle: iox2_client_h) {
     client_handle.assert_non_null();
