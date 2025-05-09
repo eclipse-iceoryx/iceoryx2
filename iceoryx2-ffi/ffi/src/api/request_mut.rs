@@ -251,7 +251,7 @@ pub unsafe extern "C" fn iox2_request_mut_move(
 /// # Safety
 ///
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
-/// * `header_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
+/// * `header_ptr` a valid, non-null pointer pointing to a `*const c_void` pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_request_mut_user_header(
     handle: iox2_request_mut_h_ref,
@@ -277,7 +277,7 @@ pub unsafe extern "C" fn iox2_request_mut_user_header(
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
 /// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_request_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
-/// * `header_handle_ptr` valid pointer to a [`iox2_request_response_header_h`].
+/// * `header_handle_ptr` valid pointer to a [`iox2_request_header_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_request_mut_header(
     handle: iox2_request_mut_h_ref,
@@ -336,7 +336,7 @@ pub unsafe extern "C" fn iox2_request_mut_user_header_mut(
 /// # Safety
 ///
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
-/// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
+/// * `payload_ptr` a valid, non-null pointer pointing to a `*mut c_void` pointer.
 /// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_request_mut_payload_mut(
@@ -477,7 +477,7 @@ pub unsafe extern "C" fn iox2_request_mut_send(
     }
 }
 
-/// This function needs to be called to destroy the sample!
+/// This function needs to be called to destroy the request!
 ///
 /// # Arguments
 ///
@@ -486,8 +486,8 @@ pub unsafe extern "C" fn iox2_request_mut_send(
 /// # Safety
 ///
 /// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-/// * The corresponding [`iox2_sample_mut_t`] can be re-used with a call to
-///   [`iox2_subscriber_receive`](crate::iox2_subscriber_receive)!
+/// * The corresponding [`iox2_request_mut_t`] can be re-used with a call to
+///   [`iox2_client_loan_slice_uninit`](crate::iox2_client_loan_slice_uninit)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_request_mut_drop(handle: iox2_request_mut_h) {
     debug_assert!(!handle.is_null());
