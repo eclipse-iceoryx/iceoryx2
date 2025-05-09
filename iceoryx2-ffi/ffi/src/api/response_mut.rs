@@ -150,6 +150,15 @@ pub unsafe extern "C" fn iox2_response_mut_move(
     *dest_handle_ptr = (*dest_struct_ptr).as_handle();
 }
 
+/// Acquires the responses header.
+///
+/// # Safety
+///
+/// * `handle` obtained by
+///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
+/// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_response_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `header_handle_ptr` valid pointer to a [`iox2_response_header_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_mut_header(
     handle: iox2_response_mut_h_ref,
@@ -179,6 +188,13 @@ pub unsafe extern "C" fn iox2_response_mut_header(
     *header_handle_ptr = (*storage_ptr).as_handle();
 }
 
+/// Acquires the responses user header.
+///
+/// # Safety
+///
+/// * `handle` obtained by
+///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
+/// * `header_ptr` valid pointer to a `*const c_void`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_mut_user_header(
     handle: iox2_response_mut_h_ref,
@@ -197,6 +213,13 @@ pub unsafe extern "C" fn iox2_response_mut_user_header(
     *header_ptr = (header as *const UserHeaderFfi).cast();
 }
 
+/// Acquires the responses mutable user header.
+///
+/// # Safety
+///
+/// * `handle` obtained by
+///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
+/// * `header_ptr` valid pointer to a `*mut c_void`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_mut_user_header_mut(
     handle: iox2_response_mut_h_ref,
@@ -215,6 +238,13 @@ pub unsafe extern "C" fn iox2_response_mut_user_header_mut(
     *header_ptr = (header as *mut UserHeaderFfi).cast();
 }
 
+/// Acquires the responses payload.
+///
+/// # Safety
+///
+/// * `handle` obtained by
+///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
+/// * `payload_ptr` valid pointer to a `*const c_void`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_mut_payload(
     handle: iox2_response_mut_h_ref,
@@ -242,6 +272,13 @@ pub unsafe extern "C" fn iox2_response_mut_payload(
     }
 }
 
+/// Acquires the responses mutable payload.
+///
+/// # Safety
+///
+/// * `handle` obtained by
+///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
+/// * `payload_ptr` valid pointer to a `*mut c_void`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_mut_payload_mut(
     handle: iox2_response_mut_h_ref,
@@ -269,6 +306,13 @@ pub unsafe extern "C" fn iox2_response_mut_payload_mut(
     }
 }
 
+/// Sends the response.
+/// Returns `IOX2_OK` on success otherwise [`iox2_send_error_e`](crate::api::iox2_send_error_e).
+///
+/// # Safety
+///
+/// * `handle` obtained by
+///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_mut_send(response_handle: iox2_response_mut_h) -> c_int {
     debug_assert!(!response_handle.is_null());
@@ -301,6 +345,12 @@ pub unsafe extern "C" fn iox2_response_mut_send(response_handle: iox2_response_m
     }
 }
 
+/// Destroys the response without sending it.
+///
+/// # Safety
+///
+/// * `handle` obtained by
+///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_mut_drop(response_handle: iox2_response_mut_h) {
     debug_assert!(!response_handle.is_null());
