@@ -145,6 +145,14 @@ pub unsafe extern "C" fn iox2_response_move(
     *dest_handle_ptr = (*dest_struct_ptr).as_handle();
 }
 
+/// Acquires the responses header.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_pending_response_receive()`](crate::iox2_pending_response_receive())
+/// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_response_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `header_handle_ptr` valid pointer to a [`iox2_response_header_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_header(
     handle: iox2_response_h_ref,
@@ -174,6 +182,12 @@ pub unsafe extern "C" fn iox2_response_header(
     *header_handle_ptr = (*storage_ptr).as_handle();
 }
 
+/// Acquires the responses user header.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_pending_response_receive()`](crate::iox2_pending_response_receive())
+/// * `header_ptr` valid pointer to a `*const c_void`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_user_header(
     handle: iox2_response_h_ref,
@@ -192,6 +206,12 @@ pub unsafe extern "C" fn iox2_response_user_header(
     *header_ptr = (header as *const UserHeaderFfi).cast();
 }
 
+/// Acquires the responses payload.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_pending_response_receive()`](crate::iox2_pending_response_receive())
+/// * `payload_ptr` valid pointer to a `*const c_void`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_payload(
     handle: iox2_response_h_ref,
@@ -218,6 +238,11 @@ pub unsafe extern "C" fn iox2_response_payload(
     }
 }
 
+/// Destroys the response.
+///
+/// # Safety
+///
+/// * `handle` obtained by [`iox2_pending_response_receive()`](crate::iox2_pending_response_receive())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_drop(handle: iox2_response_h) {
     debug_assert!(!handle.is_null());
