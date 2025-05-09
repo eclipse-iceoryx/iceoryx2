@@ -139,6 +139,21 @@ impl HandleToType for iox2_port_factory_request_response_h_ref {
 // END type definition
 
 // BEGIN C API
+
+/// Instantiates a [`iox2_port_factory_server_builder_h`] to build a server.
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_request_response_h_ref`] obtained
+///   by e.g. [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create).
+/// * `builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_server_builder_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+///
+/// Returns the `iox2_port_factory_server_builder_h` handle for the server builder.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_server_builder(
     port_factory_handle: iox2_port_factory_request_response_h_ref,
@@ -178,6 +193,20 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_server_builder(
     (*builder_struct_ptr).as_handle()
 }
 
+/// Instantiates a [`iox2_port_factory_server_builder_h`] to build a client.
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_request_response_h_ref`] obtained
+///   by e.g. [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create).
+/// * `builder_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_port_factory_client_builder_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+///
+/// Returns the `iox2_port_factory_client_builder_h` handle for the client builder.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_client_builder(
     port_factory_handle: iox2_port_factory_request_response_h_ref,
@@ -217,6 +246,12 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_client_builder(
     (*builder_struct_ptr).as_handle()
 }
 
+/// Returnes the services attributes.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The `port_factory_handle` must live longer than the returned `iox2_attribute_set_h_ref`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_attributes(
     port_factory_handle: iox2_port_factory_request_response_h_ref,
@@ -232,6 +267,13 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_attributes(
     }
 }
 
+/// Set the values in the provided [`iox2_static_config_request_response_t`] pointer.
+///
+/// # Safety
+///
+/// * The `_handle` must be valid and obtained by [`iox2_service_builder_request_response_open`](crate::iox2_service_builder_request_response_open) or
+///   [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create)!
+/// * The `static_config` must be a valid pointer and non-null.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_static_config(
     port_factory_handle: iox2_port_factory_request_response_h_ref,
@@ -251,6 +293,12 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_static_config(
     *static_config = config.into();
 }
 
+/// Returns how many server ports are currently connected.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_request_response_open`](crate::iox2_service_builder_request_response_open) or
+///   [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_number_of_servers(
     handle: iox2_port_factory_request_response_h_ref,
@@ -276,6 +324,12 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_numbe
     }
 }
 
+/// Returns how many client ports are currently connected.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_request_response_open`](crate::iox2_service_builder_request_response_open) or
+///   [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_number_of_clients(
     handle: iox2_port_factory_request_response_h_ref,
@@ -301,6 +355,22 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_numbe
     }
 }
 
+/// Calls the callback repeatedly with an [`iox2_node_state_e`](crate::api::iox2_node_state_e),
+/// [`iox2_node_id_ptr`](crate::api::iox2_node_id_ptr),
+/// [´iox2_node_name_ptr´](crate::api::iox2_node_name_ptr) and
+/// [`iox2_config_ptr`](crate::api::iox2_config_ptr) for all
+/// [`Node`](iceoryx2::node::Node)s that
+/// have opened the service.
+///
+/// Returns IOX2_OK on success, an
+/// [`iox2_node_list_failure_e`](crate::api::iox2_node_list_failure_e) otherwise.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_request_response_open`](crate::iox2_service_builder_request_response_open) or
+///   [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create)!
+/// * `callback` - A valid callback with [`iox2_node_list_callback`} signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`} to e.g. store information across callback iterations
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_nodes(
     handle: iox2_port_factory_request_response_h_ref,
@@ -332,6 +402,12 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_nodes(
     }
 }
 
+/// Returns the [`iox2_service_name_ptr`], an immutable pointer to the service name.
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_request_response_open`](crate::iox2_service_builder_request_response_open) or
+///   [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_service_name(
     handle: iox2_port_factory_request_response_h_ref,
@@ -348,6 +424,14 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_name(
     }
 }
 
+/// Stores the service id in the provided buffer
+///
+/// # Safety
+///
+/// * The `handle` must be valid and obtained by [`iox2_service_builder_request_response_open`](crate::iox2_service_builder_request_response_open) or
+///   [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create)!
+/// * `buffer` must be non-zero and point to a valid memory location
+/// * `buffer_len` must define the actual size of the memory location `buffer` is pointing to
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_service_id(
     handle: iox2_port_factory_request_response_h_ref,
@@ -370,6 +454,18 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_id(
     buffer.add(len).write(0);
 }
 
+/// This function needs to be called to destroy the port factory!
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - A valid [`iox2_port_factory_request_response_h`]
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_port_factory_request_response_t`] can be re-used with a call to
+///   [`iox2_service_builder_request_response_open_or_create`](crate::iox2_service_builder_request_response_open_or_create) or
+///   [`iox2_service_builder_request_response_open`](crate::iox2_service_builder_request_response_open)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_drop(
     port_factory_handle: iox2_port_factory_request_response_h,

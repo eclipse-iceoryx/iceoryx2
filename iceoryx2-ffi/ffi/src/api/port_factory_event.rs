@@ -141,7 +141,7 @@ pub unsafe extern "C" fn iox2_port_factory_event_service_name(
     }
 }
 
-/// Set the values int the provided [`iox2_static_config_event_t`] pointer.
+/// Set the values in the provided [`iox2_static_config_event_t`] pointer.
 ///
 /// # Safety
 ///
