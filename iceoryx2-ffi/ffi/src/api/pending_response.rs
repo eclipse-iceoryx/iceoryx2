@@ -136,6 +136,18 @@ impl HandleToType for iox2_pending_response_h_ref {
 // END type definition
 
 // BEGIN C API
+
+/// Returns true if the corresponding active response is still connected and responses can send
+/// further responses, otherwise false.
+///
+/// # Arguments
+///
+/// * `handle` - Must be a valid [`iox2_pending_response_h_ref`]
+///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+///
+/// # Safety
+///
+/// * `handle` must be valid a handle
 #[no_mangle]
 pub unsafe extern "C" fn iox2_pending_response_is_connected(
     handle: iox2_pending_response_h_ref,
@@ -150,6 +162,16 @@ pub unsafe extern "C" fn iox2_pending_response_is_connected(
     }
 }
 
+/// Returns how many servers received the corresponding request initially.
+///
+/// # Arguments
+///
+/// * `handle` - Must be a valid [`iox2_pending_response_h_ref`]
+///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+///
+/// # Safety
+///
+/// * `handle` must be valid a handle
 #[no_mangle]
 pub unsafe extern "C" fn iox2_pending_response_number_of_server_connections(
     handle: iox2_pending_response_h_ref,
@@ -172,6 +194,16 @@ pub unsafe extern "C" fn iox2_pending_response_number_of_server_connections(
     }
 }
 
+/// Returns true if there is a response in the buffer, otherwise false.
+///
+/// # Arguments
+///
+/// * `handle` - Must be a valid [`iox2_pending_response_h_ref`]
+///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+///
+/// # Safety
+///
+/// * `handle` must be valid a handle
 #[no_mangle]
 pub unsafe extern "C" fn iox2_pending_response_has_response(
     handle: iox2_pending_response_h_ref,
@@ -186,6 +218,15 @@ pub unsafe extern "C" fn iox2_pending_response_has_response(
     }
 }
 
+/// Acquires the requests header.
+///
+/// # Safety
+///
+/// * `handle` - Must be a valid [`iox2_pending_response_h_ref`]
+///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+/// * `header_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
+///   [`iox2_request_header_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `header_handle_ptr` valid pointer to a [`iox2_request_header_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_pending_response_header(
     handle: iox2_pending_response_h_ref,
@@ -215,6 +256,13 @@ pub unsafe extern "C" fn iox2_pending_response_header(
     *header_handle_ptr = (*storage_ptr).as_handle();
 }
 
+/// Acquires the requests user header.
+///
+/// # Safety
+///
+/// * `handle` - Must be a valid [`iox2_pending_response_h_ref`]
+///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+/// * `header_ptr` a valid, non-null pointer pointing to a `*const c_void` pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_pending_response_user_header(
     handle: iox2_pending_response_h_ref,
@@ -233,6 +281,14 @@ pub unsafe extern "C" fn iox2_pending_response_user_header(
     *header_ptr = (header as *const UserHeaderFfi).cast();
 }
 
+/// Acquires the requests payload.
+///
+/// # Safety
+///
+/// * `handle` - Must be a valid [`iox2_pending_response_h_ref`]
+///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+/// * `payload_ptr` a valid, non-null pointer pointing to a `*const c_void` pointer.
+/// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_pending_response_payload(
     handle: iox2_pending_response_h_ref,
@@ -264,6 +320,23 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
     }
 }
 
+/// Takes a response ouf of the buffer.
+///
+/// # Arguments
+///
+/// * `handle` - Must be a valid [`iox2_pending_response_h_ref`]
+///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+/// * `response_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_response_t`].
+///   If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `response_handle_ptr` - An uninitialized or dangling [`iox2_response_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
+///
+/// Returns IOX2_OK on success, an [`iox2_receive_error_e`] otherwise.
+/// Attention, an empty subscriber queue is not an error and even with IOX2_OK it is possible to get a NULL in `response_handle_ptr`.
+///
+/// # Safety
+///
+/// * The `handle` is still valid after the return of this function and can be use in another function call.
+/// * The `response_handle_ptr` is pointing to a valid [`iox2_response_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_pending_response_receive(
     handle: iox2_pending_response_h_ref,
@@ -333,6 +406,17 @@ pub unsafe extern "C" fn iox2_pending_response_receive(
     IOX2_OK
 }
 
+/// This function needs to be called to destroy the pending response!
+///
+/// # Arguments
+///
+/// * `handle` - A valid [`iox2_pending_response_h`]
+///
+/// # Safety
+///
+/// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_pending_response_t`] can be re-used with a call to
+///   [`iox2_request_mut_send`](crate::iox2_request_mut_send)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_pending_response_drop(handle: iox2_pending_response_h) {
     debug_assert!(!handle.is_null());
