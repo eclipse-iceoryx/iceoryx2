@@ -170,6 +170,20 @@ impl HandleToType for iox2_port_factory_client_builder_h_ref {
 // END type definition
 
 // BEGIN C API
+/// Returns a string literal describing the provided [`iox2_client_create_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_client_create_error_string(
     error: iox2_client_create_error_e,
@@ -177,6 +191,17 @@ pub unsafe extern "C" fn iox2_client_create_error_string(
     error.as_const_cstr().as_ptr() as *const c_char
 }
 
+/// Sets the [`iox2_allocation_strategy_e`] for the client
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_client_builder_h_ref`]
+///   obtained by [`iox2_port_factory_request_response_client_builder`](crate::iox2_port_factory_request_response_client_builder).
+/// * `value` - The value to set max slice length to
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_client_builder_set_allocation_strategy(
     port_factory_handle: iox2_port_factory_client_builder_h_ref,
@@ -203,6 +228,17 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_set_allocation_strateg
     }
 }
 
+/// Sets the max slice length for the client
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_client_builder_h_ref`]
+///   obtained by [`iox2_port_factory_request_response_client_builder`](crate::iox2_port_factory_request_response_client_builder).
+/// * `value` - The value to set max slice length to
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_client_builder_set_initial_max_slice_len(
     port_factory_handle: iox2_port_factory_client_builder_h_ref,
@@ -229,6 +265,17 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_set_initial_max_slice_
     }
 }
 
+/// Sets the unable to deliver strategy for the client
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_client_builder_h_ref`]
+///   obtained by [`iox2_port_factory_request_response_client_builder`](crate::iox2_port_factory_request_response_client_builder).
+/// * `value` - The value to set max slice length to
+///
+/// # Safety
+///
+/// * `port_factory_handle` must be valid handles
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_client_builder_unable_to_deliver_strategy(
     port_factory_handle: iox2_port_factory_client_builder_h_ref,
@@ -255,6 +302,21 @@ pub unsafe extern "C" fn iox2_port_factory_client_builder_unable_to_deliver_stra
     }
 }
 
+/// Creates a client and consumes the builder
+///
+/// # Arguments
+///
+/// * `port_factory_handle` - Must be a valid [`iox2_port_factory_client_builder_h`] obtained by [`iox2_port_factory_request_response_client_builder`](crate::iox2_port_factory_request_response_client_builder).
+/// * `struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_client_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `handle_ptr` - An uninitialized or dangling [`iox2_client_h`] handle which will be initialized by this function call.
+///
+/// Returns IOX2_OK on success, an [`iox2_client_create_error_e`] otherwise.
+///
+/// # Safety
+///
+/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_port_factory_client_builder_t`]
+///   can be re-used with a call to  [`iox2_port_factory_request_response_client_builder`](crate::iox2_port_factory_request_response_client_builder)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_client_builder_create(
     port_factory_handle: iox2_port_factory_client_builder_h,
