@@ -24,12 +24,11 @@ use std::time::Instant;
 use windows_sys::Win32::Networking::WinSock::{INVALID_SOCKET, SOCKADDR, SOCKET_ERROR, WSADATA};
 use windows_sys::Win32::Networking::WinSock::{SOCKADDR_UN, WSAEWOULDBLOCK};
 
-use crate::posix::ntohs;
+use crate::posix::getpid;
+use crate::posix::select;
 use crate::posix::types::*;
 use crate::posix::SockAddrIn;
 use crate::posix::{constants::*, fcntl_int};
-use crate::posix::{getpid, htons};
-use crate::posix::{htonl, select};
 use crate::posix::{Errno, Struct};
 
 use crate::win32call;
@@ -228,8 +227,8 @@ unsafe fn create_uds_address(port: u16) -> sockaddr_in {
     let mut udp_address = sockaddr_in::new();
     udp_address.sin_family = AF_INET as _;
     let localhost: u32 = (127 << 24) | 1;
-    udp_address.set_s_addr(htonl(localhost));
-    udp_address.sin_port = htons(port);
+    udp_address.set_s_addr(localhost.to_be());
+    udp_address.sin_port = port.to_be();
     udp_address
 }
 
@@ -310,7 +309,7 @@ pub unsafe fn bind(socket: int, address: *const sockaddr, address_len: socklen_t
                 return -1;
             }
 
-            let port = ntohs(client_address.sin_port);
+            let port = u16::from_be(client_address.sin_port);
             HandleTranslator::get_instance().set_uds_name(socket, client_address, address);
 
             0
