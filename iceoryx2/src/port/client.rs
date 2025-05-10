@@ -256,7 +256,7 @@ impl<Service: service::Service> ClientSharedState<Service> {
                 let inner_result = self.response_receiver.update_connection(
                     h.index() as usize,
                     SenderDetails {
-                        port_id: port.server_port_id.value(),
+                        port_id: port.server_id.value(),
                         max_number_of_segments: port.max_number_of_segments,
                         data_segment_type: port.data_segment_type,
                         number_of_samples: port.number_of_responses,
@@ -268,7 +268,7 @@ impl<Service: service::Service> ClientSharedState<Service> {
                 let inner_result = self.request_sender.update_connection(
                     h.index() as usize,
                     ReceiverDetails {
-                        port_id: port.server_port_id.value(),
+                        port_id: port.server_id.value(),
                         buffer_size: port.request_buffer_size,
                     },
                     |_| {},
@@ -298,7 +298,7 @@ pub struct Client<
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    client_port_id: UniqueClientId,
+    client_id: UniqueClientId,
     client_shared_state: Arc<ClientSharedState<Service>>,
     request_id_counter: IoxAtomicU64,
     _request_payload: PhantomData<RequestPayload>,
@@ -327,7 +327,7 @@ impl<
         let msg = "Unable to create Client port";
         let origin = "Client::new()";
         let service = &client_factory.factory.service;
-        let client_port_id = UniqueClientId::new();
+        let client_id = UniqueClientId::new();
         let static_config = client_factory.factory.static_config();
         let number_of_requests = unsafe {
             service
@@ -345,7 +345,7 @@ impl<
             .servers;
 
         let global_config = service.__internal_state().shared_node.config();
-        let segment_name = data_segment_name(client_port_id.value());
+        let segment_name = data_segment_name(client_id.value());
         let data_segment_type = DataSegmentType::new_from_allocation_strategy(
             client_factory.config.allocation_strategy,
         );
@@ -378,7 +378,7 @@ impl<
             "{} since the client data segment could not be created.", msg);
 
         let client_details = ClientDetails {
-            client_port_id,
+            client_id,
             node_id: *service.__internal_state().shared_node.id(),
             number_of_requests,
             response_buffer_size: static_config.max_response_buffer_size,
@@ -397,7 +397,7 @@ impl<
                 }
                 v
             },
-            sender_port_id: client_port_id.value(),
+            sender_port_id: client_id.value(),
             shared_node: service.__internal_state().shared_node.clone(),
             connections: (0..server_list.capacity())
                 .map(|_| UnsafeCell::new(None))
@@ -424,7 +424,7 @@ impl<
 
         let response_receiver = Receiver {
             connections: Vec::from_fn(server_list.capacity(), |_| UnsafeCell::new(None)),
-            receiver_port_id: client_port_id.value(),
+            receiver_port_id: client_id.value(),
             service_state: service.__internal_state().clone(),
             buffer_size: static_config.max_response_buffer_size,
             tagger: CyclicTagger::new(),
@@ -462,7 +462,7 @@ impl<
                 server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
                 active_request_counter: IoxAtomicUsize::new(0),
             }),
-            client_port_id,
+            client_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
@@ -501,7 +501,7 @@ impl<
 
     /// Returns the [`UniqueClientId`] of the [`Client`]
     pub fn id(&self) -> UniqueClientId {
-        self.client_port_id
+        self.client_id
     }
 
     /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
@@ -611,7 +611,7 @@ impl<
         unsafe {
             (chunk.header as *mut service::header::request_response::RequestHeader).write(
                 service::header::request_response::RequestHeader {
-                    client_port_id: self.id(),
+                    client_id: self.id(),
                     channel_id,
                     request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
                     number_of_elements: 1,
@@ -881,7 +881,7 @@ impl<
         let header_ptr = chunk.header as *mut header::request_response::RequestHeader;
         unsafe {
             header_ptr.write(header::request_response::RequestHeader {
-                client_port_id: self.id(),
+                client_id: self.id(),
                 channel_id,
                 request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
                 number_of_elements: slice_len as _,

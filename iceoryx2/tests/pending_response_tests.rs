@@ -110,7 +110,7 @@ mod pending_response {
         *request.user_header_mut() = USER_HEADER;
         let sut = request.send().unwrap();
 
-        assert_that!(sut.header().client_port_id(), eq test.client.id());
+        assert_that!(sut.header().client_id(), eq test.client.id());
         assert_that!(*sut.user_header(), eq USER_HEADER);
         assert_that!(*sut.payload(), eq PAYLOAD);
     }

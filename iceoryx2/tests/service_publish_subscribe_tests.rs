@@ -3281,6 +3281,128 @@ mod service_publish_subscribe {
         });
     }
 
+    #[test]
+    fn listing_all_publishers_works<S: Service>() {
+        const NUMBER_OF_PUBLISHERS: usize = 18;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .max_publishers(NUMBER_OF_PUBLISHERS)
+            .create()
+            .unwrap();
+
+        let mut publishers = vec![];
+
+        for _ in 0..NUMBER_OF_PUBLISHERS {
+            publishers.push(sut.publisher_builder().create().unwrap());
+        }
+
+        let mut publisher_details = vec![];
+        sut.dynamic_config().list_publishers(|details| {
+            publisher_details.push(details.publisher_id);
+            CallbackProgression::Continue
+        });
+
+        assert_that!(publisher_details, len NUMBER_OF_PUBLISHERS);
+        for publisher in publishers {
+            assert_that!(publisher_details, contains publisher.id());
+        }
+    }
+
+    #[test]
+    fn listing_all_publishers_stops_on_request<S: Service>() {
+        const NUMBER_OF_PUBLISHERS: usize = 16;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .max_publishers(NUMBER_OF_PUBLISHERS)
+            .create()
+            .unwrap();
+
+        let mut publishers = vec![];
+
+        for _ in 0..NUMBER_OF_PUBLISHERS {
+            publishers.push(sut.publisher_builder().create().unwrap());
+        }
+
+        let mut counter = 0;
+        sut.dynamic_config().list_publishers(|_| {
+            counter += 1;
+            CallbackProgression::Stop
+        });
+
+        assert_that!(counter, eq 1);
+    }
+
+    #[test]
+    fn listing_all_subscribers_works<S: Service>() {
+        const NUMBER_OF_SUBSCRIBERS: usize = 18;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .max_subscribers(NUMBER_OF_SUBSCRIBERS)
+            .create()
+            .unwrap();
+
+        let mut subscribers = vec![];
+
+        for _ in 0..NUMBER_OF_SUBSCRIBERS {
+            subscribers.push(sut.subscriber_builder().create().unwrap());
+        }
+
+        let mut subscriber_details = vec![];
+        sut.dynamic_config().list_subscribers(|details| {
+            subscriber_details.push(details.subscriber_id);
+            CallbackProgression::Continue
+        });
+
+        assert_that!(subscriber_details, len NUMBER_OF_SUBSCRIBERS);
+        for subscriber in subscribers {
+            assert_that!(subscriber_details, contains subscriber.id());
+        }
+    }
+
+    #[test]
+    fn listing_all_subscribers_stops_on_request<S: Service>() {
+        const NUMBER_OF_SUBSCRIBERS: usize = 16;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .max_subscribers(NUMBER_OF_SUBSCRIBERS)
+            .create()
+            .unwrap();
+
+        let mut subscribers = vec![];
+
+        for _ in 0..NUMBER_OF_SUBSCRIBERS {
+            subscribers.push(sut.subscriber_builder().create().unwrap());
+        }
+
+        let mut counter = 0;
+        sut.dynamic_config().list_subscribers(|_| {
+            counter += 1;
+            CallbackProgression::Stop
+        });
+
+        assert_that!(counter, eq 1);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

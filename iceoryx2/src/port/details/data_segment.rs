@@ -35,11 +35,13 @@ use crate::{
     },
 };
 
-#[doc(hidden)]
+/// Defines the data segment type of a zero copy capable sender port.
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum DataSegmentType {
+    /// The data segment can be resized if no more memory is available.
     Dynamic,
+    /// The data segment is allocated once. If it is out-of-memory no reallocation will occur.
     Static,
 }
 

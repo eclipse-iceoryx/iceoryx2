@@ -34,7 +34,7 @@
 //! // overwrite contents with 456 because its fun
 //! let response = response.write_payload(456);
 //!
-//! println!("server port id: {:?}", response.header().server_port_id());
+//! println!("server id: {:?}", response.header().server_id());
 //! response.send()?;
 //!
 //! # Ok(())
@@ -101,7 +101,7 @@ impl<
     ///
     /// let response = active_request.loan_uninit()?;
     ///
-    /// println!("server port id: {:?}", response.header().server_port_id());
+    /// println!("server id: {:?}", response.header().server_id());
     ///
     /// # Ok(())
     /// # }

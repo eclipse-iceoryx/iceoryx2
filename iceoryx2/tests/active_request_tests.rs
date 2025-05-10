@@ -143,7 +143,7 @@ mod active_request {
         let sut = test.server.receive().unwrap().unwrap();
 
         assert_that!(sut.origin(), eq test.client.id());
-        assert_that!(sut.header().client_port_id(), eq test.client.id());
+        assert_that!(sut.header().client_id(), eq test.client.id());
     }
 
     #[test]

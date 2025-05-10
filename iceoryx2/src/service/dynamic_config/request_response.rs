@@ -26,28 +26,55 @@ use crate::{
 
 use super::PortCleanupAction;
 
-#[doc(hidden)]
+/// Contains the communication settings of the connected
+/// [`Server`](crate::port::server::Server).
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ServerDetails {
-    pub server_port_id: UniqueServerId,
+    /// The [`UniqueServerId`] of the [`Server`](crate::port::server::Server).
+    pub server_id: UniqueServerId,
+    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// [`Server`](crate::port::server::Server) was created.
+    pub node_id: NodeId,
+    /// The receive buffer size for incoming requests.
     pub request_buffer_size: usize,
+    /// The total number of responses available in the
+    /// [`Server`](crate::port::server::Server)s data segment
     pub number_of_responses: usize,
+    /// The current maximum length of a slice.
     pub max_slice_len: usize,
+    /// The type of data segment the [`Server`](crate::port::server::Server)
+    /// uses.
     pub data_segment_type: DataSegmentType,
+    /// If the [`Server`](crate::port::server::Server) has the
+    /// [`DataSegmentType::Dynamic`] it defines how many segment the
+    /// [`Server`](crate::port::server::Server) can have at most.
     pub max_number_of_segments: u8,
 }
 
-#[doc(hidden)]
+/// Contains the communication settings of the connected
+/// [`Client`](crate::port::client::Client).
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ClientDetails {
-    pub client_port_id: UniqueClientId,
+    /// The [`UniqueClientId`] of the [`Client`](crate::port::client::Client).
+    pub client_id: UniqueClientId,
+    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// [`Client`](crate::port::client::Client) was created.
     pub node_id: NodeId,
+    /// The total number of requests available in the
+    /// [`Client`](crate::port::client::Client)s data segment
     pub number_of_requests: usize,
+    /// The receive buffer size for incoming responses.
     pub response_buffer_size: usize,
+    /// The current maximum length of a slice.
     pub max_slice_len: usize,
+    /// The type of data segment the [`Client`](crate::port::client::Client)
+    /// uses.
     pub data_segment_type: DataSegmentType,
+    /// If the [`Client`](crate::port::client::Client) has the
+    /// [`DataSegmentType::Dynamic`] it defines how many segment the
+    /// [`Client`](crate::port::client::Client) can have at most.
     pub max_number_of_segments: u8,
 }
 
@@ -126,23 +153,23 @@ impl DynamicConfig {
         unsafe { self.servers.remove(handle, ReleaseMode::Default) };
     }
 
-    #[doc(hidden)]
-    pub fn __internal_list_servers<F: FnMut(&ServerDetails)>(&self, mut callback: F) {
+    /// Iterates over all [`Server`](crate::port::server::Server)s and calls the
+    /// callback with the corresponding [`ServerDetails`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    pub fn list_servers<F: FnMut(&ServerDetails) -> CallbackProgression>(&self, mut callback: F) {
         let state = unsafe { self.servers.get_state() };
 
-        state.for_each(|_, details| {
-            callback(details);
-            CallbackProgression::Continue
-        });
+        state.for_each(|_, details| callback(details));
     }
 
-    #[doc(hidden)]
-    pub fn __internal_list_publishers<F: FnMut(&ClientDetails)>(&self, mut callback: F) {
+    /// Iterates over all [`Client`](crate::port::client::Client)s and calls the
+    /// callback with the corresponding [`ClientDetails`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    pub fn list_clients<F: FnMut(&ClientDetails) -> CallbackProgression>(&self, mut callback: F) {
         let state = unsafe { self.clients.get_state() };
 
-        state.for_each(|_, details| {
-            callback(details);
-            CallbackProgression::Continue
-        });
+        state.for_each(|_, details| callback(details));
     }
 }

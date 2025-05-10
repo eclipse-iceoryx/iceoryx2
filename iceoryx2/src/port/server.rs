@@ -173,7 +173,7 @@ impl<Service: service::Service> SharedServerState<Service> {
                 let inner_result = self.request_receiver.update_connection(
                     h.index() as usize,
                     SenderDetails {
-                        port_id: details.client_port_id.value(),
+                        port_id: details.client_id.value(),
                         number_of_samples: details.number_of_requests,
                         max_number_of_segments: details.max_number_of_segments,
                         data_segment_type: details.data_segment_type,
@@ -185,7 +185,7 @@ impl<Service: service::Service> SharedServerState<Service> {
                 let inner_result = self.response_sender.update_connection(
                     h.index() as usize,
                     ReceiverDetails {
-                        port_id: details.client_port_id.value(),
+                        port_id: details.client_id.value(),
                         buffer_size: details.response_buffer_size,
                     },
                     |_| {},
@@ -245,7 +245,7 @@ impl<
     ) -> Result<Self, ServerCreateError> {
         let msg = "Failed to create Server port";
         let origin = "Server::new()";
-        let server_port_id = UniqueServerId::new();
+        let server_id = UniqueServerId::new();
         let service = &server_factory.factory.service;
         let static_config = server_factory.factory.static_config();
         let number_of_requests_per_client = unsafe {
@@ -278,7 +278,7 @@ impl<
 
         let request_receiver = Receiver {
             connections: Vec::from_fn(client_list.capacity(), |_| UnsafeCell::new(None)),
-            receiver_port_id: server_port_id.value(),
+            receiver_port_id: server_id.value(),
             service_state: service.__internal_state().clone(),
             message_type_details: static_config.request_message_type_details.clone(),
             receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
@@ -294,7 +294,7 @@ impl<
         let data_segment_type = DataSegmentType::new_from_allocation_strategy(
             server_factory.config.allocation_strategy,
         );
-        let segment_name = data_segment_name(server_port_id.value());
+        let segment_name = data_segment_name(server_id.value());
         let max_number_of_segments =
             DataSegment::<Service>::max_number_of_segments(data_segment_type);
         let sample_layout = static_config
@@ -334,7 +334,7 @@ impl<
             connections: (0..client_list.capacity())
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
-            sender_port_id: server_port_id.value(),
+            sender_port_id: server_id.value(),
             shared_node: service.__internal_state().shared_node.clone(),
             receiver_max_buffer_size: static_config.max_response_buffer_size,
             receiver_max_borrowed_samples: static_config
@@ -390,7 +390,8 @@ impl<
                 .get()
                 .request_response()
                 .add_server_id(ServerDetails {
-                    server_port_id,
+                    server_id,
+                    node_id: *service.__internal_state().shared_node.id(),
                     request_buffer_size: static_config.max_active_requests_per_client,
                     number_of_responses,
                     max_slice_len: server_factory.config.initial_max_slice_len,
@@ -524,7 +525,7 @@ impl<
                     if let Some(connection_id) = self
                         .shared_state
                         .response_sender
-                        .get_connection_id_of(header.client_port_id.value())
+                        .get_connection_id_of(header.client_id.value())
                     {
                         let active_request =
                             self.create_active_request(details, chunk, connection_id);
@@ -636,7 +637,7 @@ impl<
                     if let Some(connection_id) = self
                         .shared_state
                         .response_sender
-                        .get_connection_id_of(header.client_port_id.value())
+                        .get_connection_id_of(header.client_id.value())
                     {
                         let active_request = self.create_active_request(
                             details,
@@ -694,7 +695,7 @@ impl<
                     if let Some(connection_id) = self
                         .shared_state
                         .response_sender
-                        .get_connection_id_of(header.client_port_id.value())
+                        .get_connection_id_of(header.client_id.value())
                     {
                         let active_request = self.create_active_request(
                             details,
