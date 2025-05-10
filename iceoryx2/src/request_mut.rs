@@ -28,7 +28,7 @@
 //! let request = client.loan_uninit()?;
 //! let request = request.write_payload(9219);
 //!
-//! println!("client port id: {:?}", request.header().client_port_id());
+//! println!("client id: {:?}", request.header().client_id());
 //! let pending_response = request.send()?;
 //!
 //! # Ok(())

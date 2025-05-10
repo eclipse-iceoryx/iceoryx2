@@ -31,7 +31,7 @@
 //!
 //! if let Some(response) = pending_response.receive()? {
 //!     println!("received response: {} from: {:?}",
-//!         response.payload(), response.header().server_port_id());
+//!         response.payload(), response.header().server_id());
 //! }
 //!
 //! # Ok(())
