@@ -204,15 +204,21 @@ UniqueClientId::UniqueClientId(UniqueClientId&& rhs) noexcept {
 }
 
 auto UniqueClientId::operator=([[maybe_unused]] UniqueClientId&& rhs) noexcept -> UniqueClientId& {
-    IOX_TODO();
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 UniqueClientId::~UniqueClientId() {
     drop();
 }
 
-auto operator==([[maybe_unused]] const UniqueClientId& lhs, [[maybe_unused]] const UniqueClientId& rhs) -> bool {
-    IOX_TODO();
+auto operator==(const UniqueClientId& lhs, const UniqueClientId& rhs) -> bool {
+    return iox2_unique_client_id_eq(&lhs.m_handle, &rhs.m_handle);
 }
 
 auto operator<([[maybe_unused]] const UniqueClientId& lhs, [[maybe_unused]] const UniqueClientId& rhs) -> bool {
@@ -228,7 +234,10 @@ auto UniqueClientId::bytes() const -> const iox::optional<RawIdType>& {
 };
 
 void UniqueClientId::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_unique_client_id_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 UniqueServerId::UniqueServerId(UniqueServerId&& rhs) noexcept {

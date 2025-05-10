@@ -212,7 +212,9 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::user_header_mut()
     -> T& {
-    IOX_TODO();
+    void* ptr = nullptr;
+    iox2_request_mut_user_header_mut(&m_handle, &ptr);
+    return *static_cast<T*>(ptr);
 }
 
 template <ServiceType Service,

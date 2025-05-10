@@ -108,7 +108,9 @@ inline auto Response<Service, ResponsePayload, ResponseHeader>::header() const -
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 template <typename T, typename>
 inline auto Response<Service, ResponsePayload, ResponseHeader>::user_header() const -> const T& {
-    IOX_TODO();
+    const void* ptr = nullptr;
+    iox2_response_user_header(&m_handle, &ptr);
+    return *static_cast<const T*>(ptr);
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>

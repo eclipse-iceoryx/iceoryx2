@@ -29,10 +29,13 @@ class RequestHeaderRequestResponse {
     auto client_port_id() -> UniqueClientId;
 
   private:
-    explicit RequestHeaderRequestResponse(/*iox2_request_header_h handle*/);
+    template <ServiceType, typename, typename, typename, typename>
+    friend class ActiveRequest;
+
+    explicit RequestHeaderRequestResponse(iox2_request_header_h handle);
     void drop();
 
-    // iox2_request_header_h m_handle = nullptr;
+    iox2_request_header_h m_handle = nullptr;
 };
 
 /// Response header used by [`MessagingPattern::RequestResponse`]

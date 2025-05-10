@@ -28,15 +28,20 @@ RequestHeaderRequestResponse::~RequestHeaderRequestResponse() {
 }
 
 auto RequestHeaderRequestResponse::client_port_id() -> UniqueClientId {
-    IOX_TODO();
+    iox2_unique_client_id_h id_handle = nullptr;
+    iox2_request_header_client_id(&m_handle, nullptr, &id_handle);
+    return UniqueClientId { id_handle };
 }
 
-RequestHeaderRequestResponse::RequestHeaderRequestResponse(/*iox2_request_header_h handle*/) {
-    IOX_TODO();
+RequestHeaderRequestResponse::RequestHeaderRequestResponse(iox2_request_header_h handle)
+    : m_handle(handle) {
 }
 
 void RequestHeaderRequestResponse::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_request_header_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 ResponseHeaderRequestResponse::ResponseHeaderRequestResponse(ResponseHeaderRequestResponse&& rhs) noexcept {

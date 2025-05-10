@@ -648,6 +648,43 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_with_incompatible_server_requi
     ASSERT_THAT(service_fail.error(), Eq(RequestResponseOpenError::DoesNotSupportRequestedAmountOfServers));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, send_receive_with_user_header_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .template request_user_header<uint64_t>()
+                       .template response_user_header<uint64_t>()
+                       .create()
+                       .expect("");
+
+    auto sut_client = service.client_builder().create().expect("");
+    auto sut_server = service.server_builder().create().expect("");
+
+    auto request = sut_client.loan().expect("");
+    *request = 3;
+    request.user_header_mut() = 4;
+    auto pending_response = send(std::move(request)).expect("");
+
+    auto active_request = sut_server.receive().expect("");
+    ASSERT_TRUE(active_request.has_value());
+    EXPECT_THAT(active_request->payload(), Eq(3));
+    EXPECT_THAT(active_request->user_header(), Eq(4));
+
+    auto response = active_request->loan().expect("");
+    *response = 2;
+    response.user_header_mut() = 1;
+    send(std::move(response)).expect("");
+
+    auto received_response = pending_response.receive().expect("");
+    ASSERT_TRUE(received_response.has_value());
+    EXPECT_THAT(received_response->payload(), Eq(2));
+    EXPECT_THAT(received_response->user_header(), Eq(1));
+}
+
 TYPED_TEST(ServiceRequestResponseTest, server_applies_initial_max_slice_length) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -783,6 +820,48 @@ TYPED_TEST(ServiceRequestResponseTest, open_fails_when_attributes_are_incompatib
 
     ASSERT_THAT(service_open.has_error(), Eq(true));
     ASSERT_THAT(service_open.error(), Eq(RequestResponseOpenError::IncompatibleAttributes));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, origin_is_set_correctly) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+
+    auto sut_client = service.client_builder().create().expect("");
+    auto sut_server = service.server_builder().create().expect("");
+
+    const uint64_t payload = 123;
+    auto pending_response = sut_client.send_copy(payload).expect("");
+
+    auto active_request = sut_server.receive().expect("");
+    EXPECT_TRUE(active_request->origin() == sut_client.id());
+    EXPECT_TRUE(active_request->header().client_port_id() == sut_client.id());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, is_connected_works_for_active_request) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+
+    auto sut_client = service.client_builder().create().expect("");
+    auto sut_server = service.server_builder().create().expect("");
+
+    auto pending_response = iox::make_optional<PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+        sut_client.send_copy(3).expect(""));
+
+    auto active_request = sut_server.receive().expect("");
+    EXPECT_TRUE(active_request->is_connected());
+
+    pending_response.reset();
+    EXPECT_FALSE(active_request->is_connected());
 }
 
 // BEGIN tests for customizable payload and user header type name

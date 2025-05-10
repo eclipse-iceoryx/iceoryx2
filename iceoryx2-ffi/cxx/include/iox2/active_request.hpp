@@ -79,7 +79,7 @@ class ActiveRequest {
     /// Returns a reference to the
     /// [`crate::service::header::request_response::RequestHeader`] of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
-    auto header() const -> RequestHeaderRequestResponse&;
+    auto header() const -> RequestHeaderRequestResponse;
 
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
     auto origin() const -> UniqueClientId;
@@ -105,7 +105,6 @@ class ActiveRequest {
     explicit ActiveRequest(iox2_active_request_h handle) noexcept;
 
     void drop();
-    void finish();
 
     iox2_active_request_h m_handle = nullptr;
 };
@@ -274,10 +273,9 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::user_header() const
     -> const T& {
-    IOX_TODO();
-    // const void* ptr = nullptr;
-    // iox2_active_request_user_header(&m_handle, &ptr);
-    // return *static_cast<const T*>(ptr);
+    const void* ptr = nullptr;
+    iox2_active_request_user_header(&m_handle, &ptr);
+    return *static_cast<const T*>(ptr);
 }
 
 template <ServiceType Service,
@@ -286,8 +284,10 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::header() const
-    -> RequestHeaderRequestResponse& {
-    IOX_TODO();
+    -> RequestHeaderRequestResponse {
+    iox2_request_header_h header_handle = nullptr;
+    iox2_active_request_header(&m_handle, nullptr, &header_handle);
+    return RequestHeaderRequestResponse { header_handle };
 }
 
 template <ServiceType Service,
@@ -297,7 +297,7 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::origin() const
     -> UniqueClientId {
-    IOX_TODO();
+    return header().client_port_id();
 }
 
 template <ServiceType Service,
@@ -307,7 +307,7 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::is_connected() const
     -> bool {
-    IOX_TODO();
+    return iox2_active_request_is_connected(&m_handle);
 }
 
 template <ServiceType Service,
@@ -368,15 +368,6 @@ inline void ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayloa
         iox2_active_request_drop(m_handle);
         m_handle = nullptr;
     }
-}
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestHeader,
-          typename ResponsePayload,
-          typename ResponseHeader>
-inline void ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::finish() {
-    IOX_TODO();
 }
 } // namespace iox2
 
