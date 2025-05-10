@@ -16,6 +16,7 @@ use tiny_fn::tiny_fn;
 use update_connections::ConnectionFailure;
 
 pub(crate) mod details;
+pub use details::data_segment::DataSegmentType;
 
 /// Sends requests to a [`Server`](crate::port::server::Server) and receives responses.
 pub mod client;
