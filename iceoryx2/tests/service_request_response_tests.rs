@@ -316,9 +316,9 @@ mod service_request_response {
         let active_request_1 = test.servers[0].receive().unwrap().unwrap();
 
         let p0 = *active_request_0.payload();
-        let id0 = active_request_0.header().client_port_id();
+        let id0 = active_request_0.header().client_id();
         let p1 = *active_request_1.payload();
-        let id1 = active_request_1.header().client_port_id();
+        let id1 = active_request_1.header().client_id();
 
         assert_that!(test.clients[p0].id(), eq id0);
         assert_that!(test.clients[p1].id(), eq id1);
@@ -344,9 +344,9 @@ mod service_request_response {
         let response1 = pending_response.receive().unwrap().unwrap();
 
         let p0 = *response0.payload();
-        let id0 = response0.header().server_port_id();
+        let id0 = response0.header().server_id();
         let p1 = *response1.payload();
-        let id1 = response1.header().server_port_id();
+        let id1 = response1.header().server_id();
 
         assert_that!(test.servers[p0].id(), eq id0);
         assert_that!(test.servers[p1].id(), eq id1);
@@ -1264,6 +1264,126 @@ mod service_request_response {
         Sut: Service,
     >() {
         send_and_receive_increasing_responses_works::<Sut>(AllocationStrategy::PowerOfTwo);
+    }
+
+    #[test]
+    fn listing_all_clients_works<S: Service>() {
+        const NUMBER_OF_CLIENTS: usize = 17;
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(NUMBER_OF_CLIENTS)
+            .create()
+            .unwrap();
+
+        let mut clients = vec![];
+
+        for _ in 0..NUMBER_OF_CLIENTS {
+            clients.push(sut.client_builder().create().unwrap());
+        }
+
+        let mut client_details = vec![];
+        sut.dynamic_config().list_clients(|details| {
+            client_details.push(details.client_id);
+            CallbackProgression::Continue
+        });
+
+        for client in clients {
+            assert_that!(client_details, contains client.id());
+        }
+    }
+
+    #[test]
+    fn listing_all_clients_stops_on_request<S: Service>() {
+        const NUMBER_OF_CLIENTS: usize = 13;
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_clients(NUMBER_OF_CLIENTS)
+            .create()
+            .unwrap();
+
+        let mut clients = vec![];
+
+        for _ in 0..NUMBER_OF_CLIENTS {
+            clients.push(sut.client_builder().create().unwrap());
+        }
+
+        let mut counter = 0;
+        sut.dynamic_config().list_clients(|_| {
+            counter += 1;
+            CallbackProgression::Stop
+        });
+
+        assert_that!(counter, eq 1);
+    }
+
+    #[test]
+    fn listing_all_servers_works<S: Service>() {
+        const NUMBER_OF_SERVERS: usize = 17;
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_servers(NUMBER_OF_SERVERS)
+            .create()
+            .unwrap();
+
+        let mut servers = vec![];
+
+        for _ in 0..NUMBER_OF_SERVERS {
+            servers.push(sut.server_builder().create().unwrap());
+        }
+
+        let mut server_details = vec![];
+        sut.dynamic_config().list_servers(|details| {
+            server_details.push(details.server_id);
+            CallbackProgression::Continue
+        });
+
+        for server in servers {
+            assert_that!(server_details, contains server.id());
+        }
+    }
+
+    #[test]
+    fn listing_all_servers_stops_on_request<S: Service>() {
+        const NUMBER_OF_SERVERS: usize = 13;
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .max_servers(NUMBER_OF_SERVERS)
+            .create()
+            .unwrap();
+
+        let mut servers = vec![];
+
+        for _ in 0..NUMBER_OF_SERVERS {
+            servers.push(sut.server_builder().create().unwrap());
+        }
+
+        let mut counter = 0;
+        sut.dynamic_config().list_servers(|_| {
+            counter += 1;
+            CallbackProgression::Stop
+        });
+
+        assert_that!(counter, eq 1);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

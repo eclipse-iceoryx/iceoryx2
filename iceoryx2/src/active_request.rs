@@ -299,7 +299,7 @@ impl<
         unsafe {
             (chunk.header as *mut service::header::request_response::ResponseHeader).write(
                 service::header::request_response::ResponseHeader {
-                    server_port_id: UniqueServerId(UniqueSystemId::from(
+                    server_id: UniqueServerId(UniqueSystemId::from(
                         self.shared_state.response_sender.sender_port_id,
                     )),
                     request_id: self.request_id,
@@ -549,7 +549,7 @@ impl<
         unsafe {
             (chunk.header as *mut service::header::request_response::ResponseHeader).write(
                 service::header::request_response::ResponseHeader {
-                    server_port_id: UniqueServerId(UniqueSystemId::from(
+                    server_id: UniqueServerId(UniqueSystemId::from(
                         self.shared_state.response_sender.sender_port_id,
                     )),
                     request_id: self.request_id,

@@ -30,7 +30,7 @@ use super::PortCleanupAction;
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ServerDetails {
-    pub server_port_id: UniqueServerId,
+    pub server_id: UniqueServerId,
     pub request_buffer_size: usize,
     pub number_of_responses: usize,
     pub max_slice_len: usize,
@@ -42,7 +42,7 @@ pub struct ServerDetails {
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ClientDetails {
-    pub client_port_id: UniqueClientId,
+    pub client_id: UniqueClientId,
     pub node_id: NodeId,
     pub number_of_requests: usize,
     pub response_buffer_size: usize,

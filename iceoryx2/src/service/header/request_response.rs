@@ -20,7 +20,7 @@ use crate::port::port_identifiers::{UniqueClientId, UniqueServerId};
 #[derive(Debug, Copy, Clone, ZeroCopySend)]
 #[repr(C)]
 pub struct RequestHeader {
-    pub(crate) client_port_id: UniqueClientId,
+    pub(crate) client_id: UniqueClientId,
     pub(crate) channel_id: ChannelId,
     pub(crate) request_id: u64,
     pub(crate) number_of_elements: u64,
@@ -29,8 +29,8 @@ pub struct RequestHeader {
 impl RequestHeader {
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
     /// which sent the [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn client_port_id(&self) -> UniqueClientId {
-        self.client_port_id
+    pub fn client_id(&self) -> UniqueClientId {
+        self.client_id
     }
 
     /// Returns how many elements are stored inside the requests's payload.
@@ -52,7 +52,7 @@ impl RequestHeader {
 #[derive(Debug, Copy, Clone, ZeroCopySend)]
 #[repr(C)]
 pub struct ResponseHeader {
-    pub(crate) server_port_id: UniqueServerId,
+    pub(crate) server_id: UniqueServerId,
     pub(crate) request_id: u64,
     pub(crate) number_of_elements: u64,
 }
@@ -60,8 +60,8 @@ pub struct ResponseHeader {
 impl ResponseHeader {
     /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server)
     /// which sent the [`Response`](crate::response::Response)
-    pub fn server_port_id(&self) -> UniqueServerId {
-        self.server_port_id
+    pub fn server_id(&self) -> UniqueServerId {
+        self.server_id
     }
 
     /// Returns how many elements are stored inside the response's payload.
