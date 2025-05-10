@@ -210,6 +210,7 @@ pub unsafe extern "C" fn iox2_server_has_requests(
 ///
 /// * `handle` - Must be a valid [`iox2_server_h_ref`]
 ///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create).
+#[no_mangle]
 pub unsafe extern "C" fn iox2_server_initial_max_slice_len(handle: iox2_server_h_ref) -> c_size_t {
     handle.assert_non_null();
 
