@@ -39,11 +39,13 @@
     [#643](https://github.com/eclipse-iceoryx/iceoryx2/issues/643)
 * Expose set_log_level_from_env* APIs to C++
     [#653](https://github.com/eclipse-iceoryx/iceoryx2/issues/653)
-* Add benchmark for request-response
-    [#687](https://github.com/eclipse-iceoryx/iceoryx2/issues/687)
 * Introduce a "service discovery service", which applications can
     subscribe and listen to for updates in service landscape
     [#674](https://github.com/eclipse-iceoryx/iceoryx2/issues/674)
+* Details of all service ports can be acquired
+    [#685](https://github.com/eclipse-iceoryx/iceoryx2/issues/685)
+* Add benchmark for request-response
+    [#687](https://github.com/eclipse-iceoryx/iceoryx2/issues/687)
 
 ### Bugfixes
 
