@@ -64,7 +64,6 @@ use iceoryx2_bb_log::fail;
 
 use crate::port::details::chunk::Chunk;
 use crate::port::details::chunk_details::ChunkDetails;
-use crate::port::update_connections::ConnectionFailure;
 use crate::raw_sample::RawSample;
 use crate::service::builder::CustomPayloadMarker;
 use crate::{port::ReceiveError, request_mut::RequestMut, response::Response, service};
@@ -203,9 +202,7 @@ impl<
 
     /// Returns [`true`] when a [`Server`](crate::port::server::Server) has sent a [`Response`]
     /// otherwise [`false`].
-    pub fn has_response(&self) -> Result<bool, ConnectionFailure> {
-        fail!(from self, when self.request.client_shared_state.update_connections(),
-                "Some responses are not being received since not all connections to the corresponding Server (ActiveRequest) could be established.");
+    pub fn has_response(&self) -> bool {
         self.request
             .client_shared_state
             .response_receiver

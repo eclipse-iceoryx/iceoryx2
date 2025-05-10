@@ -29,7 +29,7 @@ pub struct RequestHeader {
 impl RequestHeader {
     /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
     /// which sent the [`RequestMut`](crate::request_mut::RequestMut)
-    pub fn client_port_id(&self) -> UniqueClientId {
+    pub fn client_id(&self) -> UniqueClientId {
         self.client_port_id
     }
 
@@ -60,7 +60,7 @@ pub struct ResponseHeader {
 impl ResponseHeader {
     /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server)
     /// which sent the [`Response`](crate::response::Response)
-    pub fn server_port_id(&self) -> UniqueServerId {
+    pub fn server_id(&self) -> UniqueServerId {
         self.server_port_id
     }
 

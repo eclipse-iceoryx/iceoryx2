@@ -255,7 +255,7 @@ impl<
     pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
-        self.receiver.has_samples(ChannelId::new(0))
+        Ok(self.receiver.has_samples(ChannelId::new(0)))
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {

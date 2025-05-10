@@ -110,7 +110,7 @@ mod pending_response {
         *request.user_header_mut() = USER_HEADER;
         let sut = request.send().unwrap();
 
-        assert_that!(sut.header().client_port_id(), eq test.client.id());
+        assert_that!(sut.header().client_id(), eq test.client.id());
         assert_that!(*sut.user_header(), eq USER_HEADER);
         assert_that!(*sut.payload(), eq PAYLOAD);
     }
@@ -131,9 +131,9 @@ mod pending_response {
         let active_request = test.server_1.receive().unwrap().unwrap();
         active_request.send_copy(8).unwrap();
 
-        assert_that!(sut.has_response(), eq Ok(true));
+        assert_that!(sut.has_response(), eq true);
         assert_that!(sut.receive().unwrap(), is_some);
-        assert_that!(sut.has_response(), eq Ok(false));
+        assert_that!(sut.has_response(), eq false);
         assert_that!(sut.receive().unwrap(), is_none);
     }
 

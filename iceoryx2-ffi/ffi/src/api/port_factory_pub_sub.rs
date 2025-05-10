@@ -256,7 +256,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_attributes(
     }
 }
 
-/// Set the values int the provided [`iox2_static_config_publish_subscribe_t`] pointer.
+/// Set the values in the provided [`iox2_static_config_publish_subscribe_t`] pointer.
 ///
 /// # Safety
 ///

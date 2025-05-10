@@ -218,16 +218,16 @@ impl<Service: service::Service> Receiver<Service> {
         self.connections.len()
     }
 
-    pub(crate) fn has_samples(&self, channel_id: ChannelId) -> Result<bool, ConnectionFailure> {
+    pub(crate) fn has_samples(&self, channel_id: ChannelId) -> bool {
         for id in 0..self.len() {
             if let Some(ref connection) = &self.get(id) {
                 if connection.receiver.has_data(channel_id) {
-                    return Ok(true);
+                    return true;
                 }
             }
         }
 
-        Ok(false)
+        false
     }
 
     fn receive_from_connection(
