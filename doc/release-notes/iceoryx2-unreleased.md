@@ -101,6 +101,8 @@
     [#697](https://github.com/eclipse-iceoryx/iceoryx2/issues/697)
 * Efficient `Clone` for `FixedSizeByteString`
     [#717](https://github.com/eclipse-iceoryx/iceoryx2/issues/717)
+* Use Rust's native endian swapping
+    [#724](https://github.com/eclipse-iceoryx/iceoryx2/issues/724)
 
 ### Workflow
 
