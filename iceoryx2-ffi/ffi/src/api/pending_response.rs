@@ -299,24 +299,43 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
     debug_assert!(!payload_ptr.is_null());
 
     let pending_response = &mut *handle.as_type();
-    let payload = pending_response.value.as_mut().local.payload();
+    let number_of_elements_value;
 
     match pending_response.service_type {
         iox2_service_type_e::IPC => {
-            *payload_ptr = payload.as_ptr().cast();
+            *payload_ptr = pending_response
+                .value
+                .as_mut()
+                .ipc
+                .payload()
+                .as_ptr()
+                .cast();
+            number_of_elements_value = pending_response
+                .value
+                .as_mut()
+                .ipc
+                .header()
+                .number_of_elements();
         }
         iox2_service_type_e::LOCAL => {
-            *payload_ptr = payload.as_ptr().cast();
+            *payload_ptr = pending_response
+                .value
+                .as_mut()
+                .local
+                .payload()
+                .as_ptr()
+                .cast();
+            number_of_elements_value = pending_response
+                .value
+                .as_mut()
+                .local
+                .header()
+                .number_of_elements();
         }
     };
 
     if !number_of_elements.is_null() {
-        *number_of_elements = pending_response
-            .value
-            .as_mut()
-            .local
-            .header()
-            .number_of_elements() as c_size_t;
+        *number_of_elements = number_of_elements_value as c_size_t;
     }
 }
 
