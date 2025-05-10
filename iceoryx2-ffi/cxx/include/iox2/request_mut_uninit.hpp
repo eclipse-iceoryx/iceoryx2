@@ -14,6 +14,7 @@
 #define IOX2_REQUEST_MUT_UNINIT_HPP
 
 #include "iox/assertions_addendum.hpp"
+#include "iox/function.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/request_mut.hpp"
 #include "iox2/service_type.hpp"
@@ -69,6 +70,12 @@ class RequestMutUninit {
     /// an initialized [`RequestMut`].
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
     void write_payload(RequestPayload&& payload);
+
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
+    void write_from_slice(iox::ImmutableSlice<ValueType>& value);
+
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
+    void write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer);
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -140,7 +147,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
     -> iox::ImmutableSlice<ValueType> {
-    IOX_TODO();
+    return m_request.payload();
 }
 
 template <ServiceType Service,
@@ -174,6 +181,34 @@ template <typename T, typename>
 inline void RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::write_payload(
     RequestPayload&& payload) {
     new (&payload_mut()) RequestPayload(std::forward<T>(payload));
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline void RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::write_from_slice(
+    iox::ImmutableSlice<ValueType>& value) {
+    auto dest = payload_mut();
+    IOX_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
+               "Destination payload size is smaller than source slice size");
+    std::memcpy(dest.begin(), value.begin(), value.number_of_bytes());
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline void RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::write_from_fn(
+    const iox::function<typename T::ValueType(uint64_t)>& initializer) {
+    auto slice = payload_mut();
+    for (uint64_t i = 0; i < slice.number_of_elements(); ++i) {
+        new (&slice[i]) typename T::ValueType(initializer(i));
+    }
 }
 
 template <ServiceType Service,

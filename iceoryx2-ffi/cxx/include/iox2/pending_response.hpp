@@ -16,7 +16,9 @@
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/optional.hpp"
+#include "iox/slice.hpp"
 #include "iox2/header_request_response.hpp"
+#include "iox2/payload_info.hpp"
 #include "iox2/response.hpp"
 #include "iox2/service_type.hpp"
 
@@ -37,6 +39,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 class PendingResponse {
+    using ValueType = typename PayloadInfo<RequestPayload>::ValueType;
+
   public:
     PendingResponse(PendingResponse&& rhs) noexcept;
     auto operator=(PendingResponse&& rhs) noexcept -> PendingResponse&;
@@ -64,7 +68,11 @@ class PendingResponse {
 
     /// Returns a reference to the request payload of the corresponding
     /// [`RequestMut`]
-    auto payload() -> const RequestPayload&;
+    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    auto payload() -> const T&;
+
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload() const -> iox::ImmutableSlice<ValueType>;
 
     /// Returns how many [`Server`](crate::port::server::Server)s received the corresponding
     /// [`RequestMut`] initially.
@@ -202,9 +210,30 @@ template <ServiceType Service,
           typename RequestHeader,
           typename ResponsePayload,
           typename ResponseHeader>
+template <typename T, typename>
 inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload()
-    -> const RequestPayload& {
-    IOX_TODO();
+    -> const T& {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_pending_response_payload(&m_handle, &ptr, &number_of_elements);
+    return *static_cast<const T*>(ptr);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
+    -> iox::ImmutableSlice<ValueType> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+
+    iox2_pending_response_payload(&m_handle, &ptr, &number_of_elements);
+
+    return iox::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType Service,

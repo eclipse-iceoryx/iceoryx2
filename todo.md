@@ -2,9 +2,8 @@
 
 ## C++ binding for request response
 
-* finish tests in service_request_response_tests.cpp, i.e. at least `send_slice_copy_and_receive_works`
-  and `loan_slice_uninit_write_payload_send_and_receive_works` (see TODOs there)
-* finish slice API, mainly RequestMut/ResponseMut
+* finish tests in service_request_response_tests.cpp
+* implement and test allocation strategy
 * search for `IOX_TODO()`, implement logic (should be mainly getter methods in 
   `ActiveRequest`, `PendingResponse`, `RequestMut`, `RequestMutUninit`, `Response`,
   `ResponseMut`, `ResponseMutUninit`) and write tests

@@ -15,6 +15,8 @@
 
 #include "header_request_response.hpp"
 #include "iox/assertions_addendum.hpp"
+#include "iox/slice.hpp"
+#include "iox2/payload_info.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
@@ -24,6 +26,8 @@ namespace iox2 {
 /// [`Server`](crate::port::server::Server) via the [`Client`](crate::port::client::Client).
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 class Response {
+    using ValueType = typename PayloadInfo<ResponsePayload>::ValueType;
+
   public:
     Response(Response&& rhs) noexcept;
     auto operator=(Response&& rhs) noexcept -> Response&;
@@ -44,7 +48,11 @@ class Response {
     auto user_header() const -> const T&;
 
     /// Returns a reference to the payload of the response.
-    auto payload() const -> const ResponsePayload&;
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    auto payload() const -> const T&;
+
+    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto payload() const -> iox::ImmutableSlice<ValueType>;
 
     /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server) which sent
     /// the [`Response`].
@@ -104,11 +112,21 @@ inline auto Response<Service, ResponsePayload, ResponseHeader>::user_header() co
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::payload() const -> const ResponsePayload& {
+template <typename T, typename>
+inline auto Response<Service, ResponsePayload, ResponseHeader>::payload() const -> const T& {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
     iox2_response_payload(&m_handle, &ptr, &number_of_elements);
-    return *static_cast<const ResponsePayload*>(ptr);
+    return *static_cast<const T*>(ptr);
+}
+
+template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <typename T, typename>
+inline auto Response<Service, ResponsePayload, ResponseHeader>::payload() const -> iox::ImmutableSlice<ValueType> {
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+    iox2_response_payload(&m_handle, &ptr, &number_of_elements);
+    return iox::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>

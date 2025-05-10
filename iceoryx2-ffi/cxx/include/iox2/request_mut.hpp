@@ -236,7 +236,10 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
     -> iox::ImmutableSlice<ValueType> {
-    IOX_TODO();
+    const void* ptr = nullptr;
+    size_t number_of_elements = 0;
+    iox2_request_mut_payload(&m_handle, &ptr, &number_of_elements);
+    return iox::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
 
 template <ServiceType Service,
