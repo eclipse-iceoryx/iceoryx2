@@ -136,8 +136,8 @@ pub enum UdpSendError {
 fn create_sockaddr(address: Ipv4Address, port: Port) -> posix::sockaddr_in {
     let mut addr = posix::sockaddr_in::new();
     addr.sin_family = posix::AF_INET as _;
-    addr.set_s_addr(unsafe { posix::htonl(address.as_u32()) });
-    addr.sin_port = unsafe { posix::htons(port.as_u16()) };
+    addr.set_s_addr(address.as_u32().to_be());
+    addr.sin_port = port.as_u16().to_be();
     addr
 }
 
@@ -154,9 +154,9 @@ impl ReceiveDetails {
         Self {
             number_of_bytes,
             source_ip: unsafe {
-                core::mem::transmute::<u32, Ipv4Address>(posix::ntohl(source.get_s_addr()))
+                core::mem::transmute::<u32, Ipv4Address>(u32::from_be(source.get_s_addr()))
             },
-            source_port: Port::new(unsafe { posix::ntohs(source.sin_port) }),
+            source_port: Port::new(u16::from_be(source.sin_port)),
         }
     }
 }
@@ -557,11 +557,11 @@ impl UdpSocket {
     }
 
     fn address(&self) -> Ipv4Address {
-        unsafe { core::mem::transmute::<u32, Ipv4Address>(posix::ntohl(self.details.get_s_addr())) }
+        unsafe { core::mem::transmute::<u32, Ipv4Address>(u32::from_be(self.details.get_s_addr())) }
     }
 
     pub fn port(&self) -> Port {
-        Port::new(unsafe { posix::ntohs(self.details.sin_port) })
+        Port::new(u16::from_be(self.details.sin_port))
     }
 
     fn fcntl(&self, command: i32, value: i32, msg: &str) -> Result<i32, UdpReceiveError> {
