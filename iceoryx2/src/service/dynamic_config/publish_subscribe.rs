@@ -145,24 +145,30 @@ impl DynamicConfig {
         self.subscribers.len()
     }
 
-    #[doc(hidden)]
-    pub fn __internal_list_subscribers<F: FnMut(&SubscriberDetails)>(&self, mut callback: F) {
+    /// Iterates over all [`Subscriber`](crate::port::subscriber::Subscriber)s and calls the
+    /// callback with the corresponding [`SubscriberDetails`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    pub fn list_subscribers<F: FnMut(&SubscriberDetails) -> CallbackProgression>(
+        &self,
+        mut callback: F,
+    ) {
         let state = unsafe { self.subscribers.get_state() };
 
-        state.for_each(|_, details| {
-            callback(details);
-            CallbackProgression::Continue
-        });
+        state.for_each(|_, details| callback(details));
     }
 
-    #[doc(hidden)]
-    pub fn __internal_list_publishers<F: FnMut(&PublisherDetails)>(&self, mut callback: F) {
+    /// Iterates over all [`Publisher`](crate::port::publisher::Publisher)s and calls the
+    /// callback with the corresponding [`PublisherDetails`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    pub fn list_publishers<F: FnMut(&PublisherDetails) -> CallbackProgression>(
+        &self,
+        mut callback: F,
+    ) {
         let state = unsafe { self.publishers.get_state() };
 
-        state.for_each(|_, details| {
-            callback(details);
-            CallbackProgression::Continue
-        });
+        state.for_each(|_, details| callback(details));
     }
 
     pub(crate) fn add_subscriber_id(&self, details: SubscriberDetails) -> Option<ContainerHandle> {

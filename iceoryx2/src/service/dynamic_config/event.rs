@@ -105,24 +105,30 @@ impl DynamicConfig {
         self.notifiers.len()
     }
 
-    #[doc(hidden)]
-    pub fn __internal_list_listeners<F: FnMut(&ListenerDetails)>(&self, mut callback: F) {
+    /// Iterates over all [`Listener`](crate::port::listener::Listener)s and calls the
+    /// callback with the corresponding [`ListenerDetails`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    pub fn list_listeners<F: FnMut(&ListenerDetails) -> CallbackProgression>(
+        &self,
+        mut callback: F,
+    ) {
         let state = unsafe { self.listeners.get_state() };
 
-        state.for_each(|_, details| {
-            callback(details);
-            CallbackProgression::Continue
-        });
+        state.for_each(|_, details| callback(details));
     }
 
-    #[doc(hidden)]
-    pub fn __internal_list_notifiers<F: FnMut(&NotifierDetails)>(&self, mut callback: F) {
+    /// Iterates over all [`Notifier`](crate::port::notifier::Notifier)s and calls the
+    /// callback with the corresponding [`NotifierDetails`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    pub fn list_notifiers<F: FnMut(&NotifierDetails) -> CallbackProgression>(
+        &self,
+        mut callback: F,
+    ) {
         let state = unsafe { self.notifiers.get_state() };
 
-        state.for_each(|_, details| {
-            callback(details);
-            CallbackProgression::Continue
-        });
+        state.for_each(|_, details| callback(details));
     }
 
     pub(crate) unsafe fn remove_dead_node_id<

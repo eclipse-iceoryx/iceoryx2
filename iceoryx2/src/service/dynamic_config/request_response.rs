@@ -126,23 +126,23 @@ impl DynamicConfig {
         unsafe { self.servers.remove(handle, ReleaseMode::Default) };
     }
 
-    #[doc(hidden)]
-    pub fn __internal_list_servers<F: FnMut(&ServerDetails)>(&self, mut callback: F) {
+    /// Iterates over all [`Server`](crate::port::server::Server)s and calls the
+    /// callback with the corresponding [`ServerDetails`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    pub fn list_servers<F: FnMut(&ServerDetails) -> CallbackProgression>(&self, mut callback: F) {
         let state = unsafe { self.servers.get_state() };
 
-        state.for_each(|_, details| {
-            callback(details);
-            CallbackProgression::Continue
-        });
+        state.for_each(|_, details| callback(details));
     }
 
-    #[doc(hidden)]
-    pub fn __internal_list_publishers<F: FnMut(&ClientDetails)>(&self, mut callback: F) {
+    /// Iterates over all [`Client`](crate::port::client::Client)s and calls the
+    /// callback with the corresponding [`ClientDetails`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    pub fn list_clients<F: FnMut(&ClientDetails) -> CallbackProgression>(&self, mut callback: F) {
         let state = unsafe { self.clients.get_state() };
 
-        state.for_each(|_, details| {
-            callback(details);
-            CallbackProgression::Continue
-        });
+        state.for_each(|_, details| callback(details));
     }
 }
