@@ -48,24 +48,41 @@ pub(crate) struct DynamicConfigSettings {
     pub number_of_publishers: usize,
 }
 
-#[doc(hidden)]
+/// Contains the communication settings of the connected
+/// [`Publisher`](crate::port::publisher::Publisher).
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct PublisherDetails {
+    /// The [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher).
     pub publisher_id: UniquePublisherId,
+    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// [`Publisher`](crate::port::publisher::Publisher) was created.
     pub node_id: NodeId,
+    /// The total number of samples contained in the
+    /// [`Publisher`](crate::port::publisher::Publisher)s data segment.
     pub number_of_samples: usize,
+    /// The current maximum length of a slice.
     pub max_slice_len: usize,
+    /// The type of data segment the [`Publisher`](crate::port::publisher::Publisher)
+    /// has.
     pub data_segment_type: DataSegmentType,
+    /// If the [`Publisher`](crate::port::publisher::Publisher) has the
+    /// [`DataSegmentType::Dynamic`] it defines how many segment the
+    /// [`Publisher`](crate::port::publisher::Publisher) can have at most.
     pub max_number_of_segments: u8,
 }
 
-#[doc(hidden)]
+/// Contains the communication settings of the connected
+/// [`Subscriber`](crate::port::subscriber::Subscriber).
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct SubscriberDetails {
+    /// The [`UniqueSubscriberId`] of the [`Subscriber`](crate::port::subscriber::Subscriber).
     pub subscriber_id: UniqueSubscriberId,
+    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// [`Subscriber`](crate::port::subscriber::Subscriber) was created.
     pub node_id: NodeId,
+    /// The size of the receive buffer that stores [`Sample`](crate::sample::Sample).
     pub buffer_size: usize,
 }
 

@@ -56,19 +56,27 @@ pub struct DynamicConfig {
     pub(crate) elapsed_time_since_last_notification: IoxAtomicU64,
 }
 
-#[doc(hidden)]
+/// Contains the communication settings of the connected
+/// [`Listener`](crate::port::listener::Listener).
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ListenerDetails {
+    /// The [`UniqueListenerId`] of the [`Listener`](crate::port::listener::Listener).
     pub listener_id: UniqueListenerId,
+    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// [`Listener`](crate::port::listener::Listener) was created.
     pub node_id: NodeId,
 }
 
-#[doc(hidden)]
+/// Contains the communication settings of the connected
+/// [`Notifier`](crate::port::notifier::Notifier).
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct NotifierDetails {
+    /// The [`UniqueNotifierId`] of the [`Notifier`](crate::port::notifier::Notifier).
     pub notifier_id: UniqueNotifierId,
+    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// [`Notifier`](crate::port::notifier::Notifier) was created.
     pub node_id: NodeId,
 }
 

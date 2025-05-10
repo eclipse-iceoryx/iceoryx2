@@ -391,6 +391,7 @@ impl<
                 .request_response()
                 .add_server_id(ServerDetails {
                     server_id,
+                    node_id: *service.__internal_state().shared_node.id(),
                     request_buffer_size: static_config.max_active_requests_per_client,
                     number_of_responses,
                     max_slice_len: server_factory.config.initial_max_slice_len,
