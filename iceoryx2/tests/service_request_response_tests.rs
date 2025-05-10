@@ -1292,6 +1292,7 @@ mod service_request_response {
             CallbackProgression::Continue
         });
 
+        assert_that!(client_details, len NUMBER_OF_CLIENTS);
         for client in clients {
             assert_that!(client_details, contains client.id());
         }
@@ -1352,6 +1353,7 @@ mod service_request_response {
             CallbackProgression::Continue
         });
 
+        assert_that!(server_details, len NUMBER_OF_SERVERS);
         for server in servers {
             assert_that!(server_details, contains server.id());
         }

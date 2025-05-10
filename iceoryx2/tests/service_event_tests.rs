@@ -1428,6 +1428,7 @@ mod service_event {
             CallbackProgression::Continue
         });
 
+        assert_that!(notifier_details, len NUMBER_OF_NOTIFIERS);
         for notifier in notifiers {
             assert_that!(notifier_details, contains notifier.id());
         }
@@ -1488,6 +1489,7 @@ mod service_event {
             CallbackProgression::Continue
         });
 
+        assert_that!(listener_details, len NUMBER_OF_LISTENERS);
         for listener in listeners {
             assert_that!(listener_details, contains listener.id());
         }

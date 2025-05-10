@@ -3307,6 +3307,7 @@ mod service_publish_subscribe {
             CallbackProgression::Continue
         });
 
+        assert_that!(publisher_details, len NUMBER_OF_PUBLISHERS);
         for publisher in publishers {
             assert_that!(publisher_details, contains publisher.id());
         }
@@ -3367,6 +3368,7 @@ mod service_publish_subscribe {
             CallbackProgression::Continue
         });
 
+        assert_that!(subscriber_details, len NUMBER_OF_SUBSCRIBERS);
         for subscriber in subscribers {
             assert_that!(subscriber_details, contains subscriber.id());
         }
