@@ -13,6 +13,7 @@
 use core::{fmt::Debug, fmt::Display};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)]
 pub struct Ipv4Address(u32);
 
 pub const LOCALHOST: Ipv4Address = Ipv4Address::new(127, 0, 0, 1);

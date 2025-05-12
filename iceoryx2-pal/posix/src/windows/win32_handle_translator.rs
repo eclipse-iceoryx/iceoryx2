@@ -17,7 +17,7 @@ use windows_sys::Win32::{
     System::Threading::{WaitOnAddress, WakeByAddressSingle, INFINITE},
 };
 
-use crate::posix::{c_string_length, ntohs, types::*};
+use crate::posix::{c_string_length, types::*};
 use core::sync::atomic::Ordering;
 use core::{cell::UnsafeCell, panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32, IoxAtomicUsize};
@@ -79,7 +79,7 @@ impl UdsDatagramSocketHandle {
     }
 
     pub fn port(&self) -> u16 {
-        unsafe { ntohs(self.address.as_ref().unwrap().sin_port) }
+        u16::from_be(self.address.as_ref().unwrap().sin_port)
     }
 
     pub fn is_set(&self) -> bool {
@@ -343,7 +343,7 @@ impl HandleTranslator {
     }
 
     pub(crate) fn set_uds_name(&self, fd: int, address: sockaddr_in, uds_address: *const sockaddr) {
-        let port = unsafe { ntohs(address.sin_port) };
+        let port = u16::from_be(address.sin_port);
 
         let uds_address = uds_address as *const sockaddr_un;
         let name = unsafe {
