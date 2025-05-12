@@ -285,6 +285,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_write_payload_send_receive_wo
     uint64_t response_payload = 4;
     auto response_uninit = active_request->loan_uninit().expect("");
     response_uninit.write_payload(std::move(response_payload));
+    EXPECT_THAT(response_uninit.payload(), Eq(response_payload));
     send(assume_init(std::move(response_uninit))).expect("");
 
     auto received_response = pending_response.receive().expect("");
@@ -410,7 +411,6 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     auto request_uninit = sut_client.loan_slice_uninit(SLICE_MAX_LENGTH);
     ASSERT_FALSE(request_uninit.has_error());
     EXPECT_THAT(request_uninit.value().payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
-    // EXPECT_THAT(request_uninit.value().user_header().number_of_elements(), Eq(SLICE_MAX_LENGTH));
 
     iox::UninitializedArray<DummyData, SLICE_MAX_LENGTH, iox::ZeroedBuffer> elements;
     for (auto& item : elements) {
@@ -439,6 +439,14 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
 
     auto response_uninit = received_request.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
     response_uninit.write_from_slice(payload);
+    iterations = 0;
+    for (const auto& item : response_uninit.payload()) {
+        ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A));
+        ASSERT_THAT(item.z, Eq(DummyData::DEFAULT_VALUE_Z));
+        ++iterations;
+    }
+    EXPECT_THAT(response_uninit.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
+    EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
     send(assume_init(std::move(response_uninit))).expect("");
 
     auto received_response = pending_response.receive().expect("");
@@ -692,6 +700,10 @@ TYPED_TEST(ServiceRequestResponseTest, send_receive_with_user_header_works) {
     ASSERT_TRUE(received_response.has_value());
     EXPECT_THAT(received_response->payload(), Eq(2));
     EXPECT_THAT(received_response->user_header(), Eq(1));
+
+    auto response_uninit = active_request->loan_uninit().expect("");
+    response_uninit.user_header_mut() = 2;
+    EXPECT_THAT(response_uninit.user_header(), Eq(2));
 }
 
 TYPED_TEST(ServiceRequestResponseTest, number_of_server_connections_is_set_correctly) {
@@ -873,6 +885,17 @@ TYPED_TEST(ServiceRequestResponseTest, origin_is_set_correctly) {
     auto active_request = sut_server.receive().expect("");
     EXPECT_TRUE(active_request->origin() == sut_client.id());
     EXPECT_TRUE(active_request->header().client_port_id() == sut_client.id());
+
+    uint64_t response_payload = 4;
+    auto response_uninit = active_request->loan_uninit().expect("");
+    EXPECT_TRUE(response_uninit.header().server_port_id() == sut_server.id());
+    response_uninit.write_payload(std::move(response_payload));
+    send(assume_init(std::move(response_uninit))).expect("");
+
+    auto response = pending_response.receive().expect("");
+    ASSERT_TRUE(response.has_value());
+    EXPECT_TRUE(response->origin() == sut_server.id());
+    EXPECT_TRUE(response->header().server_port_id() == sut_server.id());
 }
 
 TYPED_TEST(ServiceRequestResponseTest, is_connected_works_for_active_request) {

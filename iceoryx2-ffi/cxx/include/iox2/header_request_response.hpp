@@ -55,10 +55,15 @@ class ResponseHeaderRequestResponse {
     auto server_port_id() -> UniqueServerId;
 
   private:
-    explicit ResponseHeaderRequestResponse(/*iox2_response_header_h handle*/);
+    template <ServiceType, typename, typename>
+    friend class Response;
+    template <ServiceType, typename, typename>
+    friend class ResponseMut;
+
+    explicit ResponseHeaderRequestResponse(iox2_response_header_h handle);
     void drop();
 
-    // iox2_response_header_h m_handle = nullptr;
+    iox2_response_header_h m_handle = nullptr;
 };
 } // namespace iox2
 #endif

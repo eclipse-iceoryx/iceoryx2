@@ -14,7 +14,6 @@
 #define IOX2_RESPONSE_HPP
 
 #include "header_request_response.hpp"
-#include "iox/assertions_addendum.hpp"
 #include "iox/slice.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/service_type.hpp"
@@ -41,7 +40,7 @@ class Response {
 
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
-    auto header() const -> ResponseHeaderRequestResponse&;
+    auto header() const -> ResponseHeaderRequestResponse;
 
     /// Returns a reference to the user header of the response.
     template <typename T = ResponseHeader, typename = std::enable_if_t<!std::is_same_v<void, ResponseHeader>, T>>
@@ -101,8 +100,10 @@ inline auto Response<Service, ResponsePayload, ResponseHeader>::operator->() con
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::header() const -> ResponseHeaderRequestResponse& {
-    IOX_TODO();
+inline auto Response<Service, ResponsePayload, ResponseHeader>::header() const -> ResponseHeaderRequestResponse {
+    iox2_response_header_h header_handle = nullptr;
+    iox2_response_header(&m_handle, nullptr, &header_handle);
+    return ResponseHeaderRequestResponse { header_handle };
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
@@ -133,7 +134,7 @@ inline auto Response<Service, ResponsePayload, ResponseHeader>::payload() const 
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 inline auto Response<Service, ResponsePayload, ResponseHeader>::origin() const -> UniqueServerId {
-    IOX_TODO();
+    return header().server_port_id();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>

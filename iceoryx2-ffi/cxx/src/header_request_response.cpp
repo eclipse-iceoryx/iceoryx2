@@ -58,15 +58,20 @@ ResponseHeaderRequestResponse::~ResponseHeaderRequestResponse() {
 }
 
 auto ResponseHeaderRequestResponse::server_port_id() -> UniqueServerId {
-    IOX_TODO();
+    iox2_unique_server_id_h id_handle = nullptr;
+    iox2_response_header_server_id(&m_handle, nullptr, &id_handle);
+    return UniqueServerId { id_handle };
 }
 
-ResponseHeaderRequestResponse::ResponseHeaderRequestResponse(/*iox2_response_header_h handle*/) {
-    IOX_TODO();
+ResponseHeaderRequestResponse::ResponseHeaderRequestResponse(iox2_response_header_h handle)
+    : m_handle(handle) {
 }
 
 void ResponseHeaderRequestResponse::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_response_header_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 } // namespace iox2

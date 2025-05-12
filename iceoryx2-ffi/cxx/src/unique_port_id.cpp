@@ -269,6 +269,9 @@ auto UniqueServerId::bytes() const -> const iox::optional<RawIdType>& {
 };
 
 void UniqueServerId::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_unique_server_id_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 } // namespace iox2

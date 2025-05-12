@@ -44,7 +44,7 @@ class ResponseMutUninit {
 
     /// Returns a reference to the
     /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
-    auto header() const -> ResponseHeaderRequestResponse&;
+    auto header() const -> ResponseHeaderRequestResponse;
 
     /// Returns a reference to the user header of the response.
     template <typename T = ResponseHeader, typename = std::enable_if_t<!std::is_same_v<void, ResponseHeader>, T>>
@@ -94,33 +94,33 @@ class ResponseMutUninit {
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::header() const
-    -> ResponseHeaderRequestResponse& {
-    IOX_TODO();
+    -> ResponseHeaderRequestResponse {
+    return m_response.header();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::user_header() const -> const T& {
-    IOX_TODO();
+    return m_response.user_header();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::user_header_mut() -> T& {
-    IOX_TODO();
+    return m_response.user_header_mut();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::payload() const -> const T& {
-    IOX_TODO();
+    return m_response.payload();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
 template <typename T, typename>
 inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::payload() const
     -> iox::ImmutableSlice<ValueType> {
-    IOX_TODO();
+    return m_response.payload();
 }
 
 template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>

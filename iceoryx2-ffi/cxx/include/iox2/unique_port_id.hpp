@@ -158,6 +158,7 @@ class UniqueServerId {
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Server;
+    friend class ResponseHeaderRequestResponse;
     friend auto operator==(const UniqueServerId&, const UniqueServerId&) -> bool;
     friend auto operator<(const UniqueServerId&, const UniqueServerId&) -> bool;
 
