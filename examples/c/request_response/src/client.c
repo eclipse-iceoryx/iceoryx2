@@ -60,7 +60,7 @@ int main(void) { // NOLINT
                                                                                alignof(uint64_t))
         != IOX2_OK) {
         printf("Unable to set request type details\n");
-        goto drop_node;
+        goto drop_service_name;
     }
 
     if (iox2_service_builder_request_response_set_response_payload_type_details(&service_builder_request_response,
@@ -71,7 +71,7 @@ int main(void) { // NOLINT
                                                                                 alignof(struct TransmissionData))
         != IOX2_OK) {
         printf("Unable to set response type details\n");
-        goto drop_node;
+        goto drop_service_name;
     }
 
     // Create service
@@ -79,7 +79,7 @@ int main(void) { // NOLINT
     if (iox2_service_builder_request_response_open_or_create(service_builder_request_response, NULL, &service)
         != IOX2_OK) {
         printf("Unable to create service!\n");
-        goto drop_node;
+        goto drop_service_name;
     }
 
     // Create client
@@ -105,24 +105,27 @@ int main(void) { // NOLINT
     // Main loop
     while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
         // Check for responses
-        struct TransmissionData response_data;
-        iox2_response_h result = NULL;
+        const struct TransmissionData* response_data = NULL;
+        iox2_response_h response = NULL;
 
-        do {
-            result = NULL;
-            if (iox2_pending_response_receive(&pending_response, NULL, &result) != IOX2_OK) {
+        while (true) {
+            response = NULL;
+            if (iox2_pending_response_receive(&pending_response, NULL, &response) != IOX2_OK) {
                 printf("Failed to receive response\n");
                 goto drop_client;
             }
 
-            if (result != NULL) {
-                iox2_response_payload(&result, (const void**) &response_data, NULL);
-                printf("  received response: x=%d, y=%d, funky=%f\n",
-                       response_data.x,
-                       response_data.y,
-                       response_data.funky);
+            if (response == NULL) {
+                break;
             }
-        } while (result != NULL);
+
+            iox2_response_payload(&response, (const void**) &response_data, NULL);
+            printf("  received response: x=%d, y=%d, funky=%f\n",
+                   response_data->x,
+                   response_data->y,
+                   response_data->funky);
+            iox2_response_drop(response);
+        }
 
         counter++;
 
@@ -162,6 +165,9 @@ drop_client:
 
 drop_service:
     iox2_port_factory_request_response_drop(service);
+
+drop_service_name:
+    iox2_service_name_drop(service_name);
 
 drop_node:
     iox2_node_drop(node_handle);

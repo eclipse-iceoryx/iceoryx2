@@ -74,14 +74,14 @@ int main(int argc, char** argv) {
                                                               alignof(struct TransmissionData))
         != IOX2_OK) {
         printf("Unable to set type details\n");
-        goto drop_node;
+        goto drop_service_name;
     }
 
     // create service
     iox2_port_factory_pub_sub_h service = NULL;
     if (iox2_service_builder_pub_sub_open_or_create(service_builder_pub_sub, NULL, &service) != IOX2_OK) {
         printf("Unable to create service!\n");
-        goto drop_node;
+        goto drop_service_name;
     }
 
     // create publisher
@@ -125,6 +125,9 @@ drop_publisher:
 
 drop_service:
     iox2_port_factory_pub_sub_drop(service);
+
+drop_service_name:
+    iox2_service_name_drop(service_name);
 
 drop_node:
     iox2_node_drop(node_handle);

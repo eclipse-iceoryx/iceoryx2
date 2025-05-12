@@ -63,7 +63,7 @@ int main(void) { // NOLINT
                                                                                alignof(uint64_t))
         != IOX2_OK) {
         printf("Unable to set request type details\n");
-        goto drop_node;
+        goto drop_service_name;
     }
 
     if (iox2_service_builder_request_response_set_response_payload_type_details(&service_builder_request_response,
@@ -74,7 +74,7 @@ int main(void) { // NOLINT
                                                                                 alignof(struct TransmissionData))
         != IOX2_OK) {
         printf("Unable to set response type details\n");
-        goto drop_node;
+        goto drop_service_name;
     }
 
     // Create service
@@ -82,7 +82,7 @@ int main(void) { // NOLINT
     if (iox2_service_builder_request_response_open_or_create(service_builder_request_response, NULL, &service)
         != IOX2_OK) {
         printf("Unable to create service!\n");
-        goto drop_node;
+        goto drop_service_name;
     }
 
     // Create server
@@ -112,10 +112,10 @@ int main(void) { // NOLINT
             }
 
             // Get request payload
-            uint64_t request_value = 0;
+            uint64_t* request_value = 0;
             iox2_active_request_payload(&active_request, (const void**) &request_value, NULL);
 
-            printf("received request: %lu\n", request_value);
+            printf("received request: %lu\n", *request_value);
 
             // Create response data
             struct TransmissionData response = { .x = 5 + counter, .y = 6 * counter, .funky = 7.77 }; // NOLINT
@@ -130,7 +130,7 @@ int main(void) { // NOLINT
             }
 
             // Optionally send additional responses using zero-copy API (mimicking the Rust example's behavior)
-            for (int32_t iter = 0; iter < request_value % 2; iter++) {
+            for (int32_t iter = 0; iter < *request_value % 2; iter++) {
                 iox2_response_mut_h response = NULL;
                 if (iox2_active_request_loan_slice_uninit(&active_request, NULL, &response, 1) != IOX2_OK) {
                     printf("Failed to loan response sample\n");
@@ -167,6 +167,9 @@ drop_server:
 
 drop_service:
     iox2_port_factory_request_response_drop(service);
+
+drop_service_name:
+    iox2_service_name_drop(service_name);
 
 drop_node:
     iox2_node_drop(node_handle);
