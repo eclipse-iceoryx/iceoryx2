@@ -41,16 +41,7 @@ fn main() -> Result<()> {
 
     set_log_level_from_env_or(LogLevel::Warn);
 
-    let cli = match Cli::try_parse() {
-        Ok(cli) => cli,
-        Err(e) => {
-            // --help and --version is treated as a parse error by clap
-            // printing the error is actually printing the result of those commands ...
-            let _ = e.print();
-            return Ok(());
-        }
-    };
-
+    let cli = Cli::parse();
     if cli.list {
         if let Err(e) = commands::list() {
             eprintln!("Failed to list commands: {}", e);
