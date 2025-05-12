@@ -36,15 +36,23 @@ class PortFactoryClient {
     /// its internal buffer is full.
     IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
 
-    /// Sets the maximum number of elements that can be loaned in a slice.
-    IOX_BUILDER_OPTIONAL(uint64_t, initial_max_slice_len);
-
   public:
     PortFactoryClient(const PortFactoryClient&) = delete;
     PortFactoryClient(PortFactoryClient&&) = default;
     auto operator=(const PortFactoryClient&) -> PortFactoryClient& = delete;
     auto operator=(PortFactoryClient&&) -> PortFactoryClient& = default;
     ~PortFactoryClient() = default;
+
+    /// Sets the maximum number of elements that can be loaned in a slice.
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto initial_max_slice_len(uint64_t value) && -> PortFactoryClient&&;
+
+    /// Defines the allocation strategy that is used when the provided
+    /// [`PortFactoryClient::initial_max_slice_len()`] is exhausted. This happens when the user
+    /// acquires more than max slice len in [`Client::loan_slice()`] or
+    /// [`Client::loan_slice_uninit()`].
+    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto allocation_strategy(AllocationStrategy value) && -> PortFactoryClient&&;
 
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.
     auto create() && -> iox::expected<Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
@@ -57,7 +65,35 @@ class PortFactoryClient {
     explicit PortFactoryClient(iox2_port_factory_client_builder_h handle);
 
     iox2_port_factory_client_builder_h m_handle = nullptr;
+    iox::optional<uint64_t> m_max_slice_len;
+    iox::optional<AllocationStrategy> m_allocation_strategy;
 };
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto
+PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::initial_max_slice_len(
+    uint64_t value) && -> PortFactoryClient&& {
+    m_max_slice_len.emplace(value);
+    return std::move(*this);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto
+PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::allocation_strategy(
+    AllocationStrategy value) && -> PortFactoryClient&& {
+    m_allocation_strategy.emplace(value);
+    return std::move(*this);
+}
 
 template <ServiceType Service,
           typename RequestPayload,
@@ -71,8 +107,13 @@ PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, Respo
         iox2_port_factory_client_builder_unable_to_deliver_strategy(
             &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
     });
-    m_initial_max_slice_len.and_then(
-        [&](auto value) { iox2_port_factory_client_builder_set_initial_max_slice_len(&m_handle, value); });
+    m_max_slice_len
+        .and_then([&](auto value) { iox2_port_factory_client_builder_set_initial_max_slice_len(&m_handle, value); })
+        .or_else([&]() { iox2_port_factory_client_builder_set_initial_max_slice_len(&m_handle, 1); });
+    m_allocation_strategy.and_then([&](auto value) {
+        iox2_port_factory_client_builder_set_allocation_strategy(&m_handle,
+                                                                 iox::into<iox2_allocation_strategy_e>(value));
+    });
 
     iox2_client_h client_handle {};
     auto result = iox2_port_factory_client_builder_create(m_handle, nullptr, &client_handle);

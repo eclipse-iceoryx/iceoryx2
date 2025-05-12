@@ -41,15 +41,24 @@ class PortFactoryServer {
     /// [`ActiveRequest`](crate::active_request::ActiveRequest).
     IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_responses_per_request);
 
-    /// Sets the maximum initial slice length configured for this [`Server`].
-    IOX_BUILDER_OPTIONAL(uint64_t, initial_max_slice_len);
-
   public:
     PortFactoryServer(const PortFactoryServer&) = delete;
     PortFactoryServer(PortFactoryServer&&) = default;
     auto operator=(const PortFactoryServer&) -> PortFactoryServer& = delete;
     auto operator=(PortFactoryServer&&) -> PortFactoryServer& = default;
     ~PortFactoryServer() = default;
+
+    /// Sets the maximum initial slice length configured for this [`Server`].
+    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto initial_max_slice_len(uint64_t value) && -> PortFactoryServer&&;
+
+    /// Defines the allocation strategy that is used when the provided
+    /// [`PortFactoryServer::initial_max_slice_len()`] is exhausted. This happens when the user
+    /// acquires more than max slice len in
+    /// [`ActiveRequest::loan_slice()`](crate::active_request::ActiveRequest::loan_slice()) or
+    /// [`ActiveRequest::loan_slice_uninit()`](crate::active_request::ActiveRequest::loan_slice_uninit()).
+    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    auto allocation_strategy(AllocationStrategy value) && -> PortFactoryServer&&;
 
     /// Creates a new [`Server`] or returns a [`ServerCreateError`] on failure.
     auto create() && -> iox::expected<Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
@@ -62,7 +71,35 @@ class PortFactoryServer {
     explicit PortFactoryServer(iox2_port_factory_server_builder_h handle);
 
     iox2_port_factory_server_builder_h m_handle = nullptr;
+    iox::optional<uint64_t> m_max_slice_len;
+    iox::optional<AllocationStrategy> m_allocation_strategy;
 };
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto
+PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::initial_max_slice_len(
+    uint64_t value) && -> PortFactoryServer&& {
+    m_max_slice_len.emplace(value);
+    return std::move(*this);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+template <typename T, typename>
+inline auto
+PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::allocation_strategy(
+    AllocationStrategy value) && -> PortFactoryServer&& {
+    m_allocation_strategy.emplace(value);
+    return std::move(*this);
+}
 
 template <ServiceType Service,
           typename RequestPayload,
@@ -76,10 +113,15 @@ PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, Respo
         iox2_port_factory_server_builder_unable_to_deliver_strategy(
             &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
     });
+    m_max_slice_len
+        .and_then([&](auto value) { iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, value); })
+        .or_else([&]() { iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, 1); });
     m_max_loaned_responses_per_request.and_then(
         [&](auto value) { iox2_port_factory_server_builder_set_max_loaned_responses_per_request(&m_handle, value); });
-    m_initial_max_slice_len.and_then(
-        [&](auto value) { iox2_port_factory_server_builder_set_initial_max_slice_len(&m_handle, value); });
+    m_allocation_strategy.and_then([&](auto value) {
+        iox2_port_factory_server_builder_set_allocation_strategy(&m_handle,
+                                                                 iox::into<iox2_allocation_strategy_e>(value));
+    });
 
     iox2_server_h server_handle {};
     auto result = iox2_port_factory_server_builder_create(m_handle, nullptr, &server_handle);

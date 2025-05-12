@@ -46,10 +46,10 @@ class ActiveRequest {
     auto operator->() const -> const RequestPayload*;
 
     /// Loans uninitialized memory for a [`ResponseMut`] where the user can write its payload to.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto loan_uninit() -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseHeader>, LoanError>;
 
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice_uninit(uint64_t number_of_elements)
         -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseHeader>, LoanError>;
 
@@ -91,10 +91,10 @@ class ActiveRequest {
 
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
-    template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto loan() -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError>;
 
-    template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
+    template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements)
         -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError>;
 

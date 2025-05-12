@@ -953,6 +953,140 @@ TYPED_TEST(ServiceRequestResponseTest, is_connected_works_for_pending_response) 
     EXPECT_FALSE(pending_response.is_connected());
 }
 
+TYPED_TEST(ServiceRequestResponseTest, client_reallocates_memory_when_allocation_strategy_is_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t INITIAL_SIZE = 128;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder()
+                      .initial_max_slice_len(INITIAL_SIZE)
+                      .allocation_strategy(AllocationStrategy::BestFit)
+                      .create()
+                      .expect("");
+
+    {
+        auto request = client.loan_slice(INITIAL_SIZE);
+        ASSERT_FALSE(request.has_error());
+    }
+
+    {
+        auto request = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
+        ASSERT_FALSE(request.has_error());
+    }
+
+    {
+        auto request = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
+        ASSERT_FALSE(request.has_error());
+    }
+}
+
+TYPED_TEST(ServiceRequestResponseTest, client_does_not_reallocate_when_allocation_strategy_is_static) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t INITIAL_SIZE = 128;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder()
+                      .initial_max_slice_len(INITIAL_SIZE)
+                      .allocation_strategy(AllocationStrategy::Static)
+                      .create()
+                      .expect("");
+
+    auto request_1 = client.loan_slice(INITIAL_SIZE);
+    ASSERT_FALSE(request_1.has_error());
+
+    auto request_2 = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE);
+    ASSERT_TRUE(request_2.has_error());
+    ASSERT_THAT(request_2.error(), Eq(LoanError::ExceedsMaxLoanSize));
+
+    auto request_3 = client.loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
+    ASSERT_TRUE(request_3.has_error());
+    ASSERT_THAT(request_3.error(), Eq(LoanError::ExceedsMaxLoanSize));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, server_reallocates_memory_when_allocation_strategy_is_set) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t INITIAL_SIZE = 128;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder()
+                      .initial_max_slice_len(INITIAL_SIZE)
+                      .allocation_strategy(AllocationStrategy::BestFit)
+                      .create()
+                      .expect("");
+
+    auto pending_response = client.send_copy(0).expect("");
+    auto active_request = server.receive().expect("");
+    ASSERT_TRUE(active_request.has_value());
+
+    {
+        auto response = active_request->loan_slice(INITIAL_SIZE);
+        ASSERT_FALSE(response.has_error());
+    }
+
+    {
+        auto response = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE);
+        ASSERT_FALSE(response.has_error());
+    }
+
+    {
+        auto response = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
+        ASSERT_FALSE(response.has_error());
+    }
+}
+
+TYPED_TEST(ServiceRequestResponseTest, server_does_not_reallocate_when_allocation_strategy_is_static) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t INITIAL_SIZE = 128;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder()
+                      .initial_max_slice_len(INITIAL_SIZE)
+                      .allocation_strategy(AllocationStrategy::Static)
+                      .create()
+                      .expect("");
+
+    auto pending_response = client.send_copy(0).expect("");
+    auto active_request = server.receive().expect("");
+    ASSERT_TRUE(active_request.has_value());
+
+    auto response_1 = active_request->loan_slice(INITIAL_SIZE);
+    ASSERT_FALSE(response_1.has_error());
+
+    auto response_2 = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE);
+    ASSERT_TRUE(response_2.has_error());
+    ASSERT_THAT(response_2.error(), Eq(LoanError::ExceedsMaxLoanSize));
+
+    auto response_3 = active_request->loan_slice(INITIAL_SIZE * INITIAL_SIZE * INITIAL_SIZE);
+    ASSERT_TRUE(response_3.has_error());
+    ASSERT_THAT(response_3.error(), Eq(LoanError::ExceedsMaxLoanSize));
+}
+
 // BEGIN tests for customizable payload and user header type name
 constexpr uint8_t CAPACITY = 100;
 constexpr uint8_t ALIGNMENT = 16;

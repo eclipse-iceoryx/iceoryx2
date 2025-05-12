@@ -1,9 +1,5 @@
 # TODO
 
-## C++ binding for request response
-
-* implement and test allocation strategy
-
 ## POSIX
 
 * Windows stat.rs, allowed to fail if file no longer exists
