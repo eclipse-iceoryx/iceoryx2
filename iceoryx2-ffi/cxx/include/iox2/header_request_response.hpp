@@ -33,6 +33,8 @@ class RequestHeaderRequestResponse {
     friend class ActiveRequest;
     template <ServiceType, typename, typename, typename, typename>
     friend class PendingResponse;
+    template <ServiceType, typename, typename, typename, typename>
+    friend class RequestMut;
 
     explicit RequestHeaderRequestResponse(iox2_request_header_h handle);
     void drop();

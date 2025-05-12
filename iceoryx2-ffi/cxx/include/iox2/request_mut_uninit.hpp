@@ -13,7 +13,6 @@
 #ifndef IOX2_REQUEST_MUT_UNINIT_HPP
 #define IOX2_REQUEST_MUT_UNINIT_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/function.hpp"
 #include "iox2/header_request_response.hpp"
 #include "iox2/request_mut.hpp"
@@ -42,7 +41,7 @@ class RequestMutUninit {
 
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`]
-    auto header() const -> RequestHeaderRequestResponse&;
+    auto header() const -> RequestHeaderRequestResponse;
 
     /// Returns a reference to the user defined request header.
     template <typename T = RequestHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestHeader>, T>>
@@ -101,8 +100,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::header() const
-    -> RequestHeaderRequestResponse& {
-    IOX_TODO();
+    -> RequestHeaderRequestResponse {
+    return m_request.header();
 }
 
 template <ServiceType Service,
@@ -114,7 +113,7 @@ template <typename T, typename>
 inline auto
 RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::user_header() const
     -> const T& {
-    IOX_TODO();
+    return m_request.user_header();
 }
 
 template <ServiceType Service,
@@ -125,7 +124,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::user_header_mut()
     -> T& {
-    IOX_TODO();
+    return m_request.user_header_mut();
 }
 
 template <ServiceType Service,
@@ -136,7 +135,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
     -> const RequestPayload& {
-    IOX_TODO();
+    return m_request.payload();
 }
 
 template <ServiceType Service,

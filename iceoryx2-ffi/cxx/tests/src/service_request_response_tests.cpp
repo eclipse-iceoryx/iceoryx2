@@ -272,6 +272,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_write_payload_send_receive_wo
     auto request_uninit = sut_client.loan_uninit().expect("");
     uint64_t request_payload = 3;
     request_uninit.write_payload(std::move(request_payload));
+    EXPECT_THAT(request_uninit.payload(), Eq(request_payload));
     auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
 
     auto has_requests = sut_server.has_requests();
@@ -669,10 +670,12 @@ TYPED_TEST(ServiceRequestResponseTest, send_receive_with_user_header_works) {
     auto sut_client = service.client_builder().create().expect("");
     auto sut_server = service.server_builder().create().expect("");
 
-    auto request = sut_client.loan().expect("");
-    *request = 3;
-    request.user_header_mut() = 4;
-    auto pending_response = send(std::move(request)).expect("");
+    auto request_uninit = sut_client.loan_uninit().expect("");
+    request_uninit.user_header_mut() = 4;
+    EXPECT_THAT(request_uninit.user_header(), Eq(4));
+    uint64_t request_payload = 3;
+    request_uninit.write_payload(std::move(request_payload));
+    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
     EXPECT_THAT(pending_response.user_header(), Eq(4));
 
     auto active_request = sut_server.receive().expect("");
@@ -858,8 +861,13 @@ TYPED_TEST(ServiceRequestResponseTest, origin_is_set_correctly) {
     auto sut_client = service.client_builder().create().expect("");
     auto sut_server = service.server_builder().create().expect("");
 
-    const uint64_t payload = 123;
-    auto pending_response = sut_client.send_copy(payload).expect("");
+    auto request_uninit = sut_client.loan_uninit().expect("");
+    EXPECT_TRUE(request_uninit.header().client_port_id() == sut_client.id());
+
+    uint64_t request_payload = 3;
+    request_uninit.write_payload(std::move(request_payload));
+    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
+
     EXPECT_TRUE(pending_response.header().client_port_id() == sut_client.id());
 
     auto active_request = sut_server.receive().expect("");

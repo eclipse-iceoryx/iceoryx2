@@ -13,7 +13,6 @@
 #ifndef IOX2_REQUEST_MUT_HPP
 #define IOX2_REQUEST_MUT_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/slice.hpp"
 #include "iox2/header_request_response.hpp"
@@ -52,7 +51,7 @@ class RequestMut {
 
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`]
-    auto header() const -> RequestHeaderRequestResponse&;
+    auto header() const -> RequestHeaderRequestResponse;
 
     /// Returns a reference to the user defined request header.
     template <typename T = RequestHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestHeader>, T>>
@@ -189,8 +188,10 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::header() const
-    -> RequestHeaderRequestResponse& {
-    IOX_TODO();
+    -> RequestHeaderRequestResponse {
+    iox2_request_header_h header_handle = nullptr;
+    iox2_request_mut_header(&m_handle, nullptr, &header_handle);
+    return RequestHeaderRequestResponse { header_handle };
 }
 
 template <ServiceType Service,
@@ -201,7 +202,9 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::user_header() const
     -> const T& {
-    IOX_TODO();
+    const void* ptr = nullptr;
+    iox2_request_mut_user_header(&m_handle, &ptr);
+    return *static_cast<const T*>(ptr);
 }
 
 template <ServiceType Service,

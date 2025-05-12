@@ -5,9 +5,8 @@
 * finish tests in service_request_response_tests.cpp
 * implement and test allocation strategy
 * search for `IOX_TODO()`, implement logic (should be mainly getter methods in 
-  `PendingResponse`, `RequestMut`, `RequestMutUninit`, `Response`,
-  `ResponseMut`, `ResponseMutUninit`) and write tests
-* implement `IOX_TODO`s in unique_port_id.cpp
+  `Response`, `ResponseMut`, `ResponseMutUninit`) and write tests
+* implement `IOX_TODO`s in unique_port_id.cpp, config.cpp, header_request_response.cpp
 
 ## POSIX
 
