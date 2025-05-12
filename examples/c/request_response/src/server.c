@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MILLISECOND_IN_NS 100000
-#define CYCLE_TIME 100 * MILLISECOND_IN_NS
+#define MILLISECOND_IN_NS 100000           // NOLINT
+#define CYCLE_TIME 100 * MILLISECOND_IN_NS // NOLINT
 
 int main(void) { // NOLINT
     // Setup logging
