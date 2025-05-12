@@ -140,7 +140,7 @@ impl HandleToType for iox2_port_factory_request_response_h_ref {
     }
 }
 
-/// The callback for [`iox2_port_factory_request_response_list_servers()`]
+/// The callback for [`iox2_port_factory_request_response_dynamic_config_list_servers()`]
 ///
 /// # Arguments
 ///
@@ -151,7 +151,7 @@ impl HandleToType for iox2_port_factory_request_response_h_ref {
 pub type iox2_list_servers_callback =
     extern "C" fn(iox2_callback_context, iox2_server_details_ptr) -> iox2_callback_progression_e;
 
-/// The callback for [`iox2_port_factory_request_response_list_clients()`]
+/// The callback for [`iox2_port_factory_request_response_dynamic_config_list_clients()`]
 ///
 /// # Arguments
 ///
