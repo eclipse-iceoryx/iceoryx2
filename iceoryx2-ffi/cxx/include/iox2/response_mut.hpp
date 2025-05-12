@@ -65,6 +65,7 @@ class ResponseMut {
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const ResponsePayload&;
 
+    /// Returns a reference to the payload of the response.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
@@ -72,6 +73,7 @@ class ResponseMut {
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> ResponsePayload&;
 
+    /// Returns a mutable reference to the payload of the response.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> iox::MutableSlice<ValueType>;
 

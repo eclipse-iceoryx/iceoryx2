@@ -58,6 +58,7 @@ class ResponseMutUninit {
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const T&;
 
+    /// Returns a reference to the payload of the response.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
@@ -65,6 +66,7 @@ class ResponseMutUninit {
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> T&;
 
+    /// Returns a mutable reference to the payload of the response.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> iox::MutableSlice<ValueType>;
 
@@ -73,9 +75,13 @@ class ResponseMutUninit {
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
     void write_payload(ResponsePayload&& payload);
 
+    /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
+    /// [`ResponseMut`] that is ready to be sent.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     void write_from_slice(iox::ImmutableSlice<ValueType>& value);
 
+    /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
+    /// [`ResponseMut`] that is ready to be sent.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     void write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer);
 

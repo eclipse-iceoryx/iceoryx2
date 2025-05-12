@@ -45,10 +45,11 @@ class ActiveRequest {
     auto operator*() const -> const RequestPayload&;
     auto operator->() const -> const RequestPayload*;
 
-    /// Loans uninitialized memory for a [`ResponseMut`] where the user can write its payload to.
+    /// Loans uninitialized memory for a [`ResponseMutUninit`] where the user can write its payload to.
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto loan_uninit() -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseHeader>, LoanError>;
 
+    /// Loans uninitialized memory for a [`ResponseMutUninit`] where the user can write its payload to.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice_uninit(uint64_t number_of_elements)
         -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseHeader>, LoanError>;
@@ -60,14 +61,20 @@ class ActiveRequest {
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto send_copy(const ResponsePayload& payload) const -> iox::expected<void, SendError>;
 
+    /// Sends a copy of the provided data to the
+    /// [`PendingResponse`](crate::pending_response::PendingResponse) of the corresponding
+    /// [`Client`](crate::port::client::Client).
+    /// This is not a zero-copy API. Use [`ActiveRequest::loan_slice_uninit()`] instead.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto send_slice_copy(const iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<void, SendError>;
 
-    /// Returns a reference to the payload of the received
+    /// Returns a reference to the payload of the received RequestPayload
     /// [`RequestMut`](crate::request_mut::RequestMut)
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const T&;
 
+    /// Returns a reference to the payload of the received RequestPayload
+    /// [`RequestMut`](crate::request_mut::RequestMut)
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
@@ -94,6 +101,8 @@ class ActiveRequest {
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto loan() -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError>;
 
+    /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
+    /// payload to.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements)
         -> iox::expected<ResponseMut<Service, ResponsePayload, ResponseHeader>, LoanError>;

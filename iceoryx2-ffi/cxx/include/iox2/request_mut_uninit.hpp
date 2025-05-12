@@ -55,6 +55,7 @@ class RequestMutUninit {
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const RequestPayload&;
 
+    /// Returns a reference to the user defined request payload.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
@@ -62,6 +63,7 @@ class RequestMutUninit {
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> RequestPayload&;
 
+    /// Returns a mutable reference to the user defined request payload.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> iox::MutableSlice<ValueType>;
 
@@ -70,9 +72,13 @@ class RequestMutUninit {
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
     void write_payload(RequestPayload&& payload);
 
+    /// Copies the provided payload into the uninitialized request and returns
+    /// an initialized [`RequestMut`].
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     void write_from_slice(iox::ImmutableSlice<ValueType>& value);
 
+    /// Copies the provided payload into the uninitialized request and returns
+    /// an initialized [`RequestMut`].
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     void write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer);
 

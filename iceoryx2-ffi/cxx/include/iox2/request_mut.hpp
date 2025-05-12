@@ -65,6 +65,7 @@ class RequestMut {
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const RequestPayload&;
 
+    /// Returns a reference to the user defined request payload.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
@@ -72,6 +73,7 @@ class RequestMut {
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> RequestPayload&;
 
+    /// Returns a mutable reference to the user defined request payload.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload_mut() -> iox::MutableSlice<ValueType>;
 

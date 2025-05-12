@@ -70,6 +70,8 @@ class PendingResponse {
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const T&;
 
+    /// Returns a reference to the request payload of the corresponding
+    /// [`RequestMut`]
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 

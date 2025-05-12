@@ -64,6 +64,7 @@ TYPED_TEST(ServiceRequestResponseTest, service_name_works) {
     ASSERT_THAT(sut.name().to_string().c_str(), StrEq(service_name.to_string().c_str()));
 }
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseTest, list_service_nodes_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -101,6 +102,7 @@ TYPED_TEST(ServiceRequestResponseTest, list_service_nodes_works) {
     ASSERT_THAT(result.has_value(), Eq(true));
     ASSERT_THAT(counter, Eq(2));
 }
+//NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServiceRequestResponseTest, creating_existing_service_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -339,6 +341,7 @@ struct DummyData {
     bool z { DEFAULT_VALUE_Z };
 };
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
@@ -392,7 +395,9 @@ TYPED_TEST(ServiceRequestResponseTest, send_slice_copy_and_receive_works) {
     EXPECT_THAT(received_response->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
@@ -460,7 +465,9 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     EXPECT_THAT(received_response->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
@@ -511,7 +518,9 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_wor
     EXPECT_THAT(received_response->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
+//NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr auto SLICE_MAX_LENGTH = 10;
@@ -565,6 +574,7 @@ TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
     EXPECT_THAT(received_response->payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 TYPED_TEST(ServiceRequestResponseTest, setting_service_properties_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;

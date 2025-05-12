@@ -13,7 +13,6 @@
 #ifndef IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP
 #define IOX2_HEADER_PUBLISH_SUBSCRIBE_HPP
 
-#include "iox/layout.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "unique_port_id.hpp"
 

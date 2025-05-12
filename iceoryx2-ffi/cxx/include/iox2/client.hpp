@@ -59,6 +59,10 @@ class Client {
         -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                          RequestSendError>;
 
+    /// Copies the input value into a [`RequestMut`] and sends it. On success it
+    /// returns a [`PendingResponse`] that can be used to receive a stream of
+    /// [`Response`](crate::response::Response)s from the
+    /// [`Server`](crate::port::server::Server).
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const
         -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
@@ -71,6 +75,8 @@ class Client {
         -> iox::expected<RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                          LoanError>;
 
+    /// Acquires an [`RequestMutUninit`] to store payload. This API shall be used
+    /// by default to avoid unnecessary copies.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice_uninit(uint64_t number_of_elements)
         -> iox::expected<RequestMutUninit<Service, T, RequestHeader, ResponsePayload, ResponseHeader>, LoanError>;
@@ -81,6 +87,9 @@ class Client {
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto loan() -> iox::expected<RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader>, LoanError>;
 
+    /// Acquires the payload for the request and initializes the underlying memory
+    /// with default. This can be very expensive when the payload is large, therefore
+    /// prefer [`Client::loan_uninit()`] when possible.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto loan_slice(uint64_t number_of_elements)
         -> iox::expected<RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader>, LoanError>;

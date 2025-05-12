@@ -15,6 +15,7 @@
 
 #include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
+#include "iox/layout.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/internal/iceoryx2.hpp"
