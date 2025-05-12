@@ -111,7 +111,7 @@ use crate::prelude::UnableToDeliverStrategy;
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
 use crate::service::builder::CustomPayloadMarker;
-use crate::service::config_scheme::{connection_config, data_segment_config};
+use crate::service::config_scheme::connection_config;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::{
@@ -137,7 +137,7 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::event::NamedConceptMgmt;
-use iceoryx2_cal::named_concept::{NamedConceptListError, NamedConceptRemoveError};
+use iceoryx2_cal::named_concept::NamedConceptListError;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
     ChannelId, ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails,
@@ -818,25 +818,6 @@ impl<
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         self.publisher_shared_state.update_connections()
     }
-}
-
-pub(crate) unsafe fn remove_data_segment_of_publisher<Service: service::Service>(
-    port_id: &UniquePublisherId,
-    config: &config::Config,
-) -> Result<(), NamedConceptRemoveError> {
-    let origin = format!(
-        "remove_data_segment_of_publisher::<{}>::({:?})",
-        core::any::type_name::<Service>(),
-        port_id
-    );
-
-    fail!(from origin, when <Service::SharedMemory as NamedConceptMgmt>::remove_cfg(
-            &data_segment_name(port_id.value()),
-            &data_segment_config::<Service>(config),
-        ), "Unable to remove the publishers data segment."
-    );
-
-    Ok(())
 }
 
 fn connections<Service: service::Service>(

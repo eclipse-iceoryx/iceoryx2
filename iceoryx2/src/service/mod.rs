@@ -166,6 +166,8 @@
 //! # }
 //! ```
 
+pub(crate) mod stale_resource_cleanup;
+
 /// The builder to create or open [`Service`]s
 pub mod builder;
 
@@ -389,11 +391,11 @@ pub(crate) mod internal {
             notifier::Notifier,
             port_identifiers::UniquePortId,
             publisher::{
-                remove_data_segment_of_publisher, remove_publisher_from_all_connections,
-                remove_subscriber_from_all_connections,
+                remove_publisher_from_all_connections, remove_subscriber_from_all_connections,
             },
         },
         prelude::EventId,
+        service::stale_resource_cleanup::remove_data_segment_of_port,
     };
 
     use super::*;
@@ -514,7 +516,8 @@ pub(crate) mod internal {
                             return PortCleanupAction::SkipPort;
                         }
 
-                        if let Err(e) = unsafe { remove_data_segment_of_publisher::<S>(id, config) }
+                        if let Err(e) =
+                            unsafe { remove_data_segment_of_port::<S>(id.value(), config) }
                         {
                             debug!(from origin, "Failed to remove the publishers ({:?}) data segment ({:?}).", id, e);
                             return PortCleanupAction::SkipPort;
