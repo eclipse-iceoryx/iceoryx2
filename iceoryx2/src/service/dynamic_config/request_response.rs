@@ -131,10 +131,32 @@ impl DynamicConfig {
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
         &self,
-        _node_id: &NodeId,
-        mut _port_cleanup_callback: PortCleanup,
+        node_id: &NodeId,
+        mut port_cleanup_callback: PortCleanup,
     ) {
-        todo!()
+        self.servers
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_server| {
+                if registered_server.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Server(registered_server.server_id))
+                        == PortCleanupAction::RemovePort
+                {
+                    self.release_server_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
+
+        self.clients
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_client| {
+                if registered_client.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Client(registered_client.client_id))
+                        == PortCleanupAction::RemovePort
+                {
+                    self.release_client_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
     }
 
     pub(crate) fn add_client_id(&self, details: ClientDetails) -> Option<ContainerHandle> {
