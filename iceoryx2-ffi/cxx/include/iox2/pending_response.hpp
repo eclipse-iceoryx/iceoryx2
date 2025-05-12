@@ -13,7 +13,6 @@
 #ifndef IOX2_PENDING_RESPONSE_HPP
 #define IOX2_PENDING_RESPONSE_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/optional.hpp"
 #include "iox/slice.hpp"
@@ -59,7 +58,7 @@ class PendingResponse {
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`] of the corresponding
     /// [`RequestMut`]
-    auto header() -> RequestHeaderRequestResponse&;
+    auto header() -> RequestHeaderRequestResponse;
 
     /// Returns a reference to the user defined request header of the corresponding
     /// [`RequestMut`]
@@ -69,7 +68,7 @@ class PendingResponse {
     /// Returns a reference to the request payload of the corresponding
     /// [`RequestMut`]
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
-    auto payload() -> const T&;
+    auto payload() const -> const T&;
 
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
@@ -80,7 +79,7 @@ class PendingResponse {
 
     /// Returns [`true`] when a [`Server`](crate::port::server::Server) has sent a [`Response`]
     /// otherwise [`false`].
-    auto has_response() -> iox::expected<bool, ConnectionFailure>;
+    auto has_response() -> bool;
 
     /// Returns [`true`] until the [`ActiveRequest`](crate::active_request::ActiveRequest)
     /// goes out of scope on the [`Server`](crate::port::server::Server)s side indicating that the
@@ -103,7 +102,6 @@ class PendingResponse {
     explicit PendingResponse(iox2_pending_response_h handle) noexcept;
 
     void drop();
-    void close();
 
     iox2_pending_response_h m_handle = nullptr;
 };
@@ -151,7 +149,7 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator*() const
     -> const RequestPayload& {
-    IOX_TODO();
+    return payload();
 }
 
 template <ServiceType Service,
@@ -161,7 +159,7 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator->() const
     -> const RequestPayload* {
-    IOX_TODO();
+    return &payload();
 }
 
 template <ServiceType Service,
@@ -190,8 +188,10 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::header()
-    -> RequestHeaderRequestResponse& {
-    IOX_TODO();
+    -> RequestHeaderRequestResponse {
+    iox2_request_header_h header_handle = nullptr;
+    iox2_pending_response_header(&m_handle, nullptr, &header_handle);
+    return RequestHeaderRequestResponse { header_handle };
 }
 
 template <ServiceType Service,
@@ -202,7 +202,9 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::user_header()
     -> const T& {
-    IOX_TODO();
+    const void* ptr = nullptr;
+    iox2_pending_response_user_header(&m_handle, &ptr);
+    return *static_cast<const T*>(ptr);
 }
 
 template <ServiceType Service,
@@ -211,7 +213,7 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 template <typename T, typename>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload()
+inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
     -> const T& {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
@@ -244,7 +246,7 @@ template <ServiceType Service,
 inline auto
 PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::number_of_server_connections()
     const -> size_t {
-    IOX_TODO();
+    return iox2_pending_response_number_of_server_connections(&m_handle);
 }
 
 template <ServiceType Service,
@@ -253,8 +255,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseHeader>
 inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::has_response()
-    -> iox::expected<bool, ConnectionFailure> {
-    IOX_TODO();
+    -> bool {
+    return iox2_pending_response_has_response(&m_handle);
 }
 
 template <ServiceType Service,
@@ -264,7 +266,7 @@ template <ServiceType Service,
           typename ResponseHeader>
 inline auto
 PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::is_connected() const -> bool {
-    IOX_TODO();
+    return iox2_pending_response_is_connected(&m_handle);
 }
 
 template <ServiceType Service,
@@ -288,15 +290,5 @@ inline void PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayl
         m_handle = nullptr;
     }
 }
-
-template <ServiceType Service,
-          typename RequestPayload,
-          typename RequestHeader,
-          typename ResponsePayload,
-          typename ResponseHeader>
-inline void PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::close() {
-    IOX_TODO();
-}
-
 } // namespace iox2
 #endif
