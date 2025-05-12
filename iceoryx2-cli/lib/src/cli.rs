@@ -15,7 +15,7 @@ use colored::*;
 pub enum HelpOptions {
     DontPrintCommandSection,
     PrintCommandSection,
-    PrintHintForInstalledCommands,
+    PrintCommandSectionWithExternalCommandHint,
 }
 
 pub fn help_template(cli_name: &str, command_help: HelpOptions) -> String {
@@ -28,13 +28,14 @@ pub fn help_template(cli_name: &str, command_help: HelpOptions) -> String {
     );
 
     match command_help {
-        HelpOptions::PrintCommandSection | HelpOptions::PrintHintForInstalledCommands => {
+        HelpOptions::PrintCommandSection
+        | HelpOptions::PrintCommandSectionWithExternalCommandHint => {
             template.push_str(&format!(
                 "\n\n{}\n{{subcommands}}",
                 "Commands:".bright_green().bold(),
             ));
 
-            if let HelpOptions::PrintHintForInstalledCommands = command_help {
+            if let HelpOptions::PrintCommandSectionWithExternalCommandHint = command_help {
                 template.push_str(&format!(
                     "\n{}{}",
                     "  ...            ".bold(),
