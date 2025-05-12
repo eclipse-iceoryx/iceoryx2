@@ -13,7 +13,7 @@ cleanup-dead-nodes-on-destruction = true
 
 [global.service]
 directory = 'services'
-publisher-data-segment-suffix = '.publisher_data'
+data-segment-suffix = '.data'
 static-config-storage-suffix = '.service'
 dynamic-config-storage-suffix = '.dynamic'
 event-connection-suffix = '.event'

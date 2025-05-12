@@ -129,7 +129,7 @@ pub struct Service {
     /// The directory in which all service files are stored
     pub directory: Path,
     /// The suffix of the publishers data segment
-    pub publisher_data_segment_suffix: FileName,
+    pub data_segment_suffix: FileName,
     /// The suffix of the static config file
     pub static_config_storage_suffix: FileName,
     /// The suffix of the dynamic config file
@@ -388,7 +388,7 @@ impl Default for Config {
                 prefix: FileName::new(b"iox2_").unwrap(),
                 service: Service {
                     directory: Path::new(b"services").unwrap(),
-                    publisher_data_segment_suffix: FileName::new(b".publisher_data").unwrap(),
+                    data_segment_suffix: FileName::new(b".data").unwrap(),
                     static_config_storage_suffix: FileName::new(b".service").unwrap(),
                     dynamic_config_storage_suffix: FileName::new(b".dynamic").unwrap(),
                     creation_timeout: Duration::from_millis(500),

@@ -62,7 +62,7 @@ pub(crate) fn data_segment_config<Service: crate::service::Service>(
 ) -> <Service::SharedMemory as NamedConceptMgmt>::Configuration {
     <<Service::SharedMemory as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
-        .suffix(&global_config.global.service.publisher_data_segment_suffix)
+        .suffix(&global_config.global.service.data_segment_suffix)
         .path_hint(global_config.global.root_path())
 }
 
@@ -71,7 +71,7 @@ pub(crate) fn resizable_data_segment_config<Service: crate::service::Service>(
 ) -> <Service::ResizableSharedMemory as NamedConceptMgmt>::Configuration {
     <<Service::ResizableSharedMemory as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
-        .suffix(&global_config.global.service.publisher_data_segment_suffix)
+        .suffix(&global_config.global.service.data_segment_suffix)
         .path_hint(global_config.global.root_path())
 }
 

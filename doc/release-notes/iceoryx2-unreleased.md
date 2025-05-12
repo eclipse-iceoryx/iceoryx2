@@ -259,3 +259,7 @@
 * `GroupName`
 * `UserName`
 * `ServiceId`
+
+13. Renamed the config entry `global.service.publisher-data-segment-suffix`
+   to `global.service.data-segment-suffix` and changed the default value to
+   `.data`.

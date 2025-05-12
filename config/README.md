@@ -63,8 +63,8 @@ Adjusting `global` settings ensures a non-interfering setup.
 
 * `global.service.directory` - [string]: Specifies the path for service-related
   files under `global.root-path`.
-* `global.service.publisher-data-segment-suffix` - [string]: Suffix added to the
-  publisher's data segment.
+* `global.service.data-segment-suffix` - [string]: Suffix added to the
+  ports's data segment.
 * `global.service.static-config-storage-suffix` - [string]: Suffix for static
   service configuration files.
 * `global.service.dynamic-config-storage-suffix` - [string]: Suffix for dynamic

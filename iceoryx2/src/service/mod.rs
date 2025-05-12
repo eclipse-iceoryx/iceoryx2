@@ -511,7 +511,7 @@ pub(crate) mod internal {
                         if let Err(e) = unsafe {
                             remove_sender_port_from_all_connections::<S>(id.value(), config)
                         } {
-                            debug!(from origin, "Failed to remove the publishers ({:?}) from all of its connections ({:?}).", id, e);
+                            debug!(from origin, "Failed to remove the publisher ({:?}) from all of its connections ({:?}).", id, e);
                             return PortCleanupAction::SkipPort;
                         }
 
@@ -539,8 +539,50 @@ pub(crate) mod internal {
                             return PortCleanupAction::SkipPort;
                         }
                     }
-                    UniquePortId::Client(_) => todo!(),
-                    UniquePortId::Server(_) => todo!(),
+                    UniquePortId::Client(ref id) => {
+                        if let Err(e) = unsafe {
+                            remove_sender_port_from_all_connections::<S>(id.value(), config)
+                        } {
+                            debug!(from origin, "Failed to remove the client ({:?}) from all of its outgoing connections ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+
+                        if let Err(e) = unsafe {
+                            remove_receiver_port_from_all_connections::<S>(id.value(), config)
+                        } {
+                            debug!(from origin, "Failed to remove the client ({:?}) from all of its incoming connections ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+
+                        if let Err(e) =
+                            unsafe { remove_data_segment_of_port::<S>(id.value(), config) }
+                        {
+                            debug!(from origin, "Failed to remove the clients ({:?}) data segment ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
+                    UniquePortId::Server(ref id) => {
+                        if let Err(e) = unsafe {
+                            remove_sender_port_from_all_connections::<S>(id.value(), config)
+                        } {
+                            debug!(from origin, "Failed to remove the server ({:?}) from all of its outgoing connections ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+
+                        if let Err(e) = unsafe {
+                            remove_receiver_port_from_all_connections::<S>(id.value(), config)
+                        } {
+                            debug!(from origin, "Failed to remove the server ({:?}) from all of its incoming connections ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+
+                        if let Err(e) =
+                            unsafe { remove_data_segment_of_port::<S>(id.value(), config) }
+                        {
+                            debug!(from origin, "Failed to remove the servers ({:?}) data segment ({:?}).", id, e);
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
                 };
 
                 debug!(from origin, "Remove port {:?} from service.", port_id);
