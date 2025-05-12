@@ -112,7 +112,7 @@ int main(void) { // NOLINT
             }
 
             // Get request payload
-            uint64_t* request_value = 0;
+            uint64_t* request_value = NULL;
             iox2_active_request_payload(&active_request, (const void**) &request_value, NULL);
 
             printf("received request: %lu\n", *request_value);
