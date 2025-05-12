@@ -129,6 +129,7 @@ impl HandleToType for iox2_port_factory_pub_sub_h_ref {
         unsafe { *self as *mut _ as _ }
     }
 }
+
 /// The callback for [`iox2_port_factory_pub_sub_dynamic_config_list_subscribers()`]
 ///
 /// # Arguments
