@@ -23,8 +23,11 @@ mod service {
     use iceoryx2::service::builder::publish_subscribe::{
         PublishSubscribeCreateError, PublishSubscribeOpenError,
     };
+    use iceoryx2::service::builder::request_response::{
+        RequestResponseCreateError, RequestResponseOpenError,
+    };
     use iceoryx2::service::messaging_pattern::MessagingPattern;
-    use iceoryx2::service::port_factory::{event, publish_subscribe};
+    use iceoryx2::service::port_factory::{event, publish_subscribe, request_response};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
     use iceoryx2::testing::*;
     use iceoryx2_bb_log::{set_log_level, LogLevel};
@@ -79,6 +82,13 @@ mod service {
 
     unsafe impl<Sut: Service> Send for EventTests<Sut> {}
     unsafe impl<Sut: Service> Sync for EventTests<Sut> {}
+
+    struct RequestResponseTests<Sut: Service> {
+        _data: PhantomData<Sut>,
+    }
+
+    unsafe impl<Sut: Service> Send for RequestResponseTests<Sut> {}
+    unsafe impl<Sut: Service> Sync for RequestResponseTests<Sut> {}
 
     impl<Sut: Service> SutFactory<Sut> for PubSubTests<Sut> {
         type Factory = publish_subscribe::PortFactory<Sut, u64, ()>;
@@ -207,6 +217,71 @@ mod service {
 
         fn messaging_pattern() -> MessagingPattern {
             MessagingPattern::Event
+        }
+    }
+
+    impl<Sut: Service> SutFactory<Sut> for RequestResponseTests<Sut> {
+        type Factory = request_response::PortFactory<Sut, u64, (), u64, ()>;
+        type CreateError = RequestResponseCreateError;
+        type OpenError = RequestResponseOpenError;
+
+        fn new() -> Self {
+            Self { _data: PhantomData }
+        }
+
+        fn open(
+            &self,
+            node: &Node<Sut>,
+            service_name: &ServiceName,
+            attributes: &AttributeVerifier,
+        ) -> Result<Self::Factory, Self::OpenError> {
+            node.service_builder(service_name)
+                .request_response::<u64, u64>()
+                .open_with_attributes(attributes)
+        }
+
+        fn create(
+            &self,
+            node: &Node<Sut>,
+            service_name: &ServiceName,
+            attributes: &AttributeSpecifier,
+        ) -> Result<Self::Factory, Self::CreateError> {
+            let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
+            node.service_builder(service_name)
+                .request_response::<u64, u64>()
+                .max_nodes(number_of_nodes)
+                .create_with_attributes(attributes)
+        }
+
+        fn assert_attribute_error(error: Self::OpenError) {
+            assert_that!(error, eq RequestResponseOpenError::IncompatibleAttributes);
+        }
+
+        fn assert_create_error(error: Self::CreateError) {
+            assert_that!(
+                error,
+                any_of([
+                    RequestResponseCreateError::AlreadyExists,
+                    RequestResponseCreateError::IsBeingCreatedByAnotherInstance,
+                    RequestResponseCreateError::HangsInCreation
+                ])
+            );
+        }
+        fn assert_open_error(error: Self::OpenError) {
+            assert_that!(
+                error,
+                any_of([
+                    RequestResponseOpenError::DoesNotExist,
+                    RequestResponseOpenError::InsufficientPermissions,
+                    RequestResponseOpenError::IsMarkedForDestruction,
+                    RequestResponseOpenError::ServiceInCorruptedState,
+                    RequestResponseOpenError::HangsInCreation
+                ])
+            );
+        }
+
+        fn messaging_pattern() -> MessagingPattern {
+            MessagingPattern::RequestResponse
         }
     }
 
@@ -962,6 +1037,9 @@ mod service {
 
         #[instantiate_tests(<Service, crate::service::PubSubTests::<Service>>)]
         mod publish_subscribe {}
+
+        #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
+        mod request_response {}
     }
 
     mod local {
@@ -972,5 +1050,8 @@ mod service {
 
         #[instantiate_tests(<Service, crate::service::PubSubTests::<Service>>)]
         mod publish_subscribe {}
+
+        #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
+        mod request_response {}
     }
 }
