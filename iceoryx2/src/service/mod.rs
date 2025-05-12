@@ -387,15 +387,14 @@ pub(crate) mod internal {
     use crate::{
         node::{NodeBuilder, NodeId},
         port::{
-            listener::remove_connection_of_listener,
-            notifier::Notifier,
+            listener::remove_connection_of_listener, notifier::Notifier,
             port_identifiers::UniquePortId,
-            publisher::{
-                remove_publisher_from_all_connections, remove_subscriber_from_all_connections,
-            },
         },
         prelude::EventId,
-        service::stale_resource_cleanup::remove_data_segment_of_port,
+        service::stale_resource_cleanup::{
+            remove_data_segment_of_port, remove_receiver_port_from_all_connections,
+            remove_sender_port_from_all_connections,
+        },
     };
 
     use super::*;
@@ -509,9 +508,9 @@ pub(crate) mod internal {
             let cleanup_port_resources = |port_id| {
                 match port_id {
                     UniquePortId::Publisher(ref id) => {
-                        if let Err(e) =
-                            unsafe { remove_publisher_from_all_connections::<S>(id, config) }
-                        {
+                        if let Err(e) = unsafe {
+                            remove_sender_port_from_all_connections::<S>(id.value(), config)
+                        } {
                             debug!(from origin, "Failed to remove the publishers ({:?}) from all of its connections ({:?}).", id, e);
                             return PortCleanupAction::SkipPort;
                         }
@@ -524,9 +523,9 @@ pub(crate) mod internal {
                         }
                     }
                     UniquePortId::Subscriber(ref id) => {
-                        if let Err(e) =
-                            unsafe { remove_subscriber_from_all_connections::<S>(id, config) }
-                        {
+                        if let Err(e) = unsafe {
+                            remove_receiver_port_from_all_connections::<S>(id.value(), config)
+                        } {
                             debug!(from origin, "Failed to remove the subscriber ({:?}) from all of its connections ({:?}).", id, e);
                             return PortCleanupAction::SkipPort;
                         }

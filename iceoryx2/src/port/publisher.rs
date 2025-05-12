@@ -104,24 +104,21 @@
 use super::details::data_segment::{DataSegment, DataSegmentType};
 use super::details::segment_state::SegmentState;
 use super::port_identifiers::UniquePublisherId;
-use super::{LoanError, SendError, UniqueSubscriberId};
+use super::{LoanError, SendError};
 use crate::port::details::sender::*;
 use crate::port::update_connections::{ConnectionFailure, UpdateConnections};
 use crate::prelude::UnableToDeliverStrategy;
 use crate::raw_sample::RawSampleMut;
+use crate::sample_mut::SampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
 use crate::service::builder::CustomPayloadMarker;
-use crate::service::config_scheme::connection_config;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
-use crate::service::naming_scheme::{
-    data_segment_name, extract_publisher_id_from_connection, extract_subscriber_id_from_connection,
-};
+use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::LocalPublisherConfig;
 use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::static_config::publish_subscribe;
 use crate::service::{self, ServiceState};
-use crate::{config, sample_mut::SampleMut};
 use core::any::TypeId;
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
@@ -132,16 +129,12 @@ use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
-use iceoryx2_bb_log::{debug, fail, warn};
+use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
-use iceoryx2_cal::event::NamedConceptMgmt;
-use iceoryx2_cal::named_concept::NamedConceptListError;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
-    ChannelId, ZeroCopyConnection, ZeroCopyCreationError, ZeroCopyPortDetails,
-    ZeroCopyPortRemoveError, ZeroCopySender,
+    ChannelId, ZeroCopyCreationError, ZeroCopyPortDetails, ZeroCopySender,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
@@ -168,14 +161,6 @@ impl core::fmt::Display for PublisherCreateError {
 }
 
 impl core::error::Error for PublisherCreateError {}
-
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub(crate) enum RemovePubSubPortFromAllConnectionsError {
-    CleanupRaceDetected,
-    InsufficientPermissions,
-    VersionMismatch,
-    InternalError,
-}
 
 #[derive(Debug, Clone, Copy)]
 struct OffsetAndSize {
@@ -818,117 +803,4 @@ impl<
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         self.publisher_shared_state.update_connections()
     }
-}
-
-fn connections<Service: service::Service>(
-    origin: &str,
-    msg: &str,
-    config: &<Service::Connection as NamedConceptMgmt>::Configuration,
-) -> Result<Vec<FileName>, RemovePubSubPortFromAllConnectionsError> {
-    match <Service::Connection as NamedConceptMgmt>::list_cfg(config) {
-        Ok(list) => Ok(list),
-        Err(NamedConceptListError::InsufficientPermissions) => {
-            fail!(from origin, with RemovePubSubPortFromAllConnectionsError::InsufficientPermissions,
-                    "{} due to insufficient permissions to list all connections.", msg);
-        }
-        Err(NamedConceptListError::InternalError) => {
-            fail!(from origin, with RemovePubSubPortFromAllConnectionsError::InternalError,
-                "{} due to an internal error while listing all connections.", msg);
-        }
-    }
-}
-
-fn handle_port_remove_error(
-    result: Result<(), ZeroCopyPortRemoveError>,
-    origin: &str,
-    msg: &str,
-    connection: &FileName,
-) -> Result<(), RemovePubSubPortFromAllConnectionsError> {
-    match result {
-        Ok(()) => Ok(()),
-        Err(ZeroCopyPortRemoveError::DoesNotExist) => {
-            debug!(from origin, "{} since the connection ({:?}) no longer exists! This could indicate a race in the node cleanup algorithm or that the underlying resources were removed manually.", msg, connection);
-            Err(RemovePubSubPortFromAllConnectionsError::CleanupRaceDetected)
-        }
-        Err(ZeroCopyPortRemoveError::InsufficientPermissions) => {
-            debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
-            Err(RemovePubSubPortFromAllConnectionsError::InsufficientPermissions)
-        }
-        Err(ZeroCopyPortRemoveError::VersionMismatch) => {
-            debug!(from origin, "{} since connection ({:?}) has a different iceoryx2 version.", msg, connection);
-            Err(RemovePubSubPortFromAllConnectionsError::VersionMismatch)
-        }
-        Err(ZeroCopyPortRemoveError::InternalError) => {
-            debug!(from origin, "{} due to insufficient permissions to remove the connection ({:?}).", msg, connection);
-            Err(RemovePubSubPortFromAllConnectionsError::InternalError)
-        }
-    }
-}
-
-pub(crate) unsafe fn remove_publisher_from_all_connections<Service: service::Service>(
-    port_id: &UniquePublisherId,
-    config: &config::Config,
-) -> Result<(), RemovePubSubPortFromAllConnectionsError> {
-    let origin = format!(
-        "remove_publisher_from_all_connections::<{}>::({:?})",
-        core::any::type_name::<Service>(),
-        port_id
-    );
-    let msg = "Unable to remove the publisher from all connections";
-
-    let connection_config = connection_config::<Service>(config);
-    let connection_list = connections::<Service>(&origin, msg, &connection_config)?;
-
-    let mut ret_val = Ok(());
-    for connection in connection_list {
-        let publisher_id = extract_publisher_id_from_connection(&connection);
-        if publisher_id == *port_id {
-            let result = handle_port_remove_error(
-                Service::Connection::remove_sender(&connection, &connection_config),
-                &origin,
-                msg,
-                &connection,
-            );
-
-            if ret_val.is_ok() {
-                ret_val = result;
-            }
-        }
-    }
-
-    ret_val
-}
-
-pub(crate) unsafe fn remove_subscriber_from_all_connections<Service: service::Service>(
-    port_id: &UniqueSubscriberId,
-    config: &config::Config,
-) -> Result<(), RemovePubSubPortFromAllConnectionsError> {
-    let origin = format!(
-        "remove_subscriber_from_all_connections::<{}>::({:?})",
-        core::any::type_name::<Service>(),
-        port_id
-    );
-    let msg = "Unable to remove the subscriber from all connections";
-
-    let connection_config = connection_config::<Service>(config);
-    let connection_list = connections::<Service>(&origin, msg, &connection_config)?;
-
-    let mut ret_val = Ok(());
-    for connection in connection_list {
-        let subscriber_id = extract_subscriber_id_from_connection(&connection);
-        if subscriber_id == *port_id {
-            let result = handle_port_remove_error(
-                Service::Connection::remove_receiver(&connection, &connection_config),
-                &origin,
-                msg,
-                &connection,
-            );
-
-            if ret_val.is_ok() {
-                ret_val = result;
-            }
-        }
-    }
-
-    ret_val
 }

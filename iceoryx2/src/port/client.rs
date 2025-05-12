@@ -73,7 +73,6 @@
 //! ```
 extern crate alloc;
 
-use crate::{config, service::config_scheme::data_segment_config};
 use alloc::sync::Arc;
 use core::{
     any::TypeId, cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit,
@@ -88,8 +87,6 @@ use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::{
     dynamic_storage::DynamicStorage,
-    event::NamedConceptMgmt,
-    named_concept::NamedConceptRemoveError,
     shm_allocator::{AllocationStrategy, PointerOffset},
     zero_copy_connection::ChannelId,
 };

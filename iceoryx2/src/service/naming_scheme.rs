@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::port::port_identifiers::{UniqueListenerId, UniquePublisherId, UniqueSubscriberId};
+use crate::port::port_identifiers::UniqueListenerId;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::FileName;
@@ -31,20 +31,28 @@ pub(crate) fn connection_name(sender_port_id: u128, receiver_port_id: u128) -> F
     file
 }
 
-pub(crate) fn extract_publisher_id_from_connection(connection: &FileName) -> UniquePublisherId {
-    let name = core::str::from_utf8(connection.as_bytes()).unwrap();
-    let publisher_id = &name[..name.find('_').unwrap()];
-    let value: u128 = publisher_id.parse::<u128>().unwrap();
+pub(crate) fn extract_sender_port_id_from_connection(connection: &FileName) -> Option<u128> {
+    if let Ok(name) = core::str::from_utf8(connection.as_bytes()) {
+        if let Some(underscore_position) = name.find('_') {
+            let sender_port_id = &name[..underscore_position];
+            return sender_port_id.parse::<u128>().ok();
+        }
+    }
 
-    unsafe { core::mem::transmute::<u128, UniquePublisherId>(value) }
+    None
 }
 
-pub(crate) fn extract_subscriber_id_from_connection(connection: &FileName) -> UniqueSubscriberId {
-    let name = core::str::from_utf8(connection.as_bytes()).unwrap();
-    let subscriber_id = &name[name.find('_').unwrap() + 1..];
-    let value: u128 = subscriber_id.parse::<u128>().unwrap();
+pub(crate) fn extract_receiver_port_id_from_connection(connection: &FileName) -> Option<u128> {
+    if let Ok(name) = core::str::from_utf8(connection.as_bytes()) {
+        if let Some(underscore_position) = name.find('_') {
+            if underscore_position + 1 < name.len() {
+                let receiver_port_id = &name[underscore_position + 1..];
+                return receiver_port_id.parse::<u128>().ok();
+            }
+        }
+    }
 
-    unsafe { core::mem::transmute::<u128, UniqueSubscriberId>(value) }
+    None
 }
 
 pub(crate) fn data_segment_name(port_id_value: u128) -> FileName {
