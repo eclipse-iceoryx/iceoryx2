@@ -115,7 +115,7 @@ int main(void) { // NOLINT
             uint64_t* request_value = NULL;
             iox2_active_request_payload(&active_request, (const void**) &request_value, NULL);
 
-            printf("received request: %lu\n", *request_value);
+            printf("received request: %d\n", (int32_t) *request_value);
 
             // Create response data
             struct TransmissionData response = { .x = 5 + counter, .y = 6 * counter, .funky = 7.77 }; // NOLINT
@@ -130,7 +130,7 @@ int main(void) { // NOLINT
             }
 
             // Optionally send additional responses using zero-copy API (mimicking the Rust example's behavior)
-            for (int32_t iter = 0; iter < *request_value % 2; iter++) {
+            for (int32_t iter = 0; iter < (int32_t) (*request_value % 2); iter++) {
                 iox2_response_mut_h response = NULL;
                 if (iox2_active_request_loan_slice_uninit(&active_request, NULL, &response, 1) != IOX2_OK) {
                     printf("Failed to loan response sample\n");

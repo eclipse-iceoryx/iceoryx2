@@ -95,7 +95,7 @@ int main(void) { // NOLINT
     uint64_t counter = 0;
 
     // For the first request, we use the copy API
-    printf("send request %lu ...\n", counter);
+    printf("send request %d ...\n", (int32_t) counter);
     iox2_pending_response_h pending_response = NULL;
     if (iox2_client_send_copy(&client, &counter, sizeof(uint64_t), 1, NULL, &pending_response) != IOX2_OK) {
         printf("Failed to send initial request\n");
@@ -133,7 +133,7 @@ int main(void) { // NOLINT
         pending_response = NULL;
 
         // For subsequent requests, use the zero-copy API
-        printf("send request %lu ...\n", counter);
+        printf("send request %d ...\n", (int32_t) counter);
 
         // Loan request sample
         iox2_request_mut_h request = NULL;
