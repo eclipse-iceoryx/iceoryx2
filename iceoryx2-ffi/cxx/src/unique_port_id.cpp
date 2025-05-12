@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/unique_port_id.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 UniquePublisherId::UniquePublisherId(UniquePublisherId&& rhs) noexcept {
@@ -221,8 +220,8 @@ auto operator==(const UniqueClientId& lhs, const UniqueClientId& rhs) -> bool {
     return iox2_unique_client_id_eq(&lhs.m_handle, &rhs.m_handle);
 }
 
-auto operator<([[maybe_unused]] const UniqueClientId& lhs, [[maybe_unused]] const UniqueClientId& rhs) -> bool {
-    IOX_TODO();
+auto operator<(const UniqueClientId& lhs, const UniqueClientId& rhs) -> bool {
+    return iox2_unique_client_id_less(&lhs.m_handle, &rhs.m_handle);
 }
 
 UniqueClientId::UniqueClientId(iox2_unique_client_id_h handle)
@@ -230,7 +229,12 @@ UniqueClientId::UniqueClientId(iox2_unique_client_id_h handle)
 }
 
 auto UniqueClientId::bytes() const -> const iox::optional<RawIdType>& {
-    IOX_TODO();
+    if (!m_raw_id.has_value() && m_handle != nullptr) {
+        RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
+        iox2_unique_client_id_value(m_handle, bytes.data(), bytes.size());
+        m_raw_id.emplace(std::move(bytes));
+    }
+    return m_raw_id;
 };
 
 void UniqueClientId::drop() {
@@ -244,8 +248,14 @@ UniqueServerId::UniqueServerId(UniqueServerId&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-auto UniqueServerId::operator=([[maybe_unused]] UniqueServerId&& rhs) noexcept -> UniqueServerId& {
-    IOX_TODO();
+auto UniqueServerId::operator=(UniqueServerId&& rhs) noexcept -> UniqueServerId& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 UniqueServerId::~UniqueServerId() {
@@ -256,8 +266,8 @@ auto operator==(const UniqueServerId& lhs, const UniqueServerId& rhs) -> bool {
     return iox2_unique_server_id_eq(&lhs.m_handle, &rhs.m_handle);
 }
 
-auto operator<([[maybe_unused]] const UniqueServerId& lhs, [[maybe_unused]] const UniqueServerId& rhs) -> bool {
-    IOX_TODO();
+auto operator<(const UniqueServerId& lhs, const UniqueServerId& rhs) -> bool {
+    return iox2_unique_server_id_less(&lhs.m_handle, &rhs.m_handle);
 }
 
 UniqueServerId::UniqueServerId(iox2_unique_server_id_h handle)
@@ -265,7 +275,12 @@ UniqueServerId::UniqueServerId(iox2_unique_server_id_h handle)
 }
 
 auto UniqueServerId::bytes() const -> const iox::optional<RawIdType>& {
-    IOX_TODO();
+    if (!m_raw_id.has_value() && m_handle != nullptr) {
+        RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
+        iox2_unique_server_id_value(m_handle, bytes.data(), bytes.size());
+        m_raw_id.emplace(std::move(bytes));
+    }
+    return m_raw_id;
 };
 
 void UniqueServerId::drop() {

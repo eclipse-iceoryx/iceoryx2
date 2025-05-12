@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/header_request_response.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
 RequestHeaderRequestResponse::RequestHeaderRequestResponse(RequestHeaderRequestResponse&& rhs) noexcept {
@@ -20,7 +19,14 @@ RequestHeaderRequestResponse::RequestHeaderRequestResponse(RequestHeaderRequestR
 
 auto RequestHeaderRequestResponse::operator=(RequestHeaderRequestResponse&& rhs) noexcept
     -> RequestHeaderRequestResponse& {
-    IOX_TODO();
+    if (this != &rhs) {
+        drop();
+
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 RequestHeaderRequestResponse::~RequestHeaderRequestResponse() {
@@ -50,7 +56,14 @@ ResponseHeaderRequestResponse::ResponseHeaderRequestResponse(ResponseHeaderReque
 
 auto ResponseHeaderRequestResponse::operator=(ResponseHeaderRequestResponse&& rhs) noexcept
     -> ResponseHeaderRequestResponse& {
-    IOX_TODO();
+    if (this != &rhs) {
+        drop();
+
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 ResponseHeaderRequestResponse::~ResponseHeaderRequestResponse() {

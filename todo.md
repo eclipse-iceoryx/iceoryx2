@@ -3,7 +3,6 @@
 ## C++ binding for request response
 
 * implement and test allocation strategy
-* implement `IOX_TODO`s in unique_port_id.cpp, config.cpp, header_request_response.cpp
 
 ## POSIX
 

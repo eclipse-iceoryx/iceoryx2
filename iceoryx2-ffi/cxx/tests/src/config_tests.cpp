@@ -286,4 +286,117 @@ TEST(Config, global_node_cleanup_dead_nodes_on_destruction) {
     config.global().node().set_cleanup_dead_nodes_on_destruction(false);
     ASSERT_THAT(config.global().node().cleanup_dead_nodes_on_destruction(), Eq(false));
 }
+
+TEST(Config, defaults_request_response_enable_safe_overflow) {
+    auto config = Config();
+
+    config.defaults().request_response().set_enable_safe_overflow_for_requests(true);
+    ASSERT_THAT(config.defaults().request_response().enable_safe_overflow_for_requests(), Eq(true));
+    config.defaults().request_response().set_enable_safe_overflow_for_requests(false);
+    ASSERT_THAT(config.defaults().request_response().enable_safe_overflow_for_requests(), Eq(false));
+
+    config.defaults().request_response().set_enable_safe_overflow_for_responses(true);
+    ASSERT_THAT(config.defaults().request_response().enable_safe_overflow_for_responses(), Eq(true));
+    config.defaults().request_response().set_enable_safe_overflow_for_responses(false);
+    ASSERT_THAT(config.defaults().request_response().enable_safe_overflow_for_responses(), Eq(false));
+}
+
+TEST(Config, defaults_request_response_max_active_requests_per_client) {
+    const auto test_value = 100;
+    auto config = Config();
+
+    config.defaults().request_response().set_max_active_requests_per_client(test_value);
+    ASSERT_THAT(config.defaults().request_response().max_active_requests_per_client(), Eq(test_value));
+}
+
+TEST(Config, defaults_request_response_max_response_buffer_size) {
+    const auto test_value = 99;
+    auto config = Config();
+
+    config.defaults().request_response().set_max_response_buffer_size(test_value);
+    ASSERT_THAT(config.defaults().request_response().max_response_buffer_size(), Eq(test_value));
+}
+
+TEST(Config, defaults_request_response_max_servers) {
+    const auto test_value = 98;
+    auto config = Config();
+
+    config.defaults().request_response().set_max_servers(test_value);
+    ASSERT_THAT(config.defaults().request_response().max_servers(), Eq(test_value));
+}
+
+TEST(Config, defaults_request_response_max_clients) {
+    const auto test_value = 97;
+    auto config = Config();
+
+    config.defaults().request_response().set_max_clients(test_value);
+    ASSERT_THAT(config.defaults().request_response().max_clients(), Eq(test_value));
+}
+
+TEST(Config, defaults_request_response_max_nodes) {
+    const auto test_value = 96;
+    auto config = Config();
+
+    config.defaults().request_response().set_max_nodes(test_value);
+    ASSERT_THAT(config.defaults().request_response().max_nodes(), Eq(test_value));
+}
+
+TEST(Config, defaults_request_response_max_borrowed_responses_per_pending_response) {
+    const auto test_value = 95;
+    auto config = Config();
+
+    config.defaults().request_response().set_max_borrowed_responses_per_pending_response(test_value);
+    ASSERT_THAT(config.defaults().request_response().max_borrowed_responses_per_pending_response(), Eq(test_value));
+}
+
+TEST(Config, defaults_request_response_max_loaned_requests) {
+    const auto test_value = 94;
+    auto config = Config();
+
+    config.defaults().request_response().set_max_loaned_requests(test_value);
+    ASSERT_THAT(config.defaults().request_response().max_loaned_requests(), Eq(test_value));
+}
+
+TEST(Config, defaults_request_response_server_max_loaned_responses_per_request) {
+    const auto test_value = 93;
+    auto config = Config();
+
+    config.defaults().request_response().set_server_max_loaned_responses_per_request(test_value);
+    ASSERT_THAT(config.defaults().request_response().server_max_loaned_responses_per_request(), Eq(test_value));
+}
+
+TEST(Config, defaults_request_response_unable_to_deliver_strategy) {
+    auto config = Config();
+
+    config.defaults().request_response().set_client_unable_to_deliver_strategy(UnableToDeliverStrategy::Block);
+    ASSERT_THAT(config.defaults().request_response().client_unable_to_deliver_strategy(),
+                Eq(UnableToDeliverStrategy::Block));
+    config.defaults().request_response().set_client_unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample);
+    ASSERT_THAT(config.defaults().request_response().client_unable_to_deliver_strategy(),
+                Eq(UnableToDeliverStrategy::DiscardSample));
+
+    config.defaults().request_response().set_server_unable_to_deliver_strategy(UnableToDeliverStrategy::Block);
+    ASSERT_THAT(config.defaults().request_response().server_unable_to_deliver_strategy(),
+                Eq(UnableToDeliverStrategy::Block));
+    config.defaults().request_response().set_server_unable_to_deliver_strategy(UnableToDeliverStrategy::DiscardSample);
+    ASSERT_THAT(config.defaults().request_response().server_unable_to_deliver_strategy(),
+                Eq(UnableToDeliverStrategy::DiscardSample));
+}
+
+TEST(Config, defaults_request_response_client_expired_connection_buffer) {
+    const auto test_value = 92;
+    auto config = Config();
+
+    config.defaults().request_response().set_client_expired_connection_buffer(test_value);
+    ASSERT_THAT(config.defaults().request_response().client_expired_connection_buffer(), Eq(test_value));
+}
+
+TEST(Config, defaults_request_response_enable_fire_and_forget_requests) {
+    auto config = Config();
+
+    config.defaults().request_response().set_enable_fire_and_forget_requests(true);
+    ASSERT_THAT(config.defaults().request_response().enable_fire_and_forget_requests(), Eq(true));
+    config.defaults().request_response().set_enable_fire_and_forget_requests(false);
+    ASSERT_THAT(config.defaults().request_response().enable_fire_and_forget_requests(), Eq(false));
+}
 } // namespace
