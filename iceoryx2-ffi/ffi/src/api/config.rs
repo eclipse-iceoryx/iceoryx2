@@ -1745,7 +1745,7 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_enable_safe_overf
         .enable_safe_overflow_for_requests
 }
 
-/// Enables/disables safe overflow
+/// Enables/disables safe overflow for requests
 ///
 /// # Safety
 ///
@@ -1790,7 +1790,7 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_enable_safe_overf
         .enable_safe_overflow_for_responses
 }
 
-/// Enables/disables safe overflow
+/// Enables/disables safe overflow for responses
 ///
 /// # Safety
 ///
@@ -1812,7 +1812,7 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_enable_safe_o
         .enable_safe_overflow_for_responses = value;
 }
 
-/// Returns how many active requests a [`iox2_client_h`](crate::api::iox2_client_h) send out in
+/// Returns how many active requests a [`iox2_client_h`](crate::api::iox2_client_h) can send out in
 /// parallel and expect responses from.
 ///
 /// # Safety

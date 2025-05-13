@@ -92,9 +92,9 @@ impl iox2_client_t {
 }
 
 pub struct iox2_client_h_t;
-/// The owning handle for `iox2_client_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_client_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_client_h = *mut iox2_client_h_t;
-/// The non-owning handle for `iox2_client_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_client_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_client_h_ref = *const iox2_client_h;
 
 impl AssertNonNullHandle for iox2_client_h {
@@ -233,10 +233,10 @@ pub unsafe extern "C" fn iox2_client_id(
 ///
 /// # Arguments
 ///
-/// * `handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
+/// * `client_handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
 /// * `request_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_request_mut_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
-/// * `request_handle_ptr` - An uninitialized or dangling [`iox2_request_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
+/// * `request_handle_ptr` - An uninitialized or dangling [`iox2_request_mut_h`] handle which will be initialized by this function call if a request is obtained, otherwise it will be set to NULL.
 /// * `number_of_elements` - The number of elements to loan from the clients's payload segment
 ///
 /// Return [`IOX2_OK`] on success, otherwise [`iox2_loan_error_e`](crate::iox2_loan_error_e).
@@ -341,10 +341,10 @@ unsafe fn send_copy<S: Service>(
 ///
 /// # Arguments
 ///
-/// * `handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
+/// * `client_handle` obtained by [`iox2_port_factory_client_builder_create`](crate::iox2_port_factory_client_builder_create)
 /// * `pending_response_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_pending_response_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
-/// * `pending_response_handle_ptr` - An uninitialized or dangling [`iox2_pending_response_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
+/// * `pending_response_handle_ptr` - An uninitialized or dangling [`iox2_pending_response_h`] handle which will be initialized by this function call.
 /// * `data_ptr` pointer to the payload that shall be transmitted
 /// * `size_of_element` the size of the payload in bytes
 /// * `number_of_elements` the number of elements in the payload

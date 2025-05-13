@@ -76,9 +76,9 @@ impl iox2_response_mut_t {
 }
 
 pub struct iox2_response_mut_h_t;
-/// The owning handle for `iox2_response_mut_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_response_mut_t`. Passing the handle to a function transfer the ownership.
 pub type iox2_response_mut_h = *mut iox2_response_mut_h_t;
-/// The non-owning handle for `iox2_response_mut_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_response_mut_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_response_mut_h_ref = *const iox2_response_mut_h;
 
 impl AssertNonNullHandle for iox2_response_mut_h {
@@ -311,7 +311,7 @@ pub unsafe extern "C" fn iox2_response_mut_payload_mut(
 ///
 /// # Safety
 ///
-/// * `handle` obtained by
+/// * `response_handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_mut_send(response_handle: iox2_response_mut_h) -> c_int {
@@ -349,7 +349,7 @@ pub unsafe extern "C" fn iox2_response_mut_send(response_handle: iox2_response_m
 ///
 /// # Safety
 ///
-/// * `handle` obtained by
+/// * `response_handle` obtained by
 ///   [`iox2_active_request_loan_slice_uninit()`](crate::iox2_active_request_loan_slice_uninit())
 #[no_mangle]
 pub unsafe extern "C" fn iox2_response_mut_drop(response_handle: iox2_response_mut_h) {

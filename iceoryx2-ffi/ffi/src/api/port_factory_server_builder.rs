@@ -132,9 +132,9 @@ impl iox2_port_factory_server_builder_t {
 }
 
 pub struct iox2_port_factory_server_builder_h_t;
-/// The owning handle for `iox2_port_factory_server_builder_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_port_factory_server_builder_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_port_factory_server_builder_h = *mut iox2_port_factory_server_builder_h_t;
-/// The non-owning handle for `iox2_port_factory_publisher_builder_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_port_factory_server_builder_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_port_factory_server_builder_h_ref = *const iox2_port_factory_server_builder_h;
 
 impl AssertNonNullHandle for iox2_port_factory_server_builder_h {
@@ -199,7 +199,7 @@ pub unsafe extern "C" fn iox2_server_create_error_string(
 ///
 /// * `port_factory_handle` - Must be a valid [`iox2_port_factory_server_builder_h_ref`]
 ///   obtained by [`iox2_port_factory_request_response_server_builder`](crate::iox2_port_factory_request_response_server_builder).
-/// * `value` - The value to set max slice length to
+/// * `value` - The value to set the allocation strategy to
 ///
 /// # Safety
 ///
@@ -273,7 +273,7 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_set_initial_max_slice_
 ///
 /// * `port_factory_handle` - Must be a valid [`iox2_port_factory_server_builder_h_ref`]
 ///   obtained by [`iox2_port_factory_request_response_server_builder`](crate::iox2_port_factory_request_response_server_builder).
-/// * `value` - The value to set max slice length to
+/// * `value` - The value to set max loaned responses to
 ///
 /// # Safety
 ///

@@ -95,9 +95,9 @@ impl iox2_active_request_t {
 }
 
 pub struct iox2_active_request_h_t;
-/// The owning handle for `iox2_active_request_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_active_request_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_active_request_h = *mut iox2_active_request_h_t;
-/// The non-owning handle for `iox2_active_request_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_active_request_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_active_request_h_ref = *const iox2_active_request_h;
 
 impl AssertNonNullHandle for iox2_active_request_h {
@@ -144,7 +144,7 @@ impl HandleToType for iox2_active_request_h_ref {
 ///
 /// # Safety
 ///
-/// * `handle` must be valid a handle
+/// * `handle` must be a valid handle
 #[no_mangle]
 pub unsafe extern "C" fn iox2_active_request_is_connected(
     handle: iox2_active_request_h_ref,
@@ -197,7 +197,7 @@ pub unsafe extern "C" fn iox2_active_request_header(
     *header_handle_ptr = (*storage_ptr).as_handle();
 }
 
-/// Acquires the requests user header.
+/// Acquires the request user header.
 ///
 /// # Safety
 ///
@@ -221,14 +221,14 @@ pub unsafe extern "C" fn iox2_active_request_user_header(
     *header_ptr = (header as *const UserHeaderFfi).cast();
 }
 
-/// Acquires the requests payload.
+/// Acquires the request payload.
 ///
 /// # Safety
 ///
 /// * `handle` - Must be a valid [`iox2_active_request_h_ref`]
-///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+///   obtained by [`iox2_server_receive`](crate::iox2_server_receive).
 /// * `payload_ptr` a valid, non-null pointer pointing to a `*const c_void` pointer.
-/// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
+/// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_active_request_payload(
     handle: iox2_active_request_h_ref,
@@ -277,11 +277,11 @@ pub unsafe extern "C" fn iox2_active_request_payload(
 ///
 /// # Arguments
 ///
-/// * `handle` - Must be a valid [`iox2_active_request_h_ref`]
-///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+/// * `active_request_handle` - Must be a valid [`iox2_active_request_h_ref`]
+///   obtained by [`iox2_server_receive`](crate::iox2_server_receive).
 /// * `response_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_response_mut_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
-/// * `response_handle_ptr` - An uninitialized or dangling [`iox2_response_mut_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
+/// * `response_handle_ptr` - An uninitialized or dangling [`iox2_response_mut_h`] handle which will be initialized by this function call if a response is obtained, otherwise it will be set to NULL.
 /// * `number_of_elements` - The number of elements to loan from the server's payload segment
 ///
 /// Return [`IOX2_OK`] on success, otherwise [`iox2_loan_error_e`](crate::iox2_loan_error_e).
@@ -385,8 +385,8 @@ unsafe fn send_copy<S: Service>(
 ///
 /// # Arguments
 ///
-/// * `handle` - Must be a valid [`iox2_active_request_h_ref`]
-///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+/// * `active_request_handle` - Must be a valid [`iox2_active_request_h_ref`]
+///   obtained by [`iox2_server_receive`](crate::iox2_server_receive).
 /// * `data_ptr` pointer to the payload that shall be transmitted
 /// * `size_of_element` the size of the payload in bytes
 /// * `number_of_elements` the number of elements stored in data_ptr

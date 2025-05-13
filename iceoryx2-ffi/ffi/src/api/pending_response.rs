@@ -97,9 +97,9 @@ impl iox2_pending_response_t {
 }
 
 pub struct iox2_pending_response_h_t;
-/// The owning handle for `iox2_pending_response_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_pending_response_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_pending_response_h = *mut iox2_pending_response_h_t;
-/// The non-owning handle for `iox2_pending_response_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_pending_response_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_pending_response_h_ref = *const iox2_pending_response_h;
 
 impl AssertNonNullHandle for iox2_pending_response_h {
@@ -288,7 +288,7 @@ pub unsafe extern "C" fn iox2_pending_response_user_header(
 /// * `handle` - Must be a valid [`iox2_pending_response_h_ref`]
 ///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
 /// * `payload_ptr` a valid, non-null pointer pointing to a `*const c_void` pointer.
-/// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
+/// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_pending_response_payload(
     handle: iox2_pending_response_h_ref,
@@ -339,7 +339,7 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
     }
 }
 
-/// Takes a response ouf of the buffer.
+/// Takes a response out of the buffer.
 ///
 /// # Arguments
 ///
@@ -350,7 +350,7 @@ pub unsafe extern "C" fn iox2_pending_response_payload(
 /// * `response_handle_ptr` - An uninitialized or dangling [`iox2_response_h`] handle which will be initialized by this function call if a sample is obtained, otherwise it will be set to NULL.
 ///
 /// Returns IOX2_OK on success, an [`iox2_receive_error_e`](crate::iox2_receive_error_e) otherwise.
-/// Attention, an empty subscriber queue is not an error and even with IOX2_OK it is possible to get a NULL in `response_handle_ptr`.
+/// Attention, an empty response buffer is not an error and even with IOX2_OK it is possible to get a NULL in `response_handle_ptr`.
 ///
 /// # Safety
 ///
