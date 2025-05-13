@@ -128,7 +128,7 @@ impl core::error::Error for ConfigCreationError {}
 pub struct Service {
     /// The directory in which all service files are stored
     pub directory: Path,
-    /// The suffix of the publishers data segment
+    /// The suffix of the ports data segment
     pub data_segment_suffix: FileName,
     /// The suffix of the static config file
     pub static_config_storage_suffix: FileName,
