@@ -60,6 +60,7 @@ class NodeId {
         -> iox2_callback_progression_e;
     friend class ClientDetailsView;
     friend class ServerDetailsView;
+    friend class NotifierDetailsView;
 
     explicit NodeId(iox2_node_id_h handle);
     void drop();
