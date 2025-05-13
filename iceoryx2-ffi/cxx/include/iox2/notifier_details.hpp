@@ -35,6 +35,10 @@ class NotifierDetailsView {
     auto node_id() const -> NodeId;
 
   private:
+    template <typename T, typename>
+    friend auto list_ports_callback(void*, T) -> iox2_callback_progression_e;
+
+    explicit NotifierDetailsView(iox2_notifier_details_ptr handle);
     iox2_notifier_details_ptr m_handle = nullptr;
 };
 } // namespace iox2

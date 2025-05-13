@@ -469,7 +469,7 @@ pub unsafe extern "C" fn iox2_port_factory_event_nodes(
 ///   location
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_list_listeners(
-    handle: iox2_port_factory_event_h,
+    handle: iox2_port_factory_event_h_ref,
     callback: iox2_list_listeners_callback,
     callback_ctx: iox2_callback_context,
 ) {
@@ -507,7 +507,7 @@ pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_list_listeners(
 ///   location
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_list_notifiers(
-    handle: iox2_port_factory_event_h,
+    handle: iox2_port_factory_event_h_ref,
     callback: iox2_list_notifiers_callback,
     callback_ctx: iox2_callback_context,
 ) {

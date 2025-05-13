@@ -13,6 +13,10 @@
 #include "iox2/listener_details.hpp"
 
 namespace iox2 {
+ListenerDetailsView::ListenerDetailsView(iox2_listener_details_ptr handle)
+    : m_handle { handle } {
+}
+
 ListenerDetailsView::ListenerDetailsView(ListenerDetailsView&& rhs) noexcept
     : m_handle { std::move(rhs.m_handle) } {
     rhs.m_handle = nullptr;

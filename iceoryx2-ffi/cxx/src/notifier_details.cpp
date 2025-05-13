@@ -13,6 +13,10 @@
 #include "iox2/notifier_details.hpp"
 
 namespace iox2 {
+NotifierDetailsView::NotifierDetailsView(iox2_notifier_details_ptr handle)
+    : m_handle { handle } {
+}
+
 NotifierDetailsView::NotifierDetailsView(NotifierDetailsView&& rhs) noexcept
     : m_handle { std::move(rhs.m_handle) } {
     rhs.m_handle = nullptr;

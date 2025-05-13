@@ -485,7 +485,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_number_of_subs
 ///   location
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_list_subscribers(
-    handle: iox2_port_factory_pub_sub_h,
+    handle: iox2_port_factory_pub_sub_h_ref,
     callback: iox2_list_subscribers_callback,
     callback_ctx: iox2_callback_context,
 ) {
@@ -523,7 +523,7 @@ pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_list_subscribe
 ///   location
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_pub_sub_dynamic_config_list_publishers(
-    handle: iox2_port_factory_pub_sub_h,
+    handle: iox2_port_factory_pub_sub_h_ref,
     callback: iox2_list_publishers_callback,
     callback_ctx: iox2_callback_context,
 ) {
