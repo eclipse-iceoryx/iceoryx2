@@ -32,27 +32,15 @@ pub(crate) fn connection_name(sender_port_id: u128, receiver_port_id: u128) -> F
 }
 
 pub(crate) fn extract_sender_port_id_from_connection(connection: &FileName) -> Option<u128> {
-    if let Ok(name) = core::str::from_utf8(connection.as_bytes()) {
-        if let Some(underscore_position) = name.find('_') {
-            let sender_port_id = &name[..underscore_position];
-            return sender_port_id.parse::<u128>().ok();
-        }
-    }
-
-    None
+    let name = core::str::from_utf8(connection.as_bytes()).ok()?;
+    let (sender_port_id, _) = name.split_once('_')?;
+    sender_port_id.parse::<u128>().ok()
 }
 
 pub(crate) fn extract_receiver_port_id_from_connection(connection: &FileName) -> Option<u128> {
-    if let Ok(name) = core::str::from_utf8(connection.as_bytes()) {
-        if let Some(underscore_position) = name.find('_') {
-            if underscore_position + 1 < name.len() {
-                let receiver_port_id = &name[underscore_position + 1..];
-                return receiver_port_id.parse::<u128>().ok();
-            }
-        }
-    }
-
-    None
+    let name = core::str::from_utf8(connection.as_bytes()).ok()?;
+    let (_, receiver_port_id) = name.split_once('_')?;
+    receiver_port_id.parse::<u128>().ok()
 }
 
 pub(crate) fn data_segment_name(port_id_value: u128) -> FileName {

@@ -507,9 +507,11 @@ pub(crate) mod internal {
                     port_name, id, e);
                 return false;
             }
-        }
 
-        true
+            true
+        } else {
+            false
+        }
     }
 
     pub(crate) trait ServiceInternal<S: Service> {
@@ -597,7 +599,7 @@ pub(crate) mod internal {
                     }
                 };
 
-                debug!(from origin, "Remove port {:?} from service.", port_id);
+                trace!(from origin, "Remove port {:?} from service.", port_id);
                 PortCleanupAction::RemovePort
             };
 
@@ -618,7 +620,7 @@ pub(crate) mod internal {
                     remove_static_service_config::<S>(config, &service_id.0.clone().into())
                 } {
                     Ok(_) => {
-                        debug!(from origin, "Remove unused service.");
+                        trace!(from origin, "Remove unused service.");
                         dynamic_config.acquire_ownership()
                     }
                     Err(e) => {
