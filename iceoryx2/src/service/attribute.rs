@@ -123,7 +123,7 @@ pub struct Attribute {
 }
 
 /// Errors that can occur when creating an [`Attribute`].
-pub enum AttributeError{
+pub enum AttributeError {
     /// The attribute key exceeds the maximum allowed length.
     KeyTooLong,
     /// The attribute value exceeds the maximum allowed length.
@@ -135,20 +135,21 @@ impl Attribute {
     pub fn new(key: &str, value: &str) -> Result<Self, AttributeError> {
         Ok(Self {
             key: AttributeKeyString::try_from(key).map_err(|_| AttributeError::KeyTooLong)?,
-            value: AttributeValueString::try_from(value).map_err(|_| AttributeError::ValueTooLong)?
+            value: AttributeValueString::try_from(value)
+                .map_err(|_| AttributeError::ValueTooLong)?,
         })
     }
 
     /// Acquires the service attribute key
     pub fn key(&self) -> &str {
-        fatal_panic!(from self, 
+        fatal_panic!(from self,
              when self.key.as_str(),
              "This should never happen! The underlying attribute key does not contain a valid UTF-8 string.")
     }
 
     /// Acquires the service attribute value
     pub fn value(&self) -> &str {
-        fatal_panic!(from self, 
+        fatal_panic!(from self,
              when self.value.as_str(),
              "This should never happen! The underlying attribute value does not contain a valid UTF-8 string.")
     }
@@ -216,7 +217,7 @@ impl AttributeVerifier {
         self.required_keys.push(
             fatal_panic!(
                 from "AttributeVerifier::require_key", 
-                when key.try_into(), 
+                when key.try_into(),
                 "Attempted to require an attribute key that does not fit into the underlying FixedSizeByteString")
         );
         self
@@ -256,7 +257,7 @@ impl AttributeVerifier {
             let key_exists = rhs.iter().any(|attr| attr.key == *key);
 
             if !key_exists {
-                let key_str = fatal_panic!(from self, 
+                let key_str = fatal_panic!(from self,
                     when key.as_str(),
                     "This should never happen! The underlying attribute key does not contain a valid UTF-8 string.");
                 return Err(key_str);
@@ -286,12 +287,10 @@ impl AttributeSet {
     }
 
     pub(crate) fn add(&mut self, key: &str, value: &str) {
-        self.0.push(
-            fatal_panic!(
+        self.0.push(fatal_panic!(
                 from "AttributeSet::add(key: &str, value: &str)", 
-                when Attribute::new(key, value), 
-                "Attribute key or value exceeds maximum capacity")
-        );
+                when Attribute::new(key, value),
+                "Attribute key or value exceeds maximum capacity"));
         self.0.sort();
     }
 

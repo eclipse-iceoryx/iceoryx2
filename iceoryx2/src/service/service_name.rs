@@ -104,10 +104,9 @@ impl ServiceName {
 
     /// Returns a str reference to the [`ServiceName`]
     pub fn as_str(&self) -> &str {
-        fatal_panic!(from self, 
+        fatal_panic!(from self,
              when self.value.as_str(),
              "This should never happen! The underlying service name does not contain a valid UTF-8 string.")
-
     }
 
     /// Checks if a service is an internal iceoryx2 service.
