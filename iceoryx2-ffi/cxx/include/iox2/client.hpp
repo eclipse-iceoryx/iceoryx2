@@ -184,9 +184,10 @@ template <typename T, typename>
 inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::loan_uninit()
     -> iox::expected<RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                      LoanError> {
+    constexpr uint64_t NUMBER_OF_ELEMENTS = 1;
     RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> request;
-    auto result =
-        iox2_client_loan_slice_uninit(&m_handle, &request.m_request.m_request, &request.m_request.m_handle, 1);
+    auto result = iox2_client_loan_slice_uninit(
+        &m_handle, &request.m_request.m_request, &request.m_request.m_handle, NUMBER_OF_ELEMENTS);
     if (result == IOX2_OK) {
         return iox::ok(std::move(request));
     }
@@ -245,6 +246,8 @@ inline auto Client<Service, RequestPayload, RequestHeader, ResponsePayload, Resp
     iox::ImmutableSlice<ValueType>& payload) const
     -> iox::expected<PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
                      RequestSendError> {
+    static_assert(std::is_trivially_copyable_v<ValueType>);
+
     iox2_pending_response_h pending_response_handle {};
     auto result = iox2_client_send_copy(&m_handle,
                                         payload.data(),

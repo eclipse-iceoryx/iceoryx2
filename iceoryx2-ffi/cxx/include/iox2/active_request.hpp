@@ -182,9 +182,10 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::loan_uninit()
     -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseHeader>, LoanError> {
+    constexpr uint64_t NUMBER_OF_ELEMENTS = 1;
     ResponseMutUninit<Service, ResponsePayload, ResponseHeader> response;
     auto result = iox2_active_request_loan_slice_uninit(
-        &m_handle, &response.m_response.m_response, &response.m_response.m_handle, 1);
+        &m_handle, &response.m_response.m_response, &response.m_response.m_handle, NUMBER_OF_ELEMENTS);
     if (result == IOX2_OK) {
         return iox::ok(std::move(response));
     }
@@ -218,9 +219,10 @@ template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::send_copy(
     const ResponsePayload& payload) const -> iox::expected<void, SendError> {
     static_assert(std::is_trivially_copyable_v<ResponsePayload>);
+    constexpr uint64_t NUMBER_OF_ELEMENTS = 1;
 
-    auto result =
-        iox2_active_request_send_copy(&m_handle, static_cast<const void*>(&payload), sizeof(ResponsePayload), 1);
+    auto result = iox2_active_request_send_copy(
+        &m_handle, static_cast<const void*>(&payload), sizeof(ResponsePayload), NUMBER_OF_ELEMENTS);
     if (result == IOX2_OK) {
         return iox::ok();
     }
@@ -235,6 +237,8 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::send_slice_copy(
     const iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<void, SendError> {
+    static_assert(std::is_trivially_copyable_v<ValueType>);
+
     auto result = iox2_active_request_send_copy(
         &m_handle, payload.data(), sizeof(typename ResponsePayload::ValueType), payload.number_of_elements());
     if (result == IOX2_OK) {
@@ -252,9 +256,7 @@ template <typename T, typename>
 inline auto ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
     -> const T& {
     const void* ptr = nullptr;
-    size_t number_of_elements = 0;
-
-    iox2_active_request_payload(&m_handle, &ptr, &number_of_elements);
+    iox2_active_request_payload(&m_handle, &ptr, nullptr);
     return *static_cast<const T*>(ptr);
 }
 

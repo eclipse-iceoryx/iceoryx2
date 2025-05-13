@@ -119,8 +119,7 @@ template <ServiceType Service, typename ResponsePayload, typename ResponseHeader
 template <typename T, typename>
 inline auto Response<Service, ResponsePayload, ResponseHeader>::payload() const -> const T& {
     const void* ptr = nullptr;
-    size_t number_of_elements = 0;
-    iox2_response_payload(&m_handle, &ptr, &number_of_elements);
+    iox2_response_payload(&m_handle, &ptr, nullptr);
     return *static_cast<const T*>(ptr);
 }
 
