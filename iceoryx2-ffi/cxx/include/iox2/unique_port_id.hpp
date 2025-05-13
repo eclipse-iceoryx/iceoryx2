@@ -64,6 +64,7 @@ class UniqueSubscriberId {
     friend class Subscriber;
     friend auto operator==(const UniqueSubscriberId&, const UniqueSubscriberId&) -> bool;
     friend auto operator<(const UniqueSubscriberId&, const UniqueSubscriberId&) -> bool;
+    friend class SubscriberDetailsView;
 
     explicit UniqueSubscriberId(iox2_unique_subscriber_id_h handle);
     void drop();

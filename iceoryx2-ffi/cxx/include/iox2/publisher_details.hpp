@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_CLIENT_DETAILS_HPP
-#define IOX2_CLIENT_DETAILS_HPP
+#ifndef IOX2_PUBLISHER_DETAILS_HPP
+#define IOX2_PUBLISHER_DETAILS_HPP
 
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_id.hpp"

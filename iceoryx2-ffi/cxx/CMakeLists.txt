@@ -74,6 +74,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/static_config_event.cpp
     src/static_config_publish_subscribe.cpp
     src/static_config_request_response.cpp
+    src/subscriber_details.cpp
     src/unique_port_id.cpp
     src/waitset.cpp
 )
