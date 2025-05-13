@@ -30,6 +30,7 @@ use iceoryx2_bb_container::byte_string::{
 };
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 
+use iceoryx2_bb_log::fatal_panic;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 /// Prefix used to identify internal iceoryx2 services.
@@ -105,7 +106,10 @@ impl ServiceName {
 
     /// Returns a str reference to the [`ServiceName`]
     pub fn as_str(&self) -> &str {
-        self.value.as_str().unwrap()
+        fatal_panic!(from self, 
+             when self.value.as_str(),
+             "This should never happen! The underlying service name does not contain a valid UTF-8 string.")
+
     }
 
     /// Checks if a service is an internal iceoryx2 service.

@@ -103,6 +103,7 @@ use core::str::FromStr;
 use iceoryx2_bb_container::{byte_string::FixedSizeByteString, vec::FixedSizeVec};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_log::fatal_panic;
 use serde::{Deserialize, Serialize};
 
 use crate::constants::{MAX_ATTRIBUTES, MAX_ATTRIBUTE_KEY_LENGTH, MAX_ATTRIBUTE_VALUE_LENGTH};
@@ -134,12 +135,16 @@ impl Attribute {
 
     /// Acquires the service attribute key
     pub fn key(&self) -> &str {
-        self.key.as_str().unwrap()
+        fatal_panic!(from self, 
+             when self.key.as_str(),
+             "This should never happen! The underlying attribute key does not contain a valid UTF-8 string.")
     }
 
     /// Acquires the service attribute value
     pub fn value(&self) -> &str {
-        self.value.as_str().unwrap()
+        fatal_panic!(from self, 
+             when self.value.as_str(),
+             "This should never happen! The underlying attribute value does not contain a valid UTF-8 string.")
     }
 }
 
@@ -223,15 +228,15 @@ impl AttributeVerifier {
 
         // Check if the required key-value pair exists in the target AttributeSet.
         for attribute in self.required_attributes().iter() {
-            let key = &attribute.key;
-            let value = &attribute.value;
+            let key = &attribute.key();
+            let value = &attribute.value();
 
             let attribute_present = rhs
                 .iter()
                 .any(|attr| attr.key == *key && attr.value == *value);
 
             if !attribute_present {
-                return Err(key.as_str().unwrap());
+                return Err(key);
             }
         }
 
@@ -240,7 +245,10 @@ impl AttributeVerifier {
             let key_exists = rhs.iter().any(|attr| attr.key == *key);
 
             if !key_exists {
-                return Err(key.as_str().unwrap());
+                let key_str = fatal_panic!(from self, 
+                    when key.as_str(),
+                    "This should never happen! The underlying attribute key does not contain a valid UTF-8 string.");
+                return Err(key_str);
             }
         }
 
@@ -292,7 +300,7 @@ impl AttributeSet {
         self.0
             .iter()
             .filter(|attr| attr.key == key)
-            .map(|attr| attr.value.as_str().unwrap())
+            .map(|attr| attr.value())
             .nth(idx)
     }
 
@@ -307,7 +315,7 @@ impl AttributeSet {
                 continue;
             }
 
-            if callback(element.value.as_str().unwrap()) == CallbackProgression::Stop {
+            if callback(element.value()) == CallbackProgression::Stop {
                 break;
             }
         }
