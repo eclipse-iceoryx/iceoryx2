@@ -1357,6 +1357,7 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToInnerTypeNameIfPro
     auto static_config = service.static_config();
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("Payload"));
 }
+// END tests for customizable payload and user header type name
 
 TYPED_TEST(ServicePublishSubscribeTest, service_id_is_unique_per_service) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -1372,5 +1373,4 @@ TYPED_TEST(ServicePublishSubscribeTest, service_id_is_unique_per_service) {
     ASSERT_THAT(service_1_create.service_id().c_str(), StrEq(service_1_open.service_id().c_str()));
     ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
 }
-// END tests for customizable payload and user header type name
 } // namespace
