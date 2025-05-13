@@ -13,12 +13,16 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{iox2_service_type_e, AssertNonNullHandle, HandleToType};
-use crate::{iox2_service_builder_pub_sub_set_user_header_type_details, iox2_type_variant_e};
+use crate::{
+    iox2_service_builder_pub_sub_set_user_header_type_details,
+    iox2_service_builder_request_response_set_request_header_type_details,
+    iox2_service_builder_request_response_set_response_header_type_details, iox2_type_variant_e,
+};
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::{
     event::Builder as ServiceBuilderEvent, publish_subscribe::Builder as ServiceBuilderPubSub,
-    Builder as ServiceBuilderBase,
+    request_response::Builder as ServiceBuilderRequestResponse, Builder as ServiceBuilderBase,
 };
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2_bb_elementary::static_assert::*;
@@ -37,6 +41,9 @@ pub(super) union ServiceBuilderUnionNested<S: Service> {
     pub(super) base: ManuallyDrop<ServiceBuilderBase<S>>,
     pub(super) event: ManuallyDrop<ServiceBuilderEvent<S>>,
     pub(super) pub_sub: ManuallyDrop<ServiceBuilderPubSub<PayloadFfi, UserHeaderFfi, S>>,
+    pub(super) request_response: ManuallyDrop<
+        ServiceBuilderRequestResponse<PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi, S>,
+    >,
 }
 
 pub(super) union ServiceBuilderUnion {
@@ -71,6 +78,22 @@ impl ServiceBuilderUnion {
         }
     }
 
+    pub(super) fn new_ipc_request_response(
+        service_builder: ServiceBuilderRequestResponse<
+            PayloadFfi,
+            UserHeaderFfi,
+            PayloadFfi,
+            UserHeaderFfi,
+            ipc::Service,
+        >,
+    ) -> Self {
+        Self {
+            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<ipc::Service> {
+                request_response: ManuallyDrop::new(service_builder),
+            }),
+        }
+    }
+
     pub(super) fn new_local_base(service_builder: ServiceBuilderBase<local::Service>) -> Self {
         Self {
             local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
@@ -96,12 +119,28 @@ impl ServiceBuilderUnion {
             }),
         }
     }
+
+    pub(super) fn new_local_request_response(
+        service_builder: ServiceBuilderRequestResponse<
+            PayloadFfi,
+            UserHeaderFfi,
+            PayloadFfi,
+            UserHeaderFfi,
+            local::Service,
+        >,
+    ) -> Self {
+        Self {
+            local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
+                request_response: ManuallyDrop::new(service_builder),
+            }),
+        }
+    }
 }
 
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<ServiceBuilderUnion>
 pub struct iox2_service_builder_storage_t {
-    internal: [u8; 632], // magic number obtained with size_of::<Option<ServiceBuilderUnion>>()
+    internal: [u8; 736], // magic number obtained with size_of::<Option<ServiceBuilderUnion>>()
 }
 
 #[repr(C)]
@@ -143,6 +182,13 @@ pub type iox2_service_builder_pub_sub_h = *mut iox2_service_builder_pub_sub_h_t;
 /// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
 pub type iox2_service_builder_pub_sub_h_ref = *const iox2_service_builder_pub_sub_h;
 
+pub struct iox2_service_builder_request_response_h_t;
+/// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function transfers the ownership.
+pub type iox2_service_builder_request_response_h = *mut iox2_service_builder_request_response_h_t;
+/// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
+pub type iox2_service_builder_request_response_h_ref =
+    *const iox2_service_builder_request_response_h;
+
 impl AssertNonNullHandle for iox2_service_builder_event_h {
     fn assert_non_null(self) {
         debug_assert!(!self.is_null());
@@ -165,6 +211,21 @@ impl AssertNonNullHandle for iox2_service_builder_pub_sub_h {
 }
 
 impl AssertNonNullHandle for iox2_service_builder_pub_sub_h_ref {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+        unsafe {
+            debug_assert!(!(*self).is_null());
+        }
+    }
+}
+
+impl AssertNonNullHandle for iox2_service_builder_request_response_h {
+    fn assert_non_null(self) {
+        debug_assert!(!self.is_null());
+    }
+}
+
+impl AssertNonNullHandle for iox2_service_builder_request_response_h_ref {
     fn assert_non_null(self) {
         debug_assert!(!self.is_null());
         unsafe {
@@ -214,6 +275,22 @@ impl HandleToType for iox2_service_builder_pub_sub_h {
 }
 
 impl HandleToType for iox2_service_builder_pub_sub_h_ref {
+    type Target = *mut iox2_service_builder_t;
+
+    fn as_type(self) -> Self::Target {
+        unsafe { *self as *mut _ as _ }
+    }
+}
+
+impl HandleToType for iox2_service_builder_request_response_h {
+    type Target = *mut iox2_service_builder_t;
+
+    fn as_type(self) -> Self::Target {
+        self as *mut _ as _
+    }
+}
+
+impl HandleToType for iox2_service_builder_request_response_h_ref {
     type Target = *mut iox2_service_builder_t;
 
     fn as_type(self) -> Self::Target {
@@ -314,6 +391,76 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
     // set default user header type to ()
     let user_header_type_name = "()";
     iox2_service_builder_pub_sub_set_user_header_type_details(
+        &(service_builder_handle as *mut _ as _),
+        iox2_type_variant_e::FIXED_SIZE,
+        user_header_type_name.as_ptr() as *const core::ffi::c_char,
+        user_header_type_name.len(),
+        0,
+        1,
+    );
+
+    service_builder_handle as *mut _ as _
+}
+
+/// This function transform the [`iox2_service_builder_h`] to a request-response service builder.
+///
+/// # Arguments
+///
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
+///
+/// Returns a [`iox2_service_builder_request_response_h`] for the request-response service builder
+///
+/// # Safety
+///
+/// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_request_response(
+    service_builder_handle: iox2_service_builder_h,
+) -> iox2_service_builder_request_response_h {
+    debug_assert!(!service_builder_handle.is_null());
+
+    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builders_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.base);
+            service_builders_struct.set(ServiceBuilderUnion::new_ipc_request_response(
+                service_builder
+                    .request_response::<PayloadFfi, PayloadFfi>()
+                    .request_user_header::<UserHeaderFfi>()
+                    .response_user_header::<UserHeaderFfi>(),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.base);
+            service_builders_struct.set(ServiceBuilderUnion::new_local_request_response(
+                service_builder
+                    .request_response::<PayloadFfi, PayloadFfi>()
+                    .request_user_header::<UserHeaderFfi>()
+                    .response_user_header::<UserHeaderFfi>(),
+            ));
+        }
+    }
+
+    // set default request header type to ()
+    let user_header_type_name = "()";
+    iox2_service_builder_request_response_set_request_header_type_details(
+        &(service_builder_handle as *mut _ as _),
+        iox2_type_variant_e::FIXED_SIZE,
+        user_header_type_name.as_ptr() as *const core::ffi::c_char,
+        user_header_type_name.len(),
+        0,
+        1,
+    );
+
+    // set default response header type to ()
+    iox2_service_builder_request_response_set_response_header_type_details(
         &(service_builder_handle as *mut _ as _),
         iox2_type_variant_e::FIXED_SIZE,
         user_header_type_name.as_ptr() as *const core::ffi::c_char,

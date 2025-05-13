@@ -1535,6 +1535,641 @@ pub unsafe extern "C" fn iox2_config_defaults_publish_subscribe_set_subscriber_e
 //////////////////////////
 
 //////////////////////////
+// BEGIN: request response
+//////////////////////////
+/// Returns the expired connection buffer size for [`iox2_client_h`](crate::api::iox2_client_h)
+/// to retrieve [`iox2_response_h`](crate::api::iox2_response_h) from disconnected
+/// [`iox2_server_h`](crate::api::iox2_server_h)
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_client_expired_connection_buffer(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .client_expired_connection_buffer
+}
+
+/// Sets the expired connection buffer size for [`iox2_client_h`](crate::api::iox2_client_h).
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_expired_connection_buffer(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .client_expired_connection_buffer = value;
+}
+
+/// If safe overflow is deactivated it defines the deliver strategy of the
+/// [`iox2_client_h`](crate::api::iox2_client_h) when the
+/// [`iox2_server_h`](crate::api::iox2_server_h)s request buffer is full.
+///
+/// Returns [`iox2_unable_to_deliver_strategy_e`]
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_client_unable_to_deliver_strategy(
+    handle: iox2_config_h_ref,
+) -> c_int {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .client_unable_to_deliver_strategy
+        .into_c_int()
+}
+
+/// Defines the unable to deliver strategy for the [`iox2_client_h`](crate::api::iox2_client_h).
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_unable_to_deliver_strategy(
+    handle: iox2_config_h_ref,
+    value: iox2_unable_to_deliver_strategy_e,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .client_unable_to_deliver_strategy = value.into();
+}
+
+/// If safe overflow is deactivated it defines the deliver strategy of the
+/// [`iox2_server_h`](crate::api::iox2_server_h) when the
+/// [`iox2_client_h`](crate::api::iox2_client_h)s response buffer is full.
+///
+/// Returns [`iox2_unable_to_deliver_strategy_e`]
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_server_unable_to_deliver_strategy(
+    handle: iox2_config_h_ref,
+) -> c_int {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .server_unable_to_deliver_strategy
+        .into_c_int()
+}
+
+/// Defines the unable to deliver strategy for the [`iox2_server_h`](crate::api::iox2_server_h).
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_unable_to_deliver_strategy(
+    handle: iox2_config_h_ref,
+    value: iox2_unable_to_deliver_strategy_e,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .server_unable_to_deliver_strategy = value.into();
+}
+
+/// Returns if the service supports fire and forget requests. Those are requests where the
+/// [`iox2_client_h`](crate::api::iox2_client_h) does not expect a response.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_has_fire_and_forget_requests(
+    handle: iox2_config_h_ref,
+) -> bool {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .enable_fire_and_forget_requests
+}
+
+/// Defines if request response services shall support fire and forget requests.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_fire_and_forget_requests(
+    handle: iox2_config_h_ref,
+    value: bool,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .enable_fire_and_forget_requests = value;
+}
+
+/// Defines how the [`iox2_server_h`](crate::api::iox2_server_h) buffer behaves when it is
+/// full. When safe overflow is activated, the [`iox2_client_h`](crate::api::iox2_client_h) will
+/// replace the oldest [`iox2_request_mut_h`](crate::api::iox2_request_mut_h) with the newest one.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_enable_safe_overflow_for_requests(
+    handle: iox2_config_h_ref,
+) -> bool {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .enable_safe_overflow_for_requests
+}
+
+/// Enables/disables safe overflow
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_enable_safe_overflow_for_requests(
+    handle: iox2_config_h_ref,
+    value: bool,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .enable_safe_overflow_for_requests = value;
+}
+
+/// Defines how the [`iox2_client_h`](crate::api::iox2_client_h) buffer behaves when it is
+/// full. When safe overflow is activated, the [`iox2_server_h`](crate::api::iox2_server_h) will
+/// replace the oldest [`iox2_response_h`](crate::api::iox2_response_h) with the newest one.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_enable_safe_overflow_for_responses(
+    handle: iox2_config_h_ref,
+) -> bool {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .enable_safe_overflow_for_responses
+}
+
+/// Enables/disables safe overflow
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_enable_safe_overflow_for_responses(
+    handle: iox2_config_h_ref,
+    value: bool,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .enable_safe_overflow_for_responses = value;
+}
+
+/// Returns how many active requests a [`iox2_client_h`](crate::api::iox2_client_h) send out in
+/// parallel and expect responses from.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_max_active_requests_per_client(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .max_active_requests_per_client
+}
+
+/// Sets the max number of active requests.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_active_requests_per_client(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .max_active_requests_per_client = value;
+}
+
+/// Returns the size of the [`iox2_response_h`](crate::api::iox2_response_h) buffer per request
+/// on the [`iox2_client_h`](crate::api::iox2_client_h) side. This is an important setting when
+/// a stream of responses is expected.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_max_response_buffer_size(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .max_response_buffer_size
+}
+
+/// Sets the max response buffer size
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_response_buffer_size(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .max_response_buffer_size = value;
+}
+
+/// Returns how many [`iox2_server_h`](crate::api::iox2_server_h)s can be connected to the same
+/// service at the same time.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_max_servers(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .max_servers
+}
+
+/// Sets the maximum number of servers per service
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_servers(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .max_servers = value;
+}
+
+/// Returns how many [`iox2_client_h`](crate::api::iox2_client_h)s can be connected to the same
+/// service at the same time.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_max_clients(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .max_clients
+}
+
+/// Sets the maximum number of clients per service
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_clients(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .max_clients = value;
+}
+
+/// Returns how many [`iox2_node_h`](crate::api::iox2_node_h)s can open the same
+/// service at the same time.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_max_nodes(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .max_nodes
+}
+
+/// Sets the maximum number of nodes per service
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_nodes(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .max_nodes = value;
+}
+
+/// Returns how many [`iox2_response_h`](crate::api::iox2_response_h)s can be borrowed per
+/// request.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_max_borrowed_responses_per_pending_response(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .max_borrowed_responses_per_pending_response
+}
+
+/// Sets the maximum number of borrowed responses per pending response
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_borrowed_responses_per_pending_response(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .max_borrowed_responses_per_pending_response = value;
+}
+
+/// Returns how many [`iox2_request_mut_h`](crate::api::iox2_request_mut_h)s can be loaned at most
+/// at the same time with a [`iox2_client_h`](crate::api::iox2_client_h).
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_max_loaned_requests(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .max_loaned_requests
+}
+
+/// Sets the maximum number of loaned requests
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_max_loaned_requests(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .max_loaned_requests = value
+}
+
+/// Returns how many [`iox2_response_mut_h`](crate::api::iox2_response_mut_h)s can be loaned at most
+/// at the same time with a [`iox2_server_h`](crate::api::iox2_server_h) per request.
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_server_max_loaned_responses_per_request(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .server_max_loaned_responses_per_request
+}
+
+/// Sets the maximum number of loaned responses per request
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_max_loaned_responses_per_request(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .server_max_loaned_responses_per_request = value
+}
+
+//////////////////////////
+// END: request response
+//////////////////////////
+
+//////////////////////////
 // BEGIN: event
 //////////////////////////
 /// Returns the maximum amount of supported [`iox2_listener_h`](crate::api::iox2_listener_h)

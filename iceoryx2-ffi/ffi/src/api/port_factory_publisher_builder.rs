@@ -56,6 +56,41 @@ impl From<iox2_allocation_strategy_e> for AllocationStrategy {
 }
 
 #[repr(C)]
+#[derive(Copy, Clone)]
+pub enum iox2_unable_to_deliver_strategy_e {
+    BLOCK,
+    DISCARD_SAMPLE,
+}
+
+impl From<iox2_unable_to_deliver_strategy_e> for UnableToDeliverStrategy {
+    fn from(value: iox2_unable_to_deliver_strategy_e) -> Self {
+        match value {
+            iox2_unable_to_deliver_strategy_e::BLOCK => UnableToDeliverStrategy::Block,
+            iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE => {
+                UnableToDeliverStrategy::DiscardSample
+            }
+        }
+    }
+}
+
+impl From<UnableToDeliverStrategy> for iox2_unable_to_deliver_strategy_e {
+    fn from(value: UnableToDeliverStrategy) -> Self {
+        match value {
+            UnableToDeliverStrategy::Block => iox2_unable_to_deliver_strategy_e::BLOCK,
+            UnableToDeliverStrategy::DiscardSample => {
+                iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE
+            }
+        }
+    }
+}
+
+impl IntoCInt for UnableToDeliverStrategy {
+    fn into_c_int(self) -> c_int {
+        Into::<iox2_unable_to_deliver_strategy_e>::into(self) as c_int
+    }
+}
+
+#[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_publisher_create_error_e {
     EXCEEDS_MAX_SUPPORTED_PUBLISHERS = IOX2_OK as isize + 1,
@@ -94,41 +129,6 @@ impl PortFactoryPublisherBuilderUnion {
         Self {
             local: ManuallyDrop::new(port_factory),
         }
-    }
-}
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub enum iox2_unable_to_deliver_strategy_e {
-    BLOCK,
-    DISCARD_SAMPLE,
-}
-
-impl From<iox2_unable_to_deliver_strategy_e> for UnableToDeliverStrategy {
-    fn from(value: iox2_unable_to_deliver_strategy_e) -> Self {
-        match value {
-            iox2_unable_to_deliver_strategy_e::BLOCK => UnableToDeliverStrategy::Block,
-            iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE => {
-                UnableToDeliverStrategy::DiscardSample
-            }
-        }
-    }
-}
-
-impl From<UnableToDeliverStrategy> for iox2_unable_to_deliver_strategy_e {
-    fn from(value: UnableToDeliverStrategy) -> Self {
-        match value {
-            UnableToDeliverStrategy::Block => iox2_unable_to_deliver_strategy_e::BLOCK,
-            UnableToDeliverStrategy::DiscardSample => {
-                iox2_unable_to_deliver_strategy_e::DISCARD_SAMPLE
-            }
-        }
-    }
-}
-
-impl IntoCInt for UnableToDeliverStrategy {
-    fn into_c_int(self) -> c_int {
-        Into::<iox2_unable_to_deliver_strategy_e>::into(self) as c_int
     }
 }
 

@@ -782,6 +782,11 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
 {
+    /// Returns the maximum initial slice length configured for this [`Client`].
+    pub fn initial_max_slice_len(&self) -> usize {
+        self.client_shared_state.config.initial_max_slice_len
+    }
+
     /// Loans/allocates a [`RequestMutUninit`] from the underlying data segment of the [`Client`].
     /// The user has to initialize the payload before it can be sent.
     ///

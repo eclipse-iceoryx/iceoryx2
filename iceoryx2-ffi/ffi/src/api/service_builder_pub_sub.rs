@@ -18,6 +18,7 @@ use crate::api::{
     AssertNonNullHandle, HandleToType, IntoCInt, PayloadFfi, PortFactoryPubSubUnion,
     ServiceBuilderUnion, UserHeaderFfi, IOX2_OK,
 };
+use crate::create_type_details;
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::publish_subscribe::{
@@ -25,15 +26,13 @@ use iceoryx2::service::builder::publish_subscribe::{
     PublishSubscribeOpenOrCreateError,
 };
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
-use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_ffi_macros::CStrRepr;
 
-use core::alloc::Layout;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
-use core::{slice, str};
 
 use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref};
 
@@ -282,27 +281,12 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_user_header_type_detai
     alignment: c_size_t,
 ) -> c_int {
     service_builder_handle.assert_non_null();
-    debug_assert!(!type_name_str.is_null());
 
-    let type_name = slice::from_raw_parts(type_name_str as _, type_name_len as _);
-
-    let type_name = if let Ok(type_name) = str::from_utf8(type_name) {
-        type_name.to_string()
-    } else {
-        return iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int;
-    };
-
-    match Layout::from_size_align(size, alignment) {
-        Ok(_) => (),
-        Err(_) => return iox2_type_detail_error_e::INVALID_SIZE_OR_ALIGNMENT_VALUE as c_int,
-    }
-
-    let value = TypeDetail {
-        variant: type_variant.into(),
-        type_name,
-        size,
-        alignment,
-    };
+    let value =
+        match create_type_details(type_variant, type_name_str, type_name_len, size, alignment) {
+            Ok(v) => v,
+            Err(e) => return e,
+        };
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -359,27 +343,12 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub_set_payload_type_details(
     alignment: c_size_t,
 ) -> c_int {
     service_builder_handle.assert_non_null();
-    debug_assert!(!type_name_str.is_null());
 
-    let type_name = slice::from_raw_parts(type_name_str as _, type_name_len as _);
-
-    let type_name = if let Ok(type_name) = str::from_utf8(type_name) {
-        type_name.to_string()
-    } else {
-        return iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int;
-    };
-
-    match Layout::from_size_align(size, alignment) {
-        Ok(_) => (),
-        Err(_) => return iox2_type_detail_error_e::INVALID_SIZE_OR_ALIGNMENT_VALUE as c_int,
-    }
-
-    let value = TypeDetail {
-        variant: type_variant.into(),
-        type_name,
-        size,
-        alignment,
-    };
+    let value =
+        match create_type_details(type_variant, type_name_str, type_name_len, size, alignment) {
+            Ok(v) => v,
+            Err(e) => return e,
+        };
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
