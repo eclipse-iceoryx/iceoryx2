@@ -122,15 +122,21 @@ pub struct Attribute {
     value: AttributeValueString,
 }
 
+/// Errors that can occur when creating an [`Attribute`].
+pub enum AttributeError{
+    /// The attribute key exceeds the maximum allowed length.
+    KeyTooLong,
+    /// The attribute value exceeds the maximum allowed length.
+    ValueTooLong,
+}
+
 impl Attribute {
     /// Creates an attribute instance
-    pub fn new(key: &str, value: &str) -> Self {
-        // TODO: return result instead of expecting key and value to fit within constraint?
-        Self {
-            key: AttributeKeyString::try_from(key).expect("attribute key length within constraint"),
-            value: AttributeValueString::try_from(value)
-                .expect("attribute value length within constraint"),
-        }
+    pub fn new(key: &str, value: &str) -> Result<Self, AttributeError> {
+        Ok(Self {
+            key: AttributeKeyString::try_from(key).map_err(|_| AttributeError::KeyTooLong)?,
+            value: AttributeValueString::try_from(value).map_err(|_| AttributeError::ValueTooLong)?
+        })
     }
 
     /// Acquires the service attribute key
@@ -280,7 +286,12 @@ impl AttributeSet {
     }
 
     pub(crate) fn add(&mut self, key: &str, value: &str) {
-        self.0.push(Attribute::new(key, value));
+        self.0.push(
+            fatal_panic!(
+                from "AttributeSet::add(key: &str, value: &str)", 
+                when Attribute::new(key, value), 
+                "Attribute key or value exceeds maximum capacity")
+        );
         self.0.sort();
     }
 
