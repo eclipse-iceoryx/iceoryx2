@@ -480,14 +480,14 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_id(
     buffer.add(len).write(0);
 }
 
-/// Calls the callback repeatedly with for every connected [`iox2_server_h`](crate::iox2_server_h)
+/// Calls the callback repeatedly for every connected [`iox2_server_h`](crate::iox2_server_h)
 /// and provides all communcation details with a [`iox2_server_details_ptr`].
 ///
 /// # Safety
 ///
 /// * [`iox2_server_details_ptr`] - Provides a view to the server details. Data must not be
 ///   accessed outside of the callback.
-/// * `callback` - A valid callback with [`iox2_list_clients_callback`] signature
+/// * `callback` - A valid callback with [`iox2_list_servers_callback`] signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
 ///   information across callback iterations. Must be either `NULL` or point to a valid memory
 ///   location
@@ -525,7 +525,7 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_
 ///
 /// * [`iox2_client_details_ptr`] - Provides a view to the client details. Data must not be
 ///   accessed outside of the callback.
-/// * `callback` - A valid callback with [`iox2_list_servers_callback`] signature
+/// * `callback` - A valid callback with [`iox2_list_clients_callback`] signature
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
 ///   information across callback iterations. Must be either `NULL` or point to a valid memory
 ///   location

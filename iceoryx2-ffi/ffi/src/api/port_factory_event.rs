@@ -456,7 +456,7 @@ pub unsafe extern "C" fn iox2_port_factory_event_nodes(
     }
 }
 
-/// Calls the callback repeatedly with for every connected [`iox2_listener_h`](crate::iox2_listener_h)
+/// Calls the callback repeatedly for every connected [`iox2_listener_h`](crate::iox2_listener_h)
 /// and provides all communcation details with a [`iox2_listener_details_ptr`].
 ///
 /// # Safety
@@ -494,7 +494,7 @@ pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_list_listeners(
     };
 }
 
-/// Calls the callback repeatedly with for every connected [`iox2_notifier_h`](crate::iox2_notifier_h)
+/// Calls the callback repeatedly for every connected [`iox2_notifier_h`](crate::iox2_notifier_h)
 /// and provides all communcation details with a [`iox2_notifier_details_ptr`].
 ///
 /// # Safety
