@@ -14,6 +14,7 @@
 #include "iox2/service.hpp"
 
 #include "test.hpp"
+#include <array>
 
 namespace {
 using namespace iox2;
