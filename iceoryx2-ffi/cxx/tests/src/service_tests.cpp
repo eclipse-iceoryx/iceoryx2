@@ -64,9 +64,6 @@ TYPED_TEST(ServiceTest, list_works) {
     const auto service_name_2 = iox2_testing::generate_service_name();
     const auto service_name_3 = iox2_testing::generate_service_name();
 
-    std::cout << service_name_1.to_string().c_str() << std::endl;
-    std::cout << service_name_2.to_string().c_str() << std::endl;
-
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
     auto sut_1 = node.service_builder(service_name_1).template publish_subscribe<uint64_t>().create().expect("");

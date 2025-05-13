@@ -68,12 +68,12 @@ class ActiveRequest {
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto send_slice_copy(const iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<void, SendError>;
 
-    /// Returns a reference to the payload of the received RequestPayload
+    /// Returns a reference to the payload of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const T&;
 
-    /// Returns a reference to the payload of the received RequestPayload
+    /// Returns a reference to the payload of the received
     /// [`RequestMut`](crate::request_mut::RequestMut)
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;

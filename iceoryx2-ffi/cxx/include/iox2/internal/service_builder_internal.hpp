@@ -10,12 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_INTERNAL_HPP
-#define IOX2_SERVICE_BUILDER_PUBLISH_SUBSCRIBE_INTERNAL_HPP
+#ifndef IOX2_SERVICE_BUILDER_INTERNAL_HPP
+#define IOX2_SERVICE_BUILDER_INTERNAL_HPP
 
 #include "iox/slice.hpp"
-
-// TODO: rename?
 
 namespace iox2::internal {
 template <typename Payload, typename = void>

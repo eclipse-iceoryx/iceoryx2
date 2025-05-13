@@ -19,7 +19,7 @@
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-#include "iox2/internal/service_builder_publish_subscribe_internal.hpp"
+#include "iox2/internal/service_builder_internal.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/port_factory_publish_subscribe.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
