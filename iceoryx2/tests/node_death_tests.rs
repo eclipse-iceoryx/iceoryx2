@@ -314,6 +314,88 @@ mod node_death_tests {
     }
 
     #[test]
+    fn dead_node_is_removed_from_request_response_service<S: Test>() {
+        let _watchdog = Watchdog::new();
+        const NUMBER_OF_BAD_NODES: usize = 2;
+        const NUMBER_OF_GOOD_NODES: usize = 3;
+        const NUMBER_OF_SERVICES: usize = 4;
+        const NUMBER_OF_CLIENTS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
+        const NUMBER_OF_SERVERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
+
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        let mut bad_nodes = vec![];
+        let mut good_nodes = vec![];
+
+        for _ in 0..NUMBER_OF_BAD_NODES {
+            bad_nodes.push(S::create_test_node(&config).node);
+        }
+
+        for _ in 0..NUMBER_OF_GOOD_NODES {
+            good_nodes.push(
+                NodeBuilder::new()
+                    .config(&config)
+                    .create::<S::Service>()
+                    .unwrap(),
+            );
+        }
+
+        let mut services = vec![];
+        let mut bad_clients = vec![];
+        let mut bad_servers = vec![];
+        let mut good_clients = vec![];
+        let mut good_servers = vec![];
+
+        for _ in 0..NUMBER_OF_SERVICES {
+            let service_name = generate_service_name();
+
+            for node in &bad_nodes {
+                let service = node
+                    .service_builder(&service_name)
+                    .request_response::<u64, u64>()
+                    .max_clients(NUMBER_OF_CLIENTS)
+                    .max_servers(NUMBER_OF_SERVERS)
+                    .open_or_create()
+                    .unwrap();
+                bad_clients.push(service.client_builder().create().unwrap());
+                bad_servers.push(service.server_builder().create().unwrap());
+
+                services.push(service);
+            }
+
+            for node in &good_nodes {
+                let service = node
+                    .service_builder(&service_name)
+                    .request_response::<u64, u64>()
+                    .max_clients(NUMBER_OF_CLIENTS)
+                    .max_servers(NUMBER_OF_SERVERS)
+                    .open_or_create()
+                    .unwrap();
+                good_clients.push(service.client_builder().create().unwrap());
+                good_servers.push(service.server_builder().create().unwrap());
+
+                services.push(service);
+            }
+        }
+
+        for _ in 0..NUMBER_OF_BAD_NODES {
+            let mut node = bad_nodes.pop().unwrap();
+            S::staged_death(&mut node);
+        }
+
+        core::mem::forget(bad_clients);
+        core::mem::forget(bad_servers);
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES, failed_cleanups: 0});
+
+        for service in &services {
+            assert_that!(service.dynamic_config().number_of_clients(), eq NUMBER_OF_CLIENTS - NUMBER_OF_BAD_NODES);
+            assert_that!(service.dynamic_config().number_of_servers(), eq NUMBER_OF_SERVERS - NUMBER_OF_BAD_NODES);
+        }
+    }
+
+    #[test]
     fn event_service_is_removed_when_last_node_dies<S: Test>() {
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -356,6 +438,39 @@ mod node_death_tests {
         core::mem::forget(
             sut.service_builder(&service_name)
                 .publish_subscribe::<u64>()
+                .open_or_create()
+                .unwrap(),
+        );
+        S::staged_death(&mut sut);
+
+        assert_that!(
+            S::Service::list(&config, |service_details| {
+                assert_that!(*service_details.static_details.name(), eq service_name);
+                CallbackProgression::Continue
+            }),
+            is_ok
+        );
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        assert_that!(
+            S::Service::list(&config, |_| {
+                test_fail!("after the cleanup there shall be no more services");
+            }),
+            is_ok
+        );
+    }
+
+    #[test]
+    fn request_response_service_is_removed_when_last_node_dies<S: Test>() {
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        let mut sut = S::create_test_node(&config).node;
+        core::mem::forget(
+            sut.service_builder(&service_name)
+                .request_response::<u64, u64>()
                 .open_or_create()
                 .unwrap(),
         );
