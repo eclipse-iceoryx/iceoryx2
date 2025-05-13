@@ -13,6 +13,10 @@
 #include "iox2/client_details.hpp"
 
 namespace iox2 {
+ClientDetailsView::ClientDetailsView(iox2_client_details_ptr handle)
+    : m_handle { handle } {
+}
+
 ClientDetailsView::ClientDetailsView(ClientDetailsView&& rhs) noexcept
     : m_handle { std::move(rhs.m_handle) } {
     rhs.m_handle = nullptr;

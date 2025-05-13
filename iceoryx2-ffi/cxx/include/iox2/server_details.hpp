@@ -13,6 +13,7 @@
 #ifndef IOX2_SERVER_DETAILS_HPP
 #define IOX2_SERVER_DETAILS_HPP
 
+#include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -44,6 +45,10 @@ class ServerDetailsView {
     auto max_slice_len() const -> uint64_t;
 
   private:
+    template <typename T, typename>
+    friend auto internal::list_ports_callback(void* context, T port_details_view) -> iox2_callback_progression_e;
+
+    explicit ServerDetailsView(iox2_server_details_ptr handle);
     iox2_server_details_ptr m_handle = nullptr;
 };
 } // namespace iox2

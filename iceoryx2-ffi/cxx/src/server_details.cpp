@@ -13,6 +13,10 @@
 #include "iox2/server_details.hpp"
 
 namespace iox2 {
+ServerDetailsView::ServerDetailsView(iox2_server_details_ptr handle)
+    : m_handle { handle } {
+}
+
 ServerDetailsView::ServerDetailsView(ServerDetailsView&& rhs) noexcept
     : m_handle { std::move(rhs.m_handle) } {
     rhs.m_handle = nullptr;
