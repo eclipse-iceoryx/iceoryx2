@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/dynamic_config_publish_subscribe.hpp"
+#include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
 auto DynamicConfigPublishSubscribe::number_of_publishers() const -> uint64_t {
@@ -23,5 +24,23 @@ auto DynamicConfigPublishSubscribe::number_of_subscribers() const -> uint64_t {
 
 DynamicConfigPublishSubscribe::DynamicConfigPublishSubscribe(iox2_port_factory_pub_sub_h handle)
     : m_handle { handle } {
+}
+
+void DynamicConfigPublishSubscribe::list_publishers(
+    const iox::function<CallbackProgression(PublisherDetailsView)>& callback) const {
+    auto ctx = internal::ctx(callback);
+    iox2_port_factory_pub_sub_dynamic_config_list_publishers(
+        &m_handle,
+        internal::list_ports_callback<iox2_publisher_details_ptr, PublisherDetailsView>,
+        static_cast<void*>(&ctx));
+}
+
+void DynamicConfigPublishSubscribe::list_subscribers(
+    const iox::function<CallbackProgression(SubscriberDetailsView)>& callback) const {
+    auto ctx = internal::ctx(callback);
+    iox2_port_factory_pub_sub_dynamic_config_list_subscribers(
+        &m_handle,
+        internal::list_ports_callback<iox2_subscriber_details_ptr, SubscriberDetailsView>,
+        static_cast<void*>(&ctx));
 }
 } // namespace iox2

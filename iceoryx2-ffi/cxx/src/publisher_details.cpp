@@ -13,6 +13,10 @@
 #include "iox2/publisher_details.hpp"
 
 namespace iox2 {
+PublisherDetailsView::PublisherDetailsView(iox2_publisher_details_ptr handle)
+    : m_handle { handle } {
+}
+
 PublisherDetailsView::PublisherDetailsView(PublisherDetailsView&& rhs) noexcept
     : m_handle { std::move(rhs.m_handle) } {
     rhs.m_handle = nullptr;

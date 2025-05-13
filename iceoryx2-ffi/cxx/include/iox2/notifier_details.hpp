@@ -13,6 +13,7 @@
 #ifndef IOX2_NOTIFIER_DETAILS_HPP
 #define IOX2_NOTIFIER_DETAILS_HPP
 
+#include "iox2/internal/callback_context.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/node_id.hpp"
 #include "iox2/unique_port_id.hpp"
@@ -36,7 +37,7 @@ class NotifierDetailsView {
 
   private:
     template <typename T, typename>
-    friend auto list_ports_callback(void*, T) -> iox2_callback_progression_e;
+    friend auto internal::list_ports_callback(void* context, T port_details_view) -> iox2_callback_progression_e;
 
     explicit NotifierDetailsView(iox2_notifier_details_ptr handle);
     iox2_notifier_details_ptr m_handle = nullptr;

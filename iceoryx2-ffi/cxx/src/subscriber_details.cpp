@@ -13,6 +13,10 @@
 #include "iox2/subscriber_details.hpp"
 
 namespace iox2 {
+SubscriberDetailsView::SubscriberDetailsView(iox2_subscriber_details_ptr handle)
+    : m_handle { handle } {
+}
+
 SubscriberDetailsView::SubscriberDetailsView(SubscriberDetailsView&& rhs) noexcept
     : m_handle { std::move(rhs.m_handle) } {
     rhs.m_handle = nullptr;
