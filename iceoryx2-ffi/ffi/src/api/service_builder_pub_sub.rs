@@ -26,7 +26,13 @@ use iceoryx2::service::builder::publish_subscribe::{
     PublishSubscribeOpenOrCreateError,
 };
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
+<<<<<<< HEAD
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
+=======
+use iceoryx2::service::static_config::message_type_details::{
+    TypeDetail, TypeNameString, TypeVariant,
+};
+>>>>>>> 87a9c312 ([#707] Implement TryFrom for conversion between &str to FixedSizeByteString)
 use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_ffi_macros::CStrRepr;

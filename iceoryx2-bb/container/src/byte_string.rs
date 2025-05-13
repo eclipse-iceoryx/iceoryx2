@@ -29,7 +29,6 @@
 //! println!("removed byte {}", some_string.remove(0));
 //! ```
 
-use core::str::FromStr;
 use core::{
     cmp::Ordering,
     fmt::{Debug, Display},
@@ -263,15 +262,17 @@ impl<const CAPACITY: usize, const BYTE_CAPACITY: usize> From<&[u8; BYTE_CAPACITY
     }
 }
 
-impl<const CAPACITY: usize> From<&str> for FixedSizeByteString<CAPACITY> {
-    fn from(value: &str) -> Self {
+impl<const CAPACITY: usize> TryFrom<&str> for FixedSizeByteString<CAPACITY> {
+    type Error = FixedSizeByteStringModificationError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
         if CAPACITY < value.len() {
-            fatal_panic!(from "FixedSizeByteString::from<&str>()", "The string does not fit into the FixedSizeByteString");
+            return Err(FixedSizeByteStringModificationError::InsertWouldExceedCapacity);
         }
 
         let mut new_self = Self::new();
         new_self.push_bytes(value.as_bytes()).unwrap();
-        new_self
+        Ok(new_self)
     }
 }
 
@@ -710,13 +711,5 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
         if self.len < CAPACITY {
             self.data[self.len].write(0u8);
         }
-    }
-}
-
-impl<const CAPACITY: usize> FromStr for FixedSizeByteString<CAPACITY> {
-    type Err = FixedSizeByteStringModificationError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_bytes(s.as_bytes())
     }
 }

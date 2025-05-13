@@ -22,8 +22,6 @@
 //! # }
 //! ```
 
-use core::str::FromStr;
-
 use crate::constants::MAX_SERVICE_NAME_LENGTH;
 use iceoryx2_bb_container::byte_string::{
     FixedSizeByteString, FixedSizeByteStringModificationError,
@@ -99,7 +97,7 @@ impl ServiceName {
             return Err(ServiceNameError::InvalidContent);
         }
 
-        let value = ServiceNameString::from_str(name).map_err(ServiceNameError::from)?;
+        let value = ServiceNameString::try_from(name).map_err(ServiceNameError::from)?;
 
         Ok(Self { value })
     }

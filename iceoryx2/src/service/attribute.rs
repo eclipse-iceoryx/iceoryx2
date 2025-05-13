@@ -98,7 +98,6 @@
 //! ```
 
 use core::ops::Deref;
-use core::str::FromStr;
 
 use iceoryx2_bb_container::{byte_string::FixedSizeByteString, vec::FixedSizeVec};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -126,9 +125,10 @@ pub struct Attribute {
 impl Attribute {
     /// Creates an attribute instance
     pub fn new(key: &str, value: &str) -> Self {
+        // TODO: return result instead of expecting key and value to fit within constraint?
         Self {
-            key: AttributeKeyString::from_str(key).expect("attribute key length within constraint"),
-            value: AttributeValueString::from_str(value)
+            key: AttributeKeyString::try_from(key).expect("attribute key length within constraint"),
+            value: AttributeValueString::try_from(value)
                 .expect("attribute value length within constraint"),
         }
     }
@@ -207,7 +207,12 @@ impl AttributeVerifier {
 
     /// Requires that a specific key is defined.
     pub fn require_key(mut self, key: &str) -> Self {
-        self.required_keys.push(key.into());
+        self.required_keys.push(
+            fatal_panic!(
+                from "AttributeVerifier::require_key", 
+                when key.try_into(), 
+                "Attempted to require an attribute key that does not fit into the underlying FixedSizeByteString")
+        );
         self
     }
 
