@@ -62,6 +62,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/port_factory_event.cpp
     src/port_factory_listener.cpp
     src/port_factory_notifier.cpp
+    src/server_details.cpp
     src/service.cpp
     src/service_builder_event.cpp
     src/service_id.cpp
