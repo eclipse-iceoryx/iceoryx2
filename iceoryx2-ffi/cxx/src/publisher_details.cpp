@@ -10,15 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/listener_details.hpp"
+#include "iox2/publisher_details.hpp"
 
 namespace iox2 {
-ListenerDetailsView::ListenerDetailsView(ListenerDetailsView&& rhs) noexcept
+PublisherDetailsView::PublisherDetailsView(PublisherDetailsView&& rhs) noexcept
     : m_handle { std::move(rhs.m_handle) } {
     rhs.m_handle = nullptr;
 }
 
-auto ListenerDetailsView::operator=(ListenerDetailsView&& rhs) noexcept -> ListenerDetailsView& {
+auto PublisherDetailsView::operator=(PublisherDetailsView&& rhs) noexcept -> PublisherDetailsView& {
     if (this != &rhs) {
         m_handle = rhs.m_handle;
         rhs.m_handle = nullptr;
@@ -27,16 +27,24 @@ auto ListenerDetailsView::operator=(ListenerDetailsView&& rhs) noexcept -> Liste
     return *this;
 }
 
-auto ListenerDetailsView::listener_id() const -> UniqueListenerId {
-    iox2_unique_listener_id_h id_handle = nullptr;
-    iox2_listener_details_listener_id(m_handle, nullptr, &id_handle);
-    return UniqueListenerId { id_handle };
+auto PublisherDetailsView::publisher_id() const -> UniquePublisherId {
+    iox2_unique_publisher_id_h id_handle = nullptr;
+    iox2_publisher_details_publisher_id(m_handle, nullptr, &id_handle);
+    return UniquePublisherId { id_handle };
 }
 
-auto ListenerDetailsView::node_id() const -> NodeId {
-    const auto* node_id_ptr = iox2_listener_details_node_id(m_handle);
+auto PublisherDetailsView::node_id() const -> NodeId {
+    const auto* node_id_ptr = iox2_publisher_details_node_id(m_handle);
     iox2_node_id_h id_handle = nullptr;
     iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
     return NodeId(id_handle);
+}
+
+auto PublisherDetailsView::number_of_samples() const -> uint64_t {
+    return iox2_publisher_details_number_of_samples(m_handle);
+}
+
+auto PublisherDetailsView::max_slice_len() const -> uint64_t {
+    return iox2_publisher_details_max_slice_len(m_handle);
 }
 } // namespace iox2

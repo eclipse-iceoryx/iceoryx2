@@ -30,7 +30,7 @@ auto NotifierDetailsView::operator=(NotifierDetailsView&& rhs) noexcept -> Notif
 auto NotifierDetailsView::notifier_id() const -> UniqueNotifierId {
     iox2_unique_notifier_id_h id_handle = nullptr;
     iox2_notifier_details_notifier_id(m_handle, nullptr, &id_handle);
-    // return UniqueNotifierId { id_handle };
+    return UniqueNotifierId { id_handle };
 }
 
 auto NotifierDetailsView::node_id() const -> NodeId {
