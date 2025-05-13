@@ -61,6 +61,7 @@ class NodeId {
     friend class ClientDetailsView;
     friend class ServerDetailsView;
     friend class NotifierDetailsView;
+    friend class ListenerDetailsView;
 
     explicit NodeId(iox2_node_id_h handle);
     void drop();

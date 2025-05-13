@@ -50,6 +50,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/header_publish_subscribe.cpp
     src/header_request_response.cpp
     src/listener.cpp
+    src/listener_details.cpp
     src/log.cpp
     src/message_type_details.cpp
     src/messaging_pattern.cpp
