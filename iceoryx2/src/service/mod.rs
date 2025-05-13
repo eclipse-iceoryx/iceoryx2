@@ -399,6 +399,9 @@ pub(crate) mod internal {
 
     use super::*;
 
+    #[derive(Debug)]
+    struct CleanupFailure;
+
     fn send_dead_node_signal<S: Service>(service_id: &ServiceId, config: &config::Config) {
         let origin = "send_dead_node_signal()";
 
@@ -476,22 +479,22 @@ pub(crate) mod internal {
         config: &config::Config,
         origin: &str,
         port_name: &str,
-    ) -> bool {
-        if let Err(e) = unsafe { remove_sender_port_from_all_connections::<S>(id, config) } {
+    ) -> Result<(), CleanupFailure> {
+        unsafe { remove_sender_port_from_all_connections::<S>(id, config) }.map_err(|e| {
             debug!(from origin,
                 "Failed to remove the {} ({:?}) from all of its connections ({:?}).",
                 port_name, id, e);
-            return false;
-        }
+            CleanupFailure
+        })?;
 
-        if let Err(e) = unsafe { remove_data_segment_of_port::<S>(id, config) } {
+        unsafe { remove_data_segment_of_port::<S>(id, config) }.map_err(|e| {
             debug!(from origin,
                 "Failed to remove the {} ({:?}) data segment ({:?}).",
                 port_name, id, e);
-            return false;
-        }
+            CleanupFailure
+        })?;
 
-        true
+        Ok(())
     }
 
     fn remove_sender_and_receiver_connections_and_data_segment<S: Service>(
@@ -499,19 +502,16 @@ pub(crate) mod internal {
         config: &config::Config,
         origin: &str,
         port_name: &str,
-    ) -> bool {
-        if remove_sender_connection_and_data_segment::<S>(id, config, origin, port_name) {
-            if let Err(e) = unsafe { remove_receiver_port_from_all_connections::<S>(id, config) } {
-                debug!(from origin,
+    ) -> Result<(), CleanupFailure> {
+        remove_sender_connection_and_data_segment::<S>(id, config, origin, port_name)?;
+        unsafe { remove_receiver_port_from_all_connections::<S>(id, config) }.map_err(|e| {
+            debug!(from origin,
                     "Failed to remove the {} ({:?}) from all of its incoming connections ({:?}).",
                     port_name, id, e);
-                return false;
-            }
+            CleanupFailure
+        })?;
 
-            true
-        } else {
-            false
-        }
+        Ok(())
     }
 
     pub(crate) trait ServiceInternal<S: Service> {
@@ -551,12 +551,14 @@ pub(crate) mod internal {
             let cleanup_port_resources = |port_id| {
                 match port_id {
                     UniquePortId::Publisher(ref id) => {
-                        if !remove_sender_connection_and_data_segment::<S>(
+                        if remove_sender_connection_and_data_segment::<S>(
                             id.value(),
                             config,
                             &origin,
                             "publisher",
-                        ) {
+                        )
+                        .is_err()
+                        {
                             return PortCleanupAction::SkipPort;
                         }
                     }
@@ -578,22 +580,26 @@ pub(crate) mod internal {
                         }
                     }
                     UniquePortId::Client(ref id) => {
-                        if !remove_sender_and_receiver_connections_and_data_segment::<S>(
+                        if remove_sender_and_receiver_connections_and_data_segment::<S>(
                             id.value(),
                             config,
                             &origin,
                             "client",
-                        ) {
+                        )
+                        .is_err()
+                        {
                             return PortCleanupAction::SkipPort;
                         }
                     }
                     UniquePortId::Server(ref id) => {
-                        if !remove_sender_and_receiver_connections_and_data_segment::<S>(
+                        if remove_sender_and_receiver_connections_and_data_segment::<S>(
                             id.value(),
                             config,
                             &origin,
                             "server",
-                        ) {
+                        )
+                        .is_err()
+                        {
                             return PortCleanupAction::SkipPort;
                         }
                     }
