@@ -767,13 +767,13 @@ pub unsafe extern "C" fn iox2_config_global_service_set_directory(
     }
 }
 
-/// Returns the suffix of the publishers data segment
+/// Returns the suffix of the ports data segment
 ///
 /// # Safety
 ///
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 #[no_mangle]
-pub unsafe extern "C" fn iox2_config_global_service_publisher_data_segment_suffix(
+pub unsafe extern "C" fn iox2_config_global_service_data_segment_suffix(
     handle: iox2_config_h_ref,
 ) -> *const c_char {
     handle.assert_non_null();
@@ -785,11 +785,11 @@ pub unsafe extern "C" fn iox2_config_global_service_publisher_data_segment_suffi
         .value
         .global
         .service
-        .publisher_data_segment_suffix
+        .data_segment_suffix
         .as_c_str()
 }
 
-/// Sets the suffix of the publishers data segment
+/// Sets the suffix of the ports data segment
 ///
 /// Returns: [`iox2_semantic_string_error_e`](crate::api::iox2_semantic_string_error_e) when an
 /// invalid file name was provided
@@ -799,7 +799,7 @@ pub unsafe extern "C" fn iox2_config_global_service_publisher_data_segment_suffi
 /// * `handle` - A valid non-owning [`iox2_config_h_ref`].
 /// * `value` - A valid file name containing the suffix
 #[no_mangle]
-pub unsafe extern "C" fn iox2_config_global_service_set_publisher_data_segment_suffix(
+pub unsafe extern "C" fn iox2_config_global_service_set_data_segment_suffix(
     handle: iox2_config_h_ref,
     value: *const c_char,
 ) -> c_int {
@@ -814,7 +814,7 @@ pub unsafe extern "C" fn iox2_config_global_service_set_publisher_data_segment_s
                 .value
                 .global
                 .service
-                .publisher_data_segment_suffix = n;
+                .data_segment_suffix = n;
             IOX2_OK as _
         }
         Err(e) => e as c_int,

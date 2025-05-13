@@ -389,12 +389,12 @@ void Service::set_directory(const iox::Path& value) && {
     iox2_config_global_service_set_directory(m_config, value.as_string().c_str());
 }
 
-auto Service::publisher_data_segment_suffix() && -> const char* {
-    return iox2_config_global_service_publisher_data_segment_suffix(m_config);
+auto Service::data_segment_suffix() && -> const char* {
+    return iox2_config_global_service_data_segment_suffix(m_config);
 }
 
-void Service::set_publisher_data_segment_suffix(const iox::FileName& value) && {
-    iox2_config_global_service_set_publisher_data_segment_suffix(m_config, value.as_string().c_str());
+void Service::set_data_segment_suffix(const iox::FileName& value) && {
+    iox2_config_global_service_set_data_segment_suffix(m_config, value.as_string().c_str());
 }
 
 auto Service::static_config_storage_suffix() && -> const char* {

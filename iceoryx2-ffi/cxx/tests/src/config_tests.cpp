@@ -189,12 +189,12 @@ TEST(Config, global_service_directory) {
     ASSERT_THAT(config.global().service().directory(), StrEq(test_value.as_string().c_str()));
 }
 
-TEST(Config, global_service_publisher_data_segment_suffix) {
+TEST(Config, global_service_data_segment_suffix) {
     const auto test_value = iox::FileName::create("no_touchy_fishy").expect("");
     auto config = Config();
 
-    config.global().service().set_publisher_data_segment_suffix(test_value);
-    ASSERT_THAT(config.global().service().publisher_data_segment_suffix(), StrEq(test_value.as_string().c_str()));
+    config.global().service().set_data_segment_suffix(test_value);
+    ASSERT_THAT(config.global().service().data_segment_suffix(), StrEq(test_value.as_string().c_str()));
 }
 
 TEST(Config, global_service_static_config_storage_suffix) {

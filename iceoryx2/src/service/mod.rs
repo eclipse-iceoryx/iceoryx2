@@ -166,6 +166,8 @@
 //! # }
 //! ```
 
+pub(crate) mod stale_resource_cleanup;
+
 /// The builder to create or open [`Service`]s
 pub mod builder;
 
@@ -385,18 +387,20 @@ pub(crate) mod internal {
     use crate::{
         node::{NodeBuilder, NodeId},
         port::{
-            listener::remove_connection_of_listener,
-            notifier::Notifier,
+            listener::remove_connection_of_listener, notifier::Notifier,
             port_identifiers::UniquePortId,
-            publisher::{
-                remove_data_segment_of_publisher, remove_publisher_from_all_connections,
-                remove_subscriber_from_all_connections,
-            },
         },
         prelude::EventId,
+        service::stale_resource_cleanup::{
+            remove_data_segment_of_port, remove_receiver_port_from_all_connections,
+            remove_sender_port_from_all_connections,
+        },
     };
 
     use super::*;
+
+    #[derive(Debug)]
+    struct CleanupFailure;
 
     fn send_dead_node_signal<S: Service>(service_id: &ServiceId, config: &config::Config) {
         let origin = "send_dead_node_signal()";
@@ -470,6 +474,46 @@ pub(crate) mod internal {
         trace!(from origin, "Send dead node signal on service {}.", service_name);
     }
 
+    fn remove_sender_connection_and_data_segment<S: Service>(
+        id: u128,
+        config: &config::Config,
+        origin: &str,
+        port_name: &str,
+    ) -> Result<(), CleanupFailure> {
+        unsafe { remove_sender_port_from_all_connections::<S>(id, config) }.map_err(|e| {
+            debug!(from origin,
+                "Failed to remove the {} ({:?}) from all of its connections ({:?}).",
+                port_name, id, e);
+            CleanupFailure
+        })?;
+
+        unsafe { remove_data_segment_of_port::<S>(id, config) }.map_err(|e| {
+            debug!(from origin,
+                "Failed to remove the {} ({:?}) data segment ({:?}).",
+                port_name, id, e);
+            CleanupFailure
+        })?;
+
+        Ok(())
+    }
+
+    fn remove_sender_and_receiver_connections_and_data_segment<S: Service>(
+        id: u128,
+        config: &config::Config,
+        origin: &str,
+        port_name: &str,
+    ) -> Result<(), CleanupFailure> {
+        remove_sender_connection_and_data_segment::<S>(id, config, origin, port_name)?;
+        unsafe { remove_receiver_port_from_all_connections::<S>(id, config) }.map_err(|e| {
+            debug!(from origin,
+                    "Failed to remove the {} ({:?}) from all of its incoming connections ({:?}).",
+                    port_name, id, e);
+            CleanupFailure
+        })?;
+
+        Ok(())
+    }
+
     pub(crate) trait ServiceInternal<S: Service> {
         fn __internal_from_state(state: ServiceState<S>) -> S;
 
@@ -507,23 +551,21 @@ pub(crate) mod internal {
             let cleanup_port_resources = |port_id| {
                 match port_id {
                     UniquePortId::Publisher(ref id) => {
-                        if let Err(e) =
-                            unsafe { remove_publisher_from_all_connections::<S>(id, config) }
+                        if remove_sender_connection_and_data_segment::<S>(
+                            id.value(),
+                            config,
+                            &origin,
+                            "publisher",
+                        )
+                        .is_err()
                         {
-                            debug!(from origin, "Failed to remove the publishers ({:?}) from all of its connections ({:?}).", id, e);
-                            return PortCleanupAction::SkipPort;
-                        }
-
-                        if let Err(e) = unsafe { remove_data_segment_of_publisher::<S>(id, config) }
-                        {
-                            debug!(from origin, "Failed to remove the publishers ({:?}) data segment ({:?}).", id, e);
                             return PortCleanupAction::SkipPort;
                         }
                     }
                     UniquePortId::Subscriber(ref id) => {
-                        if let Err(e) =
-                            unsafe { remove_subscriber_from_all_connections::<S>(id, config) }
-                        {
+                        if let Err(e) = unsafe {
+                            remove_receiver_port_from_all_connections::<S>(id.value(), config)
+                        } {
                             debug!(from origin, "Failed to remove the subscriber ({:?}) from all of its connections ({:?}).", id, e);
                             return PortCleanupAction::SkipPort;
                         }
@@ -537,11 +579,33 @@ pub(crate) mod internal {
                             return PortCleanupAction::SkipPort;
                         }
                     }
-                    UniquePortId::Client(_) => todo!(),
-                    UniquePortId::Server(_) => todo!(),
+                    UniquePortId::Client(ref id) => {
+                        if remove_sender_and_receiver_connections_and_data_segment::<S>(
+                            id.value(),
+                            config,
+                            &origin,
+                            "client",
+                        )
+                        .is_err()
+                        {
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
+                    UniquePortId::Server(ref id) => {
+                        if remove_sender_and_receiver_connections_and_data_segment::<S>(
+                            id.value(),
+                            config,
+                            &origin,
+                            "server",
+                        )
+                        .is_err()
+                        {
+                            return PortCleanupAction::SkipPort;
+                        }
+                    }
                 };
 
-                debug!(from origin, "Remove port {:?} from service.", port_id);
+                trace!(from origin, "Remove port {:?} from service.", port_id);
                 PortCleanupAction::RemovePort
             };
 
@@ -562,7 +626,7 @@ pub(crate) mod internal {
                     remove_static_service_config::<S>(config, &service_id.0.clone().into())
                 } {
                     Ok(_) => {
-                        debug!(from origin, "Remove unused service.");
+                        trace!(from origin, "Remove unused service.");
                         dynamic_config.acquire_ownership()
                     }
                     Err(e) => {

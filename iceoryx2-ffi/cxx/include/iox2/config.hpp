@@ -73,10 +73,10 @@ class Service {
     auto directory() && -> const char*;
     /// Set the directory in which all service files are stored
     void set_directory(const iox::Path& value) &&;
-    /// The suffix of the publishers data segment
-    auto publisher_data_segment_suffix() && -> const char*;
-    /// Set the suffix of the publishers data segment
-    void set_publisher_data_segment_suffix(const iox::FileName& value) &&;
+    /// The suffix of the ports data segment
+    auto data_segment_suffix() && -> const char*;
+    /// Set the suffix of the ports data segment
+    void set_data_segment_suffix(const iox::FileName& value) &&;
     /// The suffix of the static config file
     auto static_config_storage_suffix() && -> const char*;
     /// Set the suffix of the static config file
