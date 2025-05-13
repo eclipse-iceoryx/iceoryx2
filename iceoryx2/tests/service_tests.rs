@@ -263,7 +263,8 @@ mod service {
                 any_of([
                     RequestResponseCreateError::AlreadyExists,
                     RequestResponseCreateError::IsBeingCreatedByAnotherInstance,
-                    RequestResponseCreateError::HangsInCreation
+                    RequestResponseCreateError::HangsInCreation,
+                    RequestResponseCreateError::ServiceInCorruptedState
                 ])
             );
         }

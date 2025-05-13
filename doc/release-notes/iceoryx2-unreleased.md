@@ -84,6 +84,8 @@
     [#682](https://github.com/eclipse-iceoryx/iceoryx2/issues/682)
 * Do not set default log level for cargo
     [#711](https://github.com/eclipse-iceoryx/iceoryx2/issues/711)
+* Fix flaky windows test
+    [#739](https://github.com/eclipse-iceoryx/iceoryx2/issues/739)
 
 ### Refactoring
 
