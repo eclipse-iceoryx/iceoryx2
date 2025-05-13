@@ -12,7 +12,13 @@
 
 use colored::*;
 
-pub fn help_template(cli_name: &str, show_external_commands: bool) -> String {
+pub enum HelpOptions {
+    DontPrintCommandSection,
+    PrintCommandSection,
+    PrintCommandSectionWithExternalCommandHint,
+}
+
+pub fn help_template(cli_name: &str, command_help: HelpOptions) -> String {
     let mut template = format!(
         "{{about}}\n\n{}{}{}[OPTIONS] [COMMAND]\n\n{}\n{{options}}",
         "Usage: ".bright_green().bold(),
@@ -21,16 +27,23 @@ pub fn help_template(cli_name: &str, show_external_commands: bool) -> String {
         "Options:".bright_green().bold(),
     );
 
-    if show_external_commands {
-        template.push_str(&format!(
-            "\n\n{}\n{{subcommands}}\n{}{}",
-            "Commands:".bright_green().bold(),
-            "  ...            ".bold(),
-            "See external installed commands with --list"
-        ));
-    } else {
-        // Only add subcommands section without the "Commands:" header
-        template.push_str("\n\n{{subcommands}}");
+    match command_help {
+        HelpOptions::PrintCommandSection
+        | HelpOptions::PrintCommandSectionWithExternalCommandHint => {
+            template.push_str(&format!(
+                "\n\n{}\n{{subcommands}}",
+                "Commands:".bright_green().bold(),
+            ));
+
+            if let HelpOptions::PrintCommandSectionWithExternalCommandHint = command_help {
+                template.push_str(&format!(
+                    "\n{}{}",
+                    "  ...            ".bold(),
+                    "See external installed commands with --list"
+                ));
+            }
+        }
+        HelpOptions::DontPrintCommandSection => {}
     }
 
     template

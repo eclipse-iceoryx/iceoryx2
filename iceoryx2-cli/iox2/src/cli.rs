@@ -12,7 +12,7 @@
 
 use clap::Parser;
 
-use iceoryx2_cli::help_template;
+use iceoryx2_cli::{help_template, HelpOptions};
 
 #[derive(Parser, Debug)]
 #[command(
@@ -22,7 +22,7 @@ use iceoryx2_cli::help_template;
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2", true),
+    help_template = help_template("iox2", HelpOptions::PrintCommandSectionWithExternalCommandHint),
 )]
 pub struct Cli {
     #[arg(short, long, help = "List all installed external commands")]

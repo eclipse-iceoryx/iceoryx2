@@ -16,5 +16,5 @@ mod format;
 pub mod filter;
 pub mod output;
 
-pub use cli::help_template;
+pub use cli::*;
 pub use format::Format;
