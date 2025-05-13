@@ -248,7 +248,11 @@
 11. Renamed `ServiceId::max_len()`
    into `ServiceId::max_number_of_characters()`
 
-12. The following types no longer implement `Copy`
+12. Renamed the config entry `global.service.publisher-data-segment-suffix`
+   to `global.service.data-segment-suffix` and changed the default value to
+   `.data`.
+
+13. The following types no longer implement `Copy`
    (the only implement `Clone`):
 
 * `FixedSizeByteString`
@@ -259,7 +263,3 @@
 * `GroupName`
 * `UserName`
 * `ServiceId`
-
-13. Renamed the config entry `global.service.publisher-data-segment-suffix`
-   to `global.service.data-segment-suffix` and changed the default value to
-   `.data`.
