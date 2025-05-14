@@ -44,8 +44,8 @@ auto main() -> int {
         sample.user_header_mut().version = 123;               // NOLINT
         sample.user_header_mut().timestamp = 80337 + counter; // NOLINT
 
-        sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
-        auto initialized_sample = assume_init(std::move(sample));
+        auto initialized_sample =
+            sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
 
         send(std::move(initialized_sample)).expect("send successful");
 

@@ -71,19 +71,19 @@ class RequestMutUninit {
     /// an initialized [`RequestMut`].
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
     auto write_payload(RequestPayload&& payload)
-        -> RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader>;
+        -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>;
 
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     auto write_from_slice(iox::ImmutableSlice<ValueType>& value)
-        -> RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader>;
+        -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>;
 
     /// Copies the provided payload into the uninitialized request and returns
     /// an initialized [`RequestMut`].
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     auto write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer)
-        -> RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader>;
+        -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -187,7 +187,7 @@ template <ServiceType Service,
           typename ResponseHeader>
 template <typename T, typename>
 inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::write_payload(
-    RequestPayload&& payload) -> RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader> {
+    RequestPayload&& payload) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
     new (&payload_mut()) RequestPayload(std::forward<T>(payload));
     return std::move(m_request);
 }
@@ -199,7 +199,8 @@ template <ServiceType Service,
           typename ResponseHeader>
 template <typename T, typename>
 inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::write_from_slice(
-    iox::ImmutableSlice<ValueType>& value) -> RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader> {
+    iox::ImmutableSlice<ValueType>& value)
+    -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
     auto dest = payload_mut();
     IOX_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
                "Destination payload size is smaller than source slice size");
@@ -215,7 +216,7 @@ template <ServiceType Service,
 template <typename T, typename>
 inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::write_from_fn(
     const iox::function<typename T::ValueType(uint64_t)>& initializer)
-    -> RequestMut<Service, T, RequestHeader, ResponsePayload, ResponseHeader> {
+    -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
     auto slice = payload_mut();
     for (uint64_t i = 0; i < slice.number_of_elements(); ++i) {
         new (&slice[i]) typename T::ValueType(initializer(i));
