@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -11,13 +11,12 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
-project(examples_c LANGUAGES C)
+project(example_c_request_response LANGUAGES C)
 
-add_subdirectory(discovery)
-add_subdirectory(domains)
-add_subdirectory(event)
-add_subdirectory(event_multiplexing)
-add_subdirectory(publish_subscribe)
-add_subdirectory(publish_subscribe_cross_language)
-add_subdirectory(publish_subscribe_with_user_header)
-add_subdirectory(request_response)
+find_package(iceoryx2-c 0.5.0 REQUIRED)
+
+add_executable(example_c_request_response_client src/client.c)
+target_link_libraries(example_c_request_response_client iceoryx2-c::static-lib)
+
+add_executable(example_c_request_response_server src/server.c)
+target_link_libraries(example_c_request_response_server iceoryx2-c::static-lib)
