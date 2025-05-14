@@ -16,8 +16,10 @@ use core::{
     ffi::{c_char, c_int},
     mem::ManuallyDrop,
 };
-use iceoryx2::prelude::*;
-use iceoryx2::service::port_factory::request_response::PortFactory;
+use iceoryx2::service::{
+    dynamic_config::request_response::ClientDetails, port_factory::request_response::PortFactory,
+};
+use iceoryx2::{prelude::*, service::dynamic_config::request_response::ServerDetails};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -27,9 +29,10 @@ use crate::{
 };
 
 use super::{
-    iox2_attribute_set_ptr, iox2_callback_context, iox2_node_list_callback,
-    iox2_port_factory_client_builder_h, iox2_port_factory_client_builder_t,
-    iox2_port_factory_server_builder_h, iox2_port_factory_server_builder_t, iox2_service_name_ptr,
+    iox2_attribute_set_ptr, iox2_callback_context, iox2_callback_progression_e,
+    iox2_client_details_ptr, iox2_node_list_callback, iox2_port_factory_client_builder_h,
+    iox2_port_factory_client_builder_t, iox2_port_factory_server_builder_h,
+    iox2_port_factory_server_builder_t, iox2_server_details_ptr, iox2_service_name_ptr,
     iox2_service_type_e, iox2_static_config_request_response_t, AssertNonNullHandle, HandleToType,
     PayloadFfi, UserHeaderFfi,
 };
@@ -136,6 +139,29 @@ impl HandleToType for iox2_port_factory_request_response_h_ref {
         unsafe { *self as *mut _ as _ }
     }
 }
+
+/// The callback for [`iox2_port_factory_request_response_dynamic_config_list_servers()`]
+///
+/// # Arguments
+///
+/// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
+/// * [`iox2_server_details_ptr`] -> a pointer to the details struct of the port
+///
+/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+pub type iox2_list_servers_callback =
+    extern "C" fn(iox2_callback_context, iox2_server_details_ptr) -> iox2_callback_progression_e;
+
+/// The callback for [`iox2_port_factory_request_response_dynamic_config_list_clients()`]
+///
+/// # Arguments
+///
+/// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
+/// * [`iox2_client_details_ptr`] -> a pointer to the details struct of the port
+///
+/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+pub type iox2_list_clients_callback =
+    extern "C" fn(iox2_callback_context, iox2_client_details_ptr) -> iox2_callback_progression_e;
+
 // END type definition
 
 // BEGIN C API
@@ -452,6 +478,82 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_id(
     let len = buffer_len.min(service_id.as_str().len());
     core::ptr::copy_nonoverlapping(service_id.as_str().as_ptr(), buffer.cast(), len);
     buffer.add(len).write(0);
+}
+
+/// Calls the callback repeatedly for every connected [`iox2_server_h`](crate::iox2_server_h)
+/// and provides all communcation details with a [`iox2_server_details_ptr`].
+///
+/// # Safety
+///
+/// * [`iox2_server_details_ptr`] - Provides a view to the server details. Data must not be
+///   accessed outside of the callback.
+/// * `callback` - A valid callback with [`iox2_list_servers_callback`] signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
+///   information across callback iterations. Must be either `NULL` or point to a valid memory
+///   location
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_servers(
+    handle: iox2_port_factory_request_response_h,
+    callback: iox2_list_servers_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    handle.assert_non_null();
+    use iceoryx2::prelude::PortFactory;
+
+    let port_factory = &mut *handle.as_type();
+    let callback_tr = |server: &ServerDetails| callback(callback_ctx, server).into();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .list_servers(callback_tr),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .list_servers(callback_tr),
+    };
+}
+
+/// Calls the callback repeatedly with for every connected [`iox2_client_h`](crate::iox2_client_h)
+/// and provides all communcation details with a [`iox2_client_details_ptr`].
+///
+/// # Safety
+///
+/// * [`iox2_client_details_ptr`] - Provides a view to the client details. Data must not be
+///   accessed outside of the callback.
+/// * `callback` - A valid callback with [`iox2_list_clients_callback`] signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
+///   information across callback iterations. Must be either `NULL` or point to a valid memory
+///   location
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_clients(
+    handle: iox2_port_factory_request_response_h,
+    callback: iox2_list_clients_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    handle.assert_non_null();
+    use iceoryx2::prelude::PortFactory;
+
+    let port_factory = &mut *handle.as_type();
+    let callback_tr = |client: &ClientDetails| callback(callback_ctx, client).into();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .list_clients(callback_tr),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .list_clients(callback_tr),
+    };
 }
 
 /// This function needs to be called to destroy the port factory!

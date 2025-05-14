@@ -21,6 +21,7 @@ use crate::api::{
 use crate::{iox2_node_list_impl, IOX2_OK};
 
 use iceoryx2::prelude::*;
+use iceoryx2::service::dynamic_config::event::{ListenerDetails, NotifierDetails};
 use iceoryx2::service::port_factory::{event::PortFactory as PortFactoryEvent, PortFactory};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -29,7 +30,8 @@ use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 
 use super::{
-    iox2_attribute_set_ptr, iox2_callback_context, iox2_node_list_callback,
+    iox2_attribute_set_ptr, iox2_callback_context, iox2_callback_progression_e,
+    iox2_listener_details_ptr, iox2_node_list_callback, iox2_notifier_details_ptr,
     iox2_static_config_event_t,
 };
 
@@ -117,6 +119,27 @@ impl HandleToType for iox2_port_factory_event_h_ref {
     }
 }
 
+/// The callback for [`iox2_port_factory_event_dynamic_config_list_notifiers()`]
+///
+/// # Arguments
+///
+/// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
+/// * [`iox2_notifier_details_ptr`] -> a pointer to the details struct of the port
+///
+/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+pub type iox2_list_notifiers_callback =
+    extern "C" fn(iox2_callback_context, iox2_notifier_details_ptr) -> iox2_callback_progression_e;
+
+/// The callback for [`iox2_port_factory_event_dynamic_config_list_listeners()`]
+///
+/// # Arguments
+///
+/// * [`iox2_callback_context`] -> provided by the user and can be `NULL`
+/// * [`iox2_listener_details_ptr`] -> a pointer to the details struct of the port
+///
+/// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
+pub type iox2_list_listeners_callback =
+    extern "C" fn(iox2_callback_context, iox2_listener_details_ptr) -> iox2_callback_progression_e;
 // END type definition
 
 // BEGIN C API
@@ -431,6 +454,82 @@ pub unsafe extern "C" fn iox2_port_factory_event_nodes(
         Ok(_) => IOX2_OK,
         Err(e) => e.into_c_int(),
     }
+}
+
+/// Calls the callback repeatedly for every connected [`iox2_listener_h`](crate::iox2_listener_h)
+/// and provides all communcation details with a [`iox2_listener_details_ptr`].
+///
+/// # Safety
+///
+/// * [`iox2_listener_details_ptr`] - Provides a view to the listener details. Data must not be
+///   accessed outside of the callback.
+/// * `callback` - A valid callback with [`iox2_list_listeners_callback`] signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
+///   information across callback iterations. Must be either `NULL` or point to a valid memory
+///   location
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_list_listeners(
+    handle: iox2_port_factory_event_h,
+    callback: iox2_list_listeners_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    handle.assert_non_null();
+    use iceoryx2::prelude::PortFactory;
+
+    let port_factory = &mut *handle.as_type();
+    let callback_tr = |listener: &ListenerDetails| callback(callback_ctx, listener).into();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .list_listeners(callback_tr),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .list_listeners(callback_tr),
+    };
+}
+
+/// Calls the callback repeatedly for every connected [`iox2_notifier_h`](crate::iox2_notifier_h)
+/// and provides all communcation details with a [`iox2_notifier_details_ptr`].
+///
+/// # Safety
+///
+/// * [`iox2_notifier_details_ptr`] - Provides a view to the notifier details. Data must not be
+///   accessed outside of the callback.
+/// * `callback` - A valid callback with [`iox2_list_notifiers_callback`] signature
+/// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
+///   information across callback iterations. Must be either `NULL` or point to a valid memory
+///   location
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_event_dynamic_config_list_notifiers(
+    handle: iox2_port_factory_event_h,
+    callback: iox2_list_notifiers_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    handle.assert_non_null();
+    use iceoryx2::prelude::PortFactory;
+
+    let port_factory = &mut *handle.as_type();
+    let callback_tr = |notifier: &NotifierDetails| callback(callback_ctx, notifier).into();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .list_notifiers(callback_tr),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .list_notifiers(callback_tr),
+    };
 }
 
 /// This function needs to be called to destroy the port factory!
