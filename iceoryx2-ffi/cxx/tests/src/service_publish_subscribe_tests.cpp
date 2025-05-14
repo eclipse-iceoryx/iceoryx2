@@ -1430,6 +1430,27 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_subscribers_stops_on_request
     ASSERT_THAT(counter, Eq(1));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, subscriber_details_are_correct) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+
+    iox2::Subscriber<SERVICE_TYPE, uint64_t, void> subscriber = sut.subscriber_builder().create().expect("");
+
+    auto counter = 0;
+    sut.dynamic_config().list_subscribers([&](auto subscriber_details_view) {
+        counter++;
+        EXPECT_TRUE(subscriber_details_view.subscriber_id() == subscriber.id());
+        EXPECT_TRUE(subscriber_details_view.node_id() == node.id());
+        EXPECT_TRUE(subscriber_details_view.buffer_size() == subscriber.buffer_size());
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
 TYPED_TEST(ServicePublishSubscribeTest, listing_all_publishers_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_PUBLISHERS = 16;
@@ -1485,4 +1506,30 @@ TYPED_TEST(ServicePublishSubscribeTest, listing_all_publishers_stops_on_request)
 
     ASSERT_THAT(counter, Eq(1));
 }
+
+TYPED_TEST(ServicePublishSubscribeTest, publisher_details_are_correct) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t INITIAL_MAX_SLICE_LEN = 5;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut =
+        node.service_builder(service_name).template publish_subscribe<iox::Slice<uint64_t>>().create().expect("");
+
+    iox2::Publisher<SERVICE_TYPE, iox::Slice<uint64_t>, void> publisher =
+        sut.publisher_builder().initial_max_slice_len(INITIAL_MAX_SLICE_LEN).create().expect("");
+
+    auto counter = 0;
+    sut.dynamic_config().list_publishers([&](auto publisher_details_view) {
+        counter++;
+        EXPECT_TRUE(publisher_details_view.publisher_id() == publisher.id());
+        EXPECT_TRUE(publisher_details_view.node_id() == node.id());
+        EXPECT_TRUE(publisher_details_view.max_slice_len() == INITIAL_MAX_SLICE_LEN);
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+
 } // namespace
