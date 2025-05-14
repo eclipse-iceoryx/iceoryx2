@@ -18,14 +18,10 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
-/// Represents a one-to-one connection to a [`Client`](crate::port::client::Client)
-/// holding the corresponding
-/// [`PendingResponse`](crate::pending_response::PendingResponse) that is coupled
-/// with the [`RequestMut`](crate::request_mut::RequestMut) the
-/// [`Client`](crate::port::client::Client) sent to the
-/// [`Server`](crate::port::server::Server).
-/// The [`Server`](crate::port::server::Server) will use it to send arbitrary many
-/// [`Response`](crate::response::Response)s.
+/// Represents a one-to-one connection to a [`Client`] holding the corresponding
+/// [`PendingResponse`] that is coupled with the [`RequestMut`] the [`Client`]
+/// sent to the [`Server`]. The [`Server`] will use it to send arbitrary many
+/// [`Response`]s.
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestUserHeader,
@@ -54,46 +50,36 @@ class ActiveRequest {
     auto loan_slice_uninit(uint64_t number_of_elements)
         -> iox::expected<ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>, LoanError>;
 
-    /// Sends a copy of the provided data to the
-    /// [`PendingResponse`](crate::pending_response::PendingResponse) of the corresponding
-    /// [`Client`](crate::port::client::Client).
-    /// This is not a zero-copy API. Use [`ActiveRequest::loan_uninit()`] instead.
+    /// Sends a copy of the provided data to the [`PendingResponse`] of the corresponding
+    /// [`Client`]. This is not a zero-copy API. Use [`ActiveRequest::loan_uninit()`] instead.
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto send_copy(const ResponsePayload& payload) const -> iox::expected<void, SendError>;
 
-    /// Sends a copy of the provided data to the
-    /// [`PendingResponse`](crate::pending_response::PendingResponse) of the corresponding
-    /// [`Client`](crate::port::client::Client).
-    /// This is not a zero-copy API. Use [`ActiveRequest::loan_slice_uninit()`] instead.
+    /// Sends a copy of the provided data to the [`PendingResponse`] of the corresponding
+    /// [`Client`]. This is not a zero-copy API. Use [`ActiveRequest::loan_slice_uninit()`] instead.
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto send_slice_copy(const iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<void, SendError>;
 
-    /// Returns a reference to the payload of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
+    /// Returns a reference to the payload of the received [`RequestMut`]
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> const T&;
 
-    /// Returns a reference to the payload of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
+    /// Returns a reference to the payload of the received [`RequestMut`]
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
-    /// Returns a reference to the user_header of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
+    /// Returns a reference to the user_header of the received [`RequestMut`]
     template <typename T = RequestUserHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestUserHeader>, T>>
     auto user_header() const -> const T&;
 
-    /// Returns a reference to the
-    /// [`crate::service::header::request_response::RequestUserHeader`] of the received
-    /// [`RequestMut`](crate::request_mut::RequestMut)
+    /// Returns a reference to the [`RequestHeader`] of the received [`RequestMut`]
     auto header() const -> RequestHeader;
 
-    /// Returns the [`UniqueClientId`] of the [`Client`](crate::port::client::Client)
+    /// Returns the [`UniqueClientId`] of the [`Client`]
     auto origin() const -> UniqueClientId;
 
-    /// Returns [`true`] until the [`PendingResponse`](crate::pending_response::PendingResponse)
-    /// goes out of scope on the [`Client`](crate::port::client::Client)s side indicating that the
-    /// [`Client`](crate::port::client::Client) no longer receives the [`ResponseMut`].
+    /// Returns [`true`] until the [`PendingResponse`] goes out of scope on the
+    /// [`Client`] side indicating that the [`Client`] no longer receives the [`ResponseMut`].
     auto is_connected() const -> bool;
 
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its

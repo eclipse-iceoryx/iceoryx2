@@ -51,8 +51,7 @@ class RequestMutUninit {
     /// Returns a pointer to the request payload
     auto operator->() -> RequestPayload*;
 
-    /// Returns a reference to the iceoryx2 internal
-    /// [`service::header::request_response::RequestUserHeader`]
+    /// Returns a reference to the iceoryx2 internal [`RequestHeader`]
     auto header() const -> RequestHeader;
 
     /// Returns a reference to the user defined request header.

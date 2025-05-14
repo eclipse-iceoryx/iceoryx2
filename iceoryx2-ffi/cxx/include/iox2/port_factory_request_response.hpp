@@ -30,10 +30,8 @@
 #include "iox2/static_config_request_response.hpp"
 
 namespace iox2 {
-/// The factory for
-/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse).
-/// It can acquire dynamic and static service informations and create
-/// [`crate::port::client::Client`]
+/// The factory for [`MessagingPattern::RequestResponse`]. It can acquire
+/// dynamic and static service informations and create [`crate::port::client::Client`]
 /// or [`crate::port::server::Server`] ports.
 template <ServiceType Service,
           typename RequestPayload,

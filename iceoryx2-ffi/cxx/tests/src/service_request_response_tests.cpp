@@ -302,7 +302,7 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_write_payload_send_receive_wo
     auto sut_client = service.client_builder().create().expect("");
     auto sut_server = service.server_builder().create().expect("");
 
-    uint64_t request_payload = 3;
+    const uint64_t request_payload = 345;
     auto request_uninit = sut_client.loan_uninit().expect("");
     request_uninit.payload_mut() = request_payload;
     EXPECT_THAT(request_uninit.payload(), Eq(request_payload));
@@ -310,9 +310,9 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_write_payload_send_receive_wo
 
     auto active_request = sut_server.receive().expect("");
     ASSERT_TRUE(active_request.has_value());
-    EXPECT_THAT(active_request->payload(), Eq(3));
+    EXPECT_THAT(active_request->payload(), Eq(request_payload));
 
-    uint64_t response_payload = 4;
+    const uint64_t response_payload = 456;
     auto response_uninit = active_request->loan_uninit().expect("");
     response_uninit.payload_mut() = response_payload;
     EXPECT_THAT(response_uninit.payload(), Eq(response_payload));

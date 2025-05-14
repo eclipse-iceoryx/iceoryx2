@@ -22,7 +22,7 @@
 
 namespace iox2 {
 /// Factory to create a new [`Server`] port/endpoint for
-/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
+/// [`MessagingPattern::RequestResponse`]
 /// based communication.
 template <ServiceType Service,
           typename RequestPayload,
@@ -31,14 +31,12 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 class PortFactoryServer {
     /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Server`] shall behave
-    /// when a [`Client`](crate::port::client::Client) cannot receive a
-    /// [`Response`](crate::response::Response) since
+    /// when a [`Client`] cannot receive a [`Response`] since
     /// its internal buffer is full.
     IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
 
-    /// Defines the maximum number of [`ResponseMut`](crate::response_mut::ResponseMut) that
-    /// the [`Server`] can loan in parallel per
-    /// [`ActiveRequest`](crate::active_request::ActiveRequest).
+    /// Defines the maximum number of [`ResponseMut`] that the [`Server`] can
+    /// loan in parallel per [`ActiveRequest`].
     IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_responses_per_request);
 
   public:
@@ -54,9 +52,8 @@ class PortFactoryServer {
 
     /// Defines the allocation strategy that is used when the provided
     /// [`PortFactoryServer::initial_max_slice_len()`] is exhausted. This happens when the user
-    /// acquires more than max slice len in
-    /// [`ActiveRequest::loan_slice()`](crate::active_request::ActiveRequest::loan_slice()) or
-    /// [`ActiveRequest::loan_slice_uninit()`](crate::active_request::ActiveRequest::loan_slice_uninit()).
+    /// acquires more than max slice len in [`ActiveRequest::loan_slice()`] or
+    /// [`ActiveRequest::loan_slice_uninit()`].
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryServer&&;
 

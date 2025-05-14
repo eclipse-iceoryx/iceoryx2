@@ -19,10 +19,8 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
-/// It stores the payload and can be received by the
-/// [`PendingResponse`](crate::pending_response::PendingResponse) after a
-/// [`RequestMut`](crate::request_mut::RequestMut) was sent to a
-/// [`Server`](crate::port::server::Server) via the [`Client`](crate::port::client::Client).
+/// It stores the payload and can be received by the [`PendingResponse`] after a
+/// [`RequestMut`] was sent to a [`Server`] via the [`Client`].
 template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 class Response {
     using ValueType = typename PayloadInfo<ResponsePayload>::ValueType;
@@ -38,8 +36,7 @@ class Response {
     auto operator*() const -> const ResponsePayload&;
     auto operator->() const -> const ResponsePayload*;
 
-    /// Returns a reference to the
-    /// [`ResponseUserHeader`](service::header::request_response::ResponseUserHeader).
+    /// Returns a reference to the [`ResponseHeader`].
     auto header() const -> ResponseHeader;
 
     /// Returns a reference to the user header of the response.
@@ -55,7 +52,7 @@ class Response {
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
-    /// Returns the [`UniqueServerId`] of the [`Server`](crate::port::server::Server) which sent
+    /// Returns the [`UniqueServerId`] of the [`Server`] which sent
     /// the [`Response`].
     auto origin() const -> UniqueServerId;
 

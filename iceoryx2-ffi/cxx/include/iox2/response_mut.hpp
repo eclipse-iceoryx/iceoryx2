@@ -22,12 +22,11 @@
 
 namespace iox2 {
 
-/// Acquired by a [`ActiveRequest`](crate::active_request::ActiveRequest) with
-///  * [`ActiveRequest::loan()`](crate::active_request::ActiveRequest::loan())
+/// Acquired by a [`ActiveRequest`] with
+///  * [`ActiveRequest::loan()`]
 ///
 /// It stores the payload of the response that will be sent to the corresponding
-/// [`PendingResponse`](crate::pending_response::PendingResponse) of the
-/// [`Client`](crate::port::client::Client).
+/// [`PendingResponse`] of the [`Client`].
 ///
 /// If the [`ResponseMut`] is not sent it will reelase the loaned memory when going out of
 /// scope.
@@ -49,8 +48,7 @@ class ResponseMut {
     auto operator->() const -> const ResponsePayload*;
     auto operator->() -> ResponsePayload*;
 
-    /// Returns a reference to the
-    /// [`ResponseUserHeader`](service::header::request_response::ResponseUserHeader).
+    /// Returns a reference to the [`ResponseHeader`].
     auto header() const -> ResponseHeader;
 
     /// Returns a reference to the user header of the response.
@@ -85,9 +83,8 @@ class ResponseMut {
     template <ServiceType, typename, typename, typename, typename>
     friend class ActiveRequest;
 
-    /// Sends a [`ResponseMut`] to the corresponding
-    /// [`PendingResponse`](crate::pending_response::PendingResponse) of the
-    /// [`Client`](crate::port::client::Client).
+    /// Sends a [`ResponseMut`] to the corresponding [`PendingResponse`] of the
+    /// [`Client`].
     template <ServiceType S, typename ResponsePayloadT, typename ResponseUserHeaderT>
     friend auto send(ResponseMut<S, ResponsePayloadT, ResponseUserHeaderT>&& response)
         -> iox::expected<void, SendError>;

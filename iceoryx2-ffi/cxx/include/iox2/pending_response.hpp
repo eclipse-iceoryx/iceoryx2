@@ -25,13 +25,12 @@ namespace iox2 {
 template <ServiceType, typename, typename, typename, typename>
 class RequestMut;
 
-/// Represents an active connection to all [`Server`](crate::port::server::Server)
-/// that received the [`RequestMut`]. The
-/// [`Client`](crate::port::client::Client) can use it to receive the corresponding
+/// Represents an active connection to all [`Server`] that received the
+/// [`RequestMut`]. The [`Client`] can use it to receive the corresponding
 /// [`Response`]s.
 ///
 /// As soon as it goes out of scope, the connections are closed and the
-/// [`Server`](crate::port::server::Server)s are informed.
+/// [`Server`]s are informed.
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestUserHeader,
@@ -51,14 +50,13 @@ class PendingResponse {
     auto operator*() const -> const RequestPayload&;
     auto operator->() const -> const RequestPayload*;
 
-    /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
+    /// Receives a [`Response`] from one of the [`Server`]s that
     /// received the [`RequestMut`].
     auto receive()
         -> iox::expected<iox::optional<Response<Service, ResponsePayload, ResponseUserHeader>>, ReceiveError>;
 
-    /// Returns a reference to the iceoryx2 internal
-    /// [`service::header::request_response::RequestUserHeader`] of the corresponding
-    /// [`RequestMut`]
+    /// Returns a reference to the iceoryx2 internal [`RequestHeader`] of
+    /// the corresponding [`RequestMut`]
     auto header() -> RequestHeader;
 
     /// Returns a reference to the user defined request header of the corresponding
@@ -76,18 +74,17 @@ class PendingResponse {
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto payload() const -> iox::ImmutableSlice<ValueType>;
 
-    /// Returns how many [`Server`](crate::port::server::Server)s received the corresponding
+    /// Returns how many [`Server`]s received the corresponding
     /// [`RequestMut`] initially.
     auto number_of_server_connections() const -> size_t;
 
-    /// Returns [`true`] when a [`Server`](crate::port::server::Server) has sent a [`Response`]
+    /// Returns [`true`] when a [`Server`] has sent a [`Response`]
     /// otherwise [`false`].
     auto has_response() -> bool;
 
-    /// Returns [`true`] until the [`ActiveRequest`](crate::active_request::ActiveRequest)
-    /// goes out of scope on the [`Server`](crate::port::server::Server)s side indicating that the
-    /// [`Server`](crate::port::server::Server) will no longer send [`Response`]s.
-    /// It also returns [`false`] when there are no [`Server`](crate::port::server::Server)s.
+    /// Returns [`true`] until the [`ActiveRequest`] goes out of scope on the
+    /// [`Server`]s side indicating that the [`Server`] will no longer send [`Response`]s.
+    /// It also returns [`false`] when there are no [`Server`]s.
     auto is_connected() const -> bool;
 
   private:

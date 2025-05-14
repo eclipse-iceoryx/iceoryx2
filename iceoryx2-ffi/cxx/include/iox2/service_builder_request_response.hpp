@@ -54,13 +54,13 @@ class ServiceBuilderRequestResponse {
     /// behavior.
     IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_responses);
 
-    /// Defines how many active requests a [`Server`](crate::port::server::Server) can hold in
-    /// parallel per [`Client`](crate::port::client::Client). The objects are used to send answers to a request that was
-    /// received earlier from a [`Client`](crate::port::client::Client)
+    /// Defines how many active requests a [`Server`] can hold in
+    /// parallel per [`Client`]. The objects are used to send answers to a request that was
+    /// received earlier from a [`Client`]
     IOX_BUILDER_OPTIONAL(uint64_t, max_active_requests_per_client);
 
     /// If the [`Service`] is created it defines how many responses fit in the
-    /// [`Clients`](crate::port::client::Client)s buffer. If an existing
+    /// [`Clients`]s buffer. If an existing
     /// [`Service`] is opened it defines the minimum required.
     IOX_BUILDER_OPTIONAL(uint64_t, max_response_buffer_size);
 
@@ -74,18 +74,18 @@ class ServiceBuilderRequestResponse {
     /// [`crate::port::client::Client`]s must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_clients);
 
-    /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
+    /// If the [`Service`] is created it defines how many [`Node`]s shall
     /// be able to open it in parallel. If an existing [`Service`] is opened it defines how many
-    /// [`Node`](crate::node::Node)s must be at least supported.
+    /// [`Node`]s must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
 
-    /// If the [`Service`] is created it defines how many [`Response`](crate::response::Response)s shall
-    /// be able to be borrowed in parallel per [`PendingResponse`](crate::pending_response::PendingResponse). If an
+    /// If the [`Service`] is created it defines how many [`Response`]s shall
+    /// be able to be borrowed in parallel per [`PendingResponse`]. If an
     /// existing [`Service`] is opened it defines how many borrows must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_borrowed_responses_per_pending_response);
 
-    /// If the [`Service`] is created it defines how many [`RequestMut`](`crate::request_mut::RequestMut`) a
-    /// [`Client`](`crate::port::client::Client`) can loan in parallel.
+    /// If the [`Service`] is created it defines how many [`RequestMut`] a
+    /// [`Client`] can loan in parallel.
     IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_requests);
 
     /// If the [`Service`] is created, defines the fire-and-forget behavior of the service for requests.

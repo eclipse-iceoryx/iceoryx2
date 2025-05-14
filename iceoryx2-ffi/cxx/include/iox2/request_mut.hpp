@@ -25,8 +25,7 @@
 namespace iox2 {
 
 /// The [`RequestMut`] represents the object that contains the payload that the
-/// [`Client`](crate::port::client::Client) sends to the
-/// [`Server`](crate::port::server::Server).
+/// [`Client`] sends to the [`Server`].
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestUserHeader,
@@ -56,8 +55,7 @@ class RequestMut {
     /// Returns a pointer to the request payload
     auto operator->() -> RequestPayload*;
 
-    /// Returns a reference to the iceoryx2 internal
-    /// [`service::header::request_response::RequestUserHeader`]
+    /// Returns a reference to the iceoryx2 internal [`RequestHeader`]
     auto header() const -> RequestHeader;
 
     /// Returns a reference to the user defined request header.

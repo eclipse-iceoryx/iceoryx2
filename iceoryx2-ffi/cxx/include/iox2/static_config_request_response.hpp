@@ -17,9 +17,9 @@
 
 namespace iox2 {
 /// The static configuration of an
-/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
+/// [`MessagingPattern::RequestResponse`]
 /// based service. Contains all parameters that do not change during the lifetime of a
-/// [`Service`](crate::service::Service).
+/// [`Service`].
 class StaticConfigRequestResponse {
   public:
     /// Returns the request type details of the [`crate::service::Service`].
@@ -40,9 +40,9 @@ class StaticConfigRequestResponse {
     /// is full.
     auto has_safe_overflow_for_responses() const -> bool;
 
-    /// Returns the maximum number of borrowed [`Response`](crate::response::Response)s a
-    /// [`Client`](`crate::port::client::Client`) can hold in
-    /// parallel per [`PendingResponse`](crate::pending_response::PendingResponse)
+    /// Returns the maximum number of borrowed [`Response`]s a
+    /// [`Client`] can hold in
+    /// parallel per [`PendingResponse`]
     auto max_borrowed_responses_per_pending_responses() const -> uint64_t;
 
     /// Returns the maximum of active requests a [`crate::port::server::Server`] can hold in
@@ -52,12 +52,12 @@ class StaticConfigRequestResponse {
     /// Returns the maximum buffer size for responses for an active request.
     auto max_response_buffer_size() const -> uint64_t;
 
-    /// Returns the maximum number of [`RequestMut`](crate::request_mut::RequestMut) a
-    /// [`Client`](crate::port::client::Client) can loan in parallel.
+    /// Returns the maximum number of [`RequestMut`] a
+    /// [`Client`] can loan in parallel.
     auto max_loaned_requests() const -> uint64_t;
 
-    /// Returns true if fire and forget [`RequestMut`](crate::request_mut::RequestMut)s can be
-    /// sent from the [`Client`](crate::port::client::Client), otherwise false.
+    /// Returns true if fire and forget [`RequestMut`]s can be
+    /// sent from the [`Client`], otherwise false.
     auto does_support_fire_and_forget_requests() const -> bool;
 
     /// Returns the maximum number of supported [`crate::port::server::Server`] ports for the

@@ -21,8 +21,7 @@
 #include "iox2/unique_port_id.hpp"
 
 namespace iox2 {
-/// Sends [`RequestMut`]s to a [`Server`](crate::port::server::Server) in a
-/// request-response based communication.
+/// Sends [`RequestMut`]s to a [`Server`] in a request-response based communication.
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestUserHeader,
@@ -43,7 +42,7 @@ class Client {
     auto id() const -> UniqueClientId;
 
     /// Returns the strategy the [`Client`] follows when a [`RequestMut`] cannot be delivered
-    /// if the [`Server`](crate::port::server::Server)s buffer is full.
+    /// if the [`Server`]s buffer is full.
     auto unable_to_deliver_strategy() const -> UnableToDeliverStrategy;
 
     /// Returns the maximum number of elements that can be loaned in a slice.
@@ -52,8 +51,7 @@ class Client {
 
     /// Copies the input value into a [`RequestMut`] and sends it. On success it
     /// returns a [`PendingResponse`] that can be used to receive a stream of
-    /// [`Response`](crate::response::Response)s from the
-    /// [`Server`](crate::port::server::Server).
+    /// [`Response`]s from the [`Server`].
     template <typename T = RequestPayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
     auto send_copy(const RequestPayload& payload) const -> iox::expected<
         PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
@@ -61,8 +59,7 @@ class Client {
 
     /// Copies the input value into a [`RequestMut`] and sends it. On success it
     /// returns a [`PendingResponse`] that can be used to receive a stream of
-    /// [`Response`](crate::response::Response)s from the
-    /// [`Server`](crate::port::server::Server).
+    /// [`Response`]s from the [`Server`].
     template <typename T = RequestPayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, void>>
     auto send_slice_copy(iox::ImmutableSlice<ValueType>& payload) const -> iox::expected<
         PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,

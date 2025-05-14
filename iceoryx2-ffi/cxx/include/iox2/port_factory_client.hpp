@@ -22,8 +22,7 @@
 
 namespace iox2 {
 /// Factory to create a new [`Client`] port/endpoint for
-/// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
-/// based communication.
+/// [`MessagingPattern::RequestResponse`] based communication.
 template <ServiceType Service,
           typename RequestPayload,
           typename RequestUserHeader,
@@ -31,8 +30,7 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 class PortFactoryClient {
     /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Client`] shall behave
-    /// when a [`Server`](crate::port::server::Server) cannot receive a
-    /// [`RequestMut`](crate::request_mut::RequestMut) since
+    /// when a [`Server`] cannot receive a [`RequestMut`] since
     /// its internal buffer is full.
     IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
 
