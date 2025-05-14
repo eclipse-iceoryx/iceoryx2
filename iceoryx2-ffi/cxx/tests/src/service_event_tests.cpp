@@ -700,6 +700,26 @@ TYPED_TEST(ServiceEventTest, listing_all_notifiers_stops_on_request) {
     ASSERT_THAT(counter, Eq(1));
 }
 
+TYPED_TEST(ServiceEventTest, notifier_details_are_correct) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name).event().create().expect("");
+
+    iox2::Notifier<SERVICE_TYPE> notifier = sut.notifier_builder().create().expect("");
+
+    auto counter = 0;
+    sut.dynamic_config().list_notifiers([&](auto notifier_details_view) {
+        counter++;
+        EXPECT_TRUE(notifier_details_view.notifier_id() == notifier.id());
+        EXPECT_TRUE(notifier_details_view.node_id() == node.id());
+        return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
 TYPED_TEST(ServiceEventTest, listing_all_listeners_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t NUMBER_OF_LISTENERS = 17;
@@ -743,6 +763,26 @@ TYPED_TEST(ServiceEventTest, listing_all_listeners_stops_on_request) {
     sut.dynamic_config().list_listeners([&](auto listener_details_view) {
         counter++;
         return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+TYPED_TEST(ServiceEventTest, listener_details_are_correct) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name).event().create().expect("");
+
+    iox2::Listener<SERVICE_TYPE> listener = sut.listener_builder().create().expect("");
+
+    auto counter = 0;
+    sut.dynamic_config().list_listeners([&](auto listener_details_view) {
+        counter++;
+        EXPECT_TRUE(listener_details_view.listener_id() == listener.id());
+        EXPECT_TRUE(listener_details_view.node_id() == node.id());
+        return CallbackProgression::Continue;
     });
 
     ASSERT_THAT(counter, Eq(1));
