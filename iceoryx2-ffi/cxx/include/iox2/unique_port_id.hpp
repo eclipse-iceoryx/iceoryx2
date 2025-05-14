@@ -140,6 +140,7 @@ class UniqueClientId {
     friend class RequestHeader;
     friend auto operator==(const UniqueClientId&, const UniqueClientId&) -> bool;
     friend auto operator<(const UniqueClientId&, const UniqueClientId&) -> bool;
+    friend class ClientDetailsView;
 
     explicit UniqueClientId(iox2_unique_client_id_h handle);
     void drop();
@@ -165,6 +166,7 @@ class UniqueServerId {
     friend class ResponseHeader;
     friend auto operator==(const UniqueServerId&, const UniqueServerId&) -> bool;
     friend auto operator<(const UniqueServerId&, const UniqueServerId&) -> bool;
+    friend class ServerDetailsView;
 
     explicit UniqueServerId(iox2_unique_server_id_h handle);
     void drop();

@@ -34,7 +34,7 @@ auto ClientDetailsView::operator=(ClientDetailsView&& rhs) noexcept -> ClientDet
 auto ClientDetailsView::client_id() const -> UniqueClientId {
     iox2_unique_client_id_h id_handle = nullptr;
     iox2_client_details_client_id(m_handle, nullptr, &id_handle);
-    // return UniqueClientId { id_handle };
+    return UniqueClientId { id_handle };
 }
 
 auto ClientDetailsView::node_id() const -> NodeId {

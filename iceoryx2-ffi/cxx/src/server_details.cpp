@@ -34,7 +34,7 @@ auto ServerDetailsView::operator=(ServerDetailsView&& rhs) noexcept -> ServerDet
 auto ServerDetailsView::server_id() const -> UniqueServerId {
     iox2_unique_server_id_h id_handle = nullptr;
     iox2_server_details_server_id(m_handle, nullptr, &id_handle);
-    // return UniqueServerId { id_handle };
+    return UniqueServerId { id_handle };
 }
 
 auto ServerDetailsView::node_id() const -> NodeId {

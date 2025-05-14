@@ -1685,4 +1685,168 @@ TYPED_TEST(ServiceRequestResponseTest, service_id_is_unique_per_service) {
     ASSERT_THAT(service_1_create.service_id().c_str(), StrEq(service_1_open.service_id().c_str()));
     ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
 }
+
+TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_CLIENTS = 16;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template request_response<uint64_t, uint64_t>()
+                   .max_clients(NUMBER_OF_CLIENTS)
+                   .create()
+                   .expect("");
+
+    std::vector<iox2::Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>> clients;
+    for (auto idx = 0; idx < NUMBER_OF_CLIENTS; ++idx) {
+        clients.push_back(sut.client_builder().create().expect(""));
+    }
+
+    std::vector<UniqueClientId> client_ids;
+    sut.dynamic_config().list_clients([&](auto client_details_view) {
+        client_ids.push_back(client_details_view.client_id());
+        return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(client_ids.size(), Eq(NUMBER_OF_CLIENTS));
+    for (auto& client : clients) {
+        auto iter = std::find(client_ids.begin(), client_ids.end(), client.id());
+        ASSERT_THAT(iter, Ne(client_ids.end()));
+    }
+}
+
+TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_stops_on_request) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_CLIENTS = 13;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template request_response<uint64_t, uint64_t>()
+                   .max_clients(NUMBER_OF_CLIENTS)
+                   .create()
+                   .expect("");
+
+    std::vector<iox2::Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>> clients;
+    for (auto idx = 0; idx < NUMBER_OF_CLIENTS; ++idx) {
+        clients.push_back(sut.client_builder().create().expect(""));
+    }
+
+    auto counter = 0;
+    sut.dynamic_config().list_clients([&](auto client_details_view) {
+        counter++;
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, client_details_are_correct) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t MAX_SLICE_LEN = 9;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template request_response<iox::Slice<uint64_t>, uint64_t>()
+                   .create()
+                   .expect("");
+
+    iox2::Client<SERVICE_TYPE, iox::Slice<uint64_t>, void, uint64_t, void> client =
+        sut.client_builder().initial_max_slice_len(MAX_SLICE_LEN).create().expect("");
+
+    auto counter = 0;
+    sut.dynamic_config().list_clients([&](auto client_details_view) {
+        counter++;
+        EXPECT_TRUE(client_details_view.client_id() == client.id());
+        EXPECT_TRUE(client_details_view.node_id() == node.id());
+        EXPECT_TRUE(client_details_view.max_slice_len() == MAX_SLICE_LEN);
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_SERVERS = 16;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template request_response<uint64_t, uint64_t>()
+                   .max_servers(NUMBER_OF_SERVERS)
+                   .create()
+                   .expect("");
+
+    std::vector<iox2::Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>> servers;
+    for (auto idx = 0; idx < NUMBER_OF_SERVERS; ++idx) {
+        servers.push_back(sut.server_builder().create().expect(""));
+    }
+
+    std::vector<UniqueServerId> server_ids;
+    sut.dynamic_config().list_servers([&](auto server_details_view) {
+        server_ids.push_back(server_details_view.server_id());
+        return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(server_ids.size(), Eq(NUMBER_OF_SERVERS));
+    for (auto& server : servers) {
+        auto iter = std::find(server_ids.begin(), server_ids.end(), server.id());
+        ASSERT_THAT(iter, Ne(server_ids.end()));
+    }
+}
+
+TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_stops_on_request) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_SERVERS = 13;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template request_response<uint64_t, uint64_t>()
+                   .max_servers(NUMBER_OF_SERVERS)
+                   .create()
+                   .expect("");
+
+    std::vector<iox2::Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>> servers;
+    for (auto idx = 0; idx < NUMBER_OF_SERVERS; ++idx) {
+        servers.push_back(sut.server_builder().create().expect(""));
+    }
+
+    auto counter = 0;
+    sut.dynamic_config().list_servers([&](auto server_details_view) {
+        counter++;
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, server_details_are_correct) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t MAX_SLICE_LEN = 9;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                   .create()
+                   .expect("");
+
+    iox2::Server<SERVICE_TYPE, uint64_t, void, iox::Slice<uint64_t>, void> server =
+        sut.server_builder().initial_max_slice_len(MAX_SLICE_LEN).create().expect("");
+
+    auto counter = 0;
+    sut.dynamic_config().list_servers([&](auto server_details_view) {
+        counter++;
+        EXPECT_TRUE(server_details_view.server_id() == server.id());
+        EXPECT_TRUE(server_details_view.node_id() == node.id());
+        EXPECT_TRUE(server_details_view.max_slice_len() == MAX_SLICE_LEN);
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
 } // namespace
