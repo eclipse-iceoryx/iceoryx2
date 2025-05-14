@@ -23,7 +23,7 @@ use zenoh::pubsub::Publisher as ZenohPublisher;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
 
-use crate::key;
+use crate::keys;
 
 pub enum DataStream<'a> {
     Outbound {
@@ -111,11 +111,11 @@ impl<'a> DataStream<'a> {
         z_session: &ZenohSession,
         iox_service_details: &ServiceDetails<ipc::Service>,
     ) -> ZenohPublisher<'a> {
-        let z_key = key::payload(iox_service_details.static_details.service_id());
+        let z_key = keys::data_stream(iox_service_details.static_details.service_id());
         let z_publisher = z_session.declare_publisher(z_key.clone()).wait().unwrap();
         info!("ADD PUBLISHER (zenoh): {}", z_key);
 
-        let z_key = key::static_details(iox_service_details.static_details.service_id());
+        let z_key = keys::service(iox_service_details.static_details.service_id());
         let iox_static_details_json =
             serde_json::to_string(&iox_service_details.static_details).unwrap();
         z_session

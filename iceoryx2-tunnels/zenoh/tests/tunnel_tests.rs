@@ -32,54 +32,7 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn retrieves_service_type_details_from_zenoh() {
-        let iox_config = generate_isolated_config();
-
-        // create tunnel
-        let mut sut = ZenohTunnel::new(iox_config.clone());
-        sut.initialize();
-
-        // create iceoryx2 service
-        let iox_node = NodeBuilder::new()
-            .config(&iox_config)
-            .create::<ipc::Service>()
-            .unwrap();
-        let iox_service_name = generate_name();
-        let iox_service = iox_node
-            .service_builder(&iox_service_name)
-            .publish_subscribe::<[u8]>()
-            .history_size(10)
-            .subscriber_max_buffer_size(10)
-            .open_or_create()
-            .unwrap();
-
-        // discover iceoryx2 service
-        sut.discover();
-
-        // verify static config is retrievable from zenoh
-        let z_config = zenoh::config::Config::default();
-        let z_session = zenoh::open(z_config.clone()).wait().unwrap();
-        let reply = z_session
-            .get(key::static_details(iox_service.service_id()))
-            .wait()
-            .unwrap();
-        match reply.recv_timeout(Duration::from_millis(500)) {
-            Ok(Some(reply)) => match reply.result() {
-                Ok(sample) => {
-                    let z_static_config: StaticConfig =
-                        serde_json::from_slice(&sample.payload().to_bytes()).unwrap();
-                    assert_that!(z_static_config.name().as_str(), eq iox_service_name.as_str());
-                    assert_that!(z_static_config.publish_subscribe().message_type_details(), eq iox_service.static_config().message_type_details());
-                }
-                Err(e) => test_fail!("error reading reply to type details query: {}", e),
-            },
-            Ok(None) => test_fail!("no reply to type details query"),
-            Err(e) => test_fail!("error querying message type details from zenoh: {}", e),
-        }
-    }
-
-    #[test]
-    fn propagates_data_from_iceoryx_to_zenoh() {
+    fn propagates_data_from_local_services_to_remote_hosts() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         let iox_config = generate_isolated_config();
@@ -116,7 +69,7 @@ mod zenoh_tunnel {
         let z_config = zenoh::config::Config::default();
         let z_session = zenoh::open(z_config.clone()).wait().unwrap();
         let z_subscriber = z_session
-            .declare_subscriber(key::payload(iox_service.service_id()))
+            .declare_subscriber(keys::data_stream(iox_service.service_id()))
             .wait()
             .unwrap();
 
@@ -125,7 +78,7 @@ mod zenoh_tunnel {
         let sample = sample.write_from_slice(PAYLOAD_DATA.as_bytes());
         sample.send().unwrap();
 
-        // propogate over tunnel
+        // propagate over tunnel
         sut.propagate();
 
         // receive data on zenoh subscriber
@@ -134,6 +87,53 @@ mod zenoh_tunnel {
             assert_that!(received_data, eq PAYLOAD_DATA);
         } else {
             test_fail!("payload was not propagated from iceoryx2 to Zenoh")
+        }
+    }
+
+    #[test]
+    fn responds_to_zenoh_query_for_service_type_details() {
+        let iox_config = generate_isolated_config();
+
+        // create tunnel
+        let mut sut = ZenohTunnel::new(iox_config.clone());
+        sut.initialize();
+
+        // create iceoryx2 service
+        let iox_node = NodeBuilder::new()
+            .config(&iox_config)
+            .create::<ipc::Service>()
+            .unwrap();
+        let iox_service_name = generate_name();
+        let iox_service = iox_node
+            .service_builder(&iox_service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // discover iceoryx2 service
+        sut.discover();
+
+        // verify static config is retrievable from zenoh
+        let z_config = zenoh::config::Config::default();
+        let z_session = zenoh::open(z_config.clone()).wait().unwrap();
+        let z_reply = z_session
+            .get(keys::service(iox_service.service_id()))
+            .wait()
+            .unwrap();
+        match z_reply.recv_timeout(Duration::from_millis(500)) {
+            Ok(Some(reply)) => match reply.result() {
+                Ok(sample) => {
+                    let z_static_details: StaticConfig =
+                        serde_json::from_slice(&sample.payload().to_bytes()).unwrap();
+                    assert_that!(z_static_details.name().as_str(), eq iox_service_name.as_str());
+                    assert_that!(z_static_details.publish_subscribe().message_type_details(), eq iox_service.static_config().message_type_details());
+                }
+                Err(e) => test_fail!("error reading reply to type details query: {}", e),
+            },
+            Ok(None) => test_fail!("no reply to type details query"),
+            Err(e) => test_fail!("error querying message type details from zenoh: {}", e),
         }
     }
 }
