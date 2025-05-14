@@ -15,6 +15,7 @@ mod zenoh_tunnel {
     use std::time::Duration;
 
     use iceoryx2::prelude::*;
+    use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -31,17 +32,18 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn propagates_data_from_iceoryx_to_zenoh() {
-        const PAYLOAD_DATA: &str = "WhenItRegisters";
-
+    fn retrieves_service_type_details_from_zenoh() {
         let iox_config = generate_isolated_config();
 
-        // create iceoryx2 publisher
+        // create tunnel
+        let mut sut = ZenohTunnel::new(iox_config.clone());
+        sut.initialize();
+
+        // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
             .create::<ipc::Service>()
             .unwrap();
-
         let iox_service_name = generate_name();
         let iox_service = iox_node
             .service_builder(&iox_service_name)
@@ -50,22 +52,67 @@ mod zenoh_tunnel {
             .subscriber_max_buffer_size(10)
             .open_or_create()
             .unwrap();
+
+        // discover iceoryx2 service
+        sut.discover();
+
+        // verify static config is retrievable from zenoh
+        let z_config = zenoh::config::Config::default();
+        let z_session = zenoh::open(z_config.clone()).wait().unwrap();
+        let z_key = &format!("iox2/{}/static_details", iox_service.service_id().as_str());
+        let reply = z_session.get(z_key).wait().unwrap();
+        match reply.recv_timeout(Duration::from_millis(500)) {
+            Ok(Some(reply)) => match reply.result() {
+                Ok(sample) => {
+                    let z_static_config: StaticConfig =
+                        serde_json::from_slice(&sample.payload().to_bytes()).unwrap();
+                    assert_that!(z_static_config.name().as_str(), eq iox_service_name.as_str());
+                    assert_that!(z_static_config.publish_subscribe().message_type_details(), eq iox_service.static_config().message_type_details());
+                }
+                Err(e) => test_fail!("error reading reply to type details query: {}", e),
+            },
+            Ok(None) => test_fail!("no reply to type details query"),
+            Err(e) => test_fail!("error querying message type details from zenoh: {}", e),
+        }
+    }
+
+    #[test]
+    fn propagates_data_from_iceoryx_to_zenoh() {
+        const PAYLOAD_DATA: &str = "WhenItRegisters";
+
+        let iox_config = generate_isolated_config();
+
+        // create tunnel
+        let mut sut = ZenohTunnel::new(iox_config.clone());
+        sut.initialize();
+
+        // create iceoryx2 service
+        let iox_node = NodeBuilder::new()
+            .config(&iox_config)
+            .create::<ipc::Service>()
+            .unwrap();
+        let iox_service_name = generate_name();
+        let iox_service = iox_node
+            .service_builder(&iox_service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // discover iceoryx2 service
+        sut.discover();
+
+        // create iceoryx2 publisher
         let iox_publisher = iox_service
             .publisher_builder()
             .initial_max_slice_len(PAYLOAD_DATA.len())
             .create()
             .unwrap();
 
-        // create tunnel
-        let mut tunnel = ZenohTunnel::new(iox_config.clone());
-        tunnel.initialize();
-        tunnel.discover();
-
         // create zenoh subscriber
-        let mut z_config = zenoh::config::Config::default();
-        z_config.insert_json5("adminspace/enabled", "true").unwrap();
+        let z_config = zenoh::config::Config::default();
         let z_session = zenoh::open(z_config.clone()).wait().unwrap();
-
         let z_key = &format!("iox2/{}", iox_service.service_id().as_str());
         let z_subscriber = z_session.declare_subscriber(z_key.clone()).wait().unwrap();
 
@@ -75,9 +122,10 @@ mod zenoh_tunnel {
         sample.send().unwrap();
 
         // propogate over tunnel
-        tunnel.propagate();
+        sut.propagate();
 
-        if let Ok(Some(sample)) = z_subscriber.recv_timeout(Duration::from_millis(100)) {
+        // receive data on zenoh subscriber
+        if let Ok(Some(sample)) = z_subscriber.recv_timeout(Duration::from_millis(500)) {
             let received_data = sample.payload().try_to_string().unwrap();
             assert_that!(received_data, eq PAYLOAD_DATA);
         } else {

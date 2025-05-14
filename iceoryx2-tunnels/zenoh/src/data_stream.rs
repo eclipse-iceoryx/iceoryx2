@@ -114,8 +114,22 @@ impl<'a> DataStream<'a> {
             iox_service_details.static_details.service_id().as_str()
         );
         let z_publisher = z_session.declare_publisher(z_key.clone()).wait().unwrap();
-
         info!("ADD PUBLISHER (zenoh): {}", z_key);
+
+        let iox_static_details_json =
+            serde_json::to_string(&iox_service_details.static_details).unwrap();
+        let z_key = &format!("{}/static_details", z_key);
+        z_session
+            .declare_queryable(z_key)
+            .callback(move |query| {
+                query
+                    .reply(query.key_expr().clone(), &iox_static_details_json)
+                    .wait()
+                    .unwrap();
+            })
+            .background()
+            .wait()
+            .unwrap();
 
         z_publisher
     }
