@@ -12,10 +12,10 @@
 
 use iceoryx2::service::service_id::ServiceId;
 
-pub fn payload(service_id: &ServiceId) -> String {
-    format!("iox2/{}", service_id.as_str())
+pub fn data_stream(service_id: &ServiceId) -> String {
+    format!("iox2/streams/{}", service_id.as_str())
 }
 
-pub fn static_details(service_id: &ServiceId) -> String {
-    format!("iox2/{}/static_details", service_id.as_str())
+pub fn service(service_id: &ServiceId) -> String {
+    format!("iox2/services/{}", service_id.as_str())
 }
