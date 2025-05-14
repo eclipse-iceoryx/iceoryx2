@@ -153,134 +153,8 @@ class ServiceBuilderRequestResponse {
 
     void set_parameters();
 
-    template <typename PayloadType>
-    auto get_payload_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType>;
-
-    template <typename PayloadType>
-    auto get_payload_type_name() -> internal::FromNonSlice<PayloadType>;
-
-    template <typename PayloadType>
-    auto get_payload_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType>;
-
-    template <typename PayloadType>
-    auto get_payload_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType>;
-
-    template <typename UserHeaderType>
-    auto get_user_header_type_name() ->
-        typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
-
-    template <typename UserHeaderType>
-    auto get_user_header_type_name() ->
-        typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*>;
-
     iox2_service_builder_request_response_h m_handle = nullptr;
 };
-
-template <typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader,
-          ServiceType S>
-template <typename PayloadType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    get_payload_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
-    return PayloadType::IOX2_TYPE_NAME;
-}
-
-// NOLINTBEGIN(readability-function-size) : template alternative is less readable
-template <typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader,
-          ServiceType S>
-template <typename PayloadType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    get_payload_type_name() -> internal::FromNonSlice<PayloadType> {
-    if (std::is_same_v<PayloadType, uint8_t>) {
-        return "u8";
-    }
-    if (std::is_same_v<PayloadType, uint16_t>) {
-        return "u16";
-    }
-    if (std::is_same_v<PayloadType, uint32_t>) {
-        return "u32";
-    }
-    if (std::is_same_v<PayloadType, uint64_t>) {
-        return "u64";
-    }
-    if (std::is_same_v<PayloadType, int8_t>) {
-        return "i8";
-    }
-    if (std::is_same_v<PayloadType, int16_t>) {
-        return "i16";
-    }
-    if (std::is_same_v<PayloadType, int32_t>) {
-        return "i32";
-    }
-    if (std::is_same_v<PayloadType, int64_t>) {
-        return "i64";
-    }
-    if (std::is_same_v<PayloadType, float>) {
-        return "f32";
-    }
-    if (std::is_same_v<PayloadType, double>) {
-        return "f64";
-    }
-    if (std::is_same_v<PayloadType, bool>) {
-        return "bool";
-    }
-    return typeid(typename PayloadInfo<PayloadType>::ValueType).name();
-}
-// NOLINTEND(readability-function-size)
-
-template <typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader,
-          ServiceType S>
-template <typename PayloadType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    get_payload_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
-    return PayloadType::ValueType::IOX2_TYPE_NAME;
-}
-
-template <typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader,
-          ServiceType S>
-template <typename PayloadType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    get_payload_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
-    return get_payload_type_name<typename PayloadType::ValueType>();
-}
-
-template <typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader,
-          ServiceType S>
-template <typename UserHeaderType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    get_user_header_type_name() ->
-    typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    return UserHeaderType::IOX2_TYPE_NAME;
-}
-
-template <typename RequestPayload,
-          typename RequestUserHeader,
-          typename ResponsePayload,
-          typename ResponseUserHeader,
-          ServiceType S>
-template <typename UserHeaderType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
-    get_user_header_type_name() ->
-    typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
-    if (std::is_void_v<UserHeaderType>) {
-        return "()"; // no user header provided
-    }
-    return typeid(UserHeaderType).name();
-}
 
 template <typename RequestPayload,
           typename RequestUserHeader,
@@ -513,7 +387,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto type_variant_request_payload =
         iox::IsSlice<RequestPayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
-    const auto* request_payload_type_name = get_payload_type_name<RequestPayload>();
+    const auto* request_payload_type_name = internal::get_payload_type_name<RequestPayload>();
     const auto request_payload_type_name_len = strlen(request_payload_type_name);
     const auto request_payload_type_size = sizeof(RequestValueType);
     const auto request_payload_type_align = alignof(RequestValueType);
@@ -535,7 +409,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
     auto type_variant_response_payload =
         iox::IsSlice<ResponsePayload>::VALUE ? iox2_type_variant_e_DYNAMIC : iox2_type_variant_e_FIXED_SIZE;
 
-    const auto* response_payload_type_name = get_payload_type_name<ResponsePayload>();
+    const auto* response_payload_type_name = internal::get_payload_type_name<ResponsePayload>();
     const auto response_payload_type_name_len = strlen(response_payload_type_name);
     const auto response_payload_type_size = sizeof(ResponseValueType);
     const auto response_payload_type_align = alignof(ResponseValueType);
@@ -554,7 +428,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
 
     // request header type details
     const auto request_header_layout = iox::Layout::from<RequestUserHeader>();
-    const auto* request_header_type_name = get_user_header_type_name<RequestUserHeader>();
+    const auto* request_header_type_name = internal::get_user_header_type_name<RequestUserHeader>();
     const auto request_header_type_name_len = strlen(request_header_type_name);
     const auto request_header_type_size = request_header_layout.size();
     const auto request_header_type_align = request_header_layout.alignment();
@@ -573,7 +447,7 @@ inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, Res
 
     // response header type details
     const auto response_header_layout = iox::Layout::from<ResponseUserHeader>();
-    const auto* response_header_type_name = get_user_header_type_name<ResponseUserHeader>();
+    const auto* response_header_type_name = internal::get_user_header_type_name<ResponseUserHeader>();
     const auto response_header_type_name_len = strlen(response_header_type_name);
     const auto response_header_type_size = response_header_layout.size();
     const auto response_header_type_align = response_header_layout.alignment();
