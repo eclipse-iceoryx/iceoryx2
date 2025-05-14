@@ -44,9 +44,9 @@ impl iox2_request_header_t {
 }
 
 pub struct iox2_request_header_h_t;
-/// The owning handle for [`iox2_request_header_t`]. Passing the handle to an function transfers the ownership.
+/// The owning handle for [`iox2_request_header_t`]. Passing the handle to a function transfers the ownership.
 pub type iox2_request_header_h = *mut iox2_request_header_h_t;
-/// The non-owning handle for [`iox2_request_header_t`]. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for [`iox2_request_header_t`]. Passing the handle to a function does not transfer the ownership.
 pub type iox2_request_header_h_ref = *const iox2_request_header_h;
 
 // NOTE check the README.md for using opaque types with renaming
@@ -106,11 +106,11 @@ pub unsafe extern "C" fn iox2_request_header_drop(handle: iox2_request_header_h)
     (header.deleter)(header);
 }
 
-/// Returns the unique client id of the source of the sample.
+/// Returns the unique client id of the source of the request.
 ///
 /// # Arguments
 ///
-/// * `handle` is valid, non-null and is initialized
+/// * `header_handle` is valid, non-null and is initialized
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_client_id_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `id_handle_ptr` valid pointer to a [`iox2_unique_client_id_h`].
@@ -155,7 +155,7 @@ pub unsafe extern "C" fn iox2_request_header_client_id(
 ///
 /// # Arguments
 ///
-/// * `handle` is valid, non-null and initialized
+/// * `header_handle` is valid, non-null and initialized
 ///
 /// # Safety
 ///

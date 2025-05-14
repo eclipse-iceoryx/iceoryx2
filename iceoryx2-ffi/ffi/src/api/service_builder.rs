@@ -406,7 +406,7 @@ pub unsafe extern "C" fn iox2_service_builder_pub_sub(
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
 ///
 /// Returns a [`iox2_service_builder_request_response_h`] for the request-response service builder
 ///

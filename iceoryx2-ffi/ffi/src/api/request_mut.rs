@@ -151,9 +151,9 @@ impl iox2_request_mut_t {
 }
 
 pub struct iox2_request_mut_h_t;
-/// The owning handle for `iox2_request_mut_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_request_mut_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_request_mut_h = *mut iox2_request_mut_h_t;
-/// The non-owning handle for `iox2_request_mut_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_request_mut_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_request_mut_h_ref = *const iox2_request_mut_h;
 
 impl AssertNonNullHandle for iox2_request_mut_h {
@@ -337,7 +337,7 @@ pub unsafe extern "C" fn iox2_request_mut_user_header_mut(
 ///
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a `*mut c_void` pointer.
-/// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
+/// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_request_mut_payload_mut(
     handle: iox2_request_mut_h_ref,
@@ -365,13 +365,13 @@ pub unsafe extern "C" fn iox2_request_mut_payload_mut(
     }
 }
 
-/// Acquires the samples payload.
+/// Acquires the request payload.
 ///
 /// # Safety
 ///
 /// * `handle` obtained by [`iox2_client_loan_slice_uninit()`](crate::iox2_client_loan_slice_uninit())
 /// * `payload_ptr` a valid, non-null pointer pointing to a [`*const c_void`] pointer.
-/// * `payload_len` (optional) either a null poitner or a valid pointer pointing to a [`c_size_t`].
+/// * `number_of_elements` (optional) either a null pointer or a valid pointer pointing to a [`c_size_t`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_request_mut_payload(
     handle: iox2_request_mut_h_ref,
@@ -399,7 +399,7 @@ pub unsafe extern "C" fn iox2_request_mut_payload(
     }
 }
 
-/// Takes the ownership of the sample and sends it
+/// Takes the ownership of the request and sends it
 ///
 /// # Safety
 ///

@@ -231,7 +231,7 @@ pub(crate) unsafe fn create_type_details(
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
 /// * `type_variant` - The [`iox2_type_variant_e`] for the payload
-/// * `type_name_str` - Must string for the type name.
+/// * `type_name_str` - string for the type name.
 /// * `type_name_len` - The length of the type name string, not including a null
 /// * `size` - The size of the payload
 /// * `alignment` - The alignment of the payload
@@ -292,7 +292,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_set_request_heade
 /// * `service_builder_handle` - Must be a valid [`iox2_service_builder_request_response_h_ref`]
 ///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response).
 /// * `type_variant` - The [`iox2_type_variant_e`] for the payload
-/// * `type_name_str` - Must string for the type name.
+/// * `type_name_str` - string for the type name.
 /// * `type_name_len` - The length of the type name string, not including a null
 /// * `size` - The size of the payload
 /// * `alignment` - The alignment of the payload
@@ -508,7 +508,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_enable_fire_and_f
     }
 }
 
-/// Enables/disables save overflow for requests
+/// Enables/disables safe overflow for requests
 ///
 /// # Safety
 ///
@@ -546,7 +546,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_enable_safe_overf
     }
 }
 
-/// Enables/disables save overflow for responses
+/// Enables/disables safe overflow for responses
 ///
 /// # Safety
 ///
@@ -976,6 +976,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_open_or_create(
 ///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response)
 /// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_port_factory_request_response_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `attribute_verifier_handle` - An initialized valid handle to an [`iox2_attribute_verifier_h_ref`].
 /// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_request_response_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_request_response_open_or_create_error_e`] otherwise.
@@ -1046,6 +1047,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_open(
 ///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response)
 /// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_port_factory_request_response_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `attribute_verifier_handle` - An initialized valid handle to an [`iox2_attribute_verifier_h_ref`].
 /// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_request_response_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_request_response_open_or_create_error_e`] otherwise. Note, only the errors annotated with `O_` are relevant.
@@ -1116,6 +1118,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_create(
 ///   obtained by [`iox2_service_builder_request_response`](crate::iox2_service_builder_request_response)
 /// * `port_factory_struct_ptr` - Must be either a NULL pointer or a pointer to a valid
 ///   [`iox2_port_factory_request_response_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `attribute_specifier_handle` - An initialized valid handle to an [`iox2_attribute_specifier_h_ref`].
 /// * `port_factory_handle_ptr` - An uninitialized or dangling [`iox2_port_factory_request_response_h`] handle which will be initialized by this function call.
 ///
 /// Returns IOX2_OK on success, an [`iox2_request_response_open_or_create_error_e`] otherwise. Note, only the errors annotated with `C_` are relevant.
@@ -1125,7 +1128,7 @@ pub unsafe extern "C" fn iox2_service_builder_request_response_create(
 /// * The `service_builder_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_service_builder_t`](crate::iox2_service_builder_t) can be re-used with
 ///   a call to [`iox2_node_service_builder`](crate::iox2_node_service_builder)!
-/// * The `attribute_verifier_handle` must be valid.
+/// * The `attribute_specifier_handle` must be valid.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_request_response_create_with_attributes(
     service_builder_handle: iox2_service_builder_request_response_h,

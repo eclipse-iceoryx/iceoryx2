@@ -22,7 +22,7 @@ use crate::{
 
 // BEGIN types definition
 
-/// Sample header used by `MessagingPattern::ResponseResponse`
+/// Response header used by `MessagingPattern::RequestResponse`
 #[repr(C)]
 #[repr(align(8))] // core::mem::align_of::<Option<ResponseHeader>>()
 pub struct iox2_response_header_storage_t {
@@ -48,9 +48,9 @@ impl iox2_response_header_t {
 }
 
 pub struct iox2_response_header_h_t;
-/// The owning handle for [`iox2_response_header_t`]. Passing the handle to an function transfers the ownership.
+/// The owning handle for [`iox2_response_header_t`]. Passing the handle to a function transfers the ownership.
 pub type iox2_response_header_h = *mut iox2_response_header_h_t;
-/// The non-owning handle for [`iox2_response_header_t`]. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for [`iox2_response_header_t`]. Passing the handle to a function does not transfer the ownership.
 pub type iox2_response_header_h_ref = *const iox2_response_header_h;
 
 // NOTE check the README.md for using opaque types with renaming
@@ -110,11 +110,11 @@ pub unsafe extern "C" fn iox2_response_header_drop(handle: iox2_response_header_
     (header.deleter)(header);
 }
 
-/// Returns the unique server id of the source of the sample.
+/// Returns the unique server id of the source of the response.
 ///
 /// # Arguments
 ///
-/// * `handle` is valid, non-null and was initialized with
+/// * `header_handle` is valid, non-null and was initialized with
 ///   [`iox2_response_header()`](crate::iox2_response_header)
 /// * `id_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_unique_server_id_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
@@ -160,7 +160,7 @@ pub unsafe extern "C" fn iox2_response_header_server_id(
 ///
 /// # Arguments
 ///
-/// * `handle` is valid, non-null and was initialized with
+/// * `header_handle` is valid, non-null and was initialized with
 ///   [`iox2_response_header()`](crate::iox2_response_header)
 ///
 /// # Safety

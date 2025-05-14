@@ -78,9 +78,9 @@ impl iox2_server_t {
 }
 
 pub struct iox2_server_h_t;
-/// The owning handle for `iox2_server_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_server_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_server_h = *mut iox2_server_h_t;
-/// The non-owning handle for `iox2_publisher_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_server_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_server_h_ref = *const iox2_server_h;
 
 impl AssertNonNullHandle for iox2_server_h {
@@ -129,8 +129,8 @@ impl HandleToType for iox2_server_h_ref {
 ///
 /// # Safety
 ///
-/// * `subscriber_handle` is valid, non-null and was obtained via [`iox2_port_factory_server_builder_create`](crate::iox2_port_factory_server_builder_create)
-/// * `id` is valid and non-null
+/// * `handle` is valid, non-null and was obtained via [`iox2_port_factory_server_builder_create`](crate::iox2_port_factory_server_builder_create)
+/// * `id_handle_ptr` is valid and non-null
 #[no_mangle]
 pub unsafe extern "C" fn iox2_server_id(
     handle: iox2_server_h_ref,
@@ -209,7 +209,7 @@ pub unsafe extern "C" fn iox2_server_has_requests(
 /// # Safety
 ///
 /// * `handle` - Must be a valid [`iox2_server_h_ref`]
-///   obtained by [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create).
+///   obtained by [`iox2_port_factory_server_builder_create`](crate::iox2_port_factory_server_builder_create).
 #[no_mangle]
 pub unsafe extern "C" fn iox2_server_initial_max_slice_len(handle: iox2_server_h_ref) -> c_size_t {
     handle.assert_non_null();
@@ -231,15 +231,15 @@ pub unsafe extern "C" fn iox2_server_initial_max_slice_len(handle: iox2_server_h
 /// * `active_request_struct_ptr` - Must be either a NULL pointer or a pointer to a valid [`iox2_active_request_t`].
 ///   If it is a NULL pointer, the storage will be allocated on the heap.
 /// * `active_request_handle_ptr` - An uninitialized or dangling [`iox2_active_request_h`] handle
-///   which will be initialized by this function call if a sample is obtained, otherwise it will be
+///   which will be initialized by this function call if a request is obtained, otherwise it will be
 ///   set to NULL.
 ///
 /// Returns IOX2_OK on success, an [`iox2_receive_error_e`](crate::iox2_receive_error_e) otherwise.
-/// Attention, an empty server queue is not an error and even with IOX2_OK it is possible to get a NULL in `sample_handle_ptr`.
+/// Attention, an empty server queue is not an error and even with IOX2_OK it is possible to get a NULL in `active_request_handle_ptr`.
 ///
 /// # Safety
 ///
-/// * The `server_handle` is still valid after the return of this function and can be use in another function call.
+/// * The `server_handle` is still valid after the return of this function and can be used in another function call.
 /// * The `active_request_handle_ptr` is pointing to a valid [`iox2_active_request_h`].
 #[no_mangle]
 pub unsafe extern "C" fn iox2_server_receive(
@@ -309,7 +309,7 @@ pub unsafe extern "C" fn iox2_server_receive(
 ///
 /// # Safety
 ///
-/// * The `server_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The `handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
 /// * The corresponding [`iox2_server_t`] can be re-used with a call to
 ///   [`iox2_port_factory_subscriber_builder_create`](crate::iox2_port_factory_subscriber_builder_create)!
 #[no_mangle]

@@ -71,9 +71,9 @@ impl iox2_response_t {
 }
 
 pub struct iox2_response_h_t;
-/// The owning handle for `iox2_sample_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_response_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_response_h = *mut iox2_response_h_t;
-/// The non-owning handle for `iox2_response_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_response_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_response_h_ref = *const iox2_response_h;
 
 impl AssertNonNullHandle for iox2_response_h {
