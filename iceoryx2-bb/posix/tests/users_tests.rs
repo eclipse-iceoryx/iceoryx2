@@ -21,16 +21,16 @@ fn user_works() {
     test_requires!(POSIX_SUPPORT_USERS_AND_GROUPS);
 
     let root = User::from_name(&UserName::new(b"root").unwrap()).unwrap();
-    let root_from_uid = User::from_uid(0).unwrap();
+    let root_from_uid = User::from_uid(Uid::new_from_native(0)).unwrap();
 
     assert_that!(root.uid(), eq root_from_uid.uid());
-    assert_that!(root.uid(), eq 0);
+    assert_that!(root.uid().value(), eq 0);
 
     let root_details = root.details().unwrap();
     let root_from_uid_details = root_from_uid.details().unwrap();
 
     assert_that!(root_details.gid(), eq root_from_uid_details.gid());
-    assert_that!(root_details.gid(), eq 0);
+    assert_that!(root_details.gid().value(), eq 0);
 
     assert_that!(root_details.name(), eq root_from_uid_details.name());
     assert_that!(root_details.name().as_bytes(), eq b"root");

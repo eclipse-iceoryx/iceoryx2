@@ -15,9 +15,11 @@ use iceoryx2_bb_elementary::unique_id::*;
 use iceoryx2_bb_posix::config;
 use iceoryx2_bb_posix::file::*;
 use iceoryx2_bb_posix::file_descriptor::*;
+use iceoryx2_bb_posix::group::Gid;
 use iceoryx2_bb_posix::process::ProcessId;
 use iceoryx2_bb_posix::socket_ancillary::*;
 use iceoryx2_bb_posix::testing::create_test_directory;
+use iceoryx2_bb_posix::user::Uid;
 use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_testing::assert_that;
@@ -77,16 +79,16 @@ fn socket_ancillary_credentials_work() {
 
     let mut credentials = SocketCred::new();
     credentials.set_pid(ProcessId::new(123));
-    credentials.set_uid(456);
-    credentials.set_gid(789);
+    credentials.set_uid(Uid::new_from_native(456));
+    credentials.set_gid(Gid::new_from_native(789));
     sut.set_creds(&credentials);
     assert_that!(sut.get_creds(), eq Some(credentials));
     assert_that!(sut.is_full(), eq false);
     assert_that!(sut, is_not_empty);
 
     credentials.set_pid(ProcessId::new(999));
-    credentials.set_uid(888);
-    credentials.set_gid(777);
+    credentials.set_uid(Uid::new_from_native(888));
+    credentials.set_gid(Gid::new_from_native(777));
     sut.set_creds(&credentials);
     assert_that!(sut.get_creds(), eq Some(credentials));
     assert_that!(sut.is_full(), eq false);

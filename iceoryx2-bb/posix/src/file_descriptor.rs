@@ -71,9 +71,11 @@ use core::fmt::Debug;
 
 use crate::config::EINTR_REPETITIONS;
 use crate::file::*;
+use crate::group::Gid;
 use crate::metadata::Metadata;
 use crate::ownership::*;
 use crate::permission::{Permission, PermissionExt};
+use crate::user::Uid;
 use iceoryx2_bb_log::{error, fail, fatal_panic};
 use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::*;
@@ -252,8 +254,8 @@ pub trait FileDescriptorManagement: FileDescriptorBased + Debug + Sized {
         let attr =
             fail!(from self, when File::acquire_attributes(self), "Unable to read file owner.");
         Ok(OwnershipBuilder::new()
-            .uid(attr.st_uid)
-            .gid(attr.st_gid)
+            .uid(Uid::new_from_native(attr.st_uid))
+            .gid(Gid::new_from_native(attr.st_gid))
             .create())
     }
 

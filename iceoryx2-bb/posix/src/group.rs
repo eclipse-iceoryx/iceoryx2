@@ -56,6 +56,8 @@ use iceoryx2_pal_posix::*;
 use crate::{config::GROUP_BUFFER_SIZE, system_configuration::*};
 use iceoryx2_bb_log::fail;
 
+use core::fmt::Display;
+
 enum_gen! { GroupError
   entry:
     Interrupt,
@@ -67,6 +69,7 @@ enum_gen! { GroupError
     SystemGroupNameLengthLongerThanSupportedLength,
     SystemUserNameLengthLongerThanSupportedLength,
     InvalidGroupName,
+    GroupIdOutOfRange,
     UnknownError(i32)
 }
 
@@ -78,7 +81,8 @@ pub trait GroupExt {
 
 impl GroupExt for u32 {
     fn as_group(&self) -> Result<Group, GroupError> {
-        Group::from_gid(*self)
+        let gid = Gid::new(*self).ok_or(GroupError::GroupIdOutOfRange)?;
+        Group::from_gid(gid)
     }
 }
 
@@ -130,22 +134,72 @@ impl GroupDetails {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Gid {
+    gid: u32,
+}
+
+trait GidInRange {
+    fn gid_in_range(other: u32) -> bool;
+}
+
+impl GidInRange for u32 {
+    fn gid_in_range(_other: u32) -> bool {
+        true
+    }
+}
+
+impl GidInRange for u16 {
+    fn gid_in_range(other: u32) -> bool {
+        other <= u16::MAX as u32
+    }
+}
+
+impl Gid {
+    pub fn new(gid: u32) -> Option<Self> {
+        if posix::gid_t::gid_in_range(gid) {
+            Some(Self { gid })
+        } else {
+            None
+        }
+    }
+
+    pub fn new_from_native(gid: posix::gid_t) -> Self {
+        Self { gid: gid as _ }
+    }
+
+    pub fn value(&self) -> u32 {
+        self.gid
+    }
+
+    pub fn to_native(&self) -> posix::uid_t {
+        // NOTE: this is safe since the range is checked on construction
+        self.gid as _
+    }
+}
+
+impl Display for Gid {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.gid)
+    }
+}
+
 /// Represents a group in a POSIX system
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Group {
-    gid: u32,
+    gid: Gid,
     details: Option<GroupDetails>,
 }
 
 impl Group {
     /// Create an group object from the owners group of the process
     pub fn from_self() -> Result<Group, GroupError> {
-        Self::from_gid(unsafe { posix::getgid() })
+        Self::from_gid(Gid::new_from_native(unsafe { posix::getgid() }))
     }
 
     /// Create an group object from a given gid. If the gid does not exist an error will be
     /// returned.
-    pub fn from_gid(gid: u32) -> Result<Group, GroupError> {
+    pub fn from_gid(gid: Gid) -> Result<Group, GroupError> {
         let mut group = posix::group::new_zeroed();
         let mut group_ptr: *mut posix::group = &mut group;
         let mut buffer: [posix::c_char; GROUP_BUFFER_SIZE] = [0; GROUP_BUFFER_SIZE];
@@ -154,7 +208,7 @@ impl Group {
         let msg = "Unable to acquire group entry";
         let errno_value = unsafe {
             posix::getgrgid_r(
-                gid,
+                gid.to_native(),
                 &mut group,
                 buffer.as_mut_ptr(),
                 GROUP_BUFFER_SIZE,
@@ -208,7 +262,7 @@ impl Group {
     }
 
     /// Return the group id
-    pub fn gid(&self) -> u32 {
+    pub fn gid(&self) -> Gid {
         self.gid
     }
 
@@ -228,7 +282,9 @@ impl Group {
             fail!(from origin, with GroupError::GroupNotFound, "{} since the group does not exist.", msg);
         }
 
-        let gid = group.gr_gid;
+        // NOTE: on some platforms 'gr_gid' is of a different type than 'gid_t', therefore cast to 'gid_t' first
+        let gid: posix::gid_t = group.gr_gid as _;
+        let gid = Gid::new_from_native(gid);
         let name = fail!(from origin, when unsafe{ GroupName::from_c_str(group.gr_name) },
                             with GroupError::SystemGroupNameLengthLongerThanSupportedLength,
                             "{} since the group name length ({}) is greater than the supported group name length of {}.",

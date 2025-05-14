@@ -72,7 +72,8 @@
 //! File::remove(&file_name);
 //! ```
 use crate::{
-    file_descriptor::FileDescriptor, process::*, unix_datagram_socket::UnixDatagramReceiver,
+    file_descriptor::FileDescriptor, group::Gid, process::*,
+    unix_datagram_socket::UnixDatagramReceiver, user::Uid,
 };
 use core::{fmt::Display, marker::PhantomPinned};
 use iceoryx2_bb_log::warn;
@@ -106,16 +107,16 @@ fn buffer_capacity() -> usize {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct SocketCred {
     pid: ProcessId,
-    uid: u32,
-    gid: u32,
+    uid: Uid,
+    gid: Gid,
 }
 
 impl Default for SocketCred {
     fn default() -> Self {
         Self {
             pid: Process::from_self().id(),
-            uid: unsafe { posix::getuid() },
-            gid: unsafe { posix::getgid() },
+            uid: Uid::new_from_native(unsafe { posix::getuid() }),
+            gid: Gid::new_from_native(unsafe { posix::getgid() }),
         }
     }
 }
@@ -132,12 +133,12 @@ impl SocketCred {
     }
 
     /// Overrides the current uid
-    pub fn set_uid(&mut self, uid: u32) {
+    pub fn set_uid(&mut self, uid: Uid) {
         self.uid = uid;
     }
 
     /// Overrides the current gid
-    pub fn set_gid(&mut self, gid: u32) {
+    pub fn set_gid(&mut self, gid: Gid) {
         self.gid = gid;
     }
 
@@ -145,11 +146,11 @@ impl SocketCred {
         self.pid
     }
 
-    pub fn get_uid(&self) -> u32 {
+    pub fn get_uid(&self) -> Uid {
         self.uid
     }
 
-    pub fn get_gid(&self) -> u32 {
+    pub fn get_gid(&self) -> Gid {
         self.gid
     }
 }
@@ -387,8 +388,8 @@ impl SocketAncillary {
 
                     self.credentials = Some(SocketCred {
                         pid: ProcessId::new(raw_cred.pid),
-                        uid: raw_cred.uid,
-                        gid: raw_cred.gid,
+                        uid: Uid::new_from_native(raw_cred.uid),
+                        gid: Gid::new_from_native(raw_cred.gid),
                     });
                 }
                 v => {
