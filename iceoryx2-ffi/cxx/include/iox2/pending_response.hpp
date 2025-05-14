@@ -34,9 +34,9 @@ class RequestMut;
 /// [`Server`](crate::port::server::Server)s are informed.
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 class PendingResponse {
     using ValueType = typename PayloadInfo<RequestPayload>::ValueType;
 
@@ -53,16 +53,17 @@ class PendingResponse {
 
     /// Receives a [`Response`] from one of the [`Server`](crate::port::server::Server)s that
     /// received the [`RequestMut`].
-    auto receive() -> iox::expected<iox::optional<Response<Service, ResponsePayload, ResponseHeader>>, ReceiveError>;
+    auto receive()
+        -> iox::expected<iox::optional<Response<Service, ResponsePayload, ResponseUserHeader>>, ReceiveError>;
 
     /// Returns a reference to the iceoryx2 internal
-    /// [`service::header::request_response::RequestHeader`] of the corresponding
+    /// [`service::header::request_response::RequestUserHeader`] of the corresponding
     /// [`RequestMut`]
-    auto header() -> RequestHeaderRequestResponse;
+    auto header() -> RequestHeader;
 
     /// Returns a reference to the user defined request header of the corresponding
     /// [`RequestMut`]
-    template <typename T = RequestHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestHeader>, T>>
+    template <typename T = RequestUserHeader, typename = std::enable_if_t<!std::is_same_v<void, RequestUserHeader>, T>>
     auto user_header() -> const T&;
 
     /// Returns a reference to the request payload of the corresponding
@@ -94,11 +95,12 @@ class PendingResponse {
     friend class Client;
     template <ServiceType S,
               typename RequestPayloadT,
-              typename RequestHeaderT,
+              typename RequestUserHeaderT,
               typename ResponsePayloadT,
-              typename ResponseHeaderT>
-    friend auto send(RequestMut<S, RequestPayloadT, RequestHeaderT, ResponsePayloadT, ResponseHeaderT>&& request)
-        -> iox::expected<PendingResponse<S, RequestPayloadT, RequestHeaderT, ResponsePayloadT, ResponseHeaderT>,
+              typename ResponseUserHeaderT>
+    friend auto
+    send(RequestMut<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>&& request)
+        -> iox::expected<PendingResponse<S, RequestPayloadT, RequestUserHeaderT, ResponsePayloadT, ResponseUserHeaderT>,
                          RequestSendError>;
 
     explicit PendingResponse(iox2_pending_response_h handle) noexcept;
@@ -110,20 +112,20 @@ class PendingResponse {
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::PendingResponse(
-    PendingResponse&& rhs) noexcept {
+          typename ResponseUserHeader>
+inline PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    PendingResponse(PendingResponse&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
+          typename ResponseUserHeader>
+inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator=(
     PendingResponse&& rhs) noexcept -> PendingResponse& {
     if (this != &rhs) {
         drop();
@@ -136,73 +138,76 @@ inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayl
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::
+          typename ResponseUserHeader>
+inline PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     ~PendingResponse() noexcept {
     drop();
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator*() const
+          typename ResponseUserHeader>
+inline auto
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator*() const
     -> const RequestPayload& {
     return payload();
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator->() const
+          typename ResponseUserHeader>
+inline auto
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator->() const
     -> const RequestPayload* {
     return &payload();
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::receive()
-    -> iox::expected<iox::optional<Response<Service, ResponsePayload, ResponseHeader>>, ReceiveError> {
+          typename ResponseUserHeader>
+inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::receive()
+    -> iox::expected<iox::optional<Response<Service, ResponsePayload, ResponseUserHeader>>, ReceiveError> {
     iox2_response_h response_handle {};
     auto result = iox2_pending_response_receive(&m_handle, nullptr, &response_handle);
 
     if (result == IOX2_OK) {
         if (response_handle != nullptr) {
-            Response<Service, ResponsePayload, ResponseHeader> response(response_handle);
-            return iox::ok(iox::optional<Response<Service, ResponsePayload, ResponseHeader>>(std::move(response)));
+            Response<Service, ResponsePayload, ResponseUserHeader> response(response_handle);
+            return iox::ok(iox::optional<Response<Service, ResponsePayload, ResponseUserHeader>>(std::move(response)));
         }
-        return iox::ok(iox::optional<Response<Service, ResponsePayload, ResponseHeader>>(iox::nullopt));
+        return iox::ok(iox::optional<Response<Service, ResponsePayload, ResponseUserHeader>>(iox::nullopt));
     }
     return iox::err(iox::into<ReceiveError>(result));
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::header()
-    -> RequestHeaderRequestResponse {
+          typename ResponseUserHeader>
+inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::header()
+    -> RequestHeader {
     iox2_request_header_h header_handle = nullptr;
     iox2_pending_response_header(&m_handle, nullptr, &header_handle);
-    return RequestHeaderRequestResponse { header_handle };
+    return RequestHeader { header_handle };
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 template <typename T, typename>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::user_header()
+inline auto
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::user_header()
     -> const T& {
     const void* ptr = nullptr;
     iox2_pending_response_user_header(&m_handle, &ptr);
@@ -211,11 +216,12 @@ inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayl
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 template <typename T, typename>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
+inline auto
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload() const
     -> const T& {
     const void* ptr = nullptr;
     iox2_pending_response_payload(&m_handle, &ptr, nullptr);
@@ -224,11 +230,12 @@ inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayl
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 template <typename T, typename>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::payload() const
+inline auto
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::payload() const
     -> iox::ImmutableSlice<ValueType> {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
@@ -240,51 +247,52 @@ inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayl
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline auto
-PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::number_of_server_connections()
-    const -> size_t {
+          typename ResponseUserHeader>
+inline auto PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    number_of_server_connections() const -> size_t {
     return iox2_pending_response_number_of_server_connections(&m_handle);
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline auto PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::has_response()
+          typename ResponseUserHeader>
+inline auto
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::has_response()
     -> bool {
     return iox2_pending_response_has_response(&m_handle);
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::is_connected() const -> bool {
+PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::is_connected() const
+    -> bool {
     return iox2_pending_response_is_connected(&m_handle);
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::PendingResponse(
-    iox2_pending_response_h handle) noexcept
+          typename ResponseUserHeader>
+inline PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    PendingResponse(iox2_pending_response_h handle) noexcept
     : m_handle { handle } {
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline void PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::drop() {
+          typename ResponseUserHeader>
+inline void PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::drop() {
     if (m_handle != nullptr) {
         iox2_pending_response_drop(m_handle);
         m_handle = nullptr;

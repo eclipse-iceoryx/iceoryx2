@@ -37,9 +37,9 @@ namespace iox2 {
 /// or [`crate::port::server::Server`] ports.
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 class PortFactoryRequestResponse {
   public:
     PortFactoryRequestResponse(PortFactoryRequestResponse&& rhs) noexcept;
@@ -76,12 +76,12 @@ class PortFactoryRequestResponse {
     /// Returns a [`PortFactoryClient`] to create a new
     /// [`crate::port::client::Client`] port.
     auto client_builder() const
-        -> PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>;
+        -> PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
 
     /// Returns a [`PortFactoryServer`] to create a new
     /// [`crate::port::server::Server`] port.
     auto server_builder() const
-        -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>;
+        -> PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>;
 
   private:
     template <typename, typename, typename, typename, ServiceType>
@@ -95,21 +95,21 @@ class PortFactoryRequestResponse {
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::
+          typename ResponseUserHeader>
+inline PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     PortFactoryRequestResponse(PortFactoryRequestResponse&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator=(
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::operator=(
     PortFactoryRequestResponse&& rhs) noexcept -> PortFactoryRequestResponse& {
     if (this != &rhs) {
         drop();
@@ -122,34 +122,34 @@ PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePaylo
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::
+          typename ResponseUserHeader>
+inline PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     ~PortFactoryRequestResponse() {
     drop();
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::name() const
-    -> ServiceNameView {
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::name()
+    const -> ServiceNameView {
     const auto* service_name_ptr = iox2_port_factory_request_response_service_name(&m_handle);
     return ServiceNameView(service_name_ptr);
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::service_id() const
-    -> ServiceId {
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    service_id() const -> ServiceId {
     iox::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
     iox2_port_factory_request_response_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
 
@@ -158,23 +158,23 @@ PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePaylo
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::attributes() const
-    -> AttributeSetView {
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    attributes() const -> AttributeSetView {
     return AttributeSetView(iox2_port_factory_request_response_attributes(&m_handle));
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::static_config()
-    const -> StaticConfigRequestResponse {
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    static_config() const -> StaticConfigRequestResponse {
     iox2_static_config_request_response_t static_config {};
     iox2_port_factory_request_response_static_config(&m_handle, &static_config);
 
@@ -183,21 +183,22 @@ PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePaylo
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::dynamic_config()
-    const -> DynamicConfigRequestResponse {
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    dynamic_config() const -> DynamicConfigRequestResponse {
     return DynamicConfigRequestResponse(m_handle);
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline auto PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::nodes(
+          typename ResponseUserHeader>
+inline auto
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::nodes(
     const iox::function<CallbackProgression(NodeState<Service>)>& callback) const
     -> iox::expected<void, NodeListFailure> {
     auto ctx = internal::ctx(callback);
@@ -214,45 +215,47 @@ inline auto PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, R
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::client_builder()
-    const -> PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-    return PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    client_builder() const
+    -> PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> {
+    return PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
         iox2_port_factory_request_response_client_builder(&m_handle, nullptr));
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::server_builder()
-    const -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
-    return PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    server_builder() const
+    -> PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader> {
+    return PortFactoryServer<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
         iox2_port_factory_request_response_server_builder(&m_handle, nullptr));
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::
+          typename ResponseUserHeader>
+inline PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     PortFactoryRequestResponse(iox2_port_factory_request_response_h handle)
     : m_handle { handle } {
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline void
-PortFactoryRequestResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::drop() {
+PortFactoryRequestResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::drop() {
     if (m_handle != nullptr) {
         iox2_port_factory_request_response_drop(m_handle);
         m_handle = nullptr;

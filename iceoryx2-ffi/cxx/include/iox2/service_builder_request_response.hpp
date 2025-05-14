@@ -27,9 +27,9 @@
 
 namespace iox2 {
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
 class ServiceBuilderRequestResponse {
     /// If the [`Service`] is created, it defines the request [`Alignment`] of the payload for the
@@ -93,25 +93,25 @@ class ServiceBuilderRequestResponse {
 
   public:
     /// Sets the request user header type of the [`Service`].
-    template <typename NewRequestHeader>
+    template <typename NewRequestUserHeader>
     auto request_user_header() && -> ServiceBuilderRequestResponse<RequestPayload,
-                                                                   NewRequestHeader,
+                                                                   NewRequestUserHeader,
                                                                    ResponsePayload,
-                                                                   ResponseHeader,
+                                                                   ResponseUserHeader,
                                                                    S>&&;
 
     /// Sets the response user header type of the [`Service`].
-    template <typename NewResponseHeader>
+    template <typename NewResponseUserHeader>
     auto response_user_header() && -> ServiceBuilderRequestResponse<RequestPayload,
-                                                                    RequestHeader,
+                                                                    RequestUserHeader,
                                                                     ResponsePayload,
-                                                                    NewResponseHeader,
+                                                                    NewResponseUserHeader,
                                                                     S>&&;
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
     /// created.
     auto open_or_create() && -> iox::expected<
-        PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError>;
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -121,28 +121,28 @@ class ServiceBuilderRequestResponse {
     /// and service payload type must be the same, otherwise the open process will fail.
     /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
     auto open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
-        PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError>;
 
     /// Opens an existing [`Service`].
     auto open() && -> iox::expected<
-        PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError>;
 
     /// Opens an existing [`Service`] with attribute requirements. If the defined attribute
     /// requirements are not satisfied the open process will fail.
     auto open_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
-        PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenError>;
 
     /// Creates a new [`Service`].
     auto create() && -> iox::expected<
-        PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError>;
 
     /// Creates a new [`Service`] with a set of attributes.
     auto create_with_attributes(const AttributeSpecifier& attributes) && -> iox::expected<
-        PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError>;
 
   private:
@@ -177,24 +177,24 @@ class ServiceBuilderRequestResponse {
 };
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
 template <typename PayloadType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     get_payload_type_name() -> internal::FromCustomizedPayloadTypeName<PayloadType> {
     return PayloadType::IOX2_TYPE_NAME;
 }
 
 // NOLINTBEGIN(readability-function-size) : template alternative is less readable
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
 template <typename PayloadType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     get_payload_type_name() -> internal::FromNonSlice<PayloadType> {
     if (std::is_same_v<PayloadType, uint8_t>) {
         return "u8";
@@ -234,46 +234,46 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, Respons
 // NOLINTEND(readability-function-size)
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
 template <typename PayloadType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     get_payload_type_name() -> internal::FromSliceWithCustomizedInnerPayloadTypeName<PayloadType> {
     return PayloadType::ValueType::IOX2_TYPE_NAME;
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
 template <typename PayloadType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     get_payload_type_name() -> internal::FromSliceWithoutCustomizedInnerPayloadTypeName<PayloadType> {
     return get_payload_type_name<typename PayloadType::ValueType>();
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
 template <typename UserHeaderType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     get_user_header_type_name() ->
     typename std::enable_if_t<internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
     return UserHeaderType::IOX2_TYPE_NAME;
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
 template <typename UserHeaderType>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     get_user_header_type_name() ->
     typename std::enable_if_t<!internal::HasUserHeaderTypeNameMember<UserHeaderType>::value, const char*> {
     if (std::is_void_v<UserHeaderType>) {
@@ -283,53 +283,57 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, Respons
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-template <typename NewRequestHeader>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+template <typename NewRequestUserHeader>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     request_user_header() && -> ServiceBuilderRequestResponse<RequestPayload,
-                                                              NewRequestHeader,
+                                                              NewRequestUserHeader,
                                                               ResponsePayload,
-                                                              ResponseHeader,
+                                                              ResponseUserHeader,
                                                               S>&& {
     return std::move(
         // required here since we just change the template header type but the builder structure stays the same
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        *reinterpret_cast<
-            ServiceBuilderRequestResponse<RequestPayload, NewRequestHeader, ResponsePayload, ResponseHeader, S>*>(
-            this));
+        *reinterpret_cast<ServiceBuilderRequestResponse<RequestPayload,
+                                                        NewRequestUserHeader,
+                                                        ResponsePayload,
+                                                        ResponseUserHeader,
+                                                        S>*>(this));
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-template <typename NewResponseHeader>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+template <typename NewResponseUserHeader>
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     response_user_header() && -> ServiceBuilderRequestResponse<RequestPayload,
-                                                               RequestHeader,
+                                                               RequestUserHeader,
                                                                ResponsePayload,
-                                                               NewResponseHeader,
+                                                               NewResponseUserHeader,
                                                                S>&& {
     return std::move(
         // required here since we just change the template header type but the builder structure stays the same
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-        *reinterpret_cast<
-            ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, NewResponseHeader, S>*>(
-            this));
+        *reinterpret_cast<ServiceBuilderRequestResponse<RequestPayload,
+                                                        RequestUserHeader,
+                                                        ResponsePayload,
+                                                        NewResponseUserHeader,
+                                                        S>*>(this));
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     open_or_create() && -> iox::expected<
-        PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError> {
     set_parameters();
 
@@ -337,21 +341,22 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, Respons
     auto result = iox2_service_builder_request_response_open_or_create(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
-            port_factory_handle));
+        return iox::ok(
+            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+                port_factory_handle));
     }
 
     return iox::err(iox::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     open_or_create_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
-        PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseOpenOrCreateError> {
     set_parameters();
 
@@ -360,45 +365,46 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, Respons
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
-            port_factory_handle));
+        return iox::ok(
+            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+                port_factory_handle));
     }
 
     return iox::err(iox::into<RequestResponseOpenOrCreateError>(result));
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-inline auto
-ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::open() && -> iox::
-    expected<PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-             RequestResponseOpenError> {
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    open() && -> iox::expected<
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+        RequestResponseOpenError> {
     set_parameters();
 
     iox2_port_factory_request_response_h port_factory_handle {};
     auto result = iox2_service_builder_request_response_open(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
-            port_factory_handle));
+        return iox::ok(
+            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+                port_factory_handle));
     }
 
     return iox::err(iox::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-inline auto
-ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::open_with_attributes(
-    const AttributeVerifier& required_attributes) && -> iox::
-    expected<PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-             RequestResponseOpenError> {
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    open_with_attributes(const AttributeVerifier& required_attributes) && -> iox::expected<
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+        RequestResponseOpenError> {
     set_parameters();
 
     iox2_port_factory_request_response_h port_factory_handle {};
@@ -406,43 +412,45 @@ ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, Re
         m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
-            port_factory_handle));
+        return iox::ok(
+            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+                port_factory_handle));
     }
 
     return iox::err(iox::into<RequestResponseOpenError>(result));
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-inline auto
-ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::create() && -> iox::
-    expected<PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-             RequestResponseCreateError> {
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    create() && -> iox::expected<
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+        RequestResponseCreateError> {
     set_parameters();
 
     iox2_port_factory_request_response_h port_factory_handle {};
     auto result = iox2_service_builder_request_response_create(m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
-            port_factory_handle));
+        return iox::ok(
+            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+                port_factory_handle));
     }
 
     return iox::err(iox::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline auto ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     create_with_attributes(const AttributeSpecifier& attributes) && -> iox::expected<
-        PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+        PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
         RequestResponseCreateError> {
     set_parameters();
 
@@ -451,30 +459,31 @@ inline auto ServiceBuilderRequestResponse<RequestPayload, RequestHeader, Respons
         m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(PortFactoryRequestResponse<S, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(
-            port_factory_handle));
+        return iox::ok(
+            PortFactoryRequestResponse<S, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(
+                port_factory_handle));
     }
 
     return iox::err(iox::into<RequestResponseCreateError>(result));
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-inline ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::
+inline ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
     ServiceBuilderRequestResponse(iox2_service_builder_h handle)
     : m_handle { iox2_service_builder_request_response(handle) } {
 }
 
 template <typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader,
+          typename ResponseUserHeader,
           ServiceType S>
-inline void
-ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, S>::set_parameters() {
+inline void ServiceBuilderRequestResponse<RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader, S>::
+    set_parameters() {
     m_request_payload_alignment.and_then(
         [&](auto value) { iox2_service_builder_request_response_request_payload_alignment(&m_handle, value); });
     m_response_payload_alignment.and_then(
@@ -544,8 +553,8 @@ ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, Re
     }
 
     // request header type details
-    const auto request_header_layout = iox::Layout::from<RequestHeader>();
-    const auto* request_header_type_name = get_user_header_type_name<RequestHeader>();
+    const auto request_header_layout = iox::Layout::from<RequestUserHeader>();
+    const auto* request_header_type_name = get_user_header_type_name<RequestUserHeader>();
     const auto request_header_type_name_len = strlen(request_header_type_name);
     const auto request_header_type_size = request_header_layout.size();
     const auto request_header_type_align = request_header_layout.alignment();
@@ -563,8 +572,8 @@ ServiceBuilderRequestResponse<RequestPayload, RequestHeader, ResponsePayload, Re
     }
 
     // response header type details
-    const auto response_header_layout = iox::Layout::from<ResponseHeader>();
-    const auto* response_header_type_name = get_user_header_type_name<ResponseHeader>();
+    const auto response_header_layout = iox::Layout::from<ResponseUserHeader>();
+    const auto* response_header_type_name = get_user_header_type_name<ResponseUserHeader>();
     const auto response_header_type_name_len = strlen(response_header_type_name);
     const auto response_header_type_size = response_header_layout.size();
     const auto response_header_type_align = response_header_layout.alignment();

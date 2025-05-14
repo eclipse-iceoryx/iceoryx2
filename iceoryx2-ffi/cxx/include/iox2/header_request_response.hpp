@@ -17,13 +17,13 @@
 
 namespace iox2 {
 /// Request header used by [`MessagingPattern::RequestResponse`]
-class RequestHeaderRequestResponse {
+class RequestHeader {
   public:
-    RequestHeaderRequestResponse(const RequestHeaderRequestResponse&) = delete;
-    RequestHeaderRequestResponse(RequestHeaderRequestResponse&& rhs) noexcept;
-    auto operator=(const RequestHeaderRequestResponse&) -> RequestHeaderRequestResponse& = delete;
-    auto operator=(RequestHeaderRequestResponse&& rhs) noexcept -> RequestHeaderRequestResponse&;
-    ~RequestHeaderRequestResponse();
+    RequestHeader(const RequestHeader&) = delete;
+    RequestHeader(RequestHeader&& rhs) noexcept;
+    auto operator=(const RequestHeader&) -> RequestHeader& = delete;
+    auto operator=(RequestHeader&& rhs) noexcept -> RequestHeader&;
+    ~RequestHeader();
 
     /// Returns the [`UniqueClientId`] of the source [`Client`].
     auto client_port_id() -> UniqueClientId;
@@ -36,20 +36,20 @@ class RequestHeaderRequestResponse {
     template <ServiceType, typename, typename, typename, typename>
     friend class RequestMut;
 
-    explicit RequestHeaderRequestResponse(iox2_request_header_h handle);
+    explicit RequestHeader(iox2_request_header_h handle);
     void drop();
 
     iox2_request_header_h m_handle = nullptr;
 };
 
 /// Response header used by [`MessagingPattern::RequestResponse`]
-class ResponseHeaderRequestResponse {
+class ResponseHeader {
   public:
-    ResponseHeaderRequestResponse(const ResponseHeaderRequestResponse&) = delete;
-    ResponseHeaderRequestResponse(ResponseHeaderRequestResponse&& rhs) noexcept;
-    auto operator=(const ResponseHeaderRequestResponse&) -> ResponseHeaderRequestResponse& = delete;
-    auto operator=(ResponseHeaderRequestResponse&& rhs) noexcept -> ResponseHeaderRequestResponse&;
-    ~ResponseHeaderRequestResponse();
+    ResponseHeader(const ResponseHeader&) = delete;
+    ResponseHeader(ResponseHeader&& rhs) noexcept;
+    auto operator=(const ResponseHeader&) -> ResponseHeader& = delete;
+    auto operator=(ResponseHeader&& rhs) noexcept -> ResponseHeader&;
+    ~ResponseHeader();
 
     /// Returns the [`UniqueServerId`] of the source [`Server`].
     auto server_port_id() -> UniqueServerId;
@@ -60,7 +60,7 @@ class ResponseHeaderRequestResponse {
     template <ServiceType, typename, typename>
     friend class ResponseMut;
 
-    explicit ResponseHeaderRequestResponse(iox2_response_header_h handle);
+    explicit ResponseHeader(iox2_response_header_h handle);
     void drop();
 
     iox2_response_header_h m_handle = nullptr;

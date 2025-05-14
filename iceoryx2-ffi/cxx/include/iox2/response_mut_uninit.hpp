@@ -30,7 +30,7 @@ namespace iox2 {
 ///
 /// If the [`ResponseMutUninit`] is not sent it will reelase the loaned memory when going out of
 /// scope.
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 class ResponseMutUninit {
     using ValueType = typename PayloadInfo<ResponsePayload>::ValueType;
 
@@ -43,15 +43,17 @@ class ResponseMutUninit {
     auto operator=(const ResponseMutUninit&) -> ResponseMutUninit& = delete;
 
     /// Returns a reference to the
-    /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
-    auto header() const -> ResponseHeaderRequestResponse;
+    /// [`ResponseUserHeader`](service::header::request_response::ResponseUserHeader).
+    auto header() const -> ResponseHeader;
 
     /// Returns a reference to the user header of the response.
-    template <typename T = ResponseHeader, typename = std::enable_if_t<!std::is_same_v<void, ResponseHeader>, T>>
+    template <typename T = ResponseUserHeader,
+              typename = std::enable_if_t<!std::is_same_v<void, ResponseUserHeader>, T>>
     auto user_header() const -> const T&;
 
     /// Returns a mutable reference to the user header of the response.
-    template <typename T = ResponseHeader, typename = std::enable_if_t<!std::is_same_v<void, ResponseHeader>, T>>
+    template <typename T = ResponseUserHeader,
+              typename = std::enable_if_t<!std::is_same_v<void, ResponseUserHeader>, T>>
     auto user_header_mut() -> T&;
 
     /// Returns a reference to the payload of the response.
@@ -73,88 +75,88 @@ class ResponseMutUninit {
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, T>>
-    auto write_payload(ResponsePayload&& payload) -> ResponseMut<Service, T, ResponseHeader>;
+    auto write_payload(ResponsePayload&& payload) -> ResponseMut<Service, T, ResponseUserHeader>;
 
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
-    auto write_from_slice(iox::ImmutableSlice<ValueType>& value) -> ResponseMut<Service, T, ResponseHeader>;
+    auto write_from_slice(iox::ImmutableSlice<ValueType>& value) -> ResponseMut<Service, T, ResponseUserHeader>;
 
     /// Writes the provided payload into the [`ResponseMutUninit`] and returns an initialized
     /// [`ResponseMut`] that is ready to be sent.
     template <typename T = ResponsePayload, typename = std::enable_if_t<iox::IsSlice<T>::VALUE, T>>
     auto write_from_fn(const iox::function<typename T::ValueType(uint64_t)>& initializer)
-        -> ResponseMut<Service, T, ResponseHeader>;
+        -> ResponseMut<Service, T, ResponseUserHeader>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class ActiveRequest;
 
-    template <ServiceType S, typename ResponsePayloadT, typename ResponseHeaderT>
-    friend auto assume_init(ResponseMutUninit<S, ResponsePayloadT, ResponseHeaderT>&& self)
-        -> ResponseMut<S, ResponsePayloadT, ResponseHeaderT>;
+    template <ServiceType S, typename ResponsePayloadT, typename ResponseUserHeaderT>
+    friend auto assume_init(ResponseMutUninit<S, ResponsePayloadT, ResponseUserHeaderT>&& self)
+        -> ResponseMut<S, ResponsePayloadT, ResponseUserHeaderT>;
 
     explicit ResponseMutUninit() = default;
 
-    ResponseMut<Service, ResponsePayload, ResponseHeader> m_response;
+    ResponseMut<Service, ResponsePayload, ResponseUserHeader> m_response;
 };
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::header() const
-    -> ResponseHeaderRequestResponse {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::header() const -> ResponseHeader {
     return m_response.header();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::user_header() const -> const T& {
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::user_header() const -> const T& {
     return m_response.user_header();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::user_header_mut() -> T& {
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::user_header_mut() -> T& {
     return m_response.user_header_mut();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::payload() const -> const T& {
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::payload() const -> const T& {
     return m_response.payload();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::payload() const
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::payload() const
     -> iox::ImmutableSlice<ValueType> {
     return m_response.payload();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::payload_mut() -> T& {
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::payload_mut() -> T& {
     return m_response.payload_mut();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::payload_mut() -> iox::MutableSlice<ValueType> {
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::payload_mut()
+    -> iox::MutableSlice<ValueType> {
     return m_response.payload_mut();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::write_payload(ResponsePayload&& payload)
-    -> ResponseMut<Service, T, ResponseHeader> {
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_payload(ResponsePayload&& payload)
+    -> ResponseMut<Service, T, ResponseUserHeader> {
     new (&payload_mut()) ResponsePayload(std::forward<T>(payload));
     return std::move(m_response);
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
 inline auto
-ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::write_from_slice(iox::ImmutableSlice<ValueType>& value)
-    -> ResponseMut<Service, T, ResponseHeader> {
+ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_from_slice(iox::ImmutableSlice<ValueType>& value)
+    -> ResponseMut<Service, T, ResponseUserHeader> {
     auto dest = payload_mut();
     IOX_ASSERT(dest.number_of_bytes() >= value.number_of_bytes(),
                "Destination payload size is smaller than source slice size");
@@ -162,10 +164,10 @@ ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::write_from_slice(io
     return std::move(m_response);
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::write_from_fn(
-    const iox::function<typename T::ValueType(uint64_t)>& initializer) -> ResponseMut<Service, T, ResponseHeader> {
+inline auto ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>::write_from_fn(
+    const iox::function<typename T::ValueType(uint64_t)>& initializer) -> ResponseMut<Service, T, ResponseUserHeader> {
     auto slice = payload_mut();
     for (uint64_t i = 0; i < slice.number_of_elements(); ++i) {
         new (&slice[i]) typename T::ValueType(initializer(i));
@@ -173,9 +175,9 @@ inline auto ResponseMutUninit<Service, ResponsePayload, ResponseHeader>::write_f
     return std::move(m_response);
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto assume_init(ResponseMutUninit<Service, ResponsePayload, ResponseHeader>&& self)
-    -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline auto assume_init(ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader>&& self)
+    -> ResponseMut<Service, ResponsePayload, ResponseUserHeader> {
     return std::move(self.m_response);
 }
 

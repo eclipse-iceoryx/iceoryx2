@@ -23,7 +23,7 @@ namespace iox2 {
 /// [`PendingResponse`](crate::pending_response::PendingResponse) after a
 /// [`RequestMut`](crate::request_mut::RequestMut) was sent to a
 /// [`Server`](crate::port::server::Server) via the [`Client`](crate::port::client::Client).
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 class Response {
     using ValueType = typename PayloadInfo<ResponsePayload>::ValueType;
 
@@ -39,11 +39,12 @@ class Response {
     auto operator->() const -> const ResponsePayload*;
 
     /// Returns a reference to the
-    /// [`ResponseHeader`](service::header::request_response::ResponseHeader).
-    auto header() const -> ResponseHeaderRequestResponse;
+    /// [`ResponseUserHeader`](service::header::request_response::ResponseUserHeader).
+    auto header() const -> ResponseHeader;
 
     /// Returns a reference to the user header of the response.
-    template <typename T = ResponseHeader, typename = std::enable_if_t<!std::is_same_v<void, ResponseHeader>, T>>
+    template <typename T = ResponseUserHeader,
+              typename = std::enable_if_t<!std::is_same_v<void, ResponseUserHeader>, T>>
     auto user_header() const -> const T&;
 
     /// Returns a reference to the payload of the response.
@@ -69,13 +70,13 @@ class Response {
     iox2_response_h m_handle = nullptr;
 };
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline Response<Service, ResponsePayload, ResponseHeader>::Response(Response&& rhs) noexcept {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline Response<Service, ResponsePayload, ResponseUserHeader>::Response(Response&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::operator=(Response&& rhs) noexcept -> Response& {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline auto Response<Service, ResponsePayload, ResponseUserHeader>::operator=(Response&& rhs) noexcept -> Response& {
     if (this != &rhs) {
         drop();
         m_handle = std::move(rhs.m_handle);
@@ -85,65 +86,65 @@ inline auto Response<Service, ResponsePayload, ResponseHeader>::operator=(Respon
     return *this;
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline Response<Service, ResponsePayload, ResponseHeader>::~Response() noexcept {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline Response<Service, ResponsePayload, ResponseUserHeader>::~Response() noexcept {
     drop();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::operator*() const -> const ResponsePayload& {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline auto Response<Service, ResponsePayload, ResponseUserHeader>::operator*() const -> const ResponsePayload& {
     return payload();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::operator->() const -> const ResponsePayload* {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline auto Response<Service, ResponsePayload, ResponseUserHeader>::operator->() const -> const ResponsePayload* {
     return &payload();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::header() const -> ResponseHeaderRequestResponse {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline auto Response<Service, ResponsePayload, ResponseUserHeader>::header() const -> ResponseHeader {
     iox2_response_header_h header_handle = nullptr;
     iox2_response_header(&m_handle, nullptr, &header_handle);
-    return ResponseHeaderRequestResponse { header_handle };
+    return ResponseHeader { header_handle };
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::user_header() const -> const T& {
+inline auto Response<Service, ResponsePayload, ResponseUserHeader>::user_header() const -> const T& {
     const void* ptr = nullptr;
     iox2_response_user_header(&m_handle, &ptr);
     return *static_cast<const T*>(ptr);
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::payload() const -> const T& {
+inline auto Response<Service, ResponsePayload, ResponseUserHeader>::payload() const -> const T& {
     const void* ptr = nullptr;
     iox2_response_payload(&m_handle, &ptr, nullptr);
     return *static_cast<const T*>(ptr);
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
 template <typename T, typename>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::payload() const -> iox::ImmutableSlice<ValueType> {
+inline auto Response<Service, ResponsePayload, ResponseUserHeader>::payload() const -> iox::ImmutableSlice<ValueType> {
     const void* ptr = nullptr;
     size_t number_of_elements = 0;
     iox2_response_payload(&m_handle, &ptr, &number_of_elements);
     return iox::ImmutableSlice<ValueType>(static_cast<const ValueType*>(ptr), number_of_elements);
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline auto Response<Service, ResponsePayload, ResponseHeader>::origin() const -> UniqueServerId {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline auto Response<Service, ResponsePayload, ResponseUserHeader>::origin() const -> UniqueServerId {
     return header().server_port_id();
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline Response<Service, ResponsePayload, ResponseHeader>::Response(iox2_response_h handle) noexcept
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline Response<Service, ResponsePayload, ResponseUserHeader>::Response(iox2_response_h handle) noexcept
     : m_handle(handle) {
 }
 
-template <ServiceType Service, typename ResponsePayload, typename ResponseHeader>
-inline void Response<Service, ResponsePayload, ResponseHeader>::drop() {
+template <ServiceType Service, typename ResponsePayload, typename ResponseUserHeader>
+inline void Response<Service, ResponsePayload, ResponseUserHeader>::drop() {
     if (m_handle != nullptr) {
         iox2_response_drop(m_handle);
         m_handle = nullptr;

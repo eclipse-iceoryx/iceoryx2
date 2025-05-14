@@ -13,12 +13,11 @@
 #include "iox2/header_request_response.hpp"
 
 namespace iox2 {
-RequestHeaderRequestResponse::RequestHeaderRequestResponse(RequestHeaderRequestResponse&& rhs) noexcept {
+RequestHeader::RequestHeader(RequestHeader&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-auto RequestHeaderRequestResponse::operator=(RequestHeaderRequestResponse&& rhs) noexcept
-    -> RequestHeaderRequestResponse& {
+auto RequestHeader::operator=(RequestHeader&& rhs) noexcept -> RequestHeader& {
     if (this != &rhs) {
         drop();
 
@@ -29,33 +28,32 @@ auto RequestHeaderRequestResponse::operator=(RequestHeaderRequestResponse&& rhs)
     return *this;
 }
 
-RequestHeaderRequestResponse::~RequestHeaderRequestResponse() {
+RequestHeader::~RequestHeader() {
     drop();
 }
 
-auto RequestHeaderRequestResponse::client_port_id() -> UniqueClientId {
+auto RequestHeader::client_port_id() -> UniqueClientId {
     iox2_unique_client_id_h id_handle = nullptr;
     iox2_request_header_client_id(&m_handle, nullptr, &id_handle);
     return UniqueClientId { id_handle };
 }
 
-RequestHeaderRequestResponse::RequestHeaderRequestResponse(iox2_request_header_h handle)
+RequestHeader::RequestHeader(iox2_request_header_h handle)
     : m_handle(handle) {
 }
 
-void RequestHeaderRequestResponse::drop() {
+void RequestHeader::drop() {
     if (m_handle != nullptr) {
         iox2_request_header_drop(m_handle);
         m_handle = nullptr;
     }
 }
 
-ResponseHeaderRequestResponse::ResponseHeaderRequestResponse(ResponseHeaderRequestResponse&& rhs) noexcept {
+ResponseHeader::ResponseHeader(ResponseHeader&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-auto ResponseHeaderRequestResponse::operator=(ResponseHeaderRequestResponse&& rhs) noexcept
-    -> ResponseHeaderRequestResponse& {
+auto ResponseHeader::operator=(ResponseHeader&& rhs) noexcept -> ResponseHeader& {
     if (this != &rhs) {
         drop();
 
@@ -66,21 +64,21 @@ auto ResponseHeaderRequestResponse::operator=(ResponseHeaderRequestResponse&& rh
     return *this;
 }
 
-ResponseHeaderRequestResponse::~ResponseHeaderRequestResponse() {
+ResponseHeader::~ResponseHeader() {
     drop();
 }
 
-auto ResponseHeaderRequestResponse::server_port_id() -> UniqueServerId {
+auto ResponseHeader::server_port_id() -> UniqueServerId {
     iox2_unique_server_id_h id_handle = nullptr;
     iox2_response_header_server_id(&m_handle, nullptr, &id_handle);
     return UniqueServerId { id_handle };
 }
 
-ResponseHeaderRequestResponse::ResponseHeaderRequestResponse(iox2_response_header_h handle)
+ResponseHeader::ResponseHeader(iox2_response_header_h handle)
     : m_handle(handle) {
 }
 
-void ResponseHeaderRequestResponse::drop() {
+void ResponseHeader::drop() {
     if (m_handle != nullptr) {
         iox2_response_header_drop(m_handle);
         m_handle = nullptr;

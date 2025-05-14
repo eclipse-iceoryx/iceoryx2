@@ -26,9 +26,9 @@ namespace iox2 {
 /// based communication.
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 class PortFactoryClient {
     /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Client`] shall behave
     /// when a [`Server`](crate::port::server::Server) cannot receive a
@@ -55,8 +55,9 @@ class PortFactoryClient {
     auto allocation_strategy(AllocationStrategy value) && -> PortFactoryClient&&;
 
     /// Creates a new [`Client`] or returns a [`ClientCreateError`] on failure.
-    auto create() && -> iox::expected<Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
-                                      ClientCreateError>;
+    auto create() && -> iox::expected<
+        Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+        ClientCreateError>;
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -71,25 +72,24 @@ class PortFactoryClient {
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 template <typename T, typename>
-inline auto
-PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::initial_max_slice_len(
-    uint64_t value) && -> PortFactoryClient&& {
+inline auto PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    initial_max_slice_len(uint64_t value) && -> PortFactoryClient&& {
     m_max_slice_len.emplace(value);
     return std::move(*this);
 }
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 template <typename T, typename>
 inline auto
-PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::allocation_strategy(
+PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::allocation_strategy(
     AllocationStrategy value) && -> PortFactoryClient&& {
     m_allocation_strategy.emplace(value);
     return std::move(*this);
@@ -97,12 +97,13 @@ PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, Respo
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
+          typename ResponseUserHeader>
 inline auto
-PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::create() && -> iox::
-    expected<Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>, ClientCreateError> {
+PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::create() && -> iox::
+    expected<Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>,
+             ClientCreateError> {
     m_unable_to_deliver_strategy.and_then([&](auto value) {
         iox2_port_factory_client_builder_unable_to_deliver_strategy(
             &m_handle, static_cast<iox2_unable_to_deliver_strategy_e>(iox::into<int>(value)));
@@ -119,7 +120,8 @@ PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, Respo
     auto result = iox2_port_factory_client_builder_create(m_handle, nullptr, &client_handle);
 
     if (result == IOX2_OK) {
-        return iox::ok(Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>(client_handle));
+        return iox::ok(
+            Client<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>(client_handle));
     }
 
     return iox::err(iox::into<ClientCreateError>(result));
@@ -127,11 +129,11 @@ PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, Respo
 
 template <ServiceType Service,
           typename RequestPayload,
-          typename RequestHeader,
+          typename RequestUserHeader,
           typename ResponsePayload,
-          typename ResponseHeader>
-inline PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::PortFactoryClient(
-    iox2_port_factory_client_builder_h handle)
+          typename ResponseUserHeader>
+inline PortFactoryClient<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    PortFactoryClient(iox2_port_factory_client_builder_h handle)
     : m_handle { handle } {
 }
 } // namespace iox2
