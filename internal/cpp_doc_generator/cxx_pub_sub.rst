@@ -49,8 +49,8 @@ Publisher
 
        while (node.wait(CYCLE_TIME).has_value()) {
            auto sample = publisher.loan_uninit().expect("acquire sample");
-           sample.write_payload(1234);
-           send_sample(std::move(sample)).expect("send successful");
+           auto initialized_sample = sample.write_payload(1234);
+           send(std::move(initialized_sample)).expect("send successful");
        }
    }
 
