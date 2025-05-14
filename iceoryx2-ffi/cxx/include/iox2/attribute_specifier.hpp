@@ -41,6 +41,8 @@ class AttributeSpecifier {
     friend class ServiceBuilderEvent;
     template <typename, typename, ServiceType>
     friend class ServiceBuilderPublishSubscribe;
+    template <typename, typename, typename, typename, ServiceType>
+    friend class ServiceBuilderRequestResponse;
 
     void drop();
 

@@ -260,10 +260,10 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_send_receive_works) {
     auto sut_publisher = service.publisher_builder().create().expect("");
     auto sut_subscriber = service.subscriber_builder().create().expect("");
 
-    auto sample = sut_publisher.loan_uninit().expect("");
+    auto sample_uninit = sut_publisher.loan_uninit().expect("");
     const uint64_t payload = 78123791;
-    sample.write_payload(payload);
-    send(assume_init(std::move(sample))).expect("");
+    auto sample = sample_uninit.write_payload(payload);
+    send(std::move(sample)).expect("");
     auto recv_sample = sut_subscriber.receive().expect("");
 
     ASSERT_TRUE(recv_sample.has_value());
@@ -466,10 +466,10 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_fn_send_receive_works) {
     auto sut_publisher = service.publisher_builder().initial_max_slice_len(SLICE_MAX_LENGTH).create().expect("");
     auto sut_subscriber = service.subscriber_builder().create().expect("");
 
-    auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
-    send_sample.write_from_fn(
+    auto sample_uninit = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
+    auto send_sample = sample_uninit.write_from_fn(
         [](auto index) { return DummyData { DummyData::DEFAULT_VALUE_A + index, index % 2 == 0 }; });
-    send(assume_init(std::move(send_sample))).expect("");
+    send(std::move(send_sample)).expect("");
 
     auto recv_result = sut_subscriber.receive().expect("");
     ASSERT_TRUE(recv_result.has_value());
@@ -505,9 +505,9 @@ TYPED_TEST(ServicePublishSubscribeTest, write_from_slice_send_receive_works) {
         new (&item) DummyData {};
     }
     auto payload = iox::ImmutableSlice<DummyData>(elements.begin(), SLICE_MAX_LENGTH);
-    auto send_sample = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
-    send_sample.write_from_slice(payload);
-    send(assume_init(std::move(send_sample))).expect("");
+    auto sample_uninit = sut_publisher.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
+    auto send_sample = sample_uninit.write_from_slice(payload);
+    send(std::move(send_sample)).expect("");
 
     auto recv_result = sut_subscriber.receive().expect("");
     ASSERT_TRUE(recv_result.has_value());
@@ -1357,6 +1357,7 @@ TYPED_TEST(ServicePublishSubscribeTest, PayloadTypeNameIsSetToInnerTypeNameIfPro
     auto static_config = service.static_config();
     ASSERT_THAT(static_config.message_type_details().payload().type_name(), StrEq("Payload"));
 }
+// END tests for customizable payload and user header type name
 
 TYPED_TEST(ServicePublishSubscribeTest, service_id_is_unique_per_service) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -1372,5 +1373,5 @@ TYPED_TEST(ServicePublishSubscribeTest, service_id_is_unique_per_service) {
     ASSERT_THAT(service_1_create.service_id().c_str(), StrEq(service_1_open.service_id().c_str()));
     ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
 }
-// END tests for customizable payload and user header type name
+
 } // namespace

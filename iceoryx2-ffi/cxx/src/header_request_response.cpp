@@ -11,57 +11,78 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/header_request_response.hpp"
-#include "iox/assertions_addendum.hpp"
 
 namespace iox2 {
-RequestHeaderRequestResponse::RequestHeaderRequestResponse(RequestHeaderRequestResponse&& rhs) noexcept {
+RequestHeader::RequestHeader(RequestHeader&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-auto RequestHeaderRequestResponse::operator=(RequestHeaderRequestResponse&& rhs) noexcept
-    -> RequestHeaderRequestResponse& {
-    IOX_TODO();
+auto RequestHeader::operator=(RequestHeader&& rhs) noexcept -> RequestHeader& {
+    if (this != &rhs) {
+        drop();
+
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
-RequestHeaderRequestResponse::~RequestHeaderRequestResponse() {
+RequestHeader::~RequestHeader() {
     drop();
 }
 
-auto RequestHeaderRequestResponse::client_port_id() -> UniqueClientId {
-    IOX_TODO();
+auto RequestHeader::client_port_id() -> UniqueClientId {
+    iox2_unique_client_id_h id_handle = nullptr;
+    iox2_request_header_client_id(&m_handle, nullptr, &id_handle);
+    return UniqueClientId { id_handle };
 }
 
-RequestHeaderRequestResponse::RequestHeaderRequestResponse(/*iox2_request_header_h handle*/) {
-    IOX_TODO();
+RequestHeader::RequestHeader(iox2_request_header_h handle)
+    : m_handle(handle) {
 }
 
-void RequestHeaderRequestResponse::drop() {
-    IOX_TODO();
+void RequestHeader::drop() {
+    if (m_handle != nullptr) {
+        iox2_request_header_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
-ResponseHeaderRequestResponse::ResponseHeaderRequestResponse(ResponseHeaderRequestResponse&& rhs) noexcept {
+ResponseHeader::ResponseHeader(ResponseHeader&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-auto ResponseHeaderRequestResponse::operator=(ResponseHeaderRequestResponse&& rhs) noexcept
-    -> ResponseHeaderRequestResponse& {
-    IOX_TODO();
+auto ResponseHeader::operator=(ResponseHeader&& rhs) noexcept -> ResponseHeader& {
+    if (this != &rhs) {
+        drop();
+
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
-ResponseHeaderRequestResponse::~ResponseHeaderRequestResponse() {
+ResponseHeader::~ResponseHeader() {
     drop();
 }
 
-auto ResponseHeaderRequestResponse::server_port_id() -> UniqueServerId {
-    IOX_TODO();
+auto ResponseHeader::server_port_id() -> UniqueServerId {
+    iox2_unique_server_id_h id_handle = nullptr;
+    iox2_response_header_server_id(&m_handle, nullptr, &id_handle);
+    return UniqueServerId { id_handle };
 }
 
-ResponseHeaderRequestResponse::ResponseHeaderRequestResponse(/*iox2_response_header_h handle*/) {
-    IOX_TODO();
+ResponseHeader::ResponseHeader(iox2_response_header_h handle)
+    : m_handle(handle) {
 }
 
-void ResponseHeaderRequestResponse::drop() {
-    IOX_TODO();
+void ResponseHeader::drop() {
+    if (m_handle != nullptr) {
+        iox2_response_header_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 } // namespace iox2

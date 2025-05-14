@@ -43,9 +43,11 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/config.cpp
     src/dynamic_config_event.cpp
     src/dynamic_config_publish_subscribe.cpp
+    src/dynamic_config_request_response.cpp
     src/event_id.cpp
     src/file_descriptor.cpp
     src/header_publish_subscribe.cpp
+    src/header_request_response.cpp
     src/listener.cpp
     src/log.cpp
     src/message_type_details.cpp
@@ -66,6 +68,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/static_config.cpp
     src/static_config_event.cpp
     src/static_config_publish_subscribe.cpp
+    src/static_config_request_response.cpp
     src/unique_port_id.cpp
     src/waitset.cpp
 )

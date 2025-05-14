@@ -133,13 +133,14 @@ class UniqueClientId {
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Client;
+    friend class RequestHeader;
     friend auto operator==(const UniqueClientId&, const UniqueClientId&) -> bool;
     friend auto operator<(const UniqueClientId&, const UniqueClientId&) -> bool;
 
-    explicit UniqueClientId(/*iox2_unique_client_id_h handle*/);
+    explicit UniqueClientId(iox2_unique_client_id_h handle);
     void drop();
 
-    // iox2_unique_client_id_h m_handle = nullptr;
+    iox2_unique_client_id_h m_handle = nullptr;
     mutable iox::optional<RawIdType> m_raw_id;
 };
 
@@ -157,13 +158,14 @@ class UniqueServerId {
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Server;
+    friend class ResponseHeader;
     friend auto operator==(const UniqueServerId&, const UniqueServerId&) -> bool;
     friend auto operator<(const UniqueServerId&, const UniqueServerId&) -> bool;
 
-    explicit UniqueServerId(/*iox2_unique_server_id_h handle*/);
+    explicit UniqueServerId(iox2_unique_server_id_h handle);
     void drop();
 
-    // iox2_unique_server_id_h m_handle = nullptr;
+    iox2_unique_server_id_h m_handle = nullptr;
     mutable iox::optional<RawIdType> m_raw_id;
 };
 

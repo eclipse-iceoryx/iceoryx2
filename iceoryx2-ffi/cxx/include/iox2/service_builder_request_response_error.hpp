@@ -21,7 +21,10 @@ namespace iox2 {
 enum class RequestResponseOpenError : uint8_t {
     /// Service could not be openen since it does not exist
     DoesNotExist,
-    /// The [`Service`] has a lower maximum amount of [`ActiveRequest`](crate::active_request::ActiveRequest)s than
+    /// The [`Service`] has a lower maximum amount of loaned
+    /// [`RequestMut`] for a [`Client`].
+    DoesNotSupportRequestedAmountOfClientRequestLoans,
+    /// The [`Service`] has a lower maximum amount of [`ActiveRequest`]s than
     /// requested.
     DoesNotSupportRequestedAmountOfActiveRequestsPerClient,
     /// The [`Service`] has a lower maximum response buffer size than requested.
@@ -32,9 +35,9 @@ enum class RequestResponseOpenError : uint8_t {
     DoesNotSupportRequestedAmountOfClients,
     /// The [`Service`] has a lower maximum number of nodes than requested.
     DoesNotSupportRequestedAmountOfNodes,
-    /// The [`Service`] has a lower maximum number of [`Response`](crate::response::Response) borrows than requested.
+    /// The [`Service`] has a lower maximum number of [`Response`] borrows than requested.
     DoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse,
-    /// The maximum number of [`Node`](crate::node::Node)s have already opened the [`Service`].
+    /// The maximum number of [`Node`]s have already opened the [`Service`].
     ExceedsMaxNumberOfNodes,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
@@ -51,6 +54,8 @@ enum class RequestResponseOpenError : uint8_t {
     IncompatibleOverflowBehaviorForRequests,
     /// The [`Service`] required overflow behavior for responses is not compatible.
     IncompatibleOverflowBehaviorForResponses,
+    /// The [`Service`] does not support the required behavior for fire and forget requests.
+    IncompatibleBehaviorForFireAndForgetRequests,
     /// The process has not enough permissions to open the [`Service`].
     InsufficientPermissions,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
@@ -85,7 +90,10 @@ enum class RequestResponseCreateError : uint8_t {
 enum class RequestResponseOpenOrCreateError : uint8_t {
     /// Service could not be openen since it does not exist
     OpenDoesNotExist,
-    /// The [`Service`] has a lower maximum amount of [`ActiveRequest`](crate::active_request::ActiveRequest)s than
+    /// The [`Service`] has a lower maximum amount of loaned
+    /// [`RequestMut`] for a [`Client`].
+    OpenDoesNotSupportRequestedAmountOfClientRequestLoans,
+    /// The [`Service`] has a lower maximum amount of [`ActiveRequest`]s than
     /// requested.
     OpenDoesNotSupportRequestedAmountOfActiveRequestsPerClient,
     /// The [`Service`] has a lower maximum response buffer size than requested.
@@ -96,9 +104,9 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     OpenDoesNotSupportRequestedAmountOfClients,
     /// The [`Service`] has a lower maximum number of nodes than requested.
     OpenDoesNotSupportRequestedAmountOfNodes,
-    /// The [`Service`] has a lower maximum number of [`Response`](crate::response::Response) borrows than requested.
+    /// The [`Service`] has a lower maximum number of [`Response`] borrows than requested.
     OpenDoesNotSupportRequestedAmountOfBorrowedResponsesPerPendingResponse,
-    /// The maximum number of [`Node`](crate::node::Node)s have already opened the [`Service`].
+    /// The maximum number of [`Node`]s have already opened the [`Service`].
     OpenExceedsMaxNumberOfNodes,
     /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
     /// by a process that crashed during [`Service`] creation.
@@ -115,6 +123,8 @@ enum class RequestResponseOpenOrCreateError : uint8_t {
     OpenIncompatibleOverflowBehaviorForRequests,
     /// The [`Service`] required overflow behavior for responses is not compatible.
     OpenIncompatibleOverflowBehaviorForResponses,
+    /// The [`Service`] does not support the required behavior for fire and forget requests.
+    OpenIncompatibleBehaviorForFireAndForgetRequests,
     /// The process has not enough permissions to open the [`Service`].
     OpenInsufficientPermissions,
     /// Errors that indicate either an implementation issue or a wrongly configured system.

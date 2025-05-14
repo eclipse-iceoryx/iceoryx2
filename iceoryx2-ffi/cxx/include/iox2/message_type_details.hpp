@@ -57,6 +57,7 @@ class MessageTypeDetails {
 
   private:
     friend class StaticConfigPublishSubscribe;
+    friend class StaticConfigRequestResponse;
 
     explicit MessageTypeDetails(iox2_message_type_details_t value);
 

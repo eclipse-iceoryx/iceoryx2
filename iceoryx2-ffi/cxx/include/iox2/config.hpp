@@ -241,6 +241,7 @@ class Event {
 /// Default settings for the request response messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 class RequestResponse {
+  public:
     /// Defines if the request buffer of the [`Service`] safely overflows.
     auto enable_safe_overflow_for_requests() && -> bool;
     /// Enables/disables safe overflow for the request buffer.
@@ -339,7 +340,7 @@ class RequestResponse {
     friend class Defaults;
     explicit RequestResponse(iox2_config_h* config);
 
-    [[maybe_unused]] iox2_config_h* m_config = nullptr;
+    iox2_config_h* m_config = nullptr;
 };
 
 /// Default settings. These values are used when the user in the code does not specify anything

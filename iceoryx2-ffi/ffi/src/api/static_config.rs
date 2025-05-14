@@ -20,7 +20,7 @@ use iceoryx2_bb_log::fatal_panic;
 
 use crate::{
     iox2_messaging_pattern_e, iox2_static_config_event_t, iox2_static_config_publish_subscribe_t,
-    IOX2_SERVICE_ID_LENGTH, IOX2_SERVICE_NAME_LENGTH,
+    iox2_static_config_request_response_t, IOX2_SERVICE_ID_LENGTH, IOX2_SERVICE_NAME_LENGTH,
 };
 
 use super::{iox2_attribute_set_h, iox2_attribute_set_new_clone};
@@ -30,6 +30,7 @@ use super::{iox2_attribute_set_h, iox2_attribute_set_new_clone};
 pub union iox2_static_config_details_t {
     pub event: iox2_static_config_event_t,
     pub publish_subscribe: iox2_static_config_publish_subscribe_t,
+    pub request_response: iox2_static_config_request_response_t,
 }
 
 #[derive(Clone, Copy)]
@@ -84,6 +85,9 @@ impl From<&StaticConfig> for iox2_static_config_t {
                     },
                     MessagingPattern::PublishSubscribe(pubsub) => iox2_static_config_details_t {
                         publish_subscribe: pubsub.into(),
+                    },
+                    MessagingPattern::RequestResponse(reqres) => iox2_static_config_details_t {
+                        request_response: reqres.into(),
                     },
                     _ => {
                         fatal_panic!(from "StaticConfig", "missing implementation for messaging pattern.")

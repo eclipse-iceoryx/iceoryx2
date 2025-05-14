@@ -68,9 +68,9 @@ auto main(int argc, char** argv) -> int {
 
         auto sample = publisher.loan_uninit().expect("acquire sample");
 
-        sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
+        auto initialized_sample =
+            sample.write_payload(TransmissionData { counter, counter * 3, counter * 812.12 }); // NOLINT
 
-        auto initialized_sample = assume_init(std::move(sample));
         send(std::move(initialized_sample)).expect("send successful");
 
         std::cout << "[domain: \"" << args.domain() << "\", service: \"" << args.service() << "] Send sample "
