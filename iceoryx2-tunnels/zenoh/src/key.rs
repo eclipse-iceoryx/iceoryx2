@@ -10,9 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod data_stream;
-pub mod key;
-mod tunnel;
+use iceoryx2::service::service_id::ServiceId;
 
-pub(crate) use data_stream::*;
-pub use tunnel::*;
+pub fn payload(service_id: &ServiceId) -> String {
+    format!("iox2/{}", service_id.as_str())
+}
+
+pub fn static_details(service_id: &ServiceId) -> String {
+    format!("iox2/{}/static_details", service_id.as_str())
+}

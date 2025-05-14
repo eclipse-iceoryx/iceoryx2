@@ -20,7 +20,7 @@ mod zenoh_tunnel {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
-    use iceoryx2_tunnels_zenoh::ZenohTunnel;
+    use iceoryx2_tunnels_zenoh::*;
     use zenoh::Wait;
 
     fn generate_name() -> ServiceName {
@@ -59,8 +59,10 @@ mod zenoh_tunnel {
         // verify static config is retrievable from zenoh
         let z_config = zenoh::config::Config::default();
         let z_session = zenoh::open(z_config.clone()).wait().unwrap();
-        let z_key = &format!("iox2/{}/static_details", iox_service.service_id().as_str());
-        let reply = z_session.get(z_key).wait().unwrap();
+        let reply = z_session
+            .get(key::static_details(iox_service.service_id()))
+            .wait()
+            .unwrap();
         match reply.recv_timeout(Duration::from_millis(500)) {
             Ok(Some(reply)) => match reply.result() {
                 Ok(sample) => {
@@ -113,8 +115,10 @@ mod zenoh_tunnel {
         // create zenoh subscriber
         let z_config = zenoh::config::Config::default();
         let z_session = zenoh::open(z_config.clone()).wait().unwrap();
-        let z_key = &format!("iox2/{}", iox_service.service_id().as_str());
-        let z_subscriber = z_session.declare_subscriber(z_key.clone()).wait().unwrap();
+        let z_subscriber = z_session
+            .declare_subscriber(key::payload(iox_service.service_id()))
+            .wait()
+            .unwrap();
 
         // send data on iceoryx2 publisher
         let sample = iox_publisher.loan_slice_uninit(PAYLOAD_DATA.len()).unwrap();
