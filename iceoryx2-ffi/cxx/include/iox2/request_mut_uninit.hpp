@@ -39,6 +39,18 @@ class RequestMutUninit {
     RequestMutUninit(const RequestMutUninit&) = delete;
     auto operator=(const RequestMutUninit&) -> RequestMutUninit& = delete;
 
+    /// Returns a const reference to the request payload
+    auto operator*() const -> const RequestPayload&;
+
+    /// Returns a reference to the request payload
+    auto operator*() -> RequestPayload&;
+
+    /// Returns a const pointer to the request payload
+    auto operator->() const -> const RequestPayload*;
+
+    /// Returns a pointer to the request payload
+    auto operator->() -> RequestPayload*;
+
     /// Returns a reference to the iceoryx2 internal
     /// [`service::header::request_response::RequestHeader`]
     auto header() const -> RequestHeaderRequestResponse;
@@ -102,6 +114,47 @@ class RequestMutUninit {
 
     RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> m_request;
 };
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator*() const
+    -> const RequestPayload& {
+    return payload();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator*()
+    -> RequestPayload& {
+    return payload_mut();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+inline auto
+RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator->() const
+    -> const RequestPayload* {
+    return &payload();
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestHeader,
+          typename ResponsePayload,
+          typename ResponseHeader>
+inline auto RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>::operator->()
+    -> RequestPayload* {
+    return &payload_mut();
+}
 
 template <ServiceType Service,
           typename RequestPayload,

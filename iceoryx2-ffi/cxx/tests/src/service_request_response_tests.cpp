@@ -209,6 +209,36 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_paylo
     ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleResponseType));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_wrong_user_header_type_fails) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut_create = node.service_builder(service_name)
+                          .template request_response<uint64_t, uint64_t>()
+                          .template request_user_header<uint64_t>()
+                          .template response_user_header<uint64_t>()
+                          .create()
+                          .expect("");
+
+    auto sut1 = node.service_builder(service_name)
+                    .template request_response<uint64_t, uint64_t>()
+                    .template request_user_header<double>()
+                    .template response_user_header<uint64_t>()
+                    .open();
+    ASSERT_TRUE(sut1.has_error());
+    ASSERT_THAT(sut1.error(), Eq(RequestResponseOpenError::IncompatibleRequestType));
+
+    auto sut2 = node.service_builder(service_name)
+                    .template request_response<uint64_t, uint64_t>()
+                    .template request_user_header<uint64_t>()
+                    .template response_user_header<double>()
+                    .open();
+    ASSERT_TRUE(sut2.has_error());
+    ASSERT_THAT(sut2.error(), Eq(RequestResponseOpenError::IncompatibleResponseType));
+}
+
 TYPED_TEST(ServiceRequestResponseTest, open_or_create_existing_service_with_wrong_payload_type_fails) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -272,27 +302,21 @@ TYPED_TEST(ServiceRequestResponseTest, loan_uninit_write_payload_send_receive_wo
     auto sut_client = service.client_builder().create().expect("");
     auto sut_server = service.server_builder().create().expect("");
 
-    auto request_uninit = sut_client.loan_uninit().expect("");
     uint64_t request_payload = 3;
-    auto request = request_uninit.write_payload(std::move(request_payload));
-    EXPECT_THAT(request.payload(), Eq(request_payload));
-    auto pending_response = send(std::move(request)).expect("");
-    // TODO: separate test:
-    // EXPECT_THAT(request_uninit.payload(), Eq(request_payload));
-    //  auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
+    auto request_uninit = sut_client.loan_uninit().expect("");
+    request_uninit.payload_mut() = request_payload;
+    EXPECT_THAT(request_uninit.payload(), Eq(request_payload));
+    auto pending_response = send(assume_init(std::move(request_uninit))).expect("");
 
     auto active_request = sut_server.receive().expect("");
     ASSERT_TRUE(active_request.has_value());
-    EXPECT_THAT(active_request->payload(), Eq(request_payload));
+    EXPECT_THAT(active_request->payload(), Eq(3));
 
     uint64_t response_payload = 4;
     auto response_uninit = active_request->loan_uninit().expect("");
-    auto response = response_uninit.write_payload(std::move(response_payload));
-    EXPECT_THAT(response.payload(), Eq(response_payload));
-    send(std::move(response)).expect("");
-    // TODO: separate test:
-    // EXPECT_THAT(response_uninit.payload(), Eq(response_payload));
-    // send(assume_init(std::move(response_uninit))).expect("");
+    response_uninit.payload_mut() = response_payload;
+    EXPECT_THAT(response_uninit.payload(), Eq(response_payload));
+    send(assume_init(std::move(response_uninit))).expect("");
 
     auto received_response = pending_response.receive().expect("");
     ASSERT_TRUE(received_response.has_value());
@@ -424,10 +448,6 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     auto request = request_uninit->write_from_slice(payload);
     EXPECT_THAT(request.payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
     auto pending_response = send(std::move(request)).expect("");
-    // TODO: separate test:
-    // ASSERT_FALSE(request_uninit.has_error());
-    // EXPECT_THAT(request_uninit.value().payload().number_of_elements(), Eq(SLICE_MAX_LENGTH));
-    // auto pending_response = send(assume_init(std::move(request_uninit.value()))).expect("");
 
     auto active_request = sut_server.receive().expect("");
     ASSERT_TRUE(active_request.has_value());
@@ -444,7 +464,6 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_write_payload_send_rece
     auto response_uninit = received_request.loan_slice_uninit(SLICE_MAX_LENGTH).expect("");
     auto response = response_uninit.write_from_slice(payload);
     iterations = 0;
-    // TODO: separate test for response_uninit.payload() + assume_init
     for (const auto& item : response.payload()) {
         ASSERT_THAT(item.a, Eq(DummyData::DEFAULT_VALUE_A));
         ASSERT_THAT(item.z, Eq(DummyData::DEFAULT_VALUE_Z));
@@ -516,6 +535,39 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_write_payload_send_receive_wor
     EXPECT_THAT(iterations, Eq(SLICE_MAX_LENGTH));
 }
 // NOLINTEND(readability-function-cognitive-complexity)
+
+TYPED_TEST(ServiceRequestResponseTest, write_payload_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+
+    auto sut_client = service.client_builder().create().expect("");
+    auto sut_server = service.server_builder().create().expect("");
+
+    auto request_uninit = sut_client.loan_uninit().expect("");
+    uint64_t request_payload = 3;
+    auto request = request_uninit.write_payload(std::move(request_payload));
+    EXPECT_THAT(request.payload(), Eq(request_payload));
+    auto pending_response = send(std::move(request)).expect("");
+
+    auto active_request = sut_server.receive().expect("");
+    ASSERT_TRUE(active_request.has_value());
+    EXPECT_THAT(active_request->payload(), Eq(request_payload));
+
+    uint64_t response_payload = 4;
+    auto response_uninit = active_request->loan_uninit().expect("");
+    auto response = response_uninit.write_payload(std::move(response_payload));
+    EXPECT_THAT(response.payload(), Eq(response_payload));
+    send(std::move(response)).expect("");
+
+    auto received_response = pending_response.receive().expect("");
+    ASSERT_TRUE(received_response.has_value());
+    EXPECT_THAT(received_response->payload(), Eq(response_payload));
+}
 
 //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by ASSERT_THAT
 TYPED_TEST(ServiceRequestResponseTest, write_from_fn_works) {
@@ -1421,7 +1473,8 @@ TYPED_TEST(ServiceRequestResponseTest, opening_existing_service_with_same_header
     EXPECT_EQ(sut_open_res.error(), RequestResponseOpenError::IncompatibleResponseType);
 }
 
-TYPED_TEST(ServiceRequestResponseTest, PayloadTypeNameIsSetToRustPendantForFixedSizeIntegersAndBoolAndSlicesOfThem) {
+TYPED_TEST(ServiceRequestResponseTest,
+           payload_type_name_is_set_to_rust_equivalent_for_fixed_size_integers_and_bool_and_slices) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
@@ -1601,7 +1654,7 @@ TYPED_TEST(ServiceRequestResponseTest, PayloadTypeNameIsSetToRustPendantForFixed
     }
 }
 
-TYPED_TEST(ServiceRequestResponseTest, PayloadTypeNameIsSetToInnerTypeNameIfProvided) {
+TYPED_TEST(ServiceRequestResponseTest, payload_type_name_is_set_to_inner_type_name_if_provided) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     const auto service_name = iox2_testing::generate_service_name();
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");

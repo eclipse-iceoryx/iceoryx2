@@ -44,9 +44,16 @@ class RequestMut {
     RequestMut(const RequestMut&) = delete;
     auto operator=(const RequestMut&) -> RequestMut& = delete;
 
+    /// Returns a const reference to the request payload
     auto operator*() const -> const RequestPayload&;
+
+    /// Returns a reference to the request payload
     auto operator*() -> RequestPayload&;
+
+    /// Returns a const pointer to the request payload
     auto operator->() const -> const RequestPayload*;
+
+    /// Returns a pointer to the request payload
     auto operator->() -> RequestPayload*;
 
     /// Returns a reference to the iceoryx2 internal
