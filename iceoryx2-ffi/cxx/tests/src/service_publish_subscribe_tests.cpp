@@ -1374,4 +1374,115 @@ TYPED_TEST(ServicePublishSubscribeTest, service_id_is_unique_per_service) {
     ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
 }
 
+TYPED_TEST(ServicePublishSubscribeTest, listing_all_subscribers_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 16;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<uint64_t>()
+                   .max_subscribers(NUMBER_OF_SUBSCRIBERS)
+                   .create()
+                   .expect("");
+
+    std::vector<iox2::Subscriber<SERVICE_TYPE, uint64_t, void>> subscribers;
+    for (auto idx = 0; idx < NUMBER_OF_SUBSCRIBERS; ++idx) {
+        subscribers.push_back(sut.subscriber_builder().create().expect(""));
+    }
+
+    std::vector<UniqueSubscriberId> subscriber_ids;
+    sut.dynamic_config().list_subscribers([&](auto subscriber_details_view) {
+        subscriber_ids.push_back(subscriber_details_view.subscriber_id());
+        return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(subscriber_ids.size(), Eq(NUMBER_OF_SUBSCRIBERS));
+    for (auto& subscriber : subscribers) {
+        auto iter = std::find(subscriber_ids.begin(), subscriber_ids.end(), subscriber.id());
+        ASSERT_THAT(iter, Ne(subscriber_ids.end()));
+    }
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, listing_all_subscribers_stops_on_request) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_SUBSCRIBERS = 13;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<uint64_t>()
+                   .max_subscribers(NUMBER_OF_SUBSCRIBERS)
+                   .create()
+                   .expect("");
+
+    std::vector<iox2::Subscriber<SERVICE_TYPE, uint64_t, void>> subscribers;
+    for (auto idx = 0; idx < NUMBER_OF_SUBSCRIBERS; ++idx) {
+        subscribers.push_back(sut.subscriber_builder().create().expect(""));
+    }
+
+    auto counter = 0;
+    sut.dynamic_config().list_subscribers([&](auto subscriber_details_view) {
+        counter++;
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, listing_all_publishers_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_PUBLISHERS = 16;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<uint64_t>()
+                   .max_publishers(NUMBER_OF_PUBLISHERS)
+                   .create()
+                   .expect("");
+
+    std::vector<iox2::Publisher<SERVICE_TYPE, uint64_t, void>> publishers;
+    for (auto idx = 0; idx < NUMBER_OF_PUBLISHERS; ++idx) {
+        publishers.push_back(sut.publisher_builder().create().expect(""));
+    }
+
+    std::vector<UniquePublisherId> publisher_ids;
+    sut.dynamic_config().list_publishers([&](auto publisher_details_view) {
+        publisher_ids.push_back(publisher_details_view.publisher_id());
+        return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(publisher_ids.size(), Eq(NUMBER_OF_PUBLISHERS));
+    for (auto& publisher : publishers) {
+        auto iter = std::find(publisher_ids.begin(), publisher_ids.end(), publisher.id());
+        ASSERT_THAT(iter, Ne(publisher_ids.end()));
+    }
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, listing_all_publishers_stops_on_request) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_PUBLISHERS = 13;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template publish_subscribe<uint64_t>()
+                   .max_publishers(NUMBER_OF_PUBLISHERS)
+                   .create()
+                   .expect("");
+
+    std::vector<iox2::Publisher<SERVICE_TYPE, uint64_t, void>> publishers;
+    for (auto idx = 0; idx < NUMBER_OF_PUBLISHERS; ++idx) {
+        publishers.push_back(sut.publisher_builder().create().expect(""));
+    }
+
+    auto counter = 0;
+    sut.dynamic_config().list_publishers([&](auto publisher_details_view) {
+        counter++;
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
+}
 } // namespace
