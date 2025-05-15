@@ -15,6 +15,7 @@ use core::fmt::Display;
 
 use crate::service::static_config::event;
 use crate::service::static_config::publish_subscribe;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use serde::{Deserialize, Serialize};
 
@@ -22,9 +23,15 @@ use super::request_response;
 
 /// Contains the static config of the corresponding
 /// [`service::MessagingPattern`](crate::service::messaging_pattern::MessagingPattern).
+///
+/// # Safety
+///
+/// This is a large struct (>1KB). Be cautious with where it is placed and how it is passed around.
 #[non_exhaustive]
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 #[serde(tag = "messaging_pattern")]
+#[allow(clippy::large_enum_variant)]
 pub enum MessagingPattern {
     /// Stores the static config of the
     /// [`service::MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)

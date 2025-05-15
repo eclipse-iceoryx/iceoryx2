@@ -19,6 +19,7 @@
 //!
 //! ```
 //! pub use iceoryx2_bb_container::semantic_string::SemanticString;
+//! use iceoryx2_bb_derive_macros::ZeroCopySend;
 //!
 //! use core::hash::{Hash, Hasher};
 //! use iceoryx2_bb_container::semantic_string;
@@ -390,7 +391,7 @@ macro_rules! semantic_string {
      /// representations like paths for instance (`/tmp` == `/tmp/`)
      normalize: $normalize:expr} => {
         $(#[$documentation])*
-        #[derive(Debug, Clone, Eq)]
+        #[derive(Debug, Clone, Eq, PartialOrd, Ord, ZeroCopySend)]
         pub struct $string_name {
             value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>
         }
@@ -545,6 +546,17 @@ macro_rules! semantic_string {
                 };
 
                 *self == other
+            }
+        }
+
+        impl PartialEq<&str> for &$string_name {
+            fn eq(&self, other: &&str) -> bool {
+                let other = match $string_name::new(other.as_bytes()) {
+                    Ok(other) => other,
+                    Err(_) => return false,
+                };
+
+                **self == other
             }
         }
 

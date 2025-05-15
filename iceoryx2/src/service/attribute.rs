@@ -29,9 +29,9 @@
 //!         // all attributes that are defined when creating a new service are stored in the
 //!         // static config of the service
 //!         &AttributeSpecifier::new()
-//!             .define("some attribute key", "some attribute value")
-//!             .define("some attribute key", "another attribute value for the same key")
-//!             .define("another key", "another value")
+//!             .define(&"some attribute key".try_into()?, &"some attribute value".try_into()?)
+//!             .define(&"some attribute key".try_into()?, &"another attribute value for the same key".try_into()?)
+//!             .define(&"another key".try_into()?, &"another value".try_into()?)
 //!     )?;
 //!
 //! # Ok(())
@@ -55,8 +55,8 @@
 //!         // If a attribute key as either a different value or is not set at all, the service
 //!         // cannot be opened. If not specific attributes are required one can skip them completely.
 //!         &AttributeVerifier::new()
-//!             .require("another key", "another value")
-//!             .require_key("some attribute key")
+//!             .require(&"another key".try_into()?, &"another value".try_into()?)
+//!             .require_key(&"some attribute key".try_into()?)
 //!     )?;
 //!
 //! # Ok(())
@@ -98,25 +98,106 @@
 //! ```
 
 use core::ops::Deref;
+
+use iceoryx2_bb_container::{semantic_string::SemanticString, vec::FixedSizeVec};
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_log::fatal_panic;
 use serde::{Deserialize, Serialize};
+
+use crate::constants::MAX_ATTRIBUTES;
+
+mod key {
+
+    use core::hash::Hash;
+    use core::hash::Hasher;
+
+    use iceoryx2_bb_container::semantic_string;
+    use iceoryx2_bb_container::semantic_string::SemanticString;
+    use iceoryx2_bb_derive_macros::ZeroCopySend;
+
+    use crate::constants::MAX_ATTRIBUTE_KEY_LENGTH;
+
+    semantic_string! {
+      /// Fixed string for service attribute keys.
+      name: FixedString,
+      capacity: MAX_ATTRIBUTE_KEY_LENGTH,
+      invalid_content: |string: &[u8]| {
+        // empty keys are not allowed to be empty
+        string.is_empty()
+      },
+      invalid_characters: |_string: &[u8]| {
+         false
+      },
+      normalize: |this: &FixedString| {
+          this.clone()
+      }
+    }
+}
+
+/// Key type used for service attributes.
+pub type AttributeKey = key::FixedString;
+
+/// Module containing the value type used for service attributes.
+mod value {
+
+    use core::hash::Hash;
+    use core::hash::Hasher;
+
+    use iceoryx2_bb_container::semantic_string;
+    use iceoryx2_bb_container::semantic_string::SemanticString;
+    use iceoryx2_bb_derive_macros::ZeroCopySend;
+
+    use crate::constants::MAX_ATTRIBUTE_VALUE_LENGTH;
+
+    semantic_string! {
+      /// Fixed string for service attribute values.
+      name: FixedString,
+      capacity: MAX_ATTRIBUTE_VALUE_LENGTH,
+      invalid_content: |string: &[u8]| {
+        // empty keys are not allowed to be empty
+        string.is_empty()
+      },
+      invalid_characters: |_string: &[u8]| {
+         false
+      },
+      normalize: |this: &FixedString| {
+          this.clone()
+      }
+    }
+}
+
+/// Value type used for service attributes.
+pub type AttributeValue = value::FixedString;
+
+type KeyStorage = FixedSizeVec<AttributeKey, MAX_ATTRIBUTES>;
+type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
 
 /// Represents a single service attribute (key-value) pair that can be defined when the service
 /// is being created.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone, PartialOrd, Ord)]
+#[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub struct Attribute {
-    key: String,
-    value: String,
+    key: AttributeKey,
+    value: AttributeValue,
 }
 
 impl Attribute {
+    /// Creates an attribute instance
+    pub fn new(key: &AttributeKey, value: &AttributeValue) -> Self {
+        Self {
+            key: key.clone(),
+            value: value.clone(),
+        }
+    }
+
     /// Acquires the service attribute key
-    pub fn key(&self) -> &str {
+    pub fn key(&self) -> &AttributeKey {
         &self.key
     }
 
     /// Acquires the service attribute value
-    pub fn value(&self) -> &str {
+    pub fn value(&self) -> &AttributeValue {
         &self.value
     }
 }
@@ -138,7 +219,7 @@ impl AttributeSpecifier {
     }
 
     /// Defines a value for a specific key. A key is allowed to have multiple values.
-    pub fn define(mut self, key: &str, value: &str) -> Self {
+    pub fn define(mut self, key: &AttributeKey, value: &AttributeValue) -> Self {
         self.0.add(key, value);
         self
     }
@@ -153,15 +234,15 @@ impl AttributeSpecifier {
 /// is opened.
 #[derive(Debug)]
 pub struct AttributeVerifier {
-    attribute_set: AttributeSet,
-    required_keys: Vec<String>,
+    required_attributes: AttributeSet,
+    required_keys: KeyStorage,
 }
 
 impl Default for AttributeVerifier {
     fn default() -> Self {
         Self {
-            attribute_set: AttributeSet::new(),
-            required_keys: Vec::new(),
+            required_attributes: AttributeSet::new(),
+            required_keys: KeyStorage::new(),
         }
     }
 }
@@ -173,43 +254,55 @@ impl AttributeVerifier {
     }
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.
-    pub fn require(mut self, key: &str, value: &str) -> Self {
-        self.attribute_set.add(key, value);
+    pub fn require(mut self, key: &AttributeKey, value: &AttributeValue) -> Self {
+        self.required_attributes.add(key, value);
         self
     }
 
     /// Requires that a specific key is defined.
-    pub fn require_key(mut self, key: &str) -> Self {
-        self.required_keys.push(key.into());
+    pub fn require_key(mut self, key: &AttributeKey) -> Self {
+        self.required_keys.push(key.clone());
         self
     }
 
     /// Returns the underlying required [`AttributeSet`]
-    pub fn attributes(&self) -> &AttributeSet {
-        &self.attribute_set
+    pub fn required_attributes(&self) -> &AttributeSet {
+        &self.required_attributes
     }
 
     /// Returns the underlying required keys
-    pub fn keys(&self) -> &Vec<String> {
-        &self.required_keys
+    pub fn required_keys(&self) -> &[AttributeKey] {
+        self.required_keys.as_slice()
     }
 
     /// Verifies if the [`AttributeSet`] contains all required keys and key-value pairs.
     pub fn verify_requirements(&self, rhs: &AttributeSet) -> Result<(), &str> {
-        let is_subset = |lhs: Vec<&str>, rhs: Vec<&str>| lhs.iter().all(|v| rhs.contains(v));
+        // Implementation utilizes nested loops, however since MAX_ATTRIBUTES is small and
+        // the method is not expected to be used in a hot path, performance should be fine.
 
-        for attribute in self.attributes().iter() {
-            let lhs_values = self.attribute_set.get_vec(&attribute.key);
-            let rhs_values = rhs.get_vec(&attribute.key);
+        // Check if the required key-value pair exists in the target AttributeSet.
+        for attribute in self.required_attributes().iter() {
+            let key = &attribute.key();
+            let value = &attribute.value();
 
-            if !is_subset(lhs_values, rhs_values) {
-                return Err(&attribute.key);
+            let attribute_present = rhs
+                .iter()
+                .any(|attr| attr.key() == *key && attr.value() == *value);
+
+            if !attribute_present {
+                return Err(key.as_string().as_str().unwrap());
             }
         }
 
-        for key in self.keys() {
-            if rhs.get_vec(key).is_empty() {
-                return Err(key);
+        // Ensure keys without values are also present in the target AttributeSet.
+        for key in self.required_keys() {
+            let key_exists = rhs.iter().any(|attr| attr.key == *key);
+
+            if !key_exists {
+                let key_str = fatal_panic!(from self,
+                    when key.as_string().as_str(),
+                    "This should never happen! The underlying attribute key does not contain a valid UTF-8 string.");
+                return Err(key_str);
             }
         }
 
@@ -218,8 +311,9 @@ impl AttributeVerifier {
 }
 
 /// Represents all service attributes. They can be set when the service is created.
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct AttributeSet(Vec<Attribute>);
+#[derive(Debug, Eq, PartialEq, Clone, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
+pub struct AttributeSet(AttributeStorage);
 
 impl Deref for AttributeSet {
     type Target = [Attribute];
@@ -231,23 +325,12 @@ impl Deref for AttributeSet {
 
 impl AttributeSet {
     pub(crate) fn new() -> Self {
-        Self(Vec::new())
+        Self(AttributeStorage::new())
     }
 
-    pub(crate) fn add(&mut self, key: &str, value: &str) {
-        self.0.push(Attribute {
-            key: key.into(),
-            value: value.into(),
-        });
+    pub(crate) fn add(&mut self, key: &AttributeKey, value: &AttributeValue) {
+        self.0.push(Attribute::new(key, value));
         self.0.sort();
-    }
-
-    fn get_vec(&self, key: &str) -> Vec<&str> {
-        self.0
-            .iter()
-            .filter(|p| p.key == key)
-            .map(|p| p.value.as_str())
-            .collect()
     }
 
     /// Returns the number of [`Attribute`]s stored inside the [`AttributeSet`].
@@ -257,8 +340,8 @@ impl AttributeSet {
 
     /// Returns the number of values stored under a specific key. If the key does not exist it
     /// returns 0.
-    pub fn number_of_key_values(&self, key: &str) -> usize {
-        self.get_vec(key).len()
+    pub fn number_of_key_values(&self, key: &AttributeKey) -> usize {
+        self.iter().filter(|element| element.key() == key).count()
     }
 
     /// Returns a value of a key at a specific index. The index enumerates the values of the key
@@ -267,27 +350,26 @@ impl AttributeSet {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    pub fn key_value(&self, key: &str, idx: usize) -> Option<&str> {
-        let v = self.get_vec(key);
-        if v.len() <= idx {
-            return None;
-        }
-
-        Some(self.get_vec(key)[idx])
+    pub fn key_value(&self, key: &AttributeKey, idx: usize) -> Option<&AttributeValue> {
+        self.0
+            .iter()
+            .filter(|attr| attr.key() == key)
+            .map(|attr| attr.value())
+            .nth(idx)
     }
 
-    /// Returns all values to a specific key
-    pub fn iter_key_values<F: FnMut(&str) -> CallbackProgression>(
+    /// Iterates over all values of a specific key
+    pub fn iter_key_values<F: FnMut(&AttributeValue) -> CallbackProgression>(
         &self,
-        key: &str,
+        key: &AttributeKey,
         mut callback: F,
     ) {
-        for element in self.0.iter() {
-            if element.key != key {
+        for element in self.iter() {
+            if element.key() != key {
                 continue;
             }
 
-            if callback(&element.value) == CallbackProgression::Stop {
+            if callback(element.value()) == CallbackProgression::Stop {
                 break;
             }
         }

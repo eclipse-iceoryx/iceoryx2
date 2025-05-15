@@ -21,11 +21,14 @@ use core::{
     slice,
 };
 
-use iceoryx2::service::builder::request_response::{
-    Builder, RequestResponseCreateError, RequestResponseOpenOrCreateError,
-};
 use iceoryx2::service::port_factory::request_response::PortFactory;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
+use iceoryx2::service::{
+    builder::request_response::{
+        Builder, RequestResponseCreateError, RequestResponseOpenOrCreateError,
+    },
+    static_config::message_type_details::TypeNameString,
+};
 use iceoryx2::{prelude::*, service::builder::request_response::RequestResponseOpenError};
 use iceoryx2_bb_elementary::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
@@ -207,6 +210,12 @@ pub(crate) unsafe fn create_type_details(
 
     let type_name = if let Ok(type_name) = core::str::from_utf8(type_name) {
         type_name.to_string()
+    } else {
+        return Err(iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int);
+    };
+
+    let type_name = if let Ok(type_name) = TypeNameString::try_from(type_name.as_str()) {
+        type_name
     } else {
         return Err(iox2_type_detail_error_e::INVALID_TYPE_NAME as c_int);
     };

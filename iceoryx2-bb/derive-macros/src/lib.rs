@@ -105,11 +105,15 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 }
 
 /// Implements the [`iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend`] trait when all fields of
-/// the struct implement it. A type name can be optionally set with the helper attribute `type_name`.
+/// the struct or enum implement it. A type name can be optionally set with the helper attribute `type_name`.
+///
+/// ## Example with a struct:
 ///
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+///
+/// fn needs_zero_copy_send_type<T: ZeroCopySend>(_: &T) {}
 ///
 /// #[derive(ZeroCopySend)]
 /// #[type_name("MyTypeName")]
@@ -118,14 +122,29 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 ///     val2: u64,
 /// }
 ///
-/// fn needs_zero_copy_send_type<T: ZeroCopySend>(_: &T) {}
-///
 /// let x = MyZeroCopySendStruct{
 ///     val1: 23,
 ///     val2: 4,
 /// };
 /// needs_zero_copy_send_type(&x);
 /// assert_eq!(unsafe { MyZeroCopySendStruct::type_name() }, "MyTypeName");
+///
+/// #[derive(ZeroCopySend)]
+/// #[type_name("GeometricShape")]
+/// enum Shape {
+///     Point,
+///     Circle(f64),
+///     Rectangle { width: f64, height: f64 },
+/// }
+///
+/// let shape1 = Shape::Point;
+/// let shape2 = Shape::Circle(5.0);
+/// let shape3 = Shape::Rectangle { width: 10.0, height: 20.0 };
+///
+/// needs_zero_copy_send_type(&shape1);
+/// needs_zero_copy_send_type(&shape2);
+/// needs_zero_copy_send_type(&shape3);
+/// assert_eq!(unsafe { Shape::type_name() }, "GeometricShape");
 /// ```
 #[proc_macro_derive(ZeroCopySend, attributes(type_name))]
 pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
@@ -204,8 +223,80 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                 #type_name_impl
             },
         },
+        Data::Enum(ref data_enum) => {
+            let variant_checks = data_enum.variants.iter().map(|variant| {
+                let variant_name = &variant.ident;
+
+                match &variant.fields {
+                    Fields::Named(fields) => {
+                        let field_checks = fields.named.iter().map(|f| {
+                            let field_name = &f.ident;
+                            // dummy call to ensure at compile-time that all fields of the variant implement ZeroCopySend
+                            quote! {
+                                Self::#variant_name { #field_name, .. } => {
+                                    iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(#field_name);
+                                }
+                            }
+                        });
+
+                        if fields.named.is_empty() {
+                            quote! {
+                                Self::#variant_name { .. } => {}
+                            }
+                        } else {
+                            quote! { #(#field_checks)* }
+                        }
+                    },
+                    Fields::Unnamed(fields) => {
+                        if fields.unnamed.is_empty() {
+                            quote! {
+                                Self::#variant_name => {}
+                            }
+                        } else {
+                            let field_names = (0..fields.unnamed.len())
+                                .map(|i| syn::Ident::new(&format!("field_{}", i), proc_macro2::Span::call_site()))
+                                .collect::<Vec<_>>();
+
+                            let field_pattern = if field_names.is_empty() {
+                                quote! {}
+                            } else {
+                                quote! { (#(#field_names),*) }
+                            };
+
+                            // dummy call to ensure at compile-time that all fields of the variant implement ZeroCopySend
+                            let field_checks = field_names.iter().map(|field_name| {
+                                quote! {
+                                    iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(#field_name);
+                                }
+                            });
+
+                            quote! {
+                                Self::#variant_name #field_pattern => {
+                                    #(#field_checks)*
+                                }
+                            }
+                        }
+                    },
+                    Fields::Unit => {
+                        quote! {
+                            Self::#variant_name => {}
+                        }
+                    }
+                }
+            });
+
+            quote! {
+                fn __is_zero_copy_send(&self) {
+                    match self {
+                        #(#variant_checks)*
+                    }
+                }
+
+                #type_name_impl
+            }
+        }
         _ => {
-            return quote! {compile_error!("ZeroCopySend can only be implemented for structs");}
+            return quote! {compile_error!("ZeroCopySend can only be implemented for structs and enums");}
                 .into();
         }
     };

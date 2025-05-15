@@ -478,16 +478,15 @@ impl<
     fn verify_service_configuration(
         &self,
         existing_settings: &static_config::StaticConfig,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<static_config::request_response::StaticConfig, RequestResponseOpenError> {
         let msg = "Unable to open request response service";
 
         let existing_attributes = existing_settings.attributes();
-        if let Err(incompatible_key) = required_attributes.verify_requirements(existing_attributes)
-        {
+        if let Err(incompatible_key) = verifier.verify_requirements(existing_attributes) {
             fail!(from self, with RequestResponseOpenError::IncompatibleAttributes,
                 "{} due to incompatible service attribute key \"{}\". The following attributes {:?} are required but the service has the attributes {:?}.",
-                msg, incompatible_key, required_attributes, existing_attributes);
+                msg, incompatible_key, verifier, existing_attributes);
         }
 
         let required_configuration = self.base.service_config.request_response();
@@ -828,7 +827,7 @@ impl<
 
     fn open_or_create_impl(
         mut self,
-        attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -852,13 +851,14 @@ impl<
             retry_count += 1;
 
             if self.is_service_available(msg)?.is_some() {
-                match self.open_impl(attributes) {
+                match self.open_impl(verifier) {
                     Ok(factory) => return Ok(factory),
                     Err(RequestResponseOpenError::DoesNotExist) => continue,
                     Err(e) => return Err(e.into()),
                 }
             } else {
-                match self.create_impl(&AttributeSpecifier(attributes.attributes().clone())) {
+                match self.create_impl(&AttributeSpecifier(verifier.required_attributes().clone()))
+                {
                     Ok(factory) => return Ok(factory),
                     Err(RequestResponseCreateError::AlreadyExists)
                     | Err(RequestResponseCreateError::IsBeingCreatedByAnotherInstance) => {
@@ -970,7 +970,7 @@ impl<
     /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -982,7 +982,7 @@ impl<
         RequestResponseOpenOrCreateError,
     > {
         self.prepare_message_type_details();
-        self.open_or_create_impl(required_attributes)
+        self.open_or_create_impl(verifier)
     }
 
     /// Opens an existing [`Service`].
@@ -1005,7 +1005,7 @@ impl<
     /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -1017,7 +1017,7 @@ impl<
         RequestResponseOpenError,
     > {
         self.prepare_message_type_details();
-        self.open_impl(required_attributes)
+        self.open_impl(verifier)
     }
 
     /// Creates a new [`Service`].
@@ -1104,7 +1104,7 @@ impl<
     /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -1116,7 +1116,7 @@ impl<
         RequestResponseOpenOrCreateError,
     > {
         self.prepare_message_type_details();
-        self.open_or_create_impl(required_attributes)
+        self.open_or_create_impl(verifier)
     }
 
     /// Opens an existing [`Service`].
@@ -1139,7 +1139,7 @@ impl<
     /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -1151,7 +1151,7 @@ impl<
         RequestResponseOpenError,
     > {
         self.prepare_message_type_details();
-        self.open_impl(required_attributes)
+        self.open_impl(verifier)
     }
 
     /// Creates a new [`Service`].
@@ -1240,7 +1240,7 @@ impl<
     #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn open_or_create_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -1252,7 +1252,7 @@ impl<
         RequestResponseOpenOrCreateError,
     > {
         self.prepare_message_type_details();
-        self.open_or_create_impl(required_attributes)
+        self.open_or_create_impl(verifier)
     }
 
     /// Opens an existing [`Service`].
@@ -1277,7 +1277,7 @@ impl<
     #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
     pub fn open_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -1289,7 +1289,7 @@ impl<
         RequestResponseOpenError,
     > {
         self.prepare_message_type_details();
-        self.open_impl(required_attributes)
+        self.open_impl(verifier)
     }
 
     /// Creates a new [`Service`].
@@ -1378,7 +1378,7 @@ impl<
     /// If the [`Service`] does not exist the required attributes will be defined in the [`Service`].
     pub fn open_or_create_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -1390,7 +1390,7 @@ impl<
         RequestResponseOpenOrCreateError,
     > {
         self.prepare_message_type_details();
-        self.open_or_create_impl(required_attributes)
+        self.open_or_create_impl(verifier)
     }
 
     /// Opens an existing [`Service`].
@@ -1413,7 +1413,7 @@ impl<
     /// requirements are not satisfied the open process will fail.
     pub fn open_with_attributes(
         mut self,
-        required_attributes: &AttributeVerifier,
+        verifier: &AttributeVerifier,
     ) -> Result<
         request_response::PortFactory<
             ServiceType,
@@ -1425,7 +1425,7 @@ impl<
         RequestResponseOpenError,
     > {
         self.prepare_message_type_details();
-        self.open_impl(required_attributes)
+        self.open_impl(verifier)
     }
 
     /// Creates a new [`Service`].

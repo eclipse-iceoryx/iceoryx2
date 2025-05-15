@@ -14,6 +14,7 @@
 mod service_request_response {
     use iceoryx2::node::NodeBuilder;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::attribute::*;
     use iceoryx2::service::builder::request_response::{
         RequestResponseCreateError, RequestResponseOpenError,
     };
@@ -322,15 +323,15 @@ mod service_request_response {
     fn opening_service_with_attributes_and_acquiring_attributes_works<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
-        let attribute_key = "wanna try this head";
-        let attribute_value = "no its a brainslug";
+        let attribute_key: AttributeKey = "wanna try this head".try_into().unwrap();
+        let attribute_value: AttributeValue = "no its a brainslug".try_into().unwrap();
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .create_with_attributes(
-                &AttributeSpecifier::new().define(attribute_key, attribute_value),
+                &AttributeSpecifier::new().define(&attribute_key, &attribute_value),
             )
             .unwrap();
 
@@ -342,24 +343,28 @@ mod service_request_response {
 
         let attributes = sut_open.attributes();
         assert_that!(attributes.len(), eq 1);
-        assert_that!(attributes.key_value(attribute_key, 0), eq Some(attribute_value));
+        assert_that!(attributes.key_value(&attribute_key, 0), is_some);
+        assert_that!(
+            attributes.key_value(&attribute_key, 0).unwrap(),
+            eq & attribute_value
+        );
     }
 
     #[test]
     fn opening_service_with_incompatible_attributes_fails<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
-        let attribute_key = "there is a muffin";
-        let attribute_value = "with molten chocolate";
-        let attribute_incompatible_key = "its delicious";
-        let attribute_incompatible_value = "I wanna eat it";
+        let attribute_key: AttributeKey = "there is a muffin".try_into().unwrap();
+        let attribute_value: AttributeValue = "with molten chocolate".try_into().unwrap();
+        let attribute_incompatible_key: AttributeKey = "its delicious".try_into().unwrap();
+        let attribute_incompatible_value: AttributeValue = "I wanna eat it".try_into().unwrap();
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .create_with_attributes(
-                &AttributeSpecifier::new().define(attribute_key, attribute_value),
+                &AttributeSpecifier::new().define(&attribute_key, &attribute_value),
             )
             .unwrap();
 
@@ -386,15 +391,16 @@ mod service_request_response {
     fn opening_service_with_compatible_attributes_works<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
-        let attribute_key = "kermit the brave knight";
-        let attribute_value = "rides on hypnotoad into the sunset";
+        let attribute_key: AttributeKey = "kermit the brave knight".try_into().unwrap();
+        let attribute_value: AttributeValue =
+            "rides on hypnotoad into the sunset".try_into().unwrap();
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .create_with_attributes(
-                &AttributeSpecifier::new().define(attribute_key, attribute_value),
+                &AttributeSpecifier::new().define(&attribute_key, &attribute_value),
             )
             .unwrap();
 

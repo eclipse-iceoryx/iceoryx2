@@ -38,6 +38,7 @@
 //! # }
 //! ```
 
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use serde::{Deserialize, Serialize};
 
 use crate::config;
@@ -48,7 +49,8 @@ use super::message_type_details::MessageTypeDetails;
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 /// based service. Contains all parameters that do not change during the lifetime of a
 /// [`Service`](crate::service::Service).
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub struct StaticConfig {
     pub(crate) enable_safe_overflow_for_requests: bool,
     pub(crate) enable_safe_overflow_for_responses: bool,

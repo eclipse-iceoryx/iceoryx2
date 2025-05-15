@@ -35,13 +35,15 @@
 
 use super::message_type_details::MessageTypeDetails;
 use crate::config;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use serde::{Deserialize, Serialize};
 
 /// The static configuration of an
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
 /// based service. Contains all parameters that do not change during the lifetime of a
 /// [`Service`](crate::service::Service).
-#[derive(Debug, Clone, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
+#[repr(C)]
 pub struct StaticConfig {
     pub(crate) max_subscribers: usize,
     pub(crate) max_publishers: usize,

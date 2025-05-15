@@ -12,13 +12,14 @@
 
 #![allow(non_camel_case_types)]
 
-use core::ffi::{c_char, CStr};
+use core::ffi::c_char;
 use iceoryx2_bb_elementary::static_assert::*;
 
 extern crate alloc;
 use alloc::ffi::CString;
 
-use iceoryx2::service::attribute::{Attribute, AttributeSet};
+use iceoryx2::service::attribute::{Attribute, AttributeKey, AttributeSet};
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -31,7 +32,7 @@ use super::{
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<AttributeSet>
 pub struct iox2_attribute_set_storage_t {
-    internal: [u8; 24], // magic number obtained with size_of::<Option<AttributeSet>>()
+    internal: [u8; 5672], // magic number obtained with size_of::<Option<AttributeSet>>()
 }
 
 #[repr(C)]
@@ -212,13 +213,13 @@ pub unsafe extern "C" fn iox2_attribute_set_number_of_key_values(
     debug_assert!(!handle.is_null());
     debug_assert!(!key.is_null());
 
-    let key = CStr::from_ptr(key);
-    let key = key.to_str();
+    let key = AttributeKey::from_c_str(key);
     if key.is_err() {
         return 0;
     }
+    let key = key.unwrap();
 
-    (*handle).number_of_key_values(key.unwrap())
+    (*handle).number_of_key_values(&key)
 }
 
 /// Returns a value of a key at a specific index. The index enumerates the values of the key
@@ -247,13 +248,14 @@ pub unsafe extern "C" fn iox2_attribute_set_key_value(
     debug_assert!(0 < buffer_len);
 
     *has_value = false;
-    let key = CStr::from_ptr(key).to_str();
+    let key = AttributeKey::from_c_str(key);
     if key.is_err() {
         return;
     }
+    let key = key.unwrap();
 
-    if let Some(v) = (*handle).key_value(key.unwrap(), index) {
-        if let Ok(value) = CString::new(v) {
+    if let Some(v) = (*handle).key_value(&key, index) {
+        if let Ok(value) = CString::new(v.as_bytes()) {
             core::ptr::copy_nonoverlapping(
                 value.as_ptr(),
                 buffer,
@@ -280,16 +282,14 @@ pub unsafe extern "C" fn iox2_attribute_set_iter_key_values(
 ) {
     debug_assert!(!handle.is_null());
 
-    let key = CStr::from_ptr(key);
-    let c_str = key.to_str();
-    if c_str.is_err() {
+    let key = AttributeKey::from_c_str(key);
+    if key.is_err() {
         return;
     }
+    let key = key.unwrap();
 
-    let c_str = c_str.unwrap();
-
-    (*handle).iter_key_values(c_str, |value| {
-        if let Ok(value) = CString::new(value) {
+    (*handle).iter_key_values(&key, |value| {
+        if let Ok(value) = CString::new(value.as_bytes()) {
             callback(value.as_ptr(), callback_ctx).into()
         } else {
             CallbackProgression::Continue

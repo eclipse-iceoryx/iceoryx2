@@ -29,7 +29,7 @@ mod service_static_config_message_type_details {
         let sut = TypeDetail::__internal_new::<Tmp>(TypeVariant::FixedSize);
         let expected = TypeDetail {
             variant: TypeVariant::FixedSize,
-            type_name: core::any::type_name::<Tmp>().to_string(),
+            type_name: core::any::type_name::<Tmp>().try_into().unwrap(),
             size: 0,
             alignment: 1,
         };
@@ -38,7 +38,7 @@ mod service_static_config_message_type_details {
         let sut = TypeDetail::__internal_new::<i64>(TypeVariant::FixedSize);
         let expected = TypeDetail {
             variant: TypeVariant::FixedSize,
-            type_name: core::any::type_name::<i64>().to_string(),
+            type_name: core::any::type_name::<i64>().try_into().unwrap(),
             size: 8,
             alignment: ALIGNMENT,
         };

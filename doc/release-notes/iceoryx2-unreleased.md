@@ -105,6 +105,8 @@
     [#646](https://github.com/eclipse-iceoryx/iceoryx2/issues/646)
 * Improve naming in `AttributeSet` methods and `ServiceId`
     [#697](https://github.com/eclipse-iceoryx/iceoryx2/issues/697)
+* Implement `ZeroCopySend` for `StaticConfig` and its nested types
+    [#707](https://github.com/eclipse-iceoryx/iceoryx2/issues/707)
 * Efficient `Clone` for `FixedSizeByteString`
     [#717](https://github.com/eclipse-iceoryx/iceoryx2/issues/717)
 * Use Rust's native endian swapping
@@ -177,7 +179,7 @@
        .open_or_create()?;
    ```
 
-2. Renamed `PublisherLoanError` into `LoanError`
+2. Renamed `PublisherLoanError` to `LoanError`
 
    ```rust
    // old
@@ -195,7 +197,7 @@
    };
    ```
 
-3. Renamed `PublisherSendError` into `SendError`
+3. Renamed `PublisherSendError` to `SendError`
 
    ```rust
    // old
@@ -213,7 +215,7 @@
    };
    ```
 
-4. Renamed `SubscriberReceiveError` into `ReceiveError`
+4. Renamed `SubscriberReceiveError` to `ReceiveError`
 
    ```rust
    // old
@@ -232,38 +234,69 @@
    ```
 
 5. Renamed `PublisherSendError::ConnectionBrokenSincePublisherNoLongerExists`
-   into `SendError::ConnectionBrokenSinceSenderNoLongerExists`
+   to `SendError::ConnectionBrokenSinceSenderNoLongerExists`
 
 6. Renamed `ConnectionFailure::UnableToMapPublishersDataSegment`
-   into `ConnectionFailure::UnableToMapSendersDataSegment`
+   to `ConnectionFailure::UnableToMapSendersDataSegment`
 
 7. Renamed `AttributeSet::len()`
-   into `AttributeSet::number_of_attributes()`
+   to `AttributeSet::number_of_attributes()`
 
 8. Renamed `AttributeSet::get_key_value_len()`
-   into `AttributeSet::number_of_key_values()`
+   to `AttributeSet::number_of_key_values()`
 
 9. Renamed `AttributeSet::get_key_value_at()`
-   into `AttributeSet::key_value()`
+   to `AttributeSet::key_value()`
 
 10. Renamed `AttributeSet::get_key_values()`
-   into `AttributeSet::iter_key_values()`
+   to `AttributeSet::iter_key_values()`
 
 11. Renamed `ServiceId::max_len()`
-   into `ServiceId::max_number_of_characters()`
+   to `ServiceId::max_number_of_characters()`
 
 12. Renamed the config entry `global.service.publisher-data-segment-suffix`
    to `global.service.data-segment-suffix` and changed the default value to
    `.data`.
 
-13. The following types no longer implement `Copy`
-   (the only implement `Clone`):
+13. Methods of `ServiceName` return a `ServiceNameError` instead of
+   a `SemanticStringError`
 
-* `FixedSizeByteString`
-* `SemanticString`
-* `Base64URL`
-* `FileName`
-* `FilePath`
-* `GroupName`
-* `UserName`
-* `ServiceId`
+14. The following types no longer implement `Copy`
+   (they only implement `Clone`):
+    * `FixedSizeByteString`
+    * `SemanticString`
+    * `Base64URL`
+    * `FileName`
+    * `FilePath`
+    * `GroupName`
+    * `UserName`
+    * `ServiceId`
+
+15. Renamed `AttributeVerifier::keys()` to `AttributeVerifier::required_keys()`
+
+16. Renamed `AttributeVerifier::attributes()` to `AttributeVerifier::required_attributes()`
+
+17. Attribute keys and values are now `SemanticStrings`
+    1. All arguments of methods in `Attribute`, `AttributeSpecifier`,
+        `AttributeVerifier`, and `AttributeSet` changed from `&str` to
+        `FixedSizeByteStrings` that implement the `SemanticString` trait
+
+    ```rust
+    // old
+    let attribute = Attribute::new("my_key", "my_value");
+
+    // new - keys or value known to fit within maximum length
+    let attribute = Attribute::new(&"my_key".try_into().unwrap(), &"my_value".try_into().unwrap());
+
+    // new - key or value length unknown
+    fn get_key() -> &str;
+    fn get_value() -> &str;
+
+    let key = AttributeKey::try_from(get_key()).unwrap_or_else(|e| {
+        // Handle error: e.g., log error, use default key, or propagate error
+    });
+    let value = AttributeValue::try_from(get_value()).unwrap_or_else(|e| {
+        // Handle error: e.g., log error, use default value, or propagate error
+    });
+    let attribute = Attribute::new(&key, &value);
+    ```

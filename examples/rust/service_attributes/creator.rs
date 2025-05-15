@@ -26,10 +26,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // define a set of properties that are static for the lifetime
             // of the service
             &AttributeSpecifier::new()
-                .define("dds_service_mapping", "my_funky_service_name")
-                .define("tcp_serialization_format", "cdr")
-                .define("someip_service_mapping", "1/2/3")
-                .define("camera_resolution", "1920x1080"),
+                .define(
+                    &"dds_service_mapping".try_into()?,
+                    &"my_funky_service_name".try_into()?,
+                )
+                .define(&"tcp_serialization_format".try_into()?, &"cdr".try_into()?)
+                .define(&"someip_service_mapping".try_into()?, &"1/2/3".try_into()?)
+                .define(&"camera_resolution".try_into()?, &"1920x1080".try_into()?),
         )?;
 
     let publisher = service.publisher_builder().create()?;
