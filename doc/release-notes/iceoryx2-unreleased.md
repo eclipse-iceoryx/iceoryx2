@@ -286,7 +286,7 @@
     let attribute = Attribute::new("my_key", "my_value");
 
     // new - keys or value known to fit within maximum length
-    let attribute = Attribute::new("my_key".try_into().unwrap(), "my_value".try_into().unwrap());
+    let attribute = Attribute::new(&"my_key".try_into().unwrap(), &"my_value".try_into().unwrap());
 
     // new - key or value length unknown
     fn get_key() -> &str;
@@ -298,5 +298,5 @@
     let value = AttributeValue::try_from(get_value()).unwrap_or_else(|e| {
         // Handle error: e.g., log error, use default value, or propagate error
     });
-    let attribute = Attribute::new(key, value);
+    let attribute = Attribute::new(&key, &value);
     ```

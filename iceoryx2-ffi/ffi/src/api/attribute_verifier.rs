@@ -178,7 +178,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require(
     let attribute_verifier_struct = &mut *handle.as_type();
     let attribute_verifier = ManuallyDrop::take(&mut attribute_verifier_struct.value.as_mut().0);
     attribute_verifier_struct.set(AttributeVerifierType::from(
-        attribute_verifier.require(key.unwrap(), value.unwrap()),
+        attribute_verifier.require(&key.unwrap(), &value.unwrap()),
     ));
 }
 
@@ -203,7 +203,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
     let attribute_verifier_struct = &mut *handle.as_type();
     let attribute_verifier = ManuallyDrop::take(&mut attribute_verifier_struct.value.as_mut().0);
     attribute_verifier_struct.set(AttributeVerifierType::from(
-        attribute_verifier.require_key(key.unwrap()),
+        attribute_verifier.require_key(&key.unwrap()),
     ));
 }
 

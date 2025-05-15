@@ -331,7 +331,7 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .create_with_attributes(
-                &AttributeSpecifier::new().define(attribute_key.clone(), attribute_value.clone()),
+                &AttributeSpecifier::new().define(&attribute_key, &attribute_value),
             )
             .unwrap();
 
@@ -364,7 +364,7 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .create_with_attributes(
-                &AttributeSpecifier::new().define(attribute_key.clone(), attribute_value.clone()),
+                &AttributeSpecifier::new().define(&attribute_key, &attribute_value),
             )
             .unwrap();
 
@@ -372,8 +372,7 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .open_with_attributes(
-                &AttributeVerifier::new()
-                    .require(attribute_key.clone(), attribute_incompatible_value.clone()),
+                &AttributeVerifier::new().require(&attribute_key, &attribute_incompatible_value),
             );
 
         assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleAttributes));
@@ -382,7 +381,7 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .open_with_attributes(
-                &AttributeVerifier::new().require_key(attribute_incompatible_key),
+                &AttributeVerifier::new().require_key(&attribute_incompatible_key),
             );
 
         assert_that!(sut_open.err(), eq Some(RequestResponseOpenError::IncompatibleAttributes));
@@ -401,7 +400,7 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .create_with_attributes(
-                &AttributeSpecifier::new().define(attribute_key.clone(), attribute_value.clone()),
+                &AttributeSpecifier::new().define(&attribute_key, &attribute_value),
             )
             .unwrap();
 
@@ -409,7 +408,7 @@ mod service_request_response {
             .service_builder(&service_name)
             .request_response::<u64, u64>()
             .open_with_attributes(
-                &AttributeVerifier::new().require(attribute_key.clone(), attribute_value.clone()),
+                &AttributeVerifier::new().require(&attribute_key, &attribute_value),
             );
 
         assert_that!(sut_open, is_ok);
@@ -417,7 +416,7 @@ mod service_request_response {
         let sut_open = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
-            .open_with_attributes(&AttributeVerifier::new().require_key(attribute_key.clone()));
+            .open_with_attributes(&AttributeVerifier::new().require_key(&attribute_key));
 
         assert_that!(sut_open, is_ok);
     }

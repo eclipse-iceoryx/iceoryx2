@@ -29,9 +29,9 @@
 //!         // all attributes that are defined when creating a new service are stored in the
 //!         // static config of the service
 //!         &AttributeSpecifier::new()
-//!             .define("some attribute key".try_into()?, "some attribute value".try_into()?)
-//!             .define("some attribute key".try_into()?, "another attribute value for the same key".try_into()?)
-//!             .define("another key".try_into()?, "another value".try_into()?)
+//!             .define(&"some attribute key".try_into()?, &"some attribute value".try_into()?)
+//!             .define(&"some attribute key".try_into()?, &"another attribute value for the same key".try_into()?)
+//!             .define(&"another key".try_into()?, &"another value".try_into()?)
 //!     )?;
 //!
 //! # Ok(())
@@ -55,8 +55,8 @@
 //!         // If a attribute key as either a different value or is not set at all, the service
 //!         // cannot be opened. If not specific attributes are required one can skip them completely.
 //!         &AttributeVerifier::new()
-//!             .require("another key".try_into()?, "another value".try_into()?)
-//!             .require_key("some attribute key".try_into()?)
+//!             .require(&"another key".try_into()?, &"another value".try_into()?)
+//!             .require_key(&"some attribute key".try_into()?)
 //!     )?;
 //!
 //! # Ok(())
@@ -184,8 +184,11 @@ pub struct Attribute {
 
 impl Attribute {
     /// Creates an attribute instance
-    pub fn new(key: AttributeKey, value: AttributeValue) -> Self {
-        Self { key, value }
+    pub fn new(key: &AttributeKey, value: &AttributeValue) -> Self {
+        Self {
+            key: key.clone(),
+            value: value.clone(),
+        }
     }
 
     /// Acquires the service attribute key
@@ -216,7 +219,7 @@ impl AttributeSpecifier {
     }
 
     /// Defines a value for a specific key. A key is allowed to have multiple values.
-    pub fn define(mut self, key: AttributeKey, value: AttributeValue) -> Self {
+    pub fn define(mut self, key: &AttributeKey, value: &AttributeValue) -> Self {
         self.0.add(key, value);
         self
     }
@@ -251,14 +254,14 @@ impl AttributeVerifier {
     }
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.
-    pub fn require(mut self, key: AttributeKey, value: AttributeValue) -> Self {
+    pub fn require(mut self, key: &AttributeKey, value: &AttributeValue) -> Self {
         self.required_attributes.add(key, value);
         self
     }
 
     /// Requires that a specific key is defined.
-    pub fn require_key(mut self, key: AttributeKey) -> Self {
-        self.required_keys.push(key);
+    pub fn require_key(mut self, key: &AttributeKey) -> Self {
+        self.required_keys.push(key.clone());
         self
     }
 
@@ -325,7 +328,7 @@ impl AttributeSet {
         Self(AttributeStorage::new())
     }
 
-    pub(crate) fn add(&mut self, key: AttributeKey, value: AttributeValue) {
+    pub(crate) fn add(&mut self, key: &AttributeKey, value: &AttributeValue) {
         self.0.push(Attribute::new(key, value));
         self.0.sort();
     }

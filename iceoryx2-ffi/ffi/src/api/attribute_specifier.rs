@@ -175,7 +175,7 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
     let attribute_specifier_struct = &mut *handle.as_type();
     let attribute_specifier = ManuallyDrop::take(&mut attribute_specifier_struct.value.as_mut().0);
     attribute_specifier_struct.set(AttributeSpecifierType::from(
-        attribute_specifier.define(key.unwrap(), value.unwrap()),
+        attribute_specifier.define(&key.unwrap(), &value.unwrap()),
     ));
 }
 
