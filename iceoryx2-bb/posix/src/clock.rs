@@ -214,7 +214,7 @@ impl Time {
         };
 
         handle_errno!(TimeError, from "Time::now",
-            errno_source unsafe { posix::clock_gettime(clock_type.as_i32(), &mut current_time).into() },
+            errno_source unsafe { posix::clock_gettime(clock_type.as_i32() as _, &mut current_time).into() },
             success Errno::ESUCCES => Time { clock_type,
                                              seconds: current_time.tv_sec as u64,
                                              nanoseconds: current_time.tv_nsec as u32},
@@ -333,7 +333,7 @@ pub fn nanosleep_with_clock(
     handle_errno!(NanosleepError, from "nanosleep_with_clock",
         errno_source unsafe {
             let e = posix::clock_nanosleep(
-                clock_type.as_i32(),
+                clock_type.as_i32() as _,
                 posix::CLOCK_TIMER_ABSTIME,
                 &timeout,
                 &mut time_left,

@@ -26,6 +26,7 @@ fn zero_copy_send_derive_does_not_work_when_type_is_not_annotated_with_repr_c() 
 ///
 /// struct Foo(u16);
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// struct NamedTestStruct {
 ///     val1: u64,
@@ -40,6 +41,7 @@ fn zero_copy_send_derive_does_not_work_for_named_struct_when_not_all_members_imp
 ///
 /// struct Foo(u16);
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// struct UnnamedTestStruct(i32, u32, Foo);
 /// ```
@@ -49,6 +51,7 @@ fn zero_copy_send_derive_does_not_work_for_unnamed_struct_when_not_all_members_i
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// struct GenericNamedTestStruct<T1, T2> {
 ///     val1: T1,
@@ -63,6 +66,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_named_struct_when_members_do_
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// struct GenericNamedTestStruct<T1: ZeroCopySend, T2> {
 ///     val1: T1,
@@ -77,6 +81,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_named_struct_when_not_all_mem
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// struct GenericUnnamedTestStruct<T1, T2>(T1, T2);
 /// ```
@@ -89,6 +94,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_unnamed_struct_when_members_d
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 /// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// struct GenericUnnamedTestStruct<T1: ZeroCopySend, T2>(T1, T2);
 /// ```
@@ -100,6 +106,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_unnamed_struct_when_not_all_m
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// #[name("abc")]
 /// struct TestStruct(u8, i32);
@@ -110,6 +117,7 @@ fn zero_copy_send_derive_does_not_work_with_wrong_attribute() {}
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// #[type_name("abc")]
 /// #[type_name("def")]
@@ -121,6 +129,7 @@ fn zero_copy_send_derive_does_not_work_with_more_than_one_attribute() {}
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// #[type_name]
 /// struct TestStruct(u8, i32);
@@ -131,6 +140,7 @@ fn zero_copy_send_derive_does_not_work_without_attribute_argument() {}
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// #[type_name()]
 /// struct TestStruct(u8, i32);
@@ -141,6 +151,7 @@ fn zero_copy_send_derive_does_not_work_with_empty_attribute_argument() {}
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// #[type_name("abc" "def")]
 /// struct TestStruct(u8, i32);
@@ -151,6 +162,7 @@ fn zero_copy_send_derive_does_not_work_with_more_than_one_attribute_argument() {
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// #[type_name("abc", "def")]
 /// struct TestStruct(u8, i32);
@@ -161,6 +173,7 @@ fn zero_copy_send_derive_does_not_work_with_more_than_one_attribute_argument_com
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// #[type_name(abc)]
 /// struct TestStruct(u8, i32);
