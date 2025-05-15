@@ -56,4 +56,3 @@ auto ServerDetailsView::max_slice_len() const -> uint64_t {
     return iox2_server_details_max_slice_len(m_handle);
 }
 } // namespace iox2
-

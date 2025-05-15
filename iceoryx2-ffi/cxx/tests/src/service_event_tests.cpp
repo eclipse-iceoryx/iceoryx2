@@ -661,11 +661,13 @@ TYPED_TEST(ServiceEventTest, listing_all_notifiers_works) {
     auto sut = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS).create().expect("");
 
     std::vector<iox2::Notifier<SERVICE_TYPE>> notifiers;
-    for (auto idx = 0; idx < NUMBER_OF_NOTIFIERS; ++idx) {
+    notifiers.reserve(NUMBER_OF_NOTIFIERS);
+    for (uint64_t idx = 0; idx < NUMBER_OF_NOTIFIERS; ++idx) {
         notifiers.push_back(sut.notifier_builder().create().expect(""));
     }
 
     std::vector<UniqueNotifierId> notifier_ids;
+    notifier_ids.reserve(NUMBER_OF_NOTIFIERS);
     sut.dynamic_config().list_notifiers([&](auto notifier_details_view) {
         notifier_ids.push_back(notifier_details_view.notifier_id());
         return CallbackProgression::Continue;
@@ -687,12 +689,13 @@ TYPED_TEST(ServiceEventTest, listing_all_notifiers_stops_on_request) {
     auto sut = node.service_builder(service_name).event().max_notifiers(NUMBER_OF_NOTIFIERS).create().expect("");
 
     std::vector<iox2::Notifier<SERVICE_TYPE>> notifiers;
-    for (auto idx = 0; idx < NUMBER_OF_NOTIFIERS; ++idx) {
+    notifiers.reserve(NUMBER_OF_NOTIFIERS);
+    for (uint64_t idx = 0; idx < NUMBER_OF_NOTIFIERS; ++idx) {
         notifiers.push_back(sut.notifier_builder().create().expect(""));
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_notifiers([&](auto notifier_details_view) {
+    sut.dynamic_config().list_notifiers([&](auto) {
         counter++;
         return CallbackProgression::Stop;
     });
@@ -729,11 +732,13 @@ TYPED_TEST(ServiceEventTest, listing_all_listeners_works) {
     auto sut = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS).create().expect("");
 
     std::vector<iox2::Listener<SERVICE_TYPE>> listeners;
-    for (auto idx = 0; idx < NUMBER_OF_LISTENERS; ++idx) {
+    listeners.reserve(NUMBER_OF_LISTENERS);
+    for (uint64_t idx = 0; idx < NUMBER_OF_LISTENERS; ++idx) {
         listeners.push_back(sut.listener_builder().create().expect(""));
     }
 
     std::vector<UniqueListenerId> listener_ids;
+    listener_ids.reserve(NUMBER_OF_LISTENERS);
     sut.dynamic_config().list_listeners([&](auto listener_details_view) {
         listener_ids.push_back(listener_details_view.listener_id());
         return CallbackProgression::Continue;
@@ -755,12 +760,13 @@ TYPED_TEST(ServiceEventTest, listing_all_listeners_stops_on_request) {
     auto sut = node.service_builder(service_name).event().max_listeners(NUMBER_OF_LISTENERS).create().expect("");
 
     std::vector<iox2::Listener<SERVICE_TYPE>> listeners;
-    for (auto idx = 0; idx < NUMBER_OF_LISTENERS; ++idx) {
+    listeners.reserve(NUMBER_OF_LISTENERS);
+    for (uint64_t idx = 0; idx < NUMBER_OF_LISTENERS; ++idx) {
         listeners.push_back(sut.listener_builder().create().expect(""));
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_listeners([&](auto listener_details_view) {
+    sut.dynamic_config().list_listeners([&](auto) {
         counter++;
         return CallbackProgression::Stop;
     });

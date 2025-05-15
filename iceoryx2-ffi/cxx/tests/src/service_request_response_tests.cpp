@@ -1699,11 +1699,13 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_works) {
                    .expect("");
 
     std::vector<iox2::Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>> clients;
-    for (auto idx = 0; idx < NUMBER_OF_CLIENTS; ++idx) {
+    clients.reserve(NUMBER_OF_CLIENTS);
+    for (uint64_t idx = 0; idx < NUMBER_OF_CLIENTS; ++idx) {
         clients.push_back(sut.client_builder().create().expect(""));
     }
 
     std::vector<UniqueClientId> client_ids;
+    client_ids.reserve(NUMBER_OF_CLIENTS);
     sut.dynamic_config().list_clients([&](auto client_details_view) {
         client_ids.push_back(client_details_view.client_id());
         return CallbackProgression::Continue;
@@ -1729,12 +1731,13 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_clients_stops_on_request) {
                    .expect("");
 
     std::vector<iox2::Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>> clients;
-    for (auto idx = 0; idx < NUMBER_OF_CLIENTS; ++idx) {
+    clients.reserve(NUMBER_OF_CLIENTS);
+    for (uint64_t idx = 0; idx < NUMBER_OF_CLIENTS; ++idx) {
         clients.push_back(sut.client_builder().create().expect(""));
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_clients([&](auto client_details_view) {
+    sut.dynamic_config().list_clients([&](auto) {
         counter++;
         return CallbackProgression::Stop;
     });
@@ -1781,11 +1784,13 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_works) {
                    .expect("");
 
     std::vector<iox2::Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>> servers;
-    for (auto idx = 0; idx < NUMBER_OF_SERVERS; ++idx) {
+    servers.reserve(NUMBER_OF_SERVERS);
+    for (uint64_t idx = 0; idx < NUMBER_OF_SERVERS; ++idx) {
         servers.push_back(sut.server_builder().create().expect(""));
     }
 
     std::vector<UniqueServerId> server_ids;
+    server_ids.reserve(NUMBER_OF_SERVERS);
     sut.dynamic_config().list_servers([&](auto server_details_view) {
         server_ids.push_back(server_details_view.server_id());
         return CallbackProgression::Continue;
@@ -1811,12 +1816,13 @@ TYPED_TEST(ServiceRequestResponseTest, listing_all_servers_stops_on_request) {
                    .expect("");
 
     std::vector<iox2::Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>> servers;
-    for (auto idx = 0; idx < NUMBER_OF_SERVERS; ++idx) {
+    servers.reserve(NUMBER_OF_SERVERS);
+    for (uint64_t idx = 0; idx < NUMBER_OF_SERVERS; ++idx) {
         servers.push_back(sut.server_builder().create().expect(""));
     }
 
     auto counter = 0;
-    sut.dynamic_config().list_servers([&](auto server_details_view) {
+    sut.dynamic_config().list_servers([&](auto) {
         counter++;
         return CallbackProgression::Stop;
     });
