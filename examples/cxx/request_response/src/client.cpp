@@ -37,10 +37,14 @@ auto main() -> int {
 
     while (node.wait(CYCLE_TIME).has_value()) {
         // acquire all responses to our request from our buffer that were sent by the servers
-        auto response = pending_response.receive().expect("receive successful");
-        while (response.has_value()) {
-            std::cout << "received response: " << response->payload() << std::endl;
-            response = pending_response.receive().expect("receive successful");
+        while (true) {
+            auto response = pending_response.receive().expect("receive successful");
+            if (response.has_value()) {
+                std::cout << "received response: " << response->payload() << std::endl;
+                response = pending_response.receive().expect("receive successful");
+            } else {
+                break;
+            }
         }
 
         counter += 1;
