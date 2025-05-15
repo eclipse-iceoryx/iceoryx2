@@ -267,7 +267,10 @@ impl<const CAPACITY: usize> TryFrom<&str> for FixedSizeByteString<CAPACITY> {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         if CAPACITY < value.len() {
-            return Err(FixedSizeByteStringModificationError::InsertWouldExceedCapacity);
+            fail!(from "FixedSizeByteString::from<&str>()",
+                with FixedSizeByteStringModificationError::InsertWouldExceedCapacity,
+                "The provided string \"{}\" does not fit into the FixedSizeByteString with capacity {}",
+                value, CAPACITY);
         }
 
         let mut new_self = Self::new();

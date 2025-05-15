@@ -145,9 +145,9 @@
 //!         // all attributes that are defined when creating a new service are stored in the
 //!         // static config of the service
 //!         &AttributeSpecifier::new()
-//!             .define("some attribute key", "some attribute value")
-//!             .define("some attribute key", "another attribute value for the same key")
-//!             .define("another key", "another value")
+//!             .define("some attribute key".try_into()?, "some attribute value".try_into()?)
+//!             .define("some attribute key".try_into()?, "another attribute value for the same key".try_into()?)
+//!             .define("another key".try_into()?, "another value".try_into()?)
 //!     )?;
 //!
 //! let service_open = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -158,8 +158,8 @@
 //!         // If a attribute key as either a different value or is not set at all, the service
 //!         // cannot be opened. If not specific attributes are required one can skip them completely.
 //!         &AttributeVerifier::new()
-//!             .require("another key", "another value")
-//!             .require_key("some attribute key")
+//!             .require("another key".try_into()?, "another value".try_into()?)
+//!             .require_key("some attribute key".try_into()?)
 //!     )?;
 //!
 //! # Ok(())

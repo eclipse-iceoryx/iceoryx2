@@ -29,9 +29,9 @@
 //!         // all attributes that are defined when creating a new service are stored in the
 //!         // static config of the service
 //!         &AttributeSpecifier::new()
-//!             .define("some attribute key", "some attribute value")
-//!             .define("some attribute key", "another attribute value for the same key")
-//!             .define("another key", "another value")
+//!             .define("some attribute key".try_into()?, "some attribute value".try_into()?)
+//!             .define("some attribute key".try_into()?, "another attribute value for the same key".try_into()?)
+//!             .define("another key".try_into()?, "another value".try_into()?)
 //!     )?;
 //!
 //! # Ok(())
@@ -55,8 +55,8 @@
 //!         // If a attribute key as either a different value or is not set at all, the service
 //!         // cannot be opened. If not specific attributes are required one can skip them completely.
 //!         &AttributeVerifier::new()
-//!             .require("another key", "another value")
-//!             .require_key("some attribute key")
+//!             .require("another key".try_into()?, "another value".try_into()?)
+//!             .require_key("some attribute key".try_into()?)
 //!     )?;
 //!
 //! # Ok(())
@@ -99,18 +99,74 @@
 
 use core::ops::Deref;
 
-use iceoryx2_bb_container::{byte_string::FixedSizeByteString, vec::FixedSizeVec};
+use iceoryx2_bb_container::{semantic_string::SemanticString, vec::FixedSizeVec};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::fatal_panic;
 use serde::{Deserialize, Serialize};
 
-use crate::constants::{MAX_ATTRIBUTES, MAX_ATTRIBUTE_KEY_LENGTH, MAX_ATTRIBUTE_VALUE_LENGTH};
+use crate::constants::MAX_ATTRIBUTES;
 
-type AttributeKeyString = FixedSizeByteString<MAX_ATTRIBUTE_KEY_LENGTH>;
-type AttributeValueString = FixedSizeByteString<MAX_ATTRIBUTE_VALUE_LENGTH>;
+/// Module containing the key type used for service attributes.
+pub mod key {
 
-type KeyStorage = FixedSizeVec<AttributeKeyString, MAX_ATTRIBUTES>;
+    use core::hash::Hash;
+    use core::hash::Hasher;
+
+    use iceoryx2_bb_container::semantic_string;
+    use iceoryx2_bb_container::semantic_string::SemanticString;
+    use iceoryx2_bb_derive_macros::ZeroCopySend;
+
+    use crate::constants::MAX_ATTRIBUTE_KEY_LENGTH;
+
+    semantic_string! {
+      /// Fixed string for service attribute keys.
+      name: FixedString,
+      capacity: MAX_ATTRIBUTE_KEY_LENGTH,
+      invalid_content: |string: &[u8]| {
+        // empty keys are not allowed to be empty
+        string.is_empty()
+      },
+      invalid_characters: |_string: &[u8]| {
+         false
+      },
+      normalize: |this: &FixedString| {
+          this.clone()
+      }
+    }
+}
+
+/// Module containing the value type used for service attributes.
+pub mod value {
+
+    use core::hash::Hash;
+    use core::hash::Hasher;
+
+    use iceoryx2_bb_container::semantic_string;
+    use iceoryx2_bb_container::semantic_string::SemanticString;
+    use iceoryx2_bb_derive_macros::ZeroCopySend;
+
+    use crate::constants::MAX_ATTRIBUTE_VALUE_LENGTH;
+
+    semantic_string! {
+      /// Fixed string for service attribute values.
+      name: FixedString,
+      capacity: MAX_ATTRIBUTE_VALUE_LENGTH,
+      invalid_content: |string: &[u8]| {
+        // empty keys are not allowed to be empty
+        string.is_empty()
+      },
+      invalid_characters: |_string: &[u8]| {
+         false
+      },
+      normalize: |this: &FixedString| {
+          this.clone()
+      }
+    }
+}
+
+// TODO: move into module ...
+type KeyStorage = FixedSizeVec<key::FixedString, MAX_ATTRIBUTES>;
 type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
 
 /// Represents a single service attribute (key-value) pair that can be defined when the service
@@ -118,40 +174,24 @@ type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
 #[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub struct Attribute {
-    key: AttributeKeyString,
-    value: AttributeValueString,
-}
-
-/// Errors that can occur when creating an [`Attribute`].
-pub enum AttributeError {
-    /// The attribute key exceeds the maximum allowed length.
-    KeyTooLong,
-    /// The attribute value exceeds the maximum allowed length.
-    ValueTooLong,
+    key: key::FixedString,
+    value: value::FixedString,
 }
 
 impl Attribute {
     /// Creates an attribute instance
-    pub fn new(key: &str, value: &str) -> Result<Self, AttributeError> {
-        Ok(Self {
-            key: AttributeKeyString::try_from(key).map_err(|_| AttributeError::KeyTooLong)?,
-            value: AttributeValueString::try_from(value)
-                .map_err(|_| AttributeError::ValueTooLong)?,
-        })
+    pub fn new(key: key::FixedString, value: value::FixedString) -> Self {
+        Self { key, value }
     }
 
     /// Acquires the service attribute key
-    pub fn key(&self) -> &str {
-        fatal_panic!(from self,
-             when self.key.as_str(),
-             "This should never happen! The underlying attribute key does not contain a valid UTF-8 string.")
+    pub fn key(&self) -> &key::FixedString {
+        &self.key
     }
 
     /// Acquires the service attribute value
-    pub fn value(&self) -> &str {
-        fatal_panic!(from self,
-             when self.value.as_str(),
-             "This should never happen! The underlying attribute value does not contain a valid UTF-8 string.")
+    pub fn value(&self) -> &value::FixedString {
+        &self.value
     }
 }
 
@@ -172,7 +212,7 @@ impl AttributeSpecifier {
     }
 
     /// Defines a value for a specific key. A key is allowed to have multiple values.
-    pub fn define(mut self, key: &str, value: &str) -> Self {
+    pub fn define(mut self, key: key::FixedString, value: value::FixedString) -> Self {
         self.0.add(key, value);
         self
     }
@@ -207,19 +247,14 @@ impl AttributeVerifier {
     }
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.
-    pub fn require(mut self, key: &str, value: &str) -> Self {
+    pub fn require(mut self, key: key::FixedString, value: value::FixedString) -> Self {
         self.required_attributes.add(key, value);
         self
     }
 
     /// Requires that a specific key is defined.
-    pub fn require_key(mut self, key: &str) -> Self {
-        self.required_keys.push(
-            fatal_panic!(
-                from "AttributeVerifier::require_key", 
-                when key.try_into(),
-                "Attempted to require an attribute key that does not fit into the underlying FixedSizeByteString")
-        );
+    pub fn require_key(mut self, key: key::FixedString) -> Self {
+        self.required_keys.push(key);
         self
     }
 
@@ -229,7 +264,7 @@ impl AttributeVerifier {
     }
 
     /// Returns the underlying required keys
-    pub fn required_keys(&self) -> &[AttributeKeyString] {
+    pub fn required_keys(&self) -> &[key::FixedString] {
         self.required_keys.as_slice()
     }
 
@@ -245,10 +280,10 @@ impl AttributeVerifier {
 
             let attribute_present = rhs
                 .iter()
-                .any(|attr| attr.key == *key && attr.value == *value);
+                .any(|attr| attr.key() == *key && attr.value() == *value);
 
             if !attribute_present {
-                return Err(key);
+                return Err(key.as_string().as_str().unwrap());
             }
         }
 
@@ -258,7 +293,7 @@ impl AttributeVerifier {
 
             if !key_exists {
                 let key_str = fatal_panic!(from self,
-                    when key.as_str(),
+                    when key.as_string().as_str(),
                     "This should never happen! The underlying attribute key does not contain a valid UTF-8 string.");
                 return Err(key_str);
             }
@@ -286,11 +321,8 @@ impl AttributeSet {
         Self(AttributeStorage::new())
     }
 
-    pub(crate) fn add(&mut self, key: &str, value: &str) {
-        self.0.push(fatal_panic!(
-                from "AttributeSet::add(key: &str, value: &str)", 
-                when Attribute::new(key, value),
-                "Attribute key or value exceeds maximum capacity"));
+    pub(crate) fn add(&mut self, key: key::FixedString, value: value::FixedString) {
+        self.0.push(Attribute::new(key, value));
         self.0.sort();
     }
 
@@ -301,7 +333,7 @@ impl AttributeSet {
 
     /// Returns the number of values stored under a specific key. If the key does not exist it
     /// returns 0.
-    pub fn number_of_key_values(&self, key: &str) -> usize {
+    pub fn number_of_key_values(&self, key: &key::FixedString) -> usize {
         self.iter().filter(|element| element.key() == key).count()
     }
 
@@ -311,22 +343,22 @@ impl AttributeSet {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    pub fn key_value(&self, key: &str, idx: usize) -> Option<&str> {
+    pub fn key_value(&self, key: &key::FixedString, idx: usize) -> Option<&value::FixedString> {
         self.0
             .iter()
-            .filter(|attr| attr.key == key)
+            .filter(|attr| attr.key() == key)
             .map(|attr| attr.value())
             .nth(idx)
     }
 
     /// Iterates over all values of a specific key
-    pub fn iter_key_values<F: FnMut(&str) -> CallbackProgression>(
+    pub fn iter_key_values<F: FnMut(&value::FixedString) -> CallbackProgression>(
         &self,
-        key: &str,
+        key: &key::FixedString,
         mut callback: F,
     ) {
         for element in self.iter() {
-            if element.key != key {
+            if element.key() != key {
                 continue;
             }
 

@@ -75,14 +75,15 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let attr = AttributeVerifier::new().require("hello", "world");
+        let attr = AttributeVerifier::new()
+            .require("hello".try_into().unwrap(), "world".try_into().unwrap());
         let sut = node
             .service_builder(&service_name)
             .publish_subscribe::<i64>()
             .open_or_create_with_attributes(&attr);
         assert_that!(sut, is_ok);
 
-        let attr1 = AttributeVerifier::new().require_key("hello");
+        let attr1 = AttributeVerifier::new().require_key("hello".try_into().unwrap());
         let sut2 = node
             .service_builder(&service_name)
             .publish_subscribe::<i64>()
@@ -116,14 +117,15 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let attr = AttributeVerifier::new().require("hello", "world");
+        let attr = AttributeVerifier::new()
+            .require("hello".try_into().unwrap(), "world".try_into().unwrap());
         let sut = node
             .service_builder(&service_name)
             .publish_subscribe::<i64>()
             .open_or_create_with_attributes(&attr);
         assert_that!(sut, is_ok);
 
-        let attr1 = AttributeVerifier::new().require_key("non-exist");
+        let attr1 = AttributeVerifier::new().require_key("non-exist".try_into().unwrap());
         let sut2 = node
             .service_builder(&service_name)
             .publish_subscribe::<i64>()

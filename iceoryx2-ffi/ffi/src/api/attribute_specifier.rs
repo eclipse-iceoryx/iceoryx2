@@ -15,14 +15,13 @@
 use crate::api::{AssertNonNullHandle, HandleToType, IOX2_OK};
 
 use iceoryx2::prelude::*;
+use iceoryx2::service::attribute::{key, value};
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 use core::ffi::c_int;
-use core::{
-    ffi::{c_char, CStr},
-    mem::ManuallyDrop,
-};
+use core::{ffi::c_char, mem::ManuallyDrop};
 
 use super::iox2_attribute_set_ptr;
 
@@ -168,8 +167,8 @@ pub unsafe extern "C" fn iox2_attribute_specifier_define(
     debug_assert!(!key.is_null());
     debug_assert!(!value.is_null());
 
-    let key = CStr::from_ptr(key).to_str();
-    let value = CStr::from_ptr(value).to_str();
+    let key = key::FixedString::from_c_str(key);
+    let value = value::FixedString::from_c_str(value);
 
     debug_assert!(key.is_ok() && value.is_ok());
 

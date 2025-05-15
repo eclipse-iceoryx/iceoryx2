@@ -275,3 +275,8 @@
 15. Renamed `AttributeVerifier::keys()` to `AttributeVerifier::required_keys()`
 
 16. Renamed `AttributeVerifier::attributes()` to `AttributeVerifier::required_attributes()`
+
+17. Attribute keys and values are now `SemanticStrings`
+    1. All arguments of methods in `Attribute`, `AttributeSpecifier`,
+        `AttributeVerifier`, and `AttributeSet` changed from `&str` to
+        `FixedSizeByteStrings` that implement the `SemanticString` trait

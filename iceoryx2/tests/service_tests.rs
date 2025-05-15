@@ -479,9 +479,18 @@ mod service {
         let test = Factory::new();
         let service_name = generate_name();
         let defined_attributes = AttributeSpecifier::new()
-            .define("1. Hello", "Hypnotoad")
-            .define("2. No more", "Coffee")
-            .define("3. Just have a", "lick on the toad");
+            .define(
+                "1. Hello".try_into().unwrap(),
+                "Hypnotoad".try_into().unwrap(),
+            )
+            .define(
+                "2. No more".try_into().unwrap(),
+                "Coffee".try_into().unwrap(),
+            )
+            .define(
+                "3. Just have a".try_into().unwrap(),
+                "lick on the toad".try_into().unwrap(),
+            );
         let config = generate_isolated_config();
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -506,10 +515,22 @@ mod service {
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
-            .define("1. Hello", "Hypnotoad")
-            .define("1. Hello", "Take a number")
-            .define("2. No more", "Coffee")
-            .define("3. Just have a", "lick on the toad");
+            .define(
+                "1. Hello".try_into().unwrap(),
+                "Hypnotoad".try_into().unwrap(),
+            )
+            .define(
+                "1. Hello".try_into().unwrap(),
+                "Take a number".try_into().unwrap(),
+            )
+            .define(
+                "2. No more".try_into().unwrap(),
+                "Coffee".try_into().unwrap(),
+            )
+            .define(
+                "3. Just have a".try_into().unwrap(),
+                "lick on the toad".try_into().unwrap(),
+            );
 
         let _sut_create = test
             .create(&node_1, &service_name, &defined_attributes)
@@ -519,9 +540,18 @@ mod service {
             &node_2,
             &service_name,
             &AttributeVerifier::new()
-                .require("1. Hello", "Hypnotoad")
-                .require("1. Hello", "Take a number")
-                .require("3. Just have a", "lick on the toad"),
+                .require(
+                    "1. Hello".try_into().unwrap(),
+                    "Hypnotoad".try_into().unwrap(),
+                )
+                .require(
+                    "1. Hello".try_into().unwrap(),
+                    "Take a number".try_into().unwrap(),
+                )
+                .require(
+                    "3. Just have a".try_into().unwrap(),
+                    "lick on the toad".try_into().unwrap(),
+                ),
         );
 
         assert_that!(sut_open, is_ok);
@@ -538,8 +568,14 @@ mod service {
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
-            .define("1. Hello", "Hypnotoad")
-            .define("2. No more", "Coffee");
+            .define(
+                "1. Hello".try_into().unwrap(),
+                "Hypnotoad".try_into().unwrap(),
+            )
+            .define(
+                "2. No more".try_into().unwrap(),
+                "Coffee".try_into().unwrap(),
+            );
         let _sut_create = test
             .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
@@ -547,7 +583,10 @@ mod service {
         let sut_open = test.open(
             &node_2,
             &service_name,
-            &AttributeVerifier::new().require("1. Hello", "lick on the toad"),
+            &AttributeVerifier::new().require(
+                "1. Hello".try_into().unwrap(),
+                "lick on the toad".try_into().unwrap(),
+            ),
         );
 
         assert_that!(sut_open, is_err);
@@ -562,8 +601,14 @@ mod service {
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
-            .define("1. Hello", "Hypnotoad")
-            .define("2. No more", "Coffee");
+            .define(
+                "1. Hello".try_into().unwrap(),
+                "Hypnotoad".try_into().unwrap(),
+            )
+            .define(
+                "2. No more".try_into().unwrap(),
+                "Coffee".try_into().unwrap(),
+            );
         let _sut_create = test
             .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
@@ -571,7 +616,10 @@ mod service {
         let sut_open = test.open(
             &node_2,
             &service_name,
-            &AttributeVerifier::new().require("Whatever", "lick on the toad"),
+            &AttributeVerifier::new().require(
+                "Whatever".try_into().unwrap(),
+                "lick on the toad".try_into().unwrap(),
+            ),
         );
 
         assert_that!(sut_open, is_err);
@@ -586,9 +634,18 @@ mod service {
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
-            .define("1. Hello", "Hypnotoad")
-            .define("1. Hello", "Number Two")
-            .define("2. No more", "Coffee");
+            .define(
+                "1. Hello".try_into().unwrap(),
+                "Hypnotoad".try_into().unwrap(),
+            )
+            .define(
+                "1. Hello".try_into().unwrap(),
+                "Number Two".try_into().unwrap(),
+            )
+            .define(
+                "2. No more".try_into().unwrap(),
+                "Coffee".try_into().unwrap(),
+            );
         let _sut_create = test
             .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
@@ -597,8 +654,14 @@ mod service {
             &node_2,
             &service_name,
             &AttributeVerifier::new()
-                .require("1. Hello", "lick on the toad")
-                .require("1. Hello", "Number Eight"),
+                .require(
+                    "1. Hello".try_into().unwrap(),
+                    "lick on the toad".try_into().unwrap(),
+                )
+                .require(
+                    "1. Hello".try_into().unwrap(),
+                    "Number Eight".try_into().unwrap(),
+                ),
         );
 
         assert_that!(sut_open, is_err);
@@ -616,8 +679,14 @@ mod service {
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
-            .define("1. Hello", "Hypnotoad")
-            .define("2. No more", "Coffee");
+            .define(
+                "1. Hello".try_into().unwrap(),
+                "Hypnotoad".try_into().unwrap(),
+            )
+            .define(
+                "2. No more".try_into().unwrap(),
+                "Coffee".try_into().unwrap(),
+            );
         let _sut_create = test
             .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
@@ -625,7 +694,7 @@ mod service {
         let sut_open = test.open(
             &node_2,
             &service_name,
-            &AttributeVerifier::new().require_key("i do not exist"),
+            &AttributeVerifier::new().require_key("i do not exist".try_into().unwrap()),
         );
 
         assert_that!(sut_open, is_err);
@@ -643,8 +712,14 @@ mod service {
         let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let defined_attributes = AttributeSpecifier::new()
-            .define("1. Hello", "Hypnotoad")
-            .define("2. No more", "Coffee");
+            .define(
+                "1. Hello".try_into().unwrap(),
+                "Hypnotoad".try_into().unwrap(),
+            )
+            .define(
+                "2. No more".try_into().unwrap(),
+                "Coffee".try_into().unwrap(),
+            );
         let _sut_create = test
             .create(&node_1, &service_name, &defined_attributes)
             .unwrap();
@@ -652,7 +727,7 @@ mod service {
         let sut_open = test.open(
             &node_2,
             &service_name,
-            &AttributeVerifier::new().require_key("2. No more"),
+            &AttributeVerifier::new().require_key("2. No more".try_into().unwrap()),
         );
 
         assert_that!(sut_open, is_ok);
