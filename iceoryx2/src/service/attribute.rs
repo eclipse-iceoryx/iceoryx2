@@ -107,8 +107,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::constants::MAX_ATTRIBUTES;
 
-/// Module containing the key type used for service attributes.
-pub mod key {
+mod key {
 
     use core::hash::Hash;
     use core::hash::Hasher;
@@ -136,8 +135,11 @@ pub mod key {
     }
 }
 
+/// Key type used for service attributes.
+pub type AttributeKey = key::FixedString;
+
 /// Module containing the value type used for service attributes.
-pub mod value {
+mod value {
 
     use core::hash::Hash;
     use core::hash::Hasher;
@@ -165,8 +167,10 @@ pub mod value {
     }
 }
 
-// TODO: move into module ...
-type KeyStorage = FixedSizeVec<key::FixedString, MAX_ATTRIBUTES>;
+/// Value type used for service attributes.
+pub type AttributeValue = value::FixedString;
+
+type KeyStorage = FixedSizeVec<AttributeKey, MAX_ATTRIBUTES>;
 type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
 
 /// Represents a single service attribute (key-value) pair that can be defined when the service
@@ -174,23 +178,23 @@ type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
 #[derive(Debug, Eq, PartialEq, Clone, PartialOrd, Ord, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub struct Attribute {
-    key: key::FixedString,
-    value: value::FixedString,
+    key: AttributeKey,
+    value: AttributeValue,
 }
 
 impl Attribute {
     /// Creates an attribute instance
-    pub fn new(key: key::FixedString, value: value::FixedString) -> Self {
+    pub fn new(key: AttributeKey, value: AttributeValue) -> Self {
         Self { key, value }
     }
 
     /// Acquires the service attribute key
-    pub fn key(&self) -> &key::FixedString {
+    pub fn key(&self) -> &AttributeKey {
         &self.key
     }
 
     /// Acquires the service attribute value
-    pub fn value(&self) -> &value::FixedString {
+    pub fn value(&self) -> &AttributeValue {
         &self.value
     }
 }
@@ -212,7 +216,7 @@ impl AttributeSpecifier {
     }
 
     /// Defines a value for a specific key. A key is allowed to have multiple values.
-    pub fn define(mut self, key: key::FixedString, value: value::FixedString) -> Self {
+    pub fn define(mut self, key: AttributeKey, value: AttributeValue) -> Self {
         self.0.add(key, value);
         self
     }
@@ -247,13 +251,13 @@ impl AttributeVerifier {
     }
 
     /// Requires a value for a specific key. A key is allowed to have multiple values.
-    pub fn require(mut self, key: key::FixedString, value: value::FixedString) -> Self {
+    pub fn require(mut self, key: AttributeKey, value: AttributeValue) -> Self {
         self.required_attributes.add(key, value);
         self
     }
 
     /// Requires that a specific key is defined.
-    pub fn require_key(mut self, key: key::FixedString) -> Self {
+    pub fn require_key(mut self, key: AttributeKey) -> Self {
         self.required_keys.push(key);
         self
     }
@@ -264,7 +268,7 @@ impl AttributeVerifier {
     }
 
     /// Returns the underlying required keys
-    pub fn required_keys(&self) -> &[key::FixedString] {
+    pub fn required_keys(&self) -> &[AttributeKey] {
         self.required_keys.as_slice()
     }
 
@@ -321,7 +325,7 @@ impl AttributeSet {
         Self(AttributeStorage::new())
     }
 
-    pub(crate) fn add(&mut self, key: key::FixedString, value: value::FixedString) {
+    pub(crate) fn add(&mut self, key: AttributeKey, value: AttributeValue) {
         self.0.push(Attribute::new(key, value));
         self.0.sort();
     }
@@ -333,7 +337,7 @@ impl AttributeSet {
 
     /// Returns the number of values stored under a specific key. If the key does not exist it
     /// returns 0.
-    pub fn number_of_key_values(&self, key: &key::FixedString) -> usize {
+    pub fn number_of_key_values(&self, key: &AttributeKey) -> usize {
         self.iter().filter(|element| element.key() == key).count()
     }
 
@@ -343,7 +347,7 @@ impl AttributeSet {
     /// process when the system restarts.
     /// If the key does not exist or it does not have a value at the specified index, it returns
     /// [`None`].
-    pub fn key_value(&self, key: &key::FixedString, idx: usize) -> Option<&value::FixedString> {
+    pub fn key_value(&self, key: &AttributeKey, idx: usize) -> Option<&AttributeValue> {
         self.0
             .iter()
             .filter(|attr| attr.key() == key)
@@ -352,9 +356,9 @@ impl AttributeSet {
     }
 
     /// Iterates over all values of a specific key
-    pub fn iter_key_values<F: FnMut(&value::FixedString) -> CallbackProgression>(
+    pub fn iter_key_values<F: FnMut(&AttributeValue) -> CallbackProgression>(
         &self,
-        key: &key::FixedString,
+        key: &AttributeKey,
         mut callback: F,
     ) {
         for element in self.iter() {

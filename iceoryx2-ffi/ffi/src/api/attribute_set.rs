@@ -18,7 +18,7 @@ use iceoryx2_bb_elementary::static_assert::*;
 extern crate alloc;
 use alloc::ffi::CString;
 
-use iceoryx2::service::attribute::{key, Attribute, AttributeSet};
+use iceoryx2::service::attribute::{Attribute, AttributeKey, AttributeSet};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -213,7 +213,7 @@ pub unsafe extern "C" fn iox2_attribute_set_number_of_key_values(
     debug_assert!(!handle.is_null());
     debug_assert!(!key.is_null());
 
-    let key = key::FixedString::from_c_str(key);
+    let key = AttributeKey::from_c_str(key);
     if key.is_err() {
         return 0;
     }
@@ -248,7 +248,7 @@ pub unsafe extern "C" fn iox2_attribute_set_key_value(
     debug_assert!(0 < buffer_len);
 
     *has_value = false;
-    let key = key::FixedString::from_c_str(key);
+    let key = AttributeKey::from_c_str(key);
     if key.is_err() {
         return;
     }
@@ -282,7 +282,7 @@ pub unsafe extern "C" fn iox2_attribute_set_iter_key_values(
 ) {
     debug_assert!(!handle.is_null());
 
-    let key = key::FixedString::from_c_str(key);
+    let key = AttributeKey::from_c_str(key);
     if key.is_err() {
         return;
     }

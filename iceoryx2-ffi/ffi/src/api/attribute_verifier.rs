@@ -15,7 +15,7 @@
 use crate::api::{AssertNonNullHandle, HandleToType, IOX2_OK};
 
 use iceoryx2::prelude::*;
-use iceoryx2::service::attribute::{key, value};
+use iceoryx2::service::attribute::{AttributeKey, AttributeValue};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -170,8 +170,8 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require(
     debug_assert!(!key.is_null());
     debug_assert!(!value.is_null());
 
-    let key = key::FixedString::from_c_str(key);
-    let value = value::FixedString::from_c_str(value);
+    let key = AttributeKey::from_c_str(key);
+    let value = AttributeValue::from_c_str(value);
 
     debug_assert!(key.is_ok() && value.is_ok());
 
@@ -196,7 +196,7 @@ pub unsafe extern "C" fn iox2_attribute_verifier_require_key(
     debug_assert!(!handle.is_null());
     debug_assert!(!key.is_null());
 
-    let key = key::FixedString::from_c_str(key);
+    let key = AttributeKey::from_c_str(key);
 
     debug_assert!(key.is_ok());
 

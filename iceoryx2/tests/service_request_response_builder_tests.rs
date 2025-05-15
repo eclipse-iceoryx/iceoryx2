@@ -323,8 +323,8 @@ mod service_request_response {
     fn opening_service_with_attributes_and_acquiring_attributes_works<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
-        let attribute_key: key::FixedString = "wanna try this head".try_into().unwrap();
-        let attribute_value: value::FixedString = "no its a brainslug".try_into().unwrap();
+        let attribute_key: AttributeKey = "wanna try this head".try_into().unwrap();
+        let attribute_value: AttributeValue = "no its a brainslug".try_into().unwrap();
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
@@ -354,10 +354,10 @@ mod service_request_response {
     fn opening_service_with_incompatible_attributes_fails<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
-        let attribute_key: key::FixedString = "there is a muffin".try_into().unwrap();
-        let attribute_value: value::FixedString = "with molten chocolate".try_into().unwrap();
-        let attribute_incompatible_key: key::FixedString = "its delicious".try_into().unwrap();
-        let attribute_incompatible_value: value::FixedString = "I wanna eat it".try_into().unwrap();
+        let attribute_key: AttributeKey = "there is a muffin".try_into().unwrap();
+        let attribute_value: AttributeValue = "with molten chocolate".try_into().unwrap();
+        let attribute_incompatible_key: AttributeKey = "its delicious".try_into().unwrap();
+        let attribute_incompatible_value: AttributeValue = "I wanna eat it".try_into().unwrap();
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut_create = node
@@ -392,8 +392,8 @@ mod service_request_response {
     fn opening_service_with_compatible_attributes_works<Sut: Service>() {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
-        let attribute_key: key::FixedString = "kermit the brave knight".try_into().unwrap();
-        let attribute_value: value::FixedString =
+        let attribute_key: AttributeKey = "kermit the brave knight".try_into().unwrap();
+        let attribute_value: AttributeValue =
             "rides on hypnotoad into the sunset".try_into().unwrap();
 
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
