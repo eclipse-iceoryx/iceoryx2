@@ -50,13 +50,12 @@ auto main() -> int {
                     std::cout << "send response: " << *initialized_response << std::endl;
                     send(std::move(initialized_response)).expect("send successful");
                 }
-
-                // when an active_request goes out of scope it marks the connection so
-                // that the corresponding pending response sees that no more
-                // responses are arriving
             } else {
                 break;
             }
+            // when an active_request goes out of scope it marks the connection so
+            // that the corresponding pending response sees that no more
+            // responses are arriving
         }
 
         counter += 1;

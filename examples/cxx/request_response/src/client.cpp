@@ -41,7 +41,6 @@ auto main() -> int {
             auto response = pending_response.receive().expect("receive successful");
             if (response.has_value()) {
                 std::cout << "received response: " << response->payload() << std::endl;
-                response = pending_response.receive().expect("receive successful");
             } else {
                 break;
             }
