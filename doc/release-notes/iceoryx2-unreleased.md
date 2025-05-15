@@ -280,3 +280,23 @@
     1. All arguments of methods in `Attribute`, `AttributeSpecifier`,
         `AttributeVerifier`, and `AttributeSet` changed from `&str` to
         `FixedSizeByteStrings` that implement the `SemanticString` trait
+
+    ```rust
+    // old
+    let attribute = Attribute::new("my_key", "my_value");
+
+    // new - keys or value known to fit within maximum length
+    let attribute = Attribute::new("my_key".try_into().unwrap(), "my_value".try_into().unwrap());
+
+    // new - key or value length unknown
+    fn get_key() -> &str;
+    fn get_value() -> &str;
+
+    let key = AttributeKey::try_from(get_key()).unwrap_or_else(|e| {
+        // Handle error: e.g., log error, use default key, or propagate error
+    });
+    let value = AttributeValue::try_from(get_value()).unwrap_or_else(|e| {
+        // Handle error: e.g., log error, use default value, or propagate error
+    });
+    let attribute = Attribute::new(key, value);
+    ```
