@@ -37,6 +37,7 @@ class UniquePublisherId {
     template <ServiceType, typename, typename>
     friend class Publisher;
     friend class HeaderPublishSubscribe;
+    friend class PublisherDetailsView;
     friend auto operator==(const UniquePublisherId&, const UniquePublisherId&) -> bool;
     friend auto operator<(const UniquePublisherId&, const UniquePublisherId&) -> bool;
 
@@ -63,6 +64,7 @@ class UniqueSubscriberId {
     friend class Subscriber;
     friend auto operator==(const UniqueSubscriberId&, const UniqueSubscriberId&) -> bool;
     friend auto operator<(const UniqueSubscriberId&, const UniqueSubscriberId&) -> bool;
+    friend class SubscriberDetailsView;
 
     explicit UniqueSubscriberId(iox2_unique_subscriber_id_h handle);
     void drop();
@@ -87,6 +89,7 @@ class UniqueNotifierId {
     friend class Notifier;
     friend auto operator==(const UniqueNotifierId&, const UniqueNotifierId&) -> bool;
     friend auto operator<(const UniqueNotifierId&, const UniqueNotifierId&) -> bool;
+    friend class NotifierDetailsView;
 
     explicit UniqueNotifierId(iox2_unique_notifier_id_h handle);
     void drop();
@@ -111,6 +114,7 @@ class UniqueListenerId {
     friend class Listener;
     friend auto operator==(const UniqueListenerId&, const UniqueListenerId&) -> bool;
     friend auto operator<(const UniqueListenerId&, const UniqueListenerId&) -> bool;
+    friend class ListenerDetailsView;
 
     explicit UniqueListenerId(iox2_unique_listener_id_h handle);
     void drop();
@@ -136,6 +140,7 @@ class UniqueClientId {
     friend class RequestHeader;
     friend auto operator==(const UniqueClientId&, const UniqueClientId&) -> bool;
     friend auto operator<(const UniqueClientId&, const UniqueClientId&) -> bool;
+    friend class ClientDetailsView;
 
     explicit UniqueClientId(iox2_unique_client_id_h handle);
     void drop();
@@ -161,6 +166,7 @@ class UniqueServerId {
     friend class ResponseHeader;
     friend auto operator==(const UniqueServerId&, const UniqueServerId&) -> bool;
     friend auto operator<(const UniqueServerId&, const UniqueServerId&) -> bool;
+    friend class ServerDetailsView;
 
     explicit UniqueServerId(iox2_unique_server_id_h handle);
     void drop();

@@ -58,6 +58,12 @@ class NodeId {
     friend auto internal::list_callback(
         iox2_node_state_e, iox2_node_id_ptr, const char*, iox2_node_name_ptr, iox2_config_ptr, iox2_callback_context)
         -> iox2_callback_progression_e;
+    friend class ClientDetailsView;
+    friend class ServerDetailsView;
+    friend class NotifierDetailsView;
+    friend class ListenerDetailsView;
+    friend class PublisherDetailsView;
+    friend class SubscriberDetailsView;
 
     explicit NodeId(iox2_node_id_h handle);
     void drop();

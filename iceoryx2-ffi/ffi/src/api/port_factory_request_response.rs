@@ -493,7 +493,7 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_service_id(
 ///   location
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_servers(
-    handle: iox2_port_factory_request_response_h,
+    handle: iox2_port_factory_request_response_h_ref,
     callback: iox2_list_servers_callback,
     callback_ctx: iox2_callback_context,
 ) {
@@ -531,7 +531,7 @@ pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_
 ///   location
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_request_response_dynamic_config_list_clients(
-    handle: iox2_port_factory_request_response_h,
+    handle: iox2_port_factory_request_response_h_ref,
     callback: iox2_list_clients_callback,
     callback_ctx: iox2_callback_context,
 ) {

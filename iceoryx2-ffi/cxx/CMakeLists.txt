@@ -40,6 +40,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/attribute_set.cpp
     src/attribute_specifier.cpp
     src/attribute_verifier.cpp
+    src/client_details.cpp
     src/config.cpp
     src/dynamic_config_event.cpp
     src/dynamic_config_publish_subscribe.cpp
@@ -49,6 +50,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/header_publish_subscribe.cpp
     src/header_request_response.cpp
     src/listener.cpp
+    src/listener_details.cpp
     src/log.cpp
     src/message_type_details.cpp
     src/messaging_pattern.cpp
@@ -58,9 +60,12 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/node_name.cpp
     src/node_state.cpp
     src/notifier.cpp
+    src/notifier_details.cpp
     src/port_factory_event.cpp
     src/port_factory_listener.cpp
     src/port_factory_notifier.cpp
+    src/publisher_details.cpp
+    src/server_details.cpp
     src/service.cpp
     src/service_builder_event.cpp
     src/service_id.cpp
@@ -69,6 +74,7 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/static_config_event.cpp
     src/static_config_publish_subscribe.cpp
     src/static_config_request_response.cpp
+    src/subscriber_details.cpp
     src/unique_port_id.cpp
     src/waitset.cpp
 )

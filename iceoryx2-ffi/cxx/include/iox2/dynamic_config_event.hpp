@@ -13,11 +13,16 @@
 #ifndef IOX2_DYNAMIC_CONFIG_EVENT_HPP
 #define IOX2_DYNAMIC_CONFIG_EVENT_HPP
 
+#include "iox/function.hpp"
 #include "iox2/internal/iceoryx2.hpp"
+#include "iox2/listener_details.hpp"
+#include "iox2/notifier_details.hpp"
 
 #include <cstdint>
 
 namespace iox2 {
+/// The dynamic configuration of an [`MessagingPattern::Event`]
+/// based service. Contains dynamic parameters like the connected endpoints etc..
 class DynamicConfigEvent {
   public:
     DynamicConfigEvent(const DynamicConfigEvent&) = delete;
@@ -31,6 +36,18 @@ class DynamicConfigEvent {
 
     /// Returns how many [`Notifier`] ports are currently connected.
     auto number_of_notifiers() const -> uint64_t;
+
+    /// Iterates over all [`Notifier`]s and calls the
+    /// callback with the corresponding [`NotifierDetailsView`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    void list_notifiers(const iox::function<CallbackProgression(NotifierDetailsView)>& callback) const;
+
+    /// Iterates over all [`Listener`]s and calls the
+    /// callback with the corresponding [`ListenerDetailsView`].
+    /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
+    /// continue otherwise [`CallbackProgression::Stop`].
+    void list_listeners(const iox::function<CallbackProgression(ListenerDetailsView)>& callback) const;
 
   private:
     template <ServiceType>

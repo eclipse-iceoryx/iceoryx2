@@ -65,6 +65,12 @@ inline auto ctx_cast(void* ptr) -> CallbackContext<T>* {
     return static_cast<CallbackContext<T>*>(ptr);
 }
 
+template <typename T, typename ViewType>
+auto list_ports_callback(void* context, const T port_details_view) -> iox2_callback_progression_e {
+    auto* callback = internal::ctx_cast<iox::function<CallbackProgression(ViewType)>>(context);
+    return iox::into<iox2_callback_progression_e>(callback->value()(ViewType(port_details_view)));
+}
+
 template <ServiceType T>
 // NOLINTBEGIN(readability-function-size)
 auto list_callback(iox2_node_state_e node_state,

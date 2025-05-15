@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/dynamic_config_request_response.hpp"
+#include "iox2/internal/callback_context.hpp"
 
 namespace iox2 {
 auto DynamicConfigRequestResponse::number_of_clients() const -> uint64_t {
@@ -23,5 +24,19 @@ auto DynamicConfigRequestResponse::number_of_servers() const -> uint64_t {
 
 DynamicConfigRequestResponse::DynamicConfigRequestResponse(iox2_port_factory_request_response_h handle)
     : m_handle(handle) {
+}
+
+void DynamicConfigRequestResponse::list_servers(
+    const iox::function<CallbackProgression(ServerDetailsView)>& callback) const {
+    auto ctx = internal::ctx(callback);
+    iox2_port_factory_request_response_dynamic_config_list_servers(
+        &m_handle, internal::list_ports_callback<iox2_server_details_ptr, ServerDetailsView>, static_cast<void*>(&ctx));
+}
+
+void DynamicConfigRequestResponse::list_clients(
+    const iox::function<CallbackProgression(ClientDetailsView)>& callback) const {
+    auto ctx = internal::ctx(callback);
+    iox2_port_factory_request_response_dynamic_config_list_clients(
+        &m_handle, internal::list_ports_callback<iox2_client_details_ptr, ClientDetailsView>, static_cast<void*>(&ctx));
 }
 } // namespace iox2
