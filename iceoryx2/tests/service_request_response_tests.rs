@@ -443,7 +443,7 @@ mod service_request_response {
             test.clients[1].send_copy(n).unwrap();
         }
 
-        // disconnect all last client in vec
+        // disconnect last client in vec
         test.clients.pop();
 
         for n in 0..test_args.number_of_active_requests {
