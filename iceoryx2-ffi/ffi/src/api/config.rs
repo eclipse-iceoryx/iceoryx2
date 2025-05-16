@@ -1582,6 +1582,51 @@ pub unsafe extern "C" fn iox2_config_defaults_request_response_set_client_expire
         .client_expired_connection_buffer = value;
 }
 
+/// Returns the expired connection buffer size for [`iox2_serve_h`](crate::api::iox2_server_h)
+/// to retrieve [`iox2_active_request_h`](crate::api::iox2_active_request_h) from disconnected
+/// [`iox2_client_h`](crate::api::iox2_client_h)
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_server_expired_connection_buffer(
+    handle: iox2_config_h_ref,
+) -> c_size_t {
+    handle.assert_non_null();
+
+    let config = &*handle.as_type();
+    config
+        .value
+        .as_ref()
+        .value
+        .defaults
+        .request_response
+        .server_expired_connection_buffer
+}
+
+/// Sets the expired connection buffer size for [`iox2_server_h`](crate::api::iox2_server_h).
+///
+/// # Safety
+///
+/// * `handle` - A valid non-owning [`iox2_config_h_ref`].
+#[no_mangle]
+pub unsafe extern "C" fn iox2_config_defaults_request_response_set_server_expired_connection_buffer(
+    handle: iox2_config_h_ref,
+    value: c_size_t,
+) {
+    handle.assert_non_null();
+
+    let config = &mut *handle.as_type();
+    config
+        .value
+        .as_mut()
+        .value
+        .defaults
+        .request_response
+        .server_expired_connection_buffer = value;
+}
+
 /// If safe overflow is deactivated it defines the deliver strategy of the
 /// [`iox2_client_h`](crate::api::iox2_client_h) when the
 /// [`iox2_server_h`](crate::api::iox2_server_h)s request buffer is full.

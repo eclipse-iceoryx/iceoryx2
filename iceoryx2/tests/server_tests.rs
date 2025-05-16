@@ -37,6 +37,7 @@ mod server {
         let service = node
             .service_builder(&service_name)
             .request_response::<u64, u64>()
+            .enable_fire_and_forget_requests(false)
             .create()
             .unwrap();
 

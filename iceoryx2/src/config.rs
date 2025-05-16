@@ -361,6 +361,12 @@ pub struct RequestResonse {
     /// Consider enabling this feature if you do not want to loose any
     /// [`RequestMut`](crate::response_mut::ResponseMut).
     pub enable_fire_and_forget_requests: bool,
+    /// Defines the size of the internal [`Server`](crate::port::server::Server)
+    /// buffer that contains expired connections. A
+    /// connection is expired when the [`Client`](crate::port::client::Client)
+    /// disconnected from a service and the connection
+    /// still contains unconsumed [`ActiveRequest`](crate::active_request::ActiveRequest)s.
+    pub server_expired_connection_buffer: usize,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -419,6 +425,7 @@ impl Default for Config {
                     client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
                     client_expired_connection_buffer: 128,
+                    server_expired_connection_buffer: 128,
                     enable_fire_and_forget_requests: true,
                 },
                 publish_subscribe: PublishSubscribe {

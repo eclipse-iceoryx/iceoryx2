@@ -377,6 +377,89 @@ mod service_request_response {
     }
 
     #[test]
+    fn sent_requests_from_disconnected_clients_can_be_received<Sut: Service>() {
+        let test_args = Args {
+            number_of_active_requests: 8,
+            enable_fire_and_forget: true,
+            ..Default::default()
+        };
+
+        let mut test = TestFixture::<Sut>::new(test_args);
+        assert_that!(test.servers[0].receive(), is_ok);
+
+        for n in 0..test_args.number_of_active_requests {
+            test.clients[0].send_copy(n).unwrap();
+        }
+
+        // disconnect all clients
+        test.clients.clear();
+
+        for n in 0..test_args.number_of_active_requests {
+            let active_request = test.servers[0].receive().unwrap().unwrap();
+            assert_that!(*active_request.payload(), eq n);
+            assert_that!(active_request.is_connected(), eq false);
+        }
+    }
+
+    #[test]
+    fn sent_requests_from_disconnected_clients_are_not_received_without_fire_and_forget<
+        Sut: Service,
+    >() {
+        let test_args = Args {
+            number_of_active_requests: 8,
+            enable_fire_and_forget: false,
+            ..Default::default()
+        };
+
+        let mut test = TestFixture::<Sut>::new(test_args);
+        assert_that!(test.servers[0].receive(), is_ok);
+
+        for n in 0..test_args.number_of_active_requests {
+            test.clients[0].send_copy(n).unwrap();
+        }
+
+        // disconnect all clients
+        test.clients.clear();
+
+        let active_request = test.servers[0].receive().unwrap();
+        assert_that!(active_request, is_none);
+    }
+
+    #[test]
+    fn sent_requests_from_disconnected_clients_are_received_first<Sut: Service>() {
+        let test_args = Args {
+            number_of_active_requests: 8,
+            number_of_clients: 2,
+            enable_fire_and_forget: true,
+            ..Default::default()
+        };
+
+        let mut test = TestFixture::<Sut>::new(test_args);
+        assert_that!(test.servers[0].receive(), is_ok);
+
+        let mut pending_responses = vec![];
+        for n in 0..test_args.number_of_active_requests {
+            pending_responses.push(test.clients[0].send_copy(n + 100).unwrap());
+            test.clients[1].send_copy(n).unwrap();
+        }
+
+        // disconnect last client in vec
+        test.clients.pop();
+
+        for n in 0..test_args.number_of_active_requests {
+            let active_request = test.servers[0].receive().unwrap().unwrap();
+            assert_that!(*active_request.payload(), eq n);
+            assert_that!(active_request.is_connected(), eq false);
+        }
+
+        for n in 0..test_args.number_of_active_requests {
+            let active_request = test.servers[0].receive().unwrap().unwrap();
+            assert_that!(*active_request.payload(), eq n + 100);
+            assert_that!(active_request.is_connected(), eq true);
+        }
+    }
+
+    #[test]
     fn sent_responses_from_disconnected_servers_are_received_first<Sut: Service>() {
         let test_args = Args {
             number_of_servers: 2,
@@ -401,11 +484,16 @@ mod service_request_response {
 
         for n in 0..test_args.response_buffer_size {
             assert_that!(*pending_response.receive().unwrap().unwrap(), eq n + 100);
+            assert_that!(pending_response.is_connected(), eq true);
         }
 
         for n in 0..test_args.response_buffer_size {
             assert_that!(*pending_response.receive().unwrap().unwrap(), eq n );
+            assert_that!(pending_response.is_connected(), eq true);
         }
+
+        drop(active_request_0);
+        assert_that!(pending_response.is_connected(), eq false);
     }
 
     #[test]

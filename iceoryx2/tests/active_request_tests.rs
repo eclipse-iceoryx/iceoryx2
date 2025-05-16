@@ -67,6 +67,40 @@ mod active_request {
     }
 
     #[test]
+    fn is_connected_until_pending_response_is_dropped_multiple_connections<Sut: Service>() {
+        let test = TestFixture::<Sut>::new();
+        let pending_response_1 = test.client.send_copy(123).unwrap();
+        let pending_response_2 = test.client.send_copy(123).unwrap();
+        let pending_response_3 = test.client.send_copy(123).unwrap();
+
+        let sut_1 = test.server.receive().unwrap().unwrap();
+        let sut_2 = test.server.receive().unwrap().unwrap();
+        let sut_3 = test.server.receive().unwrap().unwrap();
+
+        assert_that!(sut_1.is_connected(), eq true);
+        assert_that!(sut_2.is_connected(), eq true);
+        assert_that!(sut_3.is_connected(), eq true);
+
+        drop(pending_response_2);
+
+        assert_that!(sut_1.is_connected(), eq true);
+        assert_that!(sut_2.is_connected(), eq false);
+        assert_that!(sut_3.is_connected(), eq true);
+
+        drop(pending_response_3);
+
+        assert_that!(sut_1.is_connected(), eq true);
+        assert_that!(sut_2.is_connected(), eq false);
+        assert_that!(sut_3.is_connected(), eq false);
+
+        drop(pending_response_1);
+
+        assert_that!(sut_1.is_connected(), eq false);
+        assert_that!(sut_2.is_connected(), eq false);
+        assert_that!(sut_3.is_connected(), eq false);
+    }
+
+    #[test]
     fn keeps_being_connected_when_client_goes_out_of_scope<Sut: Service>() {
         let test = TestFixture::<Sut>::new();
         let client2 = test.service.client_builder().create().unwrap();
