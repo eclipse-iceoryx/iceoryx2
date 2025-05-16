@@ -484,13 +484,16 @@ mod service_request_response {
 
         for n in 0..test_args.response_buffer_size {
             assert_that!(*pending_response.receive().unwrap().unwrap(), eq n + 100);
-            assert_that!(pending_response.is_connected(), eq false);
+            assert_that!(pending_response.is_connected(), eq true);
         }
 
         for n in 0..test_args.response_buffer_size {
             assert_that!(*pending_response.receive().unwrap().unwrap(), eq n );
             assert_that!(pending_response.is_connected(), eq true);
         }
+
+        drop(active_request_0);
+        assert_that!(pending_response.is_connected(), eq false);
     }
 
     #[test]
