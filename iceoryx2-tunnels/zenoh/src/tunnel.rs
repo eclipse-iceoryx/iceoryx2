@@ -88,6 +88,13 @@ impl<'a> Tunnel<'a> {
         info!("Zenoh Tunnel DOWN");
     }
 
+    pub fn stream_ids(&self) -> Vec<String> {
+        self.streams
+            .iter()
+            .map(|(id, _)| id.as_str().to_string())
+            .collect()
+    }
+
     fn iox_discovery(&mut self) {
         let (added, _removed) = self.iox_tracker.sync(&self.iox_config).unwrap();
 

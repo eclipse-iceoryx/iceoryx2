@@ -32,24 +32,49 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn discovers_local_services() {}
+    fn discovers_local_services() {
+        // create tunnel
+        let iox_config = generate_isolated_config();
+        let mut sut = Tunnel::new(iox_config.clone());
+        sut.initialize();
+        assert_that!(sut.stream_ids().len(), eq 0);
 
-    #[test]
-    fn does_not_discover_own_local_services() {}
+        // create iceoryx2 service
+        let iox_node = NodeBuilder::new()
+            .config(&iox_config)
+            .create::<ipc::Service>()
+            .unwrap();
+        let iox_service_name = generate_name();
+        let iox_service = iox_node
+            .service_builder(&iox_service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // discover iceoryx2 service
+        sut.discover();
+
+        // verify stream is established
+        assert_that!(sut.stream_ids().len(), eq 1);
+        assert_that!(sut
+            .stream_ids()
+            .contains(&String::from(iox_service.service_id().as_str())), eq true);
+    }
 
     #[test]
     fn discovers_remote_services() {}
 
     #[test]
-    fn does_not_discover_own_remote_services() {}
+    fn propagates_data_from_remote_hosts_to_local_subscribers() {}
 
     #[test]
-    fn propagates_data_from_local_services_to_remote_hosts() {
+    fn propagates_data_from_local_publishers_to_remote_hosts() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
-        let iox_config = generate_isolated_config();
-
         // create tunnel
+        let iox_config = generate_isolated_config();
         let mut sut = Tunnel::new(iox_config.clone());
         sut.initialize();
 
@@ -103,7 +128,7 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn responds_to_zenoh_query_for_service_type_details() {
+    fn responds_to_zenoh_query_for_details_of_local_services() {
         let iox_config = generate_isolated_config();
 
         // create tunnel
@@ -139,8 +164,9 @@ mod zenoh_tunnel {
                 Ok(sample) => {
                     let z_static_details: StaticConfig =
                         serde_json::from_slice(&sample.payload().to_bytes()).unwrap();
-                    assert_that!(z_static_details.name().as_str(), eq iox_service_name.as_str());
-                    assert_that!(z_static_details.publish_subscribe().message_type_details(), eq iox_service.static_config().message_type_details());
+                    assert_that!(z_static_details.service_id(), eq iox_service.service_id());
+                    assert_that!(z_static_details.name(), eq & iox_service_name);
+                    assert_that!(z_static_details.publish_subscribe(), eq iox_service.static_config());
                 }
                 Err(e) => test_fail!("error reading reply to type details query: {}", e),
             },
