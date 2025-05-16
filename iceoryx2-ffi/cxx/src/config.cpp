@@ -617,6 +617,14 @@ void RequestResponse::set_client_expired_connection_buffer(size_t value) && {
     iox2_config_defaults_request_response_set_client_expired_connection_buffer(m_config, value);
 }
 
+auto RequestResponse::server_expired_connection_buffer() && -> size_t {
+    return iox2_config_defaults_request_response_server_expired_connection_buffer(m_config);
+}
+
+void RequestResponse::set_server_expired_connection_buffer(size_t value) && {
+    iox2_config_defaults_request_response_set_server_expired_connection_buffer(m_config, value);
+}
+
 auto RequestResponse::enable_fire_and_forget_requests() && -> bool {
     return iox2_config_defaults_request_response_has_fire_and_forget_requests(m_config);
 }

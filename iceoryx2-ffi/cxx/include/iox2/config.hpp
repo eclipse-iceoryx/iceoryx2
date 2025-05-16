@@ -318,6 +318,18 @@ class RequestResponse {
     /// disconnected from a service and the connection
     /// still contains unconsumed [`Response`](crate::response::Response)s.
     void set_client_expired_connection_buffer(size_t value) &&;
+    /// Defines the size of the internal [`Server`]
+    /// buffer that contains expired connections. An
+    /// connection is expired when the [`Client`]
+    /// disconnected from a service and the connection
+    /// still contains unconsumed [`ActiveRequest`]s.
+    auto server_expired_connection_buffer() && -> size_t;
+    /// Set the size of the internal [`Server`]
+    /// buffer that contains expired connections. An
+    /// connection is expired when the [`Client`]
+    /// disconnected from a service and the connection
+    /// still contains unconsumed [`ActiveRequest`]s.
+    void set_server_expired_connection_buffer(size_t value) &&;
     /// Allows the [`Server`](crate::port::server::Server) to receive
     /// [`RequestMut`](crate::response_mut::ResponseMut)s of
     /// [`Client`](crate::port::client::Client)s that are not interested in a

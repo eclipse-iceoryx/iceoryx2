@@ -154,3 +154,8 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.request-response.server-unable-to-deliver-strategy` -
   [`Block`|`DiscardSample`]: Default strategy for non-overflowing setups
   when delivery fails.
+* `defaults.request-response.server-expired-connection-buffer` - [int]:
+  Expired connection buffer size of the server. Connections to clients
+  are expired when the client disconnected from the service and the
+  connection contains unconsumed active requests.
+

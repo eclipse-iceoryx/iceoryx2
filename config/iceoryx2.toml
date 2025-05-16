@@ -34,6 +34,7 @@ max-clients = 8
 max-nodes = 20
 max-borrowed-responses-per-pending-response = 2
 max-loaned-requests = 2
+server-expired-connection-buffer = 128
 server-max-loaned-responses-per-request = 2
 server-unable-to-deliver-strategy = 'Block'     # or 'DiscardSample'
 
