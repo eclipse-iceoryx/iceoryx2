@@ -3436,7 +3436,7 @@ mod service_publish_subscribe {
         assert_that!(recv_sample, is_ok);
 
         // publisher has to reallocate the data segment
-        let sample = publisher.loan_slice_uninit(SLICE_MAX_LEN + 100).unwrap();
+        let sample = publisher.loan_slice_uninit(SLICE_MAX_LEN + 4096).unwrap();
         sample.write_from_fn(|i| i as u8).send().unwrap();
         // publisher goes out of scope and closes the reallocated data segment as it was not yet mapped by the
         // subscriber

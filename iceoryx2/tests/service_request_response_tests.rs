@@ -17,7 +17,7 @@ mod service_request_response {
     use iceoryx2::node::NodeBuilder;
     use iceoryx2::port::client::Client;
     use iceoryx2::port::server::Server;
-    use iceoryx2::port::{LoanError, ReceiveError};
+    use iceoryx2::port::LoanError;
     use iceoryx2::prelude::{PortFactory, *};
     use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
@@ -1487,125 +1487,44 @@ mod service_request_response {
 
         let service = node
             .service_builder(&service_name)
-            .request_response::<[u8], [u8]>()
+            .request_response::<u8, [u8]>()
             .create()
             .unwrap();
 
-        let client = service
-            .client_builder()
+        let client = service.client_builder().create().unwrap();
+
+        let server = service
+            .server_builder()
             .initial_max_slice_len(SLICE_MAX_LEN)
             .allocation_strategy(AllocationStrategy::BestFit)
             .create()
             .unwrap();
 
-        let mut request = client.loan_slice(SLICE_MAX_LEN).unwrap();
-        for byte in request.payload_mut() {
-            *byte = 1 as u8;
-        }
-        let mut _pending_response = request.send().unwrap();
+        let pending_response = client.send_copy(0).unwrap();
 
-        {
-            let server = service
-                .server_builder()
-                .initial_max_slice_len(SLICE_MAX_LEN)
-                .allocation_strategy(AllocationStrategy::BestFit)
-                .create()
-                .unwrap();
+        // send and receive once so that the client maps the data segment
+        let active_request = server.receive().unwrap().unwrap();
+        active_request
+            .loan_slice(SLICE_MAX_LEN)
+            .unwrap()
+            .send()
+            .unwrap();
 
-            let mut request = client.loan_slice(SLICE_MAX_LEN).unwrap();
-            for byte in request.payload_mut() {
-                *byte = 1 as u8;
-            }
-            _pending_response = request.send().unwrap();
+        let _received_response = pending_response.receive().unwrap().unwrap();
 
-            // send and receive once so that the client maps the data segment
-            let active_request = server.receive().unwrap().unwrap();
-            let mut response = active_request.loan_slice(SLICE_MAX_LEN).unwrap();
-            for byte in response.payload_mut() {
-                *byte = 2 as u8;
-            }
-            response.send().unwrap();
+        // server has to reallocate the data segment
+        active_request
+            .loan_slice(SLICE_MAX_LEN + 4096)
+            .unwrap()
+            .send()
+            .unwrap();
+        // server goes out of scope and closes the reallocated data segment as it was not yet mapped by the client
+        drop(server);
+        drop(active_request);
 
-            let _received_response = _pending_response.receive().unwrap().unwrap();
-
-            // server has to reallocate the data segment
-            response = active_request.loan_slice(SLICE_MAX_LEN + 100).unwrap();
-            for byte in response.payload_mut() {
-                *byte = 3 as u8;
-            }
-            response.send().unwrap();
-            // server goes out of scope and closes the reallocated data segment as it was not yet mapped by the client
-        }
-
-        let response = _pending_response.receive();
+        let response = pending_response.receive();
         assert_that!(response, is_ok);
     }
-
-    // TODO:
-    // 1. make test fail
-    // 2. rename test
-    // 3. FAQ
-    //#[test]
-    //fn blub2<S: Service>() {
-    //const SLICE_MAX_LEN: usize = 1;
-    //let service_name = generate_service_name();
-    //let config = generate_isolated_config();
-    //let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-
-    //let service = node
-    //.service_builder(&service_name)
-    //.request_response::<[u8], [u8]>()
-    //.enable_fire_and_forget_requests(true)
-    //.create()
-    //.unwrap();
-
-    //let server = service
-    //.server_builder()
-    //.initial_max_slice_len(SLICE_MAX_LEN)
-    //.allocation_strategy(AllocationStrategy::BestFit)
-    //.create()
-    //.unwrap();
-
-    //let mut active_request = server.receive();
-    //assert_that!(active_request, is_ok);
-
-    //{
-    //let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-
-    //let service = node
-    //.service_builder(&service_name)
-    //.request_response::<[u8], [u8]>()
-    //.enable_fire_and_forget_requests(true)
-    //.open()
-    //.unwrap();
-
-    //let client = service
-    //.client_builder()
-    //.initial_max_slice_len(SLICE_MAX_LEN)
-    //.allocation_strategy(AllocationStrategy::BestFit)
-    //.create()
-    //.unwrap();
-
-    //let mut request = client.loan_slice(SLICE_MAX_LEN).unwrap();
-    //for byte in request.payload_mut() {
-    //*byte = 1 as u8;
-    //}
-    //request.send().unwrap();
-
-    //active_request = server.receive();
-    //assert_that!(active_request, is_ok);
-
-    //request = client.loan_slice(SLICE_MAX_LEN + 100).unwrap();
-    //for byte in request.payload_mut() {
-    //*byte = 2 as u8;
-    //}
-    //request.send().unwrap();
-    //}
-
-    //active_request = server.receive();
-    //assert_that!(active_request, is_err);
-    //assert_that!(active_request.err(), eq Some(ReceiveError::ExceedsMaxBorrows));
-    //}
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}

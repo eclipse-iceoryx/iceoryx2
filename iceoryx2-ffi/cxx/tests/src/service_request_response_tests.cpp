@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/service.hpp"
 

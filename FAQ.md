@@ -66,7 +66,7 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
 ## How To Send Data Where The Size Is Unknown At Compilation-Time?
 
 Take a look at the
-[publish-subscribe dynamic data size example](examples/rust/publish_subscribe_dynamic_data_size).
+[publish-subscribe dynamic data size example](examples/rust/publish_subscribe_dynamic_data).
 
 ## How To Make 32-bit and 64-bit iceoryx2 Applications Interoperatable
 
@@ -278,3 +278,13 @@ soft file descriptor limit up to the hard limit:
 ```bash
 ulimit -n <new_limit>
 ```
+
+## Losing a sample when sending dynamic data
+
+If you're sendind slices and have defined an allocation strategy, a sample may
+be lost if the sender shuts down after reallocating its data segment. This is
+because no receiver has yet mapped the reallocated data segment. Therefore, the
+sender closes the data segment when going out of scope.
+
+To circumvent this, you could use the size of the last sent sample as
+`initial_max_slice_len` and use the `Static` allocation strategy.

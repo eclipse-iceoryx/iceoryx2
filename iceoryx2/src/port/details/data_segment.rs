@@ -262,9 +262,6 @@ impl<Service: service::Service> DataSegmentView<Service> {
     }
 
     pub(crate) fn is_dynamic(&self) -> bool {
-        match &self.memory {
-            MemoryViewType::Dynamic(_) => true,
-            _ => false,
-        }
+        matches!(&self.memory, MemoryViewType::Dynamic(_))
     }
 }
