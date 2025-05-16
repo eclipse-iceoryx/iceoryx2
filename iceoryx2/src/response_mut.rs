@@ -55,7 +55,10 @@ use iceoryx2_bb_log::fail;
 use iceoryx2_cal::{shm_allocator::PointerOffset, zero_copy_connection::ChannelId};
 
 use crate::{
-    port::{server::SharedServerState, SendError},
+    port::{
+        server::{SharedServerState, INVALID_CONNECTION_ID},
+        SendError,
+    },
     raw_sample::RawSampleMut,
     service,
 };
@@ -322,14 +325,16 @@ impl<
         fail!(from self, when self.shared_state.update_connections(),
             "{} since the connections could not be updated.", msg);
 
-        self.shared_state
-            .response_sender
-            .deliver_offset_to_connection(
-                self.offset_to_chunk,
-                self.sample_size,
-                self.channel_id,
-                self.connection_id,
-            )?;
+        if self.connection_id != INVALID_CONNECTION_ID {
+            self.shared_state
+                .response_sender
+                .deliver_offset_to_connection(
+                    self.offset_to_chunk,
+                    self.sample_size,
+                    self.channel_id,
+                    self.connection_id,
+                )?;
+        }
 
         Ok(())
     }

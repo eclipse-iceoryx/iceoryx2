@@ -158,4 +158,3 @@ Adjusting `global` settings ensures a non-interfering setup.
   Expired connection buffer size of the server. Connections to clients
   are expired when the client disconnected from the service and the
   connection contains unconsumed active requests.
-

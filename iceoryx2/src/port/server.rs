@@ -120,6 +120,7 @@ use super::{
 
 // All requests are received via one channel with id 0
 const REQUEST_CHANNEL_ID: ChannelId = ChannelId::new(0);
+pub(crate) const INVALID_CONNECTION_ID: usize = usize::MAX;
 
 #[derive(Debug)]
 pub(crate) struct SharedServerState<Service: service::Service> {
@@ -549,7 +550,8 @@ impl<
 
                         return Ok(Some(active_request));
                     } else if self.enable_fire_and_forget {
-                        let active_request = self.create_active_request(details, chunk, 0);
+                        let active_request =
+                            self.create_active_request(details, chunk, INVALID_CONNECTION_ID);
                         return Ok(Some(active_request));
                     }
                 }

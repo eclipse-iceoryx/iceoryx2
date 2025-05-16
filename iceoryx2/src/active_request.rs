@@ -60,7 +60,7 @@ use crate::{
     port::{
         details::chunk_details::ChunkDetails,
         port_identifiers::{UniqueClientId, UniqueServerId},
-        server::SharedServerState,
+        server::{SharedServerState, INVALID_CONNECTION_ID},
         LoanError, SendError,
     },
     raw_sample::{RawSample, RawSampleMut},
@@ -184,22 +184,28 @@ impl<
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn finish(&self) {
-        self.shared_state.response_sender.invalidate_channel_state(
-            self.channel_id,
-            self.connection_id,
-            self.request_id,
-        );
+        if self.connection_id != INVALID_CONNECTION_ID {
+            self.shared_state.response_sender.invalidate_channel_state(
+                self.channel_id,
+                self.connection_id,
+                self.request_id,
+            );
+        }
     }
 
     /// Returns [`true`] until the [`PendingResponse`](crate::pending_response::PendingResponse)
     /// goes out of scope on the [`Client`](crate::port::client::Client)s side indicating that the
     /// [`Client`](crate::port::client::Client) no longer receives the [`ResponseMut`].
     pub fn is_connected(&self) -> bool {
-        self.shared_state.response_sender.has_channel_state(
-            self.channel_id,
-            self.connection_id,
-            self.request_id,
-        )
+        if self.connection_id != INVALID_CONNECTION_ID {
+            self.shared_state.response_sender.has_channel_state(
+                self.channel_id,
+                self.connection_id,
+                self.request_id,
+            )
+        } else {
+            false
+        }
     }
 
     /// Returns a reference to the payload of the received
