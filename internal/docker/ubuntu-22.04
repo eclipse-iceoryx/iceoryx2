@@ -35,6 +35,9 @@ RUN echo "#### Installing dependencies" \
   && ln -s /usr/bin/clang++-19 /usr/bin/clang++ \
   && ln -s /usr/bin/clang-tidy-19 /usr/bin/clang-tidy \
   && ln -s /usr/bin/clang-format-19 /usr/bin/clang-format \
+  && ln -s /usr/bin/llvm-19 /usr/bin/llvm \
+  && ln -s /usr/bin/llvm-cov-19 /usr/bin/llvm-cov \
+  && ln -s /usr/bin/llvm-profdata-19 /usr/bin/llvm-profdata \
   && echo "#### Install minimal Rust toolchain" \
   && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path \
   && echo "#### Adding beta and nightly toolchain" \
