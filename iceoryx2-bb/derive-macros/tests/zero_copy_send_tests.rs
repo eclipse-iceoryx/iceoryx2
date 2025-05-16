@@ -24,12 +24,14 @@ mod zero_copy_send {
     struct Foo(u16);
     unsafe impl ZeroCopySend for Foo {}
 
+    #[repr(C)]
     #[derive(ZeroCopySend)]
     struct NamedTestStruct {
         _val1: u64,
         _val2: Foo,
     }
 
+    #[repr(C)]
     #[derive(ZeroCopySend)]
     #[type_name("Nala")]
     struct NamedTestStructWithAttr {
@@ -38,13 +40,16 @@ mod zero_copy_send {
     }
 
     #[allow(dead_code)]
+    #[repr(C)]
     #[derive(ZeroCopySend)]
     struct UnnamedTestStruct(i32, u32, Foo);
 
+    #[repr(C)]
     #[derive(ZeroCopySend)]
     #[type_name("Hypnotoad")]
     struct UnnamedTestStructWithAttr(i32, u32, Foo);
 
+    #[repr(C)]
     #[derive(ZeroCopySend)]
     struct GenericNamedTestStruct<T1, T2>
     where
@@ -55,6 +60,7 @@ mod zero_copy_send {
         _val2: T2,
     }
 
+    #[repr(C)]
     #[derive(ZeroCopySend)]
     #[type_name("Wolf")]
     struct GenericNamedTestStructWithAttr<T1, T2>
@@ -66,12 +72,14 @@ mod zero_copy_send {
         _val2: T2,
     }
 
+    #[repr(C)]
     #[derive(ZeroCopySend)]
     struct GenericUnnamedTestStruct<T1, T2>(T1, T2)
     where
         T1: ZeroCopySend,
         T2: ZeroCopySend;
 
+    #[repr(C)]
     #[derive(ZeroCopySend)]
     #[type_name("Smeik")]
     struct GenericUnnamedTestStructWithAttr<T1, T2>(T1, T2)

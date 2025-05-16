@@ -113,6 +113,7 @@ impl core::fmt::Display for ZeroCopyReleaseError {
 
 impl core::error::Error for ZeroCopyReleaseError {}
 
+#[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ZeroCopySend)]
 pub struct ChannelId(usize);
 

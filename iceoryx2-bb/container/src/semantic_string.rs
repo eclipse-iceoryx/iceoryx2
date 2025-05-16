@@ -391,6 +391,7 @@ macro_rules! semantic_string {
      /// representations like paths for instance (`/tmp` == `/tmp/`)
      normalize: $normalize:expr} => {
         $(#[$documentation])*
+        #[repr(C)]
         #[derive(Debug, Clone, Eq, PartialOrd, Ord, ZeroCopySend)]
         pub struct $string_name {
             value: iceoryx2_bb_container::byte_string::FixedSizeByteString<$capacity>

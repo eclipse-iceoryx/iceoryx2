@@ -105,9 +105,8 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 }
 
 /// Implements the [`iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend`] trait when all fields of
-/// the struct or enum implement it. A type name can be optionally set with the helper attribute `type_name`.
-///
-/// ## Example with a struct:
+/// the struct implement it and the struct is annotated with `repr(C)`. A type name can be optionally
+/// set with the helper attribute `type_name`.
 ///
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -115,6 +114,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 ///
 /// fn needs_zero_copy_send_type<T: ZeroCopySend>(_: &T) {}
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// #[type_name("MyTypeName")]
 /// struct MyZeroCopySendStruct {
@@ -129,6 +129,7 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
 /// needs_zero_copy_send_type(&x);
 /// assert_eq!(unsafe { MyZeroCopySendStruct::type_name() }, "MyTypeName");
 ///
+/// #[repr(C)]
 /// #[derive(ZeroCopySend)]
 /// #[type_name("GeometricShape")]
 /// enum Shape {
@@ -151,11 +152,11 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
     let struct_name = &ast.ident;
 
-    // check attribute
+    // check for type_name attribute
     let attributes: &Vec<_> = &ast
         .attrs
         .iter()
-        .filter(|a| a.path().segments.len() == 1 && a.path().segments[0].ident == "type_name")
+        .filter(|a| a.path().is_ident("type_name"))
         .collect();
     if attributes.len() > 1 {
         panic!("Too many attributes provided for ZeroCopySend trait.");
@@ -181,6 +182,19 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
         }
     };
 
+    // check for repr(C) attribute
+    let has_repr_c = &ast.attrs.iter().any(|a| {
+        a.path().is_ident("repr")
+            && a.parse_args::<syn::Meta>()
+                .ok()
+                .map(|meta| meta.path().is_ident("C"))
+                .unwrap_or(false)
+    });
+    if !has_repr_c {
+        panic!("`#[derive(ZeroCopySend)]` requires the type to be annotated with #[repr(C)]");
+    }
+
+    // implement ZeroCopySend
     let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
 
     let zero_copy_send_impl = match ast.data {
