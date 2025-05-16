@@ -56,7 +56,7 @@ mod zenoh_tunnel {
         // discover iceoryx2 service
         sut.discover();
 
-        // verify stream is established
+        // verify stream is set up for the created service
         assert_that!(sut.stream_ids().len(), eq 1);
         assert_that!(sut
             .stream_ids()
@@ -65,9 +65,6 @@ mod zenoh_tunnel {
 
     #[test]
     fn discovers_remote_services() {}
-
-    #[test]
-    fn propagates_data_from_remote_hosts_to_local_subscribers() {}
 
     #[test]
     fn propagates_data_from_local_publishers_to_remote_hosts() {
@@ -119,11 +116,124 @@ mod zenoh_tunnel {
         sut.propagate();
 
         // receive data on zenoh subscriber
-        if let Ok(Some(sample)) = z_subscriber.recv_timeout(Duration::from_millis(500)) {
-            let received_data = sample.payload().try_to_string().unwrap();
-            assert_that!(received_data, eq PAYLOAD_DATA);
+        if let Ok(Some(z_sample)) = z_subscriber.recv_timeout(Duration::from_millis(500)) {
+            let z_payload = z_sample.payload().try_to_string().unwrap();
+            assert_that!(z_payload, eq PAYLOAD_DATA);
         } else {
             test_fail!("payload was not propagated from iceoryx2 to Zenoh")
+        }
+    }
+
+    #[test]
+    fn prevents_loopback_of_data_published_to_remote_hosts() {
+        const PAYLOAD_DATA: &str = "WhenItRegisters";
+
+        // create tunnel
+        let iox_config = generate_isolated_config();
+        let mut sut = Tunnel::new(iox_config.clone());
+        sut.initialize();
+
+        // create iceoryx2 service
+        let iox_node = NodeBuilder::new()
+            .config(&iox_config)
+            .create::<ipc::Service>()
+            .unwrap();
+        let iox_service_name = generate_name();
+        let iox_service = iox_node
+            .service_builder(&iox_service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // discover iceoryx2 service
+        sut.discover();
+
+        // create iceoryx2 publisher
+        let iox_publisher = iox_service
+            .publisher_builder()
+            .initial_max_slice_len(PAYLOAD_DATA.len())
+            .create()
+            .unwrap();
+
+        // create iceoryx2 subscriber
+        let iox_subscriber = iox_service.subscriber_builder().create().unwrap();
+
+        // send data on iceoryx2 publisher
+        let sample = iox_publisher.loan_slice_uninit(PAYLOAD_DATA.len()).unwrap();
+        let sample = sample.write_from_slice(PAYLOAD_DATA.as_bytes());
+        sample.send().unwrap();
+
+        // drain iceoryx2 subscriber receive queue
+        while let Ok(Some(_)) = iox_subscriber.receive() {}
+
+        // propagate over tunnel
+        sut.propagate();
+
+        // ensure no loopback to iceoryx subscribe
+        // -> detectedable by empty subscriber queue
+        if iox_subscriber.receive().unwrap().is_some() {
+            test_fail!("sample looped back")
+        }
+    }
+
+    #[test]
+    fn propagates_data_from_remote_hosts_to_local_subscribers() {
+        const PAYLOAD_DATA: &str = "WhenItRegisters";
+
+        // create tunnel
+        let iox_config = generate_isolated_config();
+        let mut sut = Tunnel::new(iox_config.clone());
+        sut.initialize();
+
+        // create iceoryx2 service
+        let iox_node = NodeBuilder::new()
+            .config(&iox_config)
+            .create::<ipc::Service>()
+            .unwrap();
+        let iox_service_name = generate_name();
+        let iox_service = iox_node
+            .service_builder(&iox_service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // discover iceoryx2 service
+        sut.discover();
+
+        // create iceoryx2 subscriber
+        let iox_subscriber = iox_service.subscriber_builder().create().unwrap();
+
+        // create zenoh publisher
+        let z_config = zenoh::config::Config::default();
+        let z_session = zenoh::open(z_config.clone()).wait().unwrap();
+        let z_publisher = z_session
+            .declare_publisher(keys::data_stream(iox_service.service_id()))
+            .wait()
+            .unwrap();
+
+        // send data on zenoh publisher
+        z_publisher.put(PAYLOAD_DATA.as_bytes()).wait().unwrap();
+        std::thread::sleep(Duration::from_millis(500)); // wait for zenoh background thread ...
+
+        // propagate over tunnel
+        sut.propagate();
+
+        // verify data received at iceoryx subscriber
+        let sample = iox_subscriber.receive().unwrap();
+        assert_that!(sample, is_some);
+        let sample = sample.unwrap();
+
+        // Convert payload to a string safely
+        let bytes = sample.payload();
+        match std::str::from_utf8(bytes) {
+            Ok(payload_str) => {
+                assert_that!(payload_str, eq PAYLOAD_DATA);
+            }
+            Err(_) => test_fail!("Payload is not valid UTF-8"),
         }
     }
 

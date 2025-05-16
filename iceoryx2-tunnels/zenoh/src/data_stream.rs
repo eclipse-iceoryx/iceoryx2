@@ -10,53 +10,89 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::port::publisher::Publisher as IceoryxPublisher;
 use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
-use iceoryx2::service::service_id::ServiceId as IceoryxServiceId;
 
 use zenoh::bytes::ZBytes;
+use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher as ZenohPublisher;
+use zenoh::pubsub::Subscriber as ZenohSubscriber;
+use zenoh::sample::Sample;
 use zenoh::Wait;
 
-pub enum DataStream<'a> {
-    Outbound {
-        iox_service_id: IceoryxServiceId,
-        iox_subscriber: IceoryxSubscriber<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
-        z_publisher: ZenohPublisher<'a>,
-    },
+pub trait DataStream {
+    fn propagate(&self);
 }
 
-impl<'a> DataStream<'a> {
-    pub fn new_outbound(
-        iox_service_id: &IceoryxServiceId,
+pub struct OutboundStream<'a> {
+    iox_subscriber: IceoryxSubscriber<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    z_publisher: ZenohPublisher<'a>,
+}
+
+impl<'a> DataStream for OutboundStream<'a> {
+    fn propagate(&self) {
+        while let Ok(Some(sample)) = unsafe { self.iox_subscriber.receive_custom_payload() } {
+            let ptr = sample.payload().as_ptr() as *const u8;
+            let len = sample.len();
+            let bytes = unsafe { core::slice::from_raw_parts(ptr, len) };
+
+            let z_payload = ZBytes::from(bytes);
+            self.z_publisher.put(z_payload).wait().unwrap();
+        }
+    }
+}
+
+impl<'a> OutboundStream<'a> {
+    pub fn new(
         iox_subscriber: IceoryxSubscriber<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
         z_publisher: ZenohPublisher<'a>,
     ) -> Self {
-        Self::Outbound {
-            iox_service_id: iox_service_id.clone(),
+        Self {
             iox_subscriber,
             z_publisher,
         }
     }
+}
 
-    pub fn propagate(&self) {
-        match self {
-            DataStream::Outbound {
-                iox_service_id: _,
-                iox_subscriber,
-                z_publisher,
-            } => {
-                while let Ok(Some(sample)) = unsafe { iox_subscriber.receive_custom_payload() } {
-                    let ptr = sample.payload().as_ptr() as *const u8;
-                    let len = sample.len();
-                    let bytes = unsafe { core::slice::from_raw_parts(ptr, len) };
+pub struct InboundStream {
+    iox_publisher: IceoryxPublisher<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
+}
 
-                    let z_payload = ZBytes::from(bytes);
-                    z_publisher.put(z_payload).wait().unwrap();
-                }
+impl DataStream for InboundStream {
+    fn propagate(&self) {
+        while let Ok(Some(z_sample)) = self.z_subscriber.try_recv() {
+            let z_payload = z_sample.payload();
+
+            // TODO: Need to divide length by payload size ...
+            unsafe {
+                let mut iox_sample = self
+                    .iox_publisher
+                    .loan_custom_payload(z_payload.len())
+                    .unwrap();
+                std::ptr::copy_nonoverlapping(
+                    z_payload.to_bytes().as_ptr(),
+                    iox_sample.payload_mut().as_mut_ptr() as *mut u8,
+                    z_payload.len(),
+                );
+                let iox_sample = iox_sample.assume_init();
+                iox_sample.send().unwrap();
             }
+        }
+    }
+}
+
+impl InboundStream {
+    pub fn new(
+        iox_publisher: IceoryxPublisher<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
+        z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
+    ) -> Self {
+        Self {
+            iox_publisher,
+            z_subscriber,
         }
     }
 }
