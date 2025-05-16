@@ -25,7 +25,7 @@ RUN echo "#### Installing dependencies" \
   && echo "#### Adding more components like 'clippy', 'rustfmt', etc." \
   && rustup component add \
        clippy \
-       llvm-tools-preview \
+       llvm-tools \
        rustfmt \
   && echo "#### Installing cargo-nextest" \
   && cargo install cargo-nextest --locked \
