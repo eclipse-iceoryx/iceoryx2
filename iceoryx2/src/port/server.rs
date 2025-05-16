@@ -548,6 +548,9 @@ impl<
                         }
 
                         return Ok(Some(active_request));
+                    } else if self.enable_fire_and_forget {
+                        let active_request = self.create_active_request(details, chunk, 0);
+                        return Ok(Some(active_request));
                     }
                 }
                 None => return Ok(None),
