@@ -285,7 +285,19 @@ impl<
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
             buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
-            to_be_removed_connections: None,
+            to_be_removed_connections: if static_config.enable_fire_and_forget_requests {
+                Some(UnsafeCell::new(Vec::new(
+                    service
+                        .__internal_state()
+                        .shared_node
+                        .config()
+                        .defaults
+                        .request_response
+                        .server_expired_connection_buffer,
+                )))
+            } else {
+                None
+            },
             degradation_callback: server_factory.request_degradation_callback,
             number_of_channels: 1,
         };
