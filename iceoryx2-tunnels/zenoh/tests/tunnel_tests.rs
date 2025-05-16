@@ -32,13 +32,25 @@ mod zenoh_tunnel {
     }
 
     #[test]
+    fn discovers_local_services() {}
+
+    #[test]
+    fn does_not_discover_own_local_services() {}
+
+    #[test]
+    fn discovers_remote_services() {}
+
+    #[test]
+    fn does_not_discover_own_remote_services() {}
+
+    #[test]
     fn propagates_data_from_local_services_to_remote_hosts() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         let iox_config = generate_isolated_config();
 
         // create tunnel
-        let mut sut = ZenohTunnel::new(iox_config.clone());
+        let mut sut = Tunnel::new(iox_config.clone());
         sut.initialize();
 
         // create iceoryx2 service
@@ -95,7 +107,7 @@ mod zenoh_tunnel {
         let iox_config = generate_isolated_config();
 
         // create tunnel
-        let mut sut = ZenohTunnel::new(iox_config.clone());
+        let mut sut = Tunnel::new(iox_config.clone());
         sut.initialize();
 
         // create iceoryx2 service

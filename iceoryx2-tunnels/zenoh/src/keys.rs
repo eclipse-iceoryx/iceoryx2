@@ -13,7 +13,7 @@
 use iceoryx2::service::service_id::ServiceId;
 
 pub fn data_stream(service_id: &ServiceId) -> String {
-    format!("iox2/streams/{}", service_id.as_str())
+    format!("iox2/services/{}/stream", service_id.as_str())
 }
 
 pub fn service(service_id: &ServiceId) -> String {
