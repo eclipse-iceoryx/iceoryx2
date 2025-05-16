@@ -39,6 +39,7 @@
     * [Supported Platforms](#supported-platforms)
     * [Language Bindings](#language-bindings)
     * [Commercial Support](#commercial-support)
+    * [Thanks To All Contributors](#thanks-to-all-contributors)
 
 ## Introduction
 
@@ -454,3 +455,13 @@ The support levels can be adjusted when required.
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
+
+## Thanks To All Contributors
+
+Thanks to everyone who has contributed to iceoryx2. Without their passion and
+dedication, the project wouldn't thrive. A list of people who have committed
+code can be found on [github](https://github.com/eclipse-iceoryx/iceoryx2/graphs/contributors).
+However, contributions are not limited to code - testing the software, reporting
+bugs, and spreading the word about iceoryx2 are all equally valuable. A big
+thank you as well to those 'invisible' contributors who play a crucial role
+behind the scenes.
