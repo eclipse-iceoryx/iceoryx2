@@ -469,10 +469,6 @@ The support levels can be adjusted when required.
           <img src="https://avatars.githubusercontent.com/u/56729169" width="120px;" alt="Christian »elfenpiff« Eltzschig"/><br />
           <sub><b>Christian »elfenpiff« Eltzschig</b></sub></a></td>
       <td align="center" valign="top" width="14.28%">
-          <a href="https://github.com/elboberido">
-          <img src="https://avatars.githubusercontent.com/u/56729607" width="120px;" alt="Mathias »elBoberido« Kraus"/><br />
-          <sub><b>Mathias »elBoberido« Kraus</b></sub></a></td>
-      <td align="center" valign="top" width="14.28%">
           <a href="https://github.com/orecham">
           <img src="https://avatars.githubusercontent.com/u/8487595" width="120px;" alt="»orecham«"/><br />
           <sub><b>»orecham«</b></sub></a></td>
