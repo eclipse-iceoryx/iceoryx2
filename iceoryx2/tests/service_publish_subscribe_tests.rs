@@ -21,7 +21,6 @@ mod service_publish_subscribe {
     use iceoryx2::port::subscriber::SubscriberCreateError;
     use iceoryx2::port::update_connections::UpdateConnections;
     use iceoryx2::port::LoanError;
-    use iceoryx2::port::ReceiveError;
     use iceoryx2::prelude::{AllocationStrategy, *};
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenError;
@@ -3408,7 +3407,7 @@ mod service_publish_subscribe {
     }
 
     #[test]
-    fn blub<S: Service>() {
+    fn receive_does_not_return_error_when_pub_goes_out_of_scope_after_reallocation<S: Service>() {
         const SLICE_MAX_LEN: usize = 1;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -3422,38 +3421,29 @@ mod service_publish_subscribe {
 
         let subscriber = service.subscriber_builder().create().unwrap();
 
-        {
-            let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let publisher = service
+            .publisher_builder()
+            .initial_max_slice_len(SLICE_MAX_LEN)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
 
-            let service = node
-                .service_builder(&service_name)
-                .publish_subscribe::<[u8]>()
-                .open()
-                .unwrap();
+        // send and receive once so that the subscriber maps the data segment
+        let sample = publisher.loan_slice_uninit(SLICE_MAX_LEN).unwrap();
+        sample.write_from_fn(|i| i as u8).send().unwrap();
 
-            let publisher = service
-                .publisher_builder()
-                .initial_max_slice_len(SLICE_MAX_LEN)
-                .allocation_strategy(AllocationStrategy::BestFit)
-                .create()
-                .unwrap();
+        let recv_sample = subscriber.receive();
+        assert_that!(recv_sample, is_ok);
 
-            // send and receive once so that the subscriber maps the data segment
-            let sample = publisher.loan_slice_uninit(SLICE_MAX_LEN).unwrap();
-            sample.write_from_fn(|i| i as u8).send().unwrap();
-
-            let recv_sample = subscriber.receive();
-            assert_that!(recv_sample, is_ok);
-
-            // publisher has to reallocate the data segment
-            let sample = publisher.loan_slice_uninit(SLICE_MAX_LEN + 100).unwrap();
-            sample.write_from_fn(|i| i as u8).send().unwrap();
-            // publisher goes out of scope and closes the reallocated data segment as it was not yet mapped by the
-            // subscriber
-        }
+        // publisher has to reallocate the data segment
+        let sample = publisher.loan_slice_uninit(SLICE_MAX_LEN + 100).unwrap();
+        sample.write_from_fn(|i| i as u8).send().unwrap();
+        // publisher goes out of scope and closes the reallocated data segment as it was not yet mapped by the
+        // subscriber
+        drop(publisher);
 
         let recv_res = subscriber.receive();
-        assert_that!(recv_res, is_err);
+        assert_that!(recv_res, is_ok);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

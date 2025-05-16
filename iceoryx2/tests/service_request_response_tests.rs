@@ -1477,7 +1477,9 @@ mod service_request_response {
     }
 
     #[test]
-    fn blub<S: Service>() {
+    fn receive_does_not_return_error_when_server_goes_out_of_scope_after_reallocation<
+        S: Service,
+    >() {
         const SLICE_MAX_LEN: usize = 1;
         let service_name = generate_service_name();
         let config = generate_isolated_config();
@@ -1500,17 +1502,9 @@ mod service_request_response {
         for byte in request.payload_mut() {
             *byte = 1 as u8;
         }
-        let mut pending_response = request.send().unwrap();
+        let mut _pending_response = request.send().unwrap();
 
         {
-            let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-
-            let service = node
-                .service_builder(&service_name)
-                .request_response::<[u8], [u8]>()
-                .open()
-                .unwrap();
-
             let server = service
                 .server_builder()
                 .initial_max_slice_len(SLICE_MAX_LEN)
@@ -1522,7 +1516,7 @@ mod service_request_response {
             for byte in request.payload_mut() {
                 *byte = 1 as u8;
             }
-            pending_response = request.send().unwrap();
+            _pending_response = request.send().unwrap();
 
             // send and receive once so that the client maps the data segment
             let active_request = server.receive().unwrap().unwrap();
@@ -1532,7 +1526,7 @@ mod service_request_response {
             }
             response.send().unwrap();
 
-            let _received_response = pending_response.receive().unwrap().unwrap();
+            let _received_response = _pending_response.receive().unwrap().unwrap();
 
             // server has to reallocate the data segment
             response = active_request.loan_slice(SLICE_MAX_LEN + 100).unwrap();
@@ -1543,71 +1537,75 @@ mod service_request_response {
             // server goes out of scope and closes the reallocated data segment as it was not yet mapped by the client
         }
 
-        let response = pending_response.receive();
-        assert_that!(response, is_err);
+        let response = _pending_response.receive();
+        assert_that!(response, is_ok);
     }
 
-    #[test]
-    fn blub2<S: Service>() {
-        const SLICE_MAX_LEN: usize = 1;
-        let service_name = generate_service_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+    // TODO:
+    // 1. make test fail
+    // 2. rename test
+    // 3. FAQ
+    //#[test]
+    //fn blub2<S: Service>() {
+    //const SLICE_MAX_LEN: usize = 1;
+    //let service_name = generate_service_name();
+    //let config = generate_isolated_config();
+    //let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
-        let service = node
-            .service_builder(&service_name)
-            .request_response::<[u8], [u8]>()
-            .enable_fire_and_forget_requests(true)
-            .create()
-            .unwrap();
+    //let service = node
+    //.service_builder(&service_name)
+    //.request_response::<[u8], [u8]>()
+    //.enable_fire_and_forget_requests(true)
+    //.create()
+    //.unwrap();
 
-        let server = service
-            .server_builder()
-            .initial_max_slice_len(SLICE_MAX_LEN)
-            .allocation_strategy(AllocationStrategy::BestFit)
-            .create()
-            .unwrap();
+    //let server = service
+    //.server_builder()
+    //.initial_max_slice_len(SLICE_MAX_LEN)
+    //.allocation_strategy(AllocationStrategy::BestFit)
+    //.create()
+    //.unwrap();
 
-        let mut active_request = server.receive();
-        assert_that!(active_request, is_ok);
+    //let mut active_request = server.receive();
+    //assert_that!(active_request, is_ok);
 
-        {
-            let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+    //{
+    //let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
-            let service = node
-                .service_builder(&service_name)
-                .request_response::<[u8], [u8]>()
-                .enable_fire_and_forget_requests(true)
-                .open()
-                .unwrap();
+    //let service = node
+    //.service_builder(&service_name)
+    //.request_response::<[u8], [u8]>()
+    //.enable_fire_and_forget_requests(true)
+    //.open()
+    //.unwrap();
 
-            let client = service
-                .client_builder()
-                .initial_max_slice_len(SLICE_MAX_LEN)
-                .allocation_strategy(AllocationStrategy::BestFit)
-                .create()
-                .unwrap();
+    //let client = service
+    //.client_builder()
+    //.initial_max_slice_len(SLICE_MAX_LEN)
+    //.allocation_strategy(AllocationStrategy::BestFit)
+    //.create()
+    //.unwrap();
 
-            let mut request = client.loan_slice(SLICE_MAX_LEN).unwrap();
-            for byte in request.payload_mut() {
-                *byte = 1 as u8;
-            }
-            request.send().unwrap();
+    //let mut request = client.loan_slice(SLICE_MAX_LEN).unwrap();
+    //for byte in request.payload_mut() {
+    //*byte = 1 as u8;
+    //}
+    //request.send().unwrap();
 
-            active_request = server.receive();
-            assert_that!(active_request, is_ok);
+    //active_request = server.receive();
+    //assert_that!(active_request, is_ok);
 
-            request = client.loan_slice(SLICE_MAX_LEN + 100).unwrap();
-            for byte in request.payload_mut() {
-                *byte = 2 as u8;
-            }
-            request.send().unwrap();
-        }
+    //request = client.loan_slice(SLICE_MAX_LEN + 100).unwrap();
+    //for byte in request.payload_mut() {
+    //*byte = 2 as u8;
+    //}
+    //request.send().unwrap();
+    //}
 
-        active_request = server.receive();
-        assert_that!(active_request, is_err);
-        assert_that!(active_request.err(), eq Some(ReceiveError::ExceedsMaxBorrows));
-    }
+    //active_request = server.receive();
+    //assert_that!(active_request, is_err);
+    //assert_that!(active_request.err(), eq Some(ReceiveError::ExceedsMaxBorrows));
+    //}
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}

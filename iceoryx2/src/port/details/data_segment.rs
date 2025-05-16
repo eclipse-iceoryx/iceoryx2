@@ -260,4 +260,11 @@ impl<Service: service::Service> DataSegmentView<Service> {
             memory.unregister_offset(offset);
         }
     }
+
+    pub(crate) fn is_dynamic(&self) -> bool {
+        match &self.memory {
+            MemoryViewType::Dynamic(_) => true,
+            _ => false,
+        }
+    }
 }
