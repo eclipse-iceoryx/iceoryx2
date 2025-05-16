@@ -14,14 +14,6 @@ use iceoryx2::prelude::*;
 use iceoryx2_services_discovery::*;
 use service_discovery::Discovery;
 
-// JSON is currently used as the serialization format.
-fn deserialize(bytes: &[u8]) -> Result<Discovery, Box<dyn core::error::Error>> {
-    let discovery =
-        serde_json::from_slice(bytes).map_err(|e| Box::new(e) as Box<dyn core::error::Error>)?;
-
-    Ok(discovery)
-}
-
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level(LogLevel::Info);
 
@@ -59,15 +51,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
             // Process new discovery information.
             while let Ok(Some(sample)) = subscriber.receive() {
-                match deserialize(sample.payload()) {
-                    Ok(Discovery::Added(details)) => {
+                match sample.payload() {
+                    Discovery::Added(details) => {
                         println!("Added: {:?}", details.name());
                     }
-                    Ok(Discovery::Removed(details)) => {
+                    Discovery::Removed(details) => {
                         println!("Removed: {:?}", details.name());
-                    }
-                    Err(e) => {
-                        eprintln!("error deserializing discovery event: {}", e);
                     }
                 }
             }

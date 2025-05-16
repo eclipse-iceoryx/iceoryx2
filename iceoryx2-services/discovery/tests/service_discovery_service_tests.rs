@@ -82,9 +82,8 @@ mod service_discovery_service {
 
         let mut num_added = 0;
         let mut num_removed = 0;
-        while let Ok(Some(bytes)) = subscriber.receive() {
-            let discovery = serde_json::from_slice(&bytes).unwrap();
-            match discovery {
+        while let Ok(Some(sample)) = subscriber.receive() {
+            match sample.payload() {
                 Discovery::Added(_) => {
                     num_added += 1;
                 }
@@ -188,10 +187,9 @@ mod service_discovery_service {
         assert_that!(result, is_ok);
         let result = result.unwrap();
         assert_that!(result, is_some);
-        let bytes = result.unwrap();
-        let discovery = serde_json::from_slice(&bytes).unwrap();
+        let sample = result.unwrap();
 
-        if let Discovery::Added(service_info) = discovery {
+        if let Discovery::Added(service_info) = sample.payload() {
             assert_that!(service_info.name().to_string(), eq service_name().as_str());
         } else {
             test_fail!("expected DiscoveryEvent::Added for the internal service")

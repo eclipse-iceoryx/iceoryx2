@@ -17,9 +17,9 @@ path = "src/lib.rs"
 
 [dependencies]
 iceoryx2 = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
