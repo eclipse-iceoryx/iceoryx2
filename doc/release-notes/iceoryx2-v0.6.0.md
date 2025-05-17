@@ -111,6 +111,9 @@
     [#717](https://github.com/eclipse-iceoryx/iceoryx2/issues/717)
 * Use Rust's native endian swapping
     [#724](https://github.com/eclipse-iceoryx/iceoryx2/issues/724)
+* Move Traits from iceoryx2-bb-elementary to separate crate to break dependency
+  cycles
+    [#754](https://github.com/eclipse-iceoryx/iceoryx2/issues/754)
 
 ### New API features
 
