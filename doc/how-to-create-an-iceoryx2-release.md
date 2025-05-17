@@ -77,9 +77,11 @@ number is `Xold.Yold.Zold`.
     `iceoryx2_bb/elementary/package_version.rs` in `PackageVersion::get()`
 10. Add the release notes to `$GIT_ROOT$/CHANGELOG.md`
 11. **Merge all changes to `main`.**
-12. Set tag on GitHub and add the release document as notes to the tag
+12. **!! Port reference system to new iceoryx2 version to catch last minute
+    bugs !!**
+13. Set tag on GitHub and add the release document as notes to the tag
     description. Add also a link to the file.
-13. Check the order of all dependencies in
+14. Check the order of all dependencies in
     `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh`. Compare it
     with `$GIT_ROOT$/Cargo.toml` and the `[workspace.dependencies]` section.
     When calling `cargo publish -p $PACKAGE$` all dependencies, also
@@ -91,7 +93,7 @@ number is `Xold.Yold.Zold`.
     * If the publish script was started and a crate requires a dependency which
       is not available on `crates.io` the release has to be redone and the patch
       version has to increase by one for the whole workspace.
-14. Call `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh` and publish
+15. Call `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh` and publish
     all crates on `crates.io` and `docs.rs`.
-15. Verify that the release looks fine on `docs.rs` (click through the
+16. Verify that the release looks fine on `docs.rs` (click through the
     documentation to check if everything was generated correctly)
