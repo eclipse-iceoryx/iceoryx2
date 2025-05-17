@@ -2,7 +2,7 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
     <name>iceoryx2_cxx</name>
-    <version>0.6.0</version>
+    <version>0.6.1</version>
     <description>iceoryx2 with c/c++ bindings</description>
     <maintainer email="iceoryx-oss-support@ekxide.io">ekxide developers</maintainer>
     <license>Apache 2.0</license>
