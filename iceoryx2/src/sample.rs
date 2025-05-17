@@ -34,7 +34,7 @@ use core::{fmt::Debug, ops::Deref};
 
 extern crate alloc;
 
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::error;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError};

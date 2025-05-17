@@ -27,7 +27,7 @@ use crate::shm_allocator::pool_allocator::PoolAllocator;
 use crate::shm_allocator::ShmAllocationError;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
-use iceoryx2_bb_elementary::allocator::AllocationError;
+use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_system_types::file_name::FileName;

@@ -30,7 +30,7 @@ use iceoryx2::service::{
     static_config::message_type_details::TypeNameString,
 };
 use iceoryx2::{prelude::*, service::builder::request_response::RequestResponseOpenError};
-use iceoryx2_bb_elementary::AsCStr;
+use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 
 use crate::{

@@ -12,7 +12,7 @@
 
 use core::sync::atomic::{AtomicUsize, Ordering};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_testing::assert_that;

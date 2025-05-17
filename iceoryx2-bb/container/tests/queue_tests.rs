@@ -12,9 +12,8 @@
 
 mod queue {
     use iceoryx2_bb_container::queue::*;
-    use iceoryx2_bb_elementary::{
-        bump_allocator::BumpAllocator, placement_default::PlacementDefault,
-    };
+    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+    use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
     use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker, memory::RawMemory};
 
     const SUT_CAPACITY: usize = 128;

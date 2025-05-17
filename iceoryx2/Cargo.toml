@@ -36,6 +36,7 @@ iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 

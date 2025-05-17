@@ -22,6 +22,7 @@ libc_platform = ["iceoryx2-pal-posix/libc_platform"]
 iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }

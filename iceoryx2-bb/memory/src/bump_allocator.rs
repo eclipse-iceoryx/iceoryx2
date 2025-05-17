@@ -21,7 +21,7 @@ use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
-pub use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
+pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 
 #[derive(Debug)]
 pub struct BumpAllocator {

@@ -22,12 +22,12 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields, LitStr};
 
-/// Implements the [`iceoryx2_bb_elementary::placement_default::PlacementDefault`] trait when all
+/// Implements the [`iceoryx2_bb_elementary_traits::placement_default::PlacementDefault`] trait when all
 /// fields of the struct implement it.
 ///
 /// ```
 /// use iceoryx2_bb_derive_macros::PlacementDefault;
-/// use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+/// use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 /// use core::alloc::Layout;
 /// use std::alloc::{alloc, dealloc};
 ///
@@ -104,13 +104,13 @@ pub fn placement_default_derive(input: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-/// Implements the [`iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend`] trait when all fields of
+/// Implements the [`iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend`] trait when all fields of
 /// the struct implement it and the struct is annotated with `repr(C)`. A type name can be optionally
 /// set with the helper attribute `type_name`.
 ///
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// fn needs_zero_copy_send_type<T: ZeroCopySend>(_: &T) {}
 ///
@@ -204,7 +204,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     let field_name = &f.ident;
                     // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
                     quote! {
-                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(&self.#field_name);
+                        iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend::__is_zero_copy_send(&self.#field_name);
                     }
                 });
 
@@ -221,7 +221,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     let field_index = syn::Index::from(i);
                     // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
                     quote! {
-                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(&self.#field_index);
+                        iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend::__is_zero_copy_send(&self.#field_index);
                     }
                 });
 
@@ -248,7 +248,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                             // dummy call to ensure at compile-time that all fields of the variant implement ZeroCopySend
                             quote! {
                                 Self::#variant_name { #field_name, .. } => {
-                                    iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(#field_name);
+                                    iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend::__is_zero_copy_send(#field_name);
                                 }
                             }
                         });
@@ -280,7 +280,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                             // dummy call to ensure at compile-time that all fields of the variant implement ZeroCopySend
                             let field_checks = field_names.iter().map(|field_name| {
                                 quote! {
-                                    iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(#field_name);
+                                    iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend::__is_zero_copy_send(#field_name);
                                 }
                             });
 
@@ -316,7 +316,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {
+        unsafe impl #impl_generics iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {
             #zero_copy_send_impl
         }
     };

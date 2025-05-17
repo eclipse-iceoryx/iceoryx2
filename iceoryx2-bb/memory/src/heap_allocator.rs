@@ -14,11 +14,11 @@
 
 use core::{alloc::Layout, ptr::NonNull};
 
-use iceoryx2_bb_elementary::allocator::{AllocationGrowError, AllocationShrinkError};
+use iceoryx2_bb_elementary_traits::allocator::{AllocationGrowError, AllocationShrinkError};
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::memory::heap;
 
-pub use iceoryx2_bb_elementary::allocator::{AllocationError, Allocator, BaseAllocator};
+pub use iceoryx2_bb_elementary_traits::allocator::{AllocationError, Allocator, BaseAllocator};
 
 #[derive(Debug)]
 pub struct HeapAllocator {}

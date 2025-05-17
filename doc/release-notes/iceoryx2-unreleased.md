@@ -29,7 +29,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Remove trait re-exports from iceoryx2-bb-elementary
+  [#757](https://github.com/eclipse-iceoryx/iceoryx2/issues/757)
 
 ### Workflow
 

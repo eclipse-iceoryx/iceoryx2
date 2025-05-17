@@ -14,7 +14,7 @@ mod shm_allocator_pool_allocator {
     use core::{alloc::Layout, ptr::NonNull};
     use std::collections::HashSet;
 
-    use iceoryx2_bb_elementary::allocator::AllocationError;
+    use iceoryx2_bb_elementary_traits::allocator::AllocationError;
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cal::{

@@ -21,7 +21,7 @@
 //! ```
 //! use iceoryx2_bb_elementary::bump_allocator::*;
 //! use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
-//! use iceoryx2_bb_elementary::relocatable_container::*;
+//! use iceoryx2_bb_elementary_traits::relocatable_container::*;
 //!
 //! const CAPACITY: usize = 128;
 //! let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
@@ -85,12 +85,12 @@ use core::alloc::Layout;
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::sync::atomic::{fence, Ordering};
-use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::enum_gen;
-use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
-use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer;
+use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
+use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
@@ -176,7 +176,7 @@ impl Drop for UniqueIndex<'_> {
 /// ```
 /// use iceoryx2_bb_elementary::bump_allocator::*;
 /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
-/// use iceoryx2_bb_elementary::relocatable_container::*;
+/// use iceoryx2_bb_elementary_traits::relocatable_container::*;
 ///
 /// const CAPACITY: usize = 128;
 /// let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
@@ -194,7 +194,7 @@ impl Drop for UniqueIndex<'_> {
 /// ## Provide memory in a separate struct
 /// ```
 /// use iceoryx2_bb_lock_free::mpmc::unique_index_set::*;
-/// use iceoryx2_bb_elementary::relocatable_container::*;
+/// use iceoryx2_bb_elementary_traits::relocatable_container::*;
 /// use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 /// use core::mem::MaybeUninit;
 ///
