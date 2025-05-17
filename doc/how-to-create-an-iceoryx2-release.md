@@ -70,10 +70,10 @@ number is `Xold.Yold.Zold`.
    version number `X.Y.Z`.
    * **IMPORTANT** change version to `X.Y.Z` for all `iceoryx2-**` packages
      under `[workspace.dependencies]`
-7.  Adjust the `<version>` to `X.Y.Z` in `$GIT_ROOT$/package.xml`.
-8.  Call `rg "Xold\.Yold\.Zold"` and adjust all findings.
+7. Adjust the `<version>` to `X.Y.Z` in `$GIT_ROOT$/package.xml`.
+8. Call `rg "Xold\.Yold\.Zold"` and adjust all findings.
     * C and C++ examples, `BUILD.bazel` & `CMakeLists.txt`
-9.  Adjust the major, minor and patch version number in
+9. Adjust the major, minor and patch version number in
     `iceoryx2_bb/elementary/package_version.rs` in `PackageVersion::get()`
 10. Add the release notes to `$GIT_ROOT$/CHANGELOG.md`
 11. **Merge all changes to `main`.**
