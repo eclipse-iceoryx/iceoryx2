@@ -1,5 +1,5 @@
 {
-  "checksum": "4a4d60b7630fb79557ace463de8bcbde50946dfffa743dd64cac229ecb6afcbc",
+  "checksum": "302c7ad9816d3123285c9b2d82b3b6ddcfeb6e4d2091e16268c436bbf3e969c6",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -517,9 +517,9 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "benchmark-event 0.5.0": {
+    "benchmark-event 0.6.0": {
       "name": "benchmark-event",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [],
       "library_target_name": null,
@@ -537,13 +537,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "benchmark-publish-subscribe 0.5.0": {
+    "benchmark-publish-subscribe 0.6.0": {
       "name": "benchmark-publish-subscribe",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [],
       "library_target_name": null,
@@ -561,13 +561,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "benchmark-queue 0.5.0": {
+    "benchmark-queue 0.6.0": {
       "name": "benchmark-queue",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [],
       "library_target_name": null,
@@ -585,13 +585,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "benchmark-request-response 0.5.0": {
+    "benchmark-request-response 0.6.0": {
       "name": "benchmark-request-response",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [],
       "library_target_name": null,
@@ -609,7 +609,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -2243,9 +2243,9 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "example 0.5.0": {
+    "example 0.6.0": {
       "name": "example",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -2268,20 +2268,12 @@
             {
               "id": "clap 4.5.19",
               "target": "clap"
-            },
-            {
-              "id": "serde 1.0.210",
-              "target": "serde"
-            },
-            {
-              "id": "serde_json 1.0.128",
-              "target": "serde_json"
             }
           ],
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -2626,13 +2618,13 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "human-panic 1.2.3": {
+    "human-panic 2.0.2": {
       "name": "human-panic",
-      "version": "1.2.3",
+      "version": "2.0.2",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/human-panic/1.2.3/download",
-          "sha256": "c4f016c89920bbb30951a8405ecacbb4540db5524313b9445736e7e1855cf370"
+          "url": "https://static.crates.io/crates/human-panic/2.0.2/download",
+          "sha256": "80b84a66a325082740043a6c28bbea400c129eac0d3a27673a1de971e44bf1f7"
         }
       },
       "targets": [
@@ -2701,13 +2693,13 @@
           ],
           "selects": {}
         },
-        "version": "1.2.3"
+        "version": "2.0.2"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2 0.5.0": {
+    "iceoryx2 0.6.0": {
       "name": "iceoryx2",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -2752,13 +2744,13 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-container 0.5.0": {
+    "iceoryx2-bb-container 0.6.0": {
       "name": "iceoryx2-bb-container",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -2804,13 +2796,13 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-derive-macros 0.5.0": {
+    "iceoryx2-bb-derive-macros 0.6.0": {
       "name": "iceoryx2-bb-derive-macros",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -2846,13 +2838,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-elementary 0.5.0": {
+    "iceoryx2-bb-elementary 0.6.0": {
       "name": "iceoryx2-bb-elementary",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -2880,13 +2872,13 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-lock-free 0.5.0": {
+    "iceoryx2-bb-lock-free 0.6.0": {
       "name": "iceoryx2-bb-lock-free",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -2914,13 +2906,13 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-log 0.5.0": {
+    "iceoryx2-bb-log 0.6.0": {
       "name": "iceoryx2-bb-log",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -2948,13 +2940,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-memory 0.5.0": {
+    "iceoryx2-bb-memory 0.6.0": {
       "name": "iceoryx2-bb-memory",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -2973,13 +2965,13 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-posix 0.5.0": {
+    "iceoryx2-bb-posix 0.6.0": {
       "name": "iceoryx2-bb-posix",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3028,13 +3020,13 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-system-types 0.5.0": {
+    "iceoryx2-bb-system-types 0.6.0": {
       "name": "iceoryx2-bb-system-types",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3062,13 +3054,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-testing 0.5.0": {
+    "iceoryx2-bb-testing 0.6.0": {
       "name": "iceoryx2-bb-testing",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3087,13 +3079,13 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-threadsafe 0.5.0": {
+    "iceoryx2-bb-threadsafe 0.6.0": {
       "name": "iceoryx2-bb-threadsafe",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3112,13 +3104,13 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-bb-trait-tests 0.5.0": {
+    "iceoryx2-bb-trait-tests 0.6.0": {
       "name": "iceoryx2-bb-trait-tests",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3146,13 +3138,13 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-cal 0.5.0": {
+    "iceoryx2-cal 0.6.0": {
       "name": "iceoryx2-cal",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3218,13 +3210,13 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-cli 0.5.0": {
+    "iceoryx2-cli 0.6.0": {
       "name": "iceoryx2-cli",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3277,7 +3269,7 @@
               "target": "enum_iterator"
             },
             {
-              "id": "human-panic 1.2.3",
+              "id": "human-panic 2.0.2",
               "target": "human_panic"
             },
             {
@@ -3313,13 +3305,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-ffi 0.5.0": {
+    "iceoryx2-ffi 0.6.0": {
       "name": "iceoryx2-ffi",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3349,7 +3341,7 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-ffi 0.5.0",
+              "id": "iceoryx2-ffi 0.6.0",
               "target": "build_script_build"
             }
           ],
@@ -3365,7 +3357,7 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -3383,9 +3375,9 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-ffi-macros 0.5.0": {
+    "iceoryx2-ffi-macros 0.6.0": {
       "name": "iceoryx2-ffi-macros",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3421,13 +3413,13 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-pal-concurrency-sync 0.5.0": {
+    "iceoryx2-pal-concurrency-sync 0.6.0": {
       "name": "iceoryx2-pal-concurrency-sync",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3455,13 +3447,13 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-pal-configuration 0.5.0": {
+    "iceoryx2-pal-configuration 0.6.0": {
       "name": "iceoryx2-pal-configuration",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3480,13 +3472,13 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-pal-posix 0.5.0": {
+    "iceoryx2-pal-posix 0.6.0": {
       "name": "iceoryx2-pal-posix",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3516,7 +3508,7 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-pal-posix 0.5.0",
+              "id": "iceoryx2-pal-posix 0.6.0",
               "target": "build_script_build"
             },
             {
@@ -3538,7 +3530,7 @@
           }
         },
         "edition": "2021",
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "build_script_attrs": {
         "data_glob": [
@@ -3560,9 +3552,9 @@
       },
       "license": "MIT OR Apache-2.0"
     },
-    "iceoryx2-services-discovery 0.5.0": {
+    "iceoryx2-services-discovery 0.6.0": {
       "name": "iceoryx2-services-discovery",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "repository": null,
       "targets": [
         {
@@ -3589,10 +3581,6 @@
             {
               "id": "serde 1.0.210",
               "target": "serde"
-            },
-            {
-              "id": "serde_json 1.0.128",
-              "target": "serde_json"
             }
           ],
           "selects": {}
@@ -3607,7 +3595,7 @@
           ],
           "selects": {}
         },
-        "version": "0.5.0"
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -7836,31 +7824,31 @@
   },
   "binary_crates": [],
   "workspace_members": {
-    "benchmark-event 0.5.0": "benchmarks/event",
-    "benchmark-publish-subscribe 0.5.0": "benchmarks/publish-subscribe",
-    "benchmark-queue 0.5.0": "benchmarks/queue",
-    "benchmark-request-response 0.5.0": "benchmarks/request-response",
-    "example 0.5.0": "examples",
-    "iceoryx2 0.5.0": "iceoryx2",
-    "iceoryx2-bb-container 0.5.0": "iceoryx2-bb/container",
-    "iceoryx2-bb-derive-macros 0.5.0": "iceoryx2-bb/derive-macros",
-    "iceoryx2-bb-elementary 0.5.0": "iceoryx2-bb/elementary",
-    "iceoryx2-bb-lock-free 0.5.0": "iceoryx2-bb/lock-free",
-    "iceoryx2-bb-log 0.5.0": "iceoryx2-bb/log",
-    "iceoryx2-bb-memory 0.5.0": "iceoryx2-bb/memory",
-    "iceoryx2-bb-posix 0.5.0": "iceoryx2-bb/posix",
-    "iceoryx2-bb-system-types 0.5.0": "iceoryx2-bb/system-types",
-    "iceoryx2-bb-testing 0.5.0": "iceoryx2-bb/testing",
-    "iceoryx2-bb-threadsafe 0.5.0": "iceoryx2-bb/threadsafe",
-    "iceoryx2-bb-trait-tests 0.5.0": "iceoryx2-bb/trait-tests",
-    "iceoryx2-cal 0.5.0": "iceoryx2-cal",
-    "iceoryx2-cli 0.5.0": "iceoryx2-cli",
-    "iceoryx2-ffi 0.5.0": "iceoryx2-ffi/ffi",
-    "iceoryx2-ffi-macros 0.5.0": "iceoryx2-ffi/ffi-macros",
-    "iceoryx2-pal-concurrency-sync 0.5.0": "iceoryx2-pal/concurrency-sync",
-    "iceoryx2-pal-configuration 0.5.0": "iceoryx2-pal/configuration",
-    "iceoryx2-pal-posix 0.5.0": "iceoryx2-pal/posix",
-    "iceoryx2-services-discovery 0.5.0": "iceoryx2-services/discovery"
+    "benchmark-event 0.6.0": "benchmarks/event",
+    "benchmark-publish-subscribe 0.6.0": "benchmarks/publish-subscribe",
+    "benchmark-queue 0.6.0": "benchmarks/queue",
+    "benchmark-request-response 0.6.0": "benchmarks/request-response",
+    "example 0.6.0": "examples",
+    "iceoryx2 0.6.0": "iceoryx2",
+    "iceoryx2-bb-container 0.6.0": "iceoryx2-bb/container",
+    "iceoryx2-bb-derive-macros 0.6.0": "iceoryx2-bb/derive-macros",
+    "iceoryx2-bb-elementary 0.6.0": "iceoryx2-bb/elementary",
+    "iceoryx2-bb-lock-free 0.6.0": "iceoryx2-bb/lock-free",
+    "iceoryx2-bb-log 0.6.0": "iceoryx2-bb/log",
+    "iceoryx2-bb-memory 0.6.0": "iceoryx2-bb/memory",
+    "iceoryx2-bb-posix 0.6.0": "iceoryx2-bb/posix",
+    "iceoryx2-bb-system-types 0.6.0": "iceoryx2-bb/system-types",
+    "iceoryx2-bb-testing 0.6.0": "iceoryx2-bb/testing",
+    "iceoryx2-bb-threadsafe 0.6.0": "iceoryx2-bb/threadsafe",
+    "iceoryx2-bb-trait-tests 0.6.0": "iceoryx2-bb/trait-tests",
+    "iceoryx2-cal 0.6.0": "iceoryx2-cal",
+    "iceoryx2-cli 0.6.0": "iceoryx2-cli",
+    "iceoryx2-ffi 0.6.0": "iceoryx2-ffi/ffi",
+    "iceoryx2-ffi-macros 0.6.0": "iceoryx2-ffi/ffi-macros",
+    "iceoryx2-pal-concurrency-sync 0.6.0": "iceoryx2-pal/concurrency-sync",
+    "iceoryx2-pal-configuration 0.6.0": "iceoryx2-pal/configuration",
+    "iceoryx2-pal-posix 0.6.0": "iceoryx2-pal/posix",
+    "iceoryx2-services-discovery 0.6.0": "iceoryx2-services/discovery"
   },
   "conditions": {
     "aarch64-pc-windows-gnullvm": [],

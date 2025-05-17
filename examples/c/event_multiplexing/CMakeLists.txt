@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(example_c_event_multiplexing LANGUAGES C)
 
-find_package(iceoryx2-c 0.5.0 REQUIRED)
+find_package(iceoryx2-c 0.6.0 REQUIRED)
 
 add_executable(example_c_event_multiplexing_wait src/wait.c)
 target_link_libraries(example_c_event_multiplexing_wait iceoryx2-c::static-lib)

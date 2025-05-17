@@ -1,8 +1,8 @@
 # iceoryx2 v?.?.?
 
-## [vx.x.x](https://github.com/eclipse-iceoryx/iceoryx2/tree/vx.x.x)
+## [v?.?.?](https://github.com/eclipse-iceoryx/iceoryx2/tree/v?.?.?)
 
-[Full Changelog](https://github.com/eclipse-iceoryx/iceoryx2/compare/vx.x.x...vx.x.x)
+[Full Changelog](https://github.com/eclipse-iceoryx/iceoryx2/compare/v?.?.?...v?.?.?)
 
 ### Features
 
