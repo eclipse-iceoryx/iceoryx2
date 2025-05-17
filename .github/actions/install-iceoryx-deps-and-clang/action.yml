@@ -18,3 +18,6 @@ runs:
         sudo ln -s /usr/bin/clang++-19 /usr/bin/clang++
         sudo ln -s /usr/bin/clang-tidy-19 /usr/bin/clang-tidy
         sudo ln -s /usr/bin/clang-format-19 /usr/bin/clang-format
+        sudo ln -s /usr/bin/llvm-19 /usr/bin/llvm
+        sudo ln -s /usr/bin/llvm-cov-19 /usr/bin/llvm-cov
+        sudo ln -s /usr/bin/llvm-profdata-19 /usr/bin/llvm-profdata

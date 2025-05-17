@@ -1476,6 +1476,102 @@ mod service_request_response {
         assert_that!(counter, eq 1);
     }
 
+    #[test]
+    fn receive_does_not_return_error_when_server_goes_out_of_scope_after_reallocation<
+        S: Service,
+    >() {
+        const SLICE_MAX_LEN: usize = 1;
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u8, [u8]>()
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+
+        let server = service
+            .server_builder()
+            .initial_max_slice_len(SLICE_MAX_LEN)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        let pending_response = client.send_copy(0).unwrap();
+
+        // send and receive once so that the client maps the data segment
+        let active_request = server.receive().unwrap().unwrap();
+        active_request
+            .loan_slice(SLICE_MAX_LEN)
+            .unwrap()
+            .send()
+            .unwrap();
+
+        let _received_response = pending_response.receive().unwrap().unwrap();
+
+        // server has to reallocate the data segment
+        active_request
+            .loan_slice(SLICE_MAX_LEN + 4096)
+            .unwrap()
+            .send()
+            .unwrap();
+        // server goes out of scope and closes the reallocated data segment as it was not yet mapped by the client
+        drop(server);
+        drop(active_request);
+
+        let response = pending_response.receive();
+        assert_that!(response, is_ok);
+    }
+
+    #[test]
+    fn receive_does_not_return_error_when_client_goes_out_of_scope_after_reallocation<
+        S: Service,
+    >() {
+        const SLICE_MAX_LEN: usize = 1;
+        let service_name = generate_service_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<[u8], u8>()
+            .enable_fire_and_forget_requests(true)
+            .create()
+            .unwrap();
+
+        let server = service.server_builder().create().unwrap();
+        let mut active_request = server.receive();
+        assert_that!(active_request, is_ok);
+
+        let client = service
+            .client_builder()
+            .initial_max_slice_len(SLICE_MAX_LEN)
+            .allocation_strategy(AllocationStrategy::BestFit)
+            .create()
+            .unwrap();
+
+        // send and receive once so that the client maps the data segment
+        client.loan_slice(SLICE_MAX_LEN).unwrap().send().unwrap();
+        active_request = server.receive();
+        assert_that!(active_request, is_ok);
+
+        // client has to reallocate the data segment
+        client
+            .loan_slice(SLICE_MAX_LEN + 4096)
+            .unwrap()
+            .send()
+            .unwrap();
+
+        // client goes out of scope and closes the reallocated data segment as it was not yet mapped by the server
+        drop(client);
+
+        active_request = server.receive();
+        assert_that!(active_request, is_ok);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

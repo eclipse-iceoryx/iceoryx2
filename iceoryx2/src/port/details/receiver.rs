@@ -252,6 +252,10 @@ impl<Service: service::Service> Receiver<Service> {
                     {
                         Ok(offset) => offset,
                         Err(e) => {
+                            if connection.data_segment.is_dynamic() {
+                                warn!(from self, "Lost a sample. This only happens in the dynamic use case when a sender has reallocated its data segment and gone out of scope before the receiver has mapped the realloacted data segment. To circumvent this, you could either use static memory or increase the initial max slice len.");
+                                return Ok(None);
+                            }
                             fail!(from self, with ReceiveError::ConnectionFailure(ConnectionFailure::UnableToMapSendersDataSegment(e)),
                                 "Unable to register and translate offset from sender {:?} since the received offset {:?} could not be registered and translated.",
                                 connection.sender_port_id, offset);

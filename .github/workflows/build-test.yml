@@ -538,11 +538,11 @@ jobs:
     - name: Build and cache grcov
       uses: ./.github/actions/build-and-cache-rust-tool
       with:
-        rust-toolchain: stable
-        rust-components: llvm-tools-preview
+        rust-toolchain: 1.86.0
+        rust-components: llvm-tools
         check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
         print-version-cmd: grcov --version
-        cache-key: cache-1-${{ runner.os }}-grcov
+        cache-key: cache-2-${{ runner.os }}-grcov
         artifact-bin-name: grcov
         artifact-upload-name: ${{ runner.os }}-grcov
 
@@ -554,7 +554,7 @@ jobs:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
     - name: Install dependencies
-      run: sudo apt-get -y install libacl1-dev llvm
+      uses: ./.github/actions/install-iceoryx-deps-and-clang
 
     - name: Create test users and groups
       run: |
@@ -566,8 +566,8 @@ jobs:
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
       with:
-        toolchain: stable
-        components: llvm-tools-preview
+        toolchain: 1.86.0
+        components: llvm-tools
 
     - name: Download artifact grcov
       uses: ./.github/actions/download-cached-rust-tool
