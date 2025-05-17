@@ -20,6 +20,7 @@
 //! ```
 //! pub use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_bb_derive_macros::ZeroCopySend;
+//! use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 //!
 //! use core::hash::{Hash, Hasher};
 //! use iceoryx2_bb_container::semantic_string;
