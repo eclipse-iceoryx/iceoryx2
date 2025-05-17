@@ -204,7 +204,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     let field_name = &f.ident;
                     // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
                     quote! {
-                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(&self.#field_name);
+                        ZeroCopySend::__is_zero_copy_send(&self.#field_name);
                     }
                 });
 
@@ -221,7 +221,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                     let field_index = syn::Index::from(i);
                     // dummy call to ensure at compile-time that all fields of the struct implement ZeroCopySend
                     quote! {
-                        iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(&self.#field_index);
+                        ZeroCopySend::__is_zero_copy_send(&self.#field_index);
                     }
                 });
 
@@ -248,7 +248,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                             // dummy call to ensure at compile-time that all fields of the variant implement ZeroCopySend
                             quote! {
                                 Self::#variant_name { #field_name, .. } => {
-                                    iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(#field_name);
+                                    ZeroCopySend::__is_zero_copy_send(#field_name);
                                 }
                             }
                         });
@@ -260,7 +260,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                         } else {
                             quote! { #(#field_checks)* }
                         }
-                    },
+                    }
                     Fields::Unnamed(fields) => {
                         if fields.unnamed.is_empty() {
                             quote! {
@@ -268,7 +268,12 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                             }
                         } else {
                             let field_names = (0..fields.unnamed.len())
-                                .map(|i| syn::Ident::new(&format!("field_{}", i), proc_macro2::Span::call_site()))
+                                .map(|i| {
+                                    syn::Ident::new(
+                                        &format!("field_{}", i),
+                                        proc_macro2::Span::call_site(),
+                                    )
+                                })
                                 .collect::<Vec<_>>();
 
                             let field_pattern = if field_names.is_empty() {
@@ -280,7 +285,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                             // dummy call to ensure at compile-time that all fields of the variant implement ZeroCopySend
                             let field_checks = field_names.iter().map(|field_name| {
                                 quote! {
-                                    iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend::__is_zero_copy_send(#field_name);
+                                    ZeroCopySend::__is_zero_copy_send(#field_name);
                                 }
                             });
 
@@ -290,7 +295,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                                 }
                             }
                         }
-                    },
+                    }
                     Fields::Unit => {
                         quote! {
                             Self::#variant_name => {}
@@ -316,7 +321,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        unsafe impl #impl_generics iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend for #struct_name #ty_generics #where_clause {
+        unsafe impl #impl_generics ZeroCopySend for #struct_name #ty_generics #where_clause {
             #zero_copy_send_impl
         }
     };

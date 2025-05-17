@@ -36,6 +36,7 @@
 use super::message_type_details::MessageTypeDetails;
 use crate::config;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use serde::{Deserialize, Serialize};
 
 /// The static configuration of an

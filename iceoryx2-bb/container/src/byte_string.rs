@@ -39,6 +39,7 @@ use core::{
 
 use iceoryx2_bb_derive_macros::{PlacementDefault, ZeroCopySend};
 use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
