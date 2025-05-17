@@ -22,6 +22,7 @@ members = [
     "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal/posix/",
     "iceoryx2-pal/configuration/",
+    "iceoryx2-pal/testing/",
 
     "iceoryx2-services/discovery",
 
@@ -69,6 +70,7 @@ iceoryx2-bb-testing = { version = "0.6.0", path = "iceoryx2-bb/testing/" }
 iceoryx2-pal-concurrency-sync = { version = "0.6.0", path = "iceoryx2-pal/concurrency-sync/" }
 iceoryx2-pal-posix = { version = "0.6.0", path = "iceoryx2-pal/posix/" }
 iceoryx2-pal-configuration = { version = "0.6.0", path = "iceoryx2-pal/configuration/" }
+iceoryx2-pal-testing = { version = "0.6.0", path = "iceoryx2-pal/testing/" }
 iceoryx2-cal = { version = "0.6.0", path = "iceoryx2-cal" }
 iceoryx2 = { version = "0.6.0", path = "iceoryx2/" }
 iceoryx2-services-discovery = { version = "0.6.0", path = "iceoryx2-services/discovery"}

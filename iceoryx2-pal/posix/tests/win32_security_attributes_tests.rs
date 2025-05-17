@@ -12,7 +12,6 @@
 
 #[cfg(target_os = "windows")]
 mod win32_security_attributes {
-    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_pal_posix::posix;
     use iceoryx2_pal_posix::posix::{
         win32_security_attributes::{
@@ -20,6 +19,7 @@ mod win32_security_attributes {
         },
         *,
     };
+    use iceoryx2_pal_testing::assert_that;
     use windows_sys::Win32::Foundation::INVALID_HANDLE_VALUE;
 
     fn roundtrip(orig_mode: posix::mode_t) {

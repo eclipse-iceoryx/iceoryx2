@@ -111,6 +111,7 @@ maybe(
         "//:iceoryx2-pal/concurrency-sync/Cargo.toml",
         "//:iceoryx2-pal/configuration/Cargo.toml",
         "//:iceoryx2-pal/posix/Cargo.toml",
+        "//:iceoryx2-pal/testing/Cargo.toml",
     ],
 )
 

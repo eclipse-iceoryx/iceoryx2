@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-bb-testing"
+name = "iceoryx2-pal-testing"
 description = "iceoryx2: [internal] simple testing primitives"
 categories = { workspace = true }
 edition = { workspace = true }
@@ -11,6 +11,4 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
-iceoryx2-pal-testing = { workspace = true }

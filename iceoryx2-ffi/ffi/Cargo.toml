@@ -34,4 +34,5 @@ iceoryx2-ffi-macros = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
+iceoryx2-pal-testing = { workspace = true }
 generic-tests = { workspace = true }

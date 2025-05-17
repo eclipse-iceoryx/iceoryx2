@@ -32,4 +32,4 @@ libc = { workspace = true }
 windows-sys = { workspace = true }
 
 [dev-dependencies]
-iceoryx2-bb-testing = { workspace = true }
+iceoryx2-pal-testing = { workspace = true }

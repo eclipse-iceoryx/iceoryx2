@@ -40,6 +40,7 @@ rust_test_suite(
         ":iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "@crate_index//:serde_test",
     ],
 )

@@ -15,8 +15,8 @@ use core::{
     time::Duration,
 };
 
-use iceoryx2_bb_testing::assert_that;
 use iceoryx2_pal_concurrency_sync::{semaphore::*, WaitAction, WaitResult};
+use iceoryx2_pal_testing::assert_that;
 
 const TIMEOUT: Duration = Duration::from_millis(25);
 

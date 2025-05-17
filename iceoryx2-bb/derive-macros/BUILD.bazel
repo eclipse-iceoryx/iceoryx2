@@ -36,6 +36,7 @@ rust_test_suite(
     deps = [
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
     ],
     proc_macro_deps = [
         ":iceoryx2-bb-derive-macros",

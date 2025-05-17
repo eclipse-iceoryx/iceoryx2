@@ -17,9 +17,11 @@ set -e
 cd $(git rev-parse --show-toplevel)
 
 cargo publish -p iceoryx2-pal-configuration
-cargo publish -p iceoryx2-bb-testing
+cargo publish -p iceoryx2-pal-testing
 cargo publish -p iceoryx2-pal-concurrency-sync
 cargo publish -p iceoryx2-pal-posix
+cargo publish -p iceoryx2-bb-elementary-traits
+cargo publish -p iceoryx2-bb-testing
 cargo publish -p iceoryx2-bb-log
 cargo publish -p iceoryx2-bb-elementary
 cargo publish -p iceoryx2-bb-derive-macros

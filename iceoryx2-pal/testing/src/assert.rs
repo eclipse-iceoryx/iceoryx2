@@ -216,7 +216,7 @@ macro_rules! assert_that {
         {
             let lval = $lhs.as_secs_f32();
             let rval = $rhs.as_secs_f32();
-            let rval_adjusted = rval * (1.0 - iceoryx2_bb_testing::AT_LEAST_TIMING_VARIANCE).clamp(0.0, 1.0);
+            let rval_adjusted = rval * (1.0 - iceoryx2_pal_testing::AT_LEAST_TIMING_VARIANCE).clamp(0.0, 1.0);
 
             if !(lval >= rval_adjusted) {
                 assert_that!(message_time_at_least $lhs, $rhs, lval, rval, rval_adjusted);
@@ -225,7 +225,7 @@ macro_rules! assert_that {
     };
     ($call:expr, block_until $rhs:expr) => {
         {
-            let watchdog = iceoryx2_bb_testing::watchdog::Watchdog::new();
+            let watchdog = iceoryx2_pal_testing::watchdog::Watchdog::new();
 
             while $call() != $rhs {
                 std::thread::yield_now();

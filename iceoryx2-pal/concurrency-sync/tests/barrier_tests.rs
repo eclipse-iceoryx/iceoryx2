@@ -12,8 +12,8 @@
 
 use core::sync::atomic::{AtomicI32, Ordering};
 
-use iceoryx2_bb_testing::assert_that;
 use iceoryx2_pal_concurrency_sync::barrier::*;
+use iceoryx2_pal_testing::assert_that;
 
 #[test]
 fn barrier_with_multiple_waiter_works() {
