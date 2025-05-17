@@ -12,6 +12,7 @@
 
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::file_name::RestrictedFileName;
 use iceoryx2_cal::hash::Hash;
