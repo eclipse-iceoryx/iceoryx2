@@ -43,7 +43,7 @@ pub trait RelocatableContainer {
     /// Returns the amount of additional memory the object requires from the
     /// [`BaseAllocator`] in the [`RelocatableContainer::init()`] call. The returned value
     /// considers the alignment overhead. When implementing this, please use
-    /// [`crate::math::unaligned_mem_size()`].
+    /// `iceoryx2_bb_elementary::math::unaligned_mem_size()`.
     /// The whole memory consumption is
     /// `core::mem::size_of::<RelocatableContainer>() + RelocatableContainer::memory_size()`.
     fn memory_size(capacity: usize) -> usize;
