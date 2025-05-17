@@ -14,7 +14,7 @@ pub mod bit_set;
 
 use core::fmt::Debug;
 
-use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 
 use super::{NotifierNotifyError, TriggerId};
 

@@ -95,7 +95,7 @@ use core::{fmt::Debug, mem::MaybeUninit};
 extern crate alloc;
 use alloc::sync::Arc;
 
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
 use crate::{

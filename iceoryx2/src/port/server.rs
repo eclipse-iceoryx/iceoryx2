@@ -79,7 +79,7 @@ use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
 use iceoryx2_bb_container::vec::Vec;
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 

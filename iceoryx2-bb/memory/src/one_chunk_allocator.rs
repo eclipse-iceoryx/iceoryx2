@@ -48,8 +48,8 @@ use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 pub use core::alloc::Layout;
-pub use iceoryx2_bb_elementary::allocator::*;
 use iceoryx2_bb_elementary::math::align;
+pub use iceoryx2_bb_elementary_traits::allocator::*;
 
 #[derive(Debug)]
 pub struct OneChunkAllocator {

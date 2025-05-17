@@ -20,7 +20,7 @@ use crate::c_size_t;
 use iceoryx2::prelude::*;
 use iceoryx2::service::service_name::ServiceNameError;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsCStr;
+use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
 
 use core::ffi::{c_char, c_int};

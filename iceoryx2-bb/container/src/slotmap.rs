@@ -51,12 +51,12 @@ use crate::vec::details::MetaVec;
 use crate::{queue::RelocatableQueue, vec::RelocatableVec};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::generic_pointer::GenericPointer;
-use iceoryx2_bb_elementary::owning_pointer::GenericOwningPointer;
-use iceoryx2_bb_elementary::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
+use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
+use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 
 /// A key of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`] that identifies a
@@ -345,10 +345,10 @@ pub mod details {
             }
         }
 
-        unsafe fn init<Allocator: iceoryx2_bb_elementary::allocator::BaseAllocator>(
+        unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
             &mut self,
             allocator: &Allocator,
-        ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
+        ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
             let msg = "Unable to initialize RelocatableSlotMap";
             fail!(from "RelocatableSlotMap::init()",
                   when self.idx_to_data.init(allocator),

@@ -14,7 +14,7 @@
 mod dynamic_storage {
     use core::sync::atomic::{AtomicI64, Ordering};
     use iceoryx2_bb_container::semantic_string::*;
-    use iceoryx2_bb_elementary::allocator::*;
+    use iceoryx2_bb_elementary_traits::allocator::*;
     use iceoryx2_bb_system_types::file_name::FileName;
     use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;

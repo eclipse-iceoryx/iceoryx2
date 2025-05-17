@@ -80,9 +80,8 @@ use core::{
 };
 use iceoryx2_bb_container::{queue::Queue, vec::Vec};
 
-use iceoryx2_bb_elementary::{
-    cyclic_tagger::CyclicTagger, zero_copy_send::ZeroCopySend, CallbackProgression,
-};
+use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::{

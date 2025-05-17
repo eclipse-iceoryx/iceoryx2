@@ -409,6 +409,8 @@
 //!  * `logger_log` - Uses the [log crate](https://crates.io/crates/log) as default log backend
 //!  * `logger_tracing` - Uses the [tracing crate](https://crates.io/crates/tracing) as default log
 //!    backend
+//!  * `libc_platform` - Uses the [libc crate](https://crates.io/crates/libc) for the platform
+//!    abstraction to simplify cross compilation. Works currently only for Linux based targets.
 //!
 //! # Custom Configuration
 //!

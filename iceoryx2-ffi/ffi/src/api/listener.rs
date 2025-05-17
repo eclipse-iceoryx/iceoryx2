@@ -21,7 +21,7 @@ use crate::iox2_file_descriptor_ptr;
 use iceoryx2::port::listener::Listener;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsCStr;
+use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use iceoryx2_cal::event::ListenerWaitError;
 use iceoryx2_ffi_macros::iceoryx2_ffi;

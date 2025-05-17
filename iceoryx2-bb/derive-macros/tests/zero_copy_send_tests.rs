@@ -13,7 +13,7 @@
 #[cfg(test)]
 mod zero_copy_send {
     use iceoryx2_bb_derive_macros::ZeroCopySend;
-    use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
     use iceoryx2_bb_testing::assert_that;
 
     fn is_zero_copy_send<T: ZeroCopySend>(_: &T) -> bool {

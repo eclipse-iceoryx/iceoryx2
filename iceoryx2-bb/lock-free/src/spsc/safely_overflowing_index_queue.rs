@@ -46,9 +46,10 @@
 use core::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
-use iceoryx2_bb_elementary::{
-    bump_allocator::BumpAllocator, owning_pointer::OwningPointer, pointer_trait::PointerTrait,
-    relocatable_container::RelocatableContainer, relocatable_ptr::RelocatablePointer,
+use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
+use iceoryx2_bb_elementary_traits::{
+    owning_pointer::OwningPointer, pointer_trait::PointerTrait,
+    relocatable_container::RelocatableContainer,
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 
@@ -164,10 +165,10 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary::allocator::BaseAllocator>(
+        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
             &mut self,
             allocator: &T,
-        ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
+        ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
             if self.is_memory_initialized.load(Ordering::Relaxed) {
                 fatal_panic!(from self, "Memory already initialized. Initializing it twice may lead to undefined behavior.");
             }
