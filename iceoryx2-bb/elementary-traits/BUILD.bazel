@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -12,7 +12,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
 
 filegroup(
     name = "all_srcs",
@@ -20,10 +20,9 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-bb-testing",
+    name = "iceoryx2-bb-elementary-traits",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
-        "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
+        "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
 )

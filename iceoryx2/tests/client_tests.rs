@@ -20,9 +20,9 @@ mod client {
     use iceoryx2::port::client::RequestSendError;
     use iceoryx2::port::LoanError;
     use iceoryx2::prelude::*;
-    use iceoryx2::testing::LifetimeTracker;
     use iceoryx2::testing::*;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 

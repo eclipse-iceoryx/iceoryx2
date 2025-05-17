@@ -182,6 +182,7 @@ filegroup(
         "//iceoryx2-bb/container:all_srcs",
         "//iceoryx2-bb/derive-macros:all_srcs",
         "//iceoryx2-bb/elementary:all_srcs",
+        "//iceoryx2-bb/elementary-traits:all_srcs",
         "//iceoryx2-bb/lock-free:all_srcs",
         "//iceoryx2-bb/log:all_srcs",
         "//iceoryx2-bb/memory:all_srcs",

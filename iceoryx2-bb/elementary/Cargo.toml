@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-bb-elementary"
-description = "iceoryx2: [internal] elementary constructs that have no dependencies at all"
+description = "iceoryx2: [internal] elementary constructs that have (almost) no dependencies at all"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -11,6 +11,7 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
+iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
 [dev-dependencies]

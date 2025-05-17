@@ -1,5 +1,5 @@
 {
-  "checksum": "302c7ad9816d3123285c9b2d82b3b6ddcfeb6e4d2091e16268c436bbf3e969c6",
+  "checksum": "25f77e9dffb2c702756d09e6c399e68fd201b915f958d296b21f6d0e0a8296e1",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -2872,6 +2872,31 @@
           ],
           "selects": {}
         },
+        "version": "0.6.0"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
+    "iceoryx2-bb-elementary-traits 0.6.0": {
+      "name": "iceoryx2-bb-elementary-traits",
+      "version": "0.6.0",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_elementary_traits",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_elementary_traits",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
         "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
@@ -7833,6 +7858,7 @@
     "iceoryx2-bb-container 0.6.0": "iceoryx2-bb/container",
     "iceoryx2-bb-derive-macros 0.6.0": "iceoryx2-bb/derive-macros",
     "iceoryx2-bb-elementary 0.6.0": "iceoryx2-bb/elementary",
+    "iceoryx2-bb-elementary-traits 0.6.0": "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb-lock-free 0.6.0": "iceoryx2-bb/lock-free",
     "iceoryx2-bb-log 0.6.0": "iceoryx2-bb/log",
     "iceoryx2-bb-memory 0.6.0": "iceoryx2-bb/memory",

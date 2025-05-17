@@ -605,7 +605,15 @@ name = "iceoryx2-bb-elementary"
 version = "0.6.0"
 dependencies = [
  "generic-tests",
+ "iceoryx2-bb-elementary-traits",
  "iceoryx2-bb-testing",
+ "iceoryx2-pal-concurrency-sync",
+]
+
+[[package]]
+name = "iceoryx2-bb-elementary-traits"
+version = "0.6.0"
+dependencies = [
  "iceoryx2-pal-concurrency-sync",
 ]
 
@@ -681,6 +689,7 @@ dependencies = [
 name = "iceoryx2-bb-testing"
 version = "0.6.0"
 dependencies = [
+ "iceoryx2-bb-elementary-traits",
  "iceoryx2-pal-configuration",
 ]
 

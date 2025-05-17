@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-bb-testing"
-description = "iceoryx2: [internal] simple testing primitives"
+name = "iceoryx2-bb-elementary-traits"
+description = "iceoryx2: [internal] elementary traits that have (almost) no dependencies at all"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -11,5 +11,5 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [dependencies]
-iceoryx2-bb-elementary-traits = { workspace = true }
-iceoryx2-pal-configuration = { workspace = true }
+# required to implement ZeroCopySend for IoxAtomic*
+iceoryx2-pal-concurrency-sync = { workspace = true }
