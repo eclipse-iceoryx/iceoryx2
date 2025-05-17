@@ -12,5 +12,3 @@ version = { workspace = true }
 
 [dependencies]
 iceoryx2-pal-configuration = { workspace = true }
-iceoryx2-bb-derive-macros = { workspace = true }
-iceoryx2-bb-elementary = { workspace = true }

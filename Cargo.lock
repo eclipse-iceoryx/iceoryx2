@@ -681,8 +681,6 @@ dependencies = [
 name = "iceoryx2-bb-testing"
 version = "0.6.0"
 dependencies = [
- "iceoryx2-bb-derive-macros",
- "iceoryx2-bb-elementary",
  "iceoryx2-pal-configuration",
 ]
 

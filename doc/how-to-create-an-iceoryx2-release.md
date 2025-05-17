@@ -75,14 +75,16 @@ number is `Xold.Yold.Zold`.
     * C and C++ examples, `BUILD.bazel` & `CMakeLists.txt`
 9.  Adjust the major, minor and patch version number in
     `iceoryx2_bb/elementary/package_version.rs` in `PackageVersion::get()`
-10. Add the release notes to `$GIT_ROOT/CHANGELOG.md`
+10. Add the release notes to `$GIT_ROOT$/CHANGELOG.md`
 11. **Merge all changes to `main`.**
 12. Set tag on GitHub and add the release document as notes to the tag
     description. Add also a link to the file.
 13. Check the order of all dependencies in
-    `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh`.
-    When calling `cargo publish -p $PACKAGE$` all dependencies, also dev-dependencies,
-    must be already published to `crates.io` via `cargo publish -p`. Verify the
+    `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh`. Compare it
+    with `$GIT_ROOT$/Cargo.toml` and the `[workspace.dependencies]` section.
+    When calling `cargo publish -p $PACKAGE$` all dependencies, also
+    dev-dependencies, must be already published to `crates.io` via
+    `cargo publish -p`. Verify the
     correct ordering of dependencies by checking the `[dependencies]` and
     `[dev-dependencies]`
     section in the `Cargo.toml` file of every crate in the workspace.

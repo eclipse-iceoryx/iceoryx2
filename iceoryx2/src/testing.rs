@@ -10,7 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary::math::ToB64;
+use std::sync::MutexGuard;
+
+use iceoryx2_bb_elementary::{math::ToB64, zero_copy_send::ZeroCopySend};
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_posix::{
     config::test_directory,
@@ -24,6 +26,22 @@ use crate::{
     config::Config,
     prelude::{NodeName, ServiceName},
 };
+
+#[derive(Clone, Default, Debug)]
+pub struct LifetimeTracker(iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker);
+
+unsafe impl ZeroCopySend for LifetimeTracker {}
+
+impl LifetimeTracker {
+    pub fn new() -> Self {
+        LifetimeTracker(iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker::new())
+    }
+
+    pub fn start_tracking(
+    ) -> MutexGuard<'static, iceoryx2_bb_testing::lifetime_tracker::LifetimeTrackingState> {
+        iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker::start_tracking()
+    }
+}
 
 pub fn generate_service_name() -> ServiceName {
     ServiceName::new(&format!("tests_{}", UniqueSystemId::new().unwrap().value())).unwrap()
