@@ -24,6 +24,7 @@ rust_proc_macro(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "@crate_index//:proc-macro2",
         "@crate_index//:quote",
         "@crate_index//:syn",
@@ -35,6 +36,7 @@ rust_test_suite(
     srcs = glob(["tests/**/*.rs"]),
     deps = [
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
         "//iceoryx2-pal/testing:iceoryx2-pal-testing",
     ],

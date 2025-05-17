@@ -101,8 +101,8 @@ use core::ops::Deref;
 
 use iceoryx2_bb_container::{semantic_string::SemanticString, vec::FixedSizeVec};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use serde::{Deserialize, Serialize};
 
@@ -116,7 +116,7 @@ mod key {
     use iceoryx2_bb_container::semantic_string;
     use iceoryx2_bb_container::semantic_string::SemanticString;
     use iceoryx2_bb_derive_macros::ZeroCopySend;
-    use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
     use crate::constants::MAX_ATTRIBUTE_KEY_LENGTH;
 
@@ -149,7 +149,7 @@ mod value {
     use iceoryx2_bb_container::semantic_string;
     use iceoryx2_bb_container::semantic_string::SemanticString;
     use iceoryx2_bb_derive_macros::ZeroCopySend;
-    use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+    use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
     use crate::constants::MAX_ATTRIBUTE_VALUE_LENGTH;
 

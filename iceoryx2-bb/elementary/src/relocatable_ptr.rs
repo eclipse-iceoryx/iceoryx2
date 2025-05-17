@@ -64,9 +64,9 @@
 //! }
 //! ```
 
-use crate::generic_pointer::GenericPointer;
-pub use crate::pointer_trait::PointerTrait;
 use core::{fmt::Debug, marker::PhantomData, ptr::NonNull};
+use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
+pub use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicIsize;
 
 #[derive(Debug)]

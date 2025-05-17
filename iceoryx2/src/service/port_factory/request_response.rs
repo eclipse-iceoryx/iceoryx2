@@ -40,7 +40,8 @@
 
 use core::{fmt::Debug, marker::PhantomData};
 
-use iceoryx2_bb_elementary::{zero_copy_send::ZeroCopySend, CallbackProgression};
+use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::{

@@ -48,7 +48,7 @@ use core::{
     ops::{Deref, DerefMut},
     sync::atomic::Ordering,
 };
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_log::fail;

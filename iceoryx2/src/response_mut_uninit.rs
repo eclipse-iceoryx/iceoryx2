@@ -41,7 +41,7 @@
 //! # }
 //! ```
 
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
 use crate::{response_mut::ResponseMut, service};
 use core::{fmt::Debug, mem::MaybeUninit};

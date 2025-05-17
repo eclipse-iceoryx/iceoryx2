@@ -64,7 +64,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_named_struct_when_members_do_
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -92,7 +92,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_unnamed_struct_when_members_d
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -185,7 +185,7 @@ fn zero_copy_send_derive_does_not_work_with_non_string_literal_attribute() {}
 
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -211,7 +211,7 @@ fn zero_copy_send_derive_works_for_enum_with_various_variant_types() {}
 
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -236,7 +236,7 @@ fn zero_copy_send_derive_works_for_enum_with_various_variant_types() {}
 fn zero_copy_send_derive_works_for_generic_enum_when_all_members_implement_it() {}
 
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[derive(ZeroCopySend)]
 /// enum EmptyEnum {}
@@ -249,7 +249,7 @@ fn zero_copy_send_derive_works_for_empty_enum() {}
 
 /// ```
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[repr(C)]
 /// #[derive(ZeroCopySend)]
@@ -335,7 +335,7 @@ fn zero_copy_send_derive_does_not_work_for_generic_enum_when_members_do_not_impl
 
 /// ``` compile_fail
 /// use iceoryx2_bb_derive_macros::ZeroCopySend;
-/// use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+/// use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 ///
 /// #[derive(ZeroCopySend)]
 /// enum GenericEnum<T1: ZeroCopySend, T2> {

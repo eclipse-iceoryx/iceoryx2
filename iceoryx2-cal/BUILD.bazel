@@ -31,6 +31,7 @@ rust_library(
     deps = [
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-bb/memory:iceoryx2-bb-memory",
@@ -56,6 +57,7 @@ rust_test_suite(
         ":iceoryx2-cal",
         "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
         "//iceoryx2-bb/memory:iceoryx2-bb-memory",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",

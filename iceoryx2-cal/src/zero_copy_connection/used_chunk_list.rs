@@ -13,9 +13,10 @@
 use core::{alloc::Layout, sync::atomic::Ordering};
 use iceoryx2_bb_elementary::{
     bump_allocator::BumpAllocator,
-    owning_pointer::OwningPointer,
-    relocatable_container::RelocatableContainer,
     relocatable_ptr::{PointerTrait, RelocatablePointer},
+};
+use iceoryx2_bb_elementary_traits::{
+    owning_pointer::OwningPointer, relocatable_container::RelocatableContainer,
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
@@ -26,7 +27,8 @@ pub type RelocatableUsedChunkList = details::UsedChunkList<RelocatablePointer<Io
 pub mod details {
     use core::fmt::Debug;
 
-    use iceoryx2_bb_elementary::{math::unaligned_mem_size, owning_pointer::OwningPointer};
+    use iceoryx2_bb_elementary::math::unaligned_mem_size;
+    use iceoryx2_bb_elementary_traits::owning_pointer::OwningPointer;
 
     use super::*;
 
@@ -71,10 +73,10 @@ pub mod details {
             }
         }
 
-        unsafe fn init<T: iceoryx2_bb_elementary::allocator::BaseAllocator>(
+        unsafe fn init<T: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
             &mut self,
             allocator: &T,
-        ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
+        ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
             if self.is_memory_initialized.load(Ordering::Relaxed) {
                 fatal_panic!(from self,
                 "Memory already initialized. Initializing it twice may lead to undefined behavior.");

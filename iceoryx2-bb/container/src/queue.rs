@@ -58,7 +58,7 @@
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::math::align_to;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+//! use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 //! use core::mem::MaybeUninit;
 //!
 //! const QUEUE_CAPACITY:usize = 12;
@@ -88,7 +88,7 @@
 //! ```
 //! use iceoryx2_bb_container::queue::RelocatableQueue;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+//! use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 //! use core::ptr::NonNull;
 //!
 //! const QUEUE_CAPACITY:usize = 12;
@@ -103,15 +103,15 @@
 //!
 use core::marker::PhantomData;
 use core::{alloc::Layout, fmt::Debug, mem::MaybeUninit};
-use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
-use iceoryx2_bb_elementary::owning_pointer::{GenericOwningPointer, OwningPointer};
-use iceoryx2_bb_elementary::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary::pointer_trait::PointerTrait;
-pub use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+use iceoryx2_bb_elementary_traits::owning_pointer::{GenericOwningPointer, OwningPointer};
+use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
+pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
@@ -123,7 +123,7 @@ pub type RelocatableQueue<T> = details::MetaQueue<T, GenericRelocatablePointer>;
 
 #[doc(hidden)]
 pub mod details {
-    use iceoryx2_bb_elementary::generic_pointer::GenericPointer;
+    use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
 
     use super::*;
     /// **Non-movable** relocatable queue with runtime fixed size capacity.

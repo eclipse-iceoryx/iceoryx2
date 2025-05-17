@@ -12,8 +12,8 @@
 
 use iceoryx2_bb_container::vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
+use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::memory::RawMemory;

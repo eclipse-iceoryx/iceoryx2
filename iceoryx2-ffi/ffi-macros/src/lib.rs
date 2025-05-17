@@ -225,7 +225,7 @@ fn parse_attribute_args(args: TokenStream) -> Args {
     Args { rust_type }
 }
 
-/// Implements the [`iceoryx2_bb_elementary::AsCStr`] trait for enums to provide a string representation of each enum variant.
+/// Implements the [`iceoryx2_bb_elementary_traits::AsCStr`] trait for enums to provide a string representation of each enum variant.
 ///
 /// The string representation can be customized using the `CStr` attribute, otherwise it will
 /// convert the variant name to lowercase and replace underscores with spaces.
@@ -233,7 +233,7 @@ fn parse_attribute_args(args: TokenStream) -> Args {
 /// # Example
 /// ```
 /// use iceoryx2_ffi_macros::CStrRepr;
-/// use iceoryx2_bb_elementary::AsCStr;
+/// use iceoryx2_bb_elementary_traits::AsCStr;
 ///
 /// #[derive(CStrRepr)]
 /// enum MyEnum {

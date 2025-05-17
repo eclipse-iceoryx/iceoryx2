@@ -14,7 +14,7 @@
 mod relocatable_container {
     use core::ptr::NonNull;
     use iceoryx2_bb_container::{queue::RelocatableQueue, vec::RelocatableVec};
-    use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+    use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::{
         mpmc::{container::Container, unique_index_set::UniqueIndexSet},
         spsc::{

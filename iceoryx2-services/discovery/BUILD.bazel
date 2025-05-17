@@ -25,6 +25,7 @@ rust_library(
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "@crate_index//:once_cell",
         "@crate_index//:serde",
     ],

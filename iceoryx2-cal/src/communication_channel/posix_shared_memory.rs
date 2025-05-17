@@ -20,7 +20,7 @@ use crate::dynamic_storage::{
     self, DynamicStorage, DynamicStorageBuilder, DynamicStorageCreateError, DynamicStorageOpenError,
 };
 use crate::named_concept::*;
-use iceoryx2_bb_elementary::relocatable_container::*;
+use iceoryx2_bb_elementary_traits::relocatable_container::*;
 use iceoryx2_bb_lock_free::spsc::safely_overflowing_index_queue::*;
 use iceoryx2_bb_log::fail;
 
