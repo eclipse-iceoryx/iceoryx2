@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(example_c_domains LANGUAGES C)
 
-find_package(iceoryx2-c 0.5.0 REQUIRED)
+find_package(iceoryx2-c 0.6.0 REQUIRED)
 
 add_executable(example_c_domains_publisher src/publisher.c)
 target_link_libraries(example_c_domains_publisher iceoryx2-c::static-lib)

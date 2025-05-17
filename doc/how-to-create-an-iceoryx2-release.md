@@ -60,31 +60,26 @@ number is `Xold.Yold.Zold`.
    `iox2-77-X.Y.Z-release`
 3. Copy `$GIT_ROOT$/doc/release-notes/iceoryx2-unreleased.md` to
    `$GIT_ROOT$/doc/release-notes/iceoryx2-vX.Y.Z.md`.
-4. Fill out all version place holders/old version numbers in newly created
+4. Fill out all version place holders (`?.?.?`) in newly created
    `$GIT_ROOT$/doc/release-notes/iceoryx2-vX.Y.Z.md`, remove template example
    entries and clean up.
-5. Add the section `Thanks To All Contributors Of This Version` in
-   `$GIT_ROOT$/doc/release-notes/iceoryx2-vX.Y.Z.md` and list all contributors
-   of the new release.
-6. Add new long-term contributors to the `$GIT_ROOT$/README.md`.
-   * Shall have provided multiple PRs and reviews/issues.
-7. Override `$GIT_ROOT$/doc/release-notes/iceoryx2-unreleased.md` with
+5. Override `$GIT_ROOT$/doc/release-notes/iceoryx2-unreleased.md` with
    `$GIT_ROOT$/doc/release-notes/iceoryx2-release-template.md` and bring it in
    the empty state again.
-8. (Major release only) Create `$GIT_ROOT$/doc/announcements/iceoryx2-vX.Y.Z.md`
-   and fill it with all the different announcement texts.
-9. Change `workspace.package.version` in `$GIT_ROOT$/Cargo.toml` to the new
+6. Change `workspace.package.version` in `$GIT_ROOT$/Cargo.toml` to the new
    version number `X.Y.Z`.
    * **IMPORTANT** change version to `X.Y.Z` for all `iceoryx2-**` packages
      under `[workspace.dependencies]`
-10. Adjust the `<version>` to `X.Y.Z` in `$GIT_ROOT$/package.xml`.
-11. Call `rg "Xold\.Yold\.Zold"` and adjust all findings.
+7.  Adjust the `<version>` to `X.Y.Z` in `$GIT_ROOT$/package.xml`.
+8.  Call `rg "Xold\.Yold\.Zold"` and adjust all findings.
     * C and C++ examples, `BUILD.bazel` & `CMakeLists.txt`
-12. Adjust the major, minor and patch version number in `iceoryx2_bb_elementary::PackageVersion`
-13. **Merge all changes to `main`.**
-14. Set tag on GitHub and add the release document as notes to the tag
+9.  Adjust the major, minor and patch version number in
+    `iceoryx2_bb/elementary/package_version.rs` in `PackageVersion::get()`
+10. Add the release notes to `$GIT_ROOT/CHANGELOG.md`
+11. **Merge all changes to `main`.**
+12. Set tag on GitHub and add the release document as notes to the tag
     description. Add also a link to the file.
-15. Check the order of all dependencies in
+13. Check the order of all dependencies in
     `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh`.
     When calling `cargo publish -p $PACKAGE$` all dependencies, also dev-dependencies,
     must be already published to `crates.io` via `cargo publish -p`. Verify the
@@ -94,7 +89,7 @@ number is `Xold.Yold.Zold`.
     * If the publish script was started and a crate requires a dependency which
       is not available on `crates.io` the release has to be redone and the patch
       version has to increase by one for the whole workspace.
-16. Call `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh` and publish
+14. Call `$GIT_ROOT$/./internal/scripts/crates_io_publish_script.sh` and publish
     all crates on `crates.io` and `docs.rs`.
-17. Verify that the release looks fine on `docs.rs` (click through the
+15. Verify that the release looks fine on `docs.rs` (click through the
     documentation to check if everything was generated correctly)

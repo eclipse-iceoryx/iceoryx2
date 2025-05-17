@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(example_cxx_health_monitoring LANGUAGES CXX)
 
-find_package(iceoryx2-cxx 0.5.0 REQUIRED)
+find_package(iceoryx2-cxx 0.6.0 REQUIRED)
 
 add_executable(example_cxx_health_monitoring_central_daemon src/central_daemon.cpp)
 target_link_libraries(example_cxx_health_monitoring_central_daemon iceoryx2-cxx::static-lib-cxx)
