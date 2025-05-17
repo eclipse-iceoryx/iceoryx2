@@ -95,6 +95,7 @@ maybe(
         "//:iceoryx2-bb/container/Cargo.toml",
         "//:iceoryx2-bb/derive-macros/Cargo.toml",
         "//:iceoryx2-bb/elementary/Cargo.toml",
+        "//:iceoryx2-bb/elementary-traits/Cargo.toml",
         "//:iceoryx2-bb/lock-free/Cargo.toml",
         "//:iceoryx2-bb/log/Cargo.toml",
         "//:iceoryx2-bb/memory/Cargo.toml",
@@ -110,6 +111,7 @@ maybe(
         "//:iceoryx2-pal/concurrency-sync/Cargo.toml",
         "//:iceoryx2-pal/configuration/Cargo.toml",
         "//:iceoryx2-pal/posix/Cargo.toml",
+        "//:iceoryx2-pal/testing/Cargo.toml",
     ],
 )
 

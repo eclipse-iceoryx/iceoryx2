@@ -322,7 +322,7 @@ impl PortToUds {
 
 #[cfg(test)]
 mod tests {
-    use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_pal_testing::assert_that;
 
     use crate::windows::win32_udp_port_to_uds_name::PATH_LENGTH;
 

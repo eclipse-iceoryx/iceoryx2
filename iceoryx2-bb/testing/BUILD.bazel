@@ -23,10 +23,8 @@ rust_library(
     name = "iceoryx2-bb-testing",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
-    ],
-    proc_macro_deps = [
-        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
     ],
 )

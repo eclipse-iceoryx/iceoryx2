@@ -12,8 +12,8 @@
 
 #[cfg(target_os = "windows")]
 mod win32_select {
-    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_pal_posix::posix::{settings::FD_SET_CAPACITY, *};
+    use iceoryx2_pal_testing::assert_that;
     use win32_handle_translator::*;
 
     #[test]

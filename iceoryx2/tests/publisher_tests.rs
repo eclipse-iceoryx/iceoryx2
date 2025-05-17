@@ -22,11 +22,11 @@ mod publisher {
     use iceoryx2::service::builder::CustomPayloadMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{service_name::ServiceName, Service};
-    use iceoryx2::testing::LifetimeTracker;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
     use iceoryx2_bb_testing::watchdog::Watchdog;
 
     type TestResult<T> = core::result::Result<T, Box<dyn std::error::Error>>;

@@ -18,8 +18,8 @@ static COUNTER: AtomicU32 = AtomicU32::new(0);
 mod ice_atomic {
     use super::*;
 
-    use iceoryx2_bb_testing::assert_that;
     use iceoryx2_pal_concurrency_sync::iox_atomic::{internal::AtomicInteger, IoxAtomic};
+    use iceoryx2_pal_testing::assert_that;
 
     use core::{
         fmt::Debug,

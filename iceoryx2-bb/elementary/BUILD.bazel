@@ -23,6 +23,7 @@ rust_library(
     name = "iceoryx2-bb-elementary",
     srcs = glob(["src/**/*.rs"]),
     deps = [
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
     ],
 )
@@ -33,6 +34,7 @@ rust_test_suite(
     deps = [
         ":iceoryx2-bb-elementary",
         "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
     ],
     proc_macro_deps = [
         "@crate_index//:generic-tests",

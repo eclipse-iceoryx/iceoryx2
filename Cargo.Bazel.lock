@@ -1,5 +1,5 @@
 {
-  "checksum": "302c7ad9816d3123285c9b2d82b3b6ddcfeb6e4d2091e16268c436bbf3e969c6",
+  "checksum": "6ed904197aeae68d8d8dac1c952e482431e3205ac0c5fa6920930614b4d2d5f8",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -2876,6 +2876,31 @@
       },
       "license": "MIT OR Apache-2.0"
     },
+    "iceoryx2-bb-elementary-traits 0.6.0": {
+      "name": "iceoryx2-bb-elementary-traits",
+      "version": "0.6.0",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_elementary_traits",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_elementary_traits",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
+        "version": "0.6.0"
+      },
+      "license": "MIT OR Apache-2.0"
+    },
     "iceoryx2-bb-lock-free 0.6.0": {
       "name": "iceoryx2-bb-lock-free",
       "version": "0.6.0",
@@ -3549,6 +3574,31 @@
           ],
           "selects": {}
         }
+      },
+      "license": "MIT OR Apache-2.0"
+    },
+    "iceoryx2-pal-testing 0.6.0": {
+      "name": "iceoryx2-pal-testing",
+      "version": "0.6.0",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_pal_testing",
+            "crate_root": "src/lib.rs",
+            "srcs": [
+              "**/*.rs"
+            ]
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_pal_testing",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
+        "version": "0.6.0"
       },
       "license": "MIT OR Apache-2.0"
     },
@@ -7833,6 +7883,7 @@
     "iceoryx2-bb-container 0.6.0": "iceoryx2-bb/container",
     "iceoryx2-bb-derive-macros 0.6.0": "iceoryx2-bb/derive-macros",
     "iceoryx2-bb-elementary 0.6.0": "iceoryx2-bb/elementary",
+    "iceoryx2-bb-elementary-traits 0.6.0": "iceoryx2-bb/elementary-traits",
     "iceoryx2-bb-lock-free 0.6.0": "iceoryx2-bb/lock-free",
     "iceoryx2-bb-log 0.6.0": "iceoryx2-bb/log",
     "iceoryx2-bb-memory 0.6.0": "iceoryx2-bb/memory",
@@ -7848,6 +7899,7 @@
     "iceoryx2-pal-concurrency-sync 0.6.0": "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal-configuration 0.6.0": "iceoryx2-pal/configuration",
     "iceoryx2-pal-posix 0.6.0": "iceoryx2-pal/posix",
+    "iceoryx2-pal-testing 0.6.0": "iceoryx2-pal/testing",
     "iceoryx2-services-discovery 0.6.0": "iceoryx2-services/discovery"
   },
   "conditions": {

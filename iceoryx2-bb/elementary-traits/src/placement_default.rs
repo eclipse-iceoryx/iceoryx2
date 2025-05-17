@@ -25,7 +25,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 /// ```
 /// use core::alloc::Layout;
 /// use std::alloc::{alloc, dealloc};
-/// use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+/// use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 ///
 /// struct MyLargeType {
 ///     value_1: [u64; 10485760],

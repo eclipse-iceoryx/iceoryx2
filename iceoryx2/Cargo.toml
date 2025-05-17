@@ -39,12 +39,11 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
-# only required for iceoryx2/src/testing.rs
-iceoryx2-bb-testing = { workspace = true }
-
 serde = { workspace = true }
 toml = { workspace = true }
 tiny-fn = { workspace = true }
 
 [dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
+iceoryx2-pal-testing = { workspace = true }
 generic-tests = { workspace = true }

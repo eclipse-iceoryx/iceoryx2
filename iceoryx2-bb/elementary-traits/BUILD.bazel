@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -20,27 +20,9 @@ filegroup(
 )
 
 rust_library(
-    name = "iceoryx2-bb-memory",
+    name = "iceoryx2-bb-elementary-traits",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-bb/lock-free:iceoryx2-bb-lock-free",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
-        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
-    ],
-)
-
-rust_test_suite(
-    name = "iceoryx2-bb-memory-tests",
-    srcs = glob(["tests/**/*.rs"]),
-    deps = [
-        "iceoryx2-bb-memory",
-        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
-        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
-    ],
-    proc_macro_deps = [
-        "@crate_index//:generic-tests",
     ],
 )

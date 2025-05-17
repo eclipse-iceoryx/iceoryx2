@@ -14,6 +14,29 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
-pub use iceoryx2_pal_testing::*;
+#[macro_use]
+pub mod assert;
+pub mod memory;
+pub mod watchdog;
 
-pub mod lifetime_tracker;
+#[macro_export(local_inner_macros)]
+macro_rules! test_requires {
+    { $condition:expr } => {
+        if !$condition { return; }
+    }
+}
+
+#[macro_export(local_inner_macros)]
+macro_rules! test_fail {
+    ($($e:expr),*) => {
+        core::panic!(
+            "test failed: {} {} {}",
+            assert_that![color_start],
+            std::format_args!($($e),*).to_string(),
+            assert_that![color_end]
+        )
+    };
+}
+
+pub const AT_LEAST_TIMING_VARIANCE: f32 =
+    iceoryx2_pal_configuration::settings::AT_LEAST_TIMING_VARIANCE;
