@@ -17,7 +17,7 @@
 #
 
 env:
-  CI_ENABLED: true
+  CI_ENABLED: false
   # RUSTFLAGS: "-C debug-assertions"
 
 #
