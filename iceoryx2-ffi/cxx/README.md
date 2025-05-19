@@ -26,6 +26,10 @@ In the repository root folder, execute this steps:
 cargo build --release --package iceoryx2-ffi
 ```
 
+> [!NOTE]
+> To pass `iceoryx2` feature flags to the `iceoryx2-ffi` crate, one needs to
+> prefix the feature with `iceoryx2/`, e.g. `--features iceoryx2/libc_platform.`.
+
 ### Build and install `iceoryx_hoofs`
 
 For production it is recommended though to separately build `iceoryx_hoofs` and

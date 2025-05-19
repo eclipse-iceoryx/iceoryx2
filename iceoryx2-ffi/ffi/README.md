@@ -91,6 +91,11 @@ The opaque types additionally need to be manually forward-declared in
 * forward declaration is done in the `after_includes` section with
   `typedef struct iox2_foo_ptr_t iox2_foo_ptr_t;`
 
+## Passing feature flags to the iceoryx2-ffi crate
+
+To pass `iceoryx2` feature flags to the `iceoryx2-ffi` crate, one needs to
+prefix the feature with `iceoryx2/`, e.g. `--features iceoryx2/libc_platform.`.
+
 ## Why the folder structure with 'api' and 'test'
 
 As it turned out `cdylib`s do not play well with integration tests. The `cdylib`
