@@ -17,6 +17,7 @@ iceoryx2-bb-log = { workspace = true }
 iceoryx2-pal-configuration = { workspace = true }
 iceoryx2-pal-posix = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
 serde = { workspace = true }
 
 [dev-dependencies]

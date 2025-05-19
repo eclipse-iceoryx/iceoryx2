@@ -16,7 +16,7 @@ pub mod details {
     use core::fmt::Debug;
     use core::marker::PhantomData;
     use core::sync::atomic::Ordering;
-    use iceoryx2_bb_elementary::allocator::{AllocationError, BaseAllocator};
+    use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
     use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
     use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicU64, IoxAtomicU8, IoxAtomicUsize};
 
@@ -28,7 +28,7 @@ pub mod details {
     use crate::shared_memory::SegmentId;
     pub use crate::zero_copy_connection::*;
     use iceoryx2_bb_container::vec::RelocatableVec;
-    use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+    use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::spsc::{
         index_queue::RelocatableIndexQueue,
         safely_overflowing_index_queue::RelocatableSafelyOverflowingIndexQueue,

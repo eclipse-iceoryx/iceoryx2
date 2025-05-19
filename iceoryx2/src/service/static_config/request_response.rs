@@ -39,7 +39,7 @@
 //! ```
 
 use iceoryx2_bb_derive_macros::ZeroCopySend;
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use serde::{Deserialize, Serialize};
 
 use crate::config;

@@ -31,31 +31,6 @@ pub mod scope_guard;
 pub mod static_assert;
 pub mod unique_id;
 
-// Re-exports
-
-pub mod allocator {
-    pub use iceoryx2_bb_elementary_traits::allocator::*;
-}
-pub use iceoryx2_bb_elementary_traits::as_cstr::*;
-pub mod generic_pointer {
-    pub use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
-}
-pub mod owning_pointer {
-    pub use iceoryx2_bb_elementary_traits::owning_pointer::*;
-}
-pub mod pointer_trait {
-    pub use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
-}
-pub mod relocatable_container {
-    pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
-}
-pub mod placement_default {
-    pub use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-}
-pub mod zero_copy_send {
-    pub use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-}
-
 /// Defines how a callback based iteration shall progress after the calling the callback. Either
 /// stop the iteration with [`CallbackProgression::Stop`] or continue with
 /// [`CallbackProgression::Continue`].

@@ -25,7 +25,7 @@ use core::mem::ManuallyDrop;
 use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::client::{ClientCreateError, PortFactoryClient};
 use iceoryx2_bb_elementary::static_assert::*;
-use iceoryx2_bb_elementary::AsCStr;
+use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
 
 // BEGIN types definition

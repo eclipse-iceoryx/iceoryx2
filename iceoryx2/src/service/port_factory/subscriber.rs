@@ -30,7 +30,7 @@
 
 use core::fmt::Debug;
 
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 
 use crate::{

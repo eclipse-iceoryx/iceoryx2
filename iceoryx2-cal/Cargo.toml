@@ -23,6 +23,7 @@ iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }

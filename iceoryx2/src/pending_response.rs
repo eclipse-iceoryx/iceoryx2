@@ -59,7 +59,7 @@ use core::ops::Deref;
 use core::sync::atomic::Ordering;
 use core::{fmt::Debug, marker::PhantomData};
 
-use iceoryx2_bb_elementary::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 
 use crate::port::details::chunk::Chunk;

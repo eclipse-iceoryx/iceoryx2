@@ -40,7 +40,7 @@
 //! use iceoryx2_bb_container::vec::RelocatableVec;
 //! use iceoryx2_bb_elementary::math::align_to;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+//! use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 //! use core::mem::MaybeUninit;
 //!
 //! const VEC_CAPACITY:usize = 12;
@@ -70,7 +70,7 @@
 //! ```
 //! use iceoryx2_bb_container::vec::RelocatableVec;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-//! use iceoryx2_bb_elementary::relocatable_container::RelocatableContainer;
+//! use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 //! use core::ptr::NonNull;
 //!
 //! const VEC_CAPACITY:usize = 12;
@@ -92,16 +92,16 @@ use core::{
 };
 
 use iceoryx2_bb_elementary::{
-    bump_allocator::BumpAllocator, owning_pointer::GenericOwningPointer,
-    relocatable_ptr::GenericRelocatablePointer,
+    bump_allocator::BumpAllocator, relocatable_ptr::GenericRelocatablePointer,
 };
-
-use iceoryx2_bb_elementary::{
-    generic_pointer::GenericPointer, math::unaligned_mem_size, owning_pointer::OwningPointer,
-    placement_default::PlacementDefault, pointer_trait::PointerTrait,
-    relocatable_container::RelocatableContainer, relocatable_ptr::RelocatablePointer,
+use iceoryx2_bb_elementary_traits::{
+    generic_pointer::GenericPointer, owning_pointer::GenericOwningPointer,
+    owning_pointer::OwningPointer, placement_default::PlacementDefault,
+    pointer_trait::PointerTrait, relocatable_container::RelocatableContainer,
     zero_copy_send::ZeroCopySend,
 };
+
+use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_ptr::RelocatablePointer};
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
@@ -153,10 +153,10 @@ pub mod details {
             }
         }
 
-        unsafe fn init<Allocator: iceoryx2_bb_elementary::allocator::BaseAllocator>(
+        unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
             &mut self,
             allocator: &Allocator,
-        ) -> Result<(), iceoryx2_bb_elementary::allocator::AllocationError> {
+        ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
             if self.is_initialized.load(Ordering::Relaxed) {
                 fatal_panic!(from "Vec::init()", "Memory already initialized, Initializing it twice may lead to undefined behavior.");
             }

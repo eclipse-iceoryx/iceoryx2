@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_elementary::{allocator::*, math::align};
+use iceoryx2_bb_elementary::math::align;
+use iceoryx2_bb_elementary_traits::allocator::*;
 use iceoryx2_bb_memory::{bump_allocator::BumpAllocator, pool_allocator::*};
 use iceoryx2_bb_testing::assert_that;
 

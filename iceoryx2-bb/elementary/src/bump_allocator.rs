@@ -10,8 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::{allocator::BaseAllocator, math::align};
+use crate::math::align;
 use core::sync::atomic::Ordering;
+use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 /// A minimalistic [`BumpAllocator`].
@@ -34,7 +35,7 @@ impl BaseAllocator for BumpAllocator {
     fn allocate(
         &self,
         layout: core::alloc::Layout,
-    ) -> Result<core::ptr::NonNull<[u8]>, crate::allocator::AllocationError> {
+    ) -> Result<core::ptr::NonNull<[u8]>, AllocationError> {
         let mem = align(self.pos.load(Ordering::Relaxed), layout.align());
         self.pos.store(mem + layout.size(), Ordering::Relaxed);
 

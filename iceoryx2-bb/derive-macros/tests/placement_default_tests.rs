@@ -15,7 +15,7 @@ mod placement_new {
     use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
     use iceoryx2_bb_derive_macros::PlacementDefault;
-    use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+    use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
     use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
 
     static DEFAULT_CTOR_COUNT: AtomicUsize = AtomicUsize::new(0);

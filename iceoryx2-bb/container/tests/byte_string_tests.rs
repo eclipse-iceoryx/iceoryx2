@@ -15,7 +15,7 @@ mod fixed_size_byte_string {
     use std::hash::{Hash, Hasher};
 
     use iceoryx2_bb_container::byte_string::*;
-    use iceoryx2_bb_elementary::placement_default::PlacementDefault;
+    use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
     use iceoryx2_bb_testing::{assert_that, memory::RawMemory};
     use serde_test::{assert_tokens, Token};
     use std::collections::hash_map::DefaultHasher;

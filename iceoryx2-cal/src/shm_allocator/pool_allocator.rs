@@ -13,7 +13,7 @@
 use core::{alloc::Layout, ptr::NonNull, sync::atomic::Ordering};
 
 use crate::shm_allocator::{ShmAllocator, ShmAllocatorConfig};
-use iceoryx2_bb_elementary::allocator::BaseAllocator;
+use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 

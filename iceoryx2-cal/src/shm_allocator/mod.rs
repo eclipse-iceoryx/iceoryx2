@@ -16,8 +16,9 @@ pub mod pool_allocator;
 
 use core::{alloc::Layout, fmt::Debug, ptr::NonNull};
 
-pub use iceoryx2_bb_elementary::allocator::AllocationError;
-use iceoryx2_bb_elementary::{allocator::BaseAllocator, enum_gen};
+use iceoryx2_bb_elementary::enum_gen;
+pub use iceoryx2_bb_elementary_traits::allocator::AllocationError;
+use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 pub use pointer_offset::*;
 
 /// Trait that identifies a configuration of a [`ShmAllocator`].

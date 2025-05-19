@@ -15,7 +15,8 @@
 #![warn(clippy::std_instead_of_core)]
 
 pub mod allocator;
-pub mod as_cstr;
+mod as_cstr;
+pub use crate::as_cstr::*;
 pub mod generic_pointer;
 pub mod owning_pointer;
 pub mod placement_default;
