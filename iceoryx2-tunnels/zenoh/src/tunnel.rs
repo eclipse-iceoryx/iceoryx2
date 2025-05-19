@@ -40,14 +40,14 @@ use zenoh::Wait;
 
 use std::collections::HashMap;
 
-/// Represents a bidirectional relay between an iceoryx2 service and Zenoh.
+/// A bidirectional relay that handles data flow between iceoryx2 and Zenoh.
 ///
-/// A `Relay` encapsulates all components needed for bidirectional communication:
-/// - An outbound stream that transfers data from iceoryx2 to Zenoh
-/// - An inbound stream that transfers data from Zenoh to iceoryx2
+/// This struct manages two data streams:
+/// - `outbound_stream`: Transfers data from iceoryx2 to Zenoh
+/// - `inbound_stream`: Transfers data from Zenoh to iceoryx2
 ///
-/// This structure is used by the `Tunnel` to manage the mapping between
-/// iceoryx2 services and their corresponding data streams.
+/// It creates a complete bidirectional communication channel between the two middleware systems,
+/// allowing services defined in iceoryx2 to be accessible through Zenoh and vice versa.
 struct BidirectionalRelay<'a> {
     outbound_stream: OutboundStream<'a>,
     inbound_stream: InboundStream,
@@ -132,6 +132,15 @@ impl<'a> Tunnel<'a> {
         info!("Zenoh Tunnel DOWN");
     }
 
+    /// Returns a list of all service IDs that are currently being tunneled.
+    ///
+    /// This method provides a way to inspect which iceoryx2 services are currently
+    /// being bridged to the Zenoh network. It returns the string representation
+    /// of each service ID that has an active relay.
+    ///
+    /// # Returns
+    ///
+    /// A vector of strings containing the service IDs of all tunneled services.
     pub fn tunneled_services(&self) -> Vec<String> {
         self.relays
             .iter()
