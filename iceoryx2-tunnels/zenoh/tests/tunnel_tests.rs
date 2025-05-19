@@ -37,7 +37,7 @@ mod zenoh_tunnel {
         let iox_config = generate_isolated_config();
         let mut sut = Tunnel::new(iox_config.clone());
         sut.initialize();
-        assert_that!(sut.stream_ids().len(), eq 0);
+        assert_that!(sut.tunneled_services().len(), eq 0);
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
@@ -57,9 +57,9 @@ mod zenoh_tunnel {
         sut.discover();
 
         // verify stream is set up for the created service
-        assert_that!(sut.stream_ids().len(), eq 1);
+        assert_that!(sut.tunneled_services().len(), eq 1);
         assert_that!(sut
-            .stream_ids()
+            .tunneled_services()
             .contains(&String::from(iox_service.service_id().as_str())), eq true);
     }
 

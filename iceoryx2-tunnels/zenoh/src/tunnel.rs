@@ -132,7 +132,7 @@ impl<'a> Tunnel<'a> {
         info!("Zenoh Tunnel DOWN");
     }
 
-    pub fn stream_ids(&self) -> Vec<String> {
+    pub fn tunneled_services(&self) -> Vec<String> {
         self.relays
             .iter()
             .map(|(id, _)| id.as_str().to_string())
