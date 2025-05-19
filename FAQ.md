@@ -288,3 +288,9 @@ sender closes the data segment when going out of scope.
 
 To circumvent this, you could use the size of the last sent sample as
 `initial_max_slice_len` and use the `Static` allocation strategy.
+
+## The package 'iceoryx2-ffi' does not contain this feature: libc_platform
+
+In order to use the `iceoryx2` feature flags when building the `iceoryx2-ffi`
+crate standalone, you needs to prefix the feature with `iceoryx2/`,
+e.g. `--features iceoryx2/libc_platform.`.

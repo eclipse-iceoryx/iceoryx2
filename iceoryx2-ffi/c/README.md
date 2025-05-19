@@ -28,6 +28,10 @@ cmake --build target/ffi/build
 cmake --install target/ffi/build
 ```
 
+> [!NOTE]
+> To pass `iceoryx2` feature flags to the `iceoryx2-ffi` crate, one needs to
+> prefix the feature with `iceoryx2/`, e.g. `--features iceoryx2/libc_platform.`.
+
 The installed libraries can the be used for out-of-tree builds of the example or
 custom C projects. This are the required steps:
 
