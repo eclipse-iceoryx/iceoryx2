@@ -273,18 +273,30 @@ mod zenoh_tunnel {
 
         // send data on zenoh publisher
         z_publisher.put(PAYLOAD_DATA.as_bytes()).wait().unwrap();
-        std::thread::sleep(Duration::from_millis(500)); // wait for zenoh background thread ...
 
-        // propagate over tunnel
-        tunnel.propagate();
+        // try propagate + receive up to 3 times (depends on zenoh background thread)
+        //  data should be propagated from zenoh to iceoryx2 subscriber
+        let mut received_sample = None;
+        for _ in 1..3 {
+            // propagate over tunnel
+            tunnel.propagate();
 
-        // verify data received at iceoryx subscriber
-        let sample = iox_subscriber.receive().unwrap();
-        assert_that!(sample, is_some);
-        let sample = sample.unwrap();
+            // verify data received at iceoryx subscriber
+            if let Ok(Some(sample)) = iox_subscriber.receive() {
+                received_sample = Some(sample);
+                break;
+            }
 
-        // Convert payload to a string safely
-        let bytes = sample.payload();
+            // wait a short time before retrying
+            std::thread::sleep(Duration::from_millis(100));
+        }
+        if received_sample.is_none() {
+            test_fail!("failed to receive sample from remote host after 3 propagation attempts");
+        }
+        let received_sample = received_sample.unwrap();
+
+        // verify payload content
+        let bytes = received_sample.payload();
         match std::str::from_utf8(bytes) {
             Ok(payload_str) => {
                 assert_that!(payload_str, eq PAYLOAD_DATA);
@@ -325,7 +337,7 @@ mod zenoh_tunnel {
             .get(keys::service(iox_service.service_id()))
             .wait()
             .unwrap();
-        match z_reply.recv_timeout(Duration::from_millis(500)) {
+        match z_reply.recv_timeout(Duration::from_millis(100)) {
             Ok(Some(reply)) => match reply.result() {
                 Ok(sample) => {
                     let iox_static_details: StaticConfig =
