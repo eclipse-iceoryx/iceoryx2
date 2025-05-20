@@ -22,7 +22,6 @@ use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
-use iceoryx2::service::ipc::Service as IceoryxService;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
 use iceoryx2::service::service_id::ServiceId as IceoryxServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
@@ -49,26 +48,26 @@ use std::collections::HashMap;
 ///
 /// It creates a complete bidirectional communication channel between the two middleware systems,
 /// allowing services defined in iceoryx2 to be accessible through Zenoh and vice versa.
-struct BidirectionalRelay<'a> {
-    outbound_stream: OutboundStream<'a>,
-    inbound_stream: InboundStream,
+struct BidirectionalRelay<'a, Service: iceoryx2::service::Service> {
+    outbound_stream: OutboundStream<'a, Service>,
+    inbound_stream: InboundStream<Service>,
 }
 
-impl<'a> BidirectionalRelay<'a> {
+impl<'a, Service: iceoryx2::service::Service> BidirectionalRelay<'a, Service> {
     pub fn new(
         iox_service_config: &StaticConfig,
-        iox_node: &IceoryxNode<ipc::Service>,
+        iox_node: &IceoryxNode<Service>,
         z_session: &ZenohSession,
     ) -> Self {
-        let iox_service = iox_create_service(iox_node, iox_service_config);
+        let iox_service = iox_create_service::<Service>(iox_node, iox_service_config);
 
         // Create Outbound Stream
-        let iox_subscriber = iox_create_subscriber(&iox_service, iox_service_config);
+        let iox_subscriber = iox_create_subscriber::<Service>(&iox_service, iox_service_config);
         let z_publisher = z_create_publisher(z_session, iox_service_config);
         let outbound_stream = OutboundStream::new(iox_subscriber, z_publisher);
 
         // Create Inbound Stream
-        let iox_publisher = iox_create_publisher(&iox_service, iox_service_config);
+        let iox_publisher = iox_create_publisher::<Service>(&iox_service, iox_service_config);
         let z_subscriber = z_create_subscriber(z_session, iox_service_config);
         let inbound_stream = InboundStream::new(iox_publisher, z_subscriber);
 
@@ -84,15 +83,15 @@ impl<'a> BidirectionalRelay<'a> {
     }
 }
 
-pub struct Tunnel<'a> {
+pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
     z_session: ZenohSession,
     iox_config: IceoryxConfig,
-    iox_node: IceoryxNode<ipc::Service>,
-    iox_tracker: IceoryxServiceTracker<ipc::Service>,
-    relays: HashMap<IceoryxServiceId, BidirectionalRelay<'a>>,
+    iox_node: IceoryxNode<Service>,
+    iox_tracker: IceoryxServiceTracker<Service>,
+    relays: HashMap<IceoryxServiceId, BidirectionalRelay<'a, Service>>,
 }
 
-impl<'a> Tunnel<'a> {
+impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
     pub fn new(iox_config: IceoryxConfig) -> Self {
         let mut z_config = zenoh::config::Config::default();
         z_config.insert_json5("adminspace/enabled", "true").unwrap(); // this is mandatory
@@ -100,11 +99,11 @@ impl<'a> Tunnel<'a> {
 
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
-            .create::<ipc::Service>()
+            .create::<Service>()
             .unwrap();
         let iox_tracker = IceoryxServiceTracker::new();
 
-        let relays: HashMap<IceoryxServiceId, BidirectionalRelay> = HashMap::new();
+        let relays: HashMap<IceoryxServiceId, BidirectionalRelay<Service>> = HashMap::new();
 
         Self {
             z_session,
@@ -212,10 +211,10 @@ impl<'a> Tunnel<'a> {
     }
 }
 
-fn iox_create_service(
-    iox_node: &IceoryxNode<ipc::Service>,
+fn iox_create_service<Service: iceoryx2::service::Service>(
+    iox_node: &IceoryxNode<Service>,
     iox_service_config: &StaticConfig,
-) -> PortFactory<IceoryxService, [CustomPayloadMarker], CustomHeaderMarker> {
+) -> PortFactory<Service, [CustomPayloadMarker], CustomHeaderMarker> {
     let iox_service = unsafe {
         iox_node
             .service_builder(iox_service_config.name())
@@ -240,10 +239,10 @@ fn iox_create_service(
     iox_service
 }
 
-fn iox_create_publisher(
-    iox_service: &PortFactory<IceoryxService, [CustomPayloadMarker], CustomHeaderMarker>,
+fn iox_create_publisher<Service: iceoryx2::service::Service>(
+    iox_service: &PortFactory<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     iox_service_config: &StaticConfig,
-) -> IceoryxPublisher<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker> {
+) -> IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker> {
     let iox_publisher = iox_service
         .publisher_builder()
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
@@ -271,10 +270,10 @@ fn iox_create_publisher(
 /// # Returns
 ///
 /// An iceoryx2 subscriber configured with custom payload and header markers
-fn iox_create_subscriber(
-    iox_service: &PortFactory<IceoryxService, [CustomPayloadMarker], CustomHeaderMarker>,
+fn iox_create_subscriber<Service: iceoryx2::service::Service>(
+    iox_service: &PortFactory<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     iox_service_config: &StaticConfig,
-) -> IceoryxSubscriber<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker> {
+) -> IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker> {
     let iox_subscriber = iox_service.subscriber_builder().create().unwrap();
     info!(
         "NEW SUBSCRIBER (iceoryx2): {} [{}]",
