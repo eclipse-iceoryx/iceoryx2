@@ -15,6 +15,7 @@ use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 
+use iceoryx2::service::static_config::message_type_details::MessageTypeDetails;
 use zenoh::bytes::ZBytes;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher as ZenohPublisher;
@@ -57,6 +58,7 @@ impl<'a, Service: iceoryx2::service::Service> OutboundStream<'a, Service> {
 }
 
 pub struct InboundStream<Service: iceoryx2::service::Service> {
+    iox_message_type_details: MessageTypeDetails,
     iox_publisher: IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
 }
@@ -64,13 +66,17 @@ pub struct InboundStream<Service: iceoryx2::service::Service> {
 impl<Service: iceoryx2::service::Service> DataStream for InboundStream<Service> {
     fn propagate(&self) {
         while let Ok(Some(z_sample)) = self.z_subscriber.try_recv() {
+            let iox_payload_size = self.iox_message_type_details.payload.size;
+            let iox_payload_alignment = self.iox_message_type_details.payload.alignment;
+
+            // TODO: verify size and alignment
             let z_payload = z_sample.payload();
 
-            // TODO: Need to divide length by payload size ...
+            let number_of_elements = z_payload.len() / iox_payload_size;
             unsafe {
                 let mut iox_sample = self
                     .iox_publisher
-                    .loan_custom_payload(z_payload.len())
+                    .loan_custom_payload(number_of_elements)
                     .unwrap();
                 std::ptr::copy_nonoverlapping(
                     z_payload.to_bytes().as_ptr(),
@@ -86,10 +92,12 @@ impl<Service: iceoryx2::service::Service> DataStream for InboundStream<Service> 
 
 impl<Service: iceoryx2::service::Service> InboundStream<Service> {
     pub fn new(
+        iox_message_type_details: &MessageTypeDetails,
         iox_publisher: IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
         z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
     ) -> Self {
         Self {
+            iox_message_type_details: iox_message_type_details.clone(),
             iox_publisher,
             z_subscriber,
         }

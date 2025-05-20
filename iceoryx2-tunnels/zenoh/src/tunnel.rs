@@ -69,7 +69,13 @@ impl<'a, Service: iceoryx2::service::Service> BidirectionalRelay<'a, Service> {
         // Create Inbound Stream
         let iox_publisher = iox_create_publisher::<Service>(&iox_service, iox_service_config);
         let z_subscriber = z_create_subscriber(z_session, iox_service_config);
-        let inbound_stream = InboundStream::new(iox_publisher, z_subscriber);
+        let inbound_stream = InboundStream::new(
+            iox_service_config
+                .publish_subscribe()
+                .message_type_details(),
+            iox_publisher,
+            z_subscriber,
+        );
 
         Self {
             outbound_stream,
