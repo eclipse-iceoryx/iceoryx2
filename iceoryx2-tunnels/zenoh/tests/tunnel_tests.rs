@@ -122,6 +122,95 @@ mod zenoh_tunnel {
     }
 
     #[test]
+    fn propagates_struct_from_local_publishers_to_remote_hosts<S: Service>() {
+        #[derive(Debug, Clone, PartialEq, ZeroCopySend)]
+        #[repr(C)]
+        struct MyType {
+            id: u32,
+            value: f64,
+            active: bool,
+        }
+
+        // === SETUP ===
+
+        // [[ COMMON ]]
+        let iox_service_name = mock_service_name();
+
+        // [[ HOST A ]]
+        // Tunnel
+        let iox_config_a = generate_isolated_config();
+        let mut tunnel_a = Tunnel::<S>::new(&iox_config_a);
+        tunnel_a.initialize();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+
+        // Publisher
+        let iox_node_a = NodeBuilder::new()
+            .config(&iox_config_a)
+            .create::<S>()
+            .unwrap();
+        let iox_service_a = iox_node_a
+            .service_builder(&iox_service_name)
+            .publish_subscribe::<MyType>()
+            .open_or_create()
+            .unwrap();
+        let iox_publisher_a = iox_service_a.publisher_builder().create().unwrap();
+
+        // [[ HOST B ]]
+        // Tunnel
+        let iox_config_b = generate_isolated_config();
+        let mut tunnel_b = Tunnel::<S>::new(&iox_config_b);
+        tunnel_b.initialize();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+
+        // Subscriber
+        let iox_node_b = NodeBuilder::new()
+            .config(&iox_config_b)
+            .create::<S>()
+            .unwrap();
+        let iox_service_b = iox_node_b
+            .service_builder(&iox_service_name)
+            .publish_subscribe::<MyType>()
+            .open_or_create()
+            .unwrap();
+        let iox_subscriber_b = iox_service_b.subscriber_builder().create().unwrap();
+
+        // [[ BOTH ]]
+        // Discover Services
+        tunnel_a.discover();
+        let tunneled_services_a = tunnel_a.tunneled_services();
+        assert_that!(tunneled_services_a.len(), eq 1);
+
+        tunnel_b.discover();
+        let tunneled_services_b = tunnel_b.tunneled_services();
+        assert_that!(tunneled_services_b.len(), eq 1);
+
+        // === TEST ===
+
+        // Publish at Host A
+        let iox_payload_local = MyType {
+            id: 42,
+            value: 3.14,
+            active: true,
+        };
+
+        let iox_sample = iox_publisher_a.loan_uninit().unwrap();
+        let iox_sample = iox_sample.write_payload(iox_payload_local.clone());
+        iox_sample.send().unwrap();
+
+        // Propagate over Tunnels
+        tunnel_a.propagate();
+        tunnel_b.propagate();
+
+        // Receive at Host B
+        let sample = iox_subscriber_b.receive().unwrap();
+        assert_that!(sample, is_some);
+
+        let sample = sample.unwrap();
+        let iox_payload_remote = sample.payload();
+        assert_that!(iox_payload_remote, eq & iox_payload_local);
+    }
+
+    #[test]
     fn propagates_data_from_local_publishers_to_remote_hosts<S: Service>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
@@ -306,7 +395,7 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn responds_to_zenoh_query_for_details_of_local_services<S: Service>() {
+    fn responds_to_zenoh_query_for_service_details<S: Service>() {
         let iox_config = generate_isolated_config();
 
         // create tunnel
