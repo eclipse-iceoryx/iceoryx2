@@ -26,6 +26,7 @@ use iceoryx2::service::ipc::Service as IceoryxService;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
 use iceoryx2::service::service_id::ServiceId as IceoryxServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
+use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_log::info;
 use iceoryx2_services_discovery::service_discovery::Tracker as IceoryxServiceTracker;
 
@@ -55,20 +56,20 @@ struct BidirectionalRelay<'a> {
 
 impl<'a> BidirectionalRelay<'a> {
     pub fn new(
-        iox_service_details: &ServiceDetails<ipc::Service>,
+        iox_service_config: &StaticConfig,
         iox_node: &IceoryxNode<ipc::Service>,
         z_session: &ZenohSession,
     ) -> Self {
-        let iox_service = iox_create_service(iox_node, iox_service_details);
+        let iox_service = iox_create_service(iox_node, iox_service_config);
 
         // Create Outbound Stream
-        let iox_subscriber = iox_create_subscriber(&iox_service, iox_service_details);
-        let z_publisher = zenoh_create_publisher(z_session, iox_service_details);
+        let iox_subscriber = iox_create_subscriber(&iox_service, iox_service_config);
+        let z_publisher = z_create_publisher(z_session, iox_service_config);
         let outbound_stream = OutboundStream::new(iox_subscriber, z_publisher);
 
         // Create Inbound Stream
-        let iox_publisher = iox_create_publisher(&iox_service, iox_service_details);
-        let z_subscriber = zenoh_create_subscriber(z_session, iox_service_details);
+        let iox_publisher = iox_create_publisher(&iox_service, iox_service_config);
+        let z_subscriber = z_create_subscriber(z_session, iox_service_config);
         let inbound_stream = InboundStream::new(iox_publisher, z_subscriber);
 
         Self {
@@ -120,6 +121,7 @@ impl<'a> Tunnel<'a> {
 
     pub fn discover(&mut self) {
         self.iox_discovery();
+        self.z_discovery();
     }
 
     pub fn propagate(&self) {
@@ -164,10 +166,12 @@ impl<'a> Tunnel<'a> {
             if let MessagingPattern::PublishSubscribe(_) =
                 iox_service_details.static_details.messaging_pattern()
             {
+                let iox_service_config = &iox_service_details.static_details;
+
                 info!(
                     "DISCOVERED (iceoryx2): {} [{}]",
-                    iox_service_details.static_details.service_id().as_str(),
-                    iox_service_details.static_details.name()
+                    iox_service_config.service_id().as_str(),
+                    iox_service_config.name()
                 );
 
                 if !self.relays.contains_key(&iox_service_id) {
@@ -175,15 +179,34 @@ impl<'a> Tunnel<'a> {
                     self.relays.insert(
                         iox_service_id.clone(),
                         BidirectionalRelay::new(
-                            &iox_service_details,
+                            &iox_service_config,
                             &self.iox_node,
                             &self.z_session,
                         ),
                     );
 
                     // Announce Service to Zenoh
-                    zenoh_announce_service(&self.z_session, iox_service_details);
+                    z_announce_service(&self.z_session, &iox_service_details.static_details);
                 }
+            }
+        }
+    }
+
+    fn z_discovery(&mut self) {
+        let iox_service_configs = z_query_services(&self.z_session);
+        for iox_service_config in iox_service_configs {
+            info!(
+                "DISCOVERED (zenoh): {} [{}]",
+                iox_service_config.service_id().as_str(),
+                iox_service_config.name()
+            );
+
+            let iox_service_id = iox_service_config.service_id();
+            if !self.relays.contains_key(&iox_service_id) {
+                self.relays.insert(
+                    iox_service_id.clone(),
+                    BidirectionalRelay::new(&iox_service_config, &self.iox_node, &self.z_session),
+                );
             }
         }
     }
@@ -191,23 +214,21 @@ impl<'a> Tunnel<'a> {
 
 fn iox_create_service(
     iox_node: &IceoryxNode<ipc::Service>,
-    iox_service_details: &ServiceDetails<ipc::Service>,
+    iox_service_config: &StaticConfig,
 ) -> PortFactory<IceoryxService, [CustomPayloadMarker], CustomHeaderMarker> {
     let iox_service = unsafe {
         iox_node
-            .service_builder(iox_service_details.static_details.name())
+            .service_builder(iox_service_config.name())
             .publish_subscribe::<[CustomPayloadMarker]>()
             .user_header::<CustomHeaderMarker>()
             .__internal_set_user_header_type_details(
-                &iox_service_details
-                    .static_details
+                &iox_service_config
                     .publish_subscribe()
                     .message_type_details()
                     .user_header,
             )
             .__internal_set_payload_type_details(
-                &iox_service_details
-                    .static_details
+                &iox_service_config
                     .publish_subscribe()
                     .message_type_details()
                     .payload,
@@ -221,7 +242,7 @@ fn iox_create_service(
 
 fn iox_create_publisher(
     iox_service: &PortFactory<IceoryxService, [CustomPayloadMarker], CustomHeaderMarker>,
-    iox_service_details: &ServiceDetails<ipc::Service>,
+    iox_service_config: &StaticConfig,
 ) -> IceoryxPublisher<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker> {
     let iox_publisher = iox_service
         .publisher_builder()
@@ -230,8 +251,8 @@ fn iox_create_publisher(
         .unwrap();
     info!(
         "NEW PUBLISHER (iceoryx2): {} [{}]",
-        iox_service_details.static_details.service_id().as_str(),
-        iox_service_details.static_details.name()
+        iox_service_config.service_id().as_str(),
+        iox_service_config.name()
     );
 
     iox_publisher
@@ -252,13 +273,13 @@ fn iox_create_publisher(
 /// An iceoryx2 subscriber configured with custom payload and header markers
 fn iox_create_subscriber(
     iox_service: &PortFactory<IceoryxService, [CustomPayloadMarker], CustomHeaderMarker>,
-    iox_service_details: &ServiceDetails<ipc::Service>,
+    iox_service_config: &StaticConfig,
 ) -> IceoryxSubscriber<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker> {
     let iox_subscriber = iox_service.subscriber_builder().create().unwrap();
     info!(
         "NEW SUBSCRIBER (iceoryx2): {} [{}]",
-        iox_service_details.static_details.service_id().as_str(),
-        iox_service_details.static_details.name()
+        iox_service_config.service_id().as_str(),
+        iox_service_config.name()
     );
 
     iox_subscriber
@@ -277,22 +298,22 @@ fn iox_create_subscriber(
 /// # Returns
 ///
 /// A Zenoh publisher that can be used to publish data to the Zenoh network
-fn zenoh_create_publisher<'a>(
+fn z_create_publisher<'a>(
     z_session: &ZenohSession,
-    iox_service_details: &ServiceDetails<ipc::Service>,
+    iox_service_config: &StaticConfig,
 ) -> ZenohPublisher<'a> {
-    let z_key = keys::data_stream(iox_service_details.static_details.service_id());
+    let z_key = keys::data_stream(iox_service_config.service_id());
     info!("NEW PUBLISHER (zenoh): {}", z_key.clone());
     let z_publisher = z_session.declare_publisher(z_key).wait().unwrap();
 
     z_publisher
 }
 
-fn zenoh_create_subscriber(
+fn z_create_subscriber(
     z_session: &ZenohSession,
-    iox_service_details: &ServiceDetails<ipc::Service>,
+    iox_service_config: &StaticConfig,
 ) -> ZenohSubscriber<FifoChannelHandler<Sample>> {
-    let z_key = keys::data_stream(iox_service_details.static_details.service_id());
+    let z_key = keys::data_stream(iox_service_config.service_id());
     let z_subscriber = z_session
         .declare_subscriber(z_key)
         .with(FifoChannel::new(10))
@@ -313,13 +334,9 @@ fn zenoh_create_subscriber(
 ///
 /// * `z_session` - The Zenoh session used to declare the queryable
 /// * `iox_service_details` - The iceoryx2 service details to be announced
-fn zenoh_announce_service(
-    z_session: &ZenohSession,
-    iox_service_details: &ServiceDetails<ipc::Service>,
-) {
-    let z_key = keys::service(iox_service_details.static_details.service_id());
-    let iox_static_details_json =
-        serde_json::to_string(&iox_service_details.static_details).unwrap();
+fn z_announce_service(z_session: &ZenohSession, iox_service_config: &StaticConfig) {
+    let z_key = keys::service(iox_service_config.service_id());
+    let iox_static_details_json = serde_json::to_string(&iox_service_config).unwrap();
     z_session
         .declare_queryable(z_key.clone())
         .callback(move |query| {
@@ -333,4 +350,36 @@ fn zenoh_announce_service(
         .unwrap();
 
     info!("ANNOUNCING (zenoh): {}", z_key);
+}
+
+fn z_query_services(z_session: &ZenohSession) -> Vec<StaticConfig> {
+    let mut iox_remote_static_details = Vec::new();
+
+    let replies = z_session
+        .get(keys::all_services())
+        .allowed_destination(Locality::Remote)
+        .wait()
+        .unwrap();
+
+    while let Ok(reply) = replies.try_recv() {
+        match reply {
+            // Case: Reply contains a sample (actual data from a service)
+            Some(sample) => match sample.result() {
+                // Case: Sample contains valid data that can be processed
+                Ok(sample) => {
+                    let iox_static_details: StaticConfig =
+                        serde_json::from_slice(&sample.payload().to_bytes()).unwrap();
+                    iox_remote_static_details.push(iox_static_details.clone());
+                }
+                // Case: Sample contains an error (e.g., malformed data)
+                Err(e) => {
+                    info!("Error in sample: {}", e);
+                }
+            },
+            // Case: Reply exists but contains no sample (empty response)
+            None => { /* Nothing to do */ }
+        }
+    }
+
+    iox_remote_static_details
 }
