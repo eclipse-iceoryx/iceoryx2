@@ -23,7 +23,7 @@ mod zenoh_tunnel {
     use iceoryx2_tunnels_zenoh::*;
     use zenoh::Wait;
 
-    fn generate_name() -> ServiceName {
+    fn mock_service_name() -> ServiceName {
         ServiceName::new(&format!(
             "test_tunnel_zenoh_{}",
             UniqueSystemId::new().unwrap().value()
@@ -35,16 +35,16 @@ mod zenoh_tunnel {
     fn discovers_local_services() {
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut sut = Tunnel::new(iox_config.clone());
-        sut.initialize();
-        assert_that!(sut.tunneled_services().len(), eq 0);
+        let mut tunnel = Tunnel::new(iox_config.clone());
+        tunnel.initialize();
+        assert_that!(tunnel.tunneled_services().len(), eq 0);
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
             .create::<ipc::Service>()
             .unwrap();
-        let iox_service_name = generate_name();
+        let iox_service_name = mock_service_name();
         let iox_service = iox_node
             .service_builder(&iox_service_name)
             .publish_subscribe::<[u8]>()
@@ -54,17 +54,70 @@ mod zenoh_tunnel {
             .unwrap();
 
         // discover iceoryx2 service
-        sut.discover();
+        tunnel.discover();
 
         // verify stream is set up for the created service
-        assert_that!(sut.tunneled_services().len(), eq 1);
-        assert_that!(sut
+        assert_that!(tunnel.tunneled_services().len(), eq 1);
+        assert_that!(tunnel
             .tunneled_services()
             .contains(&String::from(iox_service.service_id().as_str())), eq true);
     }
 
     #[test]
-    fn discovers_remote_services() {}
+    fn discovers_remote_services() {
+        // create tunnel on host a
+        let iox_config_a = generate_isolated_config();
+        let mut tunnel_a = Tunnel::new(iox_config_a.clone());
+        tunnel_a.initialize();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+
+        // create tunnel on host b
+        let iox_config_b = generate_isolated_config();
+        let mut tunnel_b = Tunnel::new(iox_config_b.clone());
+        tunnel_b.initialize();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+
+        // create an iceoryx2 service on host b
+        let iox_node_b = NodeBuilder::new()
+            .config(&iox_config_b)
+            .create::<ipc::Service>()
+            .unwrap();
+        let iox_service_name_b = mock_service_name();
+        let _iox_service_b = iox_node_b
+            .service_builder(&iox_service_name_b)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // run discovery in tunnel a
+        //  the service on host b should not be discovered
+        tunnel_a.discover();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+
+        // run discovery in tunnel b
+        //  the service on host b should be discovered and announced
+        //  by tunnel b
+        tunnel_b.discover();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 1);
+
+        // run discovery in tunnel a
+        //  the service on host b should now be discovered on host a
+        let mut success = false;
+        for _ in 0..3 {
+            tunnel_a.discover();
+            if tunnel_a.tunneled_services().len() == 1 {
+                success = true;
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(500));
+        }
+
+        if !success {
+            test_fail!("failed to discover remote service after 3 attempts");
+        }
+    }
 
     #[test]
     fn propagates_data_from_local_publishers_to_remote_hosts() {
@@ -72,15 +125,15 @@ mod zenoh_tunnel {
 
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut sut = Tunnel::new(iox_config.clone());
-        sut.initialize();
+        let mut tunnel = Tunnel::new(iox_config.clone());
+        tunnel.initialize();
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
             .create::<ipc::Service>()
             .unwrap();
-        let iox_service_name = generate_name();
+        let iox_service_name = mock_service_name();
         let iox_service = iox_node
             .service_builder(&iox_service_name)
             .publish_subscribe::<[u8]>()
@@ -90,7 +143,7 @@ mod zenoh_tunnel {
             .unwrap();
 
         // discover iceoryx2 service
-        sut.discover();
+        tunnel.discover();
 
         // create iceoryx2 publisher
         let iox_publisher = iox_service
@@ -113,7 +166,7 @@ mod zenoh_tunnel {
         sample.send().unwrap();
 
         // propagate over tunnel
-        sut.propagate();
+        tunnel.propagate();
 
         // receive data on zenoh subscriber
         if let Ok(Some(z_sample)) = z_subscriber.recv_timeout(Duration::from_millis(500)) {
@@ -130,15 +183,15 @@ mod zenoh_tunnel {
 
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut sut = Tunnel::new(iox_config.clone());
-        sut.initialize();
+        let mut tunnel = Tunnel::new(iox_config.clone());
+        tunnel.initialize();
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
             .create::<ipc::Service>()
             .unwrap();
-        let iox_service_name = generate_name();
+        let iox_service_name = mock_service_name();
         let iox_service = iox_node
             .service_builder(&iox_service_name)
             .publish_subscribe::<[u8]>()
@@ -148,7 +201,7 @@ mod zenoh_tunnel {
             .unwrap();
 
         // discover iceoryx2 service
-        sut.discover();
+        tunnel.discover();
 
         // create iceoryx2 publisher
         let iox_publisher = iox_service
@@ -169,7 +222,7 @@ mod zenoh_tunnel {
         while let Ok(Some(_)) = iox_subscriber.receive() {}
 
         // propagate over tunnel
-        sut.propagate();
+        tunnel.propagate();
 
         // ensure no loopback to iceoryx subscribe
         // -> detectedable by empty subscriber queue
@@ -184,15 +237,15 @@ mod zenoh_tunnel {
 
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut sut = Tunnel::new(iox_config.clone());
-        sut.initialize();
+        let mut tunnel = Tunnel::new(iox_config.clone());
+        tunnel.initialize();
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
             .create::<ipc::Service>()
             .unwrap();
-        let iox_service_name = generate_name();
+        let iox_service_name = mock_service_name();
         let iox_service = iox_node
             .service_builder(&iox_service_name)
             .publish_subscribe::<[u8]>()
@@ -202,7 +255,7 @@ mod zenoh_tunnel {
             .unwrap();
 
         // discover iceoryx2 service
-        sut.discover();
+        tunnel.discover();
 
         // create iceoryx2 subscriber
         let iox_subscriber = iox_service.subscriber_builder().create().unwrap();
@@ -220,7 +273,7 @@ mod zenoh_tunnel {
         std::thread::sleep(Duration::from_millis(500)); // wait for zenoh background thread ...
 
         // propagate over tunnel
-        sut.propagate();
+        tunnel.propagate();
 
         // verify data received at iceoryx subscriber
         let sample = iox_subscriber.receive().unwrap();
@@ -242,15 +295,15 @@ mod zenoh_tunnel {
         let iox_config = generate_isolated_config();
 
         // create tunnel
-        let mut sut = Tunnel::new(iox_config.clone());
-        sut.initialize();
+        let mut tunnel = Tunnel::new(iox_config.clone());
+        tunnel.initialize();
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
             .create::<ipc::Service>()
             .unwrap();
-        let iox_service_name = generate_name();
+        let iox_service_name = mock_service_name();
         let iox_service = iox_node
             .service_builder(&iox_service_name)
             .publish_subscribe::<[u8]>()
@@ -260,7 +313,7 @@ mod zenoh_tunnel {
             .unwrap();
 
         // discover iceoryx2 service
-        sut.discover();
+        tunnel.discover();
 
         // verify static config is retrievable from zenoh
         let z_config = zenoh::config::Config::default();
@@ -272,11 +325,11 @@ mod zenoh_tunnel {
         match z_reply.recv_timeout(Duration::from_millis(500)) {
             Ok(Some(reply)) => match reply.result() {
                 Ok(sample) => {
-                    let z_static_details: StaticConfig =
+                    let iox_static_details: StaticConfig =
                         serde_json::from_slice(&sample.payload().to_bytes()).unwrap();
-                    assert_that!(z_static_details.service_id(), eq iox_service.service_id());
-                    assert_that!(z_static_details.name(), eq & iox_service_name);
-                    assert_that!(z_static_details.publish_subscribe(), eq iox_service.static_config());
+                    assert_that!(iox_static_details.service_id(), eq iox_service.service_id());
+                    assert_that!(iox_static_details.name(), eq & iox_service_name);
+                    assert_that!(iox_static_details.publish_subscribe(), eq iox_service.static_config());
                 }
                 Err(e) => test_fail!("error reading reply to type details query: {}", e),
             },

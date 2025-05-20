@@ -19,3 +19,7 @@ pub fn data_stream(service_id: &ServiceId) -> String {
 pub fn service(service_id: &ServiceId) -> String {
     format!("iox2/services/{}", service_id.as_str())
 }
+
+pub fn all_services() -> String {
+    "iox2/services/*".into()
+}

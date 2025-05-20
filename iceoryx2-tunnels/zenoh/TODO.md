@@ -5,6 +5,7 @@
     1. [ ] Configure: Peers
     1. [ ] Configure: External service discovery service
     1. [ ] Configure: Execution mode
+    1. [ ] Configure: Static discovery
 1. [ ] Polling Execution
     1. [x] Discover local `iceoryx2` services
     1. [x] Make local `iceoryx2` services discoverable from `zenoh`
@@ -18,7 +19,10 @@
     1. [ ] Attach zenoh subscribers to (external) `WaitSet`
 1. [ ] Testing
     1. [x] Unit testing infrastructure
-    1. [x] Unit Test: `[u8]` Payload
-    1. [ ] Unit Test: `struct` Payload
+    1. [x] Unit Test: Discover local services
+    1. [ ] Unit Test: Discover remote services
+    1. [x] Unit Test: Propagate `[u8]` Payload
+    1. [ ] Unit Test: Propagate `struct` Payload
     1. [ ] Host-to-host testing infrastructure
 1. [ ] Refactoring
+    1. [ ] Tunnel constructor should take config by reference
