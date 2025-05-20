@@ -21,7 +21,7 @@ use iceoryx2::prelude::*;
 use iceoryx2_bb_log::set_log_level_from_env_or;
 use iceoryx2_bb_log::LogLevel;
 
-use iceoryx2_tunnels_zenoh::ZenohTunnel;
+use iceoryx2_tunnels_zenoh::Tunnel;
 
 fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
@@ -54,7 +54,7 @@ fn main() -> Result<()> {
             Transport::Zenoh(_options) => {
                 const RATE_MS: u64 = 100;
 
-                let mut tunnel = ZenohTunnel::new(iceoryx2::config::Config::default());
+                let mut tunnel = Tunnel::<ipc::Service>::new(&iceoryx2::config::Config::default());
                 tunnel.initialize();
 
                 let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
