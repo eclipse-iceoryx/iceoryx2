@@ -37,7 +37,7 @@ mod zenoh_tunnel {
     fn discovers_local_services<S: Service>() {
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(&iox_config);
         tunnel.initialize();
         assert_that!(tunnel.tunneled_services().len(), eq 0);
 
@@ -69,13 +69,13 @@ mod zenoh_tunnel {
     fn discovers_remote_services<S: Service>() {
         // create tunnel on host a
         let iox_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S>::new(iox_config_a.clone());
+        let mut tunnel_a = Tunnel::<S>::new(&iox_config_a);
         tunnel_a.initialize();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // create tunnel on host b
         let iox_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S>::new(iox_config_b.clone());
+        let mut tunnel_b = Tunnel::<S>::new(&iox_config_b);
         tunnel_b.initialize();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
@@ -127,7 +127,7 @@ mod zenoh_tunnel {
 
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(&iox_config);
         tunnel.initialize();
 
         // create iceoryx2 service
@@ -185,7 +185,7 @@ mod zenoh_tunnel {
 
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(&iox_config);
         tunnel.initialize();
 
         // create iceoryx2 service
@@ -239,7 +239,7 @@ mod zenoh_tunnel {
 
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(&iox_config);
         tunnel.initialize();
 
         // create iceoryx2 service
@@ -257,6 +257,7 @@ mod zenoh_tunnel {
             .unwrap();
 
         // discover iceoryx2 service
+        //  service should be discovered
         tunnel.discover();
 
         // create iceoryx2 subscriber
@@ -297,7 +298,7 @@ mod zenoh_tunnel {
         let iox_config = generate_isolated_config();
 
         // create tunnel
-        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(&iox_config);
         tunnel.initialize();
 
         // create iceoryx2 service

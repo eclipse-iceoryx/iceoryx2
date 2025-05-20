@@ -92,7 +92,7 @@ pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
 }
 
 impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
-    pub fn new(iox_config: IceoryxConfig) -> Self {
+    pub fn new(iox_config: &IceoryxConfig) -> Self {
         let mut z_config = zenoh::config::Config::default();
         z_config.insert_json5("adminspace/enabled", "true").unwrap(); // this is mandatory
         let z_session = zenoh::open(z_config).wait().unwrap();
@@ -107,7 +107,7 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
 
         Self {
             z_session,
-            iox_config,
+            iox_config: iox_config.clone(),
             iox_node,
             iox_tracker,
             relays,
