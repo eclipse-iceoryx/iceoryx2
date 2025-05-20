@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#[generic_tests::define]
 mod zenoh_tunnel {
 
     use std::time::Duration;
@@ -21,6 +22,7 @@ mod zenoh_tunnel {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::test_fail;
     use iceoryx2_tunnels_zenoh::*;
+
     use zenoh::Wait;
 
     fn mock_service_name() -> ServiceName {
@@ -32,17 +34,17 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn discovers_local_services() {
+    fn discovers_local_services<S: Service>() {
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut tunnel = Tunnel::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
         tunnel.initialize();
         assert_that!(tunnel.tunneled_services().len(), eq 0);
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
-            .create::<ipc::Service>()
+            .create::<S>()
             .unwrap();
         let iox_service_name = mock_service_name();
         let iox_service = iox_node
@@ -64,23 +66,23 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn discovers_remote_services() {
+    fn discovers_remote_services<S: Service>() {
         // create tunnel on host a
         let iox_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::new(iox_config_a.clone());
+        let mut tunnel_a = Tunnel::<S>::new(iox_config_a.clone());
         tunnel_a.initialize();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // create tunnel on host b
         let iox_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::new(iox_config_b.clone());
+        let mut tunnel_b = Tunnel::<S>::new(iox_config_b.clone());
         tunnel_b.initialize();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // create an iceoryx2 service on host b
         let iox_node_b = NodeBuilder::new()
             .config(&iox_config_b)
-            .create::<ipc::Service>()
+            .create::<S>()
             .unwrap();
         let iox_service_name_b = mock_service_name();
         let _iox_service_b = iox_node_b
@@ -111,7 +113,7 @@ mod zenoh_tunnel {
                 success = true;
                 break;
             }
-            std::thread::sleep(Duration::from_millis(500));
+            std::thread::sleep(Duration::from_millis(100));
         }
 
         if !success {
@@ -120,18 +122,18 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn propagates_data_from_local_publishers_to_remote_hosts() {
+    fn propagates_data_from_local_publishers_to_remote_hosts<S: Service>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut tunnel = Tunnel::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
         tunnel.initialize();
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
-            .create::<ipc::Service>()
+            .create::<S>()
             .unwrap();
         let iox_service_name = mock_service_name();
         let iox_service = iox_node
@@ -169,7 +171,7 @@ mod zenoh_tunnel {
         tunnel.propagate();
 
         // receive data on zenoh subscriber
-        if let Ok(Some(z_sample)) = z_subscriber.recv_timeout(Duration::from_millis(500)) {
+        if let Ok(Some(z_sample)) = z_subscriber.recv_timeout(Duration::from_millis(100)) {
             let z_payload = z_sample.payload().try_to_string().unwrap();
             assert_that!(z_payload, eq PAYLOAD_DATA);
         } else {
@@ -178,18 +180,18 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn prevents_loopback_of_data_published_to_remote_hosts() {
+    fn prevents_loopback_of_data_published_to_remote_hosts<S: Service>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut tunnel = Tunnel::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
         tunnel.initialize();
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
-            .create::<ipc::Service>()
+            .create::<S>()
             .unwrap();
         let iox_service_name = mock_service_name();
         let iox_service = iox_node
@@ -232,18 +234,18 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn propagates_data_from_remote_hosts_to_local_subscribers() {
+    fn propagates_data_from_remote_hosts_to_local_subscribers<S: Service>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // create tunnel
         let iox_config = generate_isolated_config();
-        let mut tunnel = Tunnel::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
         tunnel.initialize();
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
-            .create::<ipc::Service>()
+            .create::<S>()
             .unwrap();
         let iox_service_name = mock_service_name();
         let iox_service = iox_node
@@ -291,17 +293,17 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn responds_to_zenoh_query_for_details_of_local_services() {
+    fn responds_to_zenoh_query_for_details_of_local_services<S: Service>() {
         let iox_config = generate_isolated_config();
 
         // create tunnel
-        let mut tunnel = Tunnel::new(iox_config.clone());
+        let mut tunnel = Tunnel::<S>::new(iox_config.clone());
         tunnel.initialize();
 
         // create iceoryx2 service
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
-            .create::<ipc::Service>()
+            .create::<S>()
             .unwrap();
         let iox_service_name = mock_service_name();
         let iox_service = iox_node
@@ -337,4 +339,10 @@ mod zenoh_tunnel {
             Err(e) => test_fail!("error querying message type details from zenoh: {}", e),
         }
     }
+
+    #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
+    mod ipc {}
+
+    #[instantiate_tests(<iceoryx2::service::local::Service>)]
+    mod local {}
 }

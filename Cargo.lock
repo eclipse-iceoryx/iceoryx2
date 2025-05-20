@@ -1574,6 +1574,7 @@ dependencies = [
 name = "iceoryx2-tunnels-zenoh"
 version = "0.6.1"
 dependencies = [
+ "generic-tests",
  "iceoryx2",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",

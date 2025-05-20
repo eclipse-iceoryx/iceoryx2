@@ -12,7 +12,6 @@
 
 use iceoryx2::port::publisher::Publisher as IceoryxPublisher;
 use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
-use iceoryx2::prelude::*;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 
@@ -27,12 +26,12 @@ pub trait DataStream {
     fn propagate(&self);
 }
 
-pub struct OutboundStream<'a> {
-    iox_subscriber: IceoryxSubscriber<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
+pub struct OutboundStream<'a, Service: iceoryx2::service::Service> {
+    iox_subscriber: IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     z_publisher: ZenohPublisher<'a>,
 }
 
-impl<'a> DataStream for OutboundStream<'a> {
+impl<'a, Service: iceoryx2::service::Service> DataStream for OutboundStream<'a, Service> {
     fn propagate(&self) {
         while let Ok(Some(sample)) = unsafe { self.iox_subscriber.receive_custom_payload() } {
             let ptr = sample.payload().as_ptr() as *const u8;
@@ -45,9 +44,9 @@ impl<'a> DataStream for OutboundStream<'a> {
     }
 }
 
-impl<'a> OutboundStream<'a> {
+impl<'a, Service: iceoryx2::service::Service> OutboundStream<'a, Service> {
     pub fn new(
-        iox_subscriber: IceoryxSubscriber<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
+        iox_subscriber: IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
         z_publisher: ZenohPublisher<'a>,
     ) -> Self {
         Self {
@@ -57,12 +56,12 @@ impl<'a> OutboundStream<'a> {
     }
 }
 
-pub struct InboundStream {
-    iox_publisher: IceoryxPublisher<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
+pub struct InboundStream<Service: iceoryx2::service::Service> {
+    iox_publisher: IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
 }
 
-impl DataStream for InboundStream {
+impl<Service: iceoryx2::service::Service> DataStream for InboundStream<Service> {
     fn propagate(&self) {
         while let Ok(Some(z_sample)) = self.z_subscriber.try_recv() {
             let z_payload = z_sample.payload();
@@ -85,9 +84,9 @@ impl DataStream for InboundStream {
     }
 }
 
-impl InboundStream {
+impl<Service: iceoryx2::service::Service> InboundStream<Service> {
     pub fn new(
-        iox_publisher: IceoryxPublisher<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
+        iox_publisher: IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
         z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
     ) -> Self {
         Self {
