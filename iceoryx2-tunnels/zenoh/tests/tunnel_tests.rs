@@ -19,8 +19,7 @@ mod zenoh_tunnel {
     use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-    use iceoryx2_bb_testing::assert_that;
-    use iceoryx2_bb_testing::test_fail;
+    use iceoryx2_bb_testing::{assert_that, test_fail};
     use iceoryx2_tunnels_zenoh::*;
 
     use zenoh::Wait;
@@ -137,8 +136,7 @@ mod zenoh_tunnel {
         }
     }
 
-    #[test]
-    fn propagates_struct_payload_between_isolated_instances<S: Service>() {
+    fn propagates_struct_payload_n_samples<S: Service>(sample_count: usize) {
         #[derive(Debug, Clone, PartialEq, ZeroCopySend)]
         #[repr(C)]
         struct MyType {
@@ -213,37 +211,76 @@ mod zenoh_tunnel {
 
         // ==================== TEST =====================
 
-        // [[ HOST A ]]
-        // Publish
-        let iox_payload_sent = MyType {
-            id: 42,
-            value: 3.14,
-            active: true,
-        };
+        for i in 0..sample_count {
+            // Publish
+            let payload_data = MyType {
+                id: 42 + i as u32,
+                value: 3.14 + i as f64,
+                active: i % 2 == 0,
+            };
 
-        let iox_sample_sent = iox_publisher_a.loan_uninit().unwrap();
-        let iox_sample_sent = iox_sample_sent.write_payload(iox_payload_sent.clone());
-        iox_sample_sent.send().unwrap();
+            let iox_sample_sent_a = iox_publisher_a.loan_uninit().unwrap();
+            let iox_sample_sent_a = iox_sample_sent_a.write_payload(payload_data.clone());
+            iox_sample_sent_a.send().unwrap();
 
-        // Propagate
-        tunnel_a.propagate();
+            // Propagate over tunnels
+            tunnel_a.propagate();
+            tunnel_b.propagate();
 
-        // [[ HOST B ]]
-        // Propagate
-        tunnel_b.propagate();
+            // Receive with retry
+            let mut success = false;
+            for retry in 0..3 {
+                match iox_subscriber_b.receive().unwrap() {
+                    Some(iox_sample_received_b) => {
+                        let iox_payload_received_b = iox_sample_received_b.payload();
 
-        // Receive
-        let iox_sample_received = iox_subscriber_b.receive().unwrap();
-        assert_that!(iox_sample_received, is_some);
+                        // Check if we received the expected sample for this iteration
+                        if *iox_payload_received_b == payload_data {
+                            success = true;
+                            break;
+                        } else {
+                            test_fail!(
+                                "received unexpected sample; expected: {:?}, got: {:?}",
+                                payload_data,
+                                iox_payload_received_b
+                            );
+                        }
+                    }
+                    None => {
+                        // If no sample received, wait a bit and retry
+                        // Don't sleep after last attempt
+                        if retry < 2 {
+                            std::thread::sleep(Duration::from_millis(100));
+                            tunnel_a.propagate();
+                            tunnel_b.propagate();
+                        }
+                    }
+                }
+            }
 
-        let iox_sample_received = iox_sample_received.unwrap();
-        let iox_payload_received = iox_sample_received.payload();
-        assert_that!(iox_payload_received, eq & iox_payload_sent);
+            if !success {
+                test_fail!("failed to receive expected sample {} after 3 attempts", i);
+            }
+        }
     }
 
     #[test]
-    fn propagates_slice_payload_between_isolated_instances<S: Service>() {
-        const PAYLOAD_DATA: &str = "WhenItRegisters";
+    fn propagates_struct_payload_single_sample<S: Service>() {
+        propagates_struct_payload_n_samples::<S>(1);
+    }
+
+    #[test]
+    fn propagates_struct_payload_two_samples<S: Service>() {
+        propagates_struct_payload_n_samples::<S>(2);
+    }
+
+    #[test]
+    fn propagates_struct_payload_ten_samples<S: Service>() {
+        propagates_struct_payload_n_samples::<S>(10);
+    }
+
+    fn propagates_slice_payload_n_samples<S: Service>(sample_count: usize) {
+        const PAYLOAD_DATA_LENGTH: usize = 256;
 
         // ==================== SETUP ====================
 
@@ -255,6 +292,7 @@ mod zenoh_tunnel {
         let iox_config_a = generate_isolated_config();
         let mut tunnel_a = Tunnel::<S>::new(&iox_config_a);
         tunnel_a.initialize();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // Service
         let iox_node_a = NodeBuilder::new()
@@ -270,7 +308,7 @@ mod zenoh_tunnel {
         // Publisher
         let iox_publisher_a = iox_service_a
             .publisher_builder()
-            .initial_max_slice_len(PAYLOAD_DATA.len())
+            .initial_max_slice_len(PAYLOAD_DATA_LENGTH)
             .create()
             .unwrap();
 
@@ -279,6 +317,7 @@ mod zenoh_tunnel {
         let iox_config_b = generate_isolated_config();
         let mut tunnel_b = Tunnel::<S>::new(&iox_config_b);
         tunnel_b.initialize();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
         let iox_node_b = NodeBuilder::new()
@@ -313,28 +352,75 @@ mod zenoh_tunnel {
 
         // ==================== TEST =====================
 
-        // [[ HOST A ]]
-        // Publish
-        let iox_sample_sent = iox_publisher_a
-            .loan_slice_uninit(PAYLOAD_DATA.len())
-            .unwrap();
-        let iox_sample_sent = iox_sample_sent.write_from_slice(PAYLOAD_DATA.as_bytes());
-        iox_sample_sent.send().unwrap();
+        for i in 0..sample_count {
+            // Publish
+            let mut payload_data = String::with_capacity(PAYLOAD_DATA_LENGTH);
+            for j in 0..PAYLOAD_DATA_LENGTH {
+                let char_index = ((i * 7 + j * 13) % 26) as u8;
+                let char_value = (b'A' + char_index) as char;
+                payload_data.push(char_value);
+            }
 
-        // Propagate
-        tunnel_a.propagate();
+            let iox_sample_sent_a = iox_publisher_a
+                .loan_slice_uninit(PAYLOAD_DATA_LENGTH)
+                .unwrap();
+            let iox_sample_sent_a = iox_sample_sent_a.write_from_slice(payload_data.as_bytes());
+            iox_sample_sent_a.send().unwrap();
 
-        // [[ HOST B ]]
-        // Propagate
-        tunnel_b.propagate();
+            // Propagate
+            tunnel_a.propagate();
+            tunnel_b.propagate();
 
-        // Receive
-        let iox_sample_received = iox_subscriber_b.receive().unwrap();
-        assert_that!(iox_sample_received, is_some);
+            // Receive with retry
+            let mut success = false;
+            for retry in 0..3 {
+                match iox_subscriber_b.receive().unwrap() {
+                    Some(iox_sample_received_b) => {
+                        let iox_payload_received_b = iox_sample_received_b.payload();
 
-        let iox_sample_received = iox_sample_received.unwrap();
-        let iox_payload_received = iox_sample_received.payload();
-        assert_that!(iox_payload_received, eq PAYLOAD_DATA.as_bytes());
+                        // Check if we received the expected sample for this iteration
+                        if *iox_payload_received_b == *payload_data.as_bytes() {
+                            success = true;
+                            break;
+                        } else {
+                            test_fail!(
+                                "received unexpected sample; expected: {:?}, got: {:?}",
+                                payload_data,
+                                iox_payload_received_b
+                            );
+                        }
+                    }
+                    None => {
+                        // If no sample received, wait a bit and retry
+                        // Don't sleep after last attempt
+                        if retry < 2 {
+                            std::thread::sleep(Duration::from_millis(100));
+                            tunnel_a.propagate();
+                            tunnel_b.propagate();
+                        }
+                    }
+                }
+            }
+
+            if !success {
+                test_fail!("failed to receive expected sample {} after 3 attempts", i);
+            }
+        }
+    }
+
+    #[test]
+    fn propagates_slice_payload_single_sample<S: Service>() {
+        propagates_slice_payload_n_samples::<S>(1);
+    }
+
+    #[test]
+    fn propagates_slice_payload_two_samples<S: Service>() {
+        propagates_slice_payload_n_samples::<S>(2);
+    }
+
+    #[test]
+    fn propagates_slice_payload_ten_samples<S: Service>() {
+        propagates_slice_payload_n_samples::<S>(10);
     }
 
     #[test]

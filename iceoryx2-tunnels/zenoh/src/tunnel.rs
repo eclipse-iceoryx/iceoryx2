@@ -62,9 +62,10 @@ impl<'a, Service: iceoryx2::service::Service> BidirectionalRelay<'a, Service> {
         let iox_service = iox_create_service::<Service>(iox_node, iox_service_config);
 
         // Create Outbound Stream
+        let iox_node_id = iox_node.id();
         let iox_subscriber = iox_create_subscriber::<Service>(&iox_service, iox_service_config);
         let z_publisher = z_create_publisher(z_session, iox_service_config);
-        let outbound_stream = OutboundStream::new(iox_subscriber, z_publisher);
+        let outbound_stream = OutboundStream::new(iox_node_id, iox_subscriber, z_publisher);
 
         // Create Inbound Stream
         let iox_publisher = iox_create_publisher::<Service>(&iox_service, iox_service_config);
@@ -374,7 +375,14 @@ fn z_query_services(z_session: &ZenohSession) -> Vec<StaticConfig> {
                 Ok(sample) => {
                     let iox_static_details: StaticConfig =
                         serde_json::from_slice(&sample.payload().to_bytes()).unwrap();
-                    iox_remote_static_details.push(iox_static_details.clone());
+                    if !iox_remote_static_details
+                        .iter()
+                        .any(|details: &StaticConfig| {
+                            details.service_id() == iox_static_details.service_id()
+                        })
+                    {
+                        iox_remote_static_details.push(iox_static_details.clone());
+                    }
                 }
                 // Case: Sample contains an error (e.g., malformed data)
                 Err(e) => {
