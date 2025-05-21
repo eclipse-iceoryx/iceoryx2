@@ -67,7 +67,7 @@ impl<Service: iceoryx2::service::Service> DataStream for InboundStream<Service> 
     fn propagate(&self) {
         while let Ok(Some(z_sample)) = self.z_subscriber.try_recv() {
             let iox_payload_size = self.iox_message_type_details.payload.size;
-            let iox_payload_alignment = self.iox_message_type_details.payload.alignment;
+            let _iox_payload_alignment = self.iox_message_type_details.payload.alignment;
 
             // TODO: verify size and alignment
             let z_payload = z_sample.payload();
