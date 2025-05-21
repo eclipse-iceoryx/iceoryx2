@@ -10,12 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::node::NodeId;
 use iceoryx2::port::publisher::Publisher as IceoryxPublisher;
 use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
-
 use iceoryx2::service::static_config::message_type_details::MessageTypeDetails;
+
 use zenoh::bytes::ZBytes;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher as ZenohPublisher;
@@ -28,6 +29,7 @@ pub trait DataStream {
 }
 
 pub struct OutboundStream<'a, Service: iceoryx2::service::Service> {
+    iox_node_id: NodeId,
     iox_subscriber: IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     z_publisher: ZenohPublisher<'a>,
 }
@@ -35,6 +37,11 @@ pub struct OutboundStream<'a, Service: iceoryx2::service::Service> {
 impl<'a, Service: iceoryx2::service::Service> DataStream for OutboundStream<'a, Service> {
     fn propagate(&self) {
         while let Ok(Some(sample)) = unsafe { self.iox_subscriber.receive_custom_payload() } {
+            if sample.header().node_id() == self.iox_node_id {
+                // Ignore samples published by the gateway itself to prevent loopback.
+                continue;
+            }
+
             let ptr = sample.payload().as_ptr() as *const u8;
             let len = sample.len();
             let bytes = unsafe { core::slice::from_raw_parts(ptr, len) };
@@ -47,10 +54,12 @@ impl<'a, Service: iceoryx2::service::Service> DataStream for OutboundStream<'a, 
 
 impl<'a, Service: iceoryx2::service::Service> OutboundStream<'a, Service> {
     pub fn new(
+        iox_node_id: &NodeId,
         iox_subscriber: IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
         z_publisher: ZenohPublisher<'a>,
     ) -> Self {
         Self {
+            iox_node_id: iox_node_id.clone(),
             iox_subscriber,
             z_publisher,
         }
