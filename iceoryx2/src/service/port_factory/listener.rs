@@ -42,6 +42,8 @@ pub struct PortFactoryListener<'factory, Service: service::Service> {
     pub(crate) factory: &'factory PortFactory<Service>,
 }
 
+unsafe impl<Service: service::Service> Send for PortFactoryListener<'_, Service> {}
+
 impl<Service: service::Service> PortFactoryListener<'_, Service> {
     /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
     pub fn create(self) -> Result<Listener<Service>, ListenerCreateError> {

@@ -63,6 +63,14 @@ pub struct PortFactorySubscriber<
     pub(crate) factory: &'factory PortFactory<Service, PayloadType, UserHeader>,
 }
 
+unsafe impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Send for PortFactorySubscriber<'_, Service, Payload, UserHeader>
+{
+}
+
 impl<
         'factory,
         Service: service::Service,

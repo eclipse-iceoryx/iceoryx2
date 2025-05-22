@@ -92,6 +92,24 @@ pub struct PortFactoryClient<
     >,
 }
 
+unsafe impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send
+    for PortFactoryClient<
+        '_,
+        Service,
+        RequestPayload,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+}
+
 impl<
         'factory,
         Service: service::Service,

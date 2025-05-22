@@ -96,6 +96,24 @@ pub struct PortFactoryServer<
     pub(crate) response_degradation_callback: Option<DegradationCallback<'static>>,
 }
 
+unsafe impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send
+    for PortFactoryServer<
+        '_,
+        Service,
+        RequestPayload,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    >
+{
+}
+
 impl<
         'factory,
         Service: service::Service,
