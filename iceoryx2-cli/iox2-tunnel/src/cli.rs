@@ -29,6 +29,31 @@ use iceoryx2_cli::HelpOptions;
 pub struct Cli {
     #[clap(subcommand)]
     pub transport: Option<Transport>,
+
+    #[clap(
+        long,
+        short = 'd',
+        global = true,
+        help = "Optionally provide the name of a service providing discovery updates to connect to"
+    )]
+    pub discovery_service: Option<String>,
+
+    #[clap(
+        long,
+        help = "Periodically poll for discovery updates and samples at the provided rate (in milliseconds) [default]",
+        value_name = "RATE",
+        global = true,
+        conflicts_with = "reactive"
+    )]
+    pub poll: Option<u64>,
+
+    #[clap(
+        long,
+        help = "Reactively process discovery updates and samples",
+        global = true,
+        conflicts_with = "poll"
+    )]
+    pub reactive: bool,
 }
 
 #[derive(Parser)]
