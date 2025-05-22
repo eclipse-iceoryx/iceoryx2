@@ -20,7 +20,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Fix segmentation fault in event multiplexing C example
+    [#766](https://github.com/eclipse-iceoryx/iceoryx2/issues/766)
 
 ### Refactoring
 
