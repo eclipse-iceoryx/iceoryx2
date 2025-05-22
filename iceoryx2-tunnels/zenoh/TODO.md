@@ -2,9 +2,10 @@
 
 1. [ ] Configuration
     1. [ ] Infratructure
+    1. [ ] Configure via file
     1. [ ] Configure: Peers
     1. [ ] Configure: External service discovery service
-    1. [ ] Configure: Execution mode
+    1. [x] Configure: Execution mode
     1. [ ] Configure: Static discovery
 1. [ ] Polling Execution
     1. [x] Discover local `iceoryx2` services

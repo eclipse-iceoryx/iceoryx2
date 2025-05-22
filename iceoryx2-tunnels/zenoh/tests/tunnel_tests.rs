@@ -42,7 +42,8 @@ mod zenoh_tunnel {
         // [[ HOST A ]]
         // Tunnel
         let iox_config = generate_isolated_config();
-        let mut tunnel = Tunnel::<S>::new(&iox_config);
+        let tunnel_config = TunnelConfig::default();
+        let mut tunnel = Tunnel::<S>::new(&tunnel_config, &iox_config);
         tunnel.initialize();
         assert_that!(tunnel.tunneled_services().len(), eq 0);
 
@@ -80,14 +81,16 @@ mod zenoh_tunnel {
         // [[ HOST A ]]
         // Tunnel
         let iox_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S>::new(&iox_config_a);
+        let tunnel_config_a = TunnelConfig::default();
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
         tunnel_a.initialize();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // [[ HOST B ]]
         // Tunnel
         let iox_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S>::new(&iox_config_b);
+        let tunnel_config_b = TunnelConfig::default();
+        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b);
         tunnel_b.initialize();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
@@ -153,7 +156,8 @@ mod zenoh_tunnel {
         // [[ HOST A ]]
         // Tunnel
         let iox_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S>::new(&iox_config_a);
+        let tunnel_config_a = TunnelConfig::default();
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
         tunnel_a.initialize();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
@@ -174,7 +178,8 @@ mod zenoh_tunnel {
         // [[ HOST B ]]
         // Tunnel
         let iox_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S>::new(&iox_config_b);
+        let tunnel_config_b = TunnelConfig::default();
+        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b);
         tunnel_b.initialize();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
@@ -290,7 +295,8 @@ mod zenoh_tunnel {
         // [[ HOST A ]]
         // Tunnel
         let iox_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S>::new(&iox_config_a);
+        let tunnel_config_a = TunnelConfig::default();
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
         tunnel_a.initialize();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
@@ -315,7 +321,8 @@ mod zenoh_tunnel {
         // [[ HOST B ]]
         // Tunnel
         let iox_config_b = generate_isolated_config();
-        let mut tunnel_b = Tunnel::<S>::new(&iox_config_b);
+        let tunnel_config_b = TunnelConfig::default();
+        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b);
         tunnel_b.initialize();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
@@ -424,7 +431,7 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn propagated_payloads_do_not_loop_back<S: Service>() {
+    fn propagated_payloads_do_not_loop_back_from_zenoh<S: Service>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // ==================== SETUP ====================
@@ -435,7 +442,8 @@ mod zenoh_tunnel {
         // [[ HOST A ]]
         // Tunnel
         let iox_config_a = generate_isolated_config();
-        let mut tunnel_a = Tunnel::<S>::new(&iox_config_a);
+        let tunnel_config_a = TunnelConfig::default();
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
         tunnel_a.initialize();
 
         // Service
@@ -491,6 +499,7 @@ mod zenoh_tunnel {
     #[test]
     fn announces_service_details_on_zenoh<S: Service>() {
         let iox_config = generate_isolated_config();
+        let tunnel_config = TunnelConfig::default();
 
         // ==================== SETUP ====================
 
@@ -499,7 +508,7 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Tunnel
-        let mut tunnel_a = Tunnel::<S>::new(&iox_config);
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config, &iox_config);
         tunnel_a.initialize();
 
         // Service
