@@ -18,10 +18,12 @@ use cli::Cli;
 use cli::Transport;
 
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::info;
 use iceoryx2_bb_log::set_log_level_from_env_or;
 use iceoryx2_bb_log::LogLevel;
 
 use iceoryx2_tunnels_zenoh::Tunnel;
+use iceoryx2_tunnels_zenoh::TunnelConfig;
 
 fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
@@ -52,24 +54,36 @@ fn main() -> Result<()> {
     if let Some(transport) = cli.transport {
         match transport {
             Transport::Zenoh(_options) => {
-                const RATE_MS: u64 = 100;
+                let tunnel_config = TunnelConfig {
+                    discovery_service: None,
+                };
+                let iceoryx2_config = iceoryx2::config::Config::default();
 
-                let mut tunnel = Tunnel::<ipc::Service>::new(&iceoryx2::config::Config::default());
+                let mut tunnel = Tunnel::<ipc::Service>::new(&tunnel_config, &iceoryx2_config);
                 tunnel.initialize();
 
                 let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
-                let guard = waitset.attach_interval(core::time::Duration::from_millis(RATE_MS))?;
-                let tick = WaitSetAttachmentId::from_guard(&guard);
 
-                let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
-                    if id == tick {
-                        tunnel.discover();
-                        tunnel.propagate();
-                    }
-                    CallbackProgression::Continue
-                };
+                if cli.reactive {
+                    // TODO: Make tunnel (or its endpoints) attachable to waitset
+                    unimplemented!("Reactive mode is not yet supported.");
+                } else {
+                    let rate = cli.poll.unwrap_or(100);
+                    info!("Polling rate {}ms", rate);
 
-                waitset.wait_and_process(on_event)?;
+                    let guard = waitset.attach_interval(core::time::Duration::from_millis(rate))?;
+                    let tick = WaitSetAttachmentId::from_guard(&guard);
+
+                    let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
+                        if id == tick {
+                            tunnel.discover();
+                            tunnel.propagate();
+                        }
+                        CallbackProgression::Continue
+                    };
+
+                    waitset.wait_and_process(on_event)?;
+                }
 
                 tunnel.shutdown();
             }
