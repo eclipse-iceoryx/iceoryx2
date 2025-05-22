@@ -478,10 +478,10 @@ impl ThreadGuardedStackBuilder {
     }
 
     /// See: [`ThreadBuilder::spawn()`]
-    pub fn spawn<T, F>(self, f: F) -> Result<Thread, ThreadSpawnError>
+    pub fn spawn<'thread, T, F>(self, f: F) -> Result<Thread, ThreadSpawnError>
     where
-        T: Debug + Send + 'static,
-        F: FnOnce() -> T + Send + 'static,
+        T: Debug + Send + 'thread,
+        F: FnOnce() -> T + Send + 'thread,
     {
         self.config.spawn_impl(f)
     }
