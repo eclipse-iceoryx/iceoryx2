@@ -93,6 +93,14 @@ pub struct PortFactoryPublisher<
     pub(crate) factory: &'factory PortFactory<Service, Payload, UserHeader>,
 }
 
+unsafe impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Send for PortFactoryPublisher<'_, Service, Payload, UserHeader>
+{
+}
+
 impl<
         'factory,
         Service: service::Service,

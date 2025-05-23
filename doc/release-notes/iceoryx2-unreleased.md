@@ -11,7 +11,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* All port factories implement `Send`
+  [#768](https://github.com/eclipse-iceoryx/iceoryx2/issues/768)
 
 ### Bugfixes
 

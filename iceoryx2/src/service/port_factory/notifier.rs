@@ -46,6 +46,8 @@ pub struct PortFactoryNotifier<'factory, Service: service::Service> {
     default_event_id: EventId,
 }
 
+unsafe impl<'factory, Service: service::Service> Send for PortFactoryNotifier<'factory, Service> {}
+
 impl<'factory, Service: service::Service> PortFactoryNotifier<'factory, Service> {
     pub(crate) fn new(factory: &'factory PortFactory<Service>) -> Self {
         Self {
