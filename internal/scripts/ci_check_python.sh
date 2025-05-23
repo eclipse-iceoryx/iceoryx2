@@ -41,7 +41,14 @@ maturin develop
 
 cd $GIT_ROOT
 echo -e "${COLOR_CYAN}lint python bindings: examples${COLOR_RESET}"
-prospector -m -D -T --with-tool mypy -s veryhigh -F examples/python/
+prospector -m -D -T -s veryhigh -F examples/python/
+if [[ $? != "0" ]]; then
+    echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}"
+    SUCCESS_CODE=1;
+else 
+    echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}"
+fi
+mypy examples/python/
 if [[ $? != "0" ]]; then
     echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}"
     SUCCESS_CODE=1;
@@ -49,13 +56,21 @@ else
     echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}"
 fi
 
+
 echo -e "${COLOR_CYAN}lint python bindings: tests${COLOR_RESET}"
-prospector -m -D -T --with-tool mypy -s veryhigh -F iceoryx2-ffi/python/tests/
+prospector -m -D -T -s veryhigh -F iceoryx2-ffi/python/tests/
 if [[ $? != "0" ]]; then
     echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: tests - failed${COLOR_RESET}"
     SUCCESS_CODE=1;
 else
     echo -e "${COLOR_GREEN}lint python bindings: tests - success${COLOR_RESET}"
+fi
+mypy iceoryx2-ffi/python/tests/
+if [[ $? != "0" ]]; then
+    echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}"
+    SUCCESS_CODE=1;
+else 
+    echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}"
 fi
 
 echo -e "${COLOR_CYAN}python binding tests${COLOR_RESET}"
