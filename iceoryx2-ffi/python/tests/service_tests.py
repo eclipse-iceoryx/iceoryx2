@@ -11,7 +11,9 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 import pytest
+
 import iceoryx2
 
+
 def test_sum_as_string() -> None:
-    assert iceoryx2.sum_as_string(1, 3) == '4'
+    assert iceoryx2.sum_as_string(1, 3) == "4"

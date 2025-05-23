@@ -17,6 +17,8 @@ source .env/bin/activate # or source .env/bin/activate.fish
 # install dependencies
 pip install pytest
 pip install prospector[with_mypy]
+pip install black
+pip install isort
 ```
 
 ## Development
@@ -33,4 +35,3 @@ pytest tests/*
 prospector -m -D -T --with-tool mypy -s veryhigh $GIT_ROOT/examples/python
 prospector -m -D -T --with-tool mypy -s veryhigh $GIT_ROOT/iceoryx2-ffi/python/tests
 ```
-

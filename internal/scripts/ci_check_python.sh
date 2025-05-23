@@ -12,8 +12,6 @@
 
 
 #!/bin/bash
-set -e
-
 COLOR_RESET='\033[0m'
 COLOR_GREEN='\033[1;32m'
 COLOR_CYAN='\033[1;34m'
@@ -34,6 +32,8 @@ source .env/bin/activate
 echo -e "${COLOR_CYAN}install dependencies${COLOR_RESET}"
 pip install pytest
 pip install prospector[with_mypy]
+pip install black
+pip install isort
 
 echo -e "${COLOR_CYAN}compile python bindings${COLOR_RESET}"
 cd iceoryx2-ffi/python
@@ -67,10 +67,50 @@ else
 fi
 mypy iceoryx2-ffi/python/tests/
 if [[ $? != "0" ]]; then
-    echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}"
+    echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: tests - failed${COLOR_RESET}"
     SUCCESS_CODE=1;
 else 
-    echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}"
+    echo -e "${COLOR_GREEN}lint python bindings: tests - success${COLOR_RESET}"
+fi
+
+
+echo -e "${COLOR_CYAN}code formatting python bindings: examples${COLOR_RESET}"
+black --check examples/python/
+if [[ $? != "0" ]]; then
+    echo -e "${COLOR_RED}${FONT_BOLD}code formatting python bindings: examples - failed${COLOR_RESET}"
+    SUCCESS_CODE=1;
+else
+    echo -e "${COLOR_GREEN}code formatting python bindings: examples - success${COLOR_RESET}"
+fi
+
+
+echo -e "${COLOR_CYAN}code formatting python bindings: tests${COLOR_RESET}"
+black --check iceoryx2-ffi/python/tests/
+if [[ $? != "0" ]]; then
+    echo -e "${COLOR_RED}${FONT_BOLD}code formatting python bindings: tests - failed${COLOR_RESET}"
+    SUCCESS_CODE=1;
+else
+    echo -e "${COLOR_GREEN}code formatting python bindings: tests - success${COLOR_RESET}"
+fi
+
+
+echo -e "${COLOR_CYAN}import ordering python bindings: examples${COLOR_RESET}"
+isort --check-only examples/python/
+if [[ $? != "0" ]]; then
+    echo -e "${COLOR_RED}${FONT_BOLD}import ordering python bindings: examples - failed${COLOR_RESET}"
+    SUCCESS_CODE=1;
+else
+    echo -e "${COLOR_GREEN}import ordering python bindings: examples - success${COLOR_RESET}"
+fi
+
+
+echo -e "${COLOR_CYAN}import ordering python bindings: tests${COLOR_RESET}"
+isort --check-only iceoryx2-ffi/python/tests/
+if [[ $? != "0" ]]; then
+    echo -e "${COLOR_RED}${FONT_BOLD}import ordering python bindings: tests - failed${COLOR_RESET}"
+    SUCCESS_CODE=1;
+else
+    echo -e "${COLOR_GREEN}import ordering python bindings: tests - success${COLOR_RESET}"
 fi
 
 echo -e "${COLOR_CYAN}python binding tests${COLOR_RESET}"
