@@ -22,6 +22,8 @@
 
 * Fix segmentation fault in event multiplexing C example
     [#766](https://github.com/eclipse-iceoryx/iceoryx2/issues/766)
+* Fix lifetime in ThreadGuardedStackBuilder
+    [#770](https://github.com/eclipse-iceoryx/iceoryx2/issues/770)
 
 ### Refactoring
 
