@@ -82,7 +82,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
 
-use iceoryx2_bb_log::{fail, fatal_panic, trace, warn};
+use iceoryx2_bb_log::{debug, fail, fatal_panic, info, trace, warn};
 
 use crate::port::unable_to_deliver_strategy::UnableToDeliverStrategy;
 
@@ -491,8 +491,6 @@ impl Config {
     }
 
     fn load_user_config_path(origin: &str, msg: &str) -> Result<FilePath, ConfigIterationFailure> {
-        //#[cfg(not(target_os = "windows"))] // TODO: #617
-        //{
         let user = fail!(from origin,
                          when iceoryx2_bb_posix::user::User::from_self(),
                          with ConfigIterationFailure::UnableToAcquireCurrentUserDetails,
@@ -508,7 +506,6 @@ impl Config {
                 "{} since the resulting user config directory would be too long.", msg);
 
         Ok(user_config)
-        //}
     }
 
     fn load_global_config_path(
@@ -637,20 +634,23 @@ impl Config {
             if let Err(e) = Self::iterate_over_config_files(|config_file_path| {
                 match Config::setup_global_config_from_file(&config_file_path) {
                     Ok(_) => {
+                        info!(from origin, "Using config file at \"{}\"", config_file_path);
                         is_config_file_set = true;
                         CallbackProgression::Stop
                     }
                     Err(ConfigCreationError::ConfigFileDoesNotExist) => {
+                        debug!(from origin, "No config file found at \"{}\"", config_file_path);
                         CallbackProgression::Continue
                     }
                     Err(e) => {
-                        fatal_panic!(from origin,
+                        warn!(from origin,
                             "Config file found \"{}\" but a failure occurred ({:?}) while reading the content.",
                             config_file_path, e);
+                        CallbackProgression::Continue
                     }
                 }
             }) {
-                fatal_panic!(from origin,
+                warn!(from origin,
                     "A failure occurred ({:?}) while looking up the available config files.", e);
             }
 
