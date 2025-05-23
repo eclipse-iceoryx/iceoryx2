@@ -25,6 +25,8 @@
     [#766](https://github.com/eclipse-iceoryx/iceoryx2/issues/766)
 * Fix lifetime in ThreadGuardedStackBuilder
     [#770](https://github.com/eclipse-iceoryx/iceoryx2/issues/770)
+* Fix config file load failure
+    [#772](https://github.com/eclipse-iceoryx/iceoryx2/issues/772)
 
 ### Refactoring
 
