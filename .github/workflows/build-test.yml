@@ -186,6 +186,7 @@ jobs:
          args: --release --out dist --find-interpreter
          sccache: ${{ !startsWith(github.ref, 'refs/tags/') }}
          manylinux: auto
+         working-directory: iceoryx2-ffi/python/
      - name: Language Binding Tests
        run: internal/scripts/ci_check_python.sh
 
