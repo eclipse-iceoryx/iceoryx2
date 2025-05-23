@@ -491,6 +491,8 @@ impl Config {
     }
 
     fn load_user_config_path(origin: &str, msg: &str) -> Result<FilePath, ConfigIterationFailure> {
+        //#[cfg(not(target_os = "windows"))] // TODO: #617
+        //{
         let user = fail!(from origin,
                          when iceoryx2_bb_posix::user::User::from_self(),
                          with ConfigIterationFailure::UnableToAcquireCurrentUserDetails,
@@ -506,6 +508,7 @@ impl Config {
                 "{} since the resulting user config directory would be too long.", msg);
 
         Ok(user_config)
+        //}
     }
 
     fn load_global_config_path(
@@ -538,12 +541,9 @@ impl Config {
         }
 
         // prio 2: lookup user config file
-        #[cfg(not(target_os = "windows"))] // TODO: #617
-        {
-            if let Ok(user_config) = Self::load_user_config_path(origin, msg) {
-                if callback(user_config) == CallbackProgression::Stop {
-                    return Ok(());
-                }
+        if let Ok(user_config) = Self::load_user_config_path(origin, msg) {
+            if callback(user_config) == CallbackProgression::Stop {
+                return Ok(());
             }
         }
 
