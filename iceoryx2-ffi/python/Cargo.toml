@@ -13,7 +13,7 @@ readme = { workspace = true }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
-name = "iceoryx2"
+name = "iceoryx2_ffi_python"
 crate-type = ["cdylib"]
 
 [dependencies]

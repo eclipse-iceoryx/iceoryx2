@@ -12,7 +12,7 @@
 
 """Notifier example for python."""
 
-import iceoryx2
+import iceoryx2_ffi_python as iceoryx2
 
 v = iceoryx2.sum_as_string(1, 2)
 print(f"hello world: {v}")

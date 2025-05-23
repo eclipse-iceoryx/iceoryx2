@@ -23,7 +23,7 @@ cd $(git rev-parse --show-toplevel)
 RET_VAL=0
 
 check_license_header() {
-    FILES=$(find . -type f -iwholename "${FILE_SUFFIX}" -not -path "./target/*" )
+    FILES=$(find . -type f -iwholename "${FILE_SUFFIX}" -not -path "./target/*" -not -path "./env/*" )
 
     for FILE in $FILES
     do
@@ -58,6 +58,13 @@ check_shell() {
 
 check_toml() {
     FILE_SUFFIX="*.toml"
+    COMMENT_SYMBOL="#"
+    COMMENT_SYMBOL_GREP="#"
+    check_license_header
+}
+
+check_python() {
+    FILE_SUFFIX="*.py"
     COMMENT_SYMBOL="#"
     COMMENT_SYMBOL_GREP="#"
     check_license_header
@@ -105,6 +112,7 @@ check_shell
 check_c_cpp
 check_cmake
 check_bazel
+check_python
 
 # no toml check for now
 # it is usually only some configuration files which can be used without copyright notice

@@ -12,7 +12,7 @@
 
 import pytest
 
-import iceoryx2
+import iceoryx2_ffi_python as iceoryx2
 
 
 def test_sum_as_string() -> None:
