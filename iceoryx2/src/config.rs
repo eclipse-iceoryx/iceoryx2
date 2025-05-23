@@ -82,7 +82,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use serde::{Deserialize, Serialize};
 
-use iceoryx2_bb_log::{fail, fatal_panic, trace, warn};
+use iceoryx2_bb_log::{debug, fail, fatal_panic, info, trace, warn};
 
 use crate::port::unable_to_deliver_strategy::UnableToDeliverStrategy;
 
@@ -490,6 +490,41 @@ impl Config {
             "This should never happen! The default config file path contains invalid symbols.")
     }
 
+    fn load_user_config_path(origin: &str, msg: &str) -> Result<FilePath, ConfigIterationFailure> {
+        let user = fail!(from origin,
+                         when iceoryx2_bb_posix::user::User::from_self(),
+                         with ConfigIterationFailure::UnableToAcquireCurrentUserDetails,
+                         "{} since the current user details could not be acquired.", msg);
+        let mut user_config = user.config_dir().clone();
+        fail!(from origin,
+                when user_config.add_path_entry(&Self::relative_config_path()),
+                with ConfigIterationFailure::TooLongUserConfigDirectory,
+                "{} since the resulting user config directory would be too long.", msg);
+        let user_config = fail!(from origin,
+                when FilePath::from_path_and_file(&user_config, &Self::default_config_file_name()),
+                with ConfigIterationFailure::TooLongUserConfigDirectory,
+                "{} since the resulting user config directory would be too long.", msg);
+
+        Ok(user_config)
+    }
+
+    fn load_global_config_path(
+        origin: &str,
+        msg: &str,
+    ) -> Result<FilePath, ConfigIterationFailure> {
+        let mut global_config = get_global_config_path();
+        fail!(from origin,
+                when global_config.add_path_entry(&Self::relative_config_path()),
+                with ConfigIterationFailure::TooLongUserConfigDirectory,
+                "{} since the resulting global config directory would be too long.", msg);
+        let global_config = fail!(from origin,
+                when FilePath::from_path_and_file(&global_config, &Self::default_config_file_name()),
+                with ConfigIterationFailure::TooLongUserConfigDirectory,
+                "{} since the resulting global config directory would be too long.", msg);
+
+        Ok(global_config)
+    }
+
     fn iterate_over_config_files<F: FnMut(FilePath) -> CallbackProgression>(
         mut callback: F,
     ) -> Result<(), ConfigIterationFailure> {
@@ -503,39 +538,18 @@ impl Config {
         }
 
         // prio 2: lookup user config file
-        #[cfg(not(target_os = "windows"))] // TODO: #617
-        {
-            let user = fail!(from origin,
-                         when iceoryx2_bb_posix::user::User::from_self(),
-                         with ConfigIterationFailure::UnableToAcquireCurrentUserDetails,
-                         "{} since the current user details could not be acquired.", msg);
-            let mut user_config = user.config_dir().clone();
-            fail!(from origin,
-                when user_config.add_path_entry(&Self::relative_config_path()),
-                with ConfigIterationFailure::TooLongUserConfigDirectory,
-                "{} since the resulting user config directory would be too long.", msg);
-            let user_config = fail!(from origin,
-                when FilePath::from_path_and_file(&user_config, &Self::default_config_file_name()),
-                with ConfigIterationFailure::TooLongUserConfigDirectory,
-                "{} since the resulting user config directory would be too long.", msg);
-
+        if let Ok(user_config) = Self::load_user_config_path(origin, msg) {
             if callback(user_config) == CallbackProgression::Stop {
                 return Ok(());
             }
         }
 
         // prio 3: lookup global config file
-        let mut global_config = get_global_config_path();
-        fail!(from origin,
-                when global_config.add_path_entry(&Self::relative_config_path()),
-                with ConfigIterationFailure::TooLongUserConfigDirectory,
-                "{} since the resulting global config directory would be too long.", msg);
-        let global_config = fail!(from origin,
-                when FilePath::from_path_and_file(&global_config, &Self::default_config_file_name()),
-                with ConfigIterationFailure::TooLongUserConfigDirectory,
-                "{} since the resulting global config directory would be too long.", msg);
-
-        callback(global_config);
+        if let Ok(global_config) = Self::load_global_config_path(origin, msg) {
+            if callback(global_config) == CallbackProgression::Stop {
+                return Ok(());
+            }
+        }
 
         Ok(())
     }
@@ -620,20 +634,23 @@ impl Config {
             if let Err(e) = Self::iterate_over_config_files(|config_file_path| {
                 match Config::setup_global_config_from_file(&config_file_path) {
                     Ok(_) => {
+                        info!(from origin, "Using config file at \"{}\"", config_file_path);
                         is_config_file_set = true;
                         CallbackProgression::Stop
                     }
                     Err(ConfigCreationError::ConfigFileDoesNotExist) => {
+                        debug!(from origin, "No config file found at \"{}\"", config_file_path);
                         CallbackProgression::Continue
                     }
                     Err(e) => {
-                        fatal_panic!(from origin,
+                        warn!(from origin,
                             "Config file found \"{}\" but a failure occurred ({:?}) while reading the content.",
                             config_file_path, e);
+                        CallbackProgression::Continue
                     }
                 }
             }) {
-                fatal_panic!(from origin,
+                warn!(from origin,
                     "A failure occurred ({:?}) while looking up the available config files.", e);
             }
 
