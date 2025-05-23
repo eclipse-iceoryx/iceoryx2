@@ -6,7 +6,7 @@
 # install maturin, see
 # https://github.com/PyO3/maturin
 
-cd $GIT_ROOT$
+cd $GIT_ROOT
 
 # create python development environment
 python -m venv .env
@@ -30,9 +30,7 @@ maturin develop
 pytest tests/*
 
 # static code analysis
-prospector -m -D -T --with-tool mypy -s veryhigh
+prospector -m -D -T --with-tool mypy -s veryhigh $GIT_ROOT/examples/python
+prospector -m -D -T --with-tool mypy -s veryhigh $GIT_ROOT/iceoryx2-ffi/python/tests
 ```
 
-## ToDo
-
-* configure `pyproject.toml`

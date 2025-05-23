@@ -1,0 +1,34 @@
+[build-system]
+requires = ["maturin>=1.8,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "iceoryx2"
+version = "0.6.1"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Rust",
+    "Intended Audience :: Developers",
+    "Development Status :: 4 - Beta",
+    "Topic :: System :: Networking",
+    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: BSD :: FreeBSD",
+]
+
+[project.urls]
+"Bug Tracker" = "https://github.com/eclipse-iceoryx/iceoryx2/issues"
+"Source Code" = "https://github.com/eclipse-iceoryx/iceoryx2"
+"Documentation" = "https://iceoryx2.readthedocs.org/"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]
