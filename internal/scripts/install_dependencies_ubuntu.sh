@@ -18,6 +18,7 @@ apt-get update
 apt-get install -y \
      binutils-dev \
      build-essential \
+     libclang-dev \
      clang \
      cmake \
      curl \
@@ -31,6 +32,7 @@ apt-get install -y \
      libc6-dev \
      libc6-dev-i386 \
      libc6-dev-i386-cross \
+     libpython3-all-dev \
      libstdc++6-i386-cross \
      libdwarf-dev \
      libelf-dev

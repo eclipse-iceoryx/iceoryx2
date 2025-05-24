@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -10,12 +10,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#!/bin/bash
+import pytest
 
-set -e
+import iceoryx2_ffi_python as iceoryx2
 
-pacman -Syu --noconfirm clang cmake gcc git rustup python
-pacman -Scc --noconfirm
-rustup toolchain add beta nightly stable 1.81.0
-rustup component add clippy llvm-tools rustfmt
-rustup default stable
+
+def test_sum_as_string() -> None:
+    assert iceoryx2.sum_as_string(1, 3) == "4"
