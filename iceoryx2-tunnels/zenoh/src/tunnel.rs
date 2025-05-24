@@ -27,6 +27,8 @@ use iceoryx2::service::service_id::ServiceId as IceoryxServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_log::info;
+use iceoryx2_bb_log::warn;
+use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Tracker as IceoryxServiceTracker;
 
 use zenoh::handlers::FifoChannel;
@@ -106,12 +108,15 @@ pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
     z_session: ZenohSession,
     iox_config: IceoryxConfig,
     iox_node: IceoryxNode<Service>,
-    iox_tracker: IceoryxServiceTracker<Service>,
+    iox_discovery_service: Option<IceoryxSubscriber<Service, Discovery, ()>>,
+    iox_tracker: Option<IceoryxServiceTracker<Service>>,
     relays: HashMap<IceoryxServiceId, BidirectionalRelay<'a, Service>>,
 }
 
 impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
-    pub fn new(_tunnel_config: &TunnelConfig, iox_config: &IceoryxConfig) -> Self {
+    pub fn new(tunnel_config: &TunnelConfig, iox_config: &IceoryxConfig) -> Self {
+        info!("STARTING Zenoh Tunnel");
+
         let mut z_config = zenoh::config::Config::default();
         z_config.insert_json5("adminspace/enabled", "true").unwrap(); // this is mandatory
         let z_session = zenoh::open(z_config).wait().unwrap();
@@ -120,7 +125,23 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
             .config(&iox_config)
             .create::<Service>()
             .unwrap();
-        let iox_tracker = IceoryxServiceTracker::new();
+
+        // Create either a discovery service subscriber or a service tracker based on configuration
+        let (iox_discovery_service, iox_tracker) = match &tunnel_config.discovery_service {
+            Some(service_name) => {
+                info!("CONFIGURE Discovery updates from {}", service_name);
+                let service = iox_node
+                    .service_builder(&service_name.as_str().try_into().unwrap())
+                    .publish_subscribe::<Discovery>()
+                    .open_or_create()
+                    .unwrap();
+                (Some(service.subscriber_builder().create().unwrap()), None)
+            }
+            None => {
+                info!("CONFIGURE Internal discovery tracking");
+                (None, Some(IceoryxServiceTracker::new()))
+            }
+        };
 
         let relays: HashMap<IceoryxServiceId, BidirectionalRelay<Service>> = HashMap::new();
 
@@ -128,13 +149,10 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
             z_session,
             iox_config: iox_config.clone(),
             iox_node,
+            iox_discovery_service,
             iox_tracker,
             relays,
         }
-    }
-
-    pub fn initialize(&mut self) {
-        info!("Zenoh Tunnel UP");
     }
 
     pub fn discover(&mut self) {
@@ -146,10 +164,6 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
         for (_, relay) in &self.relays {
             relay.propagate();
         }
-    }
-
-    pub fn shutdown(&mut self) {
-        info!("Zenoh Tunnel DOWN");
     }
 
     /// Returns a list of all service IDs that are currently being tunneled.
@@ -176,37 +190,55 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
     ///
     /// The discovered services are stored in the internal streams collection for later propagation.
     fn iox_discovery(&mut self) {
-        let (added, _removed) = self.iox_tracker.sync(&self.iox_config).unwrap();
+        let mut on_discovered = |iox_service_config: &StaticConfig| {
+            let iox_service_id = iox_service_config.service_id();
 
-        for iox_service_id in added {
-            let iox_service_details = self.iox_tracker.get(&iox_service_id).unwrap();
-
-            if let MessagingPattern::PublishSubscribe(_) =
-                iox_service_details.static_details.messaging_pattern()
-            {
-                let iox_service_config = &iox_service_details.static_details;
-
+            if !self.relays.contains_key(&iox_service_id) {
                 info!(
                     "DISCOVERED (iceoryx2): {} [{}]",
                     iox_service_config.service_id().as_str(),
                     iox_service_config.name()
                 );
 
-                if !self.relays.contains_key(&iox_service_id) {
-                    // Set up relay
-                    self.relays.insert(
-                        iox_service_id.clone(),
-                        BidirectionalRelay::new(
-                            &iox_service_config,
-                            &self.iox_node,
-                            &self.z_session,
-                        ),
-                    );
+                // Set up relay
+                self.relays.insert(
+                    iox_service_id.clone(),
+                    BidirectionalRelay::new(iox_service_config, &self.iox_node, &self.z_session),
+                );
 
-                    // Announce Service to Zenoh
-                    z_announce_service(&self.z_session, &iox_service_details.static_details);
+                // Announce Service to Zenoh
+                z_announce_service(&self.z_session, iox_service_config);
+            }
+        };
+
+        if let Some(iox_discovery_service) = &self.iox_discovery_service {
+            // Discovery via discovery service
+            while let Some(iox_sample) = iox_discovery_service.receive().unwrap() {
+                if let Discovery::Added(iox_service_config) = iox_sample.payload() {
+                    if let MessagingPattern::PublishSubscribe(_) =
+                        iox_service_config.messaging_pattern()
+                    {
+                        on_discovered(&iox_service_config);
+                    }
                 }
             }
+        } else if let Some(iox_tracker) = &mut self.iox_tracker {
+            // Discovery via service tracker
+            let (added, _removed) = iox_tracker.sync(&self.iox_config).unwrap();
+
+            for iox_service_id in added {
+                let iox_service_details = iox_tracker.get(&iox_service_id).unwrap();
+                let iox_service_config = &iox_service_details.static_details;
+
+                if let MessagingPattern::PublishSubscribe(_) =
+                    iox_service_details.static_details.messaging_pattern()
+                {
+                    on_discovered(&iox_service_config);
+                }
+            }
+        } else {
+            // Should never happen
+            warn!("Unable to discovery iceoryx2 services as neither the service discovery service nor a service tracker are set up.");
         }
     }
 

@@ -53,15 +53,13 @@ fn main() -> Result<()> {
 
     if let Some(transport) = cli.transport {
         match transport {
-            Transport::Zenoh(_options) => {
+            Transport::Zenoh(_zenoh_options) => {
                 let tunnel_config = TunnelConfig {
-                    discovery_service: None,
+                    discovery_service: cli.discovery_service,
                 };
                 let iceoryx2_config = iceoryx2::config::Config::default();
 
                 let mut tunnel = Tunnel::<ipc::Service>::new(&tunnel_config, &iceoryx2_config);
-                tunnel.initialize();
-
                 let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 
                 if cli.reactive {
@@ -84,8 +82,6 @@ fn main() -> Result<()> {
 
                     waitset.wait_and_process(on_event)?;
                 }
-
-                tunnel.shutdown();
             }
         }
     }

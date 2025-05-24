@@ -20,6 +20,8 @@ mod zenoh_tunnel {
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::{assert_that, test_fail};
+    use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
+    use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
     use iceoryx2_tunnels_zenoh::*;
 
     use zenoh::Wait;
@@ -33,7 +35,60 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn discovers_local_services<S: Service>() {
+    fn discovers_local_services_via_discovery_service<S: Service>() {
+        // ==================== SETUP ====================
+
+        // [[ COMMON ]]
+        let iox_service_name = mock_service_name();
+        let iox_config = generate_isolated_config();
+
+        // [[ DISCOVERY SERVICE ]]
+        let discovery_config = DiscoveryConfig {
+            publish_events: true,
+            ..Default::default()
+        };
+        let mut discovery_service =
+            DiscoveryService::<S>::create(&discovery_config, &iox_config).unwrap();
+
+        // [[ HOST A ]]
+        // Tunnel
+        let tunnel_config = TunnelConfig {
+            discovery_service: Some("iox2://discovery/services/".into()),
+        };
+
+        let mut tunnel = Tunnel::<S>::new(&tunnel_config, &iox_config);
+        assert_that!(tunnel.tunneled_services().len(), eq 0);
+
+        // Service
+        let iox_node = NodeBuilder::new()
+            .config(&iox_config)
+            .create::<S>()
+            .unwrap();
+        let iox_service = iox_node
+            .service_builder(&iox_service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // ==================== TEST =====================
+
+        // [[ DISCOVERY SERVICE ]]
+        // Discover Services
+        discovery_service.spin(|_| {}, |_| {}).unwrap();
+
+        // [[ HOST A ]]
+        // Discover Services
+        tunnel.discover();
+        assert_that!(tunnel.tunneled_services().len(), eq 1);
+        assert_that!(tunnel
+            .tunneled_services()
+            .contains(&String::from(iox_service.service_id().as_str())), eq true);
+    }
+
+    #[test]
+    fn discovers_local_services_via_tracker<S: Service>() {
         // ==================== SETUP ====================
 
         // [[ COMMON ]]
@@ -44,7 +99,6 @@ mod zenoh_tunnel {
         let iox_config = generate_isolated_config();
         let tunnel_config = TunnelConfig::default();
         let mut tunnel = Tunnel::<S>::new(&tunnel_config, &iox_config);
-        tunnel.initialize();
         assert_that!(tunnel.tunneled_services().len(), eq 0);
 
         // Service
@@ -83,7 +137,6 @@ mod zenoh_tunnel {
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
-        tunnel_a.initialize();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // [[ HOST B ]]
@@ -91,7 +144,6 @@ mod zenoh_tunnel {
         let iox_config_b = generate_isolated_config();
         let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b);
-        tunnel_b.initialize();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
@@ -158,7 +210,6 @@ mod zenoh_tunnel {
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
-        tunnel_a.initialize();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // Service
@@ -180,7 +231,6 @@ mod zenoh_tunnel {
         let iox_config_b = generate_isolated_config();
         let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b);
-        tunnel_b.initialize();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
@@ -297,7 +347,6 @@ mod zenoh_tunnel {
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
-        tunnel_a.initialize();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // Service
@@ -323,7 +372,6 @@ mod zenoh_tunnel {
         let iox_config_b = generate_isolated_config();
         let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b);
-        tunnel_b.initialize();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
@@ -444,7 +492,6 @@ mod zenoh_tunnel {
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
-        tunnel_a.initialize();
 
         // Service
         let iox_node_a = NodeBuilder::new()
@@ -509,7 +556,6 @@ mod zenoh_tunnel {
         // [[ HOST A ]]
         // Tunnel
         let mut tunnel_a = Tunnel::<S>::new(&tunnel_config, &iox_config);
-        tunnel_a.initialize();
 
         // Service
         let iox_node = NodeBuilder::new()
