@@ -176,8 +176,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-     - name: Install clang-tidy and clang-format
-       uses: ./.github/actions/install-iceoryx-deps-and-clang
+     - name: Setup Rust
+       uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+       with:
+         toolchain: ${{ matrix.toolchain }}
+         components: rustfmt, clippy
+
+     - name: Prepare Linux
+       run: |
+         internal/scripts/ci_prepare_ubuntu.sh
+         uname -a
+
      - uses: actions/setup-python@v5
        with:
          python-version: 3.x

@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright (c) 2023 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -9,8 +10,6 @@
 # which is available at https://opensource.org/licenses/MIT.
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-
-#!/bin/bash
 
 # based on eclipse-iceoryx/iceoryx ice_env.sh
 #
@@ -49,12 +48,12 @@ setup_docker_image() {
     # ubuntu/debian and derivatives
     if command -v apt &>/dev/null; then
         apt update
-        apt -y install sudo git fish curl vim lsb-release software-properties-common gcc libacl1-dev libclang-dev zlib1g-dev clang
+        apt -y install sudo git fish curl vim lsb-release software-properties-common gcc libacl1-dev libclang-dev zlib1g-dev clang libpython3-all-dev
     elif command -v pacman &>/dev/null; then
-        pacman -Syu --noconfirm fish curl git vim clang
+        pacman -Syu --noconfirm fish curl git vim clang python
     else
         echo Please install the following packages to have a working iceoryx2 environment:
-        echo fish curl
+        echo fish curl clang python
     fi
 
     useradd testuser1
