@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -10,8 +11,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-
-#!/bin/bash
 set -e
 
 # Helper functions

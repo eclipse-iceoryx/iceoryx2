@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -10,8 +11,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-
-#!/bin/bash
 COLOR_RESET='\033[0m'
 COLOR_GREEN='\033[1;32m'
 COLOR_CYAN='\033[1;34m'
