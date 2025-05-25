@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -15,6 +15,7 @@ set -e
 
 export ASSUME_ALWAYS_YES=yes
 
+pkg install python3
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --no-modify-path
 export PATH=$PATH:$HOME/.cargo/bin
 rustup toolchain add beta nightly 1.81.0 stable

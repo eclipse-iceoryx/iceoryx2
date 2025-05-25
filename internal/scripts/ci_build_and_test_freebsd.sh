@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
