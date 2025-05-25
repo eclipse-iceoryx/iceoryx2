@@ -251,10 +251,10 @@ jobs:
           uname -a
 
       - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
+        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
+        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
       - name: Build language bindings
         run: |
