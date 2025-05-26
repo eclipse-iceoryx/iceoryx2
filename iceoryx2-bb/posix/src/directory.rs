@@ -273,6 +273,7 @@ impl Directory {
 
     /// Creates a new directory at the provided path.
     pub fn create(path: &Path, permission: Permission) -> Result<Self, DirectoryCreateError> {
+        let origin = "Directory::create()";
         let msg = format!("Unable to create directory \"{}\"", path);
         let entries = path.entries();
 
@@ -289,17 +290,24 @@ impl Directory {
 
             match Directory::does_exist(&inc_path) {
                 Ok(true) => (),
-                Ok(false) => Directory::create_single_directory(&inc_path, permission)?,
+                Ok(false) => match Directory::create_single_directory(&inc_path, permission) {
+                    Ok(()) | Err(DirectoryCreateError::DirectoryAlreadyExists) => (),
+                    Err(e) => {
+                        fail!(from origin, with e,
+                            "{} since the directory {} could not be created due to {:?}.",
+                            msg, inc_path, e);
+                    }
+                },
                 Err(DirectoryAccessError::InsufficientPermissions) => {
-                    fail!(from "Directory::create()", with DirectoryCreateError::InsufficientPermissions,
+                    fail!(from origin, with DirectoryCreateError::InsufficientPermissions,
                         "{} since the path {} could not be accessed due to insufficient permissions.", msg, inc_path);
                 }
                 Err(DirectoryAccessError::PathPrefixIsNotADirectory) => {
-                    fail!(from "Directory::create()", with DirectoryCreateError::PartsOfThePathAreNotADirectory,
+                    fail!(from origin, with DirectoryCreateError::PartsOfThePathAreNotADirectory,
                         "{} since the path {} is not a directory.", msg, inc_path);
                 }
                 Err(v) => {
-                    fail!(from "Directory::create()", with DirectoryCreateError::UnknownError(0),
+                    fail!(from origin, with DirectoryCreateError::UnknownError(0),
                         "{} due to a failure while accessing {} ({:?}).", msg, inc_path, v);
                 }
             };
@@ -311,7 +319,7 @@ impl Directory {
                 Ok(d)
             }
             Err(e) => {
-                fail!(from "Directory::create()", with e.into(),
+                fail!(from origin, with e.into(),
                     "Failed to open newly created directory \"{}\".", path);
             }
         }
