@@ -52,11 +52,12 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Tunnel
+        let z_config_a = zenoh::Config::default();
         let tunnel_config = TunnelConfig {
             discovery_service: Some("iox2://discovery/services/".into()),
         };
 
-        let mut tunnel = Tunnel::<S>::new(&tunnel_config, &iox_config).unwrap();
+        let mut tunnel = Tunnel::<S>::create(&tunnel_config, &iox_config, &z_config_a).unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 0);
 
         // Service
@@ -96,9 +97,10 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Tunnel
+        let z_config = zenoh::Config::default();
         let iox_config = generate_isolated_config();
         let tunnel_config = TunnelConfig::default();
-        let mut tunnel = Tunnel::<S>::new(&tunnel_config, &iox_config).unwrap();
+        let mut tunnel = Tunnel::<S>::create(&tunnel_config, &iox_config, &z_config).unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 0);
 
         // Service
@@ -134,16 +136,20 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Tunnel
+        let z_config_a = zenoh::Config::default();
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a).unwrap();
+        let mut tunnel_a =
+            Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // [[ HOST B ]]
         // Tunnel
+        let z_config_b = zenoh::Config::default();
         let iox_config_b = generate_isolated_config();
         let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b).unwrap();
+        let mut tunnel_b =
+            Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
@@ -207,9 +213,11 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Tunnel
+        let z_config_a = zenoh::Config::default();
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a).unwrap();
+        let mut tunnel_a =
+            Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // Service
@@ -228,9 +236,11 @@ mod zenoh_tunnel {
 
         // [[ HOST B ]]
         // Tunnel
+        let z_config_b = zenoh::Config::default();
         let iox_config_b = generate_isolated_config();
         let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b).unwrap();
+        let mut tunnel_b =
+            Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
@@ -344,9 +354,11 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Tunnel
+        let z_config_a = zenoh::Config::default();
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a).unwrap();
+        let mut tunnel_a =
+            Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // Service
@@ -369,9 +381,11 @@ mod zenoh_tunnel {
 
         // [[ HOST B ]]
         // Tunnel
+        let z_config_b = zenoh::Config::default();
         let iox_config_b = generate_isolated_config();
         let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b).unwrap();
+        let mut tunnel_b =
+            Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
@@ -489,9 +503,11 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Tunnel
+        let z_config_a = zenoh::Config::default();
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a).unwrap();
+        let mut tunnel_a =
+            Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
 
         // Service
         let iox_node_a = NodeBuilder::new()
@@ -545,9 +561,6 @@ mod zenoh_tunnel {
 
     #[test]
     fn announces_service_details_on_zenoh<S: Service>() {
-        let iox_config = generate_isolated_config();
-        let tunnel_config = TunnelConfig::default();
-
         // ==================== SETUP ====================
 
         // [[ COMMON ]]
@@ -555,14 +568,19 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Tunnel
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config, &iox_config).unwrap();
+        let iox_config_a = generate_isolated_config();
+        let z_config_a = zenoh::Config::default();
+        let tunnel_config_a = TunnelConfig::default();
+
+        let mut tunnel_a =
+            Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
 
         // Service
-        let iox_node = NodeBuilder::new()
-            .config(&iox_config)
+        let iox_node_a = NodeBuilder::new()
+            .config(&iox_config_a)
             .create::<S>()
             .unwrap();
-        let iox_service_a = iox_node
+        let iox_service_a = iox_node_a
             .service_builder(&iox_service_name)
             .publish_subscribe::<[u8]>()
             .history_size(10)
@@ -580,13 +598,13 @@ mod zenoh_tunnel {
             .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
 
         // Query Zenoh for Services
-        let z_config = zenoh::config::Config::default();
-        let z_session = zenoh::open(z_config.clone()).wait().unwrap();
-        let z_reply = z_session
+        let z_config_b = zenoh::config::Config::default();
+        let z_session_b = zenoh::open(z_config_b.clone()).wait().unwrap();
+        let z_reply_b = z_session_b
             .get(keys::service(iox_service_a.service_id()))
             .wait()
             .unwrap();
-        match z_reply.recv_timeout(Duration::from_millis(100)) {
+        match z_reply_b.recv_timeout(Duration::from_millis(100)) {
             Ok(Some(reply)) => match reply.result() {
                 Ok(sample) => {
                     let iox_static_details: StaticConfig =

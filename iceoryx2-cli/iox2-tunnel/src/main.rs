@@ -18,6 +18,7 @@ use cli::Cli;
 use cli::Transport;
 
 use iceoryx2::prelude::*;
+use iceoryx2_bb_log::error;
 use iceoryx2_bb_log::info;
 use iceoryx2_bb_log::set_log_level_from_env_or;
 use iceoryx2_bb_log::LogLevel;
@@ -58,8 +59,13 @@ fn main() -> Result<()> {
                     discovery_service: cli.discovery_service,
                 };
                 let iceoryx2_config = iceoryx2::config::Config::default();
+                let zenoh_config = zenoh::Config::default();
 
-                let mut tunnel = Tunnel::<ipc::Service>::new(&tunnel_config, &iceoryx2_config)?;
+                let mut tunnel = Tunnel::<ipc::Service>::create(
+                    &tunnel_config,
+                    &iceoryx2_config,
+                    &zenoh_config,
+                )?;
                 let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 
                 if cli.reactive {
@@ -74,7 +80,9 @@ fn main() -> Result<()> {
 
                     let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
                         if id == tick {
-                            tunnel.discover();
+                            if let Err(e) = tunnel.discover() {
+                                error!("Failure in discovery: {}", e);
+                            };
                             tunnel.propagate();
                         }
                         CallbackProgression::Continue
