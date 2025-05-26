@@ -10,9 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import pytest
-
 import iceoryx2_ffi_python as iceoryx2
+import pytest
 
 
 def test_sum_as_string() -> None:

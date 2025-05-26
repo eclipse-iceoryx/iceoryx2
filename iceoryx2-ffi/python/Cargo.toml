@@ -18,4 +18,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 iceoryx2 = { workspace = true }
-pyo3 = { version = "0.25.0", features = ["abi3"] }
+
+[dependencies.pyo3]
+version = "0.25.0"
+features = ["abi3-py38"]
