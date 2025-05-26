@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Copyright (c) 2023 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -10,8 +11,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#!/bin/bash
-
 set -e
 
 COLOR_RESET='\033[0m'
@@ -23,12 +22,14 @@ cd $(git rev-parse --show-toplevel)
 RET_VAL=0
 
 check_license_header() {
-    FILES=$(find . -type f -iwholename "${FILE_SUFFIX}" -not -path "./target/*" )
+    FILES=$(find . -type f -iwholename "${FILE_SUFFIX}" -not -path "./target/*" -not -path "./.env/*" )
+    let HEAD_LEN=$START_POS+12
+    let YEAR_LINE=$START_POS+1
 
     for FILE in $FILES
     do
-        HAS_CORRECT_HEADER=$(diff <(head -n 12 $FILE | tail -n 11 | sed "s/$COMMENT_SYMBOL\(.*\)/\1/") <(head -n 12 internal/scripts/copyright_header.template | tail -n 11) | wc -l)
-        HAS_CORRECT_HEADER_YEAR_LINE=$(head -n 1 $FILE | grep -E "^$COMMENT_SYMBOL_GREP Copyright \(c\) 20[2-9][0-9] Contributors to the Eclipse Foundation\$" | wc -l)
+        HAS_CORRECT_HEADER=$(diff <(head -n $HEAD_LEN $FILE | tail -n 11 | sed "s/$COMMENT_SYMBOL\(.*\)/\1/") <(head -n 12 internal/scripts/copyright_header.template | tail -n 11) | wc -l)
+        HAS_CORRECT_HEADER_YEAR_LINE=$(head -n $YEAR_LINE $FILE | grep -E "^$COMMENT_SYMBOL_GREP Copyright \(c\) 20[2-9][0-9] Contributors to the Eclipse Foundation\$" | wc -l)
         if [[ "$HAS_CORRECT_HEADER_YEAR_LINE" == "0" ]]
         then
             HAS_CORRECT_HEADER_YEAR_LINE=$(head -n 1 $FILE | grep -E "^$COMMENT_SYMBOL_GREP Copyright \(c\) 20[2-9][0-9] - 20[2-9][0-9] Contributors to the Eclipse Foundation\$" | wc -l)
@@ -43,6 +44,7 @@ check_license_header() {
 }
 
 check_rust() {
+    START_POS=0
     FILE_SUFFIX="*.rs"
     COMMENT_SYMBOL="\/\/"
     COMMENT_SYMBOL_GREP="//"
@@ -50,6 +52,7 @@ check_rust() {
 }
 
 check_shell() {
+    START_POS=1 # first line is #!/bin/bash
     FILE_SUFFIX="*.sh"
     COMMENT_SYMBOL="#"
     COMMENT_SYMBOL_GREP="#"
@@ -57,13 +60,22 @@ check_shell() {
 }
 
 check_toml() {
+    START_POS=0
     FILE_SUFFIX="*.toml"
     COMMENT_SYMBOL="#"
     COMMENT_SYMBOL_GREP="#"
     check_license_header
 }
 
+check_python() {
+    FILE_SUFFIX="*.py"
+    COMMENT_SYMBOL="#"
+    COMMENT_SYMBOL_GREP="#"
+    check_license_header
+}
+
 check_c_cpp() {
+    START_POS=0
     FILE_SUFFIX="*.h"
     COMMENT_SYMBOL="\/\/"
     COMMENT_SYMBOL_GREP="//"
@@ -83,6 +95,7 @@ check_c_cpp() {
 }
 
 check_cmake() {
+    START_POS=0
     FILE_SUFFIX="*.cmake"
     COMMENT_SYMBOL="#"
     COMMENT_SYMBOL_GREP="#"
@@ -94,6 +107,7 @@ check_cmake() {
 }
 
 check_bazel() {
+    START_POS=0
     FILE_SUFFIX="*.bazel"
     COMMENT_SYMBOL="#"
     COMMENT_SYMBOL_GREP="#"
@@ -105,6 +119,7 @@ check_shell
 check_c_cpp
 check_cmake
 check_bazel
+check_python
 
 # no toml check for now
 # it is usually only some configuration files which can be used without copyright notice

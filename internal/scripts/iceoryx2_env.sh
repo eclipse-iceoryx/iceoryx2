@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Copyright (c) 2023 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -9,26 +10,6 @@
 # which is available at https://opensource.org/licenses/MIT.
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-
-#!/bin/bash
-
-# based on eclipse-iceoryx/iceoryx ice_env.sh
-#
-# Copyright (c) 2022 by Apex.AI Inc. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# SPDX-License-Identifier: Apache-2.0
 
 CONTAINER_NAME_PREFIX="iceoryx2_env_"
 CONTAINER_MEMORY_SIZE="8g"
@@ -49,12 +30,12 @@ setup_docker_image() {
     # ubuntu/debian and derivatives
     if command -v apt &>/dev/null; then
         apt update
-        apt -y install sudo git fish curl vim lsb-release software-properties-common gcc libacl1-dev libclang-dev zlib1g-dev clang
+        apt -y install sudo git fish curl vim lsb-release software-properties-common gcc libacl1-dev libclang-dev zlib1g-dev clang libpython3-all-dev
     elif command -v pacman &>/dev/null; then
-        pacman -Syu --noconfirm fish curl git vim clang
+        pacman -Syu --noconfirm fish curl git vim clang python
     else
         echo Please install the following packages to have a working iceoryx2 environment:
-        echo fish curl
+        echo fish curl clang python
     fi
 
     useradd testuser1

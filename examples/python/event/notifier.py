@@ -1,5 +1,4 @@
-#!/usr/bin/env bash
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -11,13 +10,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-set -e
+"""Notifier example for python."""
 
-cd $(git rev-parse --show-toplevel)
+import iceoryx2_ffi_python as iceoryx2
 
-sudo ./internal/scripts/install_dependencies_ubuntu.sh
-
-sudo useradd testuser1
-sudo useradd testuser2
-sudo groupadd testgroup1
-sudo groupadd testgroup2
+v = iceoryx2.sum_as_string(1, 2)
+print(f"hello world: {v}")

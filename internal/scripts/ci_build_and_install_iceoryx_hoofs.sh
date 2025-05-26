@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -9,8 +10,6 @@
 # which is available at https://opensource.org/licenses/MIT.
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
-
-#!/bin/sh
 
 set -e
 

@@ -197,6 +197,7 @@ filegroup(
         "//iceoryx2-ffi/c:all_srcs",
         "//iceoryx2-ffi/cxx:all_srcs",
         "//iceoryx2-ffi/ffi-macros:all_srcs",
+        "//iceoryx2-ffi/python:all_srcs",
         "//iceoryx2-pal/concurrency-sync:all_srcs",
         "//iceoryx2-pal/configuration:all_srcs",
         "//iceoryx2-pal/posix:all_srcs",

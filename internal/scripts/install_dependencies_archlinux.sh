@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -10,11 +11,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#!/bin/bash
-
 set -e
 
-pacman -Syu --noconfirm clang cmake gcc git rustup
+pacman -Syu --noconfirm clang cmake gcc git rustup python
 pacman -Scc --noconfirm
 rustup toolchain add beta nightly stable 1.81.0
 rustup component add clippy llvm-tools rustfmt

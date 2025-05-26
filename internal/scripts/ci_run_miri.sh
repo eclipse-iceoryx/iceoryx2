@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
@@ -14,7 +15,7 @@ filename=".miri_allowlist"
 while IFS= read -r line; do
 if [[ "$line" == \#* ]]; then
     continue
-fi          
+fi
 
 if echo "$ALL_CHANGED_FILES" | grep -q "$line"; then
     cd "$line" || { echo "Failed to change directory to $line"; exit 1; }
@@ -28,4 +29,4 @@ if echo "$ALL_CHANGED_FILES" | grep -q "$line"; then
 else
     echo "skip $line because the PR doesn't touch its files"
 fi
-done < "$filename"     
+done < "$filename"

@@ -1,0 +1,47 @@
+[build-system]
+requires = ["maturin>=1.8,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "iceoryx2"
+version = "0.6.1"
+description = "Python bindings for iceoryx2"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "Apache-2.0 OR MIT"
+keywords = ["ipc", "inter-process communication", "zero-copy", "shared memory", "publish-subscribe", "request-response", "event"]
+authors = [
+  {name = "Contributors of eclipse-iceoryx"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Rust",
+    "Intended Audience :: Developers",
+    "Development Status :: 4 - Beta",
+    "Topic :: System :: Networking",
+    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: BSD :: FreeBSD",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest"
+]
+
+[project.urls]
+homepage = "https://iceoryx.io"
+documentation = "https://iceoryx2.readthedocs.org/"
+repository = "https://github.com/eclipse-iceoryx/iceoryx2"
+changelog = "https://github.com/eclipse-iceoryx/iceoryx2/blob/main/CHANGELOG.md"
+
+[tool.maturin]
+features = ["pyo3/extension-module"]

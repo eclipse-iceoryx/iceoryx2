@@ -170,6 +170,49 @@ jobs:
         artifact-bin-name: cargo-nextest
         artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
+  maturin:
+    needs: preflight-check
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+    - name: Build and cache maturin
+      uses: ./.github/actions/build-and-cache-rust-tool
+      with:
+        rust-toolchain: stable
+        check-and-install-cmd: maturin --version > /dev/null || cargo install maturin --locked
+        print-version-cmd: maturin --version
+        # increment cache-N-${{}} if a new maturin version is required
+        cache-key: cache-0-${{ runner.os }}-maturin
+        artifact-bin-name: maturin
+        artifact-upload-name: ${{ runner.os }}-maturin
+
+  python-bindings:
+    needs: [preflight-check, static-code-analysis, cargo-nextest, maturin]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+     - name: Download artifact maturin
+       uses: ./.github/actions/download-cached-rust-tool
+       with:
+         artifact-bin-name: maturin
+         artifact-upload-name: ${{ runner.os }}-maturin
+
+     - name: Prepare Linux
+       run: |
+         internal/scripts/ci_prepare_ubuntu.sh
+         uname -a
+
+     - uses: actions/setup-python@v5
+       with:
+         python-version: 3.x
+
+     - name: Language Binding Tests
+       run: internal/scripts/ci_check_python.sh
+
   x86_32:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
@@ -220,10 +263,10 @@ jobs:
           uname -a
 
       - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
+        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
       - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
+        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
       - name: Build language bindings
         run: |

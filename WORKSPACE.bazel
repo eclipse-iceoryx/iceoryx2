@@ -108,11 +108,12 @@ maybe(
         "//:iceoryx2-cli/Cargo.toml",
         "//:iceoryx2-ffi/ffi-macros/Cargo.toml",
         "//:iceoryx2-ffi/ffi/Cargo.toml",
+        "//:iceoryx2-ffi/python/Cargo.toml",
         "//:iceoryx2-pal/concurrency-sync/Cargo.toml",
         "//:iceoryx2-pal/configuration/Cargo.toml",
         "//:iceoryx2-pal/posix/Cargo.toml",
         "//:iceoryx2-pal/testing/Cargo.toml",
-    ],
+    ]
 )
 
 load("@crate_index//:defs.bzl", "crate_repositories")
