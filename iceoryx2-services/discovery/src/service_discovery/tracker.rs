@@ -27,6 +27,14 @@ pub enum SyncError {
     ServiceLookupFailure,
 }
 
+impl core::fmt::Display for SyncError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+        core::write!(f, "SyncError::{:?}", self)
+    }
+}
+
+impl core::error::Error for SyncError {}
+
 impl From<ServiceListError> for SyncError {
     fn from(error: ServiceListError) -> Self {
         match error {

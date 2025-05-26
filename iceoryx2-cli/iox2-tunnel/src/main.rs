@@ -59,7 +59,7 @@ fn main() -> Result<()> {
                 };
                 let iceoryx2_config = iceoryx2::config::Config::default();
 
-                let mut tunnel = Tunnel::<ipc::Service>::new(&tunnel_config, &iceoryx2_config);
+                let mut tunnel = Tunnel::<ipc::Service>::new(&tunnel_config, &iceoryx2_config)?;
                 let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 
                 if cli.reactive {
