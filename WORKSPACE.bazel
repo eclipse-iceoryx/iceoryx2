@@ -113,9 +113,6 @@ maybe(
         "//:iceoryx2-pal/configuration/Cargo.toml",
         "//:iceoryx2-pal/posix/Cargo.toml",
         "//:iceoryx2-pal/testing/Cargo.toml",
-    ],
-    ignore_packages = [
-        "//:iceoryx2-ffi/python/Cargo.toml",
     ]
 )
 
