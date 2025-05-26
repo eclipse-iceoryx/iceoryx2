@@ -28,6 +28,7 @@ members = [
     "iceoryx2-services/discovery",
 
     "iceoryx2-tunnels/common",
+    "iceoryx2-tunnels/end-to-end-testing",
     "iceoryx2-tunnels/zenoh",
 
     "iceoryx2-cli",
@@ -83,6 +84,7 @@ iceoryx2-ffi-python = { version = "0.6.1", path = "iceoryx2-ffi/python" }
 iceoryx2-ffi-macros = { version = "0.6.1", path = "iceoryx2-ffi/ffi-macros" }
 iceoryx2-services-discovery = { version = "0.6.1", path = "iceoryx2-services/discovery"}
 iceoryx2-tunnels-common = { version = "0.6.1", path = "iceoryx2-tunnels/common" }
+iceoryx2-tunnels-end-to-end-testing = { version = "0.6.1", path = "iceoryx2-tunnels/end-to-end-testing" }
 iceoryx2-tunnels-zenoh = { version = "0.6.1", path = "iceoryx2-tunnels/zenoh" }
 
 anyhow = { version = "1.0.86" }

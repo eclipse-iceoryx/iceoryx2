@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  ponger:
+    image: end-to-end-testing:latest
+    networks:
+      test-network:
+        ipv4_address: 172.20.0.10
+    environment:
+      - IOX2_LOG_LEVEL=Trace
+      - pinger_ADDR=172.20.0.11:8080
+    command: ["iceoryx2-tunnels-end-to-end-testing-ponger"]
+    restart: "no"
+
+  pinger:
+    image: end-to-end-testing:latest
+    networks:
+      test-network:
+        ipv4_address: 172.20.0.11
+    environment:
+      - IOX2_LOG_LEVEL=Trace
+      - PONGER_ADDR=172.20.0.10:8080
+    depends_on:
+      - ponger
+    command: ["sh", "-c", "sleep 3 && iceoryx2-tunnels-end-to-end-testing-pinger"]
+    restart: "no"
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
