@@ -176,11 +176,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-     - name: Setup Rust
-       uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+     - name: Download artifact cargo-nextest
+       uses: ./.github/actions/download-cached-rust-tool
        with:
-         toolchain: ${{ matrix.toolchain }}
-         components: rustfmt, clippy
+         artifact-bin-name: cargo-nextest
+         artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
      - name: Prepare Linux
        run: |
