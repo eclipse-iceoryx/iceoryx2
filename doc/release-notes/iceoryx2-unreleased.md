@@ -27,6 +27,8 @@
     [#770](https://github.com/eclipse-iceoryx/iceoryx2/issues/770)
 * Fix config file load failure
     [#772](https://github.com/eclipse-iceoryx/iceoryx2/issues/772)
+* Make `Directory::create` thread-safe
+    [#778](https://github.com/eclipse-iceoryx/iceoryx2/issues/778)
 
 ### Refactoring
 
