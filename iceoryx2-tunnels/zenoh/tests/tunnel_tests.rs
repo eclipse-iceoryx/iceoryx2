@@ -56,7 +56,7 @@ mod zenoh_tunnel {
             discovery_service: Some("iox2://discovery/services/".into()),
         };
 
-        let mut tunnel = Tunnel::<S>::new(&tunnel_config, &iox_config);
+        let mut tunnel = Tunnel::<S>::new(&tunnel_config, &iox_config).unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 0);
 
         // Service
@@ -80,7 +80,7 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Discover Services
-        tunnel.discover();
+        tunnel.discover().unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 1);
         assert_that!(tunnel
             .tunneled_services()
@@ -98,7 +98,7 @@ mod zenoh_tunnel {
         // Tunnel
         let iox_config = generate_isolated_config();
         let tunnel_config = TunnelConfig::default();
-        let mut tunnel = Tunnel::<S>::new(&tunnel_config, &iox_config);
+        let mut tunnel = Tunnel::<S>::new(&tunnel_config, &iox_config).unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 0);
 
         // Service
@@ -118,7 +118,7 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Discover Services
-        tunnel.discover();
+        tunnel.discover().unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 1);
         assert_that!(tunnel
             .tunneled_services()
@@ -136,14 +136,14 @@ mod zenoh_tunnel {
         // Tunnel
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // [[ HOST B ]]
         // Tunnel
         let iox_config_b = generate_isolated_config();
         let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b);
+        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
@@ -163,12 +163,12 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Discover Services - Nothing should be discovered
-        tunnel_a.discover();
+        tunnel_a.discover().unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // [[ HOST B ]]
         // Discover Services - Service should be announced
-        tunnel_b.discover();
+        tunnel_b.discover().unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 1);
         assert_that!(tunnel_b
             .tunneled_services()
@@ -178,7 +178,7 @@ mod zenoh_tunnel {
         // Discover Services - Announced service should be discovered
         let mut success = false;
         for _ in 0..3 {
-            tunnel_a.discover();
+            tunnel_a.discover().unwrap();
             if tunnel_a.tunneled_services().len() == 1 {
                 success = true;
                 break;
@@ -209,7 +209,7 @@ mod zenoh_tunnel {
         // Tunnel
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // Service
@@ -230,7 +230,7 @@ mod zenoh_tunnel {
         // Tunnel
         let iox_config_b = generate_isolated_config();
         let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b);
+        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
@@ -249,13 +249,13 @@ mod zenoh_tunnel {
 
         // [[ BOTH ]]
         // Discover Services
-        tunnel_a.discover();
+        tunnel_a.discover().unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
             .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
 
-        tunnel_b.discover();
+        tunnel_b.discover().unwrap();
         let tunneled_services_b = tunnel_b.tunneled_services();
         assert_that!(tunneled_services_b.len(), eq 1);
         assert_that!(tunneled_services_b
@@ -346,7 +346,7 @@ mod zenoh_tunnel {
         // Tunnel
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // Service
@@ -371,7 +371,7 @@ mod zenoh_tunnel {
         // Tunnel
         let iox_config_b = generate_isolated_config();
         let tunnel_config_b = TunnelConfig::default();
-        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b);
+        let mut tunnel_b = Tunnel::<S>::new(&tunnel_config_b, &iox_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
         // Service
@@ -390,13 +390,13 @@ mod zenoh_tunnel {
 
         // [[ BOTH ]]
         // Discover Services
-        tunnel_a.discover();
+        tunnel_a.discover().unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
             .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
 
-        tunnel_b.discover();
+        tunnel_b.discover().unwrap();
         let tunneled_services_b = tunnel_b.tunneled_services();
         assert_that!(tunneled_services_b.len(), eq 1);
         assert_that!(tunneled_services_b
@@ -491,7 +491,7 @@ mod zenoh_tunnel {
         // Tunnel
         let iox_config_a = generate_isolated_config();
         let tunnel_config_a = TunnelConfig::default();
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a);
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config_a, &iox_config_a).unwrap();
 
         // Service
         let iox_node_a = NodeBuilder::new()
@@ -515,7 +515,7 @@ mod zenoh_tunnel {
         let iox_subscriber_a = iox_service_a.subscriber_builder().create().unwrap();
 
         // Discover Services
-        tunnel_a.discover();
+        tunnel_a.discover().unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
@@ -555,7 +555,7 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Tunnel
-        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config, &iox_config);
+        let mut tunnel_a = Tunnel::<S>::new(&tunnel_config, &iox_config).unwrap();
 
         // Service
         let iox_node = NodeBuilder::new()
@@ -573,7 +573,7 @@ mod zenoh_tunnel {
         // ==================== TEST =====================
 
         // Discover Services
-        tunnel_a.discover();
+        tunnel_a.discover().unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
