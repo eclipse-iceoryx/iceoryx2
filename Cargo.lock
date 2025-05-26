@@ -1482,6 +1482,7 @@ dependencies = [
  "serde_yaml",
  "tempfile",
  "toml",
+ "zenoh",
 ]
 
 [[package]]
