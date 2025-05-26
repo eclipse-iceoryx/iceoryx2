@@ -10,6 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#[cfg(not(debug_assertions))]
+use human_panic::setup_panic;
+#[cfg(debug_assertions)]
+extern crate better_panic;
+
 mod cli;
 
 use anyhow::Result;
