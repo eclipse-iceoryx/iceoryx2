@@ -10,12 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::node::NodeId;
+use iceoryx2::node::Node as IceoryxNode;
+use iceoryx2::node::NodeId as IceoryxNodeId;
 use iceoryx2::port::publisher::Publisher as IceoryxPublisher;
 use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
+use iceoryx2::service::port_factory::publish_subscribe::PortFactory as IceoryxService;
 use iceoryx2::service::static_config::message_type_details::MessageTypeDetails;
+use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
 
 use zenoh::bytes::ZBytes;
@@ -23,18 +26,38 @@ use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher as ZenohPublisher;
 use zenoh::pubsub::Subscriber as ZenohSubscriber;
 use zenoh::sample::Sample;
+use zenoh::Session as ZenohSession;
 use zenoh::Wait;
+
+use crate::iox_create_publisher;
+use crate::iox_create_service;
+use crate::iox_create_subscriber;
+use crate::z_create_publisher;
+use crate::z_create_subscriber;
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum CreationError {
+    FailureToCreateIceoryxService,
+    FailureToCreateIceoryxPublisher,
+    FailureToCreateIceoryxSubscriber,
+    FailureToCreateZenohPublisher,
+    FailureToCreateZenohSubscriber,
+}
+
+impl core::fmt::Display for CreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+        core::write!(f, "CreationError::{:?}", self)
+    }
+}
+
+impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PropagationError {
-    /// Error that occurs when receiving data from an Iceoryx subscriber fails
-    IceoryxReceiveFailure,
-    /// Error that occurs when publishing data to an Iceoryx publisher fails
-    IceoryxPublishFailure,
-    /// Error that occurs when receiving data from a Zenoh subscriber fails
-    ZenohReceiveFailure,
-    /// Error that occurs when publishing data to a Zenoh publisher fails
-    ZenohPublishFailure,
+    FailureToReceiveFromIceoryx,
+    FailureToPublishToIceoryx,
+    FailureToReceiveFromZenoh,
+    FailureToPublishToZenoh,
 }
 
 impl core::fmt::Display for PropagationError {
@@ -49,13 +72,13 @@ pub trait DataStream {
     fn propagate(&self) -> Result<(), PropagationError>;
 }
 
-pub struct OutboundStream<'a, Service: iceoryx2::service::Service> {
-    iox_node_id: NodeId,
-    iox_subscriber: IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+pub(crate) struct OutboundStream<'a, ServiceType: iceoryx2::service::Service> {
+    iox_node_id: IceoryxNodeId,
+    iox_subscriber: IceoryxSubscriber<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     z_publisher: ZenohPublisher<'a>,
 }
 
-impl<'a, Service: iceoryx2::service::Service> DataStream for OutboundStream<'a, Service> {
+impl<'a, ServiceType: iceoryx2::service::Service> DataStream for OutboundStream<'a, ServiceType> {
     fn propagate(&self) -> Result<(), PropagationError> {
         loop {
             match unsafe { self.iox_subscriber.receive_custom_payload() } {
@@ -72,13 +95,13 @@ impl<'a, Service: iceoryx2::service::Service> DataStream for OutboundStream<'a, 
                     let z_payload = ZBytes::from(bytes);
                     if let Err(e) = self.z_publisher.put(z_payload).wait() {
                         error!("failed to propagate payload to zenoh: {}", e);
-                        return Err(PropagationError::ZenohPublishFailure);
+                        return Err(PropagationError::FailureToPublishToZenoh);
                     }
                 }
                 Ok(None) => break, // No more samples available
                 Err(e) => {
                     error!("failed to receive custom payload from iceoryx: {}", e);
-                    return Err(PropagationError::IceoryxReceiveFailure);
+                    return Err(PropagationError::FailureToReceiveFromIceoryx);
                 }
             }
         }
@@ -87,27 +110,33 @@ impl<'a, Service: iceoryx2::service::Service> DataStream for OutboundStream<'a, 
     }
 }
 
-impl<'a, Service: iceoryx2::service::Service> OutboundStream<'a, Service> {
-    pub fn new(
-        iox_node_id: &NodeId,
-        iox_subscriber: IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
-        z_publisher: ZenohPublisher<'a>,
-    ) -> Self {
-        Self {
+impl<'a, ServiceType: iceoryx2::service::Service> OutboundStream<'a, ServiceType> {
+    pub fn create(
+        iox_node_id: &IceoryxNodeId,
+        iox_service_config: &IceoryxServiceConfig,
+        iox_service: &IceoryxService<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
+        z_session: &ZenohSession,
+    ) -> Result<Self, CreationError> {
+        let iox_subscriber = iox_create_subscriber::<ServiceType>(iox_service, iox_service_config)
+            .map_err(|_e| CreationError::FailureToCreateIceoryxSubscriber)?;
+        let z_publisher = z_create_publisher(z_session, iox_service_config)
+            .map_err(|_e| CreationError::FailureToCreateZenohPublisher)?;
+
+        Ok(Self {
             iox_node_id: iox_node_id.clone(),
             iox_subscriber,
             z_publisher,
-        }
+        })
     }
 }
 
-pub struct InboundStream<Service: iceoryx2::service::Service> {
+pub(crate) struct InboundStream<ServiceType: iceoryx2::service::Service> {
     iox_message_type_details: MessageTypeDetails,
-    iox_publisher: IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    iox_publisher: IceoryxPublisher<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
 }
 
-impl<Service: iceoryx2::service::Service> DataStream for InboundStream<Service> {
+impl<ServiceType: iceoryx2::service::Service> DataStream for InboundStream<ServiceType> {
     fn propagate(&self) -> Result<(), PropagationError> {
         loop {
             match self.z_subscriber.try_recv() {
@@ -130,12 +159,12 @@ impl<Service: iceoryx2::service::Service> DataStream for InboundStream<Service> 
                                 let iox_sample = iox_sample.assume_init();
                                 if let Err(e) = iox_sample.send() {
                                     error!("failed to send custom payload to iceoryx: {}", e);
-                                    return Err(PropagationError::IceoryxPublishFailure);
+                                    return Err(PropagationError::FailureToPublishToIceoryx);
                                 }
                             }
                             Err(e) => {
                                 error!("failed to loan custom payload from iceoryx: {}", e);
-                                return Err(PropagationError::IceoryxPublishFailure);
+                                return Err(PropagationError::FailureToPublishToIceoryx);
                             }
                         }
                     }
@@ -143,7 +172,7 @@ impl<Service: iceoryx2::service::Service> DataStream for InboundStream<Service> 
                 Ok(None) => break, // No more samples available
                 Err(e) => {
                     error!("failed to receive payload from Zenoh: {}", e);
-                    return Err(PropagationError::ZenohReceiveFailure);
+                    return Err(PropagationError::FailureToReceiveFromZenoh);
                 }
             }
         }
@@ -152,16 +181,60 @@ impl<Service: iceoryx2::service::Service> DataStream for InboundStream<Service> 
     }
 }
 
-impl<Service: iceoryx2::service::Service> InboundStream<Service> {
-    pub fn new(
-        iox_message_type_details: &MessageTypeDetails,
-        iox_publisher: IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
-        z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
-    ) -> Self {
-        Self {
-            iox_message_type_details: iox_message_type_details.clone(),
+impl<ServiceType: iceoryx2::service::Service> InboundStream<ServiceType> {
+    pub fn create(
+        iox_service_config: &IceoryxServiceConfig,
+        iox_service: &IceoryxService<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
+        z_session: &ZenohSession,
+    ) -> Result<Self, CreationError> {
+        let iox_publisher = iox_create_publisher::<ServiceType>(iox_service, iox_service_config)
+            .map_err(|_e| CreationError::FailureToCreateIceoryxPublisher)?;
+        let z_subscriber = z_create_subscriber(z_session, iox_service_config)
+            .map_err(|_e| CreationError::FailureToCreateZenohSubscriber)?;
+
+        Ok(Self {
+            iox_message_type_details: iox_service_config
+                .publish_subscribe()
+                .message_type_details()
+                .clone(),
             iox_publisher,
             z_subscriber,
-        }
+        })
+    }
+}
+
+pub(crate) struct BidirectionalStream<'a, ServiceType: iceoryx2::service::Service> {
+    outbound_stream: OutboundStream<'a, ServiceType>,
+    inbound_stream: InboundStream<ServiceType>,
+}
+
+impl<'a, ServiceType: iceoryx2::service::Service> DataStream
+    for BidirectionalStream<'a, ServiceType>
+{
+    fn propagate(&self) -> Result<(), PropagationError> {
+        self.outbound_stream.propagate()?;
+        self.inbound_stream.propagate()?;
+
+        Ok(())
+    }
+}
+
+impl<'a, ServiceType: iceoryx2::service::Service> BidirectionalStream<'a, ServiceType> {
+    pub fn create(
+        iox_node: &IceoryxNode<ServiceType>,
+        z_session: &ZenohSession,
+        iox_service_config: &IceoryxServiceConfig,
+    ) -> Result<Self, CreationError> {
+        let iox_service = iox_create_service::<ServiceType>(iox_node, iox_service_config)
+            .map_err(|_e| CreationError::FailureToCreateIceoryxService)?;
+
+        let outbound_stream =
+            OutboundStream::create(&iox_node.id(), iox_service_config, &iox_service, z_session)?;
+        let inbound_stream = InboundStream::create(iox_service_config, &iox_service, z_session)?;
+
+        Ok(Self {
+            outbound_stream,
+            inbound_stream,
+        })
     }
 }

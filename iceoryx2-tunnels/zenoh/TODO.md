@@ -27,4 +27,6 @@
 1. [ ] Refactoring
     1. [x] Tunnel constructor should take config by reference
     1. [ ] Synchronize entire discovery state with discovery service on startup
-    1. [ ] Properly handle all error cases in implementation
+    1. [x] Properly handle all error cases in implementation
+    1. [ ] Make `iox2 tunnel zenoh` a separate binary from `iox2 tunnel`
+        * Keep `zenoh` dependencies separate
