@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::sync::Barrier;
+
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_posix::config::*;
 use iceoryx2_bb_posix::directory::*;
@@ -23,6 +25,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::test_fail;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
 
 struct TestFixture {
@@ -167,6 +170,45 @@ fn directory_create_from_path_works_recursively() {
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
     let sut_create = Directory::create(&sut_name, Permission::OWNER_ALL);
     assert_that!(sut_create, is_ok);
+    assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
+}
+
+#[test]
+fn directory_create_from_path_is_thread_safe() {
+    const NUMBER_OF_THREADS: usize = 4;
+    let _watchdog = Watchdog::new();
+    let mut test = TestFixture::new();
+
+    create_test_directory();
+    let mut sut_name = test.generate_directory_name();
+    sut_name
+        .add_path_entry(&Path::new(b"all").unwrap())
+        .unwrap();
+    sut_name
+        .add_path_entry(&Path::new(b"glory").unwrap())
+        .unwrap();
+    sut_name.add_path_entry(&Path::new(b"to").unwrap()).unwrap();
+    sut_name
+        .add_path_entry(&Path::new(b"the").unwrap())
+        .unwrap();
+    sut_name
+        .add_path_entry(&Path::new(b"hypnotoad").unwrap())
+        .unwrap();
+
+    let barrier = Barrier::new(NUMBER_OF_THREADS + 1);
+    std::thread::scope(|s| {
+        for _ in 0..NUMBER_OF_THREADS {
+            s.spawn(|| {
+                barrier.wait();
+                let sut_create = Directory::create(&sut_name, Permission::OWNER_ALL);
+                assert_that!(sut_create, is_ok);
+            });
+        }
+
+        assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
+        barrier.wait();
+    });
+
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq true);
 }
 
