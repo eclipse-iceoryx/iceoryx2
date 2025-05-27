@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod cpu_set_t;
+pub(crate) mod error_enum_generator;
 pub mod mem_zeroed_struct;
 pub mod sockaddr_in;
 pub(crate) mod string_operations;
