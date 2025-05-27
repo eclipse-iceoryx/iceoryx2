@@ -36,16 +36,21 @@ pub(crate) mod internal {
 }
 
 #[cfg(feature = "libc_platform")]
-mod libc;
+#[path = "libc/mod.rs"]
+mod platform;
 
 #[cfg(all(target_os = "freebsd", not(feature = "libc_platform")))]
-mod freebsd;
-#[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
-mod linux;
+#[path = "freebsd/mod.rs"]
+mod platform;
 #[cfg(all(target_os = "macos", not(feature = "libc_platform")))]
-mod macos;
+#[path = "macos/mod.rs"]
+mod platform;
+#[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
+#[path = "linux/mod.rs"]
+pub mod platform;
 #[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
-mod windows;
+#[path = "windows/mod.rs"]
+mod platform;
 
 pub mod posix {
     #![allow(dead_code)]
@@ -56,15 +61,5 @@ pub mod posix {
     pub use common::sockaddr_in::SockAddrIn;
     pub(crate) use common::string_operations::*;
 
-    #[cfg(feature = "libc_platform")]
-    pub use crate::libc::*;
-
-    #[cfg(all(target_os = "freebsd", not(feature = "libc_platform")))]
-    pub use crate::freebsd::*;
-    #[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
-    pub use crate::linux::*;
-    #[cfg(all(target_os = "macos", not(feature = "libc_platform")))]
-    pub use crate::macos::*;
-    #[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
-    pub use crate::windows::*;
+    pub use crate::platform::*;
 }
