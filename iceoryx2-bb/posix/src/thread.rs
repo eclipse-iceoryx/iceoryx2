@@ -88,7 +88,7 @@ use crate::handle_errno;
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
-use iceoryx2_pal_posix::posix::errno::Errno;
+use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 
 use crate::{

@@ -76,7 +76,7 @@ use crate::{
 };
 use core::{fmt::Display, marker::PhantomPinned};
 use iceoryx2_bb_log::warn;
-use iceoryx2_pal_posix::*;
+use iceoryx2_pal_posix::{posix::MemZeroedStruct, *};
 
 /// Defines the maximum amount of [`FileDescriptor`]s which can be sent with a single message.
 pub const MAX_FILE_DESCRIPTORS_PER_MESSAGE: usize = posix::SCM_MAX_FD as usize;

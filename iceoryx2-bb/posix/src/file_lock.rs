@@ -48,6 +48,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
 use iceoryx2_pal_posix::posix::errno::Errno;
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
 use crate::clock::NanosleepError;

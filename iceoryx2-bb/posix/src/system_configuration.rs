@@ -17,7 +17,7 @@ use enum_iterator::Sequence;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_log::{fatal_panic, warn};
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_pal_posix::*;
+use iceoryx2_pal_posix::{posix::MemZeroedStruct, *};
 
 /// The global config path of the system, where all config files shall be stored.
 pub fn get_global_config_path() -> Path {

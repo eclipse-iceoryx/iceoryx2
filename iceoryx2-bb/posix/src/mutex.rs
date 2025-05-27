@@ -53,6 +53,7 @@ use core::ops::{Deref, DerefMut};
 use core::time::Duration;
 use iceoryx2_bb_elementary::scope_guard::*;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
 use crate::adaptive_wait::*;

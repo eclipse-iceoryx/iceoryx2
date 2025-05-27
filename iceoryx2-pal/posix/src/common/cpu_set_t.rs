@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 #![allow(dead_code)]
 
-use crate::{posix::CPU_SETSIZE, MemZeroedStruct};
+use crate::posix::{MemZeroedStruct, CPU_SETSIZE};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(C)]

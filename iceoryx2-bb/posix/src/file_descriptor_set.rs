@@ -51,7 +51,7 @@ use crate::{
     file_descriptor::{FileDescriptor, FileDescriptorBased},
 };
 use iceoryx2_bb_log::fail;
-use iceoryx2_pal_posix::posix::errno::Errno;
+use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 
 /// A trait which is implement by all objects which can be added to the [`FileDescriptorSet`].

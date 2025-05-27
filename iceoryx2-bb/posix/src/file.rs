@@ -51,6 +51,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, trace, warn};
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_posix::posix::errno::Errno;
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
 pub use crate::creation_mode::CreationMode;

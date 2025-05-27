@@ -40,6 +40,7 @@ use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 use iceoryx2_pal_posix::{posix::errno::Errno, posix::S_IFDIR};
 

@@ -17,8 +17,6 @@
 
 mod common;
 
-pub use common::mem_zeroed_struct::MemZeroedStruct;
-
 #[cfg(not(feature = "libc_platform"))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
@@ -54,6 +52,8 @@ pub mod posix {
     use super::*;
 
     pub use common::cpu_set_t::cpu_set_t;
+    pub use common::mem_zeroed_struct::MemZeroedStruct;
+    pub use common::sockaddr_in::SockAddrIn;
 
     #[cfg(feature = "libc_platform")]
     pub use crate::libc::*;
@@ -66,11 +66,6 @@ pub mod posix {
     pub use crate::macos::*;
     #[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
     pub use crate::windows::*;
-
-    pub trait SockAddrIn {
-        fn set_s_addr(&mut self, value: u32);
-        fn get_s_addr(&self) -> u32;
-    }
 
     pub(crate) unsafe fn c_string_length(value: *const crate::posix::c_char) -> usize {
         for i in 0..isize::MAX {

@@ -10,9 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod cpu_set_t;
-pub mod mem_zeroed_struct;
-pub mod sockaddr_in;
-
-#[cfg(not(target_os = "windows"))]
-pub(crate) mod scandir;
+pub trait SockAddrIn {
+    fn set_s_addr(&mut self, value: u32);
+    fn get_s_addr(&self) -> u32;
+}
