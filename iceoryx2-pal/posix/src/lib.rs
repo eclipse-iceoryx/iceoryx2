@@ -49,11 +49,6 @@ mod macos;
 #[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
 mod windows;
 
-#[cfg(not(target_os = "windows"))]
-mod scandir;
-#[cfg(not(target_os = "windows"))]
-use scandir::*;
-
 pub mod posix {
     #![allow(dead_code)]
     use super::*;

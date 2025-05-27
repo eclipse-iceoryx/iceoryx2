@@ -11,3 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod mem_zeroed_struct;
+
+#[cfg(not(target_os = "windows"))]
+pub(crate) mod scandir;
