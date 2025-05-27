@@ -13,13 +13,13 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 use crate::posix::types::*;
-use crate::posix::{sighandler_t, Struct};
+use crate::posix::{sighandler_t, MemZeroedStruct};
 
 #[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct sigaction_t(crate::internal::sigaction);
 
-impl Struct for sigaction_t {}
+impl MemZeroedStruct for sigaction_t {}
 
 impl sigaction_t {
     pub fn set_handler(&mut self, handler: sighandler_t) {
