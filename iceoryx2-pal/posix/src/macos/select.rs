@@ -14,7 +14,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::posix::types::*;
-use crate::posix::Struct;
+use crate::posix::MemZeroedStruct;
 
 pub unsafe fn select(
     nfds: int,
@@ -93,5 +93,5 @@ pub unsafe fn FD_SET(fd: int, set: *mut fd_set) {
 }
 
 pub unsafe fn FD_ZERO(set: *mut fd_set) {
-    (*set) = fd_set::new();
+    (*set) = fd_set::new_zeroed();
 }
