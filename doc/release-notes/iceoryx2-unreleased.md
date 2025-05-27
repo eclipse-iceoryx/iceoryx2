@@ -39,6 +39,8 @@
 
 * Remove trait re-exports from iceoryx2-bb-elementary
   [#757](https://github.com/eclipse-iceoryx/iceoryx2/issues/757)
+* Make POSIX user- and group details optional
+  [#780](https://github.com/eclipse-iceoryx/iceoryx2/issues/780)
 
 ### Workflow
 
