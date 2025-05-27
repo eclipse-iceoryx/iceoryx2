@@ -17,7 +17,7 @@ macro_rules! ErrnoEnumGenerator {
         #[repr(i32)]
         pub enum Errno {
             $($entry = $value),*,
-            $($map_entry = crate::internal::$map_entry as _),*,
+            $($map_entry = $crate::internal::$map_entry as _),*,
             NOTIMPLEMENTED = i32::MAX
         }
 
