@@ -40,7 +40,7 @@ use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_log::{error, fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
-use iceoryx2_pal_posix::posix::Struct;
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 use iceoryx2_pal_posix::{posix::errno::Errno, posix::S_IFDIR};
 
@@ -462,7 +462,7 @@ impl Directory {
 
     /// Returns true if a directory already exists, otherwise false
     pub fn does_exist(path: &Path) -> Result<bool, DirectoryAccessError> {
-        let mut buffer = posix::stat_t::new();
+        let mut buffer = posix::stat_t::new_zeroed();
         let msg = format!("Unable to determine if \"{}\" does exist", path);
 
         if unsafe { posix::stat(path.as_c_str(), &mut buffer) } == -1 {
@@ -481,7 +481,7 @@ impl Directory {
     }
 
     fn acquire_metadata(&self, file: &FileName, msg: &str) -> Result<Metadata, DirectoryStatError> {
-        let mut buffer = posix::stat_t::new();
+        let mut buffer = posix::stat_t::new_zeroed();
         let mut path = self.path().clone();
         path.push(PATH_SEPARATOR).unwrap();
         path.push_bytes(file.as_bytes()).unwrap();

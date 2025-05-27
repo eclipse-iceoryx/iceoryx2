@@ -76,8 +76,7 @@ use crate::{
 };
 use core::{fmt::Display, marker::PhantomPinned};
 use iceoryx2_bb_log::warn;
-use iceoryx2_pal_posix::posix::Struct;
-use iceoryx2_pal_posix::*;
+use iceoryx2_pal_posix::{posix::MemZeroedStruct, *};
 
 /// Defines the maximum amount of [`FileDescriptor`]s which can be sent with a single message.
 pub const MAX_FILE_DESCRIPTORS_PER_MESSAGE: usize = posix::SCM_MAX_FD as usize;
@@ -377,7 +376,7 @@ impl SocketAncillary {
                     }
                 }
                 posix::SCM_CREDENTIALS => {
-                    let mut raw_cred = posix::ucred::new();
+                    let mut raw_cred = posix::ucred::new_zeroed();
                     unsafe {
                         posix::memcpy(
                             (&mut raw_cred as *mut posix::ucred) as *mut posix::void,

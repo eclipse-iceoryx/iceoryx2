@@ -13,7 +13,7 @@
 use crate::posix::types::*;
 use crate::posix::{closedir, free, malloc, opendir, readdir_r};
 
-pub unsafe fn scandir_impl(
+pub(crate) unsafe fn scandir_impl(
     path: *const c_char,
     namelist: *mut *mut *mut crate::posix::types::dirent,
 ) -> int {

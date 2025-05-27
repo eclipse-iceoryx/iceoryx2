@@ -13,7 +13,10 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::*;
+use crate::{
+    common::{cpu_set_t::cpu_set_t, mem_zeroed_struct::MemZeroedStruct},
+    posix::*,
+};
 
 pub unsafe fn pthread_rwlockattr_setkind_np(attr: *mut pthread_rwlockattr_t, pref: int) -> int {
     crate::internal::pthread_rwlockattr_setkind_np(attr, pref)
@@ -135,7 +138,7 @@ pub unsafe fn pthread_getaffinity_np(
     cpusetsize: size_t,
     cpuset: *mut cpu_set_t,
 ) -> int {
-    let mut native_cpuset = native_cpu_set_t::new();
+    let mut native_cpuset = native_cpu_set_t::new_zeroed();
 
     let ret_val = internal::pthread_getaffinity_np(thread, cpusetsize, &mut native_cpuset);
 

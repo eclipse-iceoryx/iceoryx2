@@ -40,7 +40,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_bb_system_types::user_name::UserName;
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
 enum_gen! { UserError
@@ -156,7 +156,7 @@ impl User {
         let msg = "Unable to acquire user entry";
         let origin = format!("User::from_uid({})", uid);
 
-        let mut passwd = posix::passwd::new();
+        let mut passwd = posix::passwd::new_zeroed();
         let mut passwd_ptr: *mut posix::passwd = &mut passwd;
         let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
 
@@ -193,7 +193,7 @@ impl User {
         let msg = "Unable to acquire user entry";
         let origin = format!("User::from_name({})", user_name);
 
-        let mut passwd = posix::passwd::new();
+        let mut passwd = posix::passwd::new_zeroed();
         let mut passwd_ptr: *mut posix::passwd = &mut passwd;
         let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
 

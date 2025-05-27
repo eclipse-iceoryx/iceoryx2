@@ -14,62 +14,8 @@
 #![allow(unused_variables)]
 
 use crate::posix::types::*;
+use crate::ErrnoEnumGenerator;
 use core::{cell::Cell, ffi::CStr, fmt::Display};
-
-macro_rules! ErrnoEnumGenerator {
-    (assign $($entry:ident = $value:expr),*; map $($map_entry:ident),*) => {
-        #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-        #[repr(i32)]
-        pub enum Errno {
-            $($entry = $value),*,
-            $($map_entry = crate::internal::$map_entry as _),*,
-            NOTIMPLEMENTED = i32::MAX
-        }
-
-        impl From<u32> for Errno {
-            fn from(value: u32) -> Self {
-                match value {
-                    $($value => Errno::$entry),*,
-                    $($crate::internal::$map_entry => Errno::$map_entry),*,
-                    _ => Errno::NOTIMPLEMENTED
-                }
-            }
-        }
-
-        impl From<i32> for Errno {
-            fn from(value: i32) -> Self {
-                Errno::from(value as u32)
-            }
-        }
-
-        impl Display for Errno {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                const BUFFER_SIZE: usize = 1024;
-                let mut buffer: [c_char; BUFFER_SIZE] = [0; BUFFER_SIZE];
-                unsafe { strerror_r(*self as i32, buffer.as_mut_ptr(), BUFFER_SIZE) };
-                let s = match unsafe { CStr::from_ptr(buffer.as_ptr()) }.to_str() {
-                    Ok(v) => v.to_string(),
-                    Err(_) => "".to_string(),
-                };
-
-                match self {
-                    $(Errno::$entry => {
-                        write!(f, "errno {{ name = \"{}\", value = {}, details = \"{}\" }}",
-                            stringify!($entry), Errno::$entry as i32, s)
-                    }),*,
-                    $(Errno::$map_entry => {
-                        write!(f, "errno {{ name = \"{}\", value = {}, details = \"{}\" }}",
-                            stringify!($map_entry), Errno::$map_entry as i32, s)
-                    }),*,
-                    Errno::NOTIMPLEMENTED => {
-                        write!(f, "errno {{ name = \"NOTIMPLEMENTED\", value = {}, details = \"???\" }}",
-                            Errno::NOTIMPLEMENTED as i32)
-                    }
-                }
-            }
-        }
-    };
-}
 
 ErrnoEnumGenerator!(
   assign

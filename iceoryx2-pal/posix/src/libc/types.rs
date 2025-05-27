@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::{SockAddrIn, Struct};
-
+use crate::common::mem_zeroed_struct::MemZeroedStruct;
+use crate::posix::SockAddrIn;
 pub type ulong = libc::c_ulong;
 
 #[repr(C)]
@@ -24,7 +24,7 @@ pub struct ucred {
     pub gid: gid_t,
 }
 
-impl Struct for ucred {}
+impl MemZeroedStruct for ucred {}
 
 pub type DIR = libc::DIR;
 
@@ -60,49 +60,49 @@ pub type ushort = libc::c_ushort;
 pub type void = core::ffi::c_void;
 
 pub(crate) type native_cpu_set_t = libc::cpu_set_t;
-impl Struct for native_cpu_set_t {}
+impl MemZeroedStruct for native_cpu_set_t {}
 
 pub type sigset_t = libc::sigset_t;
-impl Struct for sigset_t {}
+impl MemZeroedStruct for sigset_t {}
 
 pub type pthread_barrier_t = libc::pthread_barrier_t;
-impl Struct for pthread_barrier_t {}
+impl MemZeroedStruct for pthread_barrier_t {}
 
 pub type pthread_barrierattr_t = libc::pthread_barrierattr_t;
-impl Struct for pthread_barrierattr_t {}
+impl MemZeroedStruct for pthread_barrierattr_t {}
 
 pub type pthread_attr_t = libc::pthread_attr_t;
-impl Struct for pthread_attr_t {}
+impl MemZeroedStruct for pthread_attr_t {}
 
 pub type pthread_t = libc::pthread_t;
-impl Struct for pthread_t {}
+impl MemZeroedStruct for pthread_t {}
 
 pub type pthread_rwlockattr_t = libc::pthread_rwlockattr_t;
-impl Struct for pthread_rwlockattr_t {}
+impl MemZeroedStruct for pthread_rwlockattr_t {}
 
 pub type pthread_rwlock_t = libc::pthread_rwlock_t;
-impl Struct for pthread_rwlock_t {}
+impl MemZeroedStruct for pthread_rwlock_t {}
 
 pub type pthread_mutex_t = libc::pthread_mutex_t;
-impl Struct for pthread_mutex_t {}
+impl MemZeroedStruct for pthread_mutex_t {}
 
 pub type pthread_mutexattr_t = libc::pthread_mutexattr_t;
-impl Struct for pthread_mutexattr_t {}
+impl MemZeroedStruct for pthread_mutexattr_t {}
 
 pub type sem_t = libc::sem_t;
-impl Struct for sem_t {}
+impl MemZeroedStruct for sem_t {}
 
 pub type flock = libc::flock;
-impl Struct for flock {}
+impl MemZeroedStruct for flock {}
 
 pub type rlimit = libc::rlimit;
-impl Struct for rlimit {}
+impl MemZeroedStruct for rlimit {}
 
 pub type sched_param = libc::sched_param;
-impl Struct for sched_param {}
+impl MemZeroedStruct for sched_param {}
 
 pub(crate) type native_stat_t = libc::stat;
-impl Struct for native_stat_t {}
+impl MemZeroedStruct for native_stat_t {}
 
 #[repr(C)]
 pub struct stat_t {
@@ -139,37 +139,37 @@ impl From<native_stat_t> for stat_t {
         }
     }
 }
-impl Struct for stat_t {}
+impl MemZeroedStruct for stat_t {}
 
 pub type timespec = libc::timespec;
-impl Struct for timespec {}
+impl MemZeroedStruct for timespec {}
 
 pub type timeval = libc::timeval;
-impl Struct for timeval {}
+impl MemZeroedStruct for timeval {}
 
 pub type fd_set = libc::fd_set;
-impl Struct for fd_set {}
+impl MemZeroedStruct for fd_set {}
 
 pub type dirent = libc::dirent;
-impl Struct for dirent {}
+impl MemZeroedStruct for dirent {}
 
 pub type msghdr = libc::msghdr;
-impl Struct for msghdr {}
+impl MemZeroedStruct for msghdr {}
 
 pub type cmsghdr = libc::cmsghdr;
-impl Struct for cmsghdr {}
+impl MemZeroedStruct for cmsghdr {}
 
 pub type iovec = libc::iovec;
-impl Struct for iovec {}
+impl MemZeroedStruct for iovec {}
 
 pub type sockaddr = libc::sockaddr;
-impl Struct for sockaddr {}
+impl MemZeroedStruct for sockaddr {}
 
 pub type sockaddr_un = libc::sockaddr_un;
-impl Struct for sockaddr_un {}
+impl MemZeroedStruct for sockaddr_un {}
 
 pub type sockaddr_in = libc::sockaddr_in;
-impl Struct for sockaddr_in {}
+impl MemZeroedStruct for sockaddr_in {}
 
 impl SockAddrIn for sockaddr_in {
     fn set_s_addr(&mut self, value: u32) {
@@ -182,7 +182,7 @@ impl SockAddrIn for sockaddr_in {
 }
 
 pub type passwd = libc::passwd;
-impl Struct for passwd {}
+impl MemZeroedStruct for passwd {}
 
 pub type group = libc::group;
-impl Struct for group {}
+impl MemZeroedStruct for group {}

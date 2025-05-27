@@ -50,8 +50,7 @@ use iceoryx2_bb_container::byte_string::strnlen;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::{group_name::GroupName, user_name::UserName};
-use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
+use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 
 use crate::{config::GROUP_BUFFER_SIZE, system_configuration::*};
@@ -147,7 +146,7 @@ impl Group {
     /// Create an group object from a given gid. If the gid does not exist an error will be
     /// returned.
     pub fn from_gid(gid: u32) -> Result<Group, GroupError> {
-        let mut group = posix::group::new();
+        let mut group = posix::group::new_zeroed();
         let mut group_ptr: *mut posix::group = &mut group;
         let mut buffer: [posix::c_char; GROUP_BUFFER_SIZE] = [0; GROUP_BUFFER_SIZE];
 
@@ -186,7 +185,7 @@ impl Group {
     /// Create an group object from a given group-name. If the group-name does not exist an error will
     /// be returned
     pub fn from_name(group_name: &GroupName) -> Result<Group, GroupError> {
-        let mut group = posix::group::new();
+        let mut group = posix::group::new_zeroed();
         let mut group_ptr: *mut posix::group = &mut group;
         let mut buffer: [posix::c_char; GROUP_BUFFER_SIZE] = [0; GROUP_BUFFER_SIZE];
 

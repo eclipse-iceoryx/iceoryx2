@@ -15,7 +15,7 @@
 #![allow(unused_variables)]
 
 use crate::{
-    posix::Struct,
+    posix::MemZeroedStruct,
     posix::{self},
     posix::{
         types::*,
@@ -39,7 +39,7 @@ use windows_sys::Win32::{
 
 use super::settings::MAX_PATH_LENGTH;
 
-impl Struct for WIN32_FIND_DATAA {}
+impl MemZeroedStruct for WIN32_FIND_DATAA {}
 
 pub(crate) unsafe fn to_dir_search_string(path: *const c_char) -> [u8; MAX_PATH_LENGTH] {
     let mut buffer = [0u8; MAX_PATH_LENGTH];
@@ -60,7 +60,7 @@ pub(crate) unsafe fn to_dir_search_string(path: *const c_char) -> [u8; MAX_PATH_
 pub unsafe fn scandir(path: *const c_char, namelist: *mut *mut *mut dirent) -> int {
     let uds_files = HandleTranslator::get_instance().list_all_uds(path);
     let path = to_dir_search_string(path);
-    let mut data = WIN32_FIND_DATAA::new();
+    let mut data = WIN32_FIND_DATAA::new_zeroed();
     let (handle, _) =
         win32call! { FindFirstFileA(path.as_ptr(), &mut data), ignore ERROR_FILE_NOT_FOUND};
 

@@ -104,7 +104,7 @@ macro_rules! win32call {
             let ret_val = $call;
             let last_error = windows_sys::Win32::Foundation::GetLastError();
             if last_error != 0 {
-                $crate::windows::win32_call::system_error_code_to_errno(last_error);
+                $crate::platform::win32_call::system_error_code_to_errno(last_error);
                 match last_error {
                     $($error => ()),*,
                     _ => {
@@ -145,7 +145,7 @@ macro_rules! win32call {
             let ret_val = $call;
             let last_error = windows_sys::Win32::Networking::WinSock::WSAGetLastError();
             if last_error != 0 {
-                $crate::windows::win32_call::wsa_to_errno(last_error);
+                $crate::platform::win32_call::wsa_to_errno(last_error);
                 match last_error {
                     $($error => ()),*,
                     _ => {

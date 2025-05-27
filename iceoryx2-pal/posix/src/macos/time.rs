@@ -15,7 +15,7 @@
 
 use crate::posix::types::*;
 use crate::posix::Errno;
-use crate::posix::Struct;
+use crate::posix::MemZeroedStruct;
 
 pub unsafe fn clock_gettime(clock_id: clockid_t, tp: *mut timespec) -> int {
     crate::internal::clock_gettime(clock_id, tp)
@@ -35,7 +35,7 @@ pub unsafe fn clock_nanosleep(
         return Errno::ENOTSUP as _;
     }
 
-    let mut now = timespec::new();
+    let mut now = timespec::new_zeroed();
     if clock_gettime(clock_id, &mut now) == -1 {
         return Errno::EINVAL as _;
     }

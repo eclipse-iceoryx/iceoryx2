@@ -16,7 +16,10 @@
 
 use core::panic;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
-use std::{os::windows::prelude::OsStringExt, time::SystemTime, time::UNIX_EPOCH};
+use std::{
+    os::windows::prelude::OsStrExt, os::windows::prelude::OsStringExt, time::SystemTime,
+    time::UNIX_EPOCH,
+};
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_concurrency_sync::rwlock::*;
@@ -37,7 +40,8 @@ use windows_sys::Win32::{
     },
 };
 
-pub use crate::posix::Struct;
+pub use crate::posix::MemZeroedStruct;
+use crate::posix::*;
 use crate::{
     posix::Errno,
     posix::{
@@ -46,7 +50,6 @@ use crate::{
     },
     win32call,
 };
-use crate::{posix::*, win_internal::*};
 
 #[derive(Clone, Copy)]
 struct ThreadState {
@@ -202,7 +205,7 @@ pub unsafe fn pthread_barrierattr_setpshared(
 }
 
 pub unsafe fn pthread_attr_init(attr: *mut pthread_attr_t) -> int {
-    attr.write(pthread_attr_t::new());
+    attr.write(pthread_attr_t::new_zeroed());
     Errno::ESUCCES as int
 }
 
@@ -290,7 +293,7 @@ pub unsafe fn pthread_create(
     start_routine: unsafe extern "C" fn(*mut void) -> *mut void,
     arg: *mut void,
 ) -> int {
-    thread.write(pthread_t::new());
+    thread.write(pthread_t::new_zeroed());
 
     let mut thread_args = CallbackArguments {
         startup_barrier: Barrier::new(2),
@@ -341,11 +344,21 @@ pub unsafe fn pthread_join(thread: pthread_t, retval: *mut *mut void) -> int {
 }
 
 pub unsafe fn pthread_self() -> pthread_t {
-    let mut thread = pthread_t::new();
+    let mut thread = pthread_t::new_zeroed();
     (thread.handle, _) = win32call! { GetCurrentThread() };
     (thread.id, _) = win32call! { GetCurrentThreadId() };
     thread.index_to_state = ThreadStates::get_instance().get_index_of(thread.id);
     thread
+}
+
+unsafe fn c_string_to_wide_string(value: *const crate::posix::c_char) -> Vec<u16> {
+    let value_str = core::str::from_utf8_unchecked(core::slice::from_raw_parts(
+        value as *const u8,
+        crate::posix::c_string_length(value),
+    ));
+    let mut result: Vec<u16> = std::ffi::OsStr::new(value_str).encode_wide().collect();
+    result.push(0);
+    result
 }
 
 pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {
@@ -578,7 +591,7 @@ pub unsafe fn pthread_mutex_init(
     mtx: *mut pthread_mutex_t,
     attr: *const pthread_mutexattr_t,
 ) -> int {
-    mtx.write(pthread_mutex_t::new());
+    mtx.write(pthread_mutex_t::new_zeroed());
     (*mtx).mtype = (*attr).mtype | (*attr).robustness;
     (*mtx).track_thread_id = (*attr).mtype == PTHREAD_MUTEX_ERRORCHECK
         || (*attr).mtype == PTHREAD_MUTEX_RECURSIVE
@@ -791,7 +804,7 @@ pub unsafe fn pthread_mutex_consistent(mtx: *mut pthread_mutex_t) -> int {
 
 pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
     Errno::set(Errno::ESUCCES);
-    attr.write(pthread_mutexattr_t::new());
+    attr.write(pthread_mutexattr_t::new_zeroed());
     0
 }
 

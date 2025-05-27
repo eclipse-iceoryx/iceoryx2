@@ -17,8 +17,7 @@ use enum_iterator::Sequence;
 use iceoryx2_bb_container::semantic_string::*;
 use iceoryx2_bb_log::{fatal_panic, warn};
 use iceoryx2_bb_system_types::path::Path;
-use iceoryx2_pal_posix::posix::Struct;
-use iceoryx2_pal_posix::*;
+use iceoryx2_pal_posix::{posix::MemZeroedStruct, *};
 
 /// The global config path of the system, where all config files shall be stored.
 pub fn get_global_config_path() -> Path {
@@ -99,7 +98,7 @@ impl Limit {
                 result.clamp(0, posix::long::MAX) as u64
             }
             Limit::MaxUnixDomainSocketNameLength => {
-                let s = posix::sockaddr_un::new();
+                let s = posix::sockaddr_un::new_zeroed();
                 s.sun_path.len() as u64
             }
             v => {
@@ -233,7 +232,7 @@ pub enum ProcessResourceLimit {
 impl ProcessResourceLimit {
     /// Returns the soft limit or current maximum value of the resource
     pub fn soft_limit(&self) -> u64 {
-        let mut result: posix::rlimit = posix::rlimit::new();
+        let mut result: posix::rlimit = posix::rlimit::new_zeroed();
         if unsafe { posix::getrlimit(*self as i32, &mut result) } == -1 {
             fatal_panic!(from "ProcessResourceLimit::soft_limit",
                 "This should never happen! Unable to acquire soft limit for {:?} due to an unknown error ({}).",
@@ -244,7 +243,7 @@ impl ProcessResourceLimit {
 
     /// Returns the maximum value to which the soft limit can be increased
     pub fn hard_limit(&self) -> u64 {
-        let mut result: posix::rlimit = posix::rlimit::new();
+        let mut result: posix::rlimit = posix::rlimit::new_zeroed();
         if unsafe { posix::getrlimit(*self as i32, &mut result) } == -1 {
             fatal_panic!(from "ProcessResourceLimit::hard_limit",
                 "This should never happen! Unable to acquire hard limit for {:?} due to an unknown error ({}).",

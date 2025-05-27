@@ -125,7 +125,7 @@ unsafe fn write_real_shm_name(name: *const c_char, buffer: &[u8]) -> bool {
 unsafe fn generate_real_shm_name() -> [u8; SHM_MAX_NAME_LEN] {
     static COUNTER: IoxAtomicU8 = IoxAtomicU8::new(0);
 
-    let mut now = timespec::new();
+    let mut now = timespec::new_zeroed();
     clock_gettime(CLOCK_REALTIME, &mut now);
     let pid = getpid();
     let shm_name = pid.to_string()

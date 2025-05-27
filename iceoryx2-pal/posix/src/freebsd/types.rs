@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::posix::{SockAddrIn, Struct};
+use crate::posix::{MemZeroedStruct, SockAddrIn};
 
 pub type ulong = crate::internal::u_long;
 pub type kinfo_file = crate::internal::kinfo_file;
@@ -26,7 +26,7 @@ pub struct ucred {
     pub gid: gid_t,
 }
 
-impl Struct for ucred {}
+impl MemZeroedStruct for ucred {}
 
 pub type DIR = crate::internal::DIR;
 
@@ -62,49 +62,49 @@ pub type ushort = crate::internal::ushort;
 pub type void = core::ffi::c_void;
 
 pub(crate) type native_cpu_set_t = crate::internal::cpu_set_t;
-impl Struct for native_cpu_set_t {}
+impl MemZeroedStruct for native_cpu_set_t {}
 
 pub type sigset_t = crate::internal::sigset_t;
-impl Struct for sigset_t {}
+impl MemZeroedStruct for sigset_t {}
 
 pub type pthread_barrier_t = crate::internal::pthread_barrier_t;
-impl Struct for pthread_barrier_t {}
+impl MemZeroedStruct for pthread_barrier_t {}
 
 pub type pthread_barrierattr_t = crate::internal::pthread_barrierattr_t;
-impl Struct for pthread_barrierattr_t {}
+impl MemZeroedStruct for pthread_barrierattr_t {}
 
 pub type pthread_attr_t = crate::internal::pthread_attr_t;
-impl Struct for pthread_attr_t {}
+impl MemZeroedStruct for pthread_attr_t {}
 
 pub type pthread_t = crate::internal::pthread_t;
-impl Struct for pthread_t {}
+impl MemZeroedStruct for pthread_t {}
 
 pub type pthread_rwlockattr_t = crate::internal::pthread_rwlockattr_t;
-impl Struct for pthread_rwlockattr_t {}
+impl MemZeroedStruct for pthread_rwlockattr_t {}
 
 pub type pthread_rwlock_t = crate::internal::pthread_rwlock_t;
-impl Struct for pthread_rwlock_t {}
+impl MemZeroedStruct for pthread_rwlock_t {}
 
 pub type pthread_mutex_t = crate::internal::pthread_mutex_t;
-impl Struct for pthread_mutex_t {}
+impl MemZeroedStruct for pthread_mutex_t {}
 
 pub type pthread_mutexattr_t = crate::internal::pthread_mutexattr_t;
-impl Struct for pthread_mutexattr_t {}
+impl MemZeroedStruct for pthread_mutexattr_t {}
 
 pub type sem_t = crate::internal::sem_t;
-impl Struct for sem_t {}
+impl MemZeroedStruct for sem_t {}
 
 pub type flock = crate::internal::flock;
-impl Struct for flock {}
+impl MemZeroedStruct for flock {}
 
 pub type rlimit = crate::internal::rlimit;
-impl Struct for rlimit {}
+impl MemZeroedStruct for rlimit {}
 
 pub type sched_param = crate::internal::sched_param;
-impl Struct for sched_param {}
+impl MemZeroedStruct for sched_param {}
 
 pub(crate) type native_stat_t = crate::internal::stat;
-impl Struct for native_stat_t {}
+impl MemZeroedStruct for native_stat_t {}
 
 #[repr(C)]
 pub struct stat_t {
@@ -141,37 +141,37 @@ impl From<native_stat_t> for stat_t {
         }
     }
 }
-impl Struct for stat_t {}
+impl MemZeroedStruct for stat_t {}
 
 pub type timespec = crate::internal::timespec;
-impl Struct for timespec {}
+impl MemZeroedStruct for timespec {}
 
 pub type timeval = crate::internal::timeval;
-impl Struct for timeval {}
+impl MemZeroedStruct for timeval {}
 
 pub type fd_set = crate::internal::fd_set;
-impl Struct for fd_set {}
+impl MemZeroedStruct for fd_set {}
 
 pub type dirent = crate::internal::dirent;
-impl Struct for dirent {}
+impl MemZeroedStruct for dirent {}
 
 pub type msghdr = crate::internal::msghdr;
-impl Struct for msghdr {}
+impl MemZeroedStruct for msghdr {}
 
 pub type cmsghdr = crate::internal::cmsghdr;
-impl Struct for cmsghdr {}
+impl MemZeroedStruct for cmsghdr {}
 
 pub type iovec = crate::internal::iovec;
-impl Struct for iovec {}
+impl MemZeroedStruct for iovec {}
 
 pub type sockaddr = crate::internal::sockaddr;
-impl Struct for sockaddr {}
+impl MemZeroedStruct for sockaddr {}
 
 pub type sockaddr_un = crate::internal::sockaddr_un;
-impl Struct for sockaddr_un {}
+impl MemZeroedStruct for sockaddr_un {}
 
 pub type sockaddr_in = crate::internal::sockaddr_in;
-impl Struct for sockaddr_in {}
+impl MemZeroedStruct for sockaddr_in {}
 
 impl SockAddrIn for sockaddr_in {
     fn set_s_addr(&mut self, value: u32) {
@@ -184,7 +184,7 @@ impl SockAddrIn for sockaddr_in {
 }
 
 pub type passwd = crate::internal::passwd;
-impl Struct for passwd {}
+impl MemZeroedStruct for passwd {}
 
 pub type group = crate::internal::group;
-impl Struct for group {}
+impl MemZeroedStruct for group {}

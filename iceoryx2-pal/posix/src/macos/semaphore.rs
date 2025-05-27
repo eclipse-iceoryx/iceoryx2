@@ -59,8 +59,8 @@ pub unsafe fn sem_trywait(sem: *mut sem_t) -> int {
 }
 
 pub unsafe fn sem_timedwait(sem: *mut sem_t, abs_timeout: *const timespec) -> int {
-    let mut current_time = timespec::new();
-    let mut wait_time = timespec::new();
+    let mut current_time = timespec::new_zeroed();
+    let mut wait_time = timespec::new_zeroed();
 
     loop {
         if sem_trywait(sem) == 0 {

@@ -36,7 +36,7 @@ use windows_sys::Win32::{
 use crate::{
     posix::types::*,
     posix::Errno,
-    posix::Struct,
+    posix::MemZeroedStruct,
     posix::{
         shm_get_size, win32_security_attributes::from_security_attributes_to_mode, F_GETFD,
         F_GETFL, F_GETLK, F_RDLCK, F_SETFL, F_SETLK, F_SETLKW, F_UNLCK, F_WRLCK, O_NONBLOCK,
@@ -100,10 +100,10 @@ pub unsafe fn open(pathname: *const c_char, flags: int) -> int {
     open_with_mode(pathname, flags, 0)
 }
 
-impl Struct for BY_HANDLE_FILE_INFORMATION {}
+impl MemZeroedStruct for BY_HANDLE_FILE_INFORMATION {}
 
 pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
-    let mut file_stat = stat_t::new();
+    let mut file_stat = stat_t::new_zeroed();
 
     let permission_handle = match HandleTranslator::get_instance().get(fd) {
         Some(FdHandleEntry::SharedMemory(handle)) => {
@@ -120,7 +120,7 @@ pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
             file_stat.st_size = size as _;
             file_stat.st_mode = S_IFREG;
 
-            let mut info = BY_HANDLE_FILE_INFORMATION::new();
+            let mut info = BY_HANDLE_FILE_INFORMATION::new_zeroed();
             let (has_file_info, _) =
                 win32call! {GetFileInformationByHandle(handle.handle, &mut info)};
             if has_file_info == FALSE {
@@ -213,7 +213,7 @@ pub unsafe fn fcntl_int(fd: int, cmd: int, arg: int) -> int {
     }
 }
 
-impl Struct for OVERLAPPED {}
+impl MemZeroedStruct for OVERLAPPED {}
 
 pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
     let handle = match HandleTranslator::get_instance().get(fd) {
@@ -240,12 +240,12 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
             return 0;
         }
 
-        let mut overlapped = OVERLAPPED::new();
+        let mut overlapped = OVERLAPPED::new_zeroed();
         let flags = LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY;
         let lock_result = LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped);
 
         if lock_result != FALSE {
-            let mut overlapped = OVERLAPPED::new();
+            let mut overlapped = OVERLAPPED::new_zeroed();
             UnlockFileEx(handle.handle, 0, MAXWORD, MAXWORD, &mut overlapped);
             (*arg).l_type = posix::F_UNLCK as _;
         } else {
@@ -262,7 +262,7 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
     }
 
     if lock_type == F_UNLCK {
-        let mut overlapped = OVERLAPPED::new();
+        let mut overlapped = OVERLAPPED::new_zeroed();
         handle.lock_state = F_UNLCK;
         let (file_unlocked, _) = win32call! {UnlockFileEx(
             handle.handle,
@@ -287,7 +287,7 @@ pub unsafe fn fcntl(fd: int, cmd: int, arg: *mut flock) -> int {
         flags |= LOCKFILE_FAIL_IMMEDIATELY;
     }
 
-    let mut overlapped = OVERLAPPED::new();
+    let mut overlapped = OVERLAPPED::new_zeroed();
 
     let (has_file_locked, _) =
         win32call! {LockFileEx(handle.handle, flags, 0, MAXWORD, MAXWORD, &mut overlapped)};

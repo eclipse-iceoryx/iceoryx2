@@ -51,7 +51,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, trace, warn};
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
 pub use crate::creation_mode::CreationMode;
@@ -782,7 +782,7 @@ impl File {
     pub(crate) fn acquire_attributes<T: FileDescriptorBased + Debug>(
         this: &T,
     ) -> Result<posix::stat_t, FileStatError> {
-        let mut attr = posix::stat_t::new();
+        let mut attr = posix::stat_t::new_zeroed();
         if unsafe { posix::fstat(this.file_descriptor().native_handle(), &mut attr) } == -1 {
             let msg = "Unable to acquire file stats";
             handle_errno!(FileStatError, from this,

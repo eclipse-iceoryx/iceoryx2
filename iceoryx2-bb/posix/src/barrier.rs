@@ -41,7 +41,7 @@ pub use crate::ipc_capable::{Handle, IpcCapable};
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
 use crate::handle_errno;
@@ -84,7 +84,7 @@ impl BarrierBuilder {
         let msg = "Unable to create barrier";
 
         let mut attr =
-            ScopeGuardBuilder::new( posix::pthread_barrierattr_t::new() )
+            ScopeGuardBuilder::new( posix::pthread_barrierattr_t::new_zeroed() )
                 .on_init(|attr| {
                     let msg = "Unable to create barrier attributes";
                     handle_errno!(BarrierCreationError, from self,
@@ -163,7 +163,7 @@ unsafe impl Sync for BarrierHandle {}
 impl Handle for BarrierHandle {
     fn new() -> Self {
         Self {
-            handle: HandleStorage::new(posix::pthread_barrier_t::new()),
+            handle: HandleStorage::new(posix::pthread_barrier_t::new_zeroed()),
         }
     }
 

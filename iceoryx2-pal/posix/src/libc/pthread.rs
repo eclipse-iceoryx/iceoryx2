@@ -135,7 +135,7 @@ pub unsafe fn pthread_getaffinity_np(
     cpusetsize: size_t,
     cpuset: *mut cpu_set_t,
 ) -> int {
-    let mut native_cpuset = native_cpu_set_t::new();
+    let mut native_cpuset = native_cpu_set_t::new_zeroed();
 
     let ret_val = libc::pthread_getaffinity_np(thread, cpusetsize, &mut native_cpuset);
 

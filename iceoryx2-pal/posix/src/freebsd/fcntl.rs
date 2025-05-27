@@ -14,14 +14,14 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::posix::types::*;
-use crate::posix::Struct;
+use crate::posix::MemZeroedStruct;
 
 pub unsafe fn open_with_mode(pathname: *const c_char, flags: int, mode: mode_t) -> int {
     crate::internal::open(pathname, flags, mode as core::ffi::c_uint)
 }
 
 pub unsafe fn fstat(fd: int, buf: *mut stat_t) -> int {
-    let mut os_specific_buffer = native_stat_t::new();
+    let mut os_specific_buffer = native_stat_t::new_zeroed();
     match crate::internal::fstat(fd, &mut os_specific_buffer) {
         0 => {
             *buf = os_specific_buffer.into();

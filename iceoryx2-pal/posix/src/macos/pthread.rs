@@ -175,7 +175,7 @@ pub fn timed_wait(atomic: &IoxAtomicU32, expected: &u32, timeout: timespec) {
         tv_sec: 0,
         tv_nsec: 1000000,
     };
-    let mut now = timespec::new();
+    let mut now = timespec::new_zeroed();
     loop {
         if atomic.load(Ordering::Relaxed) != *expected {
             return;
@@ -244,7 +244,7 @@ pub unsafe fn pthread_barrierattr_setpshared(
 }
 
 pub unsafe fn pthread_attr_init(attr: *mut pthread_attr_t) -> int {
-    (*attr) = pthread_attr_t::new();
+    (*attr) = pthread_attr_t::new_zeroed();
     crate::internal::pthread_attr_init(&mut (*attr).attr)
 }
 
@@ -502,7 +502,7 @@ pub unsafe fn pthread_mutex_init(
     mtx: *mut pthread_mutex_t,
     attr: *const pthread_mutexattr_t,
 ) -> int {
-    mtx.write(pthread_mutex_t::new());
+    mtx.write(pthread_mutex_t::new_zeroed());
     (*mtx).mtype = (*attr).mtype | (*attr).robustness;
     (*mtx).track_thread_id = (*attr).mtype == PTHREAD_MUTEX_ERRORCHECK
         || (*attr).mtype == PTHREAD_MUTEX_RECURSIVE
@@ -610,8 +610,8 @@ pub unsafe fn pthread_mutex_timedlock(
     mtx: *mut pthread_mutex_t,
     abs_timeout: *const timespec,
 ) -> int {
-    let mut current_time = timespec::new();
-    let mut wait_time = timespec::new();
+    let mut current_time = timespec::new_zeroed();
+    let mut wait_time = timespec::new_zeroed();
 
     loop {
         match pthread_mutex_trylock(mtx).into() {
@@ -702,7 +702,7 @@ pub unsafe fn pthread_mutex_consistent(mtx: *mut pthread_mutex_t) -> int {
 
 pub unsafe fn pthread_mutexattr_init(attr: *mut pthread_mutexattr_t) -> int {
     Errno::set(Errno::ESUCCES);
-    attr.write(pthread_mutexattr_t::new());
+    attr.write(pthread_mutexattr_t::new_zeroed());
     0
 }
 

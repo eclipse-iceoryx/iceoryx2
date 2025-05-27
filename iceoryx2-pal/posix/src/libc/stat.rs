@@ -13,11 +13,11 @@
 #![allow(non_camel_case_types, non_snake_case)]
 #![allow(clippy::missing_safety_doc)]
 
+use crate::common::mem_zeroed_struct::MemZeroedStruct;
 use crate::posix::types::*;
-use crate::posix::Struct;
 
 pub unsafe fn stat(path: *const c_char, buf: *mut stat_t) -> int {
-    let mut os_specific_buffer = native_stat_t::new();
+    let mut os_specific_buffer = native_stat_t::new_zeroed();
     match libc::stat(path, &mut os_specific_buffer) {
         0 => {
             *buf = os_specific_buffer.into();

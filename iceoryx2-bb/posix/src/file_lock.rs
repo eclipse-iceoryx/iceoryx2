@@ -48,7 +48,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicI64;
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
+use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
 use crate::clock::NanosleepError;
@@ -379,7 +379,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
         }
 
         let msg = "Unable to acquire current file lock state";
-        let mut current_lock_state = posix::flock::new();
+        let mut current_lock_state = posix::flock::new_zeroed();
         current_lock_state.l_type = posix::F_WRLCK as _;
 
         let fd_guard = fail!(from self, when self.file.read_blocking_lock(),
@@ -410,7 +410,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
     }
 
     fn release(&self, file_descriptor: &FileDescriptor) -> Result<(), FileUnlockError> {
-        let mut new_lock_state = posix::flock::new();
+        let mut new_lock_state = posix::flock::new_zeroed();
         new_lock_state.l_type = LockType::Unlock as _;
         new_lock_state.l_whence = posix::SEEK_SET as _;
 
@@ -440,7 +440,7 @@ impl<'a, T: FileDescriptorBased + Debug> FileLock<'a, T> {
         mode: InternalMode,
         file_descriptor: &FileDescriptor,
     ) -> Result<bool, FileTryLockError> {
-        let mut new_lock_state = posix::flock::new();
+        let mut new_lock_state = posix::flock::new_zeroed();
         new_lock_state.l_type = lock_type as _;
         new_lock_state.l_whence = posix::SEEK_SET as _;
 

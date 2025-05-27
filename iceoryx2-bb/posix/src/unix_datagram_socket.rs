@@ -130,8 +130,7 @@ use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_log::{fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
+use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 
 use crate::{config::UNIX_DOMAIN_SOCKET_PATH_LENGTH, file::*, permission::Permission};
 
@@ -398,7 +397,7 @@ impl UnixDatagramSocket {
     }
 
     fn create_socket_address(&self) -> posix::sockaddr_un {
-        let mut socket_address = posix::sockaddr_un::new();
+        let mut socket_address = posix::sockaddr_un::new_zeroed();
         socket_address.sun_family = posix::AF_UNIX;
 
         unsafe {
