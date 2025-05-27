@@ -51,6 +51,7 @@ pub(crate) fn iox_create_publish_subscribe_service<Service: iceoryx2::service::S
     IceoryxPublishSubscribeService<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     PublishSubscribeOpenOrCreateError,
 > {
+    let iox_publish_subscribe_config = iox_service_config.publish_subscribe();
     let iox_service = unsafe {
         iox_node
             .service_builder(iox_service_config.name())
@@ -68,8 +69,14 @@ pub(crate) fn iox_create_publish_subscribe_service<Service: iceoryx2::service::S
                     .message_type_details()
                     .payload,
             )
-            // TODO(correctness): Pass through all configuration options?
-            .history_size(iox_service_config.publish_subscribe().history_size())
+            .enable_safe_overflow(iox_publish_subscribe_config.has_safe_overflow())
+            .history_size(iox_publish_subscribe_config.history_size())
+            .max_publishers(iox_publish_subscribe_config.max_publishers())
+            .max_subscribers(iox_publish_subscribe_config.max_subscribers())
+            .subscriber_max_buffer_size(iox_publish_subscribe_config.subscriber_max_buffer_size())
+            .subscriber_max_buffer_size(
+                iox_publish_subscribe_config.subscriber_max_borrowed_samples(),
+            )
             .open_or_create()?
     };
 
@@ -80,6 +87,7 @@ pub(crate) fn iox_create_event_service<Service: iceoryx2::service::Service>(
     iox_node: &IceoryxNode<Service>,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<IceoryxEventService<Service>, EventOpenOrCreateError> {
+    // TODO(correctness): Use properties of existing event services to prevent clashing
     let iox_service = iox_node
         .service_builder(iox_service_config.name())
         .event()
