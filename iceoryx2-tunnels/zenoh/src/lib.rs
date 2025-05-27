@@ -27,7 +27,7 @@ use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateE
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
-use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
 use iceoryx2_bb_log::info;
 
@@ -42,7 +42,7 @@ use zenoh::Wait;
 
 pub(crate) fn iox_create_service<Service: iceoryx2::service::Service>(
     iox_node: &IceoryxNode<Service>,
-    iox_service_config: &StaticConfig,
+    iox_service_config: &IceoryxServiceConfig,
 ) -> Result<
     PortFactory<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     PublishSubscribeOpenOrCreateError,
@@ -64,6 +64,8 @@ pub(crate) fn iox_create_service<Service: iceoryx2::service::Service>(
                     .message_type_details()
                     .payload,
             )
+            // TODO(correctness): Pass through all configuration options?
+            .history_size(iox_service_config.publish_subscribe().history_size())
             .open_or_create()?
     };
 
@@ -72,7 +74,7 @@ pub(crate) fn iox_create_service<Service: iceoryx2::service::Service>(
 
 pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
     iox_service: &PortFactory<Service, [CustomPayloadMarker], CustomHeaderMarker>,
-    iox_service_config: &StaticConfig,
+    iox_service_config: &IceoryxServiceConfig,
 ) -> Result<
     IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     PublisherCreateError,
@@ -83,7 +85,7 @@ pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
         .create()?;
 
     info!(
-        "NEW PUBLISHER (iceoryx2): {} [{}]",
+        "CREATED PUBLISHER (iceoryx2): {} [{}]",
         iox_service_config.service_id().as_str(),
         iox_service_config.name()
     );
@@ -93,7 +95,7 @@ pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
 
 pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
     iox_service: &PortFactory<Service, [CustomPayloadMarker], CustomHeaderMarker>,
-    iox_service_config: &StaticConfig,
+    iox_service_config: &IceoryxServiceConfig,
 ) -> Result<
     IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     SubscriberCreateError,
@@ -101,7 +103,7 @@ pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
     let iox_subscriber = iox_service.subscriber_builder().create()?;
 
     info!(
-        "NEW SUBSCRIBER (iceoryx2): {} [{}]",
+        "CREATED SUBSCRIBER (iceoryx2): {} [{}]",
         iox_service_config.service_id().as_str(),
         iox_service_config.name()
     );
@@ -111,41 +113,53 @@ pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
 
 pub(crate) fn z_create_publisher<'a>(
     z_session: &ZenohSession,
-    iox_service_config: &StaticConfig,
+    iox_service_config: &IceoryxServiceConfig,
 ) -> Result<ZenohPublisher<'a>, zenoh::Error> {
     let z_key = keys::data_stream(iox_service_config.service_id());
-    info!("NEW PUBLISHER (zenoh): {}", z_key.clone());
-    let z_publisher = z_session.declare_publisher(z_key).wait()?;
+    let z_publisher = z_session
+        .declare_publisher(z_key.clone())
+        .allowed_destination(Locality::Remote)
+        .wait()?;
+    info!(
+        "CREATED PUBLISHER (zenoh): {} [{}]",
+        z_key,
+        iox_service_config.name()
+    );
 
     Ok(z_publisher)
 }
 
 pub(crate) fn z_create_subscriber(
     z_session: &ZenohSession,
-    iox_service_config: &StaticConfig,
+    iox_service_config: &IceoryxServiceConfig,
 ) -> Result<ZenohSubscriber<FifoChannelHandler<Sample>>, zenoh::Error> {
     let z_key = keys::data_stream(iox_service_config.service_id());
     let z_subscriber = z_session
-        .declare_subscriber(z_key)
+        .declare_subscriber(z_key.clone())
         .with(FifoChannel::new(10))
         .allowed_origin(Locality::Remote)
         .wait()?;
+    info!(
+        "CREATED SUBSCRIBER (zenoh): {} [{}]",
+        z_key,
+        iox_service_config.name()
+    );
 
     Ok(z_subscriber)
 }
 
 pub(crate) fn z_announce_service(
     z_session: &ZenohSession,
-    iox_service_config: &StaticConfig,
+    iox_service_config: &IceoryxServiceConfig,
 ) -> Result<(), zenoh::Error> {
     let z_key = keys::service(iox_service_config.service_id());
     match serde_json::to_string(&iox_service_config) {
-        Ok(iox_static_details_json) => {
+        Ok(iox_service_config_serialized) => {
             z_session
                 .declare_queryable(z_key.clone())
                 .callback(move |query| {
                     if let Err(e) = query
-                        .reply(query.key_expr().clone(), &iox_static_details_json)
+                        .reply(query.key_expr().clone(), &iox_service_config_serialized)
                         .wait()
                     {
                         error!("Failed to reply to query for service info: {}", e);
@@ -154,10 +168,14 @@ pub(crate) fn z_announce_service(
                 .background()
                 .wait()?;
 
-            info!("ANNOUNCING (zenoh): {}", z_key);
+            info!(
+                "ANNOUNCED (zenoh): {} [{}]",
+                z_key,
+                iox_service_config.name()
+            );
         }
         Err(e) => {
-            error!("Failed to serialize static details to JSON: {}", e);
+            error!("Failed to serialize static service config: {}", e);
         }
     }
     Ok(())
@@ -165,13 +183,10 @@ pub(crate) fn z_announce_service(
 
 pub(crate) fn z_query_services(
     z_session: &ZenohSession,
-) -> Result<Vec<StaticConfig>, zenoh::Error> {
+) -> Result<Vec<IceoryxServiceConfig>, zenoh::Error> {
     let mut iox_remote_static_details = Vec::new();
 
-    let replies = z_session
-        .get(keys::all_services())
-        .allowed_destination(Locality::Remote)
-        .wait()?;
+    let replies = z_session.get(keys::all_services()).wait()?;
 
     while let Ok(reply) = replies.try_recv() {
         match reply {
@@ -179,14 +194,15 @@ pub(crate) fn z_query_services(
             Some(sample) => match sample.result() {
                 // Case: Sample contains valid data that can be processed
                 Ok(sample) => {
-                    match serde_json::from_slice::<StaticConfig>(&sample.payload().to_bytes()) {
+                    match serde_json::from_slice::<IceoryxServiceConfig>(
+                        &sample.payload().to_bytes(),
+                    ) {
                         Ok(iox_static_details) => {
-                            if !iox_remote_static_details
-                                .iter()
-                                .any(|details: &StaticConfig| {
+                            if !iox_remote_static_details.iter().any(
+                                |details: &IceoryxServiceConfig| {
                                     details.service_id() == iox_static_details.service_id()
-                                })
-                            {
+                                },
+                            ) {
                                 iox_remote_static_details.push(iox_static_details.clone());
                             }
                         }
