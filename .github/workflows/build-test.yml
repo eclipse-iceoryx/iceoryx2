@@ -349,8 +349,8 @@ jobs:
       - name: Build test binaries
         run: cargo build --release -p iceoryx2-tunnels-end-to-end-testing
 
-      - name: Build CLI tools
-        run: cargo build --release -p iceoryx2-cli
+      - name: Build tunnel CLI
+        run: cargo build --release -p iceoryx2-cli --bin iox2-tunnel
 
       - name: Build test container image
         run: docker build -f iceoryx2-tunnels/end-to-end-testing/Dockerfile -t end-to-end-testing:latest .

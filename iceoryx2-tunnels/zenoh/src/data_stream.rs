@@ -17,10 +17,10 @@ use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory as IceoryxService;
-use iceoryx2::service::static_config::message_type_details::MessageTypeDetails;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
 
+use iceoryx2_bb_log::info;
 use zenoh::bytes::ZBytes;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher as ZenohPublisher;
@@ -74,6 +74,7 @@ pub trait DataStream {
 
 pub(crate) struct OutboundStream<'a, ServiceType: iceoryx2::service::Service> {
     iox_node_id: IceoryxNodeId,
+    iox_service_config: IceoryxServiceConfig,
     iox_subscriber: IceoryxSubscriber<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     z_publisher: ZenohPublisher<'a>,
 }
@@ -94,13 +95,19 @@ impl<'a, ServiceType: iceoryx2::service::Service> DataStream for OutboundStream<
 
                     let z_payload = ZBytes::from(bytes);
                     if let Err(e) = self.z_publisher.put(z_payload).wait() {
-                        error!("failed to propagate payload to zenoh: {}", e);
+                        error!("Failed to propagate payload to zenoh: {}", e);
                         return Err(PropagationError::FailureToPublishToZenoh);
                     }
+
+                    info!(
+                        "PROPAGATED (iceoryx2->zenoh): {} [{}]",
+                        self.iox_service_config.service_id().as_str(),
+                        self.iox_service_config.name()
+                    );
                 }
                 Ok(None) => break, // No more samples available
                 Err(e) => {
-                    error!("failed to receive custom payload from iceoryx: {}", e);
+                    error!("Failed to receive custom payload from iceoryx: {}", e);
                     return Err(PropagationError::FailureToReceiveFromIceoryx);
                 }
             }
@@ -124,6 +131,7 @@ impl<'a, ServiceType: iceoryx2::service::Service> OutboundStream<'a, ServiceType
 
         Ok(Self {
             iox_node_id: iox_node_id.clone(),
+            iox_service_config: iox_service_config.clone(),
             iox_subscriber,
             z_publisher,
         })
@@ -131,7 +139,7 @@ impl<'a, ServiceType: iceoryx2::service::Service> OutboundStream<'a, ServiceType
 }
 
 pub(crate) struct InboundStream<ServiceType: iceoryx2::service::Service> {
-    iox_message_type_details: MessageTypeDetails,
+    iox_service_config: IceoryxServiceConfig,
     iox_publisher: IceoryxPublisher<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
 }
@@ -141,10 +149,14 @@ impl<ServiceType: iceoryx2::service::Service> DataStream for InboundStream<Servi
         loop {
             match self.z_subscriber.try_recv() {
                 Ok(Some(z_sample)) => {
-                    let iox_payload_size = self.iox_message_type_details.payload.size;
-                    let _iox_payload_alignment = self.iox_message_type_details.payload.alignment;
+                    let iox_message_type_details = self
+                        .iox_service_config
+                        .publish_subscribe()
+                        .message_type_details();
+                    let iox_payload_size = iox_message_type_details.payload.size;
+                    let _iox_payload_alignment = iox_message_type_details.payload.alignment;
 
-                    // TODO: verify size and alignment
+                    // TODO(qol): verify size and alignment
                     let z_payload = z_sample.payload();
 
                     let number_of_elements = z_payload.len() / iox_payload_size;
@@ -158,12 +170,17 @@ impl<ServiceType: iceoryx2::service::Service> DataStream for InboundStream<Servi
                                 );
                                 let iox_sample = iox_sample.assume_init();
                                 if let Err(e) = iox_sample.send() {
-                                    error!("failed to send custom payload to iceoryx: {}", e);
+                                    error!("Failed to send custom payload to iceoryx: {}", e);
                                     return Err(PropagationError::FailureToPublishToIceoryx);
                                 }
+                                info!(
+                                    "PROPAGATED (iceoryx2<-zenoh): {} [{}]",
+                                    self.iox_service_config.service_id().as_str(),
+                                    self.iox_service_config.name()
+                                );
                             }
                             Err(e) => {
-                                error!("failed to loan custom payload from iceoryx: {}", e);
+                                error!("Failed to loan custom payload from iceoryx: {}", e);
                                 return Err(PropagationError::FailureToPublishToIceoryx);
                             }
                         }
@@ -171,7 +188,7 @@ impl<ServiceType: iceoryx2::service::Service> DataStream for InboundStream<Servi
                 }
                 Ok(None) => break, // No more samples available
                 Err(e) => {
-                    error!("failed to receive payload from Zenoh: {}", e);
+                    error!("Failed to receive payload from Zenoh: {}", e);
                     return Err(PropagationError::FailureToReceiveFromZenoh);
                 }
             }
@@ -193,10 +210,7 @@ impl<ServiceType: iceoryx2::service::Service> InboundStream<ServiceType> {
             .map_err(|_e| CreationError::FailureToCreateZenohSubscriber)?;
 
         Ok(Self {
-            iox_message_type_details: iox_service_config
-                .publish_subscribe()
-                .message_type_details()
-                .clone(),
+            iox_service_config: iox_service_config.clone(),
             iox_publisher,
             z_subscriber,
         })

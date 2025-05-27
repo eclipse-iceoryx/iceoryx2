@@ -30,6 +30,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let ping_service = ponger_node
         .service_builder(&PING_SERVICE_NAME.try_into()?)
         .publish_subscribe::<PayloadType>()
+        .history_size(10)
         .open_or_create()?;
     let ping_subscriber = ping_service.subscriber_builder().create()?;
     log("CREATED Ping Subscriber");
@@ -44,6 +45,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let pong_service = ponger_node
         .service_builder(&PONG_SERVICE_NAME.try_into()?)
         .publish_subscribe::<PayloadType>()
+        .history_size(10)
         .open_or_create()?;
     let pong_publisher = pong_service.publisher_builder().create()?;
     log("CREATED Pong Publisher");

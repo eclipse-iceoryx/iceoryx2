@@ -21,7 +21,7 @@ use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
 use iceoryx2::prelude::*;
 use iceoryx2::service::service_id::ServiceId as IceoryxServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
 use iceoryx2_bb_log::info;
 use iceoryx2_services_discovery::service_discovery::Discovery;
@@ -113,7 +113,7 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
                     .try_into()
                     .map_err(|_e| CreationError::InvalidNameForDiscoveryService)?;
 
-                info!("CONFIGURE Discovery updates from service {}", value);
+                info!("CONFIGURED Discovery updates from service {}", value);
                 let iox_service = iox_node
                     .service_builder(&iox_service_name)
                     .publish_subscribe::<Discovery>()
@@ -128,7 +128,7 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
                 (Some(iox_subscriber), None)
             }
             None => {
-                info!("CONFIGURE Internal discovery tracking");
+                info!("CONFIGURED Internal discovery tracking");
                 (None, Some(IceoryxServiceTracker::new()))
             }
         };
@@ -172,30 +172,32 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
 
     /// Discovers local services via iceoryx2.
     fn local_discovery(&mut self) -> Result<(), DiscoveryError> {
-        let mut on_discovered = |iox_service_config: &StaticConfig| -> Result<(), DiscoveryError> {
-            let iox_service_id = iox_service_config.service_id();
+        let mut on_discovered =
+            |iox_service_config: &IceoryxServiceConfig| -> Result<(), DiscoveryError> {
+                let iox_service_id = iox_service_config.service_id();
 
-            if !self.streams.contains_key(&iox_service_id) {
-                info!(
-                    "DISCOVERED (LOCAL): {}",
-                    iox_service_config.service_id().as_str()
-                );
+                if !self.streams.contains_key(&iox_service_id) {
+                    info!(
+                        "DISCOVERED (iceoryx2): {} [{}]",
+                        iox_service_id.as_str(),
+                        iox_service_config.name()
+                    );
 
-                // Set up stream
-                let stream = BidirectionalStream::create(
-                    &self.iox_node,
-                    &self.z_session,
-                    iox_service_config,
-                )
-                .map_err(|_e| DiscoveryError::FailureToEstablishDataStream)?;
-                self.streams.insert(iox_service_id.clone(), stream);
+                    // Set up stream
+                    let stream = BidirectionalStream::create(
+                        &self.iox_node,
+                        &self.z_session,
+                        iox_service_config,
+                    )
+                    .map_err(|_e| DiscoveryError::FailureToEstablishDataStream)?;
+                    self.streams.insert(iox_service_id.clone(), stream);
 
-                // Announce Service to Zenoh
-                z_announce_service(&self.z_session, iox_service_config)
-                    .map_err(|_e| DiscoveryError::FailureToAnnounceServiceRemotely)?;
-            }
-            return Ok(());
-        };
+                    // Announce Service to Zenoh
+                    z_announce_service(&self.z_session, iox_service_config)
+                        .map_err(|_e| DiscoveryError::FailureToAnnounceServiceRemotely)?;
+                }
+                return Ok(());
+            };
 
         if let Some(iox_discovery_service) = &self.iox_discovery_service {
             // Discovery via discovery service
@@ -245,17 +247,19 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
 
     /// Discovers remote services via zenoh.
     fn remote_discovery(&mut self) -> Result<(), DiscoveryError> {
+        // TODO(optimize): This is re-discoverying the same services every iteration
         let iox_service_configs = z_query_services(&self.z_session)
             .map_err(|_e| DiscoveryError::FailureToDiscoverServicesRemotely)?;
-        for iox_service_config in iox_service_configs {
-            info!(
-                "DISCOVERED (REMOTE): {} [{}]",
-                iox_service_config.service_id().as_str(),
-                iox_service_config.name()
-            );
 
+        for iox_service_config in iox_service_configs {
             let iox_service_id = iox_service_config.service_id();
             if !self.streams.contains_key(&iox_service_id) {
+                info!(
+                    "DISCOVERED (zenoh): {} [{}]",
+                    iox_service_id.as_str(),
+                    iox_service_config.name()
+                );
+
                 let stream = BidirectionalStream::create(
                     &self.iox_node,
                     &self.z_session,

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   ponger:
     image: end-to-end-testing:latest
@@ -7,9 +5,9 @@ services:
       test-network:
         ipv4_address: 172.20.0.10
     environment:
-      - IOX2_LOG_LEVEL=Trace
-      - pinger_ADDR=172.20.0.11:8080
-    command: ["iceoryx2-tunnels-end-to-end-testing-ponger"]
+      - IOX2_LOG_LEVEL=Info
+      - PINGER_ADDR=172.20.0.11:8080
+    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 1 && iceoryx2-tunnels-end-to-end-testing-ponger"]
     restart: "no"
 
   pinger:
@@ -18,11 +16,9 @@ services:
       test-network:
         ipv4_address: 172.20.0.11
     environment:
-      - IOX2_LOG_LEVEL=Trace
+      - IOX2_LOG_LEVEL=Info
       - PONGER_ADDR=172.20.0.10:8080
-    depends_on:
-      - ponger
-    command: ["sh", "-c", "sleep 3 && iceoryx2-tunnels-end-to-end-testing-pinger"]
+    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 3 && iceoryx2-tunnels-end-to-end-testing-pinger"]
     restart: "no"
 
 networks:
