@@ -172,6 +172,8 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
 
     /// Discovers local services via iceoryx2.
     fn local_discovery(&mut self) -> Result<(), DiscoveryError> {
+        // TODO(correctness): Handle event services - need to open corresponding service with same
+        //                    properties
         let mut on_discovered =
             |iox_service_config: &IceoryxServiceConfig| -> Result<(), DiscoveryError> {
                 let iox_service_id = iox_service_config.service_id();
@@ -199,8 +201,8 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
                 return Ok(());
             };
 
+        // Discovery via discovery service
         if let Some(iox_discovery_service) = &self.iox_discovery_service {
-            // Discovery via discovery service
             loop {
                 match iox_discovery_service.receive() {
                     Ok(result) => match result {
@@ -220,8 +222,9 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
                     }
                 }
             }
-        } else if let Some(iox_tracker) = &mut self.iox_tracker {
-            // Discovery via service tracker
+        }
+        // OR Discovery via service tracker
+        else if let Some(iox_tracker) = &mut self.iox_tracker {
             let (added, _removed) = iox_tracker
                 .sync(&self.iox_config)
                 .map_err(|_e| DiscoveryError::FailureToDiscoverServicesLocally)?;
