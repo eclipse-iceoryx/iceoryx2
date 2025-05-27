@@ -15,9 +15,12 @@ pub mod keys;
 mod tunnel;
 
 pub(crate) use data_stream::*;
+use iceoryx2::port::notifier::NotifierCreateError;
+use iceoryx2::service::builder::event::EventOpenOrCreateError;
 pub use tunnel::*;
 
 use iceoryx2::node::Node as IceoryxNode;
+use iceoryx2::port::notifier::Notifier as IceoryxNotifier;
 use iceoryx2::port::publisher::Publisher as IceoryxPublisher;
 use iceoryx2::port::publisher::PublisherCreateError;
 use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
@@ -26,7 +29,8 @@ use iceoryx2::prelude::*;
 use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
-use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
+use iceoryx2::service::port_factory::event::PortFactory as IceoryxEventService;
+use iceoryx2::service::port_factory::publish_subscribe::PortFactory as IceoryxPublishSubscribeService;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
 use iceoryx2_bb_log::info;
@@ -40,11 +44,11 @@ use zenoh::sample::Sample;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
 
-pub(crate) fn iox_create_service<Service: iceoryx2::service::Service>(
+pub(crate) fn iox_create_publish_subscribe_service<Service: iceoryx2::service::Service>(
     iox_node: &IceoryxNode<Service>,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<
-    PortFactory<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    IceoryxPublishSubscribeService<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     PublishSubscribeOpenOrCreateError,
 > {
     let iox_service = unsafe {
@@ -72,14 +76,30 @@ pub(crate) fn iox_create_service<Service: iceoryx2::service::Service>(
     Ok(iox_service)
 }
 
+pub(crate) fn iox_create_event_service<Service: iceoryx2::service::Service>(
+    iox_node: &IceoryxNode<Service>,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<IceoryxEventService<Service>, EventOpenOrCreateError> {
+    let iox_service = iox_node
+        .service_builder(iox_service_config.name())
+        .event()
+        .open_or_create()?;
+
+    Ok(iox_service)
+}
+
 pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
-    iox_service: &PortFactory<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
+        Service,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<
     IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     PublisherCreateError,
 > {
-    let iox_publisher = iox_service
+    let iox_publisher = iox_publish_subscribe_service
         .publisher_builder()
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
@@ -94,13 +114,19 @@ pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
 }
 
 pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
-    iox_service: &PortFactory<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
+        Service,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<
     IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
     SubscriberCreateError,
 > {
-    let iox_subscriber = iox_service.subscriber_builder().create()?;
+    let iox_subscriber = iox_publish_subscribe_service
+        .subscriber_builder()
+        .create()?;
 
     info!(
         "CREATED SUBSCRIBER (iceoryx2): {} [{}]",
@@ -109,6 +135,21 @@ pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
     );
 
     Ok(iox_subscriber)
+}
+
+pub(crate) fn iox_create_notifier<Service: iceoryx2::service::Service>(
+    iox_event_service: &IceoryxEventService<Service>,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<IceoryxNotifier<Service>, NotifierCreateError> {
+    let iox_notifier = iox_event_service.notifier_builder().create()?;
+
+    info!(
+        "CREATED NOTIFIER (iceoryx2): {} [{}]",
+        iox_service_config.service_id().as_str(),
+        iox_service_config.name()
+    );
+
+    Ok(iox_notifier)
 }
 
 pub(crate) fn z_create_publisher<'a>(
