@@ -99,9 +99,9 @@ impl UserExt for UserName {
     }
 }
 
-/// Contains additional details to the [`User`] that might be not available on every platform or
+/// Contains additional details of the [`User`] that might be not available on every platform or
 /// on every platform configuration.
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UserDetails {
     gid: u32,
     name: UserName,
@@ -137,7 +137,7 @@ impl UserDetails {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Represents a user in a POSIX system
 pub struct User {
     uid: u32,
@@ -173,11 +173,16 @@ impl User {
 
         match Self::handle_errno(errno_value, msg, &origin) {
             Ok(()) => Self::extract_user_details(msg, &origin, passwd_ptr, &mut passwd),
-            Err(e) => {
+            Err(UserError::UnknownError(e)) => {
                 warn!(from origin,
-                    "{} details since the underlying POSIX user database `/etc/passwd` could not be read ({:?}).",
+                    "{} details since an unknown failure occurred while reading the underlying POSIX user database `/etc/passwd` ({}). It is possible that those information are not available on this platform or platform-configuration.",
                     msg, e);
                 Ok(User { uid, details: None })
+            }
+            Err(e) => {
+                fail!(from origin, with e,
+                    "{} details since the underlying POSIX user database `/etc/passwd` could not be read ({:?}).",
+                    msg, e);
             }
         }
     }
