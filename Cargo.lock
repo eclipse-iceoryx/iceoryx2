@@ -1584,6 +1584,7 @@ name = "iceoryx2-tunnels-end-to-end-testing"
 version = "0.6.1"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-log",
 ]
 
 [[package]]
