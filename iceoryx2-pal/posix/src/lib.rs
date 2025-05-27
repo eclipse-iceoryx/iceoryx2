@@ -17,6 +17,23 @@
 
 mod common;
 
+#[cfg(feature = "libc_platform")]
+#[path = "libc/mod.rs"]
+mod platform;
+
+#[cfg(all(target_os = "freebsd", not(feature = "libc_platform")))]
+#[path = "freebsd/mod.rs"]
+mod platform;
+#[cfg(all(target_os = "macos", not(feature = "libc_platform")))]
+#[path = "macos/mod.rs"]
+mod platform;
+#[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
+#[path = "linux/mod.rs"]
+pub mod platform;
+#[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
+#[path = "windows/mod.rs"]
+mod platform;
+
 #[cfg(not(feature = "libc_platform"))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
@@ -36,21 +53,9 @@ pub(crate) mod internal {
 }
 
 #[cfg(feature = "libc_platform")]
-#[path = "libc/mod.rs"]
-mod platform;
-
-#[cfg(all(target_os = "freebsd", not(feature = "libc_platform")))]
-#[path = "freebsd/mod.rs"]
-mod platform;
-#[cfg(all(target_os = "macos", not(feature = "libc_platform")))]
-#[path = "macos/mod.rs"]
-mod platform;
-#[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
-#[path = "linux/mod.rs"]
-pub mod platform;
-#[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
-#[path = "windows/mod.rs"]
-mod platform;
+pub(crate) mod internal {
+    pub use libc::*;
+}
 
 pub mod posix {
     #![allow(dead_code)]

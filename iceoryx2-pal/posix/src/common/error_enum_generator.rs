@@ -26,7 +26,7 @@ macro_rules! ErrnoEnumGenerator {
         impl Into<Errno> for u32 {
         #[deny(clippy::from_over_into)]
             fn into(self) -> Errno {
-                match self {
+                match self as _ {
                     $($value => Errno::$entry),*,
                     $($crate::internal::$map_entry => Errno::$map_entry),*,
                     _ => Errno::NOTIMPLEMENTED
