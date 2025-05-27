@@ -7,8 +7,13 @@ services:
     environment:
       - IOX2_LOG_LEVEL=Info
       - PINGER_ADDR=172.20.0.11:8080
-    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 1 && iceoryx2-tunnels-end-to-end-testing-ponger"]
     restart: "no"
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "ponger"]
+      interval: 1s
+      timeout: 3s
+      retries: 3
+    command: ["sh", "-c", "iox2-tunnel zenoh & iceoryx2-tunnels-end-to-end-testing-ponger"]
 
   pinger:
     image: end-to-end-testing:latest
@@ -18,8 +23,11 @@ services:
     environment:
       - IOX2_LOG_LEVEL=Info
       - PONGER_ADDR=172.20.0.10:8080
-    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 3 && iceoryx2-tunnels-end-to-end-testing-pinger"]
     restart: "no"
+    depends_on:
+      ponger:
+        condition: service_healthy
+    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 1 && iceoryx2-tunnels-end-to-end-testing-pinger"]
 
 networks:
   test-network:
