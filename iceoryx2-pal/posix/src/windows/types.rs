@@ -24,7 +24,7 @@ use iceoryx2_pal_concurrency_sync::semaphore::Semaphore;
 use windows_sys::Win32::Foundation::{HANDLE, INVALID_HANDLE_VALUE};
 use windows_sys::Win32::Networking::WinSock::{SOCKADDR_IN, TIMEVAL};
 
-use crate::posix::Struct;
+use crate::posix::MemZeroedStruct;
 use crate::posix::*;
 
 use super::settings::MAX_PATH_LENGTH;
@@ -63,13 +63,13 @@ pub type void = core::ffi::c_void;
 
 #[derive(Clone, Copy, Debug)]
 pub struct sigset_t {}
-impl Struct for sigset_t {}
+impl MemZeroedStruct for sigset_t {}
 
 pub struct pthread_barrier_t {
     pub(crate) barrier: Barrier,
 }
-impl Struct for pthread_barrier_t {
-    fn new() -> Self {
+impl MemZeroedStruct for pthread_barrier_t {
+    fn new_zeroed() -> Self {
         Self {
             barrier: Barrier::new(0),
         }
@@ -77,15 +77,15 @@ impl Struct for pthread_barrier_t {
 }
 
 pub struct pthread_barrierattr_t {}
-impl Struct for pthread_barrierattr_t {}
+impl MemZeroedStruct for pthread_barrierattr_t {}
 
 pub struct pthread_attr_t {
     pub(crate) stacksize: size_t,
     pub(crate) priority: int,
     pub(crate) affinity: cpu_set_t,
 }
-impl Struct for pthread_attr_t {
-    fn new() -> Self {
+impl MemZeroedStruct for pthread_attr_t {
+    fn new_zeroed() -> Self {
         Self {
             stacksize: 0,
             priority: 0,
@@ -100,8 +100,8 @@ pub struct pthread_t {
     pub(crate) index_to_state: usize,
     pub(crate) id: u32,
 }
-impl Struct for pthread_t {
-    fn new() -> Self {
+impl MemZeroedStruct for pthread_t {
+    fn new_zeroed() -> Self {
         Self {
             handle: INVALID_HANDLE_VALUE,
             index_to_state: usize::MAX,
@@ -113,8 +113,8 @@ impl Struct for pthread_t {
 pub struct pthread_rwlockattr_t {
     pub(crate) prefer_writer: bool,
 }
-impl Struct for pthread_rwlockattr_t {
-    fn new() -> Self {
+impl MemZeroedStruct for pthread_rwlockattr_t {
+    fn new_zeroed() -> Self {
         Self {
             prefer_writer: false,
         }
@@ -130,8 +130,8 @@ pub(crate) enum RwLockType {
 pub struct pthread_rwlock_t {
     pub(crate) lock: RwLockType,
 }
-impl Struct for pthread_rwlock_t {
-    fn new() -> Self {
+impl MemZeroedStruct for pthread_rwlock_t {
+    fn new_zeroed() -> Self {
         Self {
             lock: RwLockType::None,
         }
@@ -147,8 +147,8 @@ pub struct pthread_mutex_t {
     pub(crate) inconsistent_state: bool,
     pub(crate) unrecoverable_state: bool,
 }
-impl Struct for pthread_mutex_t {
-    fn new() -> Self {
+impl MemZeroedStruct for pthread_mutex_t {
+    fn new_zeroed() -> Self {
         Self {
             mtx: Mutex::new(),
             mtype: PTHREAD_MUTEX_NORMAL,
@@ -164,13 +164,13 @@ pub struct pthread_mutexattr_t {
     pub(crate) robustness: int,
     pub(crate) mtype: int,
 }
-impl Struct for pthread_mutexattr_t {}
+impl MemZeroedStruct for pthread_mutexattr_t {}
 
 pub struct sem_t {
     pub(crate) semaphore: Semaphore,
 }
-impl Struct for sem_t {
-    fn new() -> Self {
+impl MemZeroedStruct for sem_t {
+    fn new_zeroed() -> Self {
         Self {
             semaphore: Semaphore::new(0),
         }
@@ -184,18 +184,18 @@ pub struct flock {
     pub l_len: off_t,
     pub l_pid: pid_t,
 }
-impl Struct for flock {}
+impl MemZeroedStruct for flock {}
 
 pub struct rlimit {
     pub rlim_cur: rlim_t,
     pub rlim_max: rlim_t,
 }
-impl Struct for rlimit {}
+impl MemZeroedStruct for rlimit {}
 
 pub struct sched_param {
     pub sched_priority: int,
 }
-impl Struct for sched_param {}
+impl MemZeroedStruct for sched_param {}
 
 #[repr(C)]
 pub struct stat_t {
@@ -213,16 +213,16 @@ pub struct stat_t {
     pub st_blksize: blksize_t,
     pub st_blocks: blkcnt_t,
 }
-impl Struct for stat_t {}
+impl MemZeroedStruct for stat_t {}
 
 pub type timespec = crate::internal::timespec;
-impl Struct for timespec {}
+impl MemZeroedStruct for timespec {}
 
 pub type timeval = TIMEVAL;
-impl Struct for timeval {}
+impl MemZeroedStruct for timeval {}
 
 pub type fd_set = windows_sys::Win32::Networking::WinSock::FD_SET;
-impl Struct for fd_set {}
+impl MemZeroedStruct for fd_set {}
 
 #[repr(C)]
 pub struct dirent {
@@ -232,7 +232,7 @@ pub struct dirent {
     pub d_type: uchar,
     pub d_name: [c_char; MAX_PATH_LENGTH],
 }
-impl Struct for dirent {}
+impl MemZeroedStruct for dirent {}
 
 #[repr(C)]
 pub struct ucred {
@@ -240,7 +240,7 @@ pub struct ucred {
     pub uid: uid_t,
     pub gid: gid_t,
 }
-impl Struct for ucred {}
+impl MemZeroedStruct for ucred {}
 
 pub struct msghdr {
     pub msg_name: *mut void,
@@ -251,7 +251,7 @@ pub struct msghdr {
     pub msg_controllen: socklen_t,
     pub msg_flags: int,
 }
-impl Struct for msghdr {}
+impl MemZeroedStruct for msghdr {}
 
 #[derive(Clone, Copy)]
 #[repr(C)]
@@ -260,23 +260,23 @@ pub struct cmsghdr {
     pub cmsg_level: int,
     pub cmsg_type: int,
 }
-impl Struct for cmsghdr {}
+impl MemZeroedStruct for cmsghdr {}
 
 pub struct iovec {
     pub iov_base: *mut void,
     pub iov_len: size_t,
 }
-impl Struct for iovec {}
+impl MemZeroedStruct for iovec {}
 
 pub struct sockaddr {}
-impl Struct for sockaddr {}
+impl MemZeroedStruct for sockaddr {}
 
 #[repr(C)]
 pub struct sockaddr_un {
     pub sun_family: sa_family_t,
     pub sun_path: [c_char; SUN_PATH_LEN],
 }
-impl Struct for sockaddr_un {}
+impl MemZeroedStruct for sockaddr_un {}
 
 pub struct passwd {
     pub pw_name: *mut c_char,
@@ -287,7 +287,7 @@ pub struct passwd {
     pub pw_gecos: *mut c_char,
     pub pw_passwd: *mut c_char,
 }
-impl Struct for passwd {}
+impl MemZeroedStruct for passwd {}
 
 pub struct group {
     pub gr_name: *mut c_char,
@@ -295,10 +295,10 @@ pub struct group {
     pub gr_mem: *mut *mut c_char,
     pub gr_passwd: *mut c_char,
 }
-impl Struct for group {}
+impl MemZeroedStruct for group {}
 
 pub type sockaddr_in = SOCKADDR_IN;
-impl Struct for sockaddr_in {}
+impl MemZeroedStruct for sockaddr_in {}
 
 impl SockAddrIn for sockaddr_in {
     fn set_s_addr(&mut self, value: u32) {

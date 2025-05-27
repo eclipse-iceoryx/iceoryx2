@@ -29,7 +29,7 @@ use crate::posix::select;
 use crate::posix::types::*;
 use crate::posix::SockAddrIn;
 use crate::posix::{constants::*, fcntl_int};
-use crate::posix::{Errno, Struct};
+use crate::posix::{Errno, MemZeroedStruct};
 
 use crate::win32call;
 
@@ -41,7 +41,7 @@ struct GlobalWsaInitializer {
     _wsa_data: WSADATA,
 }
 
-impl Struct for WSADATA {}
+impl MemZeroedStruct for WSADATA {}
 
 impl GlobalWsaInitializer {
     unsafe fn init() {
@@ -52,7 +52,7 @@ impl GlobalWsaInitializer {
         match INITIALIZATION_STATE.compare_exchange(0, 1, Ordering::Relaxed, Ordering::Relaxed) {
             Ok(_) => {
                 WSA_INSTANCE.get_or_init(||{
-                    let mut _wsa_data = WSADATA::new();
+                    let mut _wsa_data = WSADATA::new_zeroed();
                     win32call! {winsock windows_sys::Win32::Networking::WinSock::WSAStartup(2, &mut _wsa_data)};
                     GlobalWsaInitializer { _wsa_data }
                 });
@@ -224,7 +224,7 @@ pub unsafe fn getsockopt(
 }
 
 unsafe fn create_uds_address(port: u16) -> sockaddr_in {
-    let mut udp_address = sockaddr_in::new();
+    let mut udp_address = sockaddr_in::new_zeroed();
     udp_address.sin_family = AF_INET as _;
     let localhost: u32 = (127 << 24) | 1;
     udp_address.set_s_addr(localhost.to_be());
@@ -296,7 +296,7 @@ pub unsafe fn bind(socket: int, address: *const sockaddr, address_len: socklen_t
                 return -1;
             }
 
-            let mut client_address = sockaddr_in::new();
+            let mut client_address = sockaddr_in::new_zeroed();
             let mut client_len = core::mem::size_of::<sockaddr_in>() as socklen_t;
 
             if getsockname(
@@ -452,7 +452,7 @@ pub unsafe fn recvfrom(
                 let now = Instant::now();
 
                 loop {
-                    let mut read_set = fd_set::new();
+                    let mut read_set = fd_set::new_zeroed();
                     read_set.fd_count = 1;
                     read_set.fd_array[0] = s.fd;
 
@@ -525,7 +525,7 @@ pub unsafe fn send(socket: int, message: *const void, length: size_t, flags: int
                 let now = Instant::now();
 
                 loop {
-                    let mut write_set = fd_set::new();
+                    let mut write_set = fd_set::new_zeroed();
                     write_set.fd_count = 1;
                     write_set.fd_array[0] = s.fd;
 
@@ -574,7 +574,7 @@ pub unsafe fn recv(socket: int, buffer: *mut void, length: size_t, flags: int) -
                 let now = Instant::now();
 
                 loop {
-                    let mut read_set = fd_set::new();
+                    let mut read_set = fd_set::new_zeroed();
                     read_set.fd_count = 1;
                     read_set.fd_array[0] = s.fd;
 

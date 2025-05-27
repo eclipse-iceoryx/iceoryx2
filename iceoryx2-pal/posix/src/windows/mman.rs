@@ -14,7 +14,9 @@
 #![allow(clippy::missing_safety_doc)]
 #![allow(unused_variables)]
 
-use crate::posix::{constants::*, settings::*, to_dir_search_string, types::*, Errno, Struct};
+use crate::posix::{
+    constants::*, settings::*, to_dir_search_string, types::*, Errno, MemZeroedStruct,
+};
 use crate::win32call;
 
 use iceoryx2_pal_configuration::PATH_SEPARATOR;
@@ -81,7 +83,7 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     let search_path = to_dir_search_string(search_path.as_ptr().cast());
 
     //SHM_STATE_SUFFIX
-    let mut data = WIN32_FIND_DATAA::new();
+    let mut data = WIN32_FIND_DATAA::new_zeroed();
     let (handle, _) = win32call! { FindFirstFileA(search_path.as_ptr().cast(), &mut data), ignore ERROR_FILE_NOT_FOUND };
 
     if handle == INVALID_HANDLE_VALUE {

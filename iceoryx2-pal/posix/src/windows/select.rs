@@ -17,7 +17,7 @@
 use core::time::Duration;
 use std::time::Instant;
 
-use crate::posix::Struct;
+use crate::posix::MemZeroedStruct;
 use crate::{posix::types::*, win32call};
 
 use super::win32_handle_translator::{FdHandleEntry, HandleTranslator};
@@ -46,17 +46,17 @@ pub unsafe fn select(
     let full_timeout = remaining_time;
 
     let readfds_copy = if readfds.is_null() {
-        fd_set::new()
+        fd_set::new_zeroed()
     } else {
         *readfds
     };
     let writefds_copy = if writefds.is_null() {
-        fd_set::new()
+        fd_set::new_zeroed()
     } else {
         *writefds
     };
     let errorfds_copy = if errorfds.is_null() {
-        fd_set::new()
+        fd_set::new_zeroed()
     } else {
         *errorfds
     };

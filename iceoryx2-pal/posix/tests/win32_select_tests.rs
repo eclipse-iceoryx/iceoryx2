@@ -18,13 +18,13 @@ mod win32_select {
 
     #[test]
     fn fd_set_capacity_correct() {
-        let sut = fd_set::new();
+        let sut = fd_set::new_zeroed();
         assert_that!(FD_SET_CAPACITY, eq sut.fd_array.len());
     }
 
     #[test]
     fn fd_set_setting_fds_works() {
-        let mut sut = fd_set::new();
+        let mut sut = fd_set::new_zeroed();
 
         let mut socket_fd = vec![];
         for i in 0..FD_SET_CAPACITY {
@@ -46,7 +46,7 @@ mod win32_select {
 
     #[test]
     fn fd_set_clear_works() {
-        let mut sut = fd_set::new();
+        let mut sut = fd_set::new_zeroed();
 
         let mut socket_fd = vec![];
         for i in 0..FD_SET_CAPACITY {
@@ -72,7 +72,7 @@ mod win32_select {
 
     #[test]
     fn fd_set_unsetting_fds_front_to_back_works() {
-        let mut sut = fd_set::new();
+        let mut sut = fd_set::new_zeroed();
 
         let mut socket_fd = vec![];
         for i in 0..FD_SET_CAPACITY {
@@ -98,7 +98,7 @@ mod win32_select {
 
     #[test]
     fn fd_set_unsetting_fds_back_to_front_works() {
-        let mut sut = fd_set::new();
+        let mut sut = fd_set::new_zeroed();
 
         let mut socket_fd = vec![];
         for i in 0..FD_SET_CAPACITY {

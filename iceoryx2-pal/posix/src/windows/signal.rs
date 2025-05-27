@@ -32,7 +32,7 @@ use core::cell::UnsafeCell;
 use crate::{
     posix::getpid,
     posix::types::*,
-    posix::{sighandler_t, Struct},
+    posix::{sighandler_t, MemZeroedStruct},
     posix::{Errno, SIGKILL, SIGSTOP, SIGTERM, SIGUSR1},
     win32call,
 };
@@ -45,11 +45,11 @@ pub struct sigaction_t {
     sa_flags: int,
 }
 
-impl Struct for sigaction_t {
-    fn new() -> Self {
+impl MemZeroedStruct for sigaction_t {
+    fn new_zeroed() -> Self {
         Self {
             sa_handler: 0,
-            sa_mask: sigset_t::new(),
+            sa_mask: sigset_t::new_zeroed(),
             sa_flags: 0,
         }
     }

@@ -41,7 +41,7 @@ use windows_sys::Win32::{
 
 use crate::{
     posix::shm_set_size,
-    posix::Struct,
+    posix::MemZeroedStruct,
     posix::{constants::*, types::*, win32_handle_translator::FdHandleEntry, Errno},
 };
 
@@ -51,7 +51,7 @@ use super::{
 };
 use crate::win32call;
 
-impl Struct for SYSTEM_INFO {}
+impl MemZeroedStruct for SYSTEM_INFO {}
 
 pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
     let process_handle = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid as _);
@@ -71,7 +71,7 @@ pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) 
 }
 
 pub unsafe fn sysconf(name: int) -> long {
-    let mut system_info = SYSTEM_INFO::new();
+    let mut system_info = SYSTEM_INFO::new_zeroed();
     win32call! { GetSystemInfo(&mut system_info)};
 
     const POSIX_VERSION: long = 200809;
@@ -116,7 +116,7 @@ pub unsafe fn getpid() -> pid_t {
     pid
 }
 
-impl Struct for PROCESSENTRY32 {}
+impl MemZeroedStruct for PROCESSENTRY32 {}
 
 pub unsafe fn getppid() -> pid_t {
     let (snapshot, _) = win32call! { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
@@ -124,7 +124,7 @@ pub unsafe fn getppid() -> pid_t {
         return 0;
     }
 
-    let mut process_entry = PROCESSENTRY32::new();
+    let mut process_entry = PROCESSENTRY32::new_zeroed();
     process_entry.dwSize = core::mem::size_of::<PROCESSENTRY32>() as u32;
 
     let mut parent_process_id = 0;
@@ -148,12 +148,12 @@ pub unsafe fn getppid() -> pid_t {
     parent_process_id
 }
 
-impl Struct for WSAPROTOCOL_INFOA {}
+impl MemZeroedStruct for WSAPROTOCOL_INFOA {}
 
 pub unsafe fn dup(fildes: int) -> int {
     match HandleTranslator::get_instance().get(fildes) {
         Some(FdHandleEntry::Socket(handle)) => {
-            let mut protocol_info = WSAPROTOCOL_INFOA::new();
+            let mut protocol_info = WSAPROTOCOL_INFOA::new_zeroed();
             let (result, _) = win32call! { winsock WSADuplicateSocketA(handle.fd, GetCurrentProcessId(), &mut protocol_info) };
             if result == SOCKET_ERROR {
                 return -1;
