@@ -13,7 +13,10 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use crate::{common::mem_zeroed_struct::MemZeroedStruct, posix::*};
+use crate::{
+    common::{cpu_set_t::cpu_set_t, mem_zeroed_struct::MemZeroedStruct},
+    posix::*,
+};
 
 pub unsafe fn pthread_rwlockattr_setkind_np(attr: *mut pthread_rwlockattr_t, pref: int) -> int {
     crate::internal::pthread_rwlockattr_setkind_np(attr, pref)

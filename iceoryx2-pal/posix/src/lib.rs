@@ -53,6 +53,8 @@ pub mod posix {
     #![allow(dead_code)]
     use super::*;
 
+    pub use common::cpu_set_t::cpu_set_t;
+
     #[cfg(feature = "libc_platform")]
     pub use crate::libc::*;
 
@@ -65,45 +67,9 @@ pub mod posix {
     #[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
     pub use crate::windows::*;
 
-    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-    #[repr(C)]
-    pub struct cpu_set_t {
-        pub __bits: [u8; CPU_SETSIZE / 8],
-    }
-    impl MemZeroedStruct for cpu_set_t {}
-
     pub trait SockAddrIn {
         fn set_s_addr(&mut self, value: u32);
         fn get_s_addr(&self) -> u32;
-    }
-
-    impl cpu_set_t {
-        pub fn set(&mut self, cpu: usize) {
-            if cpu > CPU_SETSIZE {
-                return;
-            }
-
-            let index = cpu / 8;
-            let offset = cpu % 8;
-
-            self.__bits[index] |= 1 << offset;
-        }
-
-        pub fn has(&self, cpu: usize) -> bool {
-            if cpu > CPU_SETSIZE {
-                return false;
-            }
-
-            let index = cpu / 8;
-            let offset = cpu % 8;
-            self.__bits[index] & (1 << offset) != 0
-        }
-
-        pub(crate) fn new_allow_all() -> Self {
-            Self {
-                __bits: [0xff; CPU_SETSIZE / 8],
-            }
-        }
     }
 
     pub(crate) unsafe fn c_string_length(value: *const crate::posix::c_char) -> usize {

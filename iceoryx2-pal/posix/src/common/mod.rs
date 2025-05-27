@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod cpu_set_t;
 pub mod mem_zeroed_struct;
 
 #[cfg(not(target_os = "windows"))]
