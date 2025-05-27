@@ -88,8 +88,9 @@ mod file_descriptor_management {
 
         let mut sut = Sut::sut();
 
-        let uid = User::from_self().unwrap().uid();
-        let gid = User::from_self().unwrap().gid();
+        let me = User::from_self().unwrap();
+        let uid = me.uid();
+        let gid = me.details().unwrap().gid();
 
         assert_that!(
             sut.set_ownership(OwnershipBuilder::new().uid(uid).gid(gid).create()),

@@ -26,17 +26,17 @@ fn user_works() {
     assert_that!(root.uid(), eq root_from_uid.uid());
     assert_that!(root.uid(), eq 0);
 
-    assert_that!(root.gid(), eq root_from_uid.gid());
-    assert_that!(root.gid(), eq 0);
+    let root_details = root.details().unwrap();
+    let root_from_uid_details = root_from_uid.details().unwrap();
 
-    assert_that!(root.name(), eq root_from_uid.name());
-    assert_that!(root.name().as_bytes(), eq b"root");
+    assert_that!(root_details.gid(), eq root_from_uid_details.gid());
+    assert_that!(root_details.gid(), eq 0);
 
-    assert_that!(root.info(), eq root_from_uid.info());
+    assert_that!(root_details.name(), eq root_from_uid_details.name());
+    assert_that!(root_details.name().as_bytes(), eq b"root");
 
-    assert_that!(root.home_dir(), eq root_from_uid.home_dir());
-    assert_that!(root.home_dir().to_string(), eq "/root");
+    assert_that!(root_details.home_dir(), eq root_from_uid_details.home_dir());
+    assert_that!(root_details.home_dir().to_string(), eq "/root");
 
-    assert_that!(root.shell(), eq root_from_uid.shell());
-    assert_that!(root.password(), eq root_from_uid.password());
+    assert_that!(root_details.shell(), eq root_from_uid_details.shell());
 }

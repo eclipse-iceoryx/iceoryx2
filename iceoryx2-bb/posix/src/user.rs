@@ -33,7 +33,7 @@ use core::ffi::CStr;
 use crate::handle_errno;
 use crate::{config::PASSWD_BUFFER_SIZE, system_configuration::*};
 use iceoryx2_bb_container::semantic_string::*;
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, warn};
 
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_system_types::file_path::FilePath;
@@ -99,84 +99,18 @@ impl UserExt for UserName {
     }
 }
 
+/// Contains additional details to the [`User`] that might be not available on every platform or
+/// on every platform configuration.
 #[derive(Debug)]
-/// Represents a user in a POSIX system
-pub struct User {
-    uid: u32,
+pub struct UserDetails {
     gid: u32,
     name: UserName,
-    info: String,
     home_dir: Path,
     config_dir: Path,
     shell: FilePath,
-    password: String,
 }
 
-impl User {
-    /// Create an user object from the owner of the process
-    pub fn from_self() -> Result<User, UserError> {
-        Self::from_uid(unsafe { posix::getuid() })
-    }
-
-    /// Create an user object from a given uid. If the uid does not exist an error will be
-    /// returned.
-    pub fn from_uid(uid: u32) -> Result<User, UserError> {
-        let mut passwd = posix::passwd::new();
-        let mut passwd_ptr: *mut posix::passwd = &mut passwd;
-        let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
-
-        let errno_value = unsafe {
-            posix::getpwuid_r(
-                uid,
-                &mut passwd,
-                buffer.as_mut_ptr(),
-                PASSWD_BUFFER_SIZE,
-                &mut passwd_ptr,
-            )
-        }
-        .into();
-
-        Self::extract_user_details(
-            errno_value,
-            "Unable to acquire user entry",
-            &format!("User::from_uid({})", uid),
-            passwd_ptr,
-            &mut passwd,
-        )
-    }
-
-    /// Create an user object from a given user-name. If the user-name does not exist an error will
-    /// be returned
-    pub fn from_name(user_name: &UserName) -> Result<User, UserError> {
-        let mut passwd = posix::passwd::new();
-        let mut passwd_ptr: *mut posix::passwd = &mut passwd;
-        let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
-
-        let errno_value = unsafe {
-            posix::getpwnam_r(
-                user_name.as_c_str(),
-                &mut passwd,
-                buffer.as_mut_ptr(),
-                PASSWD_BUFFER_SIZE,
-                &mut passwd_ptr,
-            )
-        }
-        .into();
-
-        Self::extract_user_details(
-            errno_value,
-            "Unable to acquire user entry",
-            &format!("User::from_name({})", user_name),
-            passwd_ptr,
-            &mut passwd,
-        )
-    }
-
-    /// Return the user id
-    pub fn uid(&self) -> u32 {
-        self.uid
-    }
-
+impl UserDetails {
     /// Return the group id of the users group
     pub fn gid(&self) -> u32 {
         self.gid
@@ -185,11 +119,6 @@ impl User {
     /// Return the name of the user.
     pub fn name(&self) -> &UserName {
         &self.name
-    }
-
-    /// Return additional user infos which are defined in the gecos field.
-    pub fn info(&self) -> &str {
-        self.info.as_str()
     }
 
     /// Return the users home directory.
@@ -206,11 +135,103 @@ impl User {
     pub fn shell(&self) -> &FilePath {
         &self.shell
     }
+}
 
-    /// Old entry, should contain only 'x'. Returns the password of the user but on modern systems
-    /// it should be stored in /etc/shadow
-    pub fn password(&self) -> &str {
-        self.password.as_str()
+#[derive(Debug)]
+/// Represents a user in a POSIX system
+pub struct User {
+    uid: u32,
+    details: Option<UserDetails>,
+}
+
+impl User {
+    /// Create an user object from the owner of the process
+    pub fn from_self() -> Result<User, UserError> {
+        Self::from_uid(unsafe { posix::getuid() })
+    }
+
+    /// Create an user object from a given uid. If the uid does not exist an error will be
+    /// returned.
+    pub fn from_uid(uid: u32) -> Result<User, UserError> {
+        let msg = "Unable to acquire user entry";
+        let origin = format!("User::from_uid({})", uid);
+
+        let mut passwd = posix::passwd::new();
+        let mut passwd_ptr: *mut posix::passwd = &mut passwd;
+        let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
+
+        let errno_value = unsafe {
+            posix::getpwuid_r(
+                uid,
+                &mut passwd,
+                buffer.as_mut_ptr(),
+                PASSWD_BUFFER_SIZE,
+                &mut passwd_ptr,
+            )
+        }
+        .into();
+
+        match Self::handle_errno(errno_value, msg, &origin) {
+            Ok(()) => Self::extract_user_details(msg, &origin, passwd_ptr, &mut passwd),
+            Err(e) => {
+                warn!(from origin,
+                    "{} details since the underlying POSIX user database `/etc/passwd` could not be read ({:?}).",
+                    msg, e);
+                Ok(User { uid, details: None })
+            }
+        }
+    }
+
+    /// Create an user object from a given user-name. If the user-name does not exist an error will
+    /// be returned
+    pub fn from_name(user_name: &UserName) -> Result<User, UserError> {
+        let msg = "Unable to acquire user entry";
+        let origin = format!("User::from_name({})", user_name);
+
+        let mut passwd = posix::passwd::new();
+        let mut passwd_ptr: *mut posix::passwd = &mut passwd;
+        let mut buffer: [posix::c_char; PASSWD_BUFFER_SIZE] = [0; PASSWD_BUFFER_SIZE];
+
+        let errno_value = unsafe {
+            posix::getpwnam_r(
+                user_name.as_c_str(),
+                &mut passwd,
+                buffer.as_mut_ptr(),
+                PASSWD_BUFFER_SIZE,
+                &mut passwd_ptr,
+            )
+        }
+        .into();
+
+        Self::handle_errno(errno_value, msg, &origin)?;
+        Self::extract_user_details(msg, &origin, passwd_ptr, &mut passwd)
+    }
+
+    /// Return the user id
+    pub fn uid(&self) -> u32 {
+        self.uid
+    }
+
+    /// Returns the optional [`UserDetails`] that might be not available on every platform or
+    /// on every platform configuration.
+    pub fn details(&self) -> Option<&UserDetails> {
+        self.details.as_ref()
+    }
+
+    fn handle_errno(errno_value: Errno, msg: &str, origin: &str) -> Result<(), UserError> {
+        handle_errno!(UserError, from origin,
+            errno_source errno_value,
+            continue_on_success,
+            success Errno::ESUCCES => (),
+            Errno::EINTR => (Interrupt, "{} since an interrupt signal was received", msg ),
+            Errno::EIO => (IOerror, "{} due to an I/O error.", msg),
+            Errno::EMFILE => (PerProcessFileHandleLimitReached, "{} since the per-process file handle limit is reached.", msg ),
+            Errno::ENFILE => (SystemWideFileHandleLimitReached, "{} since the system-wide file handle limit is reached.", msg),
+            Errno::ERANGE => (InsufficientBufferSize, "{} since insufficient storage was provided. Max buffer size should be: {}", msg, Limit::MaxSizeOfPasswordBuffer.value()),
+            v => (UnknownError(v as i32), "{} due to an unknown error ({}).", msg, v)
+        );
+
+        Ok(())
     }
 
     fn extract_entry(
@@ -228,24 +249,11 @@ impl User {
     }
 
     fn extract_user_details(
-        errno_value: Errno,
         msg: &str,
         origin: &str,
         passwd_ptr: *mut posix::passwd,
         passwd: &mut posix::passwd,
     ) -> Result<Self, UserError> {
-        handle_errno!(UserError, from origin,
-            errno_source errno_value,
-            continue_on_success,
-            success Errno::ESUCCES => (),
-            Errno::EINTR => (Interrupt, "{} since an interrupt signal was received", msg ),
-            Errno::EIO => (IOerror, "{} due to an I/O error.", msg),
-            Errno::EMFILE => (PerProcessFileHandleLimitReached, "{} since the per-process file handle limit is reached.", msg ),
-            Errno::ENFILE => (SystemWideFileHandleLimitReached, "{} since the system-wide file handle limit is reached.", msg),
-            Errno::ERANGE => (InsufficientBufferSize, "{} since insufficient storage was provided. Max buffer size should be: {}", msg, Limit::MaxSizeOfPasswordBuffer.value()),
-            v => (UnknownError(v as i32), "{} due to an unknown error ({}).", msg, v)
-        );
-
         if passwd_ptr.is_null() {
             fail!(from origin, with UserError::UserNotFound, "{} since the user does not exist.", msg);
         }
@@ -256,7 +264,6 @@ impl User {
                             with UserError::SystemUserNameLengthLongerThanSupportedLength,
                             "{} since the user name on the system is longer than the supported length of {}.",
                             msg, UserName::max_len());
-        let info = Self::extract_entry(origin, passwd.pw_gecos, msg, "gecos entry")?;
         let home_dir_raw = Self::extract_entry(origin, passwd.pw_dir, msg, "home directory")?;
         let home_dir = fail!(from origin,
                         when Path::new(home_dir_raw.as_bytes()),
@@ -273,17 +280,16 @@ impl User {
             when FilePath::new(shell_raw.as_bytes()),
             with UserError::InvalidSymbolsInShellPath,
             "{} since the user shell path \"{}\" contains invalid path symbols", msg, shell_raw);
-        let password = Self::extract_entry(origin, passwd.pw_passwd, msg, "password")?;
 
         Ok(User {
             uid,
-            gid,
-            name,
-            info,
-            home_dir,
-            config_dir,
-            shell,
-            password,
+            details: Some(UserDetails {
+                gid,
+                name,
+                home_dir,
+                config_dir,
+                shell,
+            }),
         })
     }
 }

@@ -92,9 +92,9 @@ const RELATIVE_CONFIG_FILE_PATH: &[u8] = b"iceoryx2";
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ConfigIterationFailure {
-    #[allow(dead_code)] // TODO: #617
     UnableToAcquireCurrentUserDetails,
     TooLongUserConfigDirectory,
+    ConfigDirectoryNotAvailable,
 }
 
 /// Failures occurring while creating a new [`Config`] object with [`Config::from_file()`] or
@@ -495,17 +495,27 @@ impl Config {
                          when iceoryx2_bb_posix::user::User::from_self(),
                          with ConfigIterationFailure::UnableToAcquireCurrentUserDetails,
                          "{} since the current user details could not be acquired.", msg);
-        let mut user_config = user.config_dir().clone();
-        fail!(from origin,
-                when user_config.add_path_entry(&Self::relative_config_path()),
-                with ConfigIterationFailure::TooLongUserConfigDirectory,
-                "{} since the resulting user config directory would be too long.", msg);
-        let user_config = fail!(from origin,
-                when FilePath::from_path_and_file(&user_config, &Self::default_config_file_name()),
-                with ConfigIterationFailure::TooLongUserConfigDirectory,
-                "{} since the resulting user config directory would be too long.", msg);
+        match user.details() {
+            Some(details) => {
+                let mut user_config = details.config_dir().clone();
+                fail!(from origin,
+                    when user_config.add_path_entry(&Self::relative_config_path()),
+                    with ConfigIterationFailure::TooLongUserConfigDirectory,
+                    "{} since the resulting user config directory would be too long.", msg);
+                let user_config = fail!(from origin,
+                    when FilePath::from_path_and_file(&user_config, &Self::default_config_file_name()),
+                    with ConfigIterationFailure::TooLongUserConfigDirectory,
+                    "{} since the resulting user config directory would be too long.", msg);
 
-        Ok(user_config)
+                Ok(user_config)
+            }
+            None => {
+                fail!(from origin,
+                      with ConfigIterationFailure::ConfigDirectoryNotAvailable,
+                      "{} since the user config directory is not available on the current platform.",
+                      msg);
+            }
+        }
     }
 
     fn load_global_config_path(
