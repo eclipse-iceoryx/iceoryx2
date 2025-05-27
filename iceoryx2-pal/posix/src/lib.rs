@@ -15,6 +15,10 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+mod common;
+
+pub use common::mem_zeroed_struct::MemZeroedStruct;
+
 #[cfg(not(feature = "libc_platform"))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
@@ -52,6 +56,7 @@ use scandir::*;
 
 pub mod posix {
     #![allow(dead_code)]
+    use super::*;
 
     #[cfg(feature = "libc_platform")]
     pub use crate::libc::*;
@@ -65,18 +70,12 @@ pub mod posix {
     #[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
     pub use crate::windows::*;
 
-    pub trait Struct: Sized {
-        fn new() -> Self {
-            unsafe { core::mem::zeroed() }
-        }
-    }
-
     #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(C)]
     pub struct cpu_set_t {
         pub __bits: [u8; CPU_SETSIZE / 8],
     }
-    impl Struct for cpu_set_t {}
+    impl MemZeroedStruct for cpu_set_t {}
 
     pub trait SockAddrIn {
         fn set_s_addr(&mut self, value: u32);

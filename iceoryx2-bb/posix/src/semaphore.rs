@@ -26,7 +26,6 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_bb_system_types::path::*;
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 
 use crate::{
@@ -666,7 +665,7 @@ unsafe impl Sync for UnnamedSemaphoreHandle {}
 impl Handle for UnnamedSemaphoreHandle {
     fn new() -> Self {
         Self {
-            handle: HandleStorage::new(posix::sem_t::new()),
+            handle: HandleStorage::new(posix::sem_t::new_zeroed()),
             clock_type: UnsafeCell::new(ClockType::default()),
         }
     }

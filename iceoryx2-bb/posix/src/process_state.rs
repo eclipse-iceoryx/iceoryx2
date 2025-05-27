@@ -136,7 +136,10 @@ use iceoryx2_bb_container::semantic_string::SemanticStringError;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, trace};
 pub use iceoryx2_bb_system_types::file_path::FilePath;
-use iceoryx2_pal_posix::posix::{self, Errno, Struct};
+use iceoryx2_pal_posix::{
+    posix::{self, Errno},
+    MemZeroedStruct,
+};
 
 use crate::{
     access_mode::AccessMode,
@@ -436,7 +439,7 @@ impl ProcessGuard {
 
     fn lock_state_file(file: &File) -> Result<(), ProcessGuardLockError> {
         let msg = format!("Unable to lock process state file {:?}", file);
-        let mut new_lock_state = posix::flock::new();
+        let mut new_lock_state = posix::flock::new_zeroed();
         new_lock_state.l_type = LockType::Write as _;
         new_lock_state.l_whence = posix::SEEK_SET as _;
 
@@ -630,7 +633,7 @@ impl ProcessMonitor {
 
     fn get_lock_state(file: &File) -> Result<i64, ProcessMonitorStateError> {
         let msg = format!("Unable to acquire lock on file {:?}", file);
-        let mut current_state = posix::flock::new();
+        let mut current_state = posix::flock::new_zeroed();
         current_state.l_type = LockType::Write as _;
 
         if unsafe {

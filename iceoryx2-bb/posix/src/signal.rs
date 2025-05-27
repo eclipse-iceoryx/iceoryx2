@@ -67,7 +67,7 @@ use enum_iterator::{all, Sequence};
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
-use iceoryx2_pal_posix::posix::{Errno, Struct};
+use iceoryx2_pal_posix::posix::Errno;
 use iceoryx2_pal_posix::*;
 use lazy_static::lazy_static;
 
@@ -561,7 +561,7 @@ impl SignalHandler {
             adjusted_state.set_flags(adjusted_state.flags() | posix::SA_RESTART);
         }
 
-        let mut previous_action = posix::sigaction_t::new();
+        let mut previous_action = posix::sigaction_t::new_zeroed();
 
         let sigaction_return = unsafe {
             posix::sigaction(details.signal as i32, &adjusted_state, &mut previous_action)
@@ -580,7 +580,7 @@ impl SignalHandler {
         signal: FetchableSignal,
         callback: posix::sighandler_t,
     ) -> posix::sigaction_t {
-        let mut action = posix::sigaction_t::new();
+        let mut action = posix::sigaction_t::new_zeroed();
         action.set_handler(callback);
         self.register_signal_from_state(SignalDetail::new(signal, action))
     }

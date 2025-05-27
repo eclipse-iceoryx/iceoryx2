@@ -52,7 +52,6 @@ use crate::{
 };
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 
 /// A trait which is implement by all objects which can be added to the [`FileDescriptorSet`].
@@ -129,7 +128,7 @@ impl Default for FileDescriptorSet {
     fn default() -> Self {
         let fd_set = FileDescriptorSet {
             internals: UnsafeCell::new(Internals {
-                fd_set: posix::fd_set::new(),
+                fd_set: posix::fd_set::new_zeroed(),
                 file_descriptors: vec![],
                 max_fd: 0,
             }),

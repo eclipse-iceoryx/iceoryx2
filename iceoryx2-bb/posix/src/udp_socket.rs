@@ -61,8 +61,9 @@ use iceoryx2_bb_log::{fail, fatal_panic, trace};
 use iceoryx2_bb_system_types::ipv4_address::{self, Ipv4Address};
 use iceoryx2_bb_system_types::port::{self, Port};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
-use iceoryx2_pal_posix::posix::{self, Struct};
+use iceoryx2_pal_posix::posix::{self};
 use iceoryx2_pal_posix::posix::{Errno, SockAddrIn};
+use iceoryx2_pal_posix::MemZeroedStruct;
 
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased};
 use crate::file_descriptor_set::{
@@ -134,7 +135,7 @@ pub enum UdpSendError {
 }
 
 fn create_sockaddr(address: Ipv4Address, port: Port) -> posix::sockaddr_in {
-    let mut addr = posix::sockaddr_in::new();
+    let mut addr = posix::sockaddr_in::new_zeroed();
     addr.sin_family = posix::AF_INET as _;
     addr.set_s_addr(address.as_u32().to_be());
     addr.sin_port = port.as_u16().to_be();
@@ -395,7 +396,7 @@ impl UdpServerBuilder {
             );
         }
 
-        let mut client_address = posix::sockaddr_in::new();
+        let mut client_address = posix::sockaddr_in::new_zeroed();
         let mut client_len = core::mem::size_of::<posix::sockaddr_in>() as posix::socklen_t;
 
         let msg = "Unable to read newly created UdpServer socket details";
@@ -600,7 +601,7 @@ impl UdpSocket {
     }
 
     fn receive_from(&self, buffer: &mut [u8]) -> Result<Option<ReceiveDetails>, UdpReceiveError> {
-        let mut client = posix::sockaddr_in::new();
+        let mut client = posix::sockaddr_in::new_zeroed();
         let mut client_len = core::mem::size_of::<posix::sockaddr_in>() as u32;
         let bytes_received = unsafe {
             posix::recvfrom(

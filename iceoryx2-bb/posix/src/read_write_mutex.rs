@@ -51,7 +51,6 @@ use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 
 use core::{
@@ -138,7 +137,7 @@ impl ReadWriteMutexBuilder {
         let msg = "Failed to create mutex";
         let origin = format!("{:?}", self);
 
-        let mut attributes = ScopeGuardBuilder::new(posix::pthread_rwlockattr_t::new()).on_init(|attr| {
+        let mut attributes = ScopeGuardBuilder::new(posix::pthread_rwlockattr_t::new_zeroed()).on_init(|attr| {
             handle_errno!(ReadWriteMutexCreationError, from self,
                 errno_source unsafe { posix::pthread_rwlockattr_init( attr).into() },
                 success Errno::ESUCCES => (),
@@ -278,7 +277,7 @@ unsafe impl<T: Sized + Debug> Sync for ReadWriteMutexHandle<T> {}
 impl<T: Sized + Debug> Handle for ReadWriteMutexHandle<T> {
     fn new() -> Self {
         Self {
-            handle: HandleStorage::new(posix::pthread_rwlock_t::new()),
+            handle: HandleStorage::new(posix::pthread_rwlock_t::new_zeroed()),
             value: UnsafeCell::new(None),
         }
     }

@@ -46,7 +46,6 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_system_types::file_path::*;
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 
 use crate::{
@@ -208,7 +207,7 @@ impl Process {
         let msg = "Unable to acquire priority of process";
         let scheduler = fail!(from self, when self.get_scheduler(), "{} due to a failure while getting the current scheduler of the process.", msg);
 
-        let mut param = posix::sched_param::new();
+        let mut param = posix::sched_param::new_zeroed();
         if unsafe { posix::sched_getparam(self.pid.0, &mut param) } == 0 {
             return Ok(scheduler.get_priority_from(&param));
         }
@@ -224,7 +223,7 @@ impl Process {
     pub fn set_priority(&mut self, priority: u8) -> Result<(), ProcessGetSchedulerError> {
         let msg = "Unable to set process priority";
         let scheduler = fail!(from self, when self.get_scheduler(), "{} due to a failure while acquiring the current process scheduler.", msg);
-        let mut param = posix::sched_param::new();
+        let mut param = posix::sched_param::new_zeroed();
         param.sched_priority = scheduler.policy_specific_priority(priority);
 
         if unsafe { posix::sched_setparam(self.pid.0, &param) } == 0 {
@@ -262,7 +261,7 @@ impl Process {
         scheduler: Scheduler,
     ) -> Result<Scheduler, ProcessSetSchedulerError> {
         let msg = "Unable to set scheduler of process";
-        let mut param = posix::sched_param::new();
+        let mut param = posix::sched_param::new_zeroed();
         param.sched_priority = scheduler.policy_specific_priority(0);
         let former_scheduler =
             unsafe { posix::sched_setscheduler(self.pid.0, scheduler as i32, &param) };

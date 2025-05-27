@@ -89,7 +89,6 @@ use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
 use iceoryx2_pal_posix::*;
 
 use crate::{
@@ -282,7 +281,7 @@ impl ThreadBuilder {
         T: Debug + Send + 'thread,
         F: FnOnce() -> T + Send + 'thread,
     {
-        let mut attributes = ScopeGuardBuilder::new( posix::pthread_attr_t::new())
+        let mut attributes = ScopeGuardBuilder::new( posix::pthread_attr_t::new_zeroed())
             .on_init(|attr| {
                 let msg = "Failed to initialize thread attributes";
                 handle_errno!(ThreadSpawnError, from self,
@@ -331,7 +330,7 @@ impl ThreadBuilder {
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         );
 
-        let mut param = posix::sched_param::new();
+        let mut param = posix::sched_param::new_zeroed();
         param.sched_priority = self.scheduler.policy_specific_priority(self.priority);
         let msg = "Failed to set thread priority";
         handle_errno!(ThreadSpawnError, from self,
@@ -361,7 +360,7 @@ impl ThreadBuilder {
             );
         }
 
-        let mut cpuset = posix::cpu_set_t::new();
+        let mut cpuset = posix::cpu_set_t::new_zeroed();
         for i in 0..core::cmp::min(posix::CPU_SETSIZE, SystemInfo::NumberOfCpuCores.value()) {
             if self.affinity[i] {
                 cpuset.set(i);
@@ -414,7 +413,7 @@ impl ThreadBuilder {
             });
         }
 
-        let mut handle = posix::pthread_t::new();
+        let mut handle = posix::pthread_t::new_zeroed();
 
         let msg = "Unable to create thread";
         match unsafe {
@@ -571,7 +570,7 @@ impl ThreadProperties for ThreadHandle {
     }
 
     fn get_affinity(&self) -> Result<Vec<usize>, ThreadSetAffinityError> {
-        let mut cpuset = posix::cpu_set_t::new();
+        let mut cpuset = posix::cpu_set_t::new_zeroed();
         let msg = "Unable to acquire threads CPU affinity";
         handle_errno!(ThreadSetAffinityError, from self,
             errno_source unsafe { posix::pthread_getaffinity_np(self.handle, core::mem::size_of::<posix::cpu_set_t>(), &mut cpuset).into()},
@@ -603,7 +602,7 @@ impl ThreadProperties for ThreadHandle {
     }
 
     fn set_affinity_to_cores(&mut self, cores: &[usize]) -> Result<(), ThreadSetAffinityError> {
-        let mut cpuset = posix::cpu_set_t::new();
+        let mut cpuset = posix::cpu_set_t::new_zeroed();
 
         for core in cores {
             cpuset.set(*core);

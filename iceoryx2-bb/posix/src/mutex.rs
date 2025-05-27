@@ -59,7 +59,6 @@ use crate::adaptive_wait::*;
 use crate::clock::{AsTimespec, ClockType, NanosleepError, Time, TimeError};
 use crate::handle_errno;
 use iceoryx2_pal_posix::posix::errno::Errno;
-use iceoryx2_pal_posix::posix::Struct;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum MutexCreationError {
@@ -297,7 +296,7 @@ impl MutexBuilder {
     ) -> Result<Capability, MutexCreationError> {
         let msg = "Unable to create mutex";
 
-        let mut mutex_attributes = ScopeGuardBuilder::new(posix::pthread_mutexattr_t::new())
+        let mut mutex_attributes = ScopeGuardBuilder::new(posix::pthread_mutexattr_t::new_zeroed())
             .on_init(
                 |attr| match unsafe { posix::pthread_mutexattr_init(attr) } {
                     0 => Ok(()),
@@ -436,7 +435,7 @@ impl<T: Sized + Debug> Drop for MutexHandle<T> {
 impl<T: Sized + Debug> Handle for MutexHandle<T> {
     fn new() -> Self {
         Self {
-            handle: HandleStorage::new(posix::pthread_mutex_t::new()),
+            handle: HandleStorage::new(posix::pthread_mutex_t::new_zeroed()),
             clock_type: UnsafeCell::new(ClockType::default()),
             value: UnsafeCell::new(None),
         }
