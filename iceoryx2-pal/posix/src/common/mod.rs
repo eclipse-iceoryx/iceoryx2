@@ -13,6 +13,7 @@
 pub mod cpu_set_t;
 pub mod mem_zeroed_struct;
 pub mod sockaddr_in;
+pub(crate) mod string_operations;
 
 #[cfg(not(target_os = "windows"))]
 pub(crate) mod scandir;

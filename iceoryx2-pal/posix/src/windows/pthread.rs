@@ -16,7 +16,10 @@
 
 use core::panic;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
-use std::{os::windows::prelude::OsStringExt, time::SystemTime, time::UNIX_EPOCH};
+use std::{
+    os::windows::prelude::OsStrExt, os::windows::prelude::OsStringExt, time::SystemTime,
+    time::UNIX_EPOCH,
+};
 
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU32;
 use iceoryx2_pal_concurrency_sync::rwlock::*;
@@ -346,6 +349,16 @@ pub unsafe fn pthread_self() -> pthread_t {
     (thread.id, _) = win32call! { GetCurrentThreadId() };
     thread.index_to_state = ThreadStates::get_instance().get_index_of(thread.id);
     thread
+}
+
+unsafe fn c_string_to_wide_string(value: *const crate::posix::c_char) -> Vec<u16> {
+    let value_str = core::str::from_utf8_unchecked(core::slice::from_raw_parts(
+        value as *const u8,
+        crate::posix::c_string_length(value),
+    ));
+    let mut result: Vec<u16> = std::ffi::OsStr::new(value_str).encode_wide().collect();
+    result.push(0);
+    result
 }
 
 pub unsafe fn pthread_setname_np(thread: pthread_t, name: *const c_char) -> int {

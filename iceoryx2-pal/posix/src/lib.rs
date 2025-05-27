@@ -54,6 +54,7 @@ pub mod posix {
     pub use common::cpu_set_t::cpu_set_t;
     pub use common::mem_zeroed_struct::MemZeroedStruct;
     pub use common::sockaddr_in::SockAddrIn;
+    pub(crate) use common::string_operations::*;
 
     #[cfg(feature = "libc_platform")]
     pub use crate::libc::*;
@@ -66,48 +67,4 @@ pub mod posix {
     pub use crate::macos::*;
     #[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
     pub use crate::windows::*;
-
-    pub(crate) unsafe fn c_string_length(value: *const crate::posix::c_char) -> usize {
-        for i in 0..isize::MAX {
-            if *value.offset(i) == crate::posix::NULL_TERMINATOR {
-                return i as usize;
-            }
-        }
-
-        unreachable!()
-    }
-}
-
-#[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
-pub(crate) mod win_internal {
-    #![allow(dead_code)]
-    use std::os::windows::prelude::OsStrExt;
-
-    pub(crate) unsafe fn print_char(value: *const crate::posix::c_char) {
-        let len = crate::posix::c_string_length(value);
-
-        let text =
-            core::str::from_utf8(core::slice::from_raw_parts(value as *const u8, len)).unwrap();
-        println!("{}", text);
-    }
-
-    pub(crate) unsafe fn c_wide_string_length(value: *const u16) -> usize {
-        for i in 0..usize::MAX {
-            if *value.add(i) == 0u16 {
-                return i;
-            }
-        }
-
-        0
-    }
-
-    pub(crate) unsafe fn c_string_to_wide_string(value: *const crate::posix::c_char) -> Vec<u16> {
-        let value_str = core::str::from_utf8_unchecked(core::slice::from_raw_parts(
-            value as *const u8,
-            crate::posix::c_string_length(value),
-        ));
-        let mut result: Vec<u16> = std::ffi::OsStr::new(value_str).encode_wide().collect();
-        result.push(0);
-        result
-    }
 }
