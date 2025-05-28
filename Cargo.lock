@@ -651,7 +651,6 @@ version = "0.6.1"
 dependencies = [
  "iceoryx2-pal-concurrency-sync",
  "log",
- "termsize",
  "tracing",
 ]
 
@@ -1372,16 +1371,6 @@ name = "terminal_size"
 version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "633c1a546cee861a1a6d0dc69ebeca693bf4296661ba7852b9d21d159e0506df"
-dependencies = [
- "libc",
- "winapi",
-]
-
-[[package]]
-name = "termsize"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f11ff5c25c172608d5b85e2fb43ee9a6d683a7f4ab7f96ae07b3d8b590368fd"
 dependencies = [
  "libc",
  "winapi",

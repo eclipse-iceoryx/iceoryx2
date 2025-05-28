@@ -36,6 +36,5 @@ rust_library(
     }),
     deps = [
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
-        "@crate_index//:termsize",
     ],
 )
