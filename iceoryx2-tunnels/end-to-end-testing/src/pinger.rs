@@ -71,6 +71,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     log("CREATED Pong Listener");
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
+
     let pong_guard = waitset.attach_notification(&pong_listener)?;
     let pong_id = WaitSetAttachmentId::from_guard(&pong_guard);
 

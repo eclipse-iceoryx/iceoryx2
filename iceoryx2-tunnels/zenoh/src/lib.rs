@@ -202,73 +202,27 @@ pub(crate) fn z_announce_service(
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<(), zenoh::Error> {
     let z_key = keys::service(iox_service_config.service_id());
-    match serde_json::to_string(&iox_service_config) {
-        Ok(iox_service_config_serialized) => {
-            z_session
-                .declare_queryable(z_key.clone())
-                .callback(move |query| {
-                    if let Err(e) = query
-                        .reply(query.key_expr().clone(), &iox_service_config_serialized)
-                        .wait()
-                    {
-                        error!("Failed to reply to query for service info: {}", e);
-                    }
-                })
-                .background()
-                .wait()?;
+    let iox_service_config_serialized = serde_json::to_string(&iox_service_config)?;
 
-            info!(
-                "ANNOUNCED (zenoh): {} [{}]",
-                z_key,
-                iox_service_config.name()
-            );
-        }
-        Err(e) => {
-            error!("Failed to serialize static service config: {}", e);
-        }
-    }
+    info!(
+        "ANNOUNCING (zenoh): {} [{}]",
+        z_key,
+        iox_service_config.name()
+    );
+
+    z_session
+        .declare_queryable(z_key.clone())
+        .callback(move |query| {
+            info!("QUERY RECEIVED at {} for: {}", z_key, query.key_expr());
+            if let Err(e) = query
+                .reply(z_key.clone(), iox_service_config_serialized.clone())
+                .wait()
+            {
+                error!("Failed to reply to query {}: {}", z_key, e);
+            }
+        })
+        .background()
+        .wait()?;
+
     Ok(())
-}
-
-pub(crate) fn z_query_services(
-    z_session: &ZenohSession,
-) -> Result<Vec<IceoryxServiceConfig>, zenoh::Error> {
-    let mut iox_remote_static_details = Vec::new();
-
-    let replies = z_session.get(keys::all_services()).wait()?;
-
-    while let Ok(reply) = replies.try_recv() {
-        match reply {
-            // Case: Reply contains a sample (actual data from a service)
-            Some(sample) => match sample.result() {
-                // Case: Sample contains valid data that can be processed
-                Ok(sample) => {
-                    match serde_json::from_slice::<IceoryxServiceConfig>(
-                        &sample.payload().to_bytes(),
-                    ) {
-                        Ok(iox_static_details) => {
-                            if !iox_remote_static_details.iter().any(
-                                |details: &IceoryxServiceConfig| {
-                                    details.service_id() == iox_static_details.service_id()
-                                },
-                            ) {
-                                iox_remote_static_details.push(iox_static_details.clone());
-                            }
-                        }
-                        Err(e) => {
-                            error!("Failed to deserialize static details: {}", e);
-                        }
-                    }
-                }
-                // Case: Sample contains an error (e.g., malformed data)
-                Err(e) => {
-                    error!("Invalid sample: {}", e);
-                }
-            },
-            // Case: Reply exists but contains no sample (empty response)
-            None => { /* Nothing to do */ }
-        }
-    }
-
-    Ok(iox_remote_static_details)
 }
