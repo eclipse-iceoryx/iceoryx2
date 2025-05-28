@@ -40,7 +40,7 @@ pub struct Cli {
     version = PackageVersion::get_str(),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 config show", HelpOptions::DontPrintCommandSection),
+    help_template = help_template("iox2 config show", HelpOptions::PrintCommandSection),
 )]
 pub struct ConfigShow {
     #[clap(subcommand)]
