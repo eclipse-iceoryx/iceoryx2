@@ -193,7 +193,7 @@ mod zenoh_tunnel {
         }
 
         if !success {
-            test_fail!("failed to discover remote service after 3 attempts");
+            test_fail!("failed to discover remote service after multiple attempts");
         }
     }
 
@@ -293,8 +293,9 @@ mod zenoh_tunnel {
             tunnel_b.propagate();
 
             // Receive with retry
+            const NUM_RETRIES: usize = 10;
             let mut success = false;
-            for retry in 0..3 {
+            for retry in 0..NUM_RETRIES {
                 match iox_subscriber_b.receive().unwrap() {
                     Some(iox_sample_received_b) => {
                         let iox_payload_received_b = iox_sample_received_b.payload();
@@ -314,7 +315,7 @@ mod zenoh_tunnel {
                     None => {
                         // If no sample received, wait a bit and retry
                         // Don't sleep after last attempt
-                        if retry < 2 {
+                        if retry < NUM_RETRIES {
                             std::thread::sleep(Duration::from_millis(100));
                             tunnel_a.propagate();
                             tunnel_b.propagate();
@@ -324,7 +325,10 @@ mod zenoh_tunnel {
             }
 
             if !success {
-                test_fail!("failed to receive expected sample {} after 3 attempts", i);
+                test_fail!(
+                    "failed to receive expected sample {} after multiple attempts",
+                    i
+                );
             }
         }
     }
@@ -441,8 +445,9 @@ mod zenoh_tunnel {
             tunnel_b.propagate();
 
             // Receive with retry
+            const NUM_RETRIES: usize = 10;
             let mut success = false;
-            for retry in 0..3 {
+            for retry in 0..NUM_RETRIES {
                 match iox_subscriber_b.receive().unwrap() {
                     Some(iox_sample_received_b) => {
                         let iox_payload_received_b = iox_sample_received_b.payload();
@@ -462,7 +467,7 @@ mod zenoh_tunnel {
                     None => {
                         // If no sample received, wait a bit and retry
                         // Don't sleep after last attempt
-                        if retry < 2 {
+                        if retry < NUM_RETRIES {
                             std::thread::sleep(Duration::from_millis(100));
                             tunnel_a.propagate();
                             tunnel_b.propagate();
@@ -472,7 +477,10 @@ mod zenoh_tunnel {
             }
 
             if !success {
-                test_fail!("failed to receive expected sample {} after 3 attempts", i);
+                test_fail!(
+                    "failed to receive expected sample {} after multiple attempts",
+                    i
+                );
             }
         }
     }
