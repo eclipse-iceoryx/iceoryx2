@@ -49,283 +49,187 @@ jobs:
       - name: Check license header
         run: ./internal/scripts/ci_test_spdx_license_header.sh
 
-  # linting-markdown:
-  #   needs: changes
-  #   if: ${{ needs.changes.outputs.markdown == 'true' }}
-  #   timeout-minutes: 10
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+  linting-markdown:
+    needs: changes
+    if: ${{ needs.changes.outputs.markdown == 'true' }}
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
-  #     - name: Setup GitHub CLI
-  #       run: |
-  #         type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
-  #         curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
-  #         && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-  #         && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
-  #         && sudo apt update \
-  #         && sudo apt install gh -y
+      - name: Setup GitHub CLI
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
 
-  #     - name: Setup node.js
-  #       uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # ratchet:actions/setup-node@v3
-  #       with:
-  #         node-version: '20'
+      - name: Setup node.js
+        uses: actions/setup-node@1a4442cacd436585916779262731d5b162bc6ec7 # ratchet:actions/setup-node@v3
+        with:
+          node-version: '20'
 
-  #     - name: Install linters
-  #       run: npm install -g markdownlint-cli
+      - name: Install linters
+        run: npm install -g markdownlint-cli
 
-  #     - name: Check linting
-  #       env:
-  #         GH_TOKEN: ${{ github.token }}
-  #         GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
-  #         GITHUB_BEFORE: ${{ github.event.before }}
-  #         GITHUB_AFTER: ${{ github.event.after }}
-  #       run: ./internal/scripts/ci_check_markdown_linting.sh
+      - name: Check linting
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_BEFORE: ${{ github.event.before }}
+          GITHUB_AFTER: ${{ github.event.after }}
+        run: ./internal/scripts/ci_check_markdown_linting.sh
 
-  # static-code-analysis-rust:
-  #   needs: preflight-check
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   strategy:
-  #     matrix:
-  #       os: [windows-latest, ubuntu-latest, macOS-latest]
-  #       cargo-features-flag: [""]
-  #       include:
-  #         - os: ubuntu-latest
-  #           cargo-features-flag: "--features libc_platform"
+  static-code-analysis-rust:
+    needs: preflight-check
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macOS-latest]
+        cargo-features-flag: [""]
+        include:
+          - os: ubuntu-latest
+            cargo-features-flag: "--features libc_platform"
 
-  #   timeout-minutes: 10
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+    timeout-minutes: 10
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
-  #     - name: Get changed files
-  #       id: changed-files
-  #       uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c # ratchet:tj-actions/changed-files@v45
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c # ratchet:tj-actions/changed-files@v45
 
-  #     - name: Setup Rust
-  #       uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-  #       with:
-  #         toolchain: stable
-  #         components: rustfmt, clippy
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
 
-  #     - name: Run cargo fmt
-  #       run: cargo fmt --all -- --check
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
 
-  #     - name: Run cargo clippy
-  #       run: cargo clippy ${{ matrix.cargo-features-flag }} -- -D warnings
+      - name: Run cargo clippy
+        run: cargo clippy ${{ matrix.cargo-features-flag }} -- -D warnings
 
-  #     - name: Run code examples in documentation
-  #       run: cargo test --workspace --doc ${{ matrix.cargo-features-flag }}
+      - name: Run code examples in documentation
+        run: cargo test --workspace --doc ${{ matrix.cargo-features-flag }}
 
-  #     - name: Build documentation
-  #       run: cargo doc ${{ matrix.cargo-features-flag }}
+      - name: Build documentation
+        run: cargo doc ${{ matrix.cargo-features-flag }}
   
-  #     - name: Setup miri
-  #       uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-  #       with:
-  #         toolchain: nightly
-  #         components: miri
+      - name: Setup miri
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: miri
 
-  #     - name: Run cargo miri
-  #       env:
-  #         ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-  #       run: ./internal/scripts/ci_run_miri.sh  
+      - name: Run cargo miri
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: ./internal/scripts/ci_run_miri.sh  
 
 
-  # static-code-analysis-cpp:
-  #   needs: preflight-check
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   timeout-minutes: 20
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+  static-code-analysis-cpp:
+    needs: preflight-check
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
-  #     - name: Install clang-tidy and clang-format
-  #       uses: ./.github/actions/install-iceoryx-deps-and-clang
+      - name: Install clang-tidy and clang-format
+        uses: ./.github/actions/install-iceoryx-deps-and-clang
 
-  #     - name: clang-format and clang-tidy versions
-  #       run: |
-  #         clang-format --version
-  #         clang-tidy --version
+      - name: clang-format and clang-tidy versions
+        run: |
+          clang-format --version
+          clang-tidy --version
 
-  #     - name: Run clang-format
-  #       run: git ls-files | grep -E "\.(c|cc|cpp|cxx|inl|h|hh|hpp|hxx)$" | xargs clang-format -i -style=file --Werror --dry-run
+      - name: Run clang-format
+        run: git ls-files | grep -E "\.(c|cc|cpp|cxx|inl|h|hh|hpp|hxx)$" | xargs clang-format -i -style=file --Werror --dry-run
 
-  #     - name: Run clang-tidy
-  #       run: |
-  #         git fetch origin main
-  #         internal/scripts/clang_tidy_scan.sh warning-as-error diff-to-main
+      - name: Run clang-tidy
+        run: |
+          git fetch origin main
+          internal/scripts/clang_tidy_scan.sh warning-as-error diff-to-main
 
-  # # just to have a sync point for the C++ and Rust static code analysis
-  # static-code-analysis:
-  #   needs: [static-code-analysis-cpp, static-code-analysis-rust]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Static code analysis sync point
-  #       run: echo "Nothing to see, move along!"
+  # just to have a sync point for the C++ and Rust static code analysis
+  static-code-analysis:
+    needs: [static-code-analysis-cpp, static-code-analysis-rust]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Static code analysis sync point
+        run: echo "Nothing to see, move along!"
 
-  # cargo-nextest:
-  #   needs: preflight-check
-  #   strategy:
-  #     matrix:
-  #       os: [windows-latest, ubuntu-latest, macos-latest]
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #   - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #   - name: Build and cache cargo-nextest
-  #     uses: ./.github/actions/build-and-cache-rust-tool
-  #     with:
-  #       rust-toolchain: stable
-  #       check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
-  #       print-version-cmd: cargo-nextest --version
-  #       # increment cache-N-${{}} if a new nextest version is required
-  #       cache-key: cache-2-${{ runner.os }}-cargo-nextest
-  #       artifact-bin-name: cargo-nextest
-  #       artifact-upload-name: ${{ runner.os }}-cargo-nextest
+  cargo-nextest:
+    needs: preflight-check
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+    - name: Build and cache cargo-nextest
+      uses: ./.github/actions/build-and-cache-rust-tool
+      with:
+        rust-toolchain: stable
+        check-and-install-cmd: cargo-nextest --version > /dev/null || cargo install cargo-nextest --locked
+        print-version-cmd: cargo-nextest --version
+        # increment cache-N-${{}} if a new nextest version is required
+        cache-key: cache-2-${{ runner.os }}-cargo-nextest
+        artifact-bin-name: cargo-nextest
+        artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
-  # maturin:
-  #   needs: preflight-check
-  #   strategy:
-  #     matrix:
-  #       os: [windows-latest, ubuntu-latest, macos-latest]
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #   - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #   - name: Build and cache maturin
-  #     uses: ./.github/actions/build-and-cache-rust-tool
-  #     with:
-  #       rust-toolchain: stable
-  #       check-and-install-cmd: maturin --version > /dev/null || cargo install maturin --locked
-  #       print-version-cmd: maturin --version
-  #       # increment cache-N-${{}} if a new maturin version is required
-  #       cache-key: cache-0-${{ runner.os }}-maturin
-  #       artifact-bin-name: maturin
-  #       artifact-upload-name: ${{ runner.os }}-maturin
+  maturin:
+    needs: preflight-check
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+    - name: Build and cache maturin
+      uses: ./.github/actions/build-and-cache-rust-tool
+      with:
+        rust-toolchain: stable
+        check-and-install-cmd: maturin --version > /dev/null || cargo install maturin --locked
+        print-version-cmd: maturin --version
+        # increment cache-N-${{}} if a new maturin version is required
+        cache-key: cache-0-${{ runner.os }}-maturin
+        artifact-bin-name: maturin
+        artifact-upload-name: ${{ runner.os }}-maturin
 
-  # python-bindings:
-  #   needs: [preflight-check, static-code-analysis, cargo-nextest, maturin]
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #    - name: Download artifact maturin
-  #      uses: ./.github/actions/download-cached-rust-tool
-  #      with:
-  #        artifact-bin-name: maturin
-  #        artifact-upload-name: ${{ runner.os }}-maturin
+  python-bindings:
+    needs: [preflight-check, static-code-analysis, cargo-nextest, maturin]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+     - name: Download artifact maturin
+       uses: ./.github/actions/download-cached-rust-tool
+       with:
+         artifact-bin-name: maturin
+         artifact-upload-name: ${{ runner.os }}-maturin
 
-  #    - name: Prepare Linux
-  #      run: |
-  #        internal/scripts/ci_prepare_ubuntu.sh
-  #        uname -a
+     - name: Prepare Linux
+       run: |
+         internal/scripts/ci_prepare_ubuntu.sh
+         uname -a
 
-  #    - uses: actions/setup-python@v5
-  #      with:
-  #        python-version: 3.x
+     - uses: actions/setup-python@v5
+       with:
+         python-version: 3.x
 
-  #    - name: Language Binding Tests
-  #      run: internal/scripts/ci_check_python.sh
+     - name: Language Binding Tests
+       run: internal/scripts/ci_check_python.sh
 
-  # x86_32:
-  #   needs: [preflight-check, static-code-analysis, cargo-nextest]
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
-  #       toolchain: [stable] # [stable, 1.81.0, beta, nightly]
-  #       mode:
-  #         - name: "release"
-  #           arg: "--release"
-  #           cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
-  #         - name: "debug"
-  #           arg: ""
-  #           cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
-  #   timeout-minutes: 60
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
- 
-  #     - name: Setup cmake
-  #       uses: jwlawson/actions-setup-cmake@v2
-  #       with:
-  #         cmake-version: '3.31.x'
-  #     - name: Use cmake
-  #       run: cmake --version
-
-  #     - name: Setup Rust
-  #       uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-  #       with:
-  #         toolchain: ${{ matrix.toolchain }}
-  #         targets: i686-unknown-linux-gnu
-  #         components: rustfmt, clippy
-
-  #     - name: Download artifact cargo-nextest
-  #       uses: ./.github/actions/download-cached-rust-tool
-  #       with:
-  #         artifact-bin-name: cargo-nextest
-  #         artifact-upload-name: ${{ runner.os }}-cargo-nextest
-
-  #     - name: Prepare Windows
-  #       if: ${{ matrix.os == 'windows-latest' }}
-  #       run: internal\scripts\ci_prepare_windows.ps1
-  #     - name: Prepare Linux
-  #       if: ${{ matrix.os == 'ubuntu-latest' }}
-  #       run: |
-  #         internal/scripts/ci_prepare_ubuntu.sh
-  #         uname -a
-
-  #     - name: Run cargo build
-  #       run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
-
-  #     - name: Run cargo nextest
-  #       run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
-
-  #     - name: Build language bindings
-  #       run: |
-  #         cmake -S . \
-  #               -B target/ffi/build \
-  #               -DCMAKE_INSTALL_PREFIX=target/ffi/install \
-  #               -DBUILD_CXX_BINDING=OFF \
-  #               -DBUILD_EXAMPLES=ON \
-  #               -DBUILD_TESTING=ON \
-  #               -DCMAKE_C_FLAGS="-m32" \
-  #               -DCMAKE_CXX_FLAGS="-m32" \
-  #               -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ matrix.mode.name }}" \
-  #               ${{ matrix.mode.cmake-build-type }}
-  #         cmake --build target/ffi/build
-  #         cmake --install target/ffi/build
-
-  #     - name: Run language binding tests
-  #       run: target/ffi/build/tests/iceoryx2-c-tests
-
-  #     - name: Build C language binding examples in out-of-tree configuration
-  #       if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
-  #       run: |
-  #         rm -rf target/ffi/build
-  #         cmake -S examples/c \
-  #               -B target/ffi/out-of-tree-c \
-  #               -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
-  #               -DCMAKE_C_FLAGS="-m32" \
-  #               -DCMAKE_CXX_FLAGS="-m32" \
-  #               -${{ matrix.mode.cmake-build-type }}
-  #         cmake --build target/ffi/out-of-tree-c
-
-  #     - name: Build C++ language binding examples in out-of-tree configuration
-  #       if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
-  #       run: |
-  #         cmake -S examples/cxx \
-  #               -B target/ffi/out-of-tree-cxx \
-  #               -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
-  #               -DCMAKE_C_FLAGS="-m32" \
-  #               -DCMAKE_CXX_FLAGS="-m32" \
-  #               -${{ matrix.mode.cmake-build-type }}
-  #         cmake --build target/ffi/out-of-tree-cxx
-
-  tunnel-end-to-end-test:
+  tunnel-end-to-end-tests:
     needs: [preflight-check]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -346,13 +250,13 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Build test binaries
-        run: cargo build --release -p iceoryx2-tunnels-end-to-end-testing
-
       - name: Build tunnel CLI
         run: cargo build --release -p iceoryx2-cli --bin iox2-tunnel
 
-      - name: Build test container image
+      - name: Build test binaries
+        run: cargo build --release -p iceoryx2-tunnels-end-to-end-testing
+
+      - name: Build test docker image
         run: docker build -f iceoryx2-tunnels/end-to-end-testing/Dockerfile -t end-to-end-testing:latest .
 
       - name: Run end-to-end test
@@ -361,352 +265,435 @@ jobs:
             --abort-on-container-exit \
             --exit-code-from pinger
 
-      - name: Collect logs
-        if: always()
-        run: |
-          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml logs ponger > test-results/ponger.log 2>&1 || echo "No ponger logs"
-          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml logs pinger > test-results/pinger.log 2>&1 || echo "No pinger logs"
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: tunnel-end-to-end-test-results
-          path: test-results/
-  
       - name: Clean up containers
         if: always()
         run: |
           docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml down -v
 
-  # x86_64:
-  #   needs: [preflight-check, static-code-analysis, cargo-nextest]
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   strategy:
-  #     matrix:
-  #       os: [windows-latest, ubuntu-latest, macos-latest]
-  #       # NOTE: enable for MinGW
-  #       # toolchain: [stable, stable-gnu, 1.81.0]
-  #       toolchain: [stable, 1.81.0]
-  #       mode:
-  #         - name: "release"
-  #           arg: "--release"
-  #           cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
-  #           cmake-build-config: "--config Release" # required for Visual Studio at build and install time
-  #         - name: "debug"
-  #           arg: ""
-  #           cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
-  #           cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
-  #       cargo-features-flag: ["", "--features libc_platform"]
-  #       include:
-  #         # NOTE: enable for MinGW
-  #         # - toolchain: stable-gnu
-  #         #  cmake-build-system-generator: '-G "MinGW Makefiles"'
-  #         - os: windows-latest
-  #           toolchain: stable
-  #           cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
-  #         - os: ubuntu-latest
-  #           toolchain: stable
-  #       exclude:
-  #         # NOTE: enable for MinGW
-  #         # - os: ubuntu-latest
-  #         #   toolchain: stable-gnu
-  #         # - os: macos-latest
-  #         #   toolchain: stable-gnu
-  #         - os: windows-latest
-  #           cargo-features-flag: "--features libc_platform"
-  #         - os: macos-latest
-  #           cargo-features-flag: "--features libc_platform"
-  #   timeout-minutes: 60
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+  x86_32:
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [stable] # [stable, 1.81.0, beta, nightly]
+        mode:
+          - name: "release"
+            arg: "--release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+          - name: "debug"
+            arg: ""
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+ 
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+      - name: Use cmake
+        run: cmake --version
 
-  #     - name: Setup cmake
-  #       uses: jwlawson/actions-setup-cmake@v2
-  #       with:
-  #         cmake-version: '3.31.x'
-  #     - name: Use cmake
-  #       run: cmake --version
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          targets: i686-unknown-linux-gnu
+          components: rustfmt, clippy
 
-  #     - name: Setup Rust
-  #       uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-  #       with:
-  #         toolchain: ${{ matrix.toolchain }}
-  #         components: rustfmt, clippy
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
-  #     - name: Download artifact cargo-nextest
-  #       uses: ./.github/actions/download-cached-rust-tool
-  #       with:
-  #         artifact-bin-name: cargo-nextest
-  #         artifact-upload-name: ${{ runner.os }}-cargo-nextest
+      - name: Prepare Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: internal\scripts\ci_prepare_windows.ps1
+      - name: Prepare Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
 
-  #     - name: Prepare Windows
-  #       if: ${{ matrix.os == 'windows-latest' }}
-  #       run: internal\scripts\ci_prepare_windows.ps1
-  #     - name: Prepare Linux
-  #       if: ${{ matrix.os == 'ubuntu-latest' }}
-  #       run: |
-  #         internal/scripts/ci_prepare_ubuntu.sh
-  #         uname -a
+      - name: Run cargo build
+        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
-  #     - name: Run cargo build
-  #       run: cargo build --workspace --all-targets ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
-  #     - name: Run cargo nextest
-  #       run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
+      - name: Build language bindings
+        run: |
+          cmake -S . \
+                -B target/ffi/build \
+                -DCMAKE_INSTALL_PREFIX=target/ffi/install \
+                -DBUILD_CXX_BINDING=OFF \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ matrix.mode.name }}" \
+                ${{ matrix.mode.cmake-build-type }}
+          cmake --build target/ffi/build
+          cmake --install target/ffi/build
 
-  #     - name: Build iceoryx_hoofs on Windows
-  #       if: ${{ matrix.os == 'windows-latest' }}
-  #       run: internal\scripts\ci_build_and_install_iceoryx_hoofs.ps1 -mode ${{ matrix.mode.name }} -toolchain ${{ matrix.toolchain }}
-  #     - name: Build iceoryx_hoofs on non-Windows
-  #       if: ${{ matrix.os != 'windows-latest' }}
-  #       run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+      - name: Run language binding tests
+        run: target/ffi/build/tests/iceoryx2-c-tests
 
-  #     - name: Print native libs of FFI target
-  #       if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
-  #       run: |
-  #         cd iceoryx2-ffi/ffi
-  #         cargo rustc -q -- --print=native-static-libs
+      - name: Build C language binding examples in out-of-tree configuration
+        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
+        run: |
+          rm -rf target/ffi/build
+          cmake -S examples/c \
+                -B target/ffi/out-of-tree-c \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
+                -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
+                -${{ matrix.mode.cmake-build-type }}
+          cmake --build target/ffi/out-of-tree-c
 
-  #     - name: Build language bindings
-  #       # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
-  #       run: |
-  #         cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
-  #         cmake --build target/ffi/build ${{ matrix.mode.cmake-build-config }}
-  #         cmake --install target/ffi/build ${{ matrix.mode.cmake-build-config }}
+      - name: Build C++ language binding examples in out-of-tree configuration
+        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
+        run: |
+          cmake -S examples/cxx \
+                -B target/ffi/out-of-tree-cxx \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
+                -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
+                -${{ matrix.mode.cmake-build-type }}
+          cmake --build target/ffi/out-of-tree-cxx
 
-  #     - name: Run C language binding tests
-  #       run: target/ffi/build/tests/iceoryx2-c-tests
+  x86_64:
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        # NOTE: enable for MinGW
+        # toolchain: [stable, stable-gnu, 1.81.0]
+        toolchain: [stable, 1.81.0]
+        mode:
+          - name: "release"
+            arg: "--release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
+            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
+          - name: "debug"
+            arg: ""
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
+            cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
+        cargo-features-flag: ["", "--features libc_platform"]
+        include:
+          # NOTE: enable for MinGW
+          # - toolchain: stable-gnu
+          #  cmake-build-system-generator: '-G "MinGW Makefiles"'
+          - os: windows-latest
+            toolchain: stable
+            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
+          - os: ubuntu-latest
+            toolchain: stable
+        exclude:
+          # NOTE: enable for MinGW
+          # - os: ubuntu-latest
+          #   toolchain: stable-gnu
+          # - os: macos-latest
+          #   toolchain: stable-gnu
+          - os: windows-latest
+            cargo-features-flag: "--features libc_platform"
+          - os: macos-latest
+            cargo-features-flag: "--features libc_platform"
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
-  #     - name: Run C++ language binding tests
-  #       run: target/ffi/build/tests/iceoryx2-cxx-tests
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+      - name: Use cmake
+        run: cmake --version
 
-  #     - name: Remove language binding build artifacts on Windows
-  #       if: ${{ matrix.os == 'windows-latest' }}
-  #       run: rm -r -force target/ffi/build
-  #     - name: Remove language binding build artifacts on non-Windows
-  #       if: ${{ matrix.os != 'windows-latest' }}
-  #       run: rm -rf target/ffi/build
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
 
-  #     - name: Build C language binding examples in out-of-tree configuration
-  #       # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
-  #       run: |
-  #         cmake -S examples/c -B target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install"
-  #         cmake --build target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
-  #     - name: Build C++ language binding examples in out-of-tree configuration
-  #       # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
-  #       run: |
-  #         cmake -S examples/cxx -B target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install;${{ github.workspace }}/target/iceoryx/install"
-  #         cmake --build target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
+      - name: Prepare Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: internal\scripts\ci_prepare_windows.ps1
+      - name: Prepare Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
 
-  # x86_64_unstable:
-  #   needs: [preflight-check, static-code-analysis, cargo-nextest]
-  #   if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
-  #   continue-on-error: true
-  #   strategy:
-  #     matrix:
-  #       os: [windows-latest, ubuntu-latest, macos-latest]
-  #       toolchain: [beta, nightly]
-  #       mode: 
-  #         - name: "release"
-  #           arg: "--release"
-  #         - name: "debug"
-  #           arg: ""
-  #   timeout-minutes: 60
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
 
-  #     - name: Setup cmake
-  #       uses: jwlawson/actions-setup-cmake@v2
-  #       with:
-  #         cmake-version: '3.31.x'
-  #     - name: Use cmake
-  #       run: cmake --version
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
 
-  #     - name: Setup Rust
-  #       uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-  #       with:
-  #         toolchain: ${{ matrix.toolchain }}
-  #         components: rustfmt, clippy
+      - name: Build iceoryx_hoofs on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: internal\scripts\ci_build_and_install_iceoryx_hoofs.ps1 -mode ${{ matrix.mode.name }} -toolchain ${{ matrix.toolchain }}
+      - name: Build iceoryx_hoofs on non-Windows
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
 
-  #     - name: Download artifact cargo-nextest
-  #       uses: ./.github/actions/download-cached-rust-tool
-  #       with:
-  #         artifact-bin-name: cargo-nextest
-  #         artifact-upload-name: ${{ runner.os }}-cargo-nextest
+      - name: Print native libs of FFI target
+        if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
+        run: |
+          cd iceoryx2-ffi/ffi
+          cargo rustc -q -- --print=native-static-libs
 
-  #     - name: Prepare Windows
-  #       if: ${{ matrix.os == 'windows-latest' }}
-  #       run: internal\scripts\ci_prepare_windows.ps1
-  #     - name: Prepare Linux
-  #       if: ${{ matrix.os == 'ubuntu-latest' }}
-  #       run: |
-  #         internal/scripts/ci_prepare_ubuntu.sh
-  #         uname -a
+      - name: Build language bindings
+        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        run: |
+          cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
+          cmake --build target/ffi/build ${{ matrix.mode.cmake-build-config }}
+          cmake --install target/ffi/build ${{ matrix.mode.cmake-build-config }}
 
-  #     - name: Run cargo build
-  #       run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
+      - name: Run C language binding tests
+        run: target/ffi/build/tests/iceoryx2-c-tests
 
-  #     - name: Run cargo nextest
-  #       run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }}
+      - name: Run C++ language binding tests
+        run: target/ffi/build/tests/iceoryx2-cxx-tests
 
-  # ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
-  # ###       current alternative is a cirrus.yml aarch64 target
-  # # arm:
-  # #   runs-on: ubuntu-latest
-  # #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  # #   strategy:
-  # #     matrix:
-  # #       architecture: ["aarch64"] # ["aarch64", "armv7"]
-  # #       toolchain: [ stable ] # [stable, 1.81.0, beta, nightly]
-  # #       mode: ["--release", ""]
-  # #   timeout-minutes: 30
-  # #   steps:
-  # #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  # #     - uses: uraimo/run-on-arch-action@v2
-  # #       name: Run commands
-  # #       with:
-  # #         arch: ${{ matrix.architecture }}
-  # #         distro: archarm_latest
-  # #         run: |
-  # #           ./internal/scripts/ci_prepare_archlinux.sh
-  # #           rustup default ${{ matrix.toolchain }}
-  # #           cargo fmt --all -- --check
-  # #           cargo clippy -- -D warnings
-  # #           cargo build --workspace --all-targets ${{ matrix.mode }}
-  # #           cargo test --workspace --all-targets --no-fail-fast ${{ matrix.mode }}
+      - name: Remove language binding build artifacts on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: rm -r -force target/ffi/build
+      - name: Remove language binding build artifacts on non-Windows
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: rm -rf target/ffi/build
 
-  # freebsd:
-  #   needs: [preflight-check, static-code-analysis]
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
+      - name: Build C language binding examples in out-of-tree configuration
+        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        run: |
+          cmake -S examples/c -B target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install"
+          cmake --build target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
+
+      - name: Build C++ language binding examples in out-of-tree configuration
+        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        run: |
+          cmake -S examples/cxx -B target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install;${{ github.workspace }}/target/iceoryx/install"
+          cmake --build target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
+
+  x86_64_unstable:
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
+    if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
+    continue-on-error: true
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [beta, nightly]
+        mode: 
+          - name: "release"
+            arg: "--release"
+          - name: "debug"
+            arg: ""
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+      - name: Use cmake
+        run: cmake --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
+
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+      - name: Prepare Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: internal\scripts\ci_prepare_windows.ps1
+      - name: Prepare Linux
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
+
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }}
+
+  ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
+  ###       current alternative is a cirrus.yml aarch64 target
+  # arm:
   #   runs-on: ubuntu-latest
-  #   timeout-minutes: 60
+  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
   #   strategy:
   #     matrix:
-  #       freebsd_version: [ "14.0" ] 
-  #       toolchain: [ "stable", "1.81.0" ] # [stable, 1.81.0, beta, nightly]
-  #       mode: ["debug"] # ["release", "debug"]
+  #       architecture: ["aarch64"] # ["aarch64", "armv7"]
+  #       toolchain: [ stable ] # [stable, 1.81.0, beta, nightly]
+  #       mode: ["--release", ""]
+  #   timeout-minutes: 30
   #   steps:
   #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #     - uses: vmactions/freebsd-vm@8873d98fd1413b5977cb2f7348fe329775159892 # ratchet:vmactions/freebsd-vm@v1
+  #     - uses: uraimo/run-on-arch-action@v2
+  #       name: Run commands
   #       with:
-  #         release: ${{ matrix.freebsd_version }}
-  #         mem: 16384
-  #         copyback: false
-  #         prepare: pkg install -y cmake curl gcc git llvm
+  #         arch: ${{ matrix.architecture }}
+  #         distro: archarm_latest
   #         run: |
-  #           git config --global --add safe.directory /home/runner/work/iceoryx2/iceoryx2
-  #           ./internal/scripts/ci_prepare_freebsd.sh
-  #           ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
+  #           ./internal/scripts/ci_prepare_archlinux.sh
+  #           rustup default ${{ matrix.toolchain }}
+  #           cargo fmt --all -- --check
+  #           cargo clippy -- -D warnings
+  #           cargo build --workspace --all-targets ${{ matrix.mode }}
+  #           cargo test --workspace --all-targets --no-fail-fast ${{ matrix.mode }}
 
-  # x86_64_bazel:
-  #   needs: [preflight-check, static-code-analysis]
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-24.04]
-  #       toolchain: [stable]
-  #   timeout-minutes: 60
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout sources
-  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+  freebsd:
+    needs: [preflight-check, static-code-analysis]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      matrix:
+        freebsd_version: [ "14.0" ] 
+        toolchain: [ "stable", "1.81.0" ] # [stable, 1.81.0, beta, nightly]
+        mode: ["debug"] # ["release", "debug"]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+      - uses: vmactions/freebsd-vm@8873d98fd1413b5977cb2f7348fe329775159892 # ratchet:vmactions/freebsd-vm@v1
+        with:
+          release: ${{ matrix.freebsd_version }}
+          mem: 16384
+          copyback: false
+          prepare: pkg install -y cmake curl gcc git llvm
+          run: |
+            git config --global --add safe.directory /home/runner/work/iceoryx2/iceoryx2
+            ./internal/scripts/ci_prepare_freebsd.sh
+            ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
 
-  #     - name: Setup Rust
-  #       uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-  #       with:
-  #         toolchain: ${{ matrix.toolchain }}
-  #         components: rustfmt, clippy
+  x86_64_bazel:
+    needs: [preflight-check, static-code-analysis]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04]
+        toolchain: [stable]
+    timeout-minutes: 60
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
-  #     - name: Prepare Linux
-  #       run: |
-  #         internal/scripts/ci_prepare_ubuntu.sh
-  #         uname -a
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rustfmt, clippy
 
-  #     - name: Set up Bazel
-  #       uses: bazel-contrib/setup-bazel@f3f50ea6791b9b0f4c4eeabba4507422426462f5 # ratchet:bazel-contrib/setup-bazel@0.9.1
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
 
-  #     - name: Run bazel build
-  #       env:
-  #         USE_BAZEL_VERSION: "7.4.1"
-  #       run: bazel build //...
+      - name: Set up Bazel
+        uses: bazel-contrib/setup-bazel@f3f50ea6791b9b0f4c4eeabba4507422426462f5 # ratchet:bazel-contrib/setup-bazel@0.9.1
 
-  #     - name: Run bazel test
-  #       env:
-  #         USE_BAZEL_VERSION: "7.4.1"
-  #       run: bazel test //...
+      - name: Run bazel build
+        env:
+          USE_BAZEL_VERSION: "7.4.1"
+        run: bazel build //...
 
-  # grcov:
-  #   needs: [preflight-check, static-code-analysis]
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   timeout-minutes: 10
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #   - name: Build and cache grcov
-  #     uses: ./.github/actions/build-and-cache-rust-tool
-  #     with:
-  #       rust-toolchain: 1.86.0
-  #       rust-components: llvm-tools
-  #       check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
-  #       print-version-cmd: grcov --version
-  #       cache-key: cache-2-${{ runner.os }}-grcov
-  #       artifact-bin-name: grcov
-  #       artifact-upload-name: ${{ runner.os }}-grcov
+      - name: Run bazel test
+        env:
+          USE_BAZEL_VERSION: "7.4.1"
+        run: bazel test //...
 
-  # coverage:
-  #   needs: grcov
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+  grcov:
+    needs: [preflight-check, static-code-analysis]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+    - name: Build and cache grcov
+      uses: ./.github/actions/build-and-cache-rust-tool
+      with:
+        rust-toolchain: 1.86.0
+        rust-components: llvm-tools
+        check-and-install-cmd: grcov --version > /dev/null || cargo install grcov
+        print-version-cmd: grcov --version
+        cache-key: cache-2-${{ runner.os }}-grcov
+        artifact-bin-name: grcov
+        artifact-upload-name: ${{ runner.os }}-grcov
 
-  #   - name: Install dependencies
-  #     uses: ./.github/actions/install-iceoryx-deps-and-clang
+  coverage:
+    needs: grcov
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
-  #   - name: Create test users and groups
-  #     run: |
-  #       sudo useradd testuser1
-  #       sudo useradd testuser2
-  #       sudo groupadd testgroup1
-  #       sudo groupadd testgroup2
+    - name: Install dependencies
+      uses: ./.github/actions/install-iceoryx-deps-and-clang
 
-  #   - name: Setup Rust
-  #     uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-  #     with:
-  #       toolchain: 1.86.0
-  #       components: llvm-tools
+    - name: Create test users and groups
+      run: |
+        sudo useradd testuser1
+        sudo useradd testuser2
+        sudo groupadd testgroup1
+        sudo groupadd testgroup2
 
-  #   - name: Download artifact grcov
-  #     uses: ./.github/actions/download-cached-rust-tool
-  #     with:
-  #       artifact-bin-name: grcov
-  #       artifact-upload-name: ${{ runner.os }}-grcov
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+      with:
+        toolchain: 1.86.0
+        components: llvm-tools
 
-  #   - name: Generate raw coverage results
-  #     run: ./internal/scripts/generate-cov-report.sh --generate
+    - name: Download artifact grcov
+      uses: ./.github/actions/download-cached-rust-tool
+      with:
+        artifact-bin-name: grcov
+        artifact-upload-name: ${{ runner.os }}-grcov
 
-  #   - name: Generate coverage results for html artifacts
-  #     run: ./internal/scripts/generate-cov-report.sh --html
+    - name: Generate raw coverage results
+      run: ./internal/scripts/generate-cov-report.sh --generate
 
-  #   - name: Archive coverage-html artifacts
-  #     uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # ratchet:actions/upload-artifact@v4
-  #     with:
-  #       name: coverage-html
-  #       path: target/debug/coverage/html/*
-  #       retention-days: 90
+    - name: Generate coverage results for html artifacts
+      run: ./internal/scripts/generate-cov-report.sh --html
 
-  #   - name: Generate coverage report for Codecov
-  #     run: ./internal/scripts/generate-cov-report.sh --lcov
+    - name: Archive coverage-html artifacts
+      uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # ratchet:actions/upload-artifact@v4
+      with:
+        name: coverage-html
+        path: target/debug/coverage/html/*
+        retention-days: 90
 
-  #   - name: Upload coverage to Codecov
-  #     uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
-  #     with:
-  #       file: target/debug/coverage/lcov.info
-  #       fail_ci_if_error: false
-  #       token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Generate coverage report for Codecov
+      run: ./internal/scripts/generate-cov-report.sh --lcov
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
+      with:
+        file: target/debug/coverage/lcov.info
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
