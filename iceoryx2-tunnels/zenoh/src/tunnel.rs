@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use crate::keys;
 use crate::z_announce_service;
-use crate::z_query_services;
 use crate::BidirectionalStream;
 use crate::DataStream;
 
@@ -27,6 +27,8 @@ use iceoryx2_bb_log::info;
 use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Tracker as IceoryxServiceTracker;
 
+use zenoh::handlers::FifoChannelHandler;
+use zenoh::query::Reply;
 use zenoh::Config as ZenohConfig;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
@@ -80,9 +82,10 @@ impl core::error::Error for DiscoveryError {}
 
 pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
     z_session: ZenohSession,
+    z_discovery: FifoChannelHandler<Reply>,
     iox_config: IceoryxConfig,
     iox_node: IceoryxNode<Service>,
-    iox_discovery_service: Option<IceoryxSubscriber<Service, Discovery, ()>>,
+    iox_discovery: Option<IceoryxSubscriber<Service, Discovery, ()>>,
     iox_tracker: Option<IceoryxServiceTracker<Service>>,
     streams: HashMap<IceoryxServiceId, BidirectionalStream<'a, Service>>,
 }
@@ -99,6 +102,9 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
         let z_session = zenoh::open(z_config.clone())
             .wait()
             .map_err(|_e| CreationError::FailureToCreateZenohSession)?;
+
+        let z_key = keys::all_services();
+        let z_discovery = z_session.get(z_key).wait().unwrap();
 
         let iox_node = NodeBuilder::new()
             .config(&iox_config)
@@ -137,9 +143,10 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
 
         Ok(Self {
             z_session,
+            z_discovery,
             iox_config: iox_config.clone(),
             iox_node,
-            iox_discovery_service,
+            iox_discovery: iox_discovery_service,
             iox_tracker,
             streams,
         })
@@ -202,9 +209,9 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
             };
 
         // Discovery via discovery service
-        if let Some(iox_discovery_service) = &self.iox_discovery_service {
+        if let Some(iox_discovery) = &self.iox_discovery {
             loop {
-                match iox_discovery_service.receive() {
+                match iox_discovery.receive() {
                     Ok(result) => match result {
                         Some(iox_sample) => {
                             if let Discovery::Added(iox_service_config) = iox_sample.payload() {
@@ -248,29 +255,36 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
         Ok(())
     }
 
-    /// Discovers remote services via zenoh.
     fn remote_discovery(&mut self) -> Result<(), DiscoveryError> {
-        // TODO(optimize): This is re-discoverying the same services every iteration
-        let iox_service_configs = z_query_services(&self.z_session)
-            .map_err(|_e| DiscoveryError::FailureToDiscoverServicesRemotely)?;
+        while let Ok(Some(reply)) = self.z_discovery.try_recv() {
+            match reply.result() {
+                Ok(sample) => {
+                    if let Ok(iox_service_config) =
+                        serde_json::from_slice::<IceoryxServiceConfig>(&sample.payload().to_bytes())
+                    {
+                        let iox_service_id = iox_service_config.service_id();
+                        if !self.streams.contains_key(&iox_service_id) {
+                            info!(
+                                "DISCOVERED (zenoh): {} [{}]",
+                                iox_service_id.as_str(),
+                                iox_service_config.name()
+                            );
 
-        for iox_service_config in iox_service_configs {
-            let iox_service_id = iox_service_config.service_id();
-            if !self.streams.contains_key(&iox_service_id) {
-                info!(
-                    "DISCOVERED (zenoh): {} [{}]",
-                    iox_service_id.as_str(),
-                    iox_service_config.name()
-                );
+                            let stream = BidirectionalStream::create(
+                                &self.iox_node,
+                                &self.z_session,
+                                &iox_service_config,
+                            )
+                            .map_err(|_e| DiscoveryError::FailureToEstablishDataStream)?;
 
-                let stream = BidirectionalStream::create(
-                    &self.iox_node,
-                    &self.z_session,
-                    &iox_service_config,
-                )
-                .map_err(|_e| DiscoveryError::FailureToEstablishDataStream)?;
-
-                self.streams.insert(iox_service_id.clone(), stream);
+                            self.streams.insert(iox_service_id.clone(), stream);
+                        }
+                    }
+                }
+                Err(e) => {
+                    error!("Invalid discovery payload from zenoh: {}", e);
+                    return Err(DiscoveryError::FailureToDiscoverServicesRemotely);
+                }
             }
         }
 
