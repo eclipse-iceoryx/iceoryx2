@@ -16,9 +16,11 @@ use dialoguer::Confirm;
 use enum_iterator::all;
 use iceoryx2::config::Config;
 use iceoryx2_bb_posix::directory::Directory;
+use iceoryx2_bb_posix::file::Permission;
 use iceoryx2_bb_posix::system_configuration::*;
 use iceoryx2_bb_posix::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
+use iceoryx2_bb_system_types::path::Path;
 use std::panic::catch_unwind;
 
 /// Prints the whole system configuration with all limits, features and details to the console.
@@ -122,50 +124,20 @@ pub fn show_current_config() -> Result<()> {
 }
 
 pub fn generate_global() -> Result<()> {
-    let mut global_config = get_global_config_path();
-    global_config.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;
+    let mut global_config_path = get_global_config_path();
+    global_config_path.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;
     let filepath = FilePath::from_path_and_file(
-        &global_config,
+        &global_config_path,
         &iceoryx2::config::Config::default_config_file_name(),
     )
     .unwrap();
 
-    if let Ok(exists) = file::File::does_exist(&filepath) {
-        if exists {
-            let proceed = Confirm::new()
-                .with_prompt("Configuration file already exists. Do you want to overwrite it?")
-                .default(false)
-                .interact()?;
-
-            if !proceed {
-                println!("Operation cancelled. Configuration file was not overwritten.");
-                return Ok(());
-            }
-        } else if let Ok(false) = Directory::does_exist(&global_config) {
-            Directory::create(&global_config, file::Permission::OWNER_ALL)
-                .map_err(|e| anyhow::anyhow!("{:?}", e))?;
-        }
-    }
-
-    let toml_string = toml::to_string_pretty(&Config::default())?;
-
-    let mut file = file::FileBuilder::new(&filepath)
-        .creation_mode(file::CreationMode::PurgeAndCreate)
-        .permission(file::Permission::OWNER_ALL | file::Permission::GROUP_READ)
-        .create()
-        .map_err(|e| anyhow::anyhow!("{:?}", e))?;
-
-    file.write(toml_string.as_bytes())
-        .expect("Failed to write to file");
-
-    println!("Default configuration is generated at {}", filepath);
-
-    Ok(())
+    generate(global_config_path, filepath)
 }
 
 pub fn generate_local() -> Result<()> {
     let user = iceoryx2_bb_posix::user::User::from_self().unwrap();
-    let mut user_config = match user.details() {
+    let mut user_config_path = match user.details() {
         Some(details) => details.config_dir().clone(),
         None => {
             return Err(anyhow::anyhow!(
@@ -173,13 +145,17 @@ pub fn generate_local() -> Result<()> {
             ))
         }
     };
-    user_config.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;
+    user_config_path.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;
     let filepath = FilePath::from_path_and_file(
-        &user_config,
+        &user_config_path,
         &iceoryx2::config::Config::default_config_file_name(),
     )
     .unwrap();
 
+    generate(user_config_path, filepath)
+}
+
+fn generate(config_dir: Path, filepath: FilePath) -> Result<()> {
     if let Ok(exists) = file::File::does_exist(&filepath) {
         if exists {
             let proceed = Confirm::new()
@@ -191,9 +167,16 @@ pub fn generate_local() -> Result<()> {
                 println!("Operation cancelled. Configuration file was not overwritten.");
                 return Ok(());
             }
-        } else if let Ok(false) = Directory::does_exist(&user_config) {
-            Directory::create(&user_config, file::Permission::OWNER_ALL)
-                .map_err(|e| anyhow::anyhow!("{:?}", e))?;
+        } else if let Ok(false) = Directory::does_exist(&config_dir) {
+            Directory::create(
+                &config_dir,
+                file::Permission::OWNER_ALL
+                    | Permission::GROUP_READ
+                    | Permission::GROUP_EXEC
+                    | Permission::OTHERS_READ
+                    | Permission::OTHERS_EXEC,
+            )
+            .map_err(|e| anyhow::anyhow!("{:?}", e))?;
         }
     }
 
@@ -201,9 +184,14 @@ pub fn generate_local() -> Result<()> {
 
     let mut file = file::FileBuilder::new(&filepath)
         .creation_mode(file::CreationMode::PurgeAndCreate)
-        .permission(file::Permission::OWNER_ALL | file::Permission::GROUP_READ)
+        .permission(
+            file::Permission::OWNER_WRITE
+                | file::Permission::OWNER_READ
+                | file::Permission::GROUP_READ
+                | file::Permission::OTHERS_READ,
+        )
         .create()
-        .expect("Failed to create file");
+        .map_err(|e| anyhow::anyhow!("{:?}", e))?;
 
     file.write(toml_string.as_bytes())
         .expect("Failed to write to file");

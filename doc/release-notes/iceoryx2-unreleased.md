@@ -29,6 +29,8 @@
     [#772](https://github.com/eclipse-iceoryx/iceoryx2/issues/772)
 * Make `Directory::create` thread-safe
     [#778](https://github.com/eclipse-iceoryx/iceoryx2/issues/778)
+* Make CLI generated global confi file accessible to all users
+    [#786](https://github.com/eclipse-iceoryx/iceoryx2/issues/786)
 
 ### Refactoring
 
