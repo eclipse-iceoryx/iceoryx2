@@ -17,8 +17,6 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 use core::sync::atomic::Ordering;
 use std::io::IsTerminal;
 
-use termsize::Size;
-
 use crate::LogLevel;
 
 pub enum ConsoleLogOrder {
@@ -105,40 +103,12 @@ impl Logger {
         }
     }
 
-    fn add_spacing(spacing: usize) {
+    fn print(separator: &str, color: &str, output: &str) {
         if std::io::stdout().is_terminal() {
-            for _ in 0..spacing {
-                std::print!(" ");
-            }
-        }
-    }
-
-    fn print(first_spacing: usize, spacing: usize, separator: &str, color: &str, output: &str) {
-        let term_len = Self::get_terminal_size().cols as usize - spacing - separator.len();
-        let mut msg_len = output.len();
-        let mut msg_pos = 0;
-
-        Self::add_spacing(first_spacing);
-        loop {
             std::print!("{}", color);
-            if msg_len < term_len {
-                std::print!("{}{}", separator, unsafe {
-                    output.get_unchecked(msg_pos..msg_pos + msg_len)
-                });
-                break;
-            } else {
-                std::print!("{}{}", separator, unsafe {
-                    output.get_unchecked(msg_pos..msg_pos + term_len)
-                });
-                msg_pos += term_len;
-                msg_len -= term_len;
-            }
-
-            if std::io::stdout().is_terminal() {
-                std::println!("\x1b[0m");
-            }
-            Self::add_spacing(spacing);
         }
+
+        std::print!("{}{}", separator, output);
 
         if std::io::stdout().is_terminal() {
             std::println!("\x1b[0m");
@@ -147,29 +117,13 @@ impl Logger {
         }
     }
 
-    fn print_message(spacing: usize, log_level: crate::LogLevel, formatted_message: &str) {
-        Self::print(
-            spacing,
-            spacing,
-            "| ",
-            Self::message_color(log_level),
-            formatted_message,
-        );
+    fn print_message(log_level: crate::LogLevel, formatted_message: &str) {
+        Self::print("| ", Self::message_color(log_level), formatted_message);
     }
 
-    fn print_origin(spacing: usize, log_level: crate::LogLevel, origin: &str) {
+    fn print_origin(log_level: crate::LogLevel, origin: &str) {
         print!("{} ", Logger::log_level_string(log_level));
-        Self::print(0, spacing, "", Logger::origin_color(log_level), origin);
-    }
-
-    fn get_terminal_size() -> Size {
-        match termsize::get() {
-            None => Size {
-                rows: 9999,
-                cols: 9999,
-            },
-            Some(t) => t,
-        }
+        Self::print("", Logger::origin_color(log_level), origin);
     }
 }
 
@@ -185,7 +139,6 @@ impl crate::Log for Logger {
         let origin_str = origin.to_string();
         let msg_str = formatted_message.to_string();
 
-        let mut spacing = 0;
         match self.ordering_mode {
             ConsoleLogOrder::Time => {
                 let time = std::time::SystemTime::now()
@@ -200,8 +153,7 @@ impl crate::Log for Logger {
                             time.as_secs(),
                             time.subsec_nanos(),
                         );
-                        spacing = 25;
-                        Self::print_origin(spacing, log_level, &origin_str);
+                        Self::print_origin(log_level, &origin_str);
                     }
                     true => std::println!(
                         "{}{}.{:0>9} {} ",
@@ -214,9 +166,8 @@ impl crate::Log for Logger {
             }
             ConsoleLogOrder::Counter => match origin.to_string().is_empty() {
                 false => {
-                    std::print!("{}{:9} ", Logger::counter_color(log_level), counter);
-                    spacing = 14;
-                    Self::print_origin(spacing, log_level, &origin_str);
+                    std::print!("{}{} ", Logger::counter_color(log_level), counter);
+                    Self::print_origin(log_level, &origin_str);
                 }
                 true => std::print!(
                     "{}{:9} {} ",
@@ -227,6 +178,6 @@ impl crate::Log for Logger {
             },
         }
 
-        Self::print_message(spacing, log_level, &msg_str);
+        Self::print_message(log_level, &msg_str);
     }
 }
