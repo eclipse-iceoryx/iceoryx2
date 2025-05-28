@@ -316,7 +316,7 @@ mod zenoh_tunnel {
                         // If no sample received, wait a bit and retry
                         // Don't sleep after last attempt
                         if retry < NUM_RETRIES {
-                            std::thread::sleep(Duration::from_millis(100));
+                            std::thread::sleep(Duration::from_millis(250));
                             tunnel_a.propagate();
                             tunnel_b.propagate();
                         }
@@ -326,8 +326,9 @@ mod zenoh_tunnel {
 
             if !success {
                 test_fail!(
-                    "failed to receive expected sample {} after multiple attempts",
-                    i
+                    "failed to receive expected sample {} after {} attempts",
+                    i,
+                    NUM_RETRIES
                 );
             }
         }
@@ -468,7 +469,7 @@ mod zenoh_tunnel {
                         // If no sample received, wait a bit and retry
                         // Don't sleep after last attempt
                         if retry < NUM_RETRIES {
-                            std::thread::sleep(Duration::from_millis(100));
+                            std::thread::sleep(Duration::from_millis(250));
                             tunnel_a.propagate();
                             tunnel_b.propagate();
                         }
@@ -478,8 +479,9 @@ mod zenoh_tunnel {
 
             if !success {
                 test_fail!(
-                    "failed to receive expected sample {} after multiple attempts",
-                    i
+                    "failed to receive expected sample {} after {} attempts",
+                    i,
+                    NUM_RETRIES
                 );
             }
         }
@@ -609,7 +611,7 @@ mod zenoh_tunnel {
         let z_config_b = zenoh::config::Config::default();
         let z_session_b = zenoh::open(z_config_b.clone()).wait().unwrap();
         let z_reply_b = z_session_b
-            .get(keys::service(iox_service_a.service_id()))
+            .get(keys::service_details(iox_service_a.service_id()))
             .wait()
             .unwrap();
         match z_reply_b.recv_timeout(Duration::from_millis(100)) {

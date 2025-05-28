@@ -10,43 +10,45 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use crate::keys;
+
 use iceoryx2::node::Node as IceoryxNode;
 use iceoryx2::node::NodeId as IceoryxNodeId;
 use iceoryx2::port::notifier::Notifier as IceoryxNotifier;
+use iceoryx2::port::notifier::NotifierCreateError;
 use iceoryx2::port::publisher::Publisher as IceoryxPublisher;
+use iceoryx2::port::publisher::PublisherCreateError;
 use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
+use iceoryx2::port::subscriber::SubscriberCreateError;
+use iceoryx2::prelude::*;
+use iceoryx2::service::builder::event::EventOpenOrCreateError;
+use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::event::PortFactory as IceoryxEventService;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory as IceoryxPublishSubscribeService;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
-
 use iceoryx2_bb_log::info;
+
 use zenoh::bytes::ZBytes;
+use zenoh::handlers::FifoChannel;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher as ZenohPublisher;
 use zenoh::pubsub::Subscriber as ZenohSubscriber;
+use zenoh::sample::Locality;
 use zenoh::sample::Sample;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
 
-use crate::iox_create_event_service;
-use crate::iox_create_notifier;
-use crate::iox_create_publish_subscribe_service;
-use crate::iox_create_publisher;
-use crate::iox_create_subscriber;
-use crate::z_create_publisher;
-use crate::z_create_subscriber;
-
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailureToCreateIceoryxService,
-    FailureToCreateIceoryxPublisher,
-    FailureToCreateIceoryxSubscriber,
-    FailureToCreateIceoryxNotifier,
-    FailureToCreateZenohPublisher,
-    FailureToCreateZenohSubscriber,
+    IceoryxService,
+    IceoryxPublisher,
+    IceoryxSubscriber,
+    IceoryxNotifier,
+    ZenohPublisher,
+    ZenohSubscriber,
 }
 
 impl core::fmt::Display for CreationError {
@@ -59,11 +61,10 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PropagationError {
-    FailureToReceiveFromIceoryx,
-    FailureToPublishToIceoryx,
-    FailureToNotifyIceoryx,
-    FailureToReceiveFromZenoh,
-    FailureToPublishToZenoh,
+    ReceiveFromIceoryx,
+    PublishToIceoryx,
+    NotifyIceoryx,
+    PublishToZenoh,
 }
 
 impl core::fmt::Display for PropagationError {
@@ -78,6 +79,7 @@ pub trait DataStream {
     fn propagate(&self) -> Result<(), PropagationError>;
 }
 
+/// Couples the ports required for streaming data from the local host to remote hosts.
 pub(crate) struct OutboundStream<'a, ServiceType: iceoryx2::service::Service> {
     iox_node_id: IceoryxNodeId,
     iox_service_config: IceoryxServiceConfig,
@@ -85,7 +87,8 @@ pub(crate) struct OutboundStream<'a, ServiceType: iceoryx2::service::Service> {
     z_publisher: ZenohPublisher<'a>,
 }
 
-impl<'a, ServiceType: iceoryx2::service::Service> DataStream for OutboundStream<'a, ServiceType> {
+impl<ServiceType: iceoryx2::service::Service> DataStream for OutboundStream<'_, ServiceType> {
+    /// Propagate local payloads to the remote hosts.
     fn propagate(&self) -> Result<(), PropagationError> {
         loop {
             match unsafe { self.iox_subscriber.receive_custom_payload() } {
@@ -102,7 +105,7 @@ impl<'a, ServiceType: iceoryx2::service::Service> DataStream for OutboundStream<
                     let z_payload = ZBytes::from(bytes);
                     if let Err(e) = self.z_publisher.put(z_payload).wait() {
                         error!("Failed to propagate payload to zenoh: {}", e);
-                        return Err(PropagationError::FailureToPublishToZenoh);
+                        return Err(PropagationError::PublishToZenoh);
                     }
 
                     info!(
@@ -114,7 +117,7 @@ impl<'a, ServiceType: iceoryx2::service::Service> DataStream for OutboundStream<
                 Ok(None) => break, // No more samples available
                 Err(e) => {
                     error!("Failed to receive custom payload from iceoryx: {}", e);
-                    return Err(PropagationError::FailureToReceiveFromIceoryx);
+                    return Err(PropagationError::ReceiveFromIceoryx);
                 }
             }
         }
@@ -123,7 +126,8 @@ impl<'a, ServiceType: iceoryx2::service::Service> DataStream for OutboundStream<
     }
 }
 
-impl<'a, ServiceType: iceoryx2::service::Service> OutboundStream<'a, ServiceType> {
+impl<ServiceType: iceoryx2::service::Service> OutboundStream<'_, ServiceType> {
+    // Create a stream to propagate payloads for a particular iceoryx2 service to remote hosts.
     pub fn create(
         iox_node_id: &IceoryxNodeId,
         iox_service_config: &IceoryxServiceConfig,
@@ -135,12 +139,12 @@ impl<'a, ServiceType: iceoryx2::service::Service> OutboundStream<'a, ServiceType
         z_session: &ZenohSession,
     ) -> Result<Self, CreationError> {
         let iox_subscriber = iox_create_subscriber::<ServiceType>(iox_service, iox_service_config)
-            .map_err(|_e| CreationError::FailureToCreateIceoryxSubscriber)?;
+            .map_err(|_e| CreationError::IceoryxSubscriber)?;
         let z_publisher = z_create_publisher(z_session, iox_service_config)
-            .map_err(|_e| CreationError::FailureToCreateZenohPublisher)?;
+            .map_err(|_e| CreationError::ZenohPublisher)?;
 
         Ok(Self {
-            iox_node_id: iox_node_id.clone(),
+            iox_node_id: *iox_node_id,
             iox_service_config: iox_service_config.clone(),
             iox_subscriber,
             z_publisher,
@@ -148,6 +152,7 @@ impl<'a, ServiceType: iceoryx2::service::Service> OutboundStream<'a, ServiceType
     }
 }
 
+/// Couples the ports required for streaming data from remote hosts to the local host.
 pub(crate) struct InboundStream<ServiceType: iceoryx2::service::Service> {
     iox_service_config: IceoryxServiceConfig,
     iox_publisher: IceoryxPublisher<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
@@ -156,61 +161,54 @@ pub(crate) struct InboundStream<ServiceType: iceoryx2::service::Service> {
 }
 
 impl<ServiceType: iceoryx2::service::Service> DataStream for InboundStream<ServiceType> {
+    /// Propagate remote payloads to the local host.
     fn propagate(&self) -> Result<(), PropagationError> {
         let mut propagated = false;
-        loop {
-            match self.z_subscriber.try_recv() {
-                Ok(Some(z_sample)) => {
-                    let iox_message_type_details = self
-                        .iox_service_config
-                        .publish_subscribe()
-                        .message_type_details();
-                    let iox_payload_size = iox_message_type_details.payload.size;
-                    let _iox_payload_alignment = iox_message_type_details.payload.alignment;
 
-                    // TODO(correctness): verify size and alignment
-                    let z_payload = z_sample.payload();
+        for z_sample in self.z_subscriber.drain() {
+            let iox_message_type_details = self
+                .iox_service_config
+                .publish_subscribe()
+                .message_type_details();
+            let iox_payload_size = iox_message_type_details.payload.size;
+            let _iox_payload_alignment = iox_message_type_details.payload.alignment;
 
-                    let number_of_elements = z_payload.len() / iox_payload_size;
-                    unsafe {
-                        match self.iox_publisher.loan_custom_payload(number_of_elements) {
-                            Ok(mut iox_sample) => {
-                                core::ptr::copy_nonoverlapping(
-                                    z_payload.to_bytes().as_ptr(),
-                                    iox_sample.payload_mut().as_mut_ptr() as *mut u8,
-                                    z_payload.len(),
-                                );
-                                let iox_sample = iox_sample.assume_init();
-                                if let Err(e) = iox_sample.send() {
-                                    error!(
-                                        "Failed to publish sample ({}): {}",
-                                        self.iox_service_config.name(),
-                                        e
-                                    );
-                                    return Err(PropagationError::FailureToPublishToIceoryx);
-                                }
-                                propagated = true;
-                                info!(
-                                    "PROPAGATED (iceoryx2<-zenoh): {} [{}]",
-                                    self.iox_service_config.service_id().as_str(),
-                                    self.iox_service_config.name()
-                                );
-                            }
-                            Err(e) => {
-                                error!(
-                                    "Failed to loan sample ({}): {}",
-                                    self.iox_service_config.name(),
-                                    e
-                                );
-                                return Err(PropagationError::FailureToPublishToIceoryx);
-                            }
+            // TODO(correctness): verify size and alignment
+            let z_payload = z_sample.payload();
+
+            let number_of_elements = z_payload.len() / iox_payload_size;
+            unsafe {
+                match self.iox_publisher.loan_custom_payload(number_of_elements) {
+                    Ok(mut iox_sample) => {
+                        core::ptr::copy_nonoverlapping(
+                            z_payload.to_bytes().as_ptr(),
+                            iox_sample.payload_mut().as_mut_ptr() as *mut u8,
+                            z_payload.len(),
+                        );
+                        let iox_sample = iox_sample.assume_init();
+                        if let Err(e) = iox_sample.send() {
+                            error!(
+                                "Failed to publish sample ({}): {}",
+                                self.iox_service_config.name(),
+                                e
+                            );
+                            return Err(PropagationError::PublishToIceoryx);
                         }
+                        propagated = true;
+                        info!(
+                            "PROPAGATED (iceoryx2<-zenoh): {} [{}]",
+                            self.iox_service_config.service_id().as_str(),
+                            self.iox_service_config.name()
+                        );
                     }
-                }
-                Ok(None) => break, // No more samples available
-                Err(e) => {
-                    error!("Failed to receive payload from Zenoh: {}", e);
-                    return Err(PropagationError::FailureToReceiveFromZenoh);
+                    Err(e) => {
+                        error!(
+                            "Failed to loan sample ({}): {}",
+                            self.iox_service_config.name(),
+                            e
+                        );
+                        return Err(PropagationError::PublishToIceoryx);
+                    }
                 }
             }
         }
@@ -222,7 +220,7 @@ impl<ServiceType: iceoryx2::service::Service> DataStream for InboundStream<Servi
                     self.iox_service_config.name(),
                     e
                 );
-                return Err(PropagationError::FailureToNotifyIceoryx);
+                return Err(PropagationError::NotifyIceoryx);
             }
         }
 
@@ -231,6 +229,8 @@ impl<ServiceType: iceoryx2::service::Service> DataStream for InboundStream<Servi
 }
 
 impl<ServiceType: iceoryx2::service::Service> InboundStream<ServiceType> {
+    // Create a stream to propagate payloads for a particular iceoryx2 service from remote
+    // hosts to the local host.
     pub fn create(
         iox_service_config: &IceoryxServiceConfig,
         iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
@@ -243,11 +243,11 @@ impl<ServiceType: iceoryx2::service::Service> InboundStream<ServiceType> {
     ) -> Result<Self, CreationError> {
         let iox_publisher =
             iox_create_publisher::<ServiceType>(iox_publish_subscribe_service, iox_service_config)
-                .map_err(|_e| CreationError::FailureToCreateIceoryxPublisher)?;
+                .map_err(|_e| CreationError::IceoryxPublisher)?;
         let iox_notifier = iox_create_notifier(iox_event_service, iox_service_config)
-            .map_err(|_e| CreationError::FailureToCreateIceoryxNotifier)?;
+            .map_err(|_e| CreationError::IceoryxNotifier)?;
         let z_subscriber = z_create_subscriber(z_session, iox_service_config)
-            .map_err(|_e| CreationError::FailureToCreateZenohSubscriber)?;
+            .map_err(|_e| CreationError::ZenohSubscriber)?;
 
         Ok(Self {
             iox_service_config: iox_service_config.clone(),
@@ -258,14 +258,14 @@ impl<ServiceType: iceoryx2::service::Service> InboundStream<ServiceType> {
     }
 }
 
+/// Couples the outbound stream and inbound stream for a particular iceoryx2 service.
 pub(crate) struct BidirectionalStream<'a, ServiceType: iceoryx2::service::Service> {
     outbound_stream: OutboundStream<'a, ServiceType>,
     inbound_stream: InboundStream<ServiceType>,
 }
 
-impl<'a, ServiceType: iceoryx2::service::Service> DataStream
-    for BidirectionalStream<'a, ServiceType>
-{
+impl<ServiceType: iceoryx2::service::Service> DataStream for BidirectionalStream<'_, ServiceType> {
+    /// Propagate local payloads to remote host and remote payloads to the local host.
     fn propagate(&self) -> Result<(), PropagationError> {
         self.outbound_stream.propagate()?;
         self.inbound_stream.propagate()?;
@@ -274,7 +274,9 @@ impl<'a, ServiceType: iceoryx2::service::Service> DataStream
     }
 }
 
-impl<'a, ServiceType: iceoryx2::service::Service> BidirectionalStream<'a, ServiceType> {
+impl<ServiceType: iceoryx2::service::Service> BidirectionalStream<'_, ServiceType> {
+    /// Create a bi-directional stream to propagate payloads for a particular iceoryx2 service
+    /// to and from remote iceoryx2 instances via Zenoh.
     pub fn create(
         iox_node: &IceoryxNode<ServiceType>,
         z_session: &ZenohSession,
@@ -282,12 +284,12 @@ impl<'a, ServiceType: iceoryx2::service::Service> BidirectionalStream<'a, Servic
     ) -> Result<Self, CreationError> {
         let iox_publish_subscribe_service =
             iox_create_publish_subscribe_service::<ServiceType>(iox_node, iox_service_config)
-                .map_err(|_e| CreationError::FailureToCreateIceoryxService)?;
+                .map_err(|_e| CreationError::IceoryxService)?;
         let iox_event_service = iox_create_event_service(iox_node, iox_service_config)
-            .map_err(|_e| CreationError::FailureToCreateIceoryxService)?;
+            .map_err(|_e| CreationError::IceoryxService)?;
 
         let outbound_stream = OutboundStream::create(
-            &iox_node.id(),
+            iox_node.id(),
             iox_service_config,
             &iox_publish_subscribe_service,
             z_session,
@@ -304,4 +306,195 @@ impl<'a, ServiceType: iceoryx2::service::Service> BidirectionalStream<'a, Servic
             inbound_stream,
         })
     }
+}
+
+/// Creates an iceoryx2 publish-subscribe service matching the provided service configuration.
+pub(crate) fn iox_create_publish_subscribe_service<Service: iceoryx2::service::Service>(
+    iox_node: &IceoryxNode<Service>,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<
+    IceoryxPublishSubscribeService<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    PublishSubscribeOpenOrCreateError,
+> {
+    let iox_publish_subscribe_config = iox_service_config.publish_subscribe();
+    let iox_service = unsafe {
+        iox_node
+            .service_builder(iox_service_config.name())
+            .publish_subscribe::<[CustomPayloadMarker]>()
+            .user_header::<CustomHeaderMarker>()
+            .__internal_set_user_header_type_details(
+                &iox_service_config
+                    .publish_subscribe()
+                    .message_type_details()
+                    .user_header,
+            )
+            .__internal_set_payload_type_details(
+                &iox_service_config
+                    .publish_subscribe()
+                    .message_type_details()
+                    .payload,
+            )
+            .enable_safe_overflow(iox_publish_subscribe_config.has_safe_overflow())
+            .history_size(iox_publish_subscribe_config.history_size())
+            .max_publishers(iox_publish_subscribe_config.max_publishers())
+            .max_subscribers(iox_publish_subscribe_config.max_subscribers())
+            .subscriber_max_buffer_size(iox_publish_subscribe_config.subscriber_max_buffer_size())
+            .subscriber_max_buffer_size(
+                iox_publish_subscribe_config.subscriber_max_borrowed_samples(),
+            )
+            .open_or_create()?
+    };
+
+    Ok(iox_service)
+}
+
+/// Creates an iceoryx2 event service matching the provided service configuration.
+pub(crate) fn iox_create_event_service<Service: iceoryx2::service::Service>(
+    iox_node: &IceoryxNode<Service>,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<IceoryxEventService<Service>, EventOpenOrCreateError> {
+    // TODO(correctness): Use properties of existing event services to prevent clashing
+    let iox_service = iox_node
+        .service_builder(iox_service_config.name())
+        .event()
+        .open_or_create()?;
+
+    Ok(iox_service)
+}
+
+/// Creates an iceoryx2 publisher to the provided service.
+pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
+    iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
+        Service,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<
+    IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    PublisherCreateError,
+> {
+    let iox_publisher = iox_publish_subscribe_service
+        .publisher_builder()
+        .allocation_strategy(AllocationStrategy::PowerOfTwo)
+        .create()?;
+
+    info!(
+        "CREATED PUBLISHER (iceoryx2): {} [{}]",
+        iox_service_config.service_id().as_str(),
+        iox_service_config.name()
+    );
+
+    Ok(iox_publisher)
+}
+
+/// Creates an iceoryx2 subscriber to the provided service.
+pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
+    iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
+        Service,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<
+    IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    SubscriberCreateError,
+> {
+    let iox_subscriber = iox_publish_subscribe_service
+        .subscriber_builder()
+        .create()?;
+
+    info!(
+        "CREATED SUBSCRIBER (iceoryx2): {} [{}]",
+        iox_service_config.service_id().as_str(),
+        iox_service_config.name()
+    );
+
+    Ok(iox_subscriber)
+}
+
+/// Creates an iceoryx2 notifier to the provided service.
+pub(crate) fn iox_create_notifier<Service: iceoryx2::service::Service>(
+    iox_event_service: &IceoryxEventService<Service>,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<IceoryxNotifier<Service>, NotifierCreateError> {
+    let iox_notifier = iox_event_service.notifier_builder().create()?;
+
+    info!(
+        "CREATED NOTIFIER (iceoryx2): {} [{}]",
+        iox_service_config.service_id().as_str(),
+        iox_service_config.name()
+    );
+
+    Ok(iox_notifier)
+}
+
+/// Creates a Zenoh publisher to send payloads from iceoryx2 services to remote hosts.
+pub(crate) fn z_create_publisher<'a>(
+    z_session: &ZenohSession,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<ZenohPublisher<'a>, zenoh::Error> {
+    let z_key = keys::payloads(iox_service_config.service_id());
+    let z_publisher = z_session
+        .declare_publisher(z_key.clone())
+        .allowed_destination(Locality::Remote)
+        .wait()?;
+    info!(
+        "CREATED PUBLISHER (zenoh): {} [{}]",
+        z_key,
+        iox_service_config.name()
+    );
+
+    Ok(z_publisher)
+}
+
+/// Creates a Zenoh subscriber to receive payloads from remote hosts for a particular iceoryx2 service.
+pub(crate) fn z_create_subscriber(
+    z_session: &ZenohSession,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<ZenohSubscriber<FifoChannelHandler<Sample>>, zenoh::Error> {
+    let z_key = keys::payloads(iox_service_config.service_id());
+    let z_subscriber = z_session
+        .declare_subscriber(z_key.clone())
+        .with(FifoChannel::new(10))
+        .allowed_origin(Locality::Remote)
+        .wait()?;
+    info!(
+        "CREATED SUBSCRIBER (zenoh): {} [{}]",
+        z_key,
+        iox_service_config.name()
+    );
+
+    Ok(z_subscriber)
+}
+
+/// Announces an iceoryx2 service over Zenoh to make it discoverable by remote hosts.
+pub(crate) fn z_announce_service(
+    z_session: &ZenohSession,
+    iox_service_config: &IceoryxServiceConfig,
+) -> Result<(), zenoh::Error> {
+    let z_key = keys::service_details(iox_service_config.service_id());
+    let iox_service_config_serialized = serde_json::to_string(&iox_service_config)?;
+
+    info!(
+        "ANNOUNCING (zenoh): {} [{}]",
+        z_key,
+        iox_service_config.name()
+    );
+
+    z_session
+        .declare_queryable(z_key.clone())
+        .callback(move |query| {
+            if let Err(e) = query
+                .reply(z_key.clone(), iox_service_config_serialized.clone())
+                .wait()
+            {
+                error!("Failed to reply to query {}: {}", z_key, e);
+            }
+        })
+        .allowed_origin(Locality::Remote)
+        .background()
+        .wait()?;
+
+    Ok(())
 }
