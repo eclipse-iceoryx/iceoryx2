@@ -126,7 +126,8 @@ impl StaticConfig {
             .is_same_pattern(&rhs.messaging_pattern)
     }
 
-    pub(crate) fn request_response(&self) -> &request_response::StaticConfig {
+    /// Unwrap the RequestResponse static configuration.
+    pub fn request_response(&self) -> &request_response::StaticConfig {
         match &self.messaging_pattern {
             MessagingPattern::RequestResponse(ref v) => v,
             m => {
@@ -145,7 +146,8 @@ impl StaticConfig {
         }
     }
 
-    pub(crate) fn event(&self) -> &event::StaticConfig {
+    /// Unwrap the Event static configuration.
+    pub fn event(&self) -> &event::StaticConfig {
         match &self.messaging_pattern {
             MessagingPattern::Event(ref v) => v,
             m => {
@@ -164,7 +166,7 @@ impl StaticConfig {
         }
     }
 
-    ///
+    /// Unwrap the PublishSubscribe static configuration.
     pub fn publish_subscribe(&self) -> &publish_subscribe::StaticConfig {
         match &self.messaging_pattern {
             MessagingPattern::PublishSubscribe(ref v) => v,

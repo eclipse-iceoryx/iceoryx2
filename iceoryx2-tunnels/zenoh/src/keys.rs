@@ -12,14 +12,17 @@
 
 use iceoryx2::service::service_id::ServiceId;
 
-pub fn data_stream(service_id: &ServiceId) -> String {
-    format!("iox2/services/{}/stream", service_id.as_str())
+/// The zenoh key at which payloads for the given service id can be received.
+pub fn payloads(service_id: &ServiceId) -> String {
+    format!("iox2/services/{}/payloads", service_id.as_str())
 }
 
-pub fn service(service_id: &ServiceId) -> String {
+/// The zenoh key at which the service details for the given service id can be received.
+pub fn service_details(service_id: &ServiceId) -> String {
     format!("iox2/services/{}", service_id.as_str())
 }
 
-pub fn all_services() -> String {
+/// The zenoh key for discovering available service details.
+pub fn discovery() -> String {
     "iox2/services/*".into()
 }
