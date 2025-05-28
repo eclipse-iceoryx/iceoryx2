@@ -213,7 +213,6 @@ pub(crate) fn z_announce_service(
     z_session
         .declare_queryable(z_key.clone())
         .callback(move |query| {
-            info!("QUERY RECEIVED at {} for: {}", z_key, query.key_expr());
             if let Err(e) = query
                 .reply(z_key.clone(), iox_service_config_serialized.clone())
                 .wait()
@@ -221,6 +220,7 @@ pub(crate) fn z_announce_service(
                 error!("Failed to reply to query {}: {}", z_key, e);
             }
         })
+        .allowed_origin(Locality::Remote)
         .background()
         .wait()?;
 
