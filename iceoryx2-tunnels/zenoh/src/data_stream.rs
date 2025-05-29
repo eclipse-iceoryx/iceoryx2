@@ -434,7 +434,7 @@ pub(crate) fn z_create_publisher<'a>(
     z_session: &ZenohSession,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<ZenohPublisher<'a>, zenoh::Error> {
-    let z_key = keys::payloads(iox_service_config.service_id());
+    let z_key = keys::publish_subscribe(iox_service_config.service_id());
     let z_publisher = z_session
         .declare_publisher(z_key.clone())
         .allowed_destination(Locality::Remote)
@@ -453,7 +453,7 @@ pub(crate) fn z_create_subscriber(
     z_session: &ZenohSession,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<ZenohSubscriber<FifoChannelHandler<Sample>>, zenoh::Error> {
-    let z_key = keys::payloads(iox_service_config.service_id());
+    let z_key = keys::publish_subscribe(iox_service_config.service_id());
     let z_subscriber = z_session
         .declare_subscriber(z_key.clone())
         .with(FifoChannel::new(10))

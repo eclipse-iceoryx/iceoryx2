@@ -630,6 +630,109 @@ mod zenoh_tunnel {
         }
     }
 
+    #[test]
+    fn propagates_events_without_payload<S: Service>() {
+        // [[ COMMON ]]
+        let iox_service_name = mock_service_name();
+
+        // [[ HOST A ]]
+        // Tunnel
+        let z_config_a = zenoh::Config::default();
+        let iox_config_a = generate_isolated_config();
+        let tunnel_config_a = TunnelConfig::default();
+        let mut tunnel_a =
+            Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+
+        // Service
+        let iox_node_a = NodeBuilder::new()
+            .config(&iox_config_a)
+            .create::<S>()
+            .unwrap();
+        let iox_service_a = iox_node_a
+            .service_builder(&iox_service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+
+        // Notifier
+        let iox_notifier_a = iox_service_a.notifier_builder().create().unwrap();
+
+        // [[ HOST B ]]
+        // Tunnel
+        let z_config_b = zenoh::Config::default();
+        let iox_config_b = generate_isolated_config();
+        let tunnel_config_b = TunnelConfig::default();
+        let mut tunnel_b =
+            Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+
+        // Service
+        let iox_node_b = NodeBuilder::new()
+            .config(&iox_config_b)
+            .create::<S>()
+            .unwrap();
+        let iox_service_b = iox_node_b
+            .service_builder(&iox_service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+
+        // Notifier
+        let iox_listener_b = iox_service_a.listener_builder().create().unwrap();
+
+        // [[ BOTH ]]
+        // Discover Services
+        tunnel_a.discover().unwrap();
+        let tunneled_services_a = tunnel_a.tunneled_services();
+        assert_that!(tunneled_services_a.len(), eq 1);
+        assert_that!(tunneled_services_a
+            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+
+        tunnel_b.discover().unwrap();
+        let tunneled_services_b = tunnel_b.tunneled_services();
+        assert_that!(tunneled_services_b.len(), eq 1);
+        assert_that!(tunneled_services_b
+            .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
+
+        // Discovered service should be the same ID in both hosts
+        assert_that!(iox_service_a.service_id(), eq iox_service_b.service_id());
+
+        // ==================== TEST =====================
+
+        // Send notification
+        iox_notifier_a.notify().unwrap();
+
+        // Propagate over tunnels
+        tunnel_a.propagate();
+        tunnel_b.propagate();
+
+        // Receive with retry
+        const NUM_RETRIES: usize = 10;
+        let mut success = false;
+        for retry in 0..NUM_RETRIES {
+            match iox_listener_b.try_wait_one().unwrap() {
+                Some(_event_id) => {
+                    success = true;
+                    break;
+                }
+                None => {
+                    // If no sample received, wait a bit and retry
+                    // Don't sleep after last attempt
+                    if retry < NUM_RETRIES {
+                        std::thread::sleep(Duration::from_millis(250));
+                        tunnel_a.propagate();
+                        tunnel_b.propagate();
+                    }
+                }
+            }
+        }
+
+        if !success {
+            test_fail!("failed to receive event after {} attempts", NUM_RETRIES);
+        }
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
