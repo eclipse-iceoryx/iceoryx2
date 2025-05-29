@@ -31,14 +31,14 @@ use crate::cli::{ListenOptions, NotifyOptions, OutputFilter};
 enum EventType {
     NotificationSent,
     NotificationReceived,
-    NotificationDeadlineExceeded,
+    NotificationTimeoutExceeded,
 }
 
 #[derive(Serialize)]
 struct EventFeedback {
     event_type: EventType,
     service: String,
-    event_id: usize,
+    event_id: Option<usize>,
 }
 
 pub fn listen(options: ListenOptions, format: Format) -> Result<()> {
@@ -53,21 +53,36 @@ pub fn listen(options: ListenOptions, format: Format) -> Result<()> {
 
     let listener = service.listener_builder().create()?;
 
-    listener.timed_wait_all(
-        |event_id| {
+    for _ in 0..options.repetitions {
+        let mut received_notification = false;
+        listener.timed_wait_all(
+            |event_id| {
+                received_notification = true;
+                println!(
+                    "{}",
+                    format
+                        .as_string(&EventFeedback {
+                            event_type: EventType::NotificationReceived,
+                            service: options.service.clone(),
+                            event_id: Some(event_id.as_value())
+                        })
+                        .unwrap_or("Failed to format EventFeedback".to_string())
+                );
+            },
+            Duration::from_millis(options.timeout_in_ms),
+        )?;
+
+        if !received_notification {
             println!(
                 "{}",
-                format
-                    .as_string(&EventFeedback {
-                        event_type: EventType::NotificationReceived,
-                        service: options.service.clone(),
-                        event_id: event_id.as_value()
-                    })
-                    .unwrap()
+                format.as_string(&EventFeedback {
+                    event_type: EventType::NotificationTimeoutExceeded,
+                    service: options.service.clone(),
+                    event_id: None
+                })?
             );
-        },
-        Duration::from_millis(options.timeout_in_ms),
-    )?;
+        }
+    }
 
     Ok(())
 }
@@ -90,7 +105,7 @@ pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
     let notify_feedback = EventFeedback {
         event_type: EventType::NotificationSent,
         service: options.service,
-        event_id: options.event_id,
+        event_id: Some(options.event_id),
     };
     let notify = || -> Result<()> {
         notifier.notify()?;

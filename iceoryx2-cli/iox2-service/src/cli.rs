@@ -137,6 +137,13 @@ pub struct ListenOptions {
         help = "Waiting time between to notifications."
     )]
     pub timeout_in_ms: u64,
+    #[clap(
+        short,
+        long,
+        default_value = "1",
+        help = "How often shall the notification receive loop be repeated."
+    )]
+    pub repetitions: u64,
 }
 
 #[derive(Subcommand)]
