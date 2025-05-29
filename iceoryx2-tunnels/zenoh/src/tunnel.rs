@@ -83,7 +83,8 @@ pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
     iox_node: IceoryxNode<Service>,
     iox_discovery_subscriber: Option<IceoryxSubscriber<Service, Discovery, ()>>,
     iox_discovery_tracker: Option<IceoryxServiceTracker<Service>>,
-    streams: HashMap<IceoryxServiceId, BidirectionalStream<'a, Service>>,
+    publish_subscribe_streams: HashMap<IceoryxServiceId, BidirectionalStream<'a, Service>>,
+    event_streams: HashMap<IceoryxServiceId, BidirectionalStream<'a, Service>>,
 }
 
 impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
@@ -142,7 +143,9 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                 }
             };
 
-        let streams: HashMap<IceoryxServiceId, BidirectionalStream<Service>> = HashMap::new();
+        let publish_subscribe_streams: HashMap<IceoryxServiceId, BidirectionalStream<Service>> =
+            HashMap::new();
+        let event_streams: HashMap<IceoryxServiceId, BidirectionalStream<Service>> = HashMap::new();
 
         Ok(Self {
             z_session,
@@ -151,7 +154,8 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
             iox_node,
             iox_discovery_subscriber,
             iox_discovery_tracker,
-            streams,
+            publish_subscribe_streams,
+            event_streams,
         })
     }
 
@@ -165,7 +169,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
     /// Propagates payloads between iceoryx2 and zenoh.
     pub fn propagate(&self) {
-        for (id, stream) in &self.streams {
+        for (id, stream) in &self.publish_subscribe_streams {
             if let Err(e) = stream.propagate() {
                 error!("Failed to propagate ({:?}): {}", id, e);
             }
@@ -174,7 +178,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
     /// Returns a list of all service IDs that are currently being tunneled.
     pub fn tunneled_services(&self) -> Vec<String> {
-        self.streams
+        self.publish_subscribe_streams
             .keys()
             .map(|id| id.as_str().to_string())
             .collect()
@@ -188,7 +192,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
             |iox_service_config: &IceoryxServiceConfig| -> Result<(), DiscoveryError> {
                 let iox_service_id = iox_service_config.service_id();
 
-                if !self.streams.contains_key(iox_service_id) {
+                if !self.publish_subscribe_streams.contains_key(iox_service_id) {
                     info!(
                         "DISCOVERED (iceoryx2): {} [{}]",
                         iox_service_id.as_str(),
@@ -202,7 +206,8 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                         iox_service_config,
                     )
                     .map_err(|_e| DiscoveryError::FailureToEstablishDataStream)?;
-                    self.streams.insert(iox_service_id.clone(), stream);
+                    self.publish_subscribe_streams
+                        .insert(iox_service_id.clone(), stream);
 
                     // Announce Service to Zenoh
                     z_announce_service(&self.z_session, iox_service_config)
@@ -268,7 +273,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                         serde_json::from_slice::<IceoryxServiceConfig>(&sample.payload().to_bytes())
                     {
                         let iox_service_id = iox_service_config.service_id();
-                        if !self.streams.contains_key(iox_service_id) {
+                        if !self.publish_subscribe_streams.contains_key(iox_service_id) {
                             info!(
                                 "DISCOVERED (zenoh): {} [{}]",
                                 iox_service_id.as_str(),
@@ -282,7 +287,8 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                             )
                             .map_err(|_e| DiscoveryError::FailureToEstablishDataStream)?;
 
-                            self.streams.insert(iox_service_id.clone(), stream);
+                            self.publish_subscribe_streams
+                                .insert(iox_service_id.clone(), stream);
                         }
                     }
                 }
