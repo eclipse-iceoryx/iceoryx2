@@ -12,8 +12,8 @@
 
 use crate::keys;
 use crate::z_announce_service;
-use crate::BidirectionalStream;
-use crate::DataStream;
+use crate::BidirectionalPublishSubscribeConnection;
+use crate::Connection;
 
 use iceoryx2::config::Config as IceoryxConfig;
 use iceoryx2::node::Node as IceoryxNode;
@@ -64,7 +64,7 @@ pub enum DiscoveryError {
     FailureToDiscoverServicesLocally,
     FailureToDiscoverServicesRemotely,
     FailureToAnnounceServiceRemotely,
-    FailureToEstablishDataStream,
+    FailureToEstablishConnection,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -83,8 +83,10 @@ pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
     iox_node: IceoryxNode<Service>,
     iox_discovery_subscriber: Option<IceoryxSubscriber<Service, Discovery, ()>>,
     iox_discovery_tracker: Option<IceoryxServiceTracker<Service>>,
-    publish_subscribe_streams: HashMap<IceoryxServiceId, BidirectionalStream<'a, Service>>,
-    event_streams: HashMap<IceoryxServiceId, BidirectionalStream<'a, Service>>,
+    publish_subscribe_connectons:
+        HashMap<IceoryxServiceId, BidirectionalPublishSubscribeConnection<'a, Service>>,
+    event_connections:
+        HashMap<IceoryxServiceId, BidirectionalPublishSubscribeConnection<'a, Service>>,
 }
 
 impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
@@ -143,9 +145,14 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                 }
             };
 
-        let publish_subscribe_streams: HashMap<IceoryxServiceId, BidirectionalStream<Service>> =
-            HashMap::new();
-        let event_streams: HashMap<IceoryxServiceId, BidirectionalStream<Service>> = HashMap::new();
+        let publish_subscribe_connectons: HashMap<
+            IceoryxServiceId,
+            BidirectionalPublishSubscribeConnection<Service>,
+        > = HashMap::new();
+        let event_connections: HashMap<
+            IceoryxServiceId,
+            BidirectionalPublishSubscribeConnection<Service>,
+        > = HashMap::new();
 
         Ok(Self {
             z_session,
@@ -154,8 +161,8 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
             iox_node,
             iox_discovery_subscriber,
             iox_discovery_tracker,
-            publish_subscribe_streams,
-            event_streams,
+            publish_subscribe_connectons,
+            event_connections,
         })
     }
 
@@ -169,8 +176,8 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
     /// Propagates payloads between iceoryx2 and zenoh.
     pub fn propagate(&self) {
-        for (id, stream) in &self.publish_subscribe_streams {
-            if let Err(e) = stream.propagate() {
+        for (id, connection) in &self.publish_subscribe_connectons {
+            if let Err(e) = connection.propagate() {
                 error!("Failed to propagate ({:?}): {}", id, e);
             }
         }
@@ -178,7 +185,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
     /// Returns a list of all service IDs that are currently being tunneled.
     pub fn tunneled_services(&self) -> Vec<String> {
-        self.publish_subscribe_streams
+        self.publish_subscribe_connectons
             .keys()
             .map(|id| id.as_str().to_string())
             .collect()
@@ -192,22 +199,25 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
             |iox_service_config: &IceoryxServiceConfig| -> Result<(), DiscoveryError> {
                 let iox_service_id = iox_service_config.service_id();
 
-                if !self.publish_subscribe_streams.contains_key(iox_service_id) {
+                if !self
+                    .publish_subscribe_connectons
+                    .contains_key(iox_service_id)
+                {
                     info!(
                         "DISCOVERED (iceoryx2): {} [{}]",
                         iox_service_id.as_str(),
                         iox_service_config.name()
                     );
 
-                    // Set up stream
-                    let stream = BidirectionalStream::create(
+                    // Set up connection
+                    let connection = BidirectionalPublishSubscribeConnection::create(
                         &self.iox_node,
                         &self.z_session,
                         iox_service_config,
                     )
-                    .map_err(|_e| DiscoveryError::FailureToEstablishDataStream)?;
-                    self.publish_subscribe_streams
-                        .insert(iox_service_id.clone(), stream);
+                    .map_err(|_e| DiscoveryError::FailureToEstablishConnection)?;
+                    self.publish_subscribe_connectons
+                        .insert(iox_service_id.clone(), connection);
 
                     // Announce Service to Zenoh
                     z_announce_service(&self.z_session, iox_service_config)
@@ -273,22 +283,25 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                         serde_json::from_slice::<IceoryxServiceConfig>(&sample.payload().to_bytes())
                     {
                         let iox_service_id = iox_service_config.service_id();
-                        if !self.publish_subscribe_streams.contains_key(iox_service_id) {
+                        if !self
+                            .publish_subscribe_connectons
+                            .contains_key(iox_service_id)
+                        {
                             info!(
                                 "DISCOVERED (zenoh): {} [{}]",
                                 iox_service_id.as_str(),
                                 iox_service_config.name()
                             );
 
-                            let stream = BidirectionalStream::create(
+                            let connection = BidirectionalPublishSubscribeConnection::create(
                                 &self.iox_node,
                                 &self.z_session,
                                 &iox_service_config,
                             )
-                            .map_err(|_e| DiscoveryError::FailureToEstablishDataStream)?;
+                            .map_err(|_e| DiscoveryError::FailureToEstablishConnection)?;
 
-                            self.publish_subscribe_streams
-                                .insert(iox_service_id.clone(), stream);
+                            self.publish_subscribe_connectons
+                                .insert(iox_service_id.clone(), connection);
                         }
                     }
                 }

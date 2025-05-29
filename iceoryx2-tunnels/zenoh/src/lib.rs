@@ -10,9 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod data_stream;
+mod connection;
 pub mod keys;
 mod tunnel;
 
-pub(crate) use data_stream::*;
+pub(crate) use connection::*;
 pub use tunnel::*;
