@@ -12,6 +12,7 @@
 
 use crate::keys;
 use crate::z_announce_service;
+use crate::BidirectionalEventConnection;
 use crate::BidirectionalPublishSubscribeConnection;
 use crate::Connection;
 
@@ -85,8 +86,7 @@ pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
     iox_discovery_tracker: Option<IceoryxServiceTracker<Service>>,
     publish_subscribe_connectons:
         HashMap<IceoryxServiceId, BidirectionalPublishSubscribeConnection<'a, Service>>,
-    event_connections:
-        HashMap<IceoryxServiceId, BidirectionalPublishSubscribeConnection<'a, Service>>,
+    event_connections: HashMap<IceoryxServiceId, BidirectionalEventConnection<'a, Service>>,
 }
 
 impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
@@ -149,10 +149,8 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
             IceoryxServiceId,
             BidirectionalPublishSubscribeConnection<Service>,
         > = HashMap::new();
-        let event_connections: HashMap<
-            IceoryxServiceId,
-            BidirectionalPublishSubscribeConnection<Service>,
-        > = HashMap::new();
+        let event_connections: HashMap<IceoryxServiceId, BidirectionalEventConnection<Service>> =
+            HashMap::new();
 
         Ok(Self {
             z_session,
@@ -181,12 +179,19 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                 error!("Failed to propagate ({:?}): {}", id, e);
             }
         }
+
+        for (id, connection) in &self.event_connections {
+            if let Err(e) = connection.propagate() {
+                error!("Failed to propagate ({:?}): {}", id, e);
+            }
+        }
     }
 
     /// Returns a list of all service IDs that are currently being tunneled.
     pub fn tunneled_services(&self) -> Vec<String> {
         self.publish_subscribe_connectons
             .keys()
+            .chain(self.event_connections.keys())
             .map(|id| id.as_str().to_string())
             .collect()
     }
@@ -195,7 +200,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     fn local_discovery(&mut self) -> Result<(), DiscoveryError> {
         // TODO(correctness): Handle event services - need to open corresponding service with same
         //                    properties
-        let mut on_discovered =
+        let mut on_pub_sub =
             |iox_service_config: &IceoryxServiceConfig| -> Result<(), DiscoveryError> {
                 let iox_service_id = iox_service_config.service_id();
 
@@ -204,18 +209,18 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                     .contains_key(iox_service_id)
                 {
                     info!(
-                        "DISCOVERED (iceoryx2): {} [{}]",
+                        "DISCOVERED (iceoryx2): PUBLISH_SUBSCRIBE {} [{}]",
                         iox_service_id.as_str(),
                         iox_service_config.name()
                     );
 
-                    // Set up connection
                     let connection = BidirectionalPublishSubscribeConnection::create(
                         &self.iox_node,
                         &self.z_session,
                         iox_service_config,
                     )
                     .map_err(|_e| DiscoveryError::FailureToEstablishConnection)?;
+
                     self.publish_subscribe_connectons
                         .insert(iox_service_id.clone(), connection);
 
@@ -225,6 +230,29 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                 }
                 Ok(())
             };
+        let mut on_event =
+            |iox_service_config: &IceoryxServiceConfig| -> Result<(), DiscoveryError> {
+                let iox_service_id = iox_service_config.service_id();
+                if !self.event_connections.contains_key(iox_service_id) {
+                    info!(
+                        "DISCOVERED (iceoryx2): EVENT {} [{}]",
+                        iox_service_id.as_str(),
+                        iox_service_config.name()
+                    );
+
+                    let connection = BidirectionalEventConnection::create(
+                        &self.iox_node,
+                        &self.z_session,
+                        iox_service_config,
+                    )
+                    .map_err(|_e| DiscoveryError::FailureToEstablishConnection)?;
+
+                    self.event_connections
+                        .insert(iox_service_id.clone(), connection);
+                }
+
+                Ok(())
+            };
 
         // Discovery via discovery service
         if let Some(iox_discovery_subscriber) = &self.iox_discovery_subscriber {
@@ -232,11 +260,16 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                 match iox_discovery_subscriber.receive() {
                     Ok(result) => match result {
                         Some(iox_sample) => {
-                            if let Discovery::Added(iox_service_config) = iox_sample.payload() {
-                                if let MessagingPattern::PublishSubscribe(_) =
-                                    iox_service_config.messaging_pattern()
-                                {
-                                    on_discovered(iox_service_config)?;
+                            if let Discovery::Added(iox_service_details) = iox_sample.payload() {
+                                match iox_service_details.messaging_pattern() {
+                                    MessagingPattern::RequestResponse(_) => todo!(),
+                                    MessagingPattern::PublishSubscribe(_) => {
+                                        on_pub_sub(iox_service_details)?;
+                                    }
+                                    MessagingPattern::Event(_) => {
+                                        on_event(iox_service_details)?;
+                                    }
+                                    _ => todo!(),
                                 }
                             }
                         }
@@ -256,12 +289,17 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
             for iox_service_id in added {
                 if let Some(iox_service_details) = iox_discovery_tracker.get(&iox_service_id) {
-                    let iox_service_config = &iox_service_details.static_details;
+                    let iox_service_details = &iox_service_details.static_details;
 
-                    if let MessagingPattern::PublishSubscribe(_) =
-                        iox_service_details.static_details.messaging_pattern()
-                    {
-                        on_discovered(iox_service_config)?;
+                    match iox_service_details.messaging_pattern() {
+                        MessagingPattern::RequestResponse(_) => todo!(),
+                        MessagingPattern::PublishSubscribe(_) => {
+                            on_pub_sub(iox_service_details)?;
+                        }
+                        MessagingPattern::Event(_) => {
+                            on_event(iox_service_details)?;
+                        }
+                        _ => todo!(),
                     }
                 }
             }
