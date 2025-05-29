@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
+use std::io::Write;
+
 use anyhow::anyhow;
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
@@ -20,8 +23,59 @@ use iceoryx2_cli::Format;
 use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
 use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
+use serde::Serialize;
 
-use crate::cli::OutputFilter;
+use crate::cli::{NotifyOptions, OutputFilter};
+
+#[derive(Serialize)]
+enum EventType {
+    NotificationSent,
+    NotificationReceived,
+}
+
+#[derive(Serialize)]
+struct EventFeedback {
+    event_type: EventType,
+    service: String,
+    event_id: usize,
+}
+
+pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
+    let node = NodeBuilder::new()
+        .name(&NodeName::new(&options.node_name)?)
+        .create::<ipc::Service>()?;
+
+    let service = node
+        .service_builder(&ServiceName::new(&options.service)?)
+        .event()
+        .open_or_create()?;
+
+    let notifier = service
+        .notifier_builder()
+        .default_event_id(EventId::new(options.event_id))
+        .create()?;
+
+    let notify_feedback = EventFeedback {
+        event_type: EventType::NotificationSent,
+        service: options.service,
+        event_id: options.event_id,
+    };
+    let notify = || -> Result<()> {
+        notifier.notify()?;
+        println!("{}", format.as_string(&notify_feedback)?);
+        std::io::stdout().flush()?;
+        Ok(())
+    };
+
+    for _ in 0..options.repetitions.clamp(1, u64::MAX) - 1 {
+        notify()?;
+        std::thread::sleep(Duration::from_millis(options.interval_in_ms));
+    }
+
+    notify()?;
+
+    Ok(())
+}
 
 pub fn list(filter: OutputFilter, format: Format) -> Result<()> {
     let mut services = Vec::<ServiceDescriptor>::new();

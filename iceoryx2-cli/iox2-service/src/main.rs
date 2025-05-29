@@ -46,6 +46,11 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     if let Some(action) = cli.action {
         match action {
+            Action::Notify(options) => {
+                if let Err(e) = commands::notify(options, cli.format) {
+                    error!("failed to notify service: {}", e);
+                }
+            }
             Action::List(options) => {
                 if let Err(e) = commands::list(options.filter, cli.format) {
                     error!("failed to list services: {}", e);

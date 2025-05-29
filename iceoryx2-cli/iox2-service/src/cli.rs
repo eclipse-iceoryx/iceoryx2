@@ -18,6 +18,7 @@ use iceoryx2_cli::filter::MessagingPatternFilter;
 use iceoryx2_cli::help_template;
 use iceoryx2_cli::Format;
 use iceoryx2_cli::HelpOptions;
+use serde::Serialize;
 
 #[derive(Parser)]
 #[command(
@@ -81,6 +82,40 @@ pub struct DiscoveryOptions {
     pub max_listeners: usize,
 }
 
+#[derive(Parser, Serialize)]
+pub struct NotifyOptions {
+    #[clap(short, long, help = "Name of the service which shall be notified.")]
+    pub service: String,
+    #[clap(
+        short,
+        long,
+        default_value = "0",
+        help = "EventId value used for the notification."
+    )]
+    pub event_id: usize,
+    #[clap(
+        short,
+        long,
+        default_value = "shell_node",
+        help = "Defines the node name of the notification endpoint."
+    )]
+    pub node_name: String,
+    #[clap(
+        short,
+        long,
+        default_value = "1",
+        help = "How often shall the notification be sent."
+    )]
+    pub repetitions: u64,
+    #[clap(
+        short,
+        long,
+        default_value = "250",
+        help = "Waiting time between to notifications."
+    )]
+    pub interval_in_ms: u64,
+}
+
 #[derive(Subcommand)]
 pub enum Action {
     #[clap(
@@ -94,8 +129,13 @@ pub enum Action {
     )]
     Details(DetailsOptions),
     #[clap(
-        about = "Runs the service discovery service within a process", 
+        about = "Runs the service discovery service within a process",
         help_template = help_template("iox2 service discovery", HelpOptions::DontPrintCommandSection)
     )]
     Discovery(DiscoveryOptions),
+    #[clap(
+        about = "Send a notification.",
+        help_template = help_template("iox2 service notify", HelpOptions::DontPrintCommandSection)
+    )]
+    Notify(NotifyOptions),
 }
