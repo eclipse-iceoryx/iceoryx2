@@ -27,6 +27,8 @@ use serde::Serialize;
 
 use crate::cli::{ListenOptions, NotifyOptions, OutputFilter};
 
+#[allow(clippy::enum_variant_names)] // explicitly allow same prefix Notification since it shall
+// be human readable on command line
 #[derive(Serialize)]
 enum EventType {
     NotificationSent,
@@ -114,7 +116,7 @@ pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
         Ok(())
     };
 
-    for _ in 0..options.repetitions.clamp(1, u64::MAX) - 1 {
+    for _ in 1..options.repetitions {
         notify()?;
         std::thread::sleep(Duration::from_millis(options.interval_in_ms));
     }

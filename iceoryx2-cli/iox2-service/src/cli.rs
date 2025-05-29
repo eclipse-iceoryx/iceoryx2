@@ -110,7 +110,7 @@ pub struct NotifyOptions {
         short,
         long,
         default_value = "250",
-        help = "Waiting time between to notifications."
+        help = "Interval between notifications."
     )]
     pub interval_in_ms: u64,
 }
@@ -134,7 +134,7 @@ pub struct ListenOptions {
         short,
         long,
         default_value = "1000",
-        help = "Waiting time between to notifications."
+        help = "Maximum delay between two notifications."
     )]
     pub timeout_in_ms: u64,
     #[clap(
