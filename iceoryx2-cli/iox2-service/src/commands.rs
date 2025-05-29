@@ -55,24 +55,27 @@ pub fn listen(options: ListenOptions, format: Format) -> Result<()> {
 
     let listener = service.listener_builder().create()?;
 
-    for _ in 0..options.repetitions {
+    for _ in 0..options.repetitions.unwrap_or(u64::MAX) {
         let mut received_notification = false;
-        listener.timed_wait_all(
-            |event_id| {
-                received_notification = true;
-                println!(
-                    "{}",
-                    format
-                        .as_string(&EventFeedback {
-                            event_type: EventType::NotificationReceived,
-                            service: options.service.clone(),
-                            event_id: Some(event_id.as_value())
-                        })
-                        .unwrap_or("Failed to format EventFeedback".to_string())
-                );
-            },
-            Duration::from_millis(options.timeout_in_ms),
-        )?;
+        let callback = |event_id: EventId| {
+            received_notification = true;
+            println!(
+                "{}",
+                format
+                    .as_string(&EventFeedback {
+                        event_type: EventType::NotificationReceived,
+                        service: options.service.clone(),
+                        event_id: Some(event_id.as_value())
+                    })
+                    .unwrap_or("Failed to format EventFeedback".to_string())
+            );
+        };
+
+        if options.timeout_in_ms != 0 {
+            listener.timed_wait_all(callback, Duration::from_millis(options.timeout_in_ms))?;
+        } else {
+            listener.blocking_wait_all(callback)?;
+        }
 
         if !received_notification {
             println!(
@@ -116,7 +119,7 @@ pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
         Ok(())
     };
 
-    for _ in 1..options.repetitions {
+    for _ in 1..options.num {
         notify()?;
         std::thread::sleep(Duration::from_millis(options.interval_in_ms));
     }

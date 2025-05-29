@@ -83,7 +83,7 @@ pub struct DiscoveryOptions {
 
 #[derive(Parser)]
 pub struct NotifyOptions {
-    #[clap(short, long, help = "Name of the service which shall be notified.")]
+    #[clap(help = "Name of the service which shall be notified.")]
     pub service: String,
     #[clap(
         short,
@@ -100,12 +100,12 @@ pub struct NotifyOptions {
     )]
     pub node_name: String,
     #[clap(
-        short,
+        short = 'u',
         long,
         default_value = "1",
         help = "How often shall the notification be sent."
     )]
-    pub repetitions: u64,
+    pub num: u64,
     #[clap(
         short,
         long,
@@ -117,11 +117,7 @@ pub struct NotifyOptions {
 
 #[derive(Parser)]
 pub struct ListenOptions {
-    #[clap(
-        short,
-        long,
-        help = "Name of the service which shall be waited on for a notification."
-    )]
+    #[clap(help = "Name of the service which shall be waited on for a notification.")]
     pub service: String,
     #[clap(
         short,
@@ -134,16 +130,15 @@ pub struct ListenOptions {
         short,
         long,
         default_value = "1000",
-        help = "Maximum delay between two notifications."
+        help = "Maximum delay between two notifications. Set to 0 to wait indefinitely."
     )]
     pub timeout_in_ms: u64,
     #[clap(
         short,
         long,
-        default_value = "1",
-        help = "How often shall the notification receive loop be repeated."
+        help = "[Optional] How often shall the notification receive loop be repeated. If its not specified the call will listen indefinitely."
     )]
-    pub repetitions: u64,
+    pub repetitions: Option<u64>,
 }
 
 #[derive(Subcommand)]
