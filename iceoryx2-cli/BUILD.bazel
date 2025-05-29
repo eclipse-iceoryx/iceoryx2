@@ -79,6 +79,7 @@ rust_binary(
         "@crate_index//:better-panic",
         "@crate_index//:clap",
         "@crate_index//:human-panic",
+        "@crate_index//:serde",
     ],
 )
 
