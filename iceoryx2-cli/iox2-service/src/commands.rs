@@ -25,12 +25,13 @@ use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
 use serde::Serialize;
 
-use crate::cli::{NotifyOptions, OutputFilter};
+use crate::cli::{ListenOptions, NotifyOptions, OutputFilter};
 
 #[derive(Serialize)]
 enum EventType {
     NotificationSent,
     NotificationReceived,
+    NotificationDeadlineExceeded,
 }
 
 #[derive(Serialize)]
@@ -38,6 +39,37 @@ struct EventFeedback {
     event_type: EventType,
     service: String,
     event_id: usize,
+}
+
+pub fn listen(options: ListenOptions, format: Format) -> Result<()> {
+    let node = NodeBuilder::new()
+        .name(&NodeName::new(&options.node_name)?)
+        .create::<ipc::Service>()?;
+
+    let service = node
+        .service_builder(&ServiceName::new(&options.service)?)
+        .event()
+        .open_or_create()?;
+
+    let listener = service.listener_builder().create()?;
+
+    listener.timed_wait_all(
+        |event_id| {
+            println!(
+                "{}",
+                format
+                    .as_string(&EventFeedback {
+                        event_type: EventType::NotificationReceived,
+                        service: options.service.clone(),
+                        event_id: event_id.as_value()
+                    })
+                    .unwrap()
+            );
+        },
+        Duration::from_millis(options.timeout_in_ms),
+    )?;
+
+    Ok(())
 }
 
 pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {

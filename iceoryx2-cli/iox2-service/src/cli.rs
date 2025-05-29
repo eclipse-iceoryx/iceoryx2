@@ -18,7 +18,6 @@ use iceoryx2_cli::filter::MessagingPatternFilter;
 use iceoryx2_cli::help_template;
 use iceoryx2_cli::Format;
 use iceoryx2_cli::HelpOptions;
-use serde::Serialize;
 
 #[derive(Parser)]
 #[command(
@@ -82,7 +81,7 @@ pub struct DiscoveryOptions {
     pub max_listeners: usize,
 }
 
-#[derive(Parser, Serialize)]
+#[derive(Parser)]
 pub struct NotifyOptions {
     #[clap(short, long, help = "Name of the service which shall be notified.")]
     pub service: String,
@@ -116,6 +115,30 @@ pub struct NotifyOptions {
     pub interval_in_ms: u64,
 }
 
+#[derive(Parser)]
+pub struct ListenOptions {
+    #[clap(
+        short,
+        long,
+        help = "Name of the service which shall be waited on for a notification."
+    )]
+    pub service: String,
+    #[clap(
+        short,
+        long,
+        default_value = "shell_node",
+        help = "Defines the node name of the listening endpoint."
+    )]
+    pub node_name: String,
+    #[clap(
+        short,
+        long,
+        default_value = "1000",
+        help = "Waiting time between to notifications."
+    )]
+    pub timeout_in_ms: u64,
+}
+
 #[derive(Subcommand)]
 pub enum Action {
     #[clap(
@@ -134,8 +157,13 @@ pub enum Action {
     )]
     Discovery(DiscoveryOptions),
     #[clap(
-        about = "Send a notification.",
+        about = "Send a notification",
         help_template = help_template("iox2 service notify", HelpOptions::DontPrintCommandSection)
     )]
     Notify(NotifyOptions),
+    #[clap(
+        about = "Wait until a notification arrives",
+        help_template = help_template("iox2 service listen", HelpOptions::DontPrintCommandSection)
+    )]
+    Listen(ListenOptions),
 }

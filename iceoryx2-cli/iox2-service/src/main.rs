@@ -51,6 +51,11 @@ fn main() -> Result<()> {
                     error!("failed to notify service: {}", e);
                 }
             }
+            Action::Listen(options) => {
+                if let Err(e) = commands::listen(options, cli.format) {
+                    error!("failed to wait for notifications: {}", e);
+                }
+            }
             Action::List(options) => {
                 if let Err(e) = commands::list(options.filter, cli.format) {
                     error!("failed to list services: {}", e);
