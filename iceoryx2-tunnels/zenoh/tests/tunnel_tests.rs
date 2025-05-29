@@ -197,7 +197,7 @@ mod zenoh_tunnel {
         }
     }
 
-    fn propagates_struct_payload_n_samples<S: Service>(sample_count: usize) {
+    fn propagates_n_struct_payloads<S: Service>(sample_count: usize) {
         #[derive(Debug, Clone, PartialEq, ZeroCopySend)]
         #[repr(C)]
         struct MyType {
@@ -335,21 +335,21 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn propagates_struct_payload_single_sample<S: Service>() {
-        propagates_struct_payload_n_samples::<S>(1);
+    fn propagates_one_struct_payload<S: Service>() {
+        propagates_n_struct_payloads::<S>(1);
     }
 
     #[test]
-    fn propagates_struct_payload_two_samples<S: Service>() {
-        propagates_struct_payload_n_samples::<S>(2);
+    fn propagates_two_struct_payloads<S: Service>() {
+        propagates_n_struct_payloads::<S>(2);
     }
 
     #[test]
-    fn propagates_struct_payload_ten_samples<S: Service>() {
-        propagates_struct_payload_n_samples::<S>(10);
+    fn propagates_ten_struct_payloads<S: Service>() {
+        propagates_n_struct_payloads::<S>(10);
     }
 
-    fn propagates_slice_payload_n_samples<S: Service>(sample_count: usize) {
+    fn propagates_n_slice_payloads<S: Service>(sample_count: usize) {
         const PAYLOAD_DATA_LENGTH: usize = 256;
 
         // ==================== SETUP ====================
@@ -488,18 +488,18 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn propagates_slice_payload_single_sample<S: Service>() {
-        propagates_slice_payload_n_samples::<S>(1);
+    fn propagates_one_slice_payload<S: Service>() {
+        propagates_n_slice_payloads::<S>(1);
     }
 
     #[test]
-    fn propagates_slice_payload_two_samples<S: Service>() {
-        propagates_slice_payload_n_samples::<S>(2);
+    fn propagates_two_slice_payloads<S: Service>() {
+        propagates_n_slice_payloads::<S>(2);
     }
 
     #[test]
-    fn propagates_slice_payload_ten_samples<S: Service>() {
-        propagates_slice_payload_n_samples::<S>(10);
+    fn propagates_ten_slice_payloads<S: Service>() {
+        propagates_n_slice_payloads::<S>(10);
     }
 
     #[test]
@@ -630,8 +630,7 @@ mod zenoh_tunnel {
         }
     }
 
-    #[test]
-    fn propagates_events_without_payload<S: Service>() {
+    fn propagates_n_events<S: Service>(num: usize) {
         // [[ COMMON ]]
         let iox_service_name = mock_service_name();
 
@@ -678,8 +677,8 @@ mod zenoh_tunnel {
             .open_or_create()
             .unwrap();
 
-        // Notifier
-        let iox_listener_b = iox_service_a.listener_builder().create().unwrap();
+        // Listener
+        let iox_listener_b = iox_service_b.listener_builder().create().unwrap();
 
         // [[ BOTH ]]
         // Discover Services
@@ -700,37 +699,58 @@ mod zenoh_tunnel {
 
         // ==================== TEST =====================
 
-        // Send notification
-        iox_notifier_a.notify().unwrap();
+        for i in 0..num {
+            // Send notification
+            iox_notifier_a.notify().unwrap();
 
-        // Propagate over tunnels
-        tunnel_a.propagate();
-        tunnel_b.propagate();
+            // Propagate over tunnels
+            tunnel_a.propagate();
+            tunnel_b.propagate();
 
-        // Receive with retry
-        const NUM_RETRIES: usize = 10;
-        let mut success = false;
-        for retry in 0..NUM_RETRIES {
-            match iox_listener_b.try_wait_one().unwrap() {
-                Some(_event_id) => {
-                    success = true;
-                    break;
-                }
-                None => {
-                    // If no sample received, wait a bit and retry
-                    // Don't sleep after last attempt
-                    if retry < NUM_RETRIES {
-                        std::thread::sleep(Duration::from_millis(250));
-                        tunnel_a.propagate();
-                        tunnel_b.propagate();
+            // Receive with retry
+            const NUM_RETRIES: usize = 10;
+            let mut success = false;
+            for retry in 0..NUM_RETRIES {
+                match iox_listener_b.try_wait_one().unwrap() {
+                    Some(_event_id) => {
+                        println!("!!");
+                        success = true;
+                        break;
+                    }
+                    None => {
+                        // If no sample received, wait a bit and retry
+                        // Don't sleep after last attempt
+                        if retry < NUM_RETRIES {
+                            std::thread::sleep(Duration::from_millis(250));
+                            tunnel_a.propagate();
+                            tunnel_b.propagate();
+                        }
                     }
                 }
             }
-        }
 
-        if !success {
-            test_fail!("failed to receive event after {} attempts", NUM_RETRIES);
+            if !success {
+                test_fail!(
+                    "failed to receive {} event after {} attempts",
+                    i,
+                    NUM_RETRIES
+                );
+            }
         }
+    }
+
+    #[test]
+    fn propagates_one_event<S: Service>() {
+        propagates_n_events::<S>(1);
+    }
+
+    #[test]
+    fn propagates_two_events<S: Service>() {
+        propagates_n_events::<S>(1);
+    }
+    #[test]
+    fn propagates_ten_events<S: Service>() {
+        propagates_n_events::<S>(1);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
