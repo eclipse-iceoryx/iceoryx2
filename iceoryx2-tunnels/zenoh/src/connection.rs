@@ -75,20 +75,22 @@ impl core::fmt::Display for PropagationError {
 
 impl core::error::Error for PropagationError {}
 
-pub trait DataStream {
+pub trait Connection {
     fn propagate(&self) -> Result<(), PropagationError>;
 }
 
-/// Couples the ports required for streaming data from the local host to remote hosts.
-pub(crate) struct OutboundStream<'a, ServiceType: iceoryx2::service::Service> {
+/// A connection for propagating `iceoryx2` publish-subscribe payloads to remote hosts.
+pub(crate) struct OutboundPublishSubscribeConnection<'a, ServiceType: iceoryx2::service::Service> {
     iox_node_id: IceoryxNodeId,
     iox_service_config: IceoryxServiceConfig,
     iox_subscriber: IceoryxSubscriber<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     z_publisher: ZenohPublisher<'a>,
 }
 
-impl<ServiceType: iceoryx2::service::Service> DataStream for OutboundStream<'_, ServiceType> {
-    /// Propagate local payloads to the remote hosts.
+impl<ServiceType: iceoryx2::service::Service> Connection
+    for OutboundPublishSubscribeConnection<'_, ServiceType>
+{
+    /// Propagate local payloads to remote hosts.
     fn propagate(&self) -> Result<(), PropagationError> {
         loop {
             match unsafe { self.iox_subscriber.receive_custom_payload() } {
@@ -126,8 +128,9 @@ impl<ServiceType: iceoryx2::service::Service> DataStream for OutboundStream<'_, 
     }
 }
 
-impl<ServiceType: iceoryx2::service::Service> OutboundStream<'_, ServiceType> {
-    // Create a stream to propagate payloads for a particular iceoryx2 service to remote hosts.
+impl<ServiceType: iceoryx2::service::Service> OutboundPublishSubscribeConnection<'_, ServiceType> {
+    // Creates an outbound connection to remote hosts for publish-subscribe payloads for a
+    // particular service.
     pub fn create(
         iox_node_id: &IceoryxNodeId,
         iox_service_config: &IceoryxServiceConfig,
@@ -152,15 +155,17 @@ impl<ServiceType: iceoryx2::service::Service> OutboundStream<'_, ServiceType> {
     }
 }
 
-/// Couples the ports required for streaming data from remote hosts to the local host.
-pub(crate) struct InboundStream<ServiceType: iceoryx2::service::Service> {
+/// A connection for propagating `iceoryx2` publish-subscribe payloads from remote hosts.
+pub(crate) struct InboundPublishSubscribeConnection<ServiceType: iceoryx2::service::Service> {
     iox_service_config: IceoryxServiceConfig,
     iox_publisher: IceoryxPublisher<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     iox_notifier: IceoryxNotifier<ServiceType>,
     z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
 }
 
-impl<ServiceType: iceoryx2::service::Service> DataStream for InboundStream<ServiceType> {
+impl<ServiceType: iceoryx2::service::Service> Connection
+    for InboundPublishSubscribeConnection<ServiceType>
+{
     /// Propagate remote payloads to the local host.
     fn propagate(&self) -> Result<(), PropagationError> {
         let mut propagated = false;
@@ -228,9 +233,9 @@ impl<ServiceType: iceoryx2::service::Service> DataStream for InboundStream<Servi
     }
 }
 
-impl<ServiceType: iceoryx2::service::Service> InboundStream<ServiceType> {
-    // Create a stream to propagate payloads for a particular iceoryx2 service from remote
-    // hosts to the local host.
+impl<ServiceType: iceoryx2::service::Service> InboundPublishSubscribeConnection<ServiceType> {
+    // Creates an inbound connection to remote hosts for publish-subscribe payloads for a
+    // particular service.
     pub fn create(
         iox_service_config: &IceoryxServiceConfig,
         iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
@@ -258,13 +263,18 @@ impl<ServiceType: iceoryx2::service::Service> InboundStream<ServiceType> {
     }
 }
 
-/// Couples the outbound stream and inbound stream for a particular iceoryx2 service.
-pub(crate) struct BidirectionalStream<'a, ServiceType: iceoryx2::service::Service> {
-    outbound_stream: OutboundStream<'a, ServiceType>,
-    inbound_stream: InboundStream<ServiceType>,
+/// Couples the outbound and inbound connection for a particular iceoryx2 service.
+pub(crate) struct BidirectionalPublishSubscribeConnection<
+    'a,
+    ServiceType: iceoryx2::service::Service,
+> {
+    outbound_stream: OutboundPublishSubscribeConnection<'a, ServiceType>,
+    inbound_stream: InboundPublishSubscribeConnection<ServiceType>,
 }
 
-impl<ServiceType: iceoryx2::service::Service> DataStream for BidirectionalStream<'_, ServiceType> {
+impl<ServiceType: iceoryx2::service::Service> Connection
+    for BidirectionalPublishSubscribeConnection<'_, ServiceType>
+{
     /// Propagate local payloads to remote host and remote payloads to the local host.
     fn propagate(&self) -> Result<(), PropagationError> {
         self.outbound_stream.propagate()?;
@@ -274,8 +284,10 @@ impl<ServiceType: iceoryx2::service::Service> DataStream for BidirectionalStream
     }
 }
 
-impl<ServiceType: iceoryx2::service::Service> BidirectionalStream<'_, ServiceType> {
-    /// Create a bi-directional stream to propagate payloads for a particular iceoryx2 service
+impl<ServiceType: iceoryx2::service::Service>
+    BidirectionalPublishSubscribeConnection<'_, ServiceType>
+{
+    /// Create a bi-directional connection to propagate payloads for a particular iceoryx2 service
     /// to and from remote iceoryx2 instances via Zenoh.
     pub fn create(
         iox_node: &IceoryxNode<ServiceType>,
@@ -288,13 +300,13 @@ impl<ServiceType: iceoryx2::service::Service> BidirectionalStream<'_, ServiceTyp
         let iox_event_service = iox_create_event_service(iox_node, iox_service_config)
             .map_err(|_e| CreationError::IceoryxService)?;
 
-        let outbound_stream = OutboundStream::create(
+        let outbound_stream = OutboundPublishSubscribeConnection::create(
             iox_node.id(),
             iox_service_config,
             &iox_publish_subscribe_service,
             z_session,
         )?;
-        let inbound_stream = InboundStream::create(
+        let inbound_stream = InboundPublishSubscribeConnection::create(
             iox_service_config,
             &iox_publish_subscribe_service,
             &iox_event_service,
