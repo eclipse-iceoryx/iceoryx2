@@ -15,6 +15,7 @@ use std::collections::HashSet;
 use iceoryx2::node::Node as IceoryxNode;
 use iceoryx2::port::listener::Listener as IceoryxListener;
 use iceoryx2::port::notifier::Notifier as IceoryxNotifier;
+use iceoryx2::prelude::EventId;
 use iceoryx2::service::port_factory::event::PortFactory as IceoryxEventService;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::info;
@@ -69,14 +70,27 @@ impl<ServiceType: iceoryx2::service::Service> Connection
     for OutboundEventConnection<'_, ServiceType>
 {
     fn propagate(&self) -> Result<(), PropagationError> {
-        // TODO(correctness): group notifications, only forward one-per-unique-id
-        while let Ok(Some(_event_id)) = self.iox_listener.try_wait_one() {
-            self.z_notifier.put([]).wait().unwrap();
-            info!(
-                "PROPAGATED(iceoryx2->zenoh): EVENT {} [{}]",
-                self.iox_service_config.service_id().as_str(),
-                self.iox_service_config.name()
-            );
+        // Propagate all notified ids once
+        let mut notified_ids: HashSet<usize> = HashSet::new();
+        while let Ok(sample) = self.iox_listener.try_wait_one() {
+            match sample {
+                Some(event_id) => {
+                    if !notified_ids.contains(&event_id.as_value()) {
+                        self.z_notifier
+                            .put(event_id.as_value().to_ne_bytes())
+                            .wait()
+                            .unwrap();
+                        info!(
+                            "PROPAGATED(iceoryx2->zenoh): Event({}) {} [{}]",
+                            event_id.as_value(),
+                            self.iox_service_config.service_id().as_str(),
+                            self.iox_service_config.name()
+                        );
+                        notified_ids.insert(event_id.as_value());
+                    }
+                }
+                None => break,
+            }
         }
 
         Ok(())
@@ -91,14 +105,27 @@ pub(crate) struct InboundEventConnection<ServiceType: iceoryx2::service::Service
 
 impl<ServiceType: iceoryx2::service::Service> Connection for InboundEventConnection<ServiceType> {
     fn propagate(&self) -> Result<(), PropagationError> {
-        let _notified_empty = false;
-        let _notified_ids: HashSet<usize> = HashSet::new();
+        // Collect all notified ids
+        let mut received_ids: HashSet<usize> = HashSet::new();
+        while let Ok(Some(sample)) = self.z_listener.try_recv() {
+            let payload = sample.payload();
+            if payload.len() == std::mem::size_of::<usize>() {
+                let id: usize =
+                    unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
+                received_ids.insert(id);
+            } else {
+                // Error, invalid event id. Skip.
+            }
+        }
 
-        // TODO(correctness): group notifications, only forward one-per-unqiue-id
-        while let Ok(Some(_sample)) = self.z_listener.try_recv() {
-            self.iox_notifier.notify().unwrap();
+        // Propagate notifications received - once per event id
+        for id in received_ids {
+            self.iox_notifier
+                .notify_with_custom_event_id(EventId::new(id))
+                .unwrap();
             info!(
-                "PROPAGATED(iceoryx2<-zenoh): EVENT {} [{}]",
+                "PROPAGATED(iceoryx2<-zenoh): Event({}) {} [{}]",
+                id,
                 self.iox_service_config.service_id().as_str(),
                 self.iox_service_config.name()
             );

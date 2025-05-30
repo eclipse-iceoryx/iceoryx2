@@ -128,7 +128,7 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn discovers_remote_services<S: Service>() {
+    fn discovers_remote_services_via_zenoh<S: Service>() {
         // ==================== SETUP ====================
 
         // [[ COMMON ]]
@@ -293,8 +293,9 @@ mod zenoh_tunnel {
             tunnel_b.propagate();
 
             // Receive with retry
-            const NUM_RETRIES: usize = 10;
             let mut success = false;
+
+            const NUM_RETRIES: usize = 10;
             for retry in 0..NUM_RETRIES {
                 match iox_subscriber_b.receive().unwrap() {
                     Some(iox_sample_received_b) => {
@@ -446,8 +447,9 @@ mod zenoh_tunnel {
             tunnel_b.propagate();
 
             // Receive with retry
-            const NUM_RETRIES: usize = 10;
             let mut success = false;
+
+            const NUM_RETRIES: usize = 10;
             for retry in 0..NUM_RETRIES {
                 match iox_subscriber_b.receive().unwrap() {
                     Some(iox_sample_received_b) => {
@@ -503,7 +505,7 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn propagated_payloads_do_not_loop_back_from_zenoh<S: Service>() {
+    fn propagated_payloads_do_not_loop_back<S: Service>() {
         const PAYLOAD_DATA: &str = "WhenItRegisters";
 
         // ==================== SETUP ====================
@@ -708,8 +710,9 @@ mod zenoh_tunnel {
             tunnel_b.propagate();
 
             // Receive with retry
-            const NUM_RETRIES: usize = 10;
             let mut success = false;
+
+            const NUM_RETRIES: usize = 10;
             for retry in 0..NUM_RETRIES {
                 match iox_listener_b.try_wait_one().unwrap() {
                     Some(_event_id) => {
@@ -751,6 +754,131 @@ mod zenoh_tunnel {
     #[test]
     fn propagates_ten_events<S: Service>() {
         propagates_n_events::<S>(1);
+    }
+
+    #[test]
+    fn propagated_events_do_not_loop_back<S: Service>() {}
+
+    #[test]
+    fn received_events_are_consolidated_by_id<S: Service>() {
+        // [[ COMMON ]]
+        let iox_service_name = mock_service_name();
+
+        // [[ HOST A ]]
+        // Tunnel
+        let z_config_a = zenoh::Config::default();
+        let iox_config_a = generate_isolated_config();
+        let tunnel_config_a = TunnelConfig::default();
+        let mut tunnel_a =
+            Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+
+        // Service
+        let iox_node_a = NodeBuilder::new()
+            .config(&iox_config_a)
+            .create::<S>()
+            .unwrap();
+        let iox_service_a = iox_node_a
+            .service_builder(&iox_service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+
+        // Notifier
+        let iox_notifier_a = iox_service_a.notifier_builder().create().unwrap();
+
+        // [[ HOST B ]]
+        // Tunnel
+        let z_config_b = zenoh::Config::default();
+        let iox_config_b = generate_isolated_config();
+        let tunnel_config_b = TunnelConfig::default();
+        let mut tunnel_b =
+            Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+
+        // Service
+        let iox_node_b = NodeBuilder::new()
+            .config(&iox_config_b)
+            .create::<S>()
+            .unwrap();
+        let iox_service_b = iox_node_b
+            .service_builder(&iox_service_name)
+            .event()
+            .open_or_create()
+            .unwrap();
+
+        // Listener
+        let iox_listener_b = iox_service_b.listener_builder().create().unwrap();
+
+        // [[ BOTH ]]
+        // Discover Services
+        tunnel_a.discover().unwrap();
+        let tunneled_services_a = tunnel_a.tunneled_services();
+        assert_that!(tunneled_services_a.len(), eq 1);
+        assert_that!(tunneled_services_a
+            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+
+        tunnel_b.discover().unwrap();
+        let tunneled_services_b = tunnel_b.tunneled_services();
+        assert_that!(tunneled_services_b.len(), eq 1);
+        assert_that!(tunneled_services_b
+            .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
+
+        // Discovered service should be the same ID in both hosts
+        assert_that!(iox_service_a.service_id(), eq iox_service_b.service_id());
+
+        // ==================== TEST =====================
+
+        // Send multiple notifications
+
+        let event_a = EventId::new(42);
+        let event_b = EventId::new(777);
+        let event_c = EventId::new(1234);
+
+        const NUM_NOTIFICATIONS: usize = 10;
+        for _ in 0..NUM_NOTIFICATIONS {
+            iox_notifier_a.notify_with_custom_event_id(event_a).unwrap();
+            iox_notifier_a.notify_with_custom_event_id(event_b).unwrap();
+            iox_notifier_a.notify_with_custom_event_id(event_c).unwrap();
+        }
+
+        // Propagate over tunnels
+        tunnel_a.propagate();
+        tunnel_b.propagate();
+
+        // Receive with retry
+        let mut num_notifications_a = 0;
+        let mut num_notifications_b = 0;
+        let mut num_notifications_c = 0;
+
+        const NUM_RETRIES: usize = 10;
+        for retry in 0..NUM_RETRIES {
+            iox_listener_b
+                .try_wait_all(|id| {
+                    if id == event_a {
+                        num_notifications_a += 1;
+                    }
+                    if id == event_b {
+                        num_notifications_b += 1;
+                    }
+                    if id == event_c {
+                        num_notifications_c += 1;
+                    }
+                })
+                .unwrap();
+
+            if num_notifications_a == 0 || num_notifications_b == 0 || num_notifications_c == 0 {
+                if retry < NUM_RETRIES {
+                    std::thread::sleep(Duration::from_millis(250));
+                    tunnel_a.propagate();
+                    tunnel_b.propagate();
+                }
+            }
+        }
+
+        assert_that!(num_notifications_a, eq 1);
+        assert_that!(num_notifications_b, eq 1);
+        assert_that!(num_notifications_c, eq 1);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
