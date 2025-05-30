@@ -94,10 +94,10 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
                             {
                                 match iox_service_details.messaging_pattern() {
                                     MessagingPattern::PublishSubscribe(_) => {
-                                        on_discovered(&iox_service_details);
+                                        on_discovered(iox_service_details);
                                     }
                                     MessagingPattern::Event(_) => {
-                                        on_discovered(&iox_service_details);
+                                        on_discovered(iox_service_details);
                                     }
                                     _ => { /* Not supported. Nothing to do. */ }
                                 }
@@ -123,10 +123,10 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
 
                     match iox_service_details.messaging_pattern() {
                         MessagingPattern::PublishSubscribe(_) => {
-                            on_discovered(&iox_service_details);
+                            on_discovered(iox_service_details);
                         }
                         MessagingPattern::Event(_) => {
-                            on_discovered(&iox_service_details);
+                            on_discovered(iox_service_details);
                         }
                         _ => { /* Not supported. Nothing to do. */ }
                     }

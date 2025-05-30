@@ -10,7 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::collections::HashSet;
+use super::Connection;
+use super::PropagationError;
+use crate::iox_create_event_service;
+use crate::iox_create_listener;
+use crate::iox_create_notifier;
+use crate::z_announce_service;
+use crate::z_create_listener;
+use crate::z_create_notifier;
 
 use iceoryx2::node::Node as IceoryxNode;
 use iceoryx2::port::listener::Listener as IceoryxListener;
@@ -27,20 +34,14 @@ use zenoh::sample::Sample;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
 
-use super::Connection;
-use super::PropagationError;
-use crate::iox_create_event_service;
-use crate::iox_create_listener;
-use crate::iox_create_notifier;
-use crate::z_announce_service;
-use crate::z_create_listener;
-use crate::z_create_notifier;
+use std::collections::HashSet;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     Error,
 }
 
+/// A connection for propagating `iceoryx2` events to remote hosts.
 pub(crate) struct OutboundEventConnection<'a, ServiceType: iceoryx2::service::Service> {
     iox_service_config: IceoryxServiceConfig,
     iox_listener: IceoryxListener<ServiceType>,
@@ -48,6 +49,8 @@ pub(crate) struct OutboundEventConnection<'a, ServiceType: iceoryx2::service::Se
 }
 
 impl<ServiceType: iceoryx2::service::Service> OutboundEventConnection<'_, ServiceType> {
+    // Creates an outbound connection to remote hosts for events for a
+    // particular service.
     pub fn create(
         iox_service_config: &IceoryxServiceConfig,
         iox_event_service: &IceoryxEventService<ServiceType>,
@@ -69,6 +72,7 @@ impl<ServiceType: iceoryx2::service::Service> OutboundEventConnection<'_, Servic
 impl<ServiceType: iceoryx2::service::Service> Connection
     for OutboundEventConnection<'_, ServiceType>
 {
+    /// Propagate local events received on the service to remote hosts.
     fn propagate(&self) -> Result<(), PropagationError> {
         // Propagate all notified ids once
         let mut notified_ids: HashSet<usize> = HashSet::new();
@@ -79,9 +83,9 @@ impl<ServiceType: iceoryx2::service::Service> Connection
                         self.z_notifier
                             .put(event_id.as_value().to_ne_bytes())
                             .wait()
-                            .unwrap();
+                            .map_err(|_| PropagationError::Error)?;
                         info!(
-                            "PROPAGATED(iceoryx2->zenoh): Event({}) {} [{}]",
+                            "PROPAGATED(iceoryx->zenoh): Event({}) {} [{}]",
                             event_id.as_value(),
                             self.iox_service_config.service_id().as_str(),
                             self.iox_service_config.name()
@@ -97,45 +101,16 @@ impl<ServiceType: iceoryx2::service::Service> Connection
     }
 }
 
+/// A connection for propagating `iceoryx2` events from remote hosts.
 pub(crate) struct InboundEventConnection<ServiceType: iceoryx2::service::Service> {
     iox_service_config: IceoryxServiceConfig,
     iox_notifier: IceoryxNotifier<ServiceType>,
     z_listener: ZenohSubscriber<FifoChannelHandler<Sample>>,
 }
 
-impl<ServiceType: iceoryx2::service::Service> Connection for InboundEventConnection<ServiceType> {
-    fn propagate(&self) -> Result<(), PropagationError> {
-        // Collect all notified ids
-        let mut received_ids: HashSet<usize> = HashSet::new();
-        while let Ok(Some(sample)) = self.z_listener.try_recv() {
-            let payload = sample.payload();
-            if payload.len() == std::mem::size_of::<usize>() {
-                let id: usize =
-                    unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
-                received_ids.insert(id);
-            } else {
-                // Error, invalid event id. Skip.
-            }
-        }
-
-        // Propagate notifications received - once per event id
-        for id in received_ids {
-            self.iox_notifier
-                .__internal_notify(EventId::new(id), true)
-                .unwrap();
-            info!(
-                "PROPAGATED(iceoryx2<-zenoh): Event({}) {} [{}]",
-                id,
-                self.iox_service_config.service_id().as_str(),
-                self.iox_service_config.name()
-            );
-        }
-
-        Ok(())
-    }
-}
-
 impl<ServiceType: iceoryx2::service::Service> InboundEventConnection<ServiceType> {
+    // Creates an inbound connection from remote hosts for events for a
+    // particular service.
     pub fn create(
         iox_service_config: &IceoryxServiceConfig,
         iox_event_service: &IceoryxEventService<ServiceType>,
@@ -154,23 +129,49 @@ impl<ServiceType: iceoryx2::service::Service> InboundEventConnection<ServiceType
     }
 }
 
-pub(crate) struct BidirectionalEventConnection<'a, ServiceType: iceoryx2::service::Service> {
-    outbound_connection: OutboundEventConnection<'a, ServiceType>,
-    inbound_connection: InboundEventConnection<ServiceType>,
-}
-
-impl<ServiceType: iceoryx2::service::Service> Connection
-    for BidirectionalEventConnection<'_, ServiceType>
-{
+impl<ServiceType: iceoryx2::service::Service> Connection for InboundEventConnection<ServiceType> {
+    /// Propagate remote events received on the service to remote hosts.
     fn propagate(&self) -> Result<(), PropagationError> {
-        self.outbound_connection.propagate()?;
-        self.inbound_connection.propagate()?;
+        // Collect all notified ids
+        let mut received_ids: HashSet<usize> = HashSet::new();
+        while let Ok(Some(sample)) = self.z_listener.try_recv() {
+            let payload = sample.payload();
+            if payload.len() == std::mem::size_of::<usize>() {
+                let id: usize =
+                    unsafe { payload.to_bytes().as_ptr().cast::<usize>().read_unaligned() };
+                received_ids.insert(id);
+            } else {
+                // Error, invalid event id. Skip.
+            }
+        }
+
+        // Propagate notifications received - once per event id
+        for id in received_ids {
+            self.iox_notifier
+                .__internal_notify(EventId::new(id), true)
+                .map_err(|_| PropagationError::Error)?;
+            info!(
+                "PROPAGATED(iceoryx<-zenoh): Event({}) {} [{}]",
+                id,
+                self.iox_service_config.service_id().as_str(),
+                self.iox_service_config.name()
+            );
+        }
 
         Ok(())
     }
 }
 
+/// Couples the outbound and inbound connection for events
+/// from particular iceoryx2 service.
+pub(crate) struct BidirectionalEventConnection<'a, ServiceType: iceoryx2::service::Service> {
+    outbound_connection: OutboundEventConnection<'a, ServiceType>,
+    inbound_connection: InboundEventConnection<ServiceType>,
+}
+
 impl<ServiceType: iceoryx2::service::Service> BidirectionalEventConnection<'_, ServiceType> {
+    /// Create a bi-directional connection to propagate events for a particular iceoryx2 service
+    /// to and from remote iceoryx2 instances via Zenoh.
     pub fn create(
         iox_node: &IceoryxNode<ServiceType>,
         z_session: &ZenohSession,
@@ -185,11 +186,23 @@ impl<ServiceType: iceoryx2::service::Service> BidirectionalEventConnection<'_, S
         let outbound_connection =
             OutboundEventConnection::create(iox_service_config, &iox_event_service, z_session)?;
 
-        z_announce_service(&z_session, iox_service_config).map_err(|_e| CreationError::Error)?;
+        z_announce_service(z_session, iox_service_config).map_err(|_e| CreationError::Error)?;
 
         Ok(Self {
             outbound_connection,
             inbound_connection,
         })
+    }
+}
+
+impl<ServiceType: iceoryx2::service::Service> Connection
+    for BidirectionalEventConnection<'_, ServiceType>
+{
+    /// Propagate local events to remote host and remote events to the local host.
+    fn propagate(&self) -> Result<(), PropagationError> {
+        self.outbound_connection.propagate()?;
+        self.inbound_connection.propagate()?;
+
+        Ok(())
     }
 }
