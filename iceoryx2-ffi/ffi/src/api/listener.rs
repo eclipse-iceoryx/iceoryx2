@@ -68,15 +68,15 @@ impl<'a, T> AcquireFileDescriptorHopper<'a, T> {
     }
 }
 
-impl<T: FileDescriptorBased> AcquireFileDescriptor for AcquireFileDescriptorHopper<'_, T> {
+impl<T> AcquireFileDescriptor for AcquireFileDescriptorHopper<'_, T> {
     fn acquire_file_descriptor(&self) -> Option<&FileDescriptor> {
-        Some(self.value.file_descriptor())
+        None
     }
 }
 
-impl<T> AcquireFileDescriptorHopper<'_, T> {
+impl<T: FileDescriptorBased> AcquireFileDescriptorHopper<'_, T> {
     fn acquire_file_descriptor(&self) -> Option<&FileDescriptor> {
-        None
+        Some(self.value.file_descriptor())
     }
 }
 
