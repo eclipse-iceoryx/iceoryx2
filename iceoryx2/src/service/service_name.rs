@@ -115,7 +115,7 @@ impl ServiceName {
         name.starts_with(INTERNAL_SERVICE_PREFIX)
     }
 
-    /// Returns the maximum length of a [`ServicecName`].
+    /// Returns the maximum length of a [`ServiceName`].
     pub fn max_len() -> usize {
         ServiceNameString::capacity()
     }
