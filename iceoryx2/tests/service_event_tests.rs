@@ -1524,6 +1524,50 @@ mod service_event {
         assert_that!(counter, eq 1);
     }
 
+    #[test]
+    fn notifier_does_not_notify_listener_from_same_node_id_when_requested<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node_1 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let node_2 = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let event_id = EventId::new(23);
+
+        let sut_1 = node_1
+            .service_builder(&service_name)
+            .event()
+            .create()
+            .unwrap();
+
+        let sut_2 = node_2
+            .service_builder(&service_name)
+            .event()
+            .open()
+            .unwrap();
+
+        let notifier = sut_1
+            .notifier_builder()
+            .default_event_id(event_id)
+            .create()
+            .unwrap();
+        let listener_1 = sut_1.listener_builder().create().unwrap();
+        let listener_2 = sut_2.listener_builder().create().unwrap();
+
+        assert_that!(notifier.__internal_notify(event_id, true), is_ok);
+
+        let mut received_events = 0;
+        for _ in listener_1.try_wait_one().unwrap().iter() {
+            received_events += 1;
+        }
+        assert_that!(received_events, eq 0);
+
+        let mut received_events = 0;
+        for event in listener_2.try_wait_one().unwrap().iter() {
+            assert_that!(*event, eq event_id);
+            received_events += 1;
+        }
+        assert_that!(received_events, eq 1);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 
