@@ -420,7 +420,7 @@ impl<Service: service::Service> Notifier<Service> {
 
         for i in 0..self.listener_connections.len() {
             if let Some(ref connection) = self.listener_connections.get(i) {
-                if !skip_self_deliver || (skip_self_deliver && connection.node_id != self.node_id) {
+                if !(skip_self_deliver && connection.node_id == self.node_id) {
                     match connection.notifier.notify(value) {
                         Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
                             self.listener_connections.remove(i);
