@@ -121,7 +121,7 @@ impl<ServiceType: iceoryx2::service::Service> Connection for InboundEventConnect
         // Propagate notifications received - once per event id
         for id in received_ids {
             self.iox_notifier
-                .notify_with_custom_event_id(EventId::new(id))
+                .__internal_notify(EventId::new(id), true)
                 .unwrap();
             info!(
                 "PROPAGATED(iceoryx2<-zenoh): Event({}) {} [{}]",

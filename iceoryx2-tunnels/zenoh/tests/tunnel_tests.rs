@@ -317,7 +317,7 @@ mod zenoh_tunnel {
                         // If no sample received, wait a bit and retry
                         // Don't sleep after last attempt
                         if retry < NUM_RETRIES {
-                            std::thread::sleep(Duration::from_millis(250));
+                            std::thread::sleep(Duration::from_millis(100));
                             tunnel_a.propagate();
                             tunnel_b.propagate();
                         }
@@ -471,7 +471,7 @@ mod zenoh_tunnel {
                         // If no sample received, wait a bit and retry
                         // Don't sleep after last attempt
                         if retry < NUM_RETRIES {
-                            std::thread::sleep(Duration::from_millis(250));
+                            std::thread::sleep(Duration::from_millis(100));
                             tunnel_a.propagate();
                             tunnel_b.propagate();
                         }
@@ -723,7 +723,7 @@ mod zenoh_tunnel {
                         // If no sample received, wait a bit and retry
                         // Don't sleep after last attempt
                         if retry < NUM_RETRIES {
-                            std::thread::sleep(Duration::from_millis(250));
+                            std::thread::sleep(Duration::from_millis(100));
                             tunnel_a.propagate();
                             tunnel_b.propagate();
                         }
@@ -830,22 +830,28 @@ mod zenoh_tunnel {
         // Send notification
         iox_notifier_a.notify().unwrap();
 
+        // Drain the notification at host a
+        iox_listener_a.try_wait_all(|_| {}).unwrap();
+
         // Propagate over tunnels
         tunnel_a.propagate();
         tunnel_b.propagate();
 
         // Receive at listener b with retry
+        let mut success = false;
+
         const NUM_RETRIES: usize = 10;
         for retry in 0..NUM_RETRIES {
             match iox_listener_b.try_wait_one().unwrap() {
                 Some(_event_id) => {
+                    success = true;
                     break;
                 }
                 None => {
                     // If no sample received, wait a bit and retry
                     // Don't sleep after last attempt
                     if retry < NUM_RETRIES {
-                        std::thread::sleep(Duration::from_millis(250));
+                        std::thread::sleep(Duration::from_millis(100));
                         tunnel_a.propagate();
                         tunnel_b.propagate();
                     }
@@ -853,11 +859,21 @@ mod zenoh_tunnel {
             }
         }
 
+        if !success {
+            test_fail!(
+                "failed to receive expected event after {} attempts",
+                NUM_RETRIES
+            );
+        }
+
+        // Wait for Zenoh ...
         for _ in 0..NUM_RETRIES {
             tunnel_a.propagate();
             tunnel_b.propagate();
+            std::thread::sleep(Duration::from_millis(100));
         }
 
+        // Notification should not have looped back from b to a
         let result = iox_listener_a.try_wait_one();
         assert_that!(result, is_ok);
         let sample = result.unwrap();
@@ -974,7 +990,7 @@ mod zenoh_tunnel {
 
             if num_notifications_a == 0 || num_notifications_b == 0 || num_notifications_c == 0 {
                 if retry < NUM_RETRIES {
-                    std::thread::sleep(Duration::from_millis(250));
+                    std::thread::sleep(Duration::from_millis(100));
                     tunnel_a.propagate();
                     tunnel_b.propagate();
                 }
