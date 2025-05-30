@@ -288,17 +288,49 @@ pub unsafe fn pthread_attr_setaffinity_np(
     Errno::ESUCCES as int
 }
 
+struct CallbackArguments {
+    startup_barrier: Barrier,
+    start_routine: unsafe extern "C" fn(*mut void) -> *mut void,
+    arg: *mut void,
+}
+
+unsafe extern "C" fn thread_callback(args: *mut void) -> *mut void {
+    let thread = args as *mut CallbackArguments;
+
+    let start_routine = (*thread).start_routine;
+    let arg = (*thread).arg;
+    let startup_barrier = &(*thread).startup_barrier;
+    startup_barrier.wait(wait, wake_all);
+
+    start_routine(arg);
+
+    core::ptr::null_mut()
+}
+
 pub unsafe fn pthread_create(
     thread: *mut pthread_t,
     attr: *const pthread_attr_t,
     start_routine: unsafe extern "C" fn(*mut void) -> *mut void,
     arg: *mut void,
 ) -> int {
-    let result = crate::internal::pthread_create(thread, &(*attr).attr, Some(start_routine), arg);
+    let mut thread_args = CallbackArguments {
+        startup_barrier: Barrier::new(2),
+        start_routine,
+        arg,
+    };
+
+    let result = crate::internal::pthread_create(
+        thread,
+        &(*attr).attr,
+        Some(thread_callback),
+        (&mut thread_args as *mut CallbackArguments).cast(),
+    );
     if result == 0 {
         ThreadStates::get_instance().add(*thread);
     }
     ThreadStates::get_instance().get_mut(*thread).affinity = (*attr).affinity;
+
+    thread_args.startup_barrier.wait(wait, wake_all);
     result
 }
 
