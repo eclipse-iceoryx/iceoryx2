@@ -37,12 +37,7 @@ use crate::z_create_notifier;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    IceoryxService,
-    IceoryxNotifier,
-    IceoryxListener,
-    ZenohNotifier,
-    ZenohListener,
-    ZenohAnnouncement,
+    Error,
 }
 
 pub(crate) struct OutboundEventConnection<'a, ServiceType: iceoryx2::service::Service> {
@@ -58,9 +53,9 @@ impl<ServiceType: iceoryx2::service::Service> OutboundEventConnection<'_, Servic
         z_session: &ZenohSession,
     ) -> Result<Self, CreationError> {
         let iox_listener = iox_create_listener(iox_event_service, iox_service_config)
-            .map_err(|_e| CreationError::IceoryxListener)?;
-        let z_notifier = z_create_notifier(z_session, iox_service_config)
-            .map_err(|_e| CreationError::ZenohNotifier)?;
+            .map_err(|_e| CreationError::Error)?;
+        let z_notifier =
+            z_create_notifier(z_session, iox_service_config).map_err(|_e| CreationError::Error)?;
 
         Ok(Self {
             iox_service_config: iox_service_config.clone(),
@@ -120,9 +115,9 @@ impl<ServiceType: iceoryx2::service::Service> InboundEventConnection<ServiceType
         z_session: &ZenohSession,
     ) -> Result<Self, CreationError> {
         let iox_notifier = iox_create_notifier(iox_event_service, iox_service_config)
-            .map_err(|_e| CreationError::IceoryxNotifier)?;
-        let z_listener = z_create_listener(z_session, iox_service_config)
-            .map_err(|_e| CreationError::ZenohListener)?;
+            .map_err(|_e| CreationError::Error)?;
+        let z_listener =
+            z_create_listener(z_session, iox_service_config).map_err(|_e| CreationError::Error)?;
 
         Ok(Self {
             iox_service_config: iox_service_config.clone(),
@@ -156,15 +151,14 @@ impl<ServiceType: iceoryx2::service::Service> BidirectionalEventConnection<'_, S
     ) -> Result<Self, CreationError> {
         let iox_event_service =
             iox_create_event_service::<ServiceType>(iox_node, iox_service_config)
-                .map_err(|_e| CreationError::IceoryxService)?;
+                .map_err(|_e| CreationError::Error)?;
 
         let inbound_connection =
             InboundEventConnection::create(iox_service_config, &iox_event_service, z_session)?;
         let outbound_connection =
             OutboundEventConnection::create(iox_service_config, &iox_event_service, z_session)?;
 
-        z_announce_service(&z_session, iox_service_config)
-            .map_err(|_e| CreationError::ZenohAnnouncement)?;
+        z_announce_service(&z_session, iox_service_config).map_err(|_e| CreationError::Error)?;
 
         Ok(Self {
             outbound_connection,
