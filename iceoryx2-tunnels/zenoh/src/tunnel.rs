@@ -249,6 +249,10 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
                     self.event_connections
                         .insert(iox_service_id.clone(), connection);
+
+                    // Announce Service to Zenoh
+                    z_announce_service(&self.z_session, iox_service_config)
+                        .map_err(|_e| DiscoveryError::FailureToAnnounceServiceRemotely)?;
                 }
 
                 Ok(())
@@ -321,25 +325,53 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                         serde_json::from_slice::<IceoryxServiceConfig>(&sample.payload().to_bytes())
                     {
                         let iox_service_id = iox_service_config.service_id();
-                        if !self
-                            .publish_subscribe_connectons
-                            .contains_key(iox_service_id)
-                        {
-                            info!(
-                                "DISCOVERED (zenoh): {} [{}]",
-                                iox_service_id.as_str(),
-                                iox_service_config.name()
-                            );
+                        match iox_service_config.messaging_pattern() {
+                            MessagingPattern::RequestResponse(_) => todo!(),
+                            MessagingPattern::PublishSubscribe(_) => {
+                                if !self
+                                    .publish_subscribe_connectons
+                                    .contains_key(iox_service_id)
+                                {
+                                    info!(
+                                        "DISCOVERED (zenoh): PUBLISH_SUBSCRIBE {} [{}]",
+                                        iox_service_id.as_str(),
+                                        iox_service_config.name()
+                                    );
 
-                            let connection = BidirectionalPublishSubscribeConnection::create(
-                                &self.iox_node,
-                                &self.z_session,
-                                &iox_service_config,
-                            )
-                            .map_err(|_e| DiscoveryError::FailureToEstablishConnection)?;
+                                    let connection =
+                                        BidirectionalPublishSubscribeConnection::create(
+                                            &self.iox_node,
+                                            &self.z_session,
+                                            &iox_service_config,
+                                        )
+                                        .map_err(|_e| {
+                                            DiscoveryError::FailureToEstablishConnection
+                                        })?;
 
-                            self.publish_subscribe_connectons
-                                .insert(iox_service_id.clone(), connection);
+                                    self.publish_subscribe_connectons
+                                        .insert(iox_service_id.clone(), connection);
+                                }
+                            }
+                            MessagingPattern::Event(_) => {
+                                if !self.event_connections.contains_key(iox_service_id) {
+                                    info!(
+                                        "DISCOVERED (zenoh): EVENT {} [{}]",
+                                        iox_service_id.as_str(),
+                                        iox_service_config.name()
+                                    );
+
+                                    let connection = BidirectionalEventConnection::create(
+                                        &self.iox_node,
+                                        &self.z_session,
+                                        &iox_service_config,
+                                    )
+                                    .map_err(|_e| DiscoveryError::FailureToEstablishConnection)?;
+
+                                    self.event_connections
+                                        .insert(iox_service_id.clone(), connection);
+                                }
+                            }
+                            _ => todo!(),
                         }
                     }
                 }
