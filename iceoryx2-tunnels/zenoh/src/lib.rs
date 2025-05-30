@@ -48,11 +48,11 @@ use zenoh::Session as ZenohSession;
 use zenoh::Wait;
 
 /// Creates an iceoryx2 publish-subscribe service matching the provided service configuration.
-pub(crate) fn iox_create_publish_subscribe_service<Service: iceoryx2::service::Service>(
-    iox_node: &IceoryxNode<Service>,
+pub(crate) fn iox_create_publish_subscribe_service<ServiceType: iceoryx2::service::Service>(
+    iox_node: &IceoryxNode<ServiceType>,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<
-    IceoryxPublishSubscribeService<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    IceoryxPublishSubscribeService<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     PublishSubscribeOpenOrCreateError,
 > {
     let iox_publish_subscribe_config = iox_service_config.publish_subscribe();
@@ -84,10 +84,10 @@ pub(crate) fn iox_create_publish_subscribe_service<Service: iceoryx2::service::S
 }
 
 /// Creates an iceoryx event service matching the provided service configuration.
-pub(crate) fn iox_create_event_service<Service: iceoryx2::service::Service>(
-    iox_node: &IceoryxNode<Service>,
+pub(crate) fn iox_create_event_service<ServiceType: iceoryx2::service::Service>(
+    iox_node: &IceoryxNode<ServiceType>,
     iox_service_config: &IceoryxServiceConfig,
-) -> Result<IceoryxEventService<Service>, EventOpenOrCreateError> {
+) -> Result<IceoryxEventService<ServiceType>, EventOpenOrCreateError> {
     let iox_service = iox_node
         .service_builder(iox_service_config.name())
         .event()
@@ -97,15 +97,15 @@ pub(crate) fn iox_create_event_service<Service: iceoryx2::service::Service>(
 }
 
 /// Creates an iceoryx publisher to the provided service.
-pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
+pub(crate) fn iox_create_publisher<ServiceType: iceoryx2::service::Service>(
     iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
-        Service,
+        ServiceType,
         [CustomPayloadMarker],
         CustomHeaderMarker,
     >,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<
-    IceoryxPublisher<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    IceoryxPublisher<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     PublisherCreateError,
 > {
     let iox_publisher = iox_publish_subscribe_service
@@ -114,7 +114,7 @@ pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
         .create()?;
 
     info!(
-        "CREATED(iceoryx2): Publisher {} [{}]",
+        "CREATED(iceoryx): Publisher {} [{}]",
         iox_service_config.service_id().as_str(),
         iox_service_config.name()
     );
@@ -123,15 +123,15 @@ pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
 }
 
 /// Creates an iceoryx subscriber to the provided service.
-pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
+pub(crate) fn iox_create_subscriber<ServiceType: iceoryx2::service::Service>(
     iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
-        Service,
+        ServiceType,
         [CustomPayloadMarker],
         CustomHeaderMarker,
     >,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<
-    IceoryxSubscriber<Service, [CustomPayloadMarker], CustomHeaderMarker>,
+    IceoryxSubscriber<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     SubscriberCreateError,
 > {
     let iox_subscriber = iox_publish_subscribe_service
@@ -139,7 +139,7 @@ pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
         .create()?;
 
     info!(
-        "CREATED(iceoryx2): Subscriber {} [{}]",
+        "CREATED(iceoryx): Subscriber {} [{}]",
         iox_service_config.service_id().as_str(),
         iox_service_config.name()
     );
@@ -148,14 +148,14 @@ pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
 }
 
 /// Creates an iceoryx notifier to the provided service.
-pub(crate) fn iox_create_notifier<Service: iceoryx2::service::Service>(
-    iox_event_service: &IceoryxEventService<Service>,
+pub(crate) fn iox_create_notifier<ServiceType: iceoryx2::service::Service>(
+    iox_event_service: &IceoryxEventService<ServiceType>,
     iox_service_config: &IceoryxServiceConfig,
-) -> Result<IceoryxNotifier<Service>, NotifierCreateError> {
+) -> Result<IceoryxNotifier<ServiceType>, NotifierCreateError> {
     let iox_notifier = iox_event_service.notifier_builder().create()?;
 
     info!(
-        "CREATED(iceoryx2): Notifier {} [{}]",
+        "CREATED(iceoryx): Notifier {} [{}]",
         iox_service_config.service_id().as_str(),
         iox_service_config.name()
     );
@@ -164,14 +164,14 @@ pub(crate) fn iox_create_notifier<Service: iceoryx2::service::Service>(
 }
 
 /// Creates an iceoryx listener for the provided service.
-pub(crate) fn iox_create_listener<Service: iceoryx2::service::Service>(
-    iox_event_service: &IceoryxEventService<Service>,
+pub(crate) fn iox_create_listener<ServiceType: iceoryx2::service::Service>(
+    iox_event_service: &IceoryxEventService<ServiceType>,
     iox_service_config: &IceoryxServiceConfig,
-) -> Result<IceoryxListener<Service>, ListenerCreateError> {
+) -> Result<IceoryxListener<ServiceType>, ListenerCreateError> {
     let iox_listener = iox_event_service.listener_builder().create()?;
 
     info!(
-        "CREATED(iceoryx2): Listener {} [{}]",
+        "CREATED(iceoryx): Listener {} [{}]",
         iox_service_config.service_id().as_str(),
         iox_service_config.name()
     );
@@ -204,6 +204,8 @@ pub(crate) fn z_create_subscriber(
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<ZenohSubscriber<FifoChannelHandler<Sample>>, zenoh::Error> {
     let z_key = keys::publish_subscribe(iox_service_config.service_id());
+
+    // TODO(correctness): Make handler type and properties configurable
     let z_subscriber = z_session
         .declare_subscriber(z_key.clone())
         .with(FifoChannel::new(10))
@@ -245,6 +247,8 @@ pub(crate) fn z_create_listener(
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<ZenohSubscriber<FifoChannelHandler<Sample>>, zenoh::Error> {
     let z_key = keys::event(iox_service_config.service_id());
+
+    // TODO(correctness): Make handler type and properties configurable
     let z_listener = z_session
         .declare_subscriber(z_key.clone())
         .with(FifoChannel::new(10))

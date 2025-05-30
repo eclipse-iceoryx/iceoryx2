@@ -18,8 +18,7 @@ pub use publish_subscribe::*;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PropagationError {
-    Outbound,
-    Inbound,
+    Error,
 }
 
 impl core::fmt::Display for PropagationError {

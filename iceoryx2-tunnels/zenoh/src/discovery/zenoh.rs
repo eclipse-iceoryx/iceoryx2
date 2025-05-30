@@ -48,11 +48,11 @@ impl<ServiceType: iceoryx2::service::Service> ZenohDiscovery<'_, ServiceType> {
         // Make query immediately - replies processed in first `discover()` call
         let z_query = z_querier.get().wait().map_err(|_e| CreationError::Error)?;
 
-        return Ok(Self {
+        Ok(Self {
             z_querier,
             z_query,
             _phantom: core::marker::PhantomData,
-        });
+        })
     }
 }
 
@@ -81,6 +81,9 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
         }
 
         // Make a new query for next `discover()` call
+        // NOTE: This results in all service details being resent - not optimal
+        // TODO(optimization): A solution to request all quereyables once whilst still retrieving
+        //                     querying new quereyables that appear
         self.z_query = self
             .z_querier
             .get()

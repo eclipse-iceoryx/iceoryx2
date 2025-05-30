@@ -31,7 +31,6 @@ pub(crate) struct IceoryxDiscovery<ServiceType: iceoryx2::service::Service> {
     iox_config: IceoryxConfig,
     iox_discovery_subscriber: Option<IceoryxSubscriber<ServiceType, DiscoveryUpdate, ()>>,
     iox_discovery_tracker: Option<IceoryxServiceTracker<ServiceType>>,
-    _phantom: core::marker::PhantomData<ServiceType>,
 }
 
 impl<ServiceType: iceoryx2::service::Service> IceoryxDiscovery<ServiceType> {
@@ -71,7 +70,6 @@ impl<ServiceType: iceoryx2::service::Service> IceoryxDiscovery<ServiceType> {
             iox_config: iox_config.clone(),
             iox_discovery_subscriber,
             iox_discovery_tracker,
-            _phantom: core::marker::PhantomData,
         })
     }
 }
@@ -94,10 +92,10 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
                             {
                                 match iox_service_details.messaging_pattern() {
                                     MessagingPattern::PublishSubscribe(_) => {
-                                        on_discovered(&iox_service_details);
+                                        on_discovered(iox_service_details);
                                     }
                                     MessagingPattern::Event(_) => {
-                                        on_discovered(&iox_service_details);
+                                        on_discovered(iox_service_details);
                                     }
                                     _ => { /* Not supported. Nothing to do. */ }
                                 }
@@ -123,10 +121,10 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
 
                     match iox_service_details.messaging_pattern() {
                         MessagingPattern::PublishSubscribe(_) => {
-                            on_discovered(&iox_service_details);
+                            on_discovered(iox_service_details);
                         }
                         MessagingPattern::Event(_) => {
-                            on_discovered(&iox_service_details);
+                            on_discovered(iox_service_details);
                         }
                         _ => { /* Not supported. Nothing to do. */ }
                     }

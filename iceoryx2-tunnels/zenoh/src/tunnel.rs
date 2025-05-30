@@ -64,17 +64,17 @@ impl core::fmt::Display for DiscoveryError {
 impl core::error::Error for DiscoveryError {}
 
 /// A tunnel for propagating iceoryx2 payloads across hosts via the Zenoh network middleware.
-pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
+pub struct Tunnel<'a, ServiceType: iceoryx2::service::Service> {
     z_session: ZenohSession,
-    z_discovery: ZenohDiscovery<'a, Service>,
-    iox_node: IceoryxNode<Service>,
-    iox_discovery: IceoryxDiscovery<Service>,
+    z_discovery: ZenohDiscovery<'a, ServiceType>,
+    iox_node: IceoryxNode<ServiceType>,
+    iox_discovery: IceoryxDiscovery<ServiceType>,
     publish_subscribe_connectons:
-        HashMap<IceoryxServiceId, BidirectionalPublishSubscribeConnection<'a, Service>>,
-    event_connections: HashMap<IceoryxServiceId, BidirectionalEventConnection<'a, Service>>,
+        HashMap<IceoryxServiceId, BidirectionalPublishSubscribeConnection<'a, ServiceType>>,
+    event_connections: HashMap<IceoryxServiceId, BidirectionalEventConnection<'a, ServiceType>>,
 }
 
-impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
+impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     /// Creates a new tunnel with the provided configuration.
     pub fn create(
         tunnel_config: &TunnelConfig,
@@ -93,7 +93,7 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
             .create::<Service>()
             .map_err(|_e| CreationError::Error)?;
         let iox_discovery =
-            IceoryxDiscovery::create(&iox_config, &iox_node, &tunnel_config.discovery_service)
+            IceoryxDiscovery::create(iox_config, &iox_node, &tunnel_config.discovery_service)
                 .map_err(|_e| CreationError::Error)?;
 
         let publish_subscribe_connectons: HashMap<
@@ -118,6 +118,7 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
         self.iox_discovery
             .discover(&mut |iox_service_config| {
                 on_discovery(
+                    Source::Iceoryx,
                     iox_service_config,
                     &self.iox_node,
                     &self.z_session,
@@ -130,6 +131,7 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
         self.z_discovery
             .discover(&mut |iox_service_config| {
                 on_discovery(
+                    Source::Zenoh,
                     iox_service_config,
                     &self.iox_node,
                     &self.z_session,
@@ -144,6 +146,7 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
 
     /// Propagates payloads between all connected hosts.
     pub fn propagate(&self) {
+        // TODO(correctioness): consolidate and forward errors
         for (id, connection) in &self.publish_subscribe_connectons {
             if let Err(e) = connection.propagate() {
                 error!("Failed to propagate ({:?}): {}", id, e);
@@ -167,23 +170,42 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
     }
 }
 
+enum Source {
+    Iceoryx,
+    Zenoh,
+}
+
+impl core::fmt::Display for Source {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Source::Iceoryx => write!(f, "iceoryx"),
+            Source::Zenoh => write!(f, "zenoh"),
+        }
+    }
+}
+
 /// Process a discovered service and create appropriate connections.
-fn on_discovery<'a, Service: iceoryx2::service::Service>(
+fn on_discovery<'a, ServiceType: iceoryx2::service::Service>(
+    source: Source,
     iox_service_config: &IceoryxServiceConfig,
-    iox_node: &IceoryxNode<Service>,
+    iox_node: &IceoryxNode<ServiceType>,
     z_session: &ZenohSession,
     publish_subscribe_connections: &mut HashMap<
         IceoryxServiceId,
-        BidirectionalPublishSubscribeConnection<'a, Service>,
+        BidirectionalPublishSubscribeConnection<'a, ServiceType>,
     >,
-    event_connections: &mut HashMap<IceoryxServiceId, BidirectionalEventConnection<'a, Service>>,
+    event_connections: &mut HashMap<
+        IceoryxServiceId,
+        BidirectionalEventConnection<'a, ServiceType>,
+    >,
 ) {
     let iox_service_id = iox_service_config.service_id();
     match iox_service_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
             if !publish_subscribe_connections.contains_key(iox_service_id) {
                 info!(
-                    "DISCOVERED: PublishSubscribe {} [{}]",
+                    "DISCOVERED({}): PublishSubscribe {} [{}]",
+                    source,
                     iox_service_id.as_str(),
                     iox_service_config.name()
                 );
@@ -201,7 +223,8 @@ fn on_discovery<'a, Service: iceoryx2::service::Service>(
         MessagingPattern::Event(_) => {
             if !event_connections.contains_key(iox_service_id) {
                 info!(
-                    "DISCOVERED: Event {} [{}]",
+                    "DISCOVERED({}): Event {} [{}]",
+                    source,
                     iox_service_id.as_str(),
                     iox_service_config.name()
                 );

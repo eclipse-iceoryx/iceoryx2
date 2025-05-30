@@ -59,47 +59,6 @@ pub(crate) struct OutboundPublishSubscribeConnection<'a, ServiceType: iceoryx2::
     z_publisher: ZenohPublisher<'a>,
 }
 
-impl<ServiceType: iceoryx2::service::Service> Connection
-    for OutboundPublishSubscribeConnection<'_, ServiceType>
-{
-    /// Propagate local payloads to remote hosts.
-    fn propagate(&self) -> Result<(), PropagationError> {
-        loop {
-            match unsafe { self.iox_subscriber.receive_custom_payload() } {
-                Ok(Some(sample)) => {
-                    if sample.header().node_id() == self.iox_node_id {
-                        // Ignore samples published by the gateway itself to prevent loopback.
-                        continue;
-                    }
-
-                    let ptr = sample.payload().as_ptr() as *const u8;
-                    let len = sample.len();
-                    let bytes = unsafe { core::slice::from_raw_parts(ptr, len) };
-
-                    let z_payload = ZBytes::from(bytes);
-                    if let Err(e) = self.z_publisher.put(z_payload).wait() {
-                        error!("Failed to propagate payload to zenoh: {}", e);
-                        return Err(PropagationError::Outbound);
-                    }
-
-                    info!(
-                        "PROPAGATED(iceoryx2->zenoh): PUBLISH_SUBSCRIBE {} [{}]",
-                        self.iox_service_config.service_id().as_str(),
-                        self.iox_service_config.name()
-                    );
-                }
-                Ok(None) => break, // No more samples available
-                Err(e) => {
-                    error!("Failed to receive custom payload from iceoryx: {}", e);
-                    return Err(PropagationError::Outbound);
-                }
-            }
-        }
-
-        Ok(())
-    }
-}
-
 impl<ServiceType: iceoryx2::service::Service> OutboundPublishSubscribeConnection<'_, ServiceType> {
     // Creates an outbound connection to remote hosts for publish-subscribe payloads for a
     // particular service.
@@ -128,6 +87,48 @@ impl<ServiceType: iceoryx2::service::Service> OutboundPublishSubscribeConnection
     }
 }
 
+impl<ServiceType: iceoryx2::service::Service> Connection
+    for OutboundPublishSubscribeConnection<'_, ServiceType>
+{
+    /// Propagate local payloads received on the service to remote hosts.
+    fn propagate(&self) -> Result<(), PropagationError> {
+        loop {
+            match unsafe { self.iox_subscriber.receive_custom_payload() } {
+                Ok(Some(sample)) => {
+                    if sample.header().node_id() == self.iox_node_id {
+                        // Ignore samples published by the gateway itself to prevent loopback.
+                        continue;
+                    }
+
+                    let ptr = sample.payload().as_ptr() as *const u8;
+                    let len = sample.len();
+                    let bytes = unsafe { core::slice::from_raw_parts(ptr, len) };
+
+                    // TODO(optimization): Is it possible to create the ZBytes struct without copy?
+                    let z_payload = ZBytes::from(bytes);
+                    if let Err(e) = self.z_publisher.put(z_payload).wait() {
+                        error!("Failed to propagate payload to zenoh: {}", e);
+                        return Err(PropagationError::Error);
+                    }
+
+                    info!(
+                        "PROPAGATED(iceoryx->zenoh): PublishSubscribe {} [{}]",
+                        self.iox_service_config.service_id().as_str(),
+                        self.iox_service_config.name()
+                    );
+                }
+                Ok(None) => break, // No more samples available
+                Err(e) => {
+                    error!("Failed to receive custom payload from iceoryx: {}", e);
+                    return Err(PropagationError::Error);
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
 /// A connection for propagating `iceoryx2` publish-subscribe payloads from remote hosts.
 pub(crate) struct InboundPublishSubscribeConnection<ServiceType: iceoryx2::service::Service> {
     iox_service_config: IceoryxServiceConfig,
@@ -135,10 +136,36 @@ pub(crate) struct InboundPublishSubscribeConnection<ServiceType: iceoryx2::servi
     z_subscriber: ZenohSubscriber<FifoChannelHandler<Sample>>,
 }
 
+impl<ServiceType: iceoryx2::service::Service> InboundPublishSubscribeConnection<ServiceType> {
+    // Creates an inbound connection from remote hosts for publish-subscribe payloads for a
+    // particular service.
+    pub fn create(
+        iox_service_config: &IceoryxServiceConfig,
+        iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
+            ServiceType,
+            [CustomPayloadMarker],
+            CustomHeaderMarker,
+        >,
+        z_session: &ZenohSession,
+    ) -> Result<Self, CreationError> {
+        let iox_publisher =
+            iox_create_publisher::<ServiceType>(iox_publish_subscribe_service, iox_service_config)
+                .map_err(|_e| CreationError::Error)?;
+        let z_subscriber = z_create_subscriber(z_session, iox_service_config)
+            .map_err(|_e| CreationError::Error)?;
+
+        Ok(Self {
+            iox_service_config: iox_service_config.clone(),
+            iox_publisher,
+            z_subscriber,
+        })
+    }
+}
+
 impl<ServiceType: iceoryx2::service::Service> Connection
     for InboundPublishSubscribeConnection<ServiceType>
 {
-    /// Propagate remote payloads to the local host.
+    /// Propagate remote publish-subscribe payloads received on the service to the local host.
     fn propagate(&self) -> Result<(), PropagationError> {
         for z_sample in self.z_subscriber.drain() {
             let iox_message_type_details = self
@@ -167,10 +194,10 @@ impl<ServiceType: iceoryx2::service::Service> Connection
                                 self.iox_service_config.name(),
                                 e
                             );
-                            return Err(PropagationError::Inbound);
+                            return Err(PropagationError::Error);
                         }
                         info!(
-                            "PROPAGATED(iceoryx2<-zenoh): PUBLISH_SUBSCRIBE {} [{}]",
+                            "PROPAGATED(iceoryx<-zenoh): PublishSubscribe {} [{}]",
                             self.iox_service_config.service_id().as_str(),
                             self.iox_service_config.name()
                         );
@@ -181,7 +208,7 @@ impl<ServiceType: iceoryx2::service::Service> Connection
                             self.iox_service_config.name(),
                             e
                         );
-                        return Err(PropagationError::Inbound);
+                        return Err(PropagationError::Error);
                     }
                 }
             }
@@ -191,51 +218,14 @@ impl<ServiceType: iceoryx2::service::Service> Connection
     }
 }
 
-impl<ServiceType: iceoryx2::service::Service> InboundPublishSubscribeConnection<ServiceType> {
-    // Creates an inbound connection to remote hosts for publish-subscribe payloads for a
-    // particular service.
-    pub fn create(
-        iox_service_config: &IceoryxServiceConfig,
-        iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
-            ServiceType,
-            [CustomPayloadMarker],
-            CustomHeaderMarker,
-        >,
-        z_session: &ZenohSession,
-    ) -> Result<Self, CreationError> {
-        let iox_publisher =
-            iox_create_publisher::<ServiceType>(iox_publish_subscribe_service, iox_service_config)
-                .map_err(|_e| CreationError::Error)?;
-        let z_subscriber = z_create_subscriber(z_session, iox_service_config)
-            .map_err(|_e| CreationError::Error)?;
-
-        Ok(Self {
-            iox_service_config: iox_service_config.clone(),
-            iox_publisher,
-            z_subscriber,
-        })
-    }
-}
-
-/// Couples the outbound and inbound connection for a particular iceoryx2 service.
+/// Couples the outbound and inbound connection for publish-subscribe payloads
+/// from particular iceoryx2 service.
 pub(crate) struct BidirectionalPublishSubscribeConnection<
     'a,
     ServiceType: iceoryx2::service::Service,
 > {
     outbound_connection: OutboundPublishSubscribeConnection<'a, ServiceType>,
     inbound_connection: InboundPublishSubscribeConnection<ServiceType>,
-}
-
-impl<ServiceType: iceoryx2::service::Service> Connection
-    for BidirectionalPublishSubscribeConnection<'_, ServiceType>
-{
-    /// Propagate local payloads to remote host and remote payloads to the local host.
-    fn propagate(&self) -> Result<(), PropagationError> {
-        self.outbound_connection.propagate()?;
-        self.inbound_connection.propagate()?;
-
-        Ok(())
-    }
 }
 
 impl<ServiceType: iceoryx2::service::Service>
@@ -264,11 +254,23 @@ impl<ServiceType: iceoryx2::service::Service>
             z_session,
         )?;
 
-        z_announce_service(&z_session, iox_service_config).map_err(|_e| CreationError::Error)?;
+        z_announce_service(z_session, iox_service_config).map_err(|_e| CreationError::Error)?;
 
         Ok(Self {
             outbound_connection,
             inbound_connection,
         })
+    }
+}
+
+impl<ServiceType: iceoryx2::service::Service> Connection
+    for BidirectionalPublishSubscribeConnection<'_, ServiceType>
+{
+    /// Propagate local payloads to remote host and remote payloads to the local host.
+    fn propagate(&self) -> Result<(), PropagationError> {
+        self.outbound_connection.propagate()?;
+        self.inbound_connection.propagate()?;
+
+        Ok(())
     }
 }
