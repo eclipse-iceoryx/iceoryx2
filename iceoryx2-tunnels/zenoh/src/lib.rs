@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod connection;
+mod discovery;
 pub mod keys;
 mod tunnel;
 
@@ -289,6 +290,13 @@ pub(crate) fn z_announce_service(
         }
     }
 
+    // Notify all current hosts.
+    z_session
+        .put(z_key.clone(), iox_service_config_serialized.clone())
+        .allowed_destination(Locality::Remote)
+        .wait()?;
+
+    // Set up a queryable to respond to future hosts.
     z_session
         .declare_queryable(z_key.clone())
         .callback(move |query| {
