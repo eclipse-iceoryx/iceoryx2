@@ -83,12 +83,11 @@ pub(crate) fn iox_create_publish_subscribe_service<Service: iceoryx2::service::S
     Ok(iox_service)
 }
 
-/// Creates an iceoryx2 event service matching the provided service configuration.
+/// Creates an iceoryx event service matching the provided service configuration.
 pub(crate) fn iox_create_event_service<Service: iceoryx2::service::Service>(
     iox_node: &IceoryxNode<Service>,
     iox_service_config: &IceoryxServiceConfig,
 ) -> Result<IceoryxEventService<Service>, EventOpenOrCreateError> {
-    // TODO(correctness): Use properties of existing event services to prevent clashing
     let iox_service = iox_node
         .service_builder(iox_service_config.name())
         .event()
@@ -97,7 +96,7 @@ pub(crate) fn iox_create_event_service<Service: iceoryx2::service::Service>(
     Ok(iox_service)
 }
 
-/// Creates an iceoryx2 publisher to the provided service.
+/// Creates an iceoryx publisher to the provided service.
 pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
     iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
         Service,
@@ -123,7 +122,7 @@ pub(crate) fn iox_create_publisher<Service: iceoryx2::service::Service>(
     Ok(iox_publisher)
 }
 
-/// Creates an iceoryx2 subscriber to the provided service.
+/// Creates an iceoryx subscriber to the provided service.
 pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
     iox_publish_subscribe_service: &IceoryxPublishSubscribeService<
         Service,
@@ -148,7 +147,7 @@ pub(crate) fn iox_create_subscriber<Service: iceoryx2::service::Service>(
     Ok(iox_subscriber)
 }
 
-/// Creates an iceoryx2 notifier to the provided service.
+/// Creates an iceoryx notifier to the provided service.
 pub(crate) fn iox_create_notifier<Service: iceoryx2::service::Service>(
     iox_event_service: &IceoryxEventService<Service>,
     iox_service_config: &IceoryxServiceConfig,
@@ -164,7 +163,7 @@ pub(crate) fn iox_create_notifier<Service: iceoryx2::service::Service>(
     Ok(iox_notifier)
 }
 
-/// Creates an iceoryx2 listener for the provided service.
+/// Creates an iceoryx listener for the provided service.
 pub(crate) fn iox_create_listener<Service: iceoryx2::service::Service>(
     iox_event_service: &IceoryxEventService<Service>,
     iox_service_config: &IceoryxServiceConfig,
@@ -220,7 +219,7 @@ pub(crate) fn z_create_subscriber(
 }
 
 // TODO(correctness): Optimize for notifications
-/// Creates a Zenoh publisher to send notifications from iceoryx2 services to remote hosts.
+/// Creates a Zenoh notifier to send notifications from iceoryx2 services to remote hosts.
 pub(crate) fn z_create_notifier<'a>(
     z_session: &ZenohSession,
     iox_service_config: &IceoryxServiceConfig,
@@ -260,7 +259,7 @@ pub(crate) fn z_create_listener(
     Ok(z_listener)
 }
 
-/// Announces an iceoryx2 service over Zenoh to make it discoverable by remote hosts.
+/// Announces an iceoryx service over Zenoh to make it discoverable by remote hosts.
 pub(crate) fn z_announce_service(
     z_session: &ZenohSession,
     iox_service_config: &IceoryxServiceConfig,

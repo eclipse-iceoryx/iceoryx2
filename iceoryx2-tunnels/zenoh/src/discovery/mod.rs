@@ -12,13 +12,15 @@
 
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 
+mod iceoryx;
 mod zenoh;
 
+pub(crate) use iceoryx::*;
 pub(crate) use zenoh::*;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    FailureToMakeQuery,
+    Error,
 }
 
 impl core::fmt::Display for DiscoveryError {

@@ -40,12 +40,7 @@ use zenoh::Wait;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    IceoryxService,
-    IceoryxPublisher,
-    IceoryxSubscriber,
-    ZenohPublisher,
-    ZenohSubscriber,
-    ZenohAnnouncement,
+    Error,
 }
 
 impl core::fmt::Display for CreationError {
@@ -119,10 +114,10 @@ impl<ServiceType: iceoryx2::service::Service> OutboundPublishSubscribeConnection
         z_session: &ZenohSession,
     ) -> Result<Self, CreationError> {
         let iox_subscriber = iox_create_subscriber::<ServiceType>(iox_service, iox_service_config)
-            .map_err(|_e| CreationError::IceoryxSubscriber)?;
+            .map_err(|_e| CreationError::Error)?;
 
-        let z_publisher = z_create_publisher(z_session, iox_service_config)
-            .map_err(|_e| CreationError::ZenohPublisher)?;
+        let z_publisher =
+            z_create_publisher(z_session, iox_service_config).map_err(|_e| CreationError::Error)?;
 
         Ok(Self {
             iox_node_id: *iox_node_id,
@@ -210,9 +205,9 @@ impl<ServiceType: iceoryx2::service::Service> InboundPublishSubscribeConnection<
     ) -> Result<Self, CreationError> {
         let iox_publisher =
             iox_create_publisher::<ServiceType>(iox_publish_subscribe_service, iox_service_config)
-                .map_err(|_e| CreationError::IceoryxPublisher)?;
+                .map_err(|_e| CreationError::Error)?;
         let z_subscriber = z_create_subscriber(z_session, iox_service_config)
-            .map_err(|_e| CreationError::ZenohSubscriber)?;
+            .map_err(|_e| CreationError::Error)?;
 
         Ok(Self {
             iox_service_config: iox_service_config.clone(),
@@ -255,7 +250,7 @@ impl<ServiceType: iceoryx2::service::Service>
     ) -> Result<Self, CreationError> {
         let iox_publish_subscribe_service =
             iox_create_publish_subscribe_service::<ServiceType>(iox_node, iox_service_config)
-                .map_err(|_e| CreationError::IceoryxService)?;
+                .map_err(|_e| CreationError::Error)?;
 
         let outbound_connection = OutboundPublishSubscribeConnection::create(
             iox_node.id(),
@@ -269,8 +264,7 @@ impl<ServiceType: iceoryx2::service::Service>
             z_session,
         )?;
 
-        z_announce_service(&z_session, iox_service_config)
-            .map_err(|_e| CreationError::ZenohAnnouncement)?;
+        z_announce_service(&z_session, iox_service_config).map_err(|_e| CreationError::Error)?;
 
         Ok(Self {
             outbound_connection,

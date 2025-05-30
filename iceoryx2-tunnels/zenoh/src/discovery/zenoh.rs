@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use super::DiscoveryError;
+
 use crate::discovery::Discovery;
 use crate::keys;
 
@@ -22,11 +24,8 @@ use zenoh::sample::Locality;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
 
-use super::DiscoveryError;
-
 pub enum CreationError {
-    FailureToCreateZenohQueriable,
-    FailureToQueryZenoh,
+    Error,
 }
 
 /// Discovers remote `iceoryx2` services via Zenoh.
@@ -44,13 +43,10 @@ impl<ServiceType: iceoryx2::service::Service> ZenohDiscovery<'_, ServiceType> {
             .declare_querier(keys::discovery())
             .allowed_destination(Locality::Remote)
             .wait()
-            .map_err(|_e| CreationError::FailureToCreateZenohQueriable)?;
+            .map_err(|_e| CreationError::Error)?;
 
         // Make query immediately - replies processed in first `discover()` call
-        let z_query = z_querier
-            .get()
-            .wait()
-            .map_err(|_e| CreationError::FailureToQueryZenoh)?;
+        let z_query = z_querier.get().wait().map_err(|_e| CreationError::Error)?;
 
         return Ok(Self {
             z_querier,
@@ -89,7 +85,7 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
             .z_querier
             .get()
             .wait()
-            .map_err(|_e| DiscoveryError::FailureToMakeQuery)?;
+            .map_err(|_e| DiscoveryError::Error)?;
 
         Ok(())
     }

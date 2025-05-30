@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::discovery::Discovery;
+use crate::discovery::IceoryxDiscovery;
 use crate::discovery::ZenohDiscovery;
 use crate::BidirectionalEventConnection;
 use crate::BidirectionalPublishSubscribeConnection;
@@ -18,15 +19,12 @@ use crate::Connection;
 
 use iceoryx2::config::Config as IceoryxConfig;
 use iceoryx2::node::Node as IceoryxNode;
-use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
-use iceoryx2::prelude::*;
+use iceoryx2::node::NodeBuilder;
 use iceoryx2::service::service_id::ServiceId as IceoryxServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
 use iceoryx2_bb_log::info;
-use iceoryx2_services_discovery::service_discovery::Discovery as IceoryxDiscovery;
-use iceoryx2_services_discovery::service_discovery::Tracker as IceoryxServiceTracker;
 
 use zenoh::Config as ZenohConfig;
 use zenoh::Session as ZenohSession;
@@ -41,13 +39,7 @@ pub struct TunnelConfig {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    FailureToCreateZenohSession,
-    FailureToCreateZenohDiscovery,
-    FailureToCreateZenohQuery,
-    FailureToCreateIceoryxNode,
-    InvalidNameForDiscoveryService,
-    FailureToCreateIceoryxService,
-    FailureToCreateIceoryxSubscriber,
+    Error,
 }
 
 impl core::fmt::Display for CreationError {
@@ -60,10 +52,7 @@ impl core::error::Error for CreationError {}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    FailureToDiscoverServicesLocally,
-    FailureToDiscoverServicesRemotely,
-    FailureToAnnounceServiceRemotely,
-    FailureToEstablishConnection,
+    Error,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -78,10 +67,8 @@ impl core::error::Error for DiscoveryError {}
 pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
     z_session: ZenohSession,
     z_discovery: ZenohDiscovery<'a, Service>,
-    iox_config: IceoryxConfig,
     iox_node: IceoryxNode<Service>,
-    iox_discovery_subscriber: Option<IceoryxSubscriber<Service, IceoryxDiscovery, ()>>,
-    iox_discovery_tracker: Option<IceoryxServiceTracker<Service>>,
+    iox_discovery: IceoryxDiscovery<Service>,
     publish_subscribe_connectons:
         HashMap<IceoryxServiceId, BidirectionalPublishSubscribeConnection<'a, Service>>,
     event_connections: HashMap<IceoryxServiceId, BidirectionalEventConnection<'a, Service>>,
@@ -98,43 +85,16 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
 
         let z_session = zenoh::open(z_config.clone())
             .wait()
-            .map_err(|_e| CreationError::FailureToCreateZenohSession)?;
-        let z_discovery = ZenohDiscovery::create(&z_session)
-            .map_err(|_e| CreationError::FailureToCreateZenohDiscovery)?;
+            .map_err(|_e| CreationError::Error)?;
+        let z_discovery = ZenohDiscovery::create(&z_session).map_err(|_e| CreationError::Error)?;
 
         let iox_node = NodeBuilder::new()
             .config(iox_config)
             .create::<Service>()
-            .map_err(|_e| CreationError::FailureToCreateZenohQuery)?;
-
-        // Create either a discovery service subscriber or a service tracker based on configuration
-        let (iox_discovery_subscriber, iox_discovery_tracker) =
-            match &tunnel_config.discovery_service {
-                Some(value) => {
-                    let iox_service_name: ServiceName = value
-                        .as_str()
-                        .try_into()
-                        .map_err(|_e| CreationError::InvalidNameForDiscoveryService)?;
-
-                    info!("CONFIGURED Discovery updates from service {}", value);
-                    let iox_service = iox_node
-                        .service_builder(&iox_service_name)
-                        .publish_subscribe::<IceoryxDiscovery>()
-                        .open_or_create()
-                        .map_err(|_e| CreationError::FailureToCreateIceoryxService)?;
-
-                    let iox_subscriber = iox_service
-                        .subscriber_builder()
-                        .create()
-                        .map_err(|_e| CreationError::FailureToCreateIceoryxSubscriber)?;
-
-                    (Some(iox_subscriber), None)
-                }
-                None => {
-                    info!("CONFIGURED Internal discovery tracking");
-                    (None, Some(IceoryxServiceTracker::new()))
-                }
-            };
+            .map_err(|_e| CreationError::Error)?;
+        let iox_discovery =
+            IceoryxDiscovery::create(&iox_config, &iox_node, &tunnel_config.discovery_service)
+                .map_err(|_e| CreationError::Error)?;
 
         let publish_subscribe_connectons: HashMap<
             IceoryxServiceId,
@@ -146,24 +106,43 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
         Ok(Self {
             z_session,
             z_discovery,
-            iox_config: iox_config.clone(),
             iox_node,
-            iox_discovery_subscriber,
-            iox_discovery_tracker,
+            iox_discovery,
             publish_subscribe_connectons,
             event_connections,
         })
     }
 
-    /// Discover services locally and remotely.
+    /// Discover iceoryx services across all connected hosts.
     pub fn discover(&mut self) -> Result<(), DiscoveryError> {
-        self.local_discovery()?;
-        self.remote_discovery()?;
+        self.iox_discovery
+            .discover(&mut |iox_service_config| {
+                on_discovery(
+                    iox_service_config,
+                    &self.iox_node,
+                    &self.z_session,
+                    &mut self.publish_subscribe_connectons,
+                    &mut self.event_connections,
+                )
+            })
+            .map_err(|_e| DiscoveryError::Error)?;
+
+        self.z_discovery
+            .discover(&mut |iox_service_config| {
+                on_discovery(
+                    iox_service_config,
+                    &self.iox_node,
+                    &self.z_session,
+                    &mut self.publish_subscribe_connectons,
+                    &mut self.event_connections,
+                )
+            })
+            .map_err(|_e| DiscoveryError::Error)?;
 
         Ok(())
     }
 
-    /// Propagates payloads between iceoryx2 and zenoh.
+    /// Propagates payloads between all connected hosts.
     pub fn propagate(&self) {
         for (id, connection) in &self.publish_subscribe_connectons {
             if let Err(e) = connection.propagate() {
@@ -186,172 +165,54 @@ impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
             .map(|id| id.as_str().to_string())
             .collect()
     }
+}
 
-    /// Discover local services via iceoryx2.
-    fn local_discovery(&mut self) -> Result<(), DiscoveryError> {
-        // TODO(correctness): Handle event services - need to open corresponding service with same
-        //                    properties
-        let mut on_pub_sub =
-            |iox_service_config: &IceoryxServiceConfig| -> Result<(), DiscoveryError> {
-                let iox_service_id = iox_service_config.service_id();
+/// Process a discovered service and create appropriate connections.
+fn on_discovery<'a, Service: iceoryx2::service::Service>(
+    iox_service_config: &IceoryxServiceConfig,
+    iox_node: &IceoryxNode<Service>,
+    z_session: &ZenohSession,
+    publish_subscribe_connections: &mut HashMap<
+        IceoryxServiceId,
+        BidirectionalPublishSubscribeConnection<'a, Service>,
+    >,
+    event_connections: &mut HashMap<IceoryxServiceId, BidirectionalEventConnection<'a, Service>>,
+) {
+    let iox_service_id = iox_service_config.service_id();
+    match iox_service_config.messaging_pattern() {
+        MessagingPattern::PublishSubscribe(_) => {
+            if !publish_subscribe_connections.contains_key(iox_service_id) {
+                info!(
+                    "DISCOVERED: PublishSubscribe {} [{}]",
+                    iox_service_id.as_str(),
+                    iox_service_config.name()
+                );
 
-                if !self
-                    .publish_subscribe_connectons
-                    .contains_key(iox_service_id)
-                {
-                    info!(
-                        "DISCOVERED (iceoryx2): PublishSubscribe {} [{}]",
-                        iox_service_id.as_str(),
-                        iox_service_config.name()
-                    );
+                let connection = BidirectionalPublishSubscribeConnection::create(
+                    iox_node,
+                    z_session,
+                    iox_service_config,
+                )
+                .unwrap();
 
-                    let connection = BidirectionalPublishSubscribeConnection::create(
-                        &self.iox_node,
-                        &self.z_session,
-                        iox_service_config,
-                    )
-                    .map_err(|_e| DiscoveryError::FailureToEstablishConnection)?;
-
-                    self.publish_subscribe_connectons
-                        .insert(iox_service_id.clone(), connection);
-                }
-                Ok(())
-            };
-        let mut on_event =
-            |iox_service_config: &IceoryxServiceConfig| -> Result<(), DiscoveryError> {
-                let iox_service_id = iox_service_config.service_id();
-                if !self.event_connections.contains_key(iox_service_id) {
-                    info!(
-                        "DISCOVERED (iceoryx2): Event {} [{}]",
-                        iox_service_id.as_str(),
-                        iox_service_config.name()
-                    );
-
-                    let connection = BidirectionalEventConnection::create(
-                        &self.iox_node,
-                        &self.z_session,
-                        iox_service_config,
-                    )
-                    .map_err(|_e| DiscoveryError::FailureToEstablishConnection)?;
-
-                    self.event_connections
-                        .insert(iox_service_id.clone(), connection);
-                }
-
-                Ok(())
-            };
-
-        // Discovery via discovery service
-        if let Some(iox_discovery_subscriber) = &self.iox_discovery_subscriber {
-            loop {
-                match iox_discovery_subscriber.receive() {
-                    Ok(result) => match result {
-                        Some(iox_sample) => {
-                            if let IceoryxDiscovery::Added(iox_service_details) =
-                                iox_sample.payload()
-                            {
-                                match iox_service_details.messaging_pattern() {
-                                    MessagingPattern::RequestResponse(_) => todo!(),
-                                    MessagingPattern::PublishSubscribe(_) => {
-                                        on_pub_sub(iox_service_details)?;
-                                    }
-                                    MessagingPattern::Event(_) => {
-                                        on_event(iox_service_details)?;
-                                    }
-                                    _ => todo!(),
-                                }
-                            }
-                        }
-                        None => break,
-                    },
-                    Err(_e) => {
-                        return Err(DiscoveryError::FailureToDiscoverServicesLocally);
-                    }
-                }
+                publish_subscribe_connections.insert(iox_service_id.clone(), connection);
             }
         }
-        // OR Discovery via service tracker
-        else if let Some(iox_discovery_tracker) = &mut self.iox_discovery_tracker {
-            let (added, _removed) = iox_discovery_tracker
-                .sync(&self.iox_config)
-                .map_err(|_e| DiscoveryError::FailureToDiscoverServicesLocally)?;
+        MessagingPattern::Event(_) => {
+            if !event_connections.contains_key(iox_service_id) {
+                info!(
+                    "DISCOVERED: Event {} [{}]",
+                    iox_service_id.as_str(),
+                    iox_service_config.name()
+                );
 
-            for iox_service_id in added {
-                if let Some(iox_service_details) = iox_discovery_tracker.get(&iox_service_id) {
-                    let iox_service_details = &iox_service_details.static_details;
+                let connection =
+                    BidirectionalEventConnection::create(iox_node, z_session, iox_service_config)
+                        .unwrap();
 
-                    match iox_service_details.messaging_pattern() {
-                        MessagingPattern::RequestResponse(_) => todo!(),
-                        MessagingPattern::PublishSubscribe(_) => {
-                            on_pub_sub(iox_service_details)?;
-                        }
-                        MessagingPattern::Event(_) => {
-                            on_event(iox_service_details)?;
-                        }
-                        _ => todo!(),
-                    }
-                }
+                event_connections.insert(iox_service_id.clone(), connection);
             }
-        } else {
-            // Should never happen
-            panic!("Unable to discover iceoryx2 services as neither the service discovery service nor a service tracker are set up.");
         }
-
-        Ok(())
-    }
-
-    /// Discover remote services via Zenoh.
-    fn remote_discovery(&mut self) -> Result<(), DiscoveryError> {
-        let mut on_discovered = |iox_service_config: &IceoryxServiceConfig| {
-            let iox_service_id = iox_service_config.service_id();
-            match iox_service_config.messaging_pattern() {
-                MessagingPattern::PublishSubscribe(_) => {
-                    if !self
-                        .publish_subscribe_connectons
-                        .contains_key(iox_service_id)
-                    {
-                        info!(
-                            "DISCOVERED (zenoh): PublishSubscribe {} [{}]",
-                            iox_service_id.as_str(),
-                            iox_service_config.name()
-                        );
-
-                        let connection = BidirectionalPublishSubscribeConnection::create(
-                            &self.iox_node,
-                            &self.z_session,
-                            &iox_service_config,
-                        )
-                        .unwrap();
-
-                        self.publish_subscribe_connectons
-                            .insert(iox_service_id.clone(), connection);
-                    }
-                }
-                MessagingPattern::Event(_) => {
-                    if !self.event_connections.contains_key(iox_service_id) {
-                        info!(
-                            "DISCOVERED (zenoh): Event {} [{}]",
-                            iox_service_id.as_str(),
-                            iox_service_config.name()
-                        );
-
-                        let connection = BidirectionalEventConnection::create(
-                            &self.iox_node,
-                            &self.z_session,
-                            &iox_service_config,
-                        )
-                        .unwrap();
-
-                        self.event_connections
-                            .insert(iox_service_id.clone(), connection);
-                    }
-                }
-                _ => { /* Not supported. Nothing to do. */ }
-            }
-        };
-
-        self.z_discovery.discover(&mut on_discovered).unwrap();
-
-        Ok(())
+        _ => { /* Not supported. Nothing to do. */ }
     }
 }
