@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::keys;
-use crate::z_announce_service;
 use crate::BidirectionalEventConnection;
 use crate::BidirectionalPublishSubscribeConnection;
 use crate::Connection;
@@ -209,7 +208,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                     .contains_key(iox_service_id)
                 {
                     info!(
-                        "DISCOVERED (iceoryx2): PUBLISH_SUBSCRIBE {} [{}]",
+                        "DISCOVERED (iceoryx2): PublishSubscribe {} [{}]",
                         iox_service_id.as_str(),
                         iox_service_config.name()
                     );
@@ -223,10 +222,6 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
                     self.publish_subscribe_connectons
                         .insert(iox_service_id.clone(), connection);
-
-                    // Announce Service to Zenoh
-                    z_announce_service(&self.z_session, iox_service_config)
-                        .map_err(|_e| DiscoveryError::FailureToAnnounceServiceRemotely)?;
                 }
                 Ok(())
             };
@@ -235,7 +230,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                 let iox_service_id = iox_service_config.service_id();
                 if !self.event_connections.contains_key(iox_service_id) {
                     info!(
-                        "DISCOVERED (iceoryx2): EVENT {} [{}]",
+                        "DISCOVERED (iceoryx2): Event {} [{}]",
                         iox_service_id.as_str(),
                         iox_service_config.name()
                     );
@@ -249,10 +244,6 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
                     self.event_connections
                         .insert(iox_service_id.clone(), connection);
-
-                    // Announce Service to Zenoh
-                    z_announce_service(&self.z_session, iox_service_config)
-                        .map_err(|_e| DiscoveryError::FailureToAnnounceServiceRemotely)?;
                 }
 
                 Ok(())
@@ -333,7 +324,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                                     .contains_key(iox_service_id)
                                 {
                                     info!(
-                                        "DISCOVERED (zenoh): PUBLISH_SUBSCRIBE {} [{}]",
+                                        "DISCOVERED (zenoh): PublishSubscribe {} [{}]",
                                         iox_service_id.as_str(),
                                         iox_service_config.name()
                                     );
@@ -355,7 +346,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                             MessagingPattern::Event(_) => {
                                 if !self.event_connections.contains_key(iox_service_id) {
                                     info!(
-                                        "DISCOVERED (zenoh): EVENT {} [{}]",
+                                        "DISCOVERED (zenoh): Event {} [{}]",
                                         iox_service_id.as_str(),
                                         iox_service_config.name()
                                     );
