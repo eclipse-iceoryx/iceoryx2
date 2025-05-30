@@ -391,6 +391,15 @@ impl<Service: service::Service> Notifier<Service> {
         self.__internal_notify(value, false)
     }
 
+    /// Notifies all [`crate::port::listener::Listener`] connected to the service with a custom
+    /// [`EventId`].
+    /// On success the number of
+    /// [`crate::port::listener::Listener`]s that were notified otherwise it returns
+    /// [`NotifierNotifyError`].
+    ///
+    /// When `skip_self_deliver` is set to true the [`Notifier`] will only notify
+    /// [`crate::port::listener::Listener`]s that were NOT created by the same node (have the same
+    /// [`crate::node::NodeId`])
     #[doc(hidden)]
     pub fn __internal_notify(
         &self,
