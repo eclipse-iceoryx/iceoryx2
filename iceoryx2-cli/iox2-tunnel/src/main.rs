@@ -63,18 +63,15 @@ fn main() -> Result<()> {
                 let tunnel_config = TunnelConfig {
                     discovery_service: cli.discovery_service,
                 };
-                let iceoryx2_config = iceoryx2::config::Config::default();
+                let iox_config = iceoryx2::config::Config::default();
                 let zenoh_config = zenoh::Config::default();
 
-                let mut tunnel = Tunnel::<ipc::Service>::create(
-                    &tunnel_config,
-                    &iceoryx2_config,
-                    &zenoh_config,
-                )?;
+                let mut tunnel =
+                    Tunnel::<ipc::Service>::create(&tunnel_config, &iox_config, &zenoh_config)?;
                 let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 
                 if cli.reactive {
-                    // TODO: Make tunnel (or its endpoints) attachable to waitset
+                    // TODO(functionality): Make tunnel (or its endpoints) attachable to waitset
                     unimplemented!("Reactive mode is not yet supported.");
                 } else {
                     let rate = cli.poll.unwrap_or(100);

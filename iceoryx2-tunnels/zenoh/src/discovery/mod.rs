@@ -31,7 +31,7 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
-pub(crate) trait Discovery<S: iceoryx2::service::Service> {
+pub(crate) trait Discovery<ServiceType: iceoryx2::service::Service> {
     fn discover<OnDiscovered: FnMut(&IceoryxServiceConfig)>(
         &mut self,
         on_discovered: &mut OnDiscovered,
