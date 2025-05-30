@@ -81,6 +81,66 @@ pub struct DiscoveryOptions {
     pub max_listeners: usize,
 }
 
+#[derive(Parser)]
+pub struct NotifyOptions {
+    #[clap(help = "Name of the service which shall be notified.")]
+    pub service: String,
+    #[clap(
+        short,
+        long,
+        default_value = "0",
+        help = "EventId value used for the notification."
+    )]
+    pub event_id: usize,
+    #[clap(
+        short,
+        long,
+        default_value = "shell_node",
+        help = "Defines the node name of the notification endpoint."
+    )]
+    pub node_name: String,
+    #[clap(
+        short = 'u',
+        long,
+        default_value = "1",
+        help = "How often shall the notification be sent."
+    )]
+    pub num: u64,
+    #[clap(
+        short,
+        long,
+        default_value = "250",
+        help = "Interval between notifications."
+    )]
+    pub interval_in_ms: u64,
+}
+
+#[derive(Parser)]
+pub struct ListenOptions {
+    #[clap(help = "Name of the service which shall be waited on for a notification.")]
+    pub service: String,
+    #[clap(
+        short,
+        long,
+        default_value = "shell_node",
+        help = "Defines the node name of the listening endpoint."
+    )]
+    pub node_name: String,
+    #[clap(
+        short,
+        long,
+        default_value = "1000",
+        help = "Maximum delay between two notifications. Set to 0 to wait indefinitely."
+    )]
+    pub timeout_in_ms: u64,
+    #[clap(
+        short,
+        long,
+        help = "[Optional] How often shall the notification receive loop be repeated. If its not specified the call will listen indefinitely."
+    )]
+    pub repetitions: Option<u64>,
+}
+
 #[derive(Subcommand)]
 pub enum Action {
     #[clap(
@@ -94,8 +154,18 @@ pub enum Action {
     )]
     Details(DetailsOptions),
     #[clap(
-        about = "Runs the service discovery service within a process", 
+        about = "Runs the service discovery service within a process",
         help_template = help_template("iox2 service discovery", HelpOptions::DontPrintCommandSection)
     )]
     Discovery(DiscoveryOptions),
+    #[clap(
+        about = "Send a notification",
+        help_template = help_template("iox2 service notify", HelpOptions::DontPrintCommandSection)
+    )]
+    Notify(NotifyOptions),
+    #[clap(
+        about = "Wait until a notification arrives",
+        help_template = help_template("iox2 service listen", HelpOptions::DontPrintCommandSection)
+    )]
+    Listen(ListenOptions),
 }

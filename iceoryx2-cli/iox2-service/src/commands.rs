@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
+use std::io::Write;
+
 use anyhow::anyhow;
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
@@ -20,8 +23,111 @@ use iceoryx2_cli::Format;
 use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
 use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
+use serde::Serialize;
 
-use crate::cli::OutputFilter;
+use crate::cli::{ListenOptions, NotifyOptions, OutputFilter};
+
+#[allow(clippy::enum_variant_names)] // explicitly allow same prefix Notification since it shall
+// be human readable on command line
+#[derive(Serialize)]
+enum EventType {
+    NotificationSent,
+    NotificationReceived,
+    NotificationTimeoutExceeded,
+}
+
+#[derive(Serialize)]
+struct EventFeedback {
+    event_type: EventType,
+    service: String,
+    event_id: Option<usize>,
+}
+
+pub fn listen(options: ListenOptions, format: Format) -> Result<()> {
+    let node = NodeBuilder::new()
+        .name(&NodeName::new(&options.node_name)?)
+        .create::<ipc::Service>()?;
+
+    let service = node
+        .service_builder(&ServiceName::new(&options.service)?)
+        .event()
+        .open_or_create()?;
+
+    let listener = service.listener_builder().create()?;
+
+    for _ in 0..options.repetitions.unwrap_or(u64::MAX) {
+        let mut received_notification = false;
+        let callback = |event_id: EventId| {
+            received_notification = true;
+            println!(
+                "{}",
+                format
+                    .as_string(&EventFeedback {
+                        event_type: EventType::NotificationReceived,
+                        service: options.service.clone(),
+                        event_id: Some(event_id.as_value())
+                    })
+                    .unwrap_or("Failed to format EventFeedback".to_string())
+            );
+        };
+
+        if options.timeout_in_ms != 0 {
+            listener.timed_wait_all(callback, Duration::from_millis(options.timeout_in_ms))?;
+        } else {
+            listener.blocking_wait_all(callback)?;
+        }
+
+        if !received_notification {
+            println!(
+                "{}",
+                format.as_string(&EventFeedback {
+                    event_type: EventType::NotificationTimeoutExceeded,
+                    service: options.service.clone(),
+                    event_id: None
+                })?
+            );
+        }
+    }
+
+    Ok(())
+}
+
+pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
+    let node = NodeBuilder::new()
+        .name(&NodeName::new(&options.node_name)?)
+        .create::<ipc::Service>()?;
+
+    let service = node
+        .service_builder(&ServiceName::new(&options.service)?)
+        .event()
+        .open_or_create()?;
+
+    let notifier = service
+        .notifier_builder()
+        .default_event_id(EventId::new(options.event_id))
+        .create()?;
+
+    let notify_feedback = EventFeedback {
+        event_type: EventType::NotificationSent,
+        service: options.service,
+        event_id: Some(options.event_id),
+    };
+    let notify = || -> Result<()> {
+        notifier.notify()?;
+        println!("{}", format.as_string(&notify_feedback)?);
+        std::io::stdout().flush()?;
+        Ok(())
+    };
+
+    for _ in 1..options.num {
+        notify()?;
+        std::thread::sleep(Duration::from_millis(options.interval_in_ms));
+    }
+
+    notify()?;
+
+    Ok(())
+}
 
 pub fn list(filter: OutputFilter, format: Format) -> Result<()> {
     let mut services = Vec::<ServiceDescriptor>::new();
