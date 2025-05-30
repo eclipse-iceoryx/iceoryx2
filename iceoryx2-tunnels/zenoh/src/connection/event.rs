@@ -157,13 +157,14 @@ impl<ServiceType: iceoryx2::service::Service> BidirectionalEventConnection<'_, S
         let iox_event_service =
             iox_create_event_service::<ServiceType>(iox_node, iox_service_config)
                 .map_err(|_e| CreationError::IceoryxService)?;
-        z_announce_service(&z_session, iox_service_config)
-            .map_err(|_e| CreationError::ZenohAnnouncement)?;
 
         let inbound_connection =
             InboundEventConnection::create(iox_service_config, &iox_event_service, z_session)?;
         let outbound_connection =
             OutboundEventConnection::create(iox_service_config, &iox_event_service, z_session)?;
+
+        z_announce_service(&z_session, iox_service_config)
+            .map_err(|_e| CreationError::ZenohAnnouncement)?;
 
         Ok(Self {
             outbound_connection,

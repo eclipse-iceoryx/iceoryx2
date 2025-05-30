@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::keys;
+use crate::discovery::Discovery;
+use crate::discovery::ZenohDiscovery;
 use crate::BidirectionalEventConnection;
 use crate::BidirectionalPublishSubscribeConnection;
 use crate::Connection;
@@ -24,12 +25,9 @@ use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
 use iceoryx2_bb_log::info;
-use iceoryx2_services_discovery::service_discovery::Discovery;
+use iceoryx2_services_discovery::service_discovery::Discovery as IceoryxDiscovery;
 use iceoryx2_services_discovery::service_discovery::Tracker as IceoryxServiceTracker;
 
-use zenoh::handlers::FifoChannelHandler;
-use zenoh::query::Reply;
-use zenoh::sample::Locality;
 use zenoh::Config as ZenohConfig;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
@@ -44,6 +42,7 @@ pub struct TunnelConfig {
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     FailureToCreateZenohSession,
+    FailureToCreateZenohDiscovery,
     FailureToCreateZenohQuery,
     FailureToCreateIceoryxNode,
     InvalidNameForDiscoveryService,
@@ -78,17 +77,17 @@ impl core::error::Error for DiscoveryError {}
 /// A tunnel for propagating iceoryx2 payloads across hosts via the Zenoh network middleware.
 pub struct Tunnel<'a, Service: iceoryx2::service::Service> {
     z_session: ZenohSession,
-    z_discovery_query: FifoChannelHandler<Reply>,
+    z_discovery: ZenohDiscovery<'a, Service>,
     iox_config: IceoryxConfig,
     iox_node: IceoryxNode<Service>,
-    iox_discovery_subscriber: Option<IceoryxSubscriber<Service, Discovery, ()>>,
+    iox_discovery_subscriber: Option<IceoryxSubscriber<Service, IceoryxDiscovery, ()>>,
     iox_discovery_tracker: Option<IceoryxServiceTracker<Service>>,
     publish_subscribe_connectons:
         HashMap<IceoryxServiceId, BidirectionalPublishSubscribeConnection<'a, Service>>,
     event_connections: HashMap<IceoryxServiceId, BidirectionalEventConnection<'a, Service>>,
 }
 
-impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
+impl<'a, Service: iceoryx2::service::Service> Tunnel<'a, Service> {
     /// Creates a new tunnel with the provided configuration.
     pub fn create(
         tunnel_config: &TunnelConfig,
@@ -100,15 +99,8 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
         let z_session = zenoh::open(z_config.clone())
             .wait()
             .map_err(|_e| CreationError::FailureToCreateZenohSession)?;
-
-        // Make discovery query immediately - responses shall be processed during
-        // discovery calls.
-        // TODO(correctness): Should this be a subscriber ?
-        let z_discovery_query = z_session
-            .get(keys::discovery())
-            .allowed_destination(Locality::Remote)
-            .wait()
-            .map_err(|_e| CreationError::FailureToCreateZenohSession)?;
+        let z_discovery = ZenohDiscovery::create(&z_session)
+            .map_err(|_e| CreationError::FailureToCreateZenohDiscovery)?;
 
         let iox_node = NodeBuilder::new()
             .config(iox_config)
@@ -127,7 +119,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                     info!("CONFIGURED Discovery updates from service {}", value);
                     let iox_service = iox_node
                         .service_builder(&iox_service_name)
-                        .publish_subscribe::<Discovery>()
+                        .publish_subscribe::<IceoryxDiscovery>()
                         .open_or_create()
                         .map_err(|_e| CreationError::FailureToCreateIceoryxService)?;
 
@@ -153,7 +145,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
         Ok(Self {
             z_session,
-            z_discovery_query,
+            z_discovery,
             iox_config: iox_config.clone(),
             iox_node,
             iox_discovery_subscriber,
@@ -255,7 +247,9 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
                 match iox_discovery_subscriber.receive() {
                     Ok(result) => match result {
                         Some(iox_sample) => {
-                            if let Discovery::Added(iox_service_details) = iox_sample.payload() {
+                            if let IceoryxDiscovery::Added(iox_service_details) =
+                                iox_sample.payload()
+                            {
                                 match iox_service_details.messaging_pattern() {
                                     MessagingPattern::RequestResponse(_) => todo!(),
                                     MessagingPattern::PublishSubscribe(_) => {
@@ -308,84 +302,55 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 
     /// Discover remote services via Zenoh.
     fn remote_discovery(&mut self) -> Result<(), DiscoveryError> {
-        // Process all responses received since making the query.
-        for reply in self.z_discovery_query.drain() {
-            match reply.result() {
-                Ok(sample) => {
-                    if let Ok(iox_service_config) =
-                        serde_json::from_slice::<IceoryxServiceConfig>(&sample.payload().to_bytes())
+        let mut on_discovered = |iox_service_config: &IceoryxServiceConfig| {
+            let iox_service_id = iox_service_config.service_id();
+            match iox_service_config.messaging_pattern() {
+                MessagingPattern::PublishSubscribe(_) => {
+                    if !self
+                        .publish_subscribe_connectons
+                        .contains_key(iox_service_id)
                     {
-                        let iox_service_id = iox_service_config.service_id();
-                        match iox_service_config.messaging_pattern() {
-                            MessagingPattern::RequestResponse(_) => todo!(),
-                            MessagingPattern::PublishSubscribe(_) => {
-                                if !self
-                                    .publish_subscribe_connectons
-                                    .contains_key(iox_service_id)
-                                {
-                                    info!(
-                                        "DISCOVERED (zenoh): PublishSubscribe {} [{}]",
-                                        iox_service_id.as_str(),
-                                        iox_service_config.name()
-                                    );
+                        info!(
+                            "DISCOVERED (zenoh): PublishSubscribe {} [{}]",
+                            iox_service_id.as_str(),
+                            iox_service_config.name()
+                        );
 
-                                    let connection =
-                                        BidirectionalPublishSubscribeConnection::create(
-                                            &self.iox_node,
-                                            &self.z_session,
-                                            &iox_service_config,
-                                        )
-                                        .map_err(|_e| {
-                                            DiscoveryError::FailureToEstablishConnection
-                                        })?;
+                        let connection = BidirectionalPublishSubscribeConnection::create(
+                            &self.iox_node,
+                            &self.z_session,
+                            &iox_service_config,
+                        )
+                        .unwrap();
 
-                                    self.publish_subscribe_connectons
-                                        .insert(iox_service_id.clone(), connection);
-                                }
-                            }
-                            MessagingPattern::Event(_) => {
-                                if !self.event_connections.contains_key(iox_service_id) {
-                                    info!(
-                                        "DISCOVERED (zenoh): Event {} [{}]",
-                                        iox_service_id.as_str(),
-                                        iox_service_config.name()
-                                    );
-
-                                    let connection = BidirectionalEventConnection::create(
-                                        &self.iox_node,
-                                        &self.z_session,
-                                        &iox_service_config,
-                                    )
-                                    .map_err(|_e| DiscoveryError::FailureToEstablishConnection)?;
-
-                                    self.event_connections
-                                        .insert(iox_service_id.clone(), connection);
-                                }
-                            }
-                            _ => todo!(),
-                        }
+                        self.publish_subscribe_connectons
+                            .insert(iox_service_id.clone(), connection);
                     }
                 }
-                Err(e) => {
-                    error!("Invalid discovery payload from zenoh: {}", e);
-                    return Err(DiscoveryError::FailureToDiscoverServicesRemotely);
+                MessagingPattern::Event(_) => {
+                    if !self.event_connections.contains_key(iox_service_id) {
+                        info!(
+                            "DISCOVERED (zenoh): Event {} [{}]",
+                            iox_service_id.as_str(),
+                            iox_service_config.name()
+                        );
+
+                        let connection = BidirectionalEventConnection::create(
+                            &self.iox_node,
+                            &self.z_session,
+                            &iox_service_config,
+                        )
+                        .unwrap();
+
+                        self.event_connections
+                            .insert(iox_service_id.clone(), connection);
+                    }
                 }
+                _ => { /* Not supported. Nothing to do. */ }
             }
-        }
+        };
 
-        // Resend the query.
-        // Required to get responses from any new queryables that appear after the request.
-        // This is not ideal since it prompts queryables from whom responses were already
-        // received to resend their response.
-        // TODO(optimization): Find a way to avoid duplicate responses from queryables
-        let z_discovery_query = self
-            .z_session
-            .get(keys::discovery())
-            .allowed_destination(Locality::Remote)
-            .wait()
-            .map_err(|_e| DiscoveryError::FailureToDiscoverServicesRemotely)?;
-
-        self.z_discovery_query = z_discovery_query;
+        self.z_discovery.discover(&mut on_discovered).unwrap();
 
         Ok(())
     }
