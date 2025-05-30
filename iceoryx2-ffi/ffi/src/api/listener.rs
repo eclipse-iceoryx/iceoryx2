@@ -51,6 +51,28 @@ impl IntoCInt for ListenerWaitError {
     }
 }
 
+trait AcquireFileDescriptor {
+    fn file_descriptor(&self) -> Option<&FileDescriptor> {
+        None
+    }
+}
+
+struct AcquireFileDescriptorHopper<'a, T> {
+    value: &'a T,
+}
+
+impl<'a, T> AcquireFileDescriptorHopper<'a, T> {
+    fn new(value: &'a T) -> Self {
+        Self { value }
+    }
+}
+
+impl<T: FileDescriptorBased> AcquireFileDescriptor for AcquireFileDescriptorHopper<'_, T> {
+    fn file_descriptor(&self) -> Option<&FileDescriptor> {
+        Some(self.value.file_descriptor())
+    }
+}
+
 pub(super) union ListenerUnion {
     ipc: ManuallyDrop<Listener<ipc::Service>>,
     local: ManuallyDrop<Listener<local::Service>>,
@@ -206,12 +228,18 @@ pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
 
     let listener = &mut *listener_handle.as_type();
 
-    let fd = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_ref().ipc.file_descriptor(),
-        iox2_service_type_e::LOCAL => listener.value.as_ref().local.file_descriptor(),
-    };
-
-    core::mem::transmute(fd as *const FileDescriptor)
+    match listener.service_type {
+        iox2_service_type_e::IPC => {
+            let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().ipc);
+            let fd = hopper.file_descriptor().unwrap();
+            core::mem::transmute(fd as *const FileDescriptor)
+        }
+        iox2_service_type_e::LOCAL => {
+            let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().local);
+            let fd = hopper.file_descriptor().unwrap();
+            core::mem::transmute(fd as *const FileDescriptor)
+        }
+    }
 }
 
 /// Tries to wait on the listener and calls the callback for every received event providing the
