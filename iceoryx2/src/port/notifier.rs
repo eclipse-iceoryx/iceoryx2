@@ -37,6 +37,7 @@
 
 use super::{event_id::EventId, port_identifiers::UniqueListenerId};
 use crate::{
+    node::NodeId,
     port::port_identifiers::UniqueNotifierId,
     service::{
         self,
@@ -104,6 +105,7 @@ impl core::error::Error for NotifierNotifyError {}
 struct Connection<Service: service::Service> {
     notifier: <Service::Event as Event>::Notifier,
     listener_id: UniqueListenerId,
+    node_id: NodeId,
 }
 
 #[derive(Debug)]
@@ -128,7 +130,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
         new_self
     }
 
-    fn create(&self, index: usize, listener_id: UniqueListenerId) {
+    fn create(&self, index: usize, listener_id: UniqueListenerId, node_id: NodeId) {
         let msg = "Unable to establish connection to listener";
         let event_name = event_concept_name(&listener_id);
         let event_config = event_config::<Service>(self.service_state.shared_node.config());
@@ -141,6 +143,7 @@ impl<Service: service::Service> ListenerConnections<Service> {
                     *self.get_mut(index) = Some(Connection {
                         notifier,
                         listener_id,
+                        node_id,
                     });
                 }
                 Err(
@@ -193,6 +196,7 @@ pub struct Notifier<Service: service::Service> {
     dynamic_notifier_handle: Option<ContainerHandle>,
     notifier_id: UniqueNotifierId,
     on_drop_notification: Option<EventId>,
+    node_id: NodeId,
 }
 
 impl<Service: service::Service> Drop for Notifier<Service> {
@@ -258,6 +262,7 @@ impl<Service: service::Service> Notifier<Service> {
             .event()
             .listeners;
 
+        let node_id = *service.__internal_state().shared_node.id();
         let static_config = service.__internal_state().static_config.event();
         let mut new_self = Self {
             listener_connections: ListenerConnections::new(
@@ -270,6 +275,7 @@ impl<Service: service::Service> Notifier<Service> {
             dynamic_notifier_handle: None,
             notifier_id,
             on_drop_notification: None,
+            node_id,
         };
 
         new_self.populate_listener_channels();
@@ -286,7 +292,7 @@ impl<Service: service::Service> Notifier<Service> {
             .event()
             .add_notifier_id(NotifierDetails {
                 notifier_id,
-                node_id: *service.__internal_state().shared_node.id(),
+                node_id,
             }) {
             Some(handle) => handle,
             None => {
@@ -340,7 +346,8 @@ impl<Service: service::Service> Notifier<Service> {
                     };
 
                     if create_connection {
-                        self.listener_connections.create(i, details.listener_id);
+                        self.listener_connections
+                            .create(i, details.listener_id, details.node_id);
                     }
                 }
                 None => self.listener_connections.remove(i),
@@ -381,6 +388,15 @@ impl<Service: service::Service> Notifier<Service> {
         &self,
         value: EventId,
     ) -> Result<usize, NotifierNotifyError> {
+        self.__internal_notify(value, false)
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_notify(
+        &self,
+        value: EventId,
+        skip_self_deliver: bool,
+    ) -> Result<usize, NotifierNotifyError> {
         let msg = "Unable to notify event";
         self.update_connections();
 
@@ -395,16 +411,18 @@ impl<Service: service::Service> Notifier<Service> {
 
         for i in 0..self.listener_connections.len() {
             if let Some(ref connection) = self.listener_connections.get(i) {
-                match connection.notifier.notify(value) {
-                    Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
-                        self.listener_connections.remove(i);
-                    }
-                    Err(e) => {
-                        warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
-                        connection, e)
-                    }
-                    Ok(_) => {
-                        number_of_triggered_listeners += 1;
+                if !skip_self_deliver || (skip_self_deliver && connection.node_id != self.node_id) {
+                    match connection.notifier.notify(value) {
+                        Err(iceoryx2_cal::event::NotifierNotifyError::Disconnected) => {
+                            self.listener_connections.remove(i);
+                        }
+                        Err(e) => {
+                            warn!(from self, "Unable to send notification via connection {:?} due to {:?}.",
+                                    connection, e)
+                        }
+                        Ok(_) => {
+                            number_of_triggered_listeners += 1;
+                        }
                     }
                 }
             }
