@@ -341,6 +341,11 @@ impl AttributeSet {
         self.iter().len()
     }
 
+    /// Returns the maximum number of [`Attribute`]s the [`AttributeSet`] can hold.
+    pub const fn capacity() -> usize {
+        AttributeStorage::capacity()
+    }
+
     /// Returns the number of values stored under a specific key. If the key does not exist it
     /// returns 0.
     pub fn number_of_key_values(&self, key: &AttributeKey) -> usize {

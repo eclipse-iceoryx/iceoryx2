@@ -114,6 +114,11 @@ impl ServiceName {
     pub fn has_iox2_prefix(name: &str) -> bool {
         name.starts_with(INTERNAL_SERVICE_PREFIX)
     }
+
+    /// Returns the maximum length of a [`ServicecName`].
+    pub fn max_len() -> usize {
+        ServiceNameString::capacity()
+    }
 }
 
 impl core::fmt::Display for ServiceName {

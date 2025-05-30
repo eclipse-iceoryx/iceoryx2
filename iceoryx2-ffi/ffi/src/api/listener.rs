@@ -31,6 +31,8 @@ use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use core::time::Duration;
 
+use super::CFileDescriptor;
+
 // BEGIN types definition
 
 #[repr(C)]
@@ -211,7 +213,8 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
     (listener.deleter)(listener);
 }
 
-/// Returns the underlying non-owning file descriptor of the [`iox2_listener_h`].
+/// Returns the underlying non-owning file descriptor of the [`iox2_listener_h`] if the
+/// [`iox2_listener_h`] is file descriptor based, otherwise it returns NULL.
 ///
 /// # Arguments
 ///
@@ -231,13 +234,17 @@ pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
     match listener.service_type {
         iox2_service_type_e::IPC => {
             let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().ipc);
-            let fd = hopper.file_descriptor().unwrap();
-            core::mem::transmute(fd as *const FileDescriptor)
+            match hopper.file_descriptor() {
+                Some(fd) => core::mem::transmute(fd as *const FileDescriptor),
+                None => core::ptr::null::<CFileDescriptor>(),
+            }
         }
         iox2_service_type_e::LOCAL => {
             let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().local);
-            let fd = hopper.file_descriptor().unwrap();
-            core::mem::transmute(fd as *const FileDescriptor)
+            match hopper.file_descriptor() {
+                Some(fd) => core::mem::transmute(fd as *const FileDescriptor),
+                None => core::ptr::null::<CFileDescriptor>(),
+            }
         }
     }
 }

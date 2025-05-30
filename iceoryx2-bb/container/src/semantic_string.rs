@@ -172,7 +172,7 @@ pub trait SemanticString<const CAPACITY: usize>:
 
     /// Returns the capacity of the file system type
     fn capacity(&self) -> usize {
-        self.as_string().capacity()
+        CAPACITY
     }
 
     /// Finds the first occurrence of a  byte string in the given string. If the byte string was

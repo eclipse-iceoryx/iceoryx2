@@ -270,6 +270,8 @@ impl Listener {
 }
 
 impl crate::event::Listener for Listener {
+    const IS_FILE_DESCRIPTOR_BASED: bool = true;
+
     fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError> {
         self.wait(
             "Unable to try wait for signal on event::unix_datagram_socket::Listener",

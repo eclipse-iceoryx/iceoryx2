@@ -37,16 +37,14 @@ mod fixed_size_vec {
 
     #[test]
     fn capacity_is_correct() {
-        let sut = Sut::new();
-
-        assert_that!(sut.capacity(), eq SUT_CAPACITY);
+        assert_that!(Sut::capacity(), eq SUT_CAPACITY);
     }
 
     #[test]
     fn push_pop_works() {
         let mut sut = Sut::new();
 
-        for i in 0..sut.capacity() {
+        for i in 0..Sut::capacity() {
             let element = i * 2 + 3;
             assert_that!(sut.is_full(), eq false);
             assert_that!(sut.push(element), eq true);
@@ -55,14 +53,14 @@ mod fixed_size_vec {
         }
         assert_that!(sut.is_full(), eq true);
 
-        for i in 0..sut.capacity() {
+        for i in 0..Sut::capacity() {
             assert_that!(*sut.get(i).unwrap(), eq i * 2 + 3);
             assert_that!(*sut.get_mut(i).unwrap(), eq i * 2 + 3);
             assert_that!(unsafe { *sut.get_unchecked(i) }, eq i * 2 + 3);
             assert_that!(unsafe { *sut.get_unchecked_mut(i) }, eq i * 2 + 3);
         }
 
-        for i in (0..sut.capacity()).rev() {
+        for i in (0..Sut::capacity()).rev() {
             assert_that!(sut, is_not_empty);
             assert_that!(sut, len i + 1);
             let result = sut.pop();
@@ -113,7 +111,7 @@ mod fixed_size_vec {
     fn clear_works() {
         let mut sut = Sut::new();
 
-        for i in 0..sut.capacity() {
+        for i in 0..Sut::capacity() {
             assert_that!(sut.push(i), eq true);
         }
 
@@ -128,7 +126,7 @@ mod fixed_size_vec {
         let mut sut = Sut::new();
 
         let mut push_counter: usize = 0;
-        for _ in 0..sut.capacity() / 3 {
+        for _ in 0..Sut::capacity() / 3 {
             for _ in 0..5 {
                 let element = push_counter * 4 + 1;
                 push_counter += 1;
@@ -146,16 +144,16 @@ mod fixed_size_vec {
     fn valid_after_move() {
         let mut sut = Sut::new();
 
-        for i in 0..sut.capacity() {
+        for i in 0..Sut::capacity() {
             let element = i * 2 + 3;
             assert_that!(sut.push(element), eq true);
         }
 
         let mut sut2 = sut;
 
-        for i in 0..sut2.capacity() {
+        for i in 0..Sut::capacity() {
             let result = sut2.pop();
-            assert_that!(result, eq Some((sut2.capacity() - i - 1) * 2 + 3));
+            assert_that!(result, eq Some((Sut::capacity() - i - 1) * 2 + 3));
         }
     }
 

@@ -50,6 +50,10 @@ void Listener<S>::drop() {
 
 template <ServiceType S>
 auto Listener<S>::file_descriptor() const -> FileDescriptorView {
+    const auto* fd_ptr = iox2_listener_get_file_descriptor(&m_handle);
+    IOX_ENFORCE(fd_ptr != nullptr,
+                "The underlying Listener variant is not based on a file descriptor and can therefore be not used for "
+                "event-multiplexing like the WaitSet.");
     return FileDescriptorView(iox2_listener_get_file_descriptor(&m_handle));
 }
 
