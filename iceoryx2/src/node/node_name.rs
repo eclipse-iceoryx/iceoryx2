@@ -10,13 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_container::semantic_string::SemanticStringError;
+use crate::constants::MAX_NODE_NAME_LENGTH;
+use iceoryx2_bb_container::{
+    byte_string::FixedSizeByteString, semantic_string::SemanticStringError,
+};
+use iceoryx2_bb_log::fail;
 use serde::{de::Visitor, Deserialize, Serialize};
+
+type NodeNameString = FixedSizeByteString<MAX_NODE_NAME_LENGTH>;
 
 /// Represent the name for a [`crate::node::Node`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct NodeName {
-    value: String,
+    value: NodeNameString,
 }
 
 impl NodeName {
@@ -24,13 +30,23 @@ impl NodeName {
     /// If the provided name does not contain a valid [`NodeName`] it will return a
     /// [`SemanticStringError`] otherwise the [`NodeName`].
     pub fn new(name: &str) -> Result<Self, SemanticStringError> {
-        Ok(Self { value: name.into() })
+        Ok(Self {
+            value: fail!(from "NodeName::new()",
+                         when NodeNameString::try_from(name),
+                         "The string \"{}\" is not a valid node name.",
+                         name),
+        })
     }
 
     /// Returns a str reference to the [`NodeName`]
     pub fn as_str(&self) -> &str {
         // SAFETY: `ServieName` was created from a `&str` and therefore this conversion is safe
         unsafe { core::str::from_utf8_unchecked(self.value.as_bytes()) }
+    }
+
+    /// Returns the maximum length of [`NodeName`]
+    pub fn max_len() -> usize {
+        NodeNameString::capacity()
     }
 }
 
