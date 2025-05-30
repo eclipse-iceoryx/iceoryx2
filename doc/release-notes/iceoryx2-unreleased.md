@@ -66,6 +66,8 @@
 
 * Add API to prevent self notification `Notifier::__internal_notify()`
   [#794](https://github.com/eclipse-iceoryx/iceoryx2/issues/794)
+* Enable the usage of semaphore based events in C/C++
+  [#795](https://github.com/eclipse-iceoryx/iceoryx2/issues/795)
 
 ### API Breaking Changes
 

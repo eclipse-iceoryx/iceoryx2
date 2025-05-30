@@ -94,9 +94,7 @@ mod fixed_size_byte_string {
 
     #[test]
     fn capacity_is_correct() {
-        let sut = Sut::new();
-
-        assert_that!(sut.capacity(), eq SUT_CAPACITY);
+        assert_that!(Sut::capacity(), eq SUT_CAPACITY);
     }
 
     #[test]

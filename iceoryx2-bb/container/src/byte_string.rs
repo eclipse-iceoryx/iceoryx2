@@ -433,7 +433,7 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
         core::str::from_utf8_unchecked(self.as_bytes())
     }
     /// Returns the capacity of the string
-    pub const fn capacity(&self) -> usize {
+    pub const fn capacity() -> usize {
         CAPACITY
     }
 

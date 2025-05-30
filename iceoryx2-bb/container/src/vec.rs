@@ -675,8 +675,8 @@ impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
     }
 
     /// Returns the capacity of the vector
-    pub fn capacity(&self) -> usize {
-        self.state.capacity()
+    pub const fn capacity() -> usize {
+        CAPACITY
     }
 
     /// Returns the number of elements stored inside the vector

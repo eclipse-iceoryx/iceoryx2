@@ -553,7 +553,7 @@ impl ThreadProperties for ThreadHandle {
                     let raw_string = fail!(from self, when ThreadName::from_c_str(name.as_mut_ptr()),
                         with ThreadGetNameError::ThreadNameLongerThanMaxSupportedSize,
                         "{} since it require more characters than the maximum supported length of {}.",
-                        msg, self.name.get().as_ref().unwrap().capacity());
+                        msg, ThreadName::capacity());
 
                     *self.name.get() = raw_string
                 };

@@ -28,7 +28,7 @@ use core::{slice, str};
 #[repr(C)]
 #[repr(align(8))] // alignment of Option<NodeName>
 pub struct iox2_node_name_storage_t {
-    internal: [u8; 24], // magic number obtained with size_of::<Option<NodeName>>()
+    internal: [u8; 152], // magic number obtained with size_of::<Option<NodeName>>()
 }
 
 #[repr(C)]

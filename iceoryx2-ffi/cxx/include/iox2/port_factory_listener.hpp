@@ -43,6 +43,23 @@ class PortFactoryListener {
 
     iox2_port_factory_listener_builder_h m_handle = nullptr;
 };
+
+template <ServiceType S>
+inline PortFactoryListener<S>::PortFactoryListener(iox2_port_factory_listener_builder_h handle)
+    : m_handle { handle } {
+}
+
+template <ServiceType S>
+inline auto PortFactoryListener<S>::create() && -> iox::expected<Listener<S>, ListenerCreateError> {
+    iox2_listener_h listener_handle { nullptr };
+    auto result = iox2_port_factory_listener_builder_create(m_handle, nullptr, &listener_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Listener<S> { listener_handle });
+    }
+
+    return iox::err(iox::into<ListenerCreateError>(result));
+}
 } // namespace iox2
 
 #endif

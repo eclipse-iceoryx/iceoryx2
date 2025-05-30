@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #![allow(non_camel_case_types)]
+#![allow(dead_code)]
 
 use crate::api::{
     iox2_callback_context, iox2_event_id_t, iox2_service_type_e, iox2_unique_listener_id_h,
@@ -31,6 +32,8 @@ use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
 use core::time::Duration;
 
+use super::CFileDescriptor;
+
 // BEGIN types definition
 
 #[repr(C)]
@@ -48,6 +51,32 @@ impl IntoCInt for ListenerWaitError {
             ListenerWaitError::InterruptSignal => iox2_listener_wait_error_e::INTERRUPT_SIGNAL,
             ListenerWaitError::InternalFailure => iox2_listener_wait_error_e::INTERNAL_FAILURE,
         }) as c_int
+    }
+}
+
+trait AcquireFileDescriptor {
+    fn acquire_file_descriptor(&self) -> Option<&FileDescriptor>;
+}
+
+struct AcquireFileDescriptorHopper<'a, T> {
+    value: &'a T,
+}
+
+impl<'a, T> AcquireFileDescriptorHopper<'a, T> {
+    fn new(value: &'a T) -> Self {
+        Self { value }
+    }
+}
+
+impl<T> AcquireFileDescriptor for AcquireFileDescriptorHopper<'_, T> {
+    fn acquire_file_descriptor(&self) -> Option<&FileDescriptor> {
+        None
+    }
+}
+
+impl<T: FileDescriptorBased> AcquireFileDescriptorHopper<'_, T> {
+    fn acquire_file_descriptor(&self) -> Option<&FileDescriptor> {
+        Some(self.value.file_descriptor())
     }
 }
 
@@ -189,7 +218,8 @@ pub unsafe extern "C" fn iox2_listener_drop(listener_handle: iox2_listener_h) {
     (listener.deleter)(listener);
 }
 
-/// Returns the underlying non-owning file descriptor of the [`iox2_listener_h`].
+/// Returns the underlying non-owning file descriptor of the [`iox2_listener_h`] if the
+/// [`iox2_listener_h`] is file descriptor based, otherwise it returns NULL.
 ///
 /// # Arguments
 ///
@@ -206,12 +236,22 @@ pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
 
     let listener = &mut *listener_handle.as_type();
 
-    let fd = match listener.service_type {
-        iox2_service_type_e::IPC => listener.value.as_ref().ipc.file_descriptor(),
-        iox2_service_type_e::LOCAL => listener.value.as_ref().local.file_descriptor(),
-    };
-
-    core::mem::transmute(fd as *const FileDescriptor)
+    match listener.service_type {
+        iox2_service_type_e::IPC => {
+            let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().ipc);
+            match hopper.acquire_file_descriptor() {
+                Some(fd) => (fd as *const FileDescriptor).cast(),
+                None => core::ptr::null::<CFileDescriptor>(),
+            }
+        }
+        iox2_service_type_e::LOCAL => {
+            let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().local);
+            match hopper.acquire_file_descriptor() {
+                Some(fd) => (fd as *const FileDescriptor).cast(),
+                None => core::ptr::null::<CFileDescriptor>(),
+            }
+        }
+    }
 }
 
 /// Tries to wait on the listener and calls the callback for every received event providing the

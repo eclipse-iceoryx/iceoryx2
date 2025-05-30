@@ -115,6 +115,8 @@ pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
 }
 
 pub trait Listener: NamedConcept + Debug {
+    const IS_FILE_DESCRIPTOR_BASED: bool = false;
+
     fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
     fn timed_wait_one(&self, timeout: Duration) -> Result<Option<TriggerId>, ListenerWaitError>;
     fn blocking_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
