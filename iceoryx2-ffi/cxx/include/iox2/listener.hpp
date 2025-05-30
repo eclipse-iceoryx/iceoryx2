@@ -28,17 +28,17 @@
 namespace iox2 {
 /// Represents the receiving endpoint of an event based communication.
 template <ServiceType>
-class Listener : public FileDescriptorBased {
+class Listener {
   public:
-    Listener(Listener&&) noexcept;
-    auto operator=(Listener&&) noexcept -> Listener&;
-    ~Listener() override;
+    Listener(Listener&& rhs) noexcept;
+    auto operator=(Listener&& rhs) noexcept -> Listener&;
+    ~Listener();
 
     Listener(const Listener&) = delete;
     auto operator=(const Listener&) -> Listener& = delete;
 
     /// Returns a [`FileDescriptorView`] to the underlying [`FileDescriptor`] of the [`Listener`].
-    auto file_descriptor() const -> FileDescriptorView override;
+    auto file_descriptor() const -> FileDescriptorView;
 
     /// Returns the [`UniqueListenerId`] of the [`Listener`]
     auto id() const -> UniqueListenerId;
@@ -151,7 +151,7 @@ template <ServiceType S>
 inline auto Listener<S>::file_descriptor() const -> FileDescriptorView {
     static_assert(IsListenerFdBased<S>::VALUE,
                   "This Listener variant is not based on a file descriptor. It cannot be attached to a WaitSet nor can "
-                  "the underlying file descriptor acquired.");
+                  "the underlying file descriptor be acquired.");
     const auto* fd_ptr = iox2_listener_get_file_descriptor(&m_handle);
     return FileDescriptorView(iox2_listener_get_file_descriptor(&m_handle));
 }
