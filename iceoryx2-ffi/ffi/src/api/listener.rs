@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #![allow(non_camel_case_types)]
+#![allow(dead_code)]
 
 use crate::api::{
     iox2_callback_context, iox2_event_id_t, iox2_service_type_e, iox2_unique_listener_id_h,
@@ -54,9 +55,7 @@ impl IntoCInt for ListenerWaitError {
 }
 
 trait AcquireFileDescriptor {
-    fn file_descriptor(&self) -> Option<&FileDescriptor> {
-        None
-    }
+    fn acquire_file_descriptor(&self) -> Option<&FileDescriptor>;
 }
 
 struct AcquireFileDescriptorHopper<'a, T> {
@@ -70,8 +69,14 @@ impl<'a, T> AcquireFileDescriptorHopper<'a, T> {
 }
 
 impl<T: FileDescriptorBased> AcquireFileDescriptor for AcquireFileDescriptorHopper<'_, T> {
-    fn file_descriptor(&self) -> Option<&FileDescriptor> {
+    fn acquire_file_descriptor(&self) -> Option<&FileDescriptor> {
         Some(self.value.file_descriptor())
+    }
+}
+
+impl<T> AcquireFileDescriptorHopper<'_, T> {
+    fn acquire_file_descriptor(&self) -> Option<&FileDescriptor> {
+        None
     }
 }
 
@@ -234,15 +239,15 @@ pub unsafe extern "C" fn iox2_listener_get_file_descriptor(
     match listener.service_type {
         iox2_service_type_e::IPC => {
             let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().ipc);
-            match hopper.file_descriptor() {
-                Some(fd) => core::mem::transmute(fd as *const FileDescriptor),
+            match hopper.acquire_file_descriptor() {
+                Some(fd) => (fd as *const FileDescriptor).cast(),
                 None => core::ptr::null::<CFileDescriptor>(),
             }
         }
         iox2_service_type_e::LOCAL => {
             let hopper = AcquireFileDescriptorHopper::new(&*listener.value.as_ref().local);
-            match hopper.file_descriptor() {
-                Some(fd) => core::mem::transmute(fd as *const FileDescriptor),
+            match hopper.acquire_file_descriptor() {
+                Some(fd) => (fd as *const FileDescriptor).cast(),
                 None => core::ptr::null::<CFileDescriptor>(),
             }
         }
