@@ -13,7 +13,7 @@
 
 * All port factories implement `Send`
   [#768](https://github.com/eclipse-iceoryx/iceoryx2/issues/768)
-* `iox2 service listen` and `iox2_service notify`
+* `iox2 service listen` and `iox2 service notify`
   [#790](https://github.com/eclipse-iceoryx/iceoryx2/issues/790)
 
 ### Bugfixes
@@ -64,7 +64,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add API to prevent self notification `Notifier::__internal_notify()`
+  [#794](https://github.com/eclipse-iceoryx/iceoryx2/issues/794)
 
 ### API Breaking Changes
 
