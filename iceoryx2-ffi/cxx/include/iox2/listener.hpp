@@ -152,7 +152,6 @@ inline auto Listener<S>::file_descriptor() const -> FileDescriptorView {
     static_assert(IsListenerFdBased<S>::VALUE,
                   "This Listener variant is not based on a file descriptor. It cannot be attached to a WaitSet nor can "
                   "the underlying file descriptor be acquired.");
-    const auto* fd_ptr = iox2_listener_get_file_descriptor(&m_handle);
     return FileDescriptorView(iox2_listener_get_file_descriptor(&m_handle));
 }
 
