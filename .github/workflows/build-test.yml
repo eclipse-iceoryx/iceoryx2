@@ -213,6 +213,43 @@ jobs:
      - name: Language Binding Tests
        run: internal/scripts/ci_check_python.sh
 
+  tunnel-end-to-end-tests:
+    needs: [preflight-check]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    strategy:
+      matrix:
+        tunnel: [zenoh]
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Build tunnel CLI
+        run: cargo build --release -p iceoryx2-cli --bin iox2-tunnel
+
+      - name: Build test binaries
+        run: cargo build --release -p iceoryx2-tunnels-end-to-end-testing
+
+      - name: Build test docker image
+        run: docker build -f iceoryx2-tunnels/end-to-end-testing/Dockerfile -t end-to-end-testing:latest .
+
+      - name: Run end-to-end test
+        run: |
+          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
+            --abort-on-container-exit \
+            --exit-code-from pinger
+
+      - name: Clean up containers
+        if: always()
+        run: |
+          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml down -v
+
   x86_32:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}

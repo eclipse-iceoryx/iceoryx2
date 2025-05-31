@@ -66,7 +66,7 @@ impl MessagingPattern {
     /// # Safety
     ///
     ///  * User must ensure that publish subscribe is stored inside
-    pub(crate) unsafe fn publish_subscribe(&self) -> &publish_subscribe::StaticConfig {
+    pub unsafe fn publish_subscribe(&self) -> &publish_subscribe::StaticConfig {
         if let MessagingPattern::PublishSubscribe(v) = self {
             v
         } else {
@@ -78,7 +78,7 @@ impl MessagingPattern {
     /// # Safety
     ///
     ///  * User must ensure that event is stored inside
-    pub(crate) unsafe fn request_response(&self) -> &request_response::StaticConfig {
+    pub unsafe fn request_response(&self) -> &request_response::StaticConfig {
         if let MessagingPattern::RequestResponse(v) = self {
             v
         } else {
