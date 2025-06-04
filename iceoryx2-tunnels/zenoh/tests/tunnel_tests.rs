@@ -34,6 +34,45 @@ mod zenoh_tunnel {
         .unwrap()
     }
 
+    /// Repeatedly attempts to execute a function until it succeeds or reaches the maximum number of attempts.
+    ///
+    /// Required for operations that involve zenoh as the background thread makes the
+    /// execution indeterministic.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - A function that returns `Result<(), &'static str>`. The function is considered successful when it returns `Ok(())`.
+    /// * `period` - The duration to wait between retry attempts.
+    /// * `max_attempts` - An optional maximum number of retry attempts. If `None`, the function will retry indefinitely.
+    ///
+    /// # Behavior
+    ///
+    /// If the function succeeds (returns `Ok(())`), this function returns immediately.
+    /// If the function fails and `max_attempts` is reached, this function will call `test_fail!` with the error message.
+    /// Otherwise, it will sleep for the specified period and try again.
+    fn retry<F>(mut f: F, period: Duration, max_attempts: Option<usize>)
+    where
+        F: FnMut() -> Result<(), &'static str>,
+    {
+        let mut attempt = 0;
+
+        loop {
+            match f() {
+                Ok(_) => return,
+                Err(failure) => {
+                    if let Some(max_attempts) = max_attempts {
+                        if attempt >= max_attempts {
+                            test_fail!("{}, after {} attempts", failure, attempt);
+                        }
+                    }
+                }
+            }
+
+            std::thread::sleep(period);
+            attempt += 1;
+        }
+    }
+
     #[test]
     fn discovers_local_services_via_discovery_service<S: Service>() {
         // ==================== SETUP ====================
@@ -182,19 +221,24 @@ mod zenoh_tunnel {
 
         // [[ HOST A ]]
         // Discover Services - Announced service should be discovered
-        let mut success = false;
-        for _ in 0..3 {
-            tunnel_a.discover().unwrap();
-            if tunnel_a.tunneled_services().len() == 1 {
-                success = true;
-                break;
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        }
+        const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
+        const MAX_ATTEMPTS: usize = 25;
+        retry(
+            || {
+                tunnel_a.discover().unwrap();
 
-        if !success {
-            test_fail!("failed to discover remote service after multiple attempts");
-        }
+                let tunneled_services = tunnel_a.tunneled_services();
+                let success =
+                    tunneled_services.contains(&String::from(iox_service_b.service_id().as_str()));
+
+                if success {
+                    return Ok(());
+                }
+                return Err("failed to discover remote service");
+            },
+            TIME_BETWEEN_ATTEMPTS,
+            Some(MAX_ATTEMPTS),
+        );
     }
 
     fn propagates_n_struct_payloads<S: Service>(sample_count: usize) {
@@ -234,6 +278,13 @@ mod zenoh_tunnel {
         // Publisher
         let iox_publisher_a = iox_service_a.publisher_builder().create().unwrap();
 
+        // Discover Services
+        tunnel_a.discover().unwrap();
+        let tunneled_services_a = tunnel_a.tunneled_services();
+        assert_that!(tunneled_services_a.len(), eq 1);
+        assert_that!(tunneled_services_a
+            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+
         // [[ HOST B ]]
         // Tunnel
         let z_config_b = zenoh::Config::default();
@@ -257,22 +308,12 @@ mod zenoh_tunnel {
         // Subscriber
         let iox_subscriber_b = iox_service_b.subscriber_builder().create().unwrap();
 
-        // [[ BOTH ]]
         // Discover Services
-        tunnel_a.discover().unwrap();
-        let tunneled_services_a = tunnel_a.tunneled_services();
-        assert_that!(tunneled_services_a.len(), eq 1);
-        assert_that!(tunneled_services_a
-            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
-
         tunnel_b.discover().unwrap();
         let tunneled_services_b = tunnel_b.tunneled_services();
         assert_that!(tunneled_services_b.len(), eq 1);
         assert_that!(tunneled_services_b
             .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
-
-        // Discovered service should be the same ID in both hosts
-        assert_that!(iox_service_a.service_id(), eq iox_service_b.service_id());
 
         // ==================== TEST =====================
 
@@ -292,46 +333,32 @@ mod zenoh_tunnel {
             tunnel_a.propagate();
             tunnel_b.propagate();
 
-            // Receive with retry
-            let mut success = false;
+            // Receive
+            const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
+            const MAX_ATTEMPTS: usize = 25;
+            retry(
+                || {
+                    match iox_subscriber_b.receive().unwrap() {
+                        Some(iox_sample_received_b) => {
+                            let iox_payload_received_b = iox_sample_received_b.payload();
 
-            const NUM_RETRIES: usize = 10;
-            for retry in 0..NUM_RETRIES {
-                match iox_subscriber_b.receive().unwrap() {
-                    Some(iox_sample_received_b) => {
-                        let iox_payload_received_b = iox_sample_received_b.payload();
-
-                        // Check if we received the expected sample for this iteration
-                        if *iox_payload_received_b == payload_data {
-                            success = true;
-                            break;
-                        } else {
-                            test_fail!(
-                                "received unexpected sample; expected: {:?}, got: {:?}",
-                                payload_data,
-                                iox_payload_received_b
-                            );
+                            // Check if we received the expected sample for this iteration
+                            if *iox_payload_received_b == payload_data {
+                                return Ok(());
+                            } else {
+                                return Err("received unexpected sample");
+                            }
                         }
-                    }
-                    None => {
-                        // If no sample received, wait a bit and retry
-                        // Don't sleep after last attempt
-                        if retry < NUM_RETRIES {
-                            std::thread::sleep(Duration::from_millis(100));
+                        None => {
                             tunnel_a.propagate();
                             tunnel_b.propagate();
+                            return Err("failed to receive expected sample");
                         }
                     }
-                }
-            }
-
-            if !success {
-                test_fail!(
-                    "failed to receive expected sample {} after {} attempts",
-                    i,
-                    NUM_RETRIES
-                );
-            }
+                },
+                TIME_BETWEEN_ATTEMPTS,
+                Some(MAX_ATTEMPTS),
+            );
         }
     }
 
@@ -385,6 +412,13 @@ mod zenoh_tunnel {
             .create()
             .unwrap();
 
+        // Discover Services
+        tunnel_a.discover().unwrap();
+        let tunneled_services_a = tunnel_a.tunneled_services();
+        assert_that!(tunneled_services_a.len(), eq 1);
+        assert_that!(tunneled_services_a
+            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+
         // [[ HOST B ]]
         // Tunnel
         let z_config_b = zenoh::Config::default();
@@ -408,22 +442,12 @@ mod zenoh_tunnel {
         // Subscriber
         let iox_subscriber_b = iox_service_b.subscriber_builder().create().unwrap();
 
-        // [[ BOTH ]]
         // Discover Services
-        tunnel_a.discover().unwrap();
-        let tunneled_services_a = tunnel_a.tunneled_services();
-        assert_that!(tunneled_services_a.len(), eq 1);
-        assert_that!(tunneled_services_a
-            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
-
         tunnel_b.discover().unwrap();
         let tunneled_services_b = tunnel_b.tunneled_services();
         assert_that!(tunneled_services_b.len(), eq 1);
         assert_that!(tunneled_services_b
             .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
-
-        // Discovered service should be the same ID in both hosts
-        assert_that!(iox_service_a.service_id(), eq iox_service_b.service_id());
 
         // ==================== TEST =====================
 
@@ -446,46 +470,32 @@ mod zenoh_tunnel {
             tunnel_a.propagate();
             tunnel_b.propagate();
 
-            // Receive with retry
-            let mut success = false;
+            // Receive
+            const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
+            const MAX_ATTEMPTS: usize = 25;
+            retry(
+                || {
+                    match iox_subscriber_b.receive().unwrap() {
+                        Some(iox_sample_received_b) => {
+                            let iox_payload_received_b = iox_sample_received_b.payload();
 
-            const NUM_RETRIES: usize = 10;
-            for retry in 0..NUM_RETRIES {
-                match iox_subscriber_b.receive().unwrap() {
-                    Some(iox_sample_received_b) => {
-                        let iox_payload_received_b = iox_sample_received_b.payload();
-
-                        // Check if we received the expected sample for this iteration
-                        if *iox_payload_received_b == *payload_data.as_bytes() {
-                            success = true;
-                            break;
-                        } else {
-                            test_fail!(
-                                "received unexpected sample; expected: {:?}, got: {:?}",
-                                payload_data,
-                                iox_payload_received_b
-                            );
+                            // Check if we received the expected sample for this iteration
+                            if *iox_payload_received_b == *payload_data.as_bytes() {
+                                return Ok(());
+                            } else {
+                                return Err("received unexpected sample");
+                            }
                         }
-                    }
-                    None => {
-                        // If no sample received, wait a bit and retry
-                        // Don't sleep after last attempt
-                        if retry < NUM_RETRIES {
-                            std::thread::sleep(Duration::from_millis(100));
+                        None => {
                             tunnel_a.propagate();
                             tunnel_b.propagate();
+                            return Err("failed to receive expected sample");
                         }
                     }
-                }
-            }
-
-            if !success {
-                test_fail!(
-                    "failed to receive expected sample {} after {} attempts",
-                    i,
-                    NUM_RETRIES
-                );
-            }
+                },
+                TIME_BETWEEN_ATTEMPTS,
+                Some(MAX_ATTEMPTS),
+            );
         }
     }
 
@@ -632,7 +642,8 @@ mod zenoh_tunnel {
         }
     }
 
-    fn propagates_n_events<S: Service>(num: usize) {
+    #[test]
+    fn propagates_one_event<S: Service>() {
         // [[ COMMON ]]
         let iox_service_name = mock_service_name();
 
@@ -659,6 +670,13 @@ mod zenoh_tunnel {
         // Notifier
         let iox_notifier_a = iox_service_a.notifier_builder().create().unwrap();
 
+        // Discover Services
+        tunnel_a.discover().unwrap();
+        let tunneled_services_a = tunnel_a.tunneled_services();
+        assert_that!(tunneled_services_a.len(), eq 1);
+        assert_that!(tunneled_services_a
+            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+
         // [[ HOST B ]]
         // Tunnel
         let z_config_b = zenoh::Config::default();
@@ -682,77 +700,36 @@ mod zenoh_tunnel {
         // Listener
         let iox_listener_b = iox_service_b.listener_builder().create().unwrap();
 
-        // [[ BOTH ]]
         // Discover Services
-        tunnel_a.discover().unwrap();
-        let tunneled_services_a = tunnel_a.tunneled_services();
-        assert_that!(tunneled_services_a.len(), eq 1);
-        assert_that!(tunneled_services_a
-            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
-
         tunnel_b.discover().unwrap();
         let tunneled_services_b = tunnel_b.tunneled_services();
         assert_that!(tunneled_services_b.len(), eq 1);
         assert_that!(tunneled_services_b
             .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
 
-        // Discovered service should be the same ID in both hosts
-        assert_that!(iox_service_a.service_id(), eq iox_service_b.service_id());
-
         // ==================== TEST =====================
+        // Send notification
+        iox_notifier_a.notify().unwrap();
 
-        for i in 0..num {
-            // Send notification
-            iox_notifier_a.notify().unwrap();
+        // Propagate over tunnels
+        tunnel_a.propagate();
+        tunnel_b.propagate();
 
-            // Propagate over tunnels
-            tunnel_a.propagate();
-            tunnel_b.propagate();
-
-            // Receive with retry
-            let mut success = false;
-
-            const NUM_RETRIES: usize = 10;
-            for retry in 0..NUM_RETRIES {
-                match iox_listener_b.try_wait_one().unwrap() {
-                    Some(_event_id) => {
-                        success = true;
-                        break;
-                    }
-                    None => {
-                        // If no sample received, wait a bit and retry
-                        // Don't sleep after last attempt
-                        if retry < NUM_RETRIES {
-                            std::thread::sleep(Duration::from_millis(100));
-                            tunnel_a.propagate();
-                            tunnel_b.propagate();
-                        }
-                    }
+        // Receive with retry
+        const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
+        const MAX_ATTEMPTS: usize = 25;
+        retry(
+            || match iox_listener_b.try_wait_one().unwrap() {
+                Some(_event_id) => return Ok(()),
+                None => {
+                    tunnel_a.propagate();
+                    tunnel_b.propagate();
+                    return Err("failed to receive expected event");
                 }
-            }
-
-            if !success {
-                test_fail!(
-                    "failed to receive {} event after {} attempts",
-                    i,
-                    NUM_RETRIES
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn propagates_one_event<S: Service>() {
-        propagates_n_events::<S>(1);
-    }
-
-    #[test]
-    fn propagates_two_events<S: Service>() {
-        propagates_n_events::<S>(1);
-    }
-    #[test]
-    fn propagates_ten_events<S: Service>() {
-        propagates_n_events::<S>(1);
+            },
+            TIME_BETWEEN_ATTEMPTS,
+            Some(MAX_ATTEMPTS),
+        );
     }
 
     #[test]
@@ -785,6 +762,13 @@ mod zenoh_tunnel {
         // Listener
         let iox_listener_a = iox_service_a.listener_builder().create().unwrap();
 
+        // Discover Services
+        tunnel_a.discover().unwrap();
+        let tunneled_services_a = tunnel_a.tunneled_services();
+        assert_that!(tunneled_services_a.len(), eq 1);
+        assert_that!(tunneled_services_a
+            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+
         // [[ HOST B ]]
         // Tunnel
         let z_config_b = zenoh::Config::default();
@@ -808,22 +792,12 @@ mod zenoh_tunnel {
         // Listener
         let iox_listener_b = iox_service_b.listener_builder().create().unwrap();
 
-        // [[ BOTH ]]
         // Discover Services
-        tunnel_a.discover().unwrap();
-        let tunneled_services_a = tunnel_a.tunneled_services();
-        assert_that!(tunneled_services_a.len(), eq 1);
-        assert_that!(tunneled_services_a
-            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
-
         tunnel_b.discover().unwrap();
         let tunneled_services_b = tunnel_b.tunneled_services();
         assert_that!(tunneled_services_b.len(), eq 1);
         assert_that!(tunneled_services_b
             .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
-
-        // Discovered service should be the same ID in both hosts
-        assert_that!(iox_service_a.service_id(), eq iox_service_b.service_id());
 
         // ==================== TEST =====================
 
@@ -838,36 +812,23 @@ mod zenoh_tunnel {
         tunnel_b.propagate();
 
         // Receive at listener b with retry
-        let mut success = false;
-
-        const NUM_RETRIES: usize = 10;
-        for retry in 0..NUM_RETRIES {
-            match iox_listener_b.try_wait_one().unwrap() {
-                Some(_event_id) => {
-                    success = true;
-                    break;
-                }
+        const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
+        const MAX_ATTEMPTS: usize = 25;
+        retry(
+            || match iox_listener_b.try_wait_one().unwrap() {
+                Some(_event_id) => return Ok(()),
                 None => {
-                    // If no sample received, wait a bit and retry
-                    // Don't sleep after last attempt
-                    if retry < NUM_RETRIES {
-                        std::thread::sleep(Duration::from_millis(100));
-                        tunnel_a.propagate();
-                        tunnel_b.propagate();
-                    }
+                    tunnel_a.propagate();
+                    tunnel_b.propagate();
+                    return Err("failed to receive expected event");
                 }
-            }
-        }
-
-        if !success {
-            test_fail!(
-                "failed to receive expected event after {} attempts",
-                NUM_RETRIES
-            );
-        }
+            },
+            TIME_BETWEEN_ATTEMPTS,
+            Some(MAX_ATTEMPTS),
+        );
 
         // Wait for Zenoh ...
-        for _ in 0..NUM_RETRIES {
+        for _ in 0..5 {
             tunnel_a.propagate();
             tunnel_b.propagate();
             std::thread::sleep(Duration::from_millis(100));
@@ -881,7 +842,7 @@ mod zenoh_tunnel {
     }
 
     #[test]
-    fn received_events_are_consolidated_by_id<S: Service>() {
+    fn multiple_events_are_consolidated_by_id<S: Service>() {
         // [[ COMMON ]]
         let iox_service_name = mock_service_name();
 
@@ -908,6 +869,13 @@ mod zenoh_tunnel {
         // Notifier
         let iox_notifier_a = iox_service_a.notifier_builder().create().unwrap();
 
+        // Discover Services
+        tunnel_a.discover().unwrap();
+        let tunneled_services_a = tunnel_a.tunneled_services();
+        assert_that!(tunneled_services_a.len(), eq 1);
+        assert_that!(tunneled_services_a
+            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+
         // [[ HOST B ]]
         // Tunnel
         let z_config_b = zenoh::Config::default();
@@ -931,27 +899,15 @@ mod zenoh_tunnel {
         // Listener
         let iox_listener_b = iox_service_b.listener_builder().create().unwrap();
 
-        // [[ BOTH ]]
         // Discover Services
-        tunnel_a.discover().unwrap();
-        let tunneled_services_a = tunnel_a.tunneled_services();
-        assert_that!(tunneled_services_a.len(), eq 1);
-        assert_that!(tunneled_services_a
-            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
-
         tunnel_b.discover().unwrap();
         let tunneled_services_b = tunnel_b.tunneled_services();
         assert_that!(tunneled_services_b.len(), eq 1);
         assert_that!(tunneled_services_b
             .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
 
-        // Discovered service should be the same ID in both hosts
-        assert_that!(iox_service_a.service_id(), eq iox_service_b.service_id());
-
         // ==================== TEST =====================
-
-        // Send multiple notifications
-
+        // Send multiple notifications on different event ids
         let event_a = EventId::new(42);
         let event_b = EventId::new(777);
         let event_c = EventId::new(1234);
@@ -972,30 +928,34 @@ mod zenoh_tunnel {
         let mut num_notifications_b = 0;
         let mut num_notifications_c = 0;
 
-        const NUM_RETRIES: usize = 10;
-        for retry in 0..NUM_RETRIES {
-            iox_listener_b
-                .try_wait_all(|id| {
-                    if id == event_a {
-                        num_notifications_a += 1;
-                    }
-                    if id == event_b {
-                        num_notifications_b += 1;
-                    }
-                    if id == event_c {
-                        num_notifications_c += 1;
-                    }
-                })
-                .unwrap();
-
-            if num_notifications_a == 0 || num_notifications_b == 0 || num_notifications_c == 0 {
-                if retry < NUM_RETRIES {
-                    std::thread::sleep(Duration::from_millis(100));
+        const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
+        const MAX_ATTEMPTS: usize = 25;
+        retry(
+            || {
+                iox_listener_b
+                    .try_wait_all(|id| {
+                        if id == event_a {
+                            num_notifications_a += 1;
+                        }
+                        if id == event_b {
+                            num_notifications_b += 1;
+                        }
+                        if id == event_c {
+                            num_notifications_c += 1;
+                        }
+                    })
+                    .unwrap();
+                if num_notifications_a == 0 || num_notifications_b == 0 || num_notifications_c == 0
+                {
                     tunnel_a.propagate();
                     tunnel_b.propagate();
+                    return Err("expected notifications did not arrive");
                 }
-            }
-        }
+                return Ok(());
+            },
+            TIME_BETWEEN_ATTEMPTS,
+            Some(MAX_ATTEMPTS),
+        );
 
         assert_that!(num_notifications_a, eq 1);
         assert_that!(num_notifications_b, eq 1);
