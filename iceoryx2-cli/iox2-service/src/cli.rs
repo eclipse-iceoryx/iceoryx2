@@ -21,13 +21,14 @@ use iceoryx2_cli::HelpOptions;
 
 #[derive(Parser)]
 #[command(
-    name = "iox2-service",
+    name = "iox2 service",
+    bin_name = "iox2 service",
     about = "Query information about iceoryx2 services",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 service", HelpOptions::PrintCommandSection),
+    help_template = help_template(HelpOptions::PrintCommandSection),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -145,27 +146,27 @@ pub struct ListenOptions {
 pub enum Action {
     #[clap(
         about = "List all services",
-        help_template = help_template("iox2 service list", HelpOptions::DontPrintCommandSection)
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     List(ListOptions),
     #[clap(
         about = "Show service details",
-        help_template = help_template("iox2 service details", HelpOptions::DontPrintCommandSection)
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Details(DetailsOptions),
     #[clap(
         about = "Runs the service discovery service within a process",
-        help_template = help_template("iox2 service discovery", HelpOptions::DontPrintCommandSection)
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Discovery(DiscoveryOptions),
     #[clap(
         about = "Send a notification",
-        help_template = help_template("iox2 service notify", HelpOptions::DontPrintCommandSection)
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Notify(NotifyOptions),
     #[clap(
         about = "Wait until a notification arrives",
-        help_template = help_template("iox2 service listen", HelpOptions::DontPrintCommandSection)
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Listen(ListenOptions),
 }

@@ -19,13 +19,14 @@ use iceoryx2_cli::HelpOptions;
 
 #[derive(Parser)]
 #[command(
-    name = "iox2-config",
+    name = "iox2 config",
+    bin_name = "iox2 config",
     about = "Query information about iceoryx2 configuration",
     long_about = None,
     version = PackageVersion::get_str(),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 config", HelpOptions::PrintCommandSection),
+    help_template = help_template(HelpOptions::PrintCommandSection),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -40,7 +41,7 @@ pub struct Cli {
     version = PackageVersion::get_str(),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 config show", HelpOptions::PrintCommandSection),
+    help_template = help_template(HelpOptions::PrintCommandSection),
 )]
 pub struct ConfigShow {
     #[clap(subcommand)]
@@ -55,7 +56,7 @@ pub struct ConfigShow {
     version = PackageVersion::get_str(),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 config generate", HelpOptions::PrintCommandSection),
+    help_template = help_template(HelpOptions::PrintCommandSection),
 )]
 pub struct ConfigGenerate {
     #[clap(subcommand)]
@@ -80,12 +81,12 @@ pub enum GenerateSubcommand {
 
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "Show the currently used configuration", help_template = help_template("iox2 config show", HelpOptions::DontPrintCommandSection))]
+    #[clap(about = "Show the currently used configuration", help_template = help_template(HelpOptions::DontPrintCommandSection))]
     Show {
         #[clap(subcommand)]
         subcommand: Option<ShowSubcommand>,
     },
-    #[clap(about = "Generate a default configuration file", help_template = help_template("iox2 config generate", HelpOptions::DontPrintCommandSection))]
+    #[clap(about = "Generate a default configuration file", help_template = help_template(HelpOptions::DontPrintCommandSection))]
     Generate {
         #[clap(subcommand)]
         subcommand: Option<GenerateSubcommand>,

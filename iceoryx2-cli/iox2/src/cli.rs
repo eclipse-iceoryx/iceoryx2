@@ -17,12 +17,13 @@ use iceoryx2_cli::{help_template, HelpOptions};
 #[derive(Parser, Debug)]
 #[command(
     name = "iox2",
+    bin_name = "iox2",
     about = "The command-line interface entrypoint to iceoryx2.",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2", HelpOptions::PrintCommandSectionWithExternalCommandHint),
+    help_template = help_template(HelpOptions::PrintCommandSectionWithExternalCommandHint),
 )]
 pub struct Cli {
     #[arg(short, long, help = "List all installed external commands")]
