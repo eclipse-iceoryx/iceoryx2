@@ -12,7 +12,11 @@
 
 use core::fmt::Display;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, ZeroCopySend)]
+#[repr(C)]
 pub struct Port(u16);
 
 impl Display for Port {

@@ -12,8 +12,11 @@
 
 use core::{fmt::Debug, fmt::Display};
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-#[repr(transparent)]
+use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+
+#[derive(Clone, Copy, PartialEq, Eq, ZeroCopySend)]
+#[repr(C)]
 pub struct Ipv4Address(u32);
 
 pub const LOCALHOST: Ipv4Address = Ipv4Address::new(127, 0, 0, 1);
