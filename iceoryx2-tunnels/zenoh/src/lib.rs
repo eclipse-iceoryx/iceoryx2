@@ -42,6 +42,7 @@ use zenoh::handlers::FifoChannel;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::pubsub::Publisher as ZenohPublisher;
 use zenoh::pubsub::Subscriber as ZenohSubscriber;
+use zenoh::qos::Reliability;
 use zenoh::sample::Locality;
 use zenoh::sample::Sample;
 use zenoh::Session as ZenohSession;
@@ -188,6 +189,7 @@ pub(crate) fn z_create_publisher<'a>(
     let z_publisher = z_session
         .declare_publisher(z_key.clone())
         .allowed_destination(Locality::Remote)
+        .reliability(Reliability::Reliable)
         .wait()?;
     info!(
         "CREATED(zenoh): Publisher {} [{}]",
@@ -230,6 +232,7 @@ pub(crate) fn z_create_notifier<'a>(
     let z_notifier = z_session
         .declare_publisher(z_key.clone())
         .allowed_destination(Locality::Remote)
+        .reliability(Reliability::Reliable)
         .wait()?;
     info!(
         "CREATED(zenoh): Notifier {} [{}]",
