@@ -45,6 +45,8 @@
     conflicts when merging.
 -->
 
+* Implement `ZeroCopySend` for all system types
+  [#732](https://github.com/eclipse-iceoryx/iceoryx2/issues/732)
 * Remove trait re-exports from iceoryx2-bb-elementary
   [#757](https://github.com/eclipse-iceoryx/iceoryx2/issues/757)
 * Make POSIX user- and group details optional
