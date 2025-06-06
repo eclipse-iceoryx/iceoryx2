@@ -18,12 +18,13 @@ pub enum HelpOptions {
     PrintCommandSectionWithExternalCommandHint,
 }
 
-pub fn help_template(cli_name: &str, command_help: HelpOptions) -> String {
+pub fn help_template(command_help: HelpOptions) -> String {
     let mut template = format!(
-        "{{about}}\n\n{}{}{}[OPTIONS] [COMMAND]\n\n{}\n{{options}}",
-        "Usage: ".bright_green().bold(),
-        cli_name.bold(),
-        " ".bold(),
+        "{{about}}\n\n\
+         {} {{usage}}\n\n\
+         {}\n\
+         {{options}}",
+        "Usage:".bright_green().bold(),
         "Options:".bright_green().bold(),
     );
 
@@ -31,13 +32,16 @@ pub fn help_template(cli_name: &str, command_help: HelpOptions) -> String {
         HelpOptions::PrintCommandSection
         | HelpOptions::PrintCommandSectionWithExternalCommandHint => {
             template.push_str(&format!(
-                "\n\n{}\n{{subcommands}}",
+                "\n\n\
+                {}\n\
+                {{subcommands}}",
                 "Commands:".bright_green().bold(),
             ));
 
             if let HelpOptions::PrintCommandSectionWithExternalCommandHint = command_help {
                 template.push_str(&format!(
-                    "\n{}{}",
+                    "\n\
+                    {}{}",
                     "  ...            ".bold(),
                     "See external installed commands with --list"
                 ));

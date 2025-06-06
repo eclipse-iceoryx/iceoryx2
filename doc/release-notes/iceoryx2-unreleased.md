@@ -35,6 +35,8 @@
     [#786](https://github.com/eclipse-iceoryx/iceoryx2/issues/786)
 * Make `iox2 config show` print the available options
     [#788](https://github.com/eclipse-iceoryx/iceoryx2/issues/788)
+* Fix bug where CLI was not displaying positional arguments in usage help
+    [#796](https://github.com/eclipse-iceoryx/iceoryx2/issues/796)
 * Fix startup race in `pthread_create` on mac os platform
     [#799](https://github.com/eclipse-iceoryx/iceoryx2/issues/799)
 

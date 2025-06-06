@@ -22,13 +22,14 @@ use iceoryx2_cli::HelpOptions;
 
 #[derive(Parser)]
 #[command(
-    name = "iox2-node",
+    name = "iox2 node",
+    bin_name = "iox2 node",
     about = "Query information about iceoryx2 nodes",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 node", HelpOptions::PrintCommandSection),
+    help_template = help_template(HelpOptions::PrintCommandSection),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -61,8 +62,8 @@ pub struct DetailsOptions {
 
 #[derive(Subcommand)]
 pub enum Action {
-    #[clap(about = "List all nodes", help_template = help_template("iox2 node list", HelpOptions::DontPrintCommandSection))]
+    #[clap(about = "List all nodes", help_template = help_template(HelpOptions::DontPrintCommandSection))]
     List(ListOptions),
-    #[clap(about = "Show node details", help_template = help_template("iox2 node details", HelpOptions::DontPrintCommandSection))]
+    #[clap(about = "Show node details", help_template = help_template(HelpOptions::DontPrintCommandSection))]
     Details(DetailsOptions),
 }
