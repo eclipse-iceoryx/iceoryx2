@@ -80,7 +80,7 @@ pub enum CreationError {
 
 impl core::fmt::Display for CreationError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "CreationError::{:?}", self)
+        core::write!(f, "CreationError::{:?}", self)
     }
 }
 
@@ -150,7 +150,7 @@ pub enum SpinError {
 
 impl core::fmt::Display for SpinError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "SpinError::{:?}", self)
+        core::write!(f, "SpinError::{:?}", self)
     }
 }
 
@@ -218,16 +218,17 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
+        let defaults = iceoryx2::config::Config::default().defaults;
         Self {
             sync_on_initialization: true,
             include_internal: true,
             publish_events: true,
-            max_subscribers: 10,
-            max_buffer_size: 10,
-            history_size: 10,
-            max_borrrowed_samples: 10,
+            history_size: defaults.publish_subscribe.publisher_history_size,
+            max_subscribers: defaults.publish_subscribe.max_subscribers,
+            max_buffer_size: defaults.publish_subscribe.subscriber_max_buffer_size,
+            max_borrrowed_samples: defaults.publish_subscribe.subscriber_max_borrowed_samples,
             send_notifications: true,
-            max_listeners: 10,
+            max_listeners: defaults.event.max_listeners,
         }
     }
 }

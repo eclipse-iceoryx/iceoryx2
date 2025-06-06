@@ -68,3 +68,16 @@ Caused by:
 
 This is fixed by adding the new crate to the `filegroup` in `BUILD.bazel` in
 the project root.
+
+## The bazel build fails to build the crate index
+
+An error in this form:
+
+```ascii
+--stderr:
+thread 'main' panicked at external/crate_index__ring-0.17.14/build.rs:287:43:
+called `Option::unwrap()` on a `None` value
+```
+
+may be due to an out-of-date `rules_rust` being used by the bazel build.
+Updating to a newer version may resolve the issue.
