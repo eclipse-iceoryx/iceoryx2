@@ -53,6 +53,9 @@
   [#757](https://github.com/eclipse-iceoryx/iceoryx2/issues/757)
 * Make POSIX user- and group details optional
   [#780](https://github.com/eclipse-iceoryx/iceoryx2/issues/780)
+* Add `recommended::Ipc` and `recommended::Local` to iceoryx2 concepts for
+  to provide link the best implementation for the specific platform
+  [#806](https://github.com/eclipse-iceoryx/iceoryx2/issues/806)
 
 ### Workflow
 

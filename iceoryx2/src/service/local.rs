@@ -49,17 +49,16 @@ pub struct Service {
 }
 
 impl crate::service::Service for Service {
-    type StaticStorage = static_storage::process_local::Storage;
-    type ConfigSerializer = serialize::toml::Toml;
-    type DynamicStorage = dynamic_storage::process_local::Storage<DynamicConfig>;
-    type ServiceNameHasher = hash::sha1::Sha1;
-    type SharedMemory = shared_memory::process_local::Memory<PoolAllocator>;
-    type ResizableSharedMemory =
-        resizable_shared_memory::dynamic::DynamicMemory<PoolAllocator, Self::SharedMemory>;
-    type Connection = zero_copy_connection::process_local::Connection;
-    type Event = event::process_local_socketpair::EventImpl;
-    type Monitoring = monitoring::process_local::ProcessLocalMonitoring;
-    type Reactor = reactor::posix_select::Reactor;
+    type StaticStorage = static_storage::recommended::Local;
+    type ConfigSerializer = serialize::recommended::Recommended;
+    type DynamicStorage = dynamic_storage::recommended::Local<DynamicConfig>;
+    type ServiceNameHasher = hash::recommended::Recommended;
+    type SharedMemory = shared_memory::recommended::Local<PoolAllocator>;
+    type ResizableSharedMemory = resizable_shared_memory::recommended::Local<PoolAllocator>;
+    type Connection = zero_copy_connection::recommended::Local;
+    type Event = event::recommended::Local;
+    type Monitoring = monitoring::recommended::Local;
+    type Reactor = reactor::recommended::Local;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {

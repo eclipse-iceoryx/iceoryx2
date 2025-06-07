@@ -38,6 +38,7 @@
 //! ```
 
 pub mod cdr;
+pub mod recommended;
 pub mod toml;
 
 /// Failure emitted by [`Serialize::serialize()`]

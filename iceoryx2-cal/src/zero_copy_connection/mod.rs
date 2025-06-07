@@ -13,6 +13,7 @@
 pub mod common;
 pub mod posix_shared_memory;
 pub mod process_local;
+pub mod recommended;
 pub mod used_chunk_list;
 
 use core::fmt::Debug;

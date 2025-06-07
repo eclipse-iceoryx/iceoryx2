@@ -81,6 +81,7 @@ pub use crate::{
 
 pub mod file_lock;
 pub mod process_local;
+pub mod recommended;
 #[doc(hidden)]
 pub mod testing;
 
