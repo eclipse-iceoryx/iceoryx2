@@ -87,6 +87,7 @@
 //! ```
 
 pub mod dynamic;
+pub mod recommended;
 
 pub use crate::shm_allocator::{pool_allocator::PoolAllocator, AllocationStrategy};
 
