@@ -13,6 +13,7 @@
 mod service_discovery_service {
 
     use iceoryx2::prelude::*;
+    use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -195,4 +196,72 @@ mod service_discovery_service {
             test_fail!("expected DiscoveryEvent::Added for the internal service")
         }
     }
+
+    #[test]
+    fn request_current_discovery_state() -> Result<(), Box<dyn std::error::Error>> {
+        let iceoryx_config = generate_isolated_config();
+
+        // create the discovery service
+        let discovery_config = Config {
+            sync_on_initialization: true,
+            include_internal: false,
+            publish_events: true,
+            max_subscribers: 1,
+            send_notifications: false,
+            max_listeners: 1,
+            max_response_buffer_size: 3,
+            ..Default::default()
+        };
+        
+        // create a service monitoring service
+        // create some services
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<ipc::Service>()
+            .unwrap();
+
+        let service_names: Vec<_> = (0..6)
+            .map(|_| generate_name())
+            .collect();
+
+        let _created_services: Vec<_> = service_names
+            .iter()
+            .map(|name| {
+            node.service_builder(name)
+                .publish_subscribe::<u64>()
+                .create()
+                .unwrap()
+            })
+            .collect();
+
+        let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
+
+        // send a request for current discovery state
+        let service = node
+            .service_builder(service_name())
+            .request_response::<() , StaticConfig>()
+            .max_response_buffer_size(discovery_config.max_response_buffer_size)
+            .open_or_create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+
+        let request = client.loan_uninit()?;
+        let request = request.write_payload(());
+        let pending_response = request.send()?;
+
+        sut.spin(|_| {}, |_| {}).unwrap();
+        
+        let mut counter = 0; 
+        while let Some(response) = pending_response.receive()? {
+            //check the services are present in created services
+            assert_that!(service_names.contains(response.name()),eq true);
+            counter+=1;
+        }
+        // check that all the services are covered
+        assert_that!(counter, eq service_names.len());
+
+        Ok(())
+    }
 }
+
