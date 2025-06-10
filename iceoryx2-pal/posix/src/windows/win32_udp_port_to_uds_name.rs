@@ -66,7 +66,8 @@ impl Entry {
         let current = self.aba_counter.load(Ordering::Acquire);
         unsafe {
             (*self.value[(current % 2) as usize].get()) = [0u8; PATH_LENGTH];
-            (*self.value[(current % 2) as usize].get())[..value.len()].copy_from_slice(value);
+            (&mut (*self.value[(current % 2) as usize].get()))[..value.len()]
+                .copy_from_slice(value);
         };
         self.aba_counter.fetch_add(1, Ordering::Release);
     }

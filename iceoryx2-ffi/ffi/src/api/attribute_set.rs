@@ -195,7 +195,7 @@ pub unsafe extern "C" fn iox2_attribute_set_index(
     debug_assert!(!handle.is_null());
     debug_assert!(index < iox2_attribute_set_number_of_attributes(handle));
 
-    (&(*handle)[index] as *const Attribute).cast()
+    (&(&(*handle))[index] as *const Attribute).cast()
 }
 
 /// Returns the number of values stored under a specific key. If the key does not exist it
