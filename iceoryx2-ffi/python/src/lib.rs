@@ -30,6 +30,7 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::file_path::FilePath>()?;
     m.add_class::<crate::path::Path>()?;
     m.add_class::<crate::duration::Duration>()?;
+    m.add_class::<crate::semantic_string_error::UnableToDeliverStrategy>()?;
     m.add(
         "SemanticStringError",
         py.get_type::<crate::semantic_string_error::SemanticStringError>(),

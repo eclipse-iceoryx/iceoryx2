@@ -16,7 +16,7 @@ use crate::duration::Duration;
 use crate::file_name::FileName;
 use crate::file_path::FilePath;
 use crate::path::Path;
-use crate::semantic_string_error::ConfigCreationError;
+use crate::semantic_string_error::{ConfigCreationError, UnableToDeliverStrategy};
 use pyo3::prelude::*;
 
 #[pyclass]
@@ -214,6 +214,161 @@ impl Service {
     #[setter]
     pub fn set_event_connection_suffix(&self, value: &FileName) {
         self.value().global.service.event_connection_suffix = value.value.clone()
+    }
+}
+
+#[pyclass]
+pub struct PublishSubscribe {
+    value: Arc<Mutex<iceoryx2::config::Config>>,
+}
+
+impl PublishSubscribe {
+    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
+        self.value.lock().unwrap()
+    }
+}
+
+#[pymethods]
+impl PublishSubscribe {
+    pub fn __str__(&self) -> String {
+        format!("{:?}", self.value().defaults.publish_subscribe)
+    }
+
+    #[getter]
+    pub fn max_subscribers(&self) -> usize {
+        self.value().defaults.publish_subscribe.max_subscribers
+    }
+
+    #[setter]
+    pub fn set_max_subscribers(&self, value: usize) {
+        self.value().defaults.publish_subscribe.max_subscribers = value
+    }
+
+    #[getter]
+    pub fn max_publishers(&self) -> usize {
+        self.value().defaults.publish_subscribe.max_publishers
+    }
+
+    #[setter]
+    pub fn set_max_publishers(&self, value: usize) {
+        self.value().defaults.publish_subscribe.max_publishers = value
+    }
+
+    #[getter]
+    pub fn max_nodes(&self) -> usize {
+        self.value().defaults.publish_subscribe.max_nodes
+    }
+
+    #[setter]
+    pub fn set_max_nodes(&self, value: usize) {
+        self.value().defaults.publish_subscribe.max_nodes = value
+    }
+
+    #[getter]
+    pub fn subscriber_max_buffer_size(&self) -> usize {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .subscriber_max_buffer_size
+    }
+
+    #[setter]
+    pub fn set_subscriber_max_buffer_size(&self, value: usize) {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .subscriber_max_buffer_size = value
+    }
+
+    #[getter]
+    pub fn subscriber_max_borrowed_samples(&self) -> usize {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .subscriber_max_borrowed_samples
+    }
+
+    #[setter]
+    pub fn set_subscriber_max_borrowed_samples(&self, value: usize) {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .subscriber_max_borrowed_samples = value
+    }
+
+    #[getter]
+    pub fn publisher_max_loaned_samples(&self) -> usize {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .publisher_max_loaned_samples
+    }
+
+    #[setter]
+    pub fn set_publisher_max_loaned_samples(&self, value: usize) {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .publisher_max_loaned_samples = value
+    }
+
+    #[getter]
+    pub fn publisher_history_size(&self) -> usize {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .publisher_history_size
+    }
+
+    #[setter]
+    pub fn set_publisher_history_size(&self, value: usize) {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .publisher_history_size = value
+    }
+
+    #[getter]
+    pub fn enable_safe_overflow(&self) -> bool {
+        self.value().defaults.publish_subscribe.enable_safe_overflow
+    }
+
+    #[setter]
+    pub fn set_enable_safe_overflow(&self, value: bool) {
+        self.value().defaults.publish_subscribe.enable_safe_overflow = value
+    }
+
+    #[getter]
+    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .unable_to_deliver_strategy
+            .into()
+    }
+
+    #[setter]
+    pub fn set_unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .unable_to_deliver_strategy = (value.clone()).into()
+    }
+
+    #[getter]
+    pub fn subscriber_expired_connection_buffer(&self) -> usize {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .subscriber_expired_connection_buffer
+    }
+
+    #[setter]
+    pub fn set_subscriber_expired_connection_buffer(&self, value: usize) {
+        self.value()
+            .defaults
+            .publish_subscribe
+            .subscriber_expired_connection_buffer = value
     }
 }
 
