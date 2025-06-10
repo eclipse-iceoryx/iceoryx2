@@ -18,13 +18,14 @@ use iceoryx2_cli::HelpOptions;
 
 #[derive(Parser)]
 #[command(
-    name = "iox2-tunnel",
+    name = "iox2 tunnel",
+    bin_name = "iox2 tunnel",
     about = "Launch a tunnel between iceoryx2 instances.",
     long_about = None,
     version = env!("CARGO_PKG_VERSION"),
     disable_help_subcommand = true,
     arg_required_else_help = false,
-    help_template = help_template("iox2 tunnel", HelpOptions::PrintCommandSection),
+    help_template = help_template(HelpOptions::PrintCommandSection),
 )]
 pub struct Cli {
     #[clap(subcommand)]
@@ -63,7 +64,7 @@ pub struct ZenohOptions {}
 pub enum Transport {
     #[clap(
         about = "Use Zenoh as the transport",
-        help_template = help_template("iox2 tunnel zenoh", HelpOptions::DontPrintCommandSection)
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Zenoh(ZenohOptions),
 }
