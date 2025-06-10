@@ -10,13 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::usize;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::duration::Duration;
-use crate::error::{ConfigCreationError, UnableToDeliverStrategy};
+use crate::error::ConfigCreationError;
 use crate::file_name::FileName;
 use crate::file_path::FilePath;
 use crate::path::Path;
+use crate::unable_to_deliver_strategy::UnableToDeliverStrategy;
 use pyo3::prelude::*;
 
 #[pyclass]
@@ -369,6 +371,390 @@ impl PublishSubscribe {
             .defaults
             .publish_subscribe
             .subscriber_expired_connection_buffer = value
+    }
+}
+
+#[pyclass]
+pub struct Event {
+    value: Arc<Mutex<iceoryx2::config::Config>>,
+}
+
+impl Event {
+    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
+        self.value.lock().unwrap()
+    }
+}
+
+#[pymethods]
+impl Event {
+    pub fn __str__(&self) -> String {
+        format!("{:?}", self.value().defaults.event)
+    }
+
+    #[getter]
+    pub fn max_listeners(&self) -> usize {
+        self.value().defaults.event.max_listeners
+    }
+
+    #[setter]
+    pub fn set_max_listeners(&self, value: usize) {
+        self.value().defaults.event.max_listeners = value
+    }
+
+    #[getter]
+    pub fn max_notifiers(&self) -> usize {
+        self.value().defaults.event.max_notifiers
+    }
+
+    #[setter]
+    pub fn set_max_notifiers(&self, value: usize) {
+        self.value().defaults.event.max_notifiers = value
+    }
+
+    #[getter]
+    pub fn max_nodes(&self) -> usize {
+        self.value().defaults.event.max_nodes
+    }
+
+    #[setter]
+    pub fn set_max_nodes(&self, value: usize) {
+        self.value().defaults.event.max_nodes = value
+    }
+
+    #[getter]
+    pub fn event_id_max_value(&self) -> usize {
+        self.value().defaults.event.event_id_max_value
+    }
+
+    #[setter]
+    pub fn set_event_id_max_value(&self, value: usize) {
+        self.value().defaults.event.event_id_max_value = value
+    }
+
+    #[getter]
+    pub fn deadline(&self) -> Duration {
+        Duration {
+            value: self
+                .value()
+                .defaults
+                .event
+                .deadline
+                .unwrap_or(core::time::Duration::ZERO),
+        }
+    }
+
+    #[setter]
+    pub fn set_deadline(&self, value: &Duration) {
+        if value.value.is_zero() {
+            self.value().defaults.event.deadline = None
+        } else {
+            self.value().defaults.event.deadline = Some(value.value)
+        }
+    }
+
+    #[getter]
+    pub fn get_notifier_created_event(&self) -> usize {
+        self.value()
+            .defaults
+            .event
+            .notifier_created_event
+            .unwrap_or(usize::MAX)
+    }
+
+    #[getter]
+    pub fn has_notifier_created_event(&self) -> bool {
+        self.value().defaults.event.notifier_created_event.is_some()
+    }
+
+    #[setter]
+    pub fn set_notifier_created_event(&self, value: usize) {
+        self.value().defaults.event.notifier_created_event = Some(value)
+    }
+
+    pub fn disable_notifier_created_event(&self) {
+        self.value().defaults.event.notifier_created_event = None
+    }
+
+    #[getter]
+    pub fn get_notifier_dropped_event(&self) -> usize {
+        self.value()
+            .defaults
+            .event
+            .notifier_dropped_event
+            .unwrap_or(usize::MAX)
+    }
+
+    #[getter]
+    pub fn has_notifier_dropped_event(&self) -> bool {
+        self.value().defaults.event.notifier_dropped_event.is_some()
+    }
+
+    #[setter]
+    pub fn set_notifier_dropped_event(&self, value: usize) {
+        self.value().defaults.event.notifier_dropped_event = Some(value)
+    }
+
+    pub fn disable_notifier_dropped_event(&self) {
+        self.value().defaults.event.notifier_dropped_event = None
+    }
+
+    #[getter]
+    pub fn get_notifier_dead_event(&self) -> usize {
+        self.value()
+            .defaults
+            .event
+            .notifier_dead_event
+            .unwrap_or(usize::MAX)
+    }
+
+    #[getter]
+    pub fn has_notifier_dead_event(&self) -> bool {
+        self.value().defaults.event.notifier_dead_event.is_some()
+    }
+
+    #[setter]
+    pub fn set_notifier_dead_event(&self, value: usize) {
+        self.value().defaults.event.notifier_dead_event = Some(value)
+    }
+
+    pub fn disable_notifier_dead_event(&self) {
+        self.value().defaults.event.notifier_dead_event = None
+    }
+}
+
+#[pyclass]
+pub struct RequestResponse {
+    value: Arc<Mutex<iceoryx2::config::Config>>,
+}
+
+impl RequestResponse {
+    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
+        self.value.lock().unwrap()
+    }
+}
+
+#[pymethods]
+impl RequestResponse {
+    pub fn __str__(&self) -> String {
+        format!("{:?}", self.value().defaults.event)
+    }
+
+    #[getter]
+    pub fn enable_safe_overflow_for_requests(&self) -> bool {
+        self.value()
+            .defaults
+            .request_response
+            .enable_safe_overflow_for_requests
+    }
+
+    #[setter]
+    pub fn set_enable_safe_overflow_for_requests(&self, value: bool) {
+        self.value()
+            .defaults
+            .request_response
+            .enable_safe_overflow_for_requests = value
+    }
+
+    #[getter]
+    pub fn enable_safe_overflow_for_responses(&self) -> bool {
+        self.value()
+            .defaults
+            .request_response
+            .enable_safe_overflow_for_responses
+    }
+
+    #[setter]
+    pub fn set_enable_safe_overflow_for_responses(&self, value: bool) {
+        self.value()
+            .defaults
+            .request_response
+            .enable_safe_overflow_for_responses = value
+    }
+
+    #[getter]
+    pub fn max_active_requests_per_client(&self) -> usize {
+        self.value()
+            .defaults
+            .request_response
+            .max_active_requests_per_client
+    }
+
+    #[setter]
+    pub fn set_max_active_requests_per_client(&self, value: usize) {
+        self.value()
+            .defaults
+            .request_response
+            .max_active_requests_per_client = value
+    }
+
+    #[getter]
+    pub fn max_response_buffer_size(&self) -> usize {
+        self.value()
+            .defaults
+            .request_response
+            .max_response_buffer_size
+    }
+
+    #[setter]
+    pub fn set_max_response_buffer_size(&self, value: usize) {
+        self.value()
+            .defaults
+            .request_response
+            .max_response_buffer_size = value
+    }
+
+    #[getter]
+    pub fn max_servers(&self) -> usize {
+        self.value().defaults.request_response.max_servers
+    }
+
+    #[setter]
+    pub fn set_max_servers(&self, value: usize) {
+        self.value().defaults.request_response.max_servers = value
+    }
+
+    #[getter]
+    pub fn max_clients(&self) -> usize {
+        self.value().defaults.request_response.max_clients
+    }
+
+    #[setter]
+    pub fn set_max_clients(&self, value: usize) {
+        self.value().defaults.request_response.max_clients = value
+    }
+
+    #[getter]
+    pub fn max_nodes(&self) -> usize {
+        self.value().defaults.request_response.max_nodes
+    }
+
+    #[setter]
+    pub fn set_max_nodes(&self, value: usize) {
+        self.value().defaults.request_response.max_nodes = value
+    }
+
+    #[getter]
+    pub fn max_borrowed_responses_per_pending_response(&self) -> usize {
+        self.value()
+            .defaults
+            .request_response
+            .max_borrowed_responses_per_pending_response
+    }
+
+    #[setter]
+    pub fn set_max_borrowed_responses_per_pending_response(&self, value: usize) {
+        self.value()
+            .defaults
+            .request_response
+            .max_borrowed_responses_per_pending_response = value
+    }
+
+    #[getter]
+    pub fn max_loaned_requests(&self) -> usize {
+        self.value().defaults.request_response.max_loaned_requests
+    }
+
+    #[setter]
+    pub fn set_max_loaned_requests(&self, value: usize) {
+        self.value().defaults.request_response.max_loaned_requests = value
+    }
+
+    #[getter]
+    pub fn server_max_loaned_responses_per_request(&self) -> usize {
+        self.value()
+            .defaults
+            .request_response
+            .server_max_loaned_responses_per_request
+    }
+
+    #[setter]
+    pub fn set_server_max_loaned_responses_per_request(&self, value: usize) {
+        self.value()
+            .defaults
+            .request_response
+            .server_max_loaned_responses_per_request = value
+    }
+
+    #[getter]
+    pub fn client_unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+        self.value()
+            .defaults
+            .request_response
+            .client_unable_to_deliver_strategy
+            .into()
+    }
+
+    #[setter]
+    pub fn set_client_unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) {
+        self.value()
+            .defaults
+            .request_response
+            .client_unable_to_deliver_strategy = (value.clone()).into()
+    }
+
+    #[getter]
+    pub fn server_unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+        self.value()
+            .defaults
+            .request_response
+            .server_unable_to_deliver_strategy
+            .into()
+    }
+
+    #[setter]
+    pub fn set_server_unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) {
+        self.value()
+            .defaults
+            .request_response
+            .server_unable_to_deliver_strategy = (value.clone()).into()
+    }
+
+    #[getter]
+    pub fn client_expired_connection_buffer(&self) -> usize {
+        self.value()
+            .defaults
+            .request_response
+            .client_expired_connection_buffer
+    }
+
+    #[setter]
+    pub fn set_client_expired_connection_buffer(&self, value: usize) {
+        self.value()
+            .defaults
+            .request_response
+            .client_expired_connection_buffer = value
+    }
+
+    #[getter]
+    pub fn server_expired_connection_buffer(&self) -> usize {
+        self.value()
+            .defaults
+            .request_response
+            .server_expired_connection_buffer
+    }
+
+    #[setter]
+    pub fn set_server_expired_connection_buffer(&self, value: usize) {
+        self.value()
+            .defaults
+            .request_response
+            .server_expired_connection_buffer = value
+    }
+
+    #[getter]
+    pub fn enable_fire_and_forget_requests(&self) -> bool {
+        self.value()
+            .defaults
+            .request_response
+            .enable_fire_and_forget_requests
+    }
+
+    #[setter]
+    pub fn set_enable_fire_and_forget_requests(&self, value: bool) {
+        self.value()
+            .defaults
+            .request_response
+            .enable_fire_and_forget_requests = value
     }
 }
 

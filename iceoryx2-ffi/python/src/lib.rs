@@ -17,6 +17,7 @@ pub mod file_name;
 pub mod file_path;
 pub mod node_name;
 pub mod path;
+pub mod unable_to_deliver_strategy;
 
 use pyo3::prelude::*;
 
@@ -30,7 +31,7 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::file_path::FilePath>()?;
     m.add_class::<crate::path::Path>()?;
     m.add_class::<crate::duration::Duration>()?;
-    m.add_class::<crate::error::UnableToDeliverStrategy>()?;
+    m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
     m.add(
         "SemanticStringError",
         py.get_type::<crate::error::SemanticStringError>(),

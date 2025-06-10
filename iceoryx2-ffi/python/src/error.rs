@@ -12,7 +12,6 @@
 
 use pyo3::create_exception;
 use pyo3::exceptions::PyException;
-use pyo3::prelude::*;
 
 create_exception!(
     iceoryx2_ffi_python,
@@ -27,32 +26,3 @@ create_exception!(
     PyException,
     "Errors caused by creating a new config."
 );
-
-#[pyclass(eq, eq_int)]
-#[derive(PartialEq, Clone)]
-pub enum UnableToDeliverStrategy {
-    Block,
-    DiscardSample,
-}
-
-impl From<iceoryx2::prelude::UnableToDeliverStrategy> for UnableToDeliverStrategy {
-    fn from(value: iceoryx2::prelude::UnableToDeliverStrategy) -> Self {
-        match value {
-            iceoryx2::prelude::UnableToDeliverStrategy::Block => UnableToDeliverStrategy::Block,
-            iceoryx2::prelude::UnableToDeliverStrategy::DiscardSample => {
-                UnableToDeliverStrategy::DiscardSample
-            }
-        }
-    }
-}
-
-impl From<UnableToDeliverStrategy> for iceoryx2::prelude::UnableToDeliverStrategy {
-    fn from(value: UnableToDeliverStrategy) -> Self {
-        match value {
-            UnableToDeliverStrategy::Block => iceoryx2::prelude::UnableToDeliverStrategy::Block,
-            UnableToDeliverStrategy::DiscardSample => {
-                iceoryx2::prelude::UnableToDeliverStrategy::DiscardSample
-            }
-        }
-    }
-}
