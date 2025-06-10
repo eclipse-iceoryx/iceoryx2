@@ -67,6 +67,7 @@
 
 pub mod posix_shared_memory;
 pub mod process_local;
+pub mod recommended;
 pub mod unix_datagram;
 
 use core::fmt::Debug;

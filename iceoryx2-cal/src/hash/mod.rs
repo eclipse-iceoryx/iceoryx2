@@ -28,6 +28,7 @@
 use iceoryx2_bb_container::semantic_string::{SemanticString, SemanticStringError};
 use iceoryx2_bb_system_types::base64url::Base64Url;
 
+pub mod recommended;
 pub mod sha1;
 
 /// Represents the value of the hash.
