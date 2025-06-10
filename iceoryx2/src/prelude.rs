@@ -20,6 +20,7 @@ pub use crate::service::{
 };
 pub use crate::signal_handling_mode::SignalHandlingMode;
 pub use crate::waitset::{WaitSet, WaitSetAttachmentId, WaitSetBuilder, WaitSetGuard};
+pub use iceoryx2_bb_container::semantic_string::SemanticStringError;
 pub use iceoryx2_bb_derive_macros::PlacementDefault;
 pub use iceoryx2_bb_derive_macros::ZeroCopySend;
 pub use iceoryx2_bb_elementary::alignment::Alignment;

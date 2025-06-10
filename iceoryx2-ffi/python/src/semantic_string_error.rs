@@ -10,18 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod node_name;
-pub mod semantic_string_error;
+use pyo3::create_exception;
+use pyo3::exceptions::PyException;
 
-use node_name::*;
-use semantic_string_error::*;
-
-use pyo3::prelude::*;
-
-/// A Python module implemented in Rust.
-#[pymodule]
-fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<NodeName>()?;
-    m.add("SemanticStringError", py.get_type::<SemanticStringError>())?;
-    Ok(())
-}
+create_exception!(
+    iceoryx2_ffi_python,
+    SemanticStringError,
+    PyException,
+    "Errors caused by creating a semantic string."
+);

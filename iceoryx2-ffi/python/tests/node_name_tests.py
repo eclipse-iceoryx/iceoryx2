@@ -14,5 +14,11 @@ import iceoryx2_ffi_python as iceoryx2
 import pytest
 
 
-def test_sum_as_string() -> None:
-    assert iceoryx2.sum_as_string(1, 3) == "4"
+def test_node_name_can_be_constructed() -> None:
+    sut = iceoryx2.NodeName.new("hello world")
+    assert sut.as_str() == "hello world"
+
+def test_node_name_construction_fails_when_max_len_is_exceeded() -> None:
+    sut_value = "x" * (iceoryx2.NodeName.max_len() + 1)
+    with pytest.raises(iceoryx2.SemanticStringError):
+        sut = iceoryx2.NodeName.new(sut_value)
