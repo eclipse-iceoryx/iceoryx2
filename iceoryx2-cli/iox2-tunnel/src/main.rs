@@ -28,6 +28,7 @@ use iceoryx2_bb_log::info;
 use iceoryx2_bb_log::set_log_level_from_env_or;
 use iceoryx2_bb_log::LogLevel;
 
+use iceoryx2_tunnels_zenoh::Scope;
 use iceoryx2_tunnels_zenoh::Tunnel;
 use iceoryx2_tunnels_zenoh::TunnelConfig;
 
@@ -82,7 +83,7 @@ fn main() -> Result<()> {
 
                     let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
                         if id == tick {
-                            if let Err(e) = tunnel.discover() {
+                            if let Err(e) = tunnel.discover(Scope::Both) {
                                 error!("Failure in discovery: {}", e);
                             };
                             tunnel.propagate();

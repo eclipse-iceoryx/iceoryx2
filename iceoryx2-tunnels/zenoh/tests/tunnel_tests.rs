@@ -115,12 +115,12 @@ mod zenoh_tunnel {
         // ==================== TEST =====================
 
         // [[ DISCOVERY SERVICE ]]
-        // Discover Services
+        // Discover
         discovery_service.spin(|_| {}, |_| {}).unwrap();
 
         // [[ HOST A ]]
-        // Discover Services
-        tunnel.discover().unwrap();
+        // Respond to discovered services
+        tunnel.discover(Scope::Iceoryx).unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 1);
         assert_that!(tunnel
             .tunneled_services()
@@ -158,8 +158,8 @@ mod zenoh_tunnel {
         // ==================== TEST =====================
 
         // [[ HOST A ]]
-        // Discover Services
-        tunnel.discover().unwrap();
+        // Discover
+        tunnel.discover(Scope::Iceoryx).unwrap();
         assert_that!(tunnel.tunneled_services().len(), eq 1);
         assert_that!(tunnel
             .tunneled_services()
@@ -168,6 +168,9 @@ mod zenoh_tunnel {
 
     #[test]
     fn discovers_remote_services_via_zenoh<S: Service>() {
+        const MAX_RETRIES: usize = 25;
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+
         // ==================== SETUP ====================
 
         // [[ COMMON ]]
@@ -207,25 +210,23 @@ mod zenoh_tunnel {
         // ==================== TEST =====================
 
         // [[ HOST A ]]
-        // Discover Services - Nothing should be discovered
-        tunnel_a.discover().unwrap();
+        // Discover - nothing should be discovered
+        tunnel_a.discover(Scope::Zenoh).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
         // [[ HOST B ]]
-        // Discover Services - Service should be announced
-        tunnel_b.discover().unwrap();
+        // Discover - service should be announced
+        tunnel_b.discover(Scope::Iceoryx).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 1);
         assert_that!(tunnel_b
             .tunneled_services()
             .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
 
         // [[ HOST A ]]
-        // Discover Services - Announced service should be discovered
-        const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
-        const MAX_ATTEMPTS: usize = 25;
+        // Discover - announced service should be discovered via Zenoh
         retry(
             || {
-                tunnel_a.discover().unwrap();
+                tunnel_a.discover(Scope::Zenoh).unwrap();
 
                 let tunneled_services = tunnel_a.tunneled_services();
                 let success =
@@ -236,12 +237,15 @@ mod zenoh_tunnel {
                 }
                 return Err("failed to discover remote service");
             },
-            TIME_BETWEEN_ATTEMPTS,
-            Some(MAX_ATTEMPTS),
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
         );
     }
 
     fn propagates_n_struct_payloads<S: Service>(sample_count: usize) {
+        const MAX_RETRIES: usize = 25;
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+
         #[derive(Debug, Clone, PartialEq, ZeroCopySend)]
         #[repr(C)]
         struct MyType {
@@ -264,7 +268,7 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
-        // Service
+        // Publisher
         let iox_node_a = NodeBuilder::new()
             .config(&iox_config_a)
             .create::<S>()
@@ -274,12 +278,10 @@ mod zenoh_tunnel {
             .publish_subscribe::<MyType>()
             .open_or_create()
             .unwrap();
-
-        // Publisher
         let iox_publisher_a = iox_service_a.publisher_builder().create().unwrap();
 
-        // Discover Services
-        tunnel_a.discover().unwrap();
+        // Discover
+        tunnel_a.discover(Scope::Iceoryx).unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
@@ -294,7 +296,25 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
-        // Service
+        // Discover
+        retry(
+            || {
+                tunnel_b.discover(Scope::Zenoh).unwrap();
+
+                let tunneled_services = tunnel_b.tunneled_services();
+                let success =
+                    tunneled_services.contains(&String::from(iox_service_a.service_id().as_str()));
+
+                if success {
+                    return Ok(());
+                }
+                return Err("failed to discover remote service");
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        );
+
+        // Subscriber
         let iox_node_b = NodeBuilder::new()
             .config(&iox_config_b)
             .create::<S>()
@@ -304,16 +324,7 @@ mod zenoh_tunnel {
             .publish_subscribe::<MyType>()
             .open_or_create()
             .unwrap();
-
-        // Subscriber
         let iox_subscriber_b = iox_service_b.subscriber_builder().create().unwrap();
-
-        // Discover Services
-        tunnel_b.discover().unwrap();
-        let tunneled_services_b = tunnel_b.tunneled_services();
-        assert_that!(tunneled_services_b.len(), eq 1);
-        assert_that!(tunneled_services_b
-            .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
 
         // ==================== TEST =====================
 
@@ -334,8 +345,6 @@ mod zenoh_tunnel {
             tunnel_b.propagate();
 
             // Receive
-            const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
-            const MAX_ATTEMPTS: usize = 25;
             retry(
                 || {
                     match iox_subscriber_b.receive().unwrap() {
@@ -356,8 +365,8 @@ mod zenoh_tunnel {
                         }
                     }
                 },
-                TIME_BETWEEN_ATTEMPTS,
-                Some(MAX_ATTEMPTS),
+                TIME_BETWEEN_RETRIES,
+                Some(MAX_RETRIES),
             );
         }
     }
@@ -378,6 +387,8 @@ mod zenoh_tunnel {
     }
 
     fn propagates_n_slice_payloads<S: Service>(sample_count: usize) {
+        const MAX_RETRIES: usize = 25;
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
         const PAYLOAD_DATA_LENGTH: usize = 256;
 
         // ==================== SETUP ====================
@@ -394,7 +405,7 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
-        // Service
+        // Publisher
         let iox_node_a = NodeBuilder::new()
             .config(&iox_config_a)
             .create::<S>()
@@ -404,16 +415,14 @@ mod zenoh_tunnel {
             .publish_subscribe::<[u8]>()
             .open_or_create()
             .unwrap();
-
-        // Publisher
         let iox_publisher_a = iox_service_a
             .publisher_builder()
             .initial_max_slice_len(PAYLOAD_DATA_LENGTH)
             .create()
             .unwrap();
 
-        // Discover Services
-        tunnel_a.discover().unwrap();
+        // Discover
+        tunnel_a.discover(Scope::Iceoryx).unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
@@ -428,7 +437,25 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
-        // Service
+        // Discover
+        retry(
+            || {
+                tunnel_b.discover(Scope::Zenoh).unwrap();
+
+                let tunneled_services = tunnel_b.tunneled_services();
+                let success =
+                    tunneled_services.contains(&String::from(iox_service_a.service_id().as_str()));
+
+                if success {
+                    return Ok(());
+                }
+                return Err("failed to discover remote service");
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        );
+
+        // Subscriber
         let iox_node_b = NodeBuilder::new()
             .config(&iox_config_b)
             .create::<S>()
@@ -438,16 +465,7 @@ mod zenoh_tunnel {
             .publish_subscribe::<[u8]>()
             .open_or_create()
             .unwrap();
-
-        // Subscriber
         let iox_subscriber_b = iox_service_b.subscriber_builder().create().unwrap();
-
-        // Discover Services
-        tunnel_b.discover().unwrap();
-        let tunneled_services_b = tunnel_b.tunneled_services();
-        assert_that!(tunneled_services_b.len(), eq 1);
-        assert_that!(tunneled_services_b
-            .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
 
         // ==================== TEST =====================
 
@@ -471,8 +489,6 @@ mod zenoh_tunnel {
             tunnel_b.propagate();
 
             // Receive
-            const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
-            const MAX_ATTEMPTS: usize = 25;
             retry(
                 || {
                     match iox_subscriber_b.receive().unwrap() {
@@ -493,8 +509,8 @@ mod zenoh_tunnel {
                         }
                     }
                 },
-                TIME_BETWEEN_ATTEMPTS,
-                Some(MAX_ATTEMPTS),
+                TIME_BETWEEN_RETRIES,
+                Some(MAX_RETRIES),
             );
         }
     }
@@ -531,7 +547,7 @@ mod zenoh_tunnel {
         let mut tunnel_a =
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
 
-        // Service
+        // Publisher
         let iox_node_a = NodeBuilder::new()
             .config(&iox_config_a)
             .create::<S>()
@@ -541,8 +557,6 @@ mod zenoh_tunnel {
             .publish_subscribe::<[u8]>()
             .open_or_create()
             .unwrap();
-
-        // Publisher
         let iox_publisher_a = iox_service_a
             .publisher_builder()
             .initial_max_slice_len(PAYLOAD_DATA.len())
@@ -552,8 +566,8 @@ mod zenoh_tunnel {
         // Subscriber
         let iox_subscriber_a = iox_service_a.subscriber_builder().create().unwrap();
 
-        // Discover Services
-        tunnel_a.discover().unwrap();
+        // Discover
+        tunnel_a.discover(Scope::Iceoryx).unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
@@ -612,8 +626,8 @@ mod zenoh_tunnel {
 
         // ==================== TEST =====================
 
-        // Discover Services
-        tunnel_a.discover().unwrap();
+        // Discover
+        tunnel_a.discover(Scope::Iceoryx).unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
@@ -644,6 +658,9 @@ mod zenoh_tunnel {
 
     #[test]
     fn propagates_one_event<S: Service>() {
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+        const MAX_RETRIES: usize = 25;
+
         // [[ COMMON ]]
         let iox_service_name = mock_service_name();
 
@@ -656,7 +673,7 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
-        // Service
+        // Notifier
         let iox_node_a = NodeBuilder::new()
             .config(&iox_config_a)
             .create::<S>()
@@ -666,12 +683,10 @@ mod zenoh_tunnel {
             .event()
             .open_or_create()
             .unwrap();
-
-        // Notifier
         let iox_notifier_a = iox_service_a.notifier_builder().create().unwrap();
 
-        // Discover Services
-        tunnel_a.discover().unwrap();
+        // Discover
+        tunnel_a.discover(Scope::Iceoryx).unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
@@ -686,7 +701,25 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
-        // Service
+        // Discover
+        retry(
+            || {
+                tunnel_b.discover(Scope::Zenoh).unwrap();
+
+                let tunneled_services = tunnel_b.tunneled_services();
+                let success =
+                    tunneled_services.contains(&String::from(iox_service_a.service_id().as_str()));
+
+                if success {
+                    return Ok(());
+                }
+                return Err("failed to discover remote service");
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        );
+
+        // Listener
         let iox_node_b = NodeBuilder::new()
             .config(&iox_config_b)
             .create::<S>()
@@ -696,16 +729,7 @@ mod zenoh_tunnel {
             .event()
             .open_or_create()
             .unwrap();
-
-        // Listener
         let iox_listener_b = iox_service_b.listener_builder().create().unwrap();
-
-        // Discover Services
-        tunnel_b.discover().unwrap();
-        let tunneled_services_b = tunnel_b.tunneled_services();
-        assert_that!(tunneled_services_b.len(), eq 1);
-        assert_that!(tunneled_services_b
-            .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
 
         // ==================== TEST =====================
         // Send notification
@@ -716,8 +740,6 @@ mod zenoh_tunnel {
         tunnel_b.propagate();
 
         // Receive with retry
-        const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
-        const MAX_ATTEMPTS: usize = 25;
         retry(
             || match iox_listener_b.try_wait_one().unwrap() {
                 Some(_event_id) => return Ok(()),
@@ -727,13 +749,16 @@ mod zenoh_tunnel {
                     return Err("failed to receive expected event");
                 }
             },
-            TIME_BETWEEN_ATTEMPTS,
-            Some(MAX_ATTEMPTS),
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
         );
     }
 
     #[test]
     fn propagated_events_do_not_loop_back<S: Service>() {
+        const MAX_RETRIES: usize = 25;
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+
         // [[ COMMON ]]
         let iox_service_name = mock_service_name();
 
@@ -746,7 +771,7 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
-        // Service
+        // Notifier
         let iox_node_a = NodeBuilder::new()
             .config(&iox_config_a)
             .create::<S>()
@@ -756,14 +781,13 @@ mod zenoh_tunnel {
             .event()
             .open_or_create()
             .unwrap();
-
-        // Notifier
         let iox_notifier_a = iox_service_a.notifier_builder().create().unwrap();
+
         // Listener
         let iox_listener_a = iox_service_a.listener_builder().create().unwrap();
 
-        // Discover Services
-        tunnel_a.discover().unwrap();
+        // Discover
+        tunnel_a.discover(Scope::Iceoryx).unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
@@ -778,7 +802,25 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
-        // Service
+        // Discover
+        retry(
+            || {
+                tunnel_b.discover(Scope::Zenoh).unwrap();
+
+                let tunneled_services = tunnel_b.tunneled_services();
+                let success =
+                    tunneled_services.contains(&String::from(iox_service_a.service_id().as_str()));
+
+                if success {
+                    return Ok(());
+                }
+                return Err("failed to discover remote service");
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        );
+
+        // Listener
         let iox_node_b = NodeBuilder::new()
             .config(&iox_config_b)
             .create::<S>()
@@ -788,16 +830,7 @@ mod zenoh_tunnel {
             .event()
             .open_or_create()
             .unwrap();
-
-        // Listener
         let iox_listener_b = iox_service_b.listener_builder().create().unwrap();
-
-        // Discover Services
-        tunnel_b.discover().unwrap();
-        let tunneled_services_b = tunnel_b.tunneled_services();
-        assert_that!(tunneled_services_b.len(), eq 1);
-        assert_that!(tunneled_services_b
-            .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
 
         // ==================== TEST =====================
 
@@ -812,8 +845,6 @@ mod zenoh_tunnel {
         tunnel_b.propagate();
 
         // Receive at listener b with retry
-        const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
-        const MAX_ATTEMPTS: usize = 25;
         retry(
             || match iox_listener_b.try_wait_one().unwrap() {
                 Some(_event_id) => return Ok(()),
@@ -823,8 +854,8 @@ mod zenoh_tunnel {
                     return Err("failed to receive expected event");
                 }
             },
-            TIME_BETWEEN_ATTEMPTS,
-            Some(MAX_ATTEMPTS),
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
         );
 
         // Wait for Zenoh ...
@@ -843,6 +874,9 @@ mod zenoh_tunnel {
 
     #[test]
     fn multiple_events_are_consolidated_by_id<S: Service>() {
+        const MAX_RETRIES: usize = 25;
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+
         // [[ COMMON ]]
         let iox_service_name = mock_service_name();
 
@@ -855,7 +889,7 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
         assert_that!(tunnel_a.tunneled_services().len(), eq 0);
 
-        // Service
+        // Notifier
         let iox_node_a = NodeBuilder::new()
             .config(&iox_config_a)
             .create::<S>()
@@ -865,12 +899,10 @@ mod zenoh_tunnel {
             .event()
             .open_or_create()
             .unwrap();
-
-        // Notifier
         let iox_notifier_a = iox_service_a.notifier_builder().create().unwrap();
 
-        // Discover Services
-        tunnel_a.discover().unwrap();
+        // Discover
+        tunnel_a.discover(Scope::Iceoryx).unwrap();
         let tunneled_services_a = tunnel_a.tunneled_services();
         assert_that!(tunneled_services_a.len(), eq 1);
         assert_that!(tunneled_services_a
@@ -885,7 +917,25 @@ mod zenoh_tunnel {
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
         assert_that!(tunnel_b.tunneled_services().len(), eq 0);
 
-        // Service
+        // Discover
+        retry(
+            || {
+                tunnel_b.discover(Scope::Zenoh).unwrap();
+
+                let tunneled_services = tunnel_b.tunneled_services();
+                let success =
+                    tunneled_services.contains(&String::from(iox_service_a.service_id().as_str()));
+
+                if success {
+                    return Ok(());
+                }
+                return Err("failed to discover remote service");
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        );
+
+        // Listener
         let iox_node_b = NodeBuilder::new()
             .config(&iox_config_b)
             .create::<S>()
@@ -895,16 +945,7 @@ mod zenoh_tunnel {
             .event()
             .open_or_create()
             .unwrap();
-
-        // Listener
         let iox_listener_b = iox_service_b.listener_builder().create().unwrap();
-
-        // Discover Services
-        tunnel_b.discover().unwrap();
-        let tunneled_services_b = tunnel_b.tunneled_services();
-        assert_that!(tunneled_services_b.len(), eq 1);
-        assert_that!(tunneled_services_b
-            .contains(&String::from(iox_service_b.service_id().as_str())), eq true);
 
         // ==================== TEST =====================
         // Send multiple notifications on different event ids
@@ -928,8 +969,6 @@ mod zenoh_tunnel {
         let mut num_notifications_b = 0;
         let mut num_notifications_c = 0;
 
-        const TIME_BETWEEN_ATTEMPTS: Duration = Duration::from_millis(250);
-        const MAX_ATTEMPTS: usize = 25;
         retry(
             || {
                 iox_listener_b
@@ -953,8 +992,8 @@ mod zenoh_tunnel {
                 }
                 return Ok(());
             },
-            TIME_BETWEEN_ATTEMPTS,
-            Some(MAX_ATTEMPTS),
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
         );
 
         assert_that!(num_notifications_a, eq 1);

@@ -63,6 +63,29 @@ impl core::fmt::Display for DiscoveryError {
 
 impl core::error::Error for DiscoveryError {}
 
+/// Defines the operational scope for tunnel services.
+///
+/// This enum specifies which environment to use for tunnel operations:
+/// - `Iceoryx`: Only operate within the local Iceoryx environment
+/// - `Zenoh`: Only operate through the Zenoh network
+/// - `Both`: Operate in both Iceoryx and Zenoh environments
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum Scope {
+    Iceoryx,
+    Zenoh,
+    Both,
+}
+
+impl core::fmt::Display for Scope {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Scope::Iceoryx => write!(f, "iceoryx"),
+            Scope::Zenoh => write!(f, "zenoh"),
+            Scope::Both => write!(f, "both"),
+        }
+    }
+}
+
 /// A tunnel for propagating iceoryx2 payloads across hosts via the Zenoh network middleware.
 pub struct Tunnel<'a, ServiceType: iceoryx2::service::Service> {
     z_session: ZenohSession,
@@ -76,6 +99,17 @@ pub struct Tunnel<'a, ServiceType: iceoryx2::service::Service> {
 
 impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     /// Creates a new tunnel with the provided configuration.
+    ///
+    /// # Arguments
+    ///
+    /// * `tunnel_config` - Tunnel configuration
+    /// * `iox_config` - Iceoryx configuration to be used
+    /// * `z_config` - Zenoh configuration to be used
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Self)` - A new tunnel instance if creation was successful
+    /// * `Err(CreationError)` - If any part of the tunnel creation failed
     pub fn create(
         tunnel_config: &TunnelConfig,
         iox_config: &IceoryxConfig,
@@ -114,32 +148,45 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     }
 
     /// Discover iceoryx services across all connected hosts.
-    pub fn discover(&mut self) -> Result<(), DiscoveryError> {
-        self.iox_discovery
-            .discover(&mut |iox_service_config| {
-                on_discovery(
-                    Source::Iceoryx,
-                    iox_service_config,
-                    &self.iox_node,
-                    &self.z_session,
-                    &mut self.publish_subscribe_connectons,
-                    &mut self.event_connections,
-                )
-            })
-            .map_err(|_e| DiscoveryError::Error)?;
+    ///
+    /// # Arguments
+    ///
+    /// * `scope` - Determines the discovery scope
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If discovery was successful
+    /// * `Err(DiscoveryError)` - If discovery failed
+    pub fn discover(&mut self, scope: Scope) -> Result<(), DiscoveryError> {
+        if scope == Scope::Iceoryx || scope == Scope::Both {
+            self.iox_discovery
+                .discover(&mut |iox_service_config| {
+                    on_discovery(
+                        Scope::Iceoryx,
+                        iox_service_config,
+                        &self.iox_node,
+                        &self.z_session,
+                        &mut self.publish_subscribe_connectons,
+                        &mut self.event_connections,
+                    )
+                })
+                .map_err(|_e| DiscoveryError::Error)?;
+        }
 
-        self.z_discovery
-            .discover(&mut |iox_service_config| {
-                on_discovery(
-                    Source::Zenoh,
-                    iox_service_config,
-                    &self.iox_node,
-                    &self.z_session,
-                    &mut self.publish_subscribe_connectons,
-                    &mut self.event_connections,
-                )
-            })
-            .map_err(|_e| DiscoveryError::Error)?;
+        if scope == Scope::Zenoh || scope == Scope::Both {
+            self.z_discovery
+                .discover(&mut |iox_service_config| {
+                    on_discovery(
+                        Scope::Zenoh,
+                        iox_service_config,
+                        &self.iox_node,
+                        &self.z_session,
+                        &mut self.publish_subscribe_connectons,
+                        &mut self.event_connections,
+                    )
+                })
+                .map_err(|_e| DiscoveryError::Error)?;
+        }
 
         Ok(())
     }
@@ -161,6 +208,11 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     }
 
     /// Returns a list of all service IDs that are currently being tunneled.
+    ///
+    /// # Returns
+    ///
+    /// * `Vec<String>` - A vector containing the string representation of all service IDs
+    ///   that are currently being tunneled through this tunnel instance.
     pub fn tunneled_services(&self) -> Vec<String> {
         self.publish_subscribe_connectons
             .keys()
@@ -170,23 +222,22 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     }
 }
 
-enum Source {
-    Iceoryx,
-    Zenoh,
-}
-
-impl core::fmt::Display for Source {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Source::Iceoryx => write!(f, "iceoryx"),
-            Source::Zenoh => write!(f, "zenoh"),
-        }
-    }
-}
-
 /// Process a discovered service and create appropriate connections.
+///
+/// # Arguments
+///
+/// * `source` - The scope from which the service was discovered (Iceoryx, Zenoh, or Both)
+/// * `iox_service_config` - Configuration of the discovered Iceoryx service
+/// * `iox_node` - The Iceoryx node instance to use for creating connections
+/// * `z_session` - The Zenoh session to use for creating connections
+/// * `publish_subscribe_connections` - Map to store created publish-subscribe connections
+/// * `event_connections` - Map to store created event connections
+///
+/// # Returns
+///
+/// This function doesn't return a value. It updates the connection maps in-place.
 fn on_discovery<'a, ServiceType: iceoryx2::service::Service>(
-    source: Source,
+    source: Scope,
     iox_service_config: &IceoryxServiceConfig,
     iox_node: &IceoryxNode<ServiceType>,
     z_session: &ZenohSession,
