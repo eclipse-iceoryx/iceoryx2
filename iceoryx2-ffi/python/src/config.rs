@@ -182,3 +182,49 @@ impl Service {
         self.value.event_connection_suffix = value.value.clone()
     }
 }
+
+#[pyclass(str = "{value:?}")]
+pub struct Global {
+    value: iceoryx2::config::Global,
+}
+
+#[pymethods]
+impl Global {
+    #[getter]
+    pub fn service_dir(&self) -> Path {
+        Path {
+            value: self.value.service_dir().clone(),
+        }
+    }
+
+    #[getter]
+    pub fn node_dir(&self) -> Path {
+        Path {
+            value: self.value.node_dir().clone(),
+        }
+    }
+
+    #[getter]
+    pub fn root_path(&self) -> Path {
+        Path {
+            value: self.value.root_path().clone(),
+        }
+    }
+
+    #[setter]
+    pub fn set_root_path(&mut self, value: &Path) {
+        self.value.set_root_path(&value.value.clone())
+    }
+
+    #[getter]
+    pub fn prefix(&self) -> FileName {
+        FileName {
+            value: self.value.prefix.clone(),
+        }
+    }
+
+    #[setter]
+    pub fn set_prefix(&mut self, value: &FileName) {
+        self.value.prefix = value.value.clone()
+    }
+}
