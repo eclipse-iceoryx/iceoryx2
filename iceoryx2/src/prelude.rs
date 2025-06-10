@@ -34,5 +34,5 @@ pub use iceoryx2_bb_log::set_log_level_from_env_or_default;
 pub use iceoryx2_bb_log::LogLevel;
 pub use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
 pub use iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing;
-pub use iceoryx2_bb_system_types::{file_name::FileName, path::Path};
+pub use iceoryx2_bb_system_types::{file_name::FileName, file_path::FilePath, path::Path};
 pub use iceoryx2_cal::shm_allocator::AllocationStrategy;

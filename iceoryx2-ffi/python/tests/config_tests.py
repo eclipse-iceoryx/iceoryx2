@@ -10,11 +10,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Notifier example for python."""
-
 import iceoryx2_ffi_python as iceoryx2
+import pytest
 
-config = iceoryx2.Config.default()
-g = config.global_cfg
 
-print(f"hello world: {iceoryx2.Config.default().global_cfg}")
+def test_config() -> None:
+    sut = iceoryx2.Duration.from_secs(2)
+    assert sut.as_secs() == 2
+
+

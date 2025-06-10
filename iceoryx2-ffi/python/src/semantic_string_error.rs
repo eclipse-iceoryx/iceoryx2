@@ -19,3 +19,10 @@ create_exception!(
     PyException,
     "Errors caused by creating a semantic string."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ConfigCreationError,
+    PyException,
+    "Errors caused by creating a new config."
+);
