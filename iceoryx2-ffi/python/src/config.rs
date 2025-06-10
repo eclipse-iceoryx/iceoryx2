@@ -13,10 +13,10 @@
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::duration::Duration;
+use crate::error::{ConfigCreationError, UnableToDeliverStrategy};
 use crate::file_name::FileName;
 use crate::file_path::FilePath;
 use crate::path::Path;
-use crate::semantic_string_error::{ConfigCreationError, UnableToDeliverStrategy};
 use pyo3::prelude::*;
 
 #[pyclass]

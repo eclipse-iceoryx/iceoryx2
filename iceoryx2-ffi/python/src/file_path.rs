@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::semantic_string_error::SemanticStringError;
+use crate::error::SemanticStringError;
 use iceoryx2::prelude::SemanticString;
 use pyo3::prelude::*;
 
