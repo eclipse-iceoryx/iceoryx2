@@ -16,15 +16,17 @@ pub mod node_name;
 pub mod path;
 pub mod semantic_string_error;
 
-use node_name::*;
-use semantic_string_error::*;
-
 use pyo3::prelude::*;
 
 /// A Python module implemented in Rust.
 #[pymodule]
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<NodeName>()?;
-    m.add("SemanticStringError", py.get_type::<SemanticStringError>())?;
+    m.add_class::<crate::node_name::NodeName>()?;
+    m.add_class::<crate::file_name::FileName>()?;
+    m.add_class::<crate::path::Path>()?;
+    m.add(
+        "SemanticStringError",
+        py.get_type::<crate::semantic_string_error::SemanticStringError>(),
+    )?;
     Ok(())
 }
