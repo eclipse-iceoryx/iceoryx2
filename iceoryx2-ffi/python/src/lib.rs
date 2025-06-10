@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod config;
+pub mod duration;
 pub mod file_name;
 pub mod node_name;
 pub mod path;
@@ -24,6 +25,7 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::node_name::NodeName>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::path::Path>()?;
+    m.add_class::<crate::duration::Duration>()?;
     m.add(
         "SemanticStringError",
         py.get_type::<crate::semantic_string_error::SemanticStringError>(),

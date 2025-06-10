@@ -14,9 +14,9 @@ use crate::semantic_string_error::SemanticStringError;
 use iceoryx2::prelude::SemanticString;
 use pyo3::prelude::*;
 
-#[pyclass(name = "FileName")]
+#[pyclass(str = "{value:?}")]
 pub struct FileName {
-    value: iceoryx2::prelude::FileName,
+    pub(crate) value: iceoryx2::prelude::FileName,
 }
 
 #[pymethods]

@@ -14,9 +14,9 @@ use crate::semantic_string_error::SemanticStringError;
 use iceoryx2::prelude::SemanticString;
 use pyo3::prelude::*;
 
-#[pyclass(name = "Path")]
+#[pyclass(str = "{value:?}")]
 pub struct Path {
-    value: iceoryx2::prelude::Path,
+    pub(crate) value: iceoryx2::prelude::Path,
 }
 
 #[pymethods]

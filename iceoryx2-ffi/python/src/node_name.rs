@@ -13,7 +13,7 @@
 use crate::semantic_string_error::SemanticStringError;
 use pyo3::prelude::*;
 
-#[pyclass(name = "NodeName")]
+#[pyclass(str = "{value:?}")]
 pub struct NodeName {
     value: iceoryx2::prelude::NodeName,
 }

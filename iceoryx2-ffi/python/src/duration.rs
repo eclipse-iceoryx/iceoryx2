@@ -14,7 +14,7 @@ use pyo3::prelude::*;
 
 #[pyclass(str = "{value:?}")]
 pub struct Duration {
-    value: core::time::Duration,
+    pub(crate) value: core::time::Duration,
 }
 
 #[pymethods]
