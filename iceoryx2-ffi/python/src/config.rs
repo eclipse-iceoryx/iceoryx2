@@ -10,21 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod config;
-pub mod file_name;
-pub mod node_name;
-pub mod path;
-pub mod semantic_string_error;
-
-use node_name::*;
-use semantic_string_error::*;
-
+use crate::file_name::FileName;
+use crate::path::Path;
 use pyo3::prelude::*;
 
-/// A Python module implemented in Rust.
-#[pymodule]
-fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<NodeName>()?;
-    m.add("SemanticStringError", py.get_type::<SemanticStringError>())?;
-    Ok(())
+#[pyclass(name = "Node")]
+pub struct Node {
+    value: iceoryx2::config::Node,
+}
+
+#[pymethods]
+impl Node {
+    #[getter]
+    pub fn cleanup_dead_nodes_on_creation(&self) -> bool {
+        self.value.cleanup_dead_nodes_on_creation
+    }
+
+    #[setter]
+    fn set_cleanup_dead_nodes_on_creation(&mut self, value: bool) {
+        self.value.cleanup_dead_nodes_on_creation = value
+    }
 }
