@@ -479,14 +479,13 @@ impl<S: ServiceType> Service<S> {
                 let services = self.tracker.get_all();
 
                 for service in services.iter() {
-                    // if !self.discovery_config.include_internal
-                    //     && ServiceName::has_iox2_prefix(service.name().as_str())
-                    // {
-                    //     continue;
-                    // }
+                    if !self.discovery_config.include_internal
+                        && ServiceName::has_iox2_prefix(service.name())
+                    {
+                        continue;
+                    }
                     let response = active_request.loan_uninit()?;
                     let response = response.write_payload(service.clone());
-                    println!("{}", response.name().as_str());
                     response.send()?;
                 }
             }
