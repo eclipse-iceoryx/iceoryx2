@@ -143,6 +143,38 @@ mod flat_map {
     }
 
     #[test]
+    fn get_ref_value_from_flat_map_works() {
+        let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
+        let key = 34;
+        assert_that!(map.insert(key, 40), is_ok);
+
+        let res = map.get_ref(&key);
+        assert_that!(res, is_some);
+        assert_that!(*res.unwrap(), eq 40);
+
+        let res = map.get_ref(&35);
+        assert_that!(res, is_none);
+    }
+
+    #[test]
+    fn get_mut_ref_value_from_flat_map_works() {
+        let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
+        let key = 34;
+        assert_that!(map.insert(key, 40), is_ok);
+
+        let res = map.get_mut_ref(&key);
+        assert_that!(res, is_some);
+
+        *res.unwrap() = 41;
+        let res = map.get_ref(&key);
+        assert_that!(res, is_some);
+        assert_that!(*res.unwrap(), eq 41);
+
+        let res = map.get_mut_ref(&35);
+        assert_that!(res, is_none);
+    }
+
+    #[test]
     fn remove_keys_from_flat_map_works() {
         let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
         assert_that!(map, is_empty);

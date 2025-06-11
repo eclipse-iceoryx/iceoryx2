@@ -108,6 +108,20 @@ impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize>
         iter.next().map(|kv| kv.1.value.clone())
     }
 
+    /// Returns a reference to the value corresponding to the given key. If there is no such key, [`None`] is returned.
+    pub fn get_ref(&self, id: &K) -> Option<&V> {
+        let mut iter = self.map.iter().skip_while(|kv| kv.1.id != *id);
+        iter.next().map(|kv| &kv.1.value)
+    }
+
+    /// Returns a mutable reference to the value corresponding to the given key. If there is no such key, [`None`] is returned.
+    pub fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
+        let slot_map_entry = self.map.iter().find(|kv| kv.1.id == *id)?;
+        self.map
+            .get_mut(slot_map_entry.0)
+            .map(|flat_map_entry| &mut flat_map_entry.value)
+    }
+
     /// Removes the given key and the corresponding value from the FixedSizeFlatMap.
     pub fn remove(&mut self, id: &K) {
         let mut iter = self.map.iter().skip_while(|kv| kv.1.id != *id);
