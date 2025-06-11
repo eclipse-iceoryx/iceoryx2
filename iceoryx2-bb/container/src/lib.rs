@@ -100,3 +100,5 @@ pub mod slotmap;
 pub mod semantic_string;
 /// A vector similar to [`std::vec::Vec`]
 pub mod vec;
+
+pub mod flatmap;

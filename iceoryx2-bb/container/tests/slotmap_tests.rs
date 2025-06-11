@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2_bb_container::slotmap::SlotMap;
+use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::memory::RawMemory;
 
 mod slot_map {
 
@@ -225,5 +227,14 @@ mod slot_map {
 
         let next_key = sut.next_free_key();
         assert_that!(next_key, is_none);
+    }
+
+    #[test]
+    fn placement_default_works() {
+        let mut sut = RawMemory::<FixedSizeSut>::new_zeroed();
+        unsafe { FixedSizeSut::placement_default(sut.as_mut_ptr()) };
+
+        let res = unsafe { sut.assume_init_mut() }.insert(4);
+        assert_that!(res, is_some);
     }
 }
