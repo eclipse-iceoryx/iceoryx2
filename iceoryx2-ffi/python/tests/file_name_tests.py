@@ -18,6 +18,7 @@ def test_file_name_can_be_constructed() -> None:
     sut = iceoryx2.FileName.new("some.file")
     assert sut.to_string() == "some.file"
 
+
 def test_file_with_invalid_content_cannot_be_constructed() -> None:
     invalid_content = "/i/am/not/a/path"
     with pytest.raises(iceoryx2.SemanticStringError):

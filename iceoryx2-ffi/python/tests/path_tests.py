@@ -18,6 +18,7 @@ def test_path_can_be_constructed() -> None:
     sut = iceoryx2.Path.new("/path/to/some/file")
     assert sut.to_string() == "/path/to/some/file"
 
+
 def test_path_with_invalid_content_cannot_be_constructed() -> None:
     invalid_content = "/wildcards/***/are/*/forbidden"
     with pytest.raises(iceoryx2.SemanticStringError):

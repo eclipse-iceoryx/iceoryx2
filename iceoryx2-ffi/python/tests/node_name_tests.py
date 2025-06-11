@@ -18,6 +18,7 @@ def test_node_name_can_be_constructed() -> None:
     sut = iceoryx2.NodeName.new("hello world")
     assert sut.as_str() == "hello world"
 
+
 def test_node_name_construction_fails_when_max_len_is_exceeded() -> None:
     sut_value = "x" * (iceoryx2.NodeName.max_len() + 1)
     with pytest.raises(iceoryx2.SemanticStringError):

@@ -34,4 +34,12 @@ pytest tests/*
 # static code analysis
 prospector -m -D -T --with-tool mypy -s veryhigh $GIT_ROOT/examples/python
 prospector -m -D -T --with-tool mypy -s veryhigh $GIT_ROOT/iceoryx2-ffi/python/tests
+
+# formatting: import ordering
+isort $GIT_ROOT/examples/python
+isort $GIT_ROOT/iceoryx2-ffi/python/tests
+
+# formatting
+black $GIT_ROOT/examples/python
+black $GIT_ROOT/iceoryx2-ffi/python/tests
 ```
