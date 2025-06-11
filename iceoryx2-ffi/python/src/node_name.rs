@@ -13,7 +13,8 @@
 use crate::error::SemanticStringError;
 use pyo3::prelude::*;
 
-#[pyclass(str = "{value:?}")]
+#[pyclass(str = "{value:?}", eq)]
+#[derive(PartialEq)]
 pub struct NodeName {
     value: iceoryx2::prelude::NodeName,
 }

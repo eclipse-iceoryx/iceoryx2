@@ -12,7 +12,8 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(str = "{value:?}")]
+#[pyclass(str = "{value:?}", eq)]
+#[derive(PartialEq)]
 pub struct Duration {
     pub(crate) value: core::time::Duration,
 }

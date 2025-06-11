@@ -776,6 +776,20 @@ impl Global {
     }
 
     #[getter]
+    pub fn service(&self) -> Service {
+        Service {
+            value: self.value.clone(),
+        }
+    }
+
+    #[getter]
+    pub fn node(&self) -> Node {
+        Node {
+            value: self.value.clone(),
+        }
+    }
+
+    #[getter]
     pub fn service_dir(&self) -> Path {
         Path {
             value: self.value().global.service_dir().clone(),

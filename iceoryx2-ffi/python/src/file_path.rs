@@ -14,7 +14,8 @@ use crate::error::SemanticStringError;
 use iceoryx2::prelude::SemanticString;
 use pyo3::prelude::*;
 
-#[pyclass(str = "{value:?}")]
+#[pyclass(str = "{value:?}", eq)]
+#[derive(PartialEq)]
 pub struct FilePath {
     pub(crate) value: iceoryx2::prelude::FilePath,
 }
