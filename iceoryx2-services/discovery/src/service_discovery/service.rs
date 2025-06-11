@@ -12,7 +12,7 @@
 
 use crate::service_discovery::{SyncError, Tracker};
 use iceoryx2::port::ReceiveError;
-use iceoryx2::prelude::ZeroCopySend;
+use iceoryx2::prelude::{UnableToDeliverStrategy, ZeroCopySend};
 use iceoryx2::{
     config::Config as IceoryxConfig,
     node::{Node, NodeBuilder, NodeCreationFailure},
@@ -189,7 +189,7 @@ impl From<NotifierNotifyError> for SpinError {
 }
 
 impl From<ServerSpinError> for SpinError {
-    fn from( error: ServerSpinError) -> Self {
+    fn from(error: ServerSpinError) -> Self {
         SpinError::ServerSpinError(error)
     }
 }
@@ -272,12 +272,12 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            sync_on_initialization: false,
+            sync_on_initialization: true,
             include_internal: true,
             publish_events: true,
             max_subscribers: 10,
             max_buffer_size: 10,
-            max_response_buffer_size: 10,
+            max_response_buffer_size: 3,
             history_size: 10,
             max_borrrowed_samples: 10,
             send_notifications: true,
@@ -359,16 +359,18 @@ impl<S: ServiceType> Service<S> {
             tracker.sync(iceoryx_config)?;
         }
 
-        let server = Some(node
-            .service_builder(service_name())
-            .request_response::<(), StaticConfig>()
-            .max_response_buffer_size(discovery_config.max_response_buffer_size)
-            .open_or_create()
-            .map_err(|_| CreationError::ServiceCreationFailure)?
-            .server_builder()
-            
-            .create()
-            .map_err(|_| CreationError::ServiceCreationFailure)?);
+        let server = Some(
+            node.service_builder(service_name())
+                .request_response::<(), StaticConfig>()
+                .enable_safe_overflow_for_responses(false)
+                .max_response_buffer_size(discovery_config.max_response_buffer_size)
+                .open_or_create()
+                .map_err(|_| CreationError::ServiceCreationFailure)?
+                .server_builder()
+                .unable_to_deliver_strategy(UnableToDeliverStrategy::Block)
+                .create()
+                .map_err(|_| CreationError::ServiceCreationFailure)?,
+        );
 
         Ok(Service::<S> {
             discovery_config: discovery_config.clone(),
@@ -452,34 +454,39 @@ impl<S: ServiceType> Service<S> {
         }
 
         // Handle server requests
-        self.start_server()?;
+        self.handle_discovery_requests()?;
 
         Ok(())
     }
 
-
-    /// Returns the service details of the discovery service.
-    ///     /// # Returns
+    /// Returns the service details of all the current services.
+    ///
+    /// This function is called within the spin function, so that
+    /// if any requests are recieved for the discovery states,
+    /// it can be provided via the RequestResponse method.
+    ///
+    /// # Returns
     ///
     /// A result containing `()` if successful.
-    ///     /// # Errors
     ///
-    /// Returns a `SpinError` if there was an error publishing events or sending
-    /// notifications.
-    pub fn start_server(&mut self)-> Result<(), ServerSpinError> {
+    /// # Errors
+    ///
+    /// Returns a `ServerSpinError` if there was an error in Responsding,
+    /// Loaning or recieving Requests.
+    pub fn handle_discovery_requests(&mut self) -> Result<(), ServerSpinError> {
         if let Some(server) = self.server.as_mut() {
             while let Some(active_request) = server.receive()? {
-                
-                let services= self.tracker.get_all();
+                let services = self.tracker.get_all();
 
                 for service in services.iter() {
-                    if !self.discovery_config.include_internal
-                        && ServiceName::has_iox2_prefix(service.name().as_str())
-                        {
-                            continue;
-                        }
+                    // if !self.discovery_config.include_internal
+                    //     && ServiceName::has_iox2_prefix(service.name().as_str())
+                    // {
+                    //     continue;
+                    // }
                     let response = active_request.loan_uninit()?;
                     let response = response.write_payload(service.clone());
+                    println!("{}", response.name().as_str());
                     response.send()?;
                 }
             }
