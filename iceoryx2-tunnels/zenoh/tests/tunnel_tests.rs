@@ -73,6 +73,37 @@ mod zenoh_tunnel {
         }
     }
 
+    /// Waits for a Zenoh match on the specified key for up to the specified duration.
+    ///
+    /// This function can be used to stall execution of test logic until the zenoh background
+    /// thread has woken up to set up matches. The assumption is that if this unrelated subscriber
+    /// is matched, other matches on this key should also have been processed.
+    ///
+    /// # Arguments
+    ///
+    /// * `z_key` - The Zenoh key to subscribe to
+    /// * `timeout` - Maximum duration to wait for a match
+    ///
+    /// # Returns
+    ///
+    /// * `true` if a match was found within the timeout period
+    /// * `false` if the timeout was reached without finding a match
+    fn wait_for_zenoh_match(z_key: String, timeout: Duration) -> bool {
+        let start_time = std::time::Instant::now();
+        let z_config = zenoh::Config::default();
+        let z_session = zenoh::open(z_config.clone()).wait().unwrap();
+        let z_subscriber = z_session.declare_subscriber(z_key).wait().unwrap();
+
+        while z_subscriber.sender_count() == 0 {
+            if start_time.elapsed() >= timeout {
+                return false;
+            }
+            std::thread::sleep(Duration::from_millis(100));
+        }
+
+        true
+    }
+
     #[test]
     fn discovers_local_services_via_discovery_service<S: Service>() {
         // ==================== SETUP ====================
@@ -314,6 +345,13 @@ mod zenoh_tunnel {
             Some(MAX_RETRIES),
         );
 
+        // Wait for Zenoh's backgorund thread to establish match...
+        let matched = wait_for_zenoh_match(
+            keys::publish_subscribe(iox_service_a.service_id()),
+            Duration::from_millis(1000),
+        );
+        assert_that!(matched, eq true);
+
         // Subscriber
         let iox_node_b = NodeBuilder::new()
             .config(&iox_config_b)
@@ -454,6 +492,13 @@ mod zenoh_tunnel {
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
         );
+
+        // Wait for Zenoh's backgorund thread to establish match...
+        let matched = wait_for_zenoh_match(
+            keys::publish_subscribe(iox_service_a.service_id()),
+            Duration::from_millis(1000),
+        );
+        assert_that!(matched, eq true);
 
         // Subscriber
         let iox_node_b = NodeBuilder::new()
@@ -719,6 +764,13 @@ mod zenoh_tunnel {
             Some(MAX_RETRIES),
         );
 
+        // Wait for Zenoh's backgorund thread to establish match...
+        let matched = wait_for_zenoh_match(
+            keys::publish_subscribe(iox_service_a.service_id()),
+            Duration::from_millis(1000),
+        );
+        assert_that!(matched, eq true);
+
         // Listener
         let iox_node_b = NodeBuilder::new()
             .config(&iox_config_b)
@@ -820,6 +872,13 @@ mod zenoh_tunnel {
             Some(MAX_RETRIES),
         );
 
+        // Wait for Zenoh's backgorund thread to establish match...
+        let matched = wait_for_zenoh_match(
+            keys::publish_subscribe(iox_service_a.service_id()),
+            Duration::from_millis(1000),
+        );
+        assert_that!(matched, eq true);
+
         // Listener
         let iox_node_b = NodeBuilder::new()
             .config(&iox_config_b)
@@ -858,7 +917,7 @@ mod zenoh_tunnel {
             Some(MAX_RETRIES),
         );
 
-        // Wait for Zenoh ...
+        // Propagate a few times to see if there is a loop-back
         for _ in 0..5 {
             tunnel_a.propagate();
             tunnel_b.propagate();
@@ -934,6 +993,13 @@ mod zenoh_tunnel {
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
         );
+
+        // Wait for Zenoh's backgorund thread to establish match...
+        let matched = wait_for_zenoh_match(
+            keys::publish_subscribe(iox_service_a.service_id()),
+            Duration::from_millis(1000),
+        );
+        assert_that!(matched, eq true);
 
         // Listener
         let iox_node_b = NodeBuilder::new()
