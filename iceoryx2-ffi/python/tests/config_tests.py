@@ -38,12 +38,6 @@ def test_global_service_data_segment_suffix_can_be_set() -> None:
     sut.global_cfg.service.data_segment_suffix = path
     assert sut.global_cfg.service.data_segment_suffix == path
 
-def test_global_service_data_segment_suffix_can_be_set() -> None:
-    sut = iceoryx2.config.default()
-    path = iceoryx2.FileName.new(".let_suf_the_fix")
-    sut.global_cfg.service.data_segment_suffix = path
-    assert sut.global_cfg.service.data_segment_suffix == path
-
 def test_global_service_static_config_storage_suffix_can_be_set() -> None:
     sut = iceoryx2.config.default()
     path = iceoryx2.FileName.new(".its_a_fix_for_the_suf")

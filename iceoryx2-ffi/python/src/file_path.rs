@@ -16,6 +16,10 @@ use pyo3::prelude::*;
 
 #[pyclass(str = "{value:?}", eq)]
 #[derive(PartialEq)]
+/// Relocatable (inter-process shared memory compatible) `SemanticString` implementation for
+/// `FilePath`. All modification operations ensure that never an
+/// invalid file or path name can be generated. All strings have a fixed size so that the maximum
+/// path or file name length the system supports can be stored.
 pub struct FilePath {
     pub(crate) value: iceoryx2::prelude::FilePath,
 }
@@ -23,6 +27,8 @@ pub struct FilePath {
 #[pymethods]
 impl FilePath {
     #[staticmethod]
+    /// Creates a new `FilePath` when the provided `name` contains a valid path to a file,
+    /// otherwise it emits a `SemanticStringError`.
     pub fn new(name: &str) -> PyResult<Self> {
         Ok(Self {
             value: iceoryx2::prelude::FilePath::new(name.as_bytes())
@@ -31,10 +37,12 @@ impl FilePath {
     }
 
     #[staticmethod]
+    /// Returns the maximum length of a `FilePath`
     pub fn max_len() -> usize {
         iceoryx2::prelude::FilePath::max_len()
     }
 
+    /// Converts the `FilePath` into a `String`
     pub fn to_string(&self) -> String {
         self.value.to_string()
     }

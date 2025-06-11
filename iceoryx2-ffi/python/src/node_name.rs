@@ -15,6 +15,7 @@ use pyo3::prelude::*;
 
 #[pyclass(str = "{value:?}", eq)]
 #[derive(PartialEq)]
+/// Represent the name for a `Node`.
 pub struct NodeName {
     value: iceoryx2::prelude::NodeName,
 }
@@ -22,6 +23,9 @@ pub struct NodeName {
 #[pymethods]
 impl NodeName {
     #[staticmethod]
+    /// Creates a new `NodeName`.
+    /// If the provided name does not contain a valid `NodeName` it will emit
+    /// `SemanticStringError`, otherwise the `NodeName`.
     pub fn new(name: &str) -> PyResult<Self> {
         Ok(Self {
             value: iceoryx2::prelude::NodeName::new(name)
@@ -30,10 +34,12 @@ impl NodeName {
     }
 
     #[staticmethod]
+    /// Returns the maximum length of a `NodeName`
     pub fn max_len() -> usize {
         iceoryx2::prelude::NodeName::max_len()
     }
 
+    /// Converts the `NodeName` into a `String`
     pub fn as_str(&self) -> String {
         self.value.as_str().to_string()
     }

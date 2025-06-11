@@ -14,8 +14,13 @@ use pyo3::prelude::*;
 
 #[pyclass(eq, eq_int)]
 #[derive(PartialEq, Clone, Debug)]
+/// Defines the strategy a sender shall pursue when the buffer of the receiver is full
+/// and the service does not overflow.
 pub enum UnableToDeliverStrategy {
+    /// Blocks until the receiver has consumed the
+    /// data from the buffer and there is space again
     Block,
+    /// Do not deliver the data.
     DiscardSample,
 }
 

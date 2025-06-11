@@ -22,7 +22,7 @@ pub mod unable_to_deliver_strategy;
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
 
-/// A Python module implemented in Rust.
+/// iceoryx2 Python language bindings
 #[pymodule]
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
