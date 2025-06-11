@@ -30,8 +30,6 @@ mod waitset {
         file_descriptor_set::SynchronousMultiplexing, unique_system_id::UniqueSystemId,
         unix_datagram_socket::UnixDatagramReceiverBuilder,
     };
-    use iceoryx2_bb_system_types::file_path::*;
-    use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
     use iceoryx2_cal::event::Event;

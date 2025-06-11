@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::usize;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::duration::Duration;
@@ -96,7 +95,7 @@ impl Node {
     }
 
     #[getter]
-    /// When true, the [`NodeBuilder`](NodeBuilder) checks for dead nodes and
+    /// When true, the `NodeBuilder` checks for dead nodes and
     /// cleans up all their stale resources whenever a new [`Node`](Node) is
     /// created.
     pub fn cleanup_dead_nodes_on_creation(&self) -> bool {
@@ -110,8 +109,8 @@ impl Node {
     }
 
     #[getter]
-    /// When true, the [`NodeBuilder`](NodeBuilder) checks for dead nodes and
-    /// cleans up all their stale resources whenever an existing [`Node`](Node) is
+    /// When true, the `NodeBuilder` checks for dead nodes and
+    /// cleans up all their stale resources whenever an existing `Node` is
     /// going out of scope.
     pub fn cleanup_dead_nodes_on_destruction(&self) -> bool {
         self.value().global.node.cleanup_dead_nodes_on_destruction
@@ -220,7 +219,7 @@ impl Service {
     #[setter]
     /// Set the creation timeout
     pub fn set_creation_timeout(&self, value: &Duration) {
-        self.value().global.service.creation_timeout = value.value.clone()
+        self.value().global.service.creation_timeout = value.value
     }
 
     #[getter]

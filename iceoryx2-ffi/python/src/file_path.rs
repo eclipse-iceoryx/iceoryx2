@@ -43,6 +43,7 @@ impl FilePath {
     }
 
     /// Converts the `FilePath` into a `String`
+    #[allow(clippy::inherent_to_string)] // method required to generate this API in Python
     pub fn to_string(&self) -> String {
         self.value.to_string()
     }

@@ -24,7 +24,6 @@ mod node {
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
-    use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::watchdog::Watchdog;
     use iceoryx2_bb_testing::{assert_that, test_fail};
 

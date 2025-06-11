@@ -13,7 +13,6 @@
 use clap::Parser;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
-use iceoryx2_bb_system_types::file_name::*;
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
