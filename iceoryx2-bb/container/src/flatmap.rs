@@ -17,10 +17,10 @@
 //! # User Examples
 //!
 //! ```
-//! use iceoryx2-bb-container::flatmap::FixedSizeFlatMap;
+//! use iceoryx2_bb_container::flatmap::FixedSizeFlatMap;
 //!
 //! const CAPACITY: usize = 100;
-//! let map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
+//! let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
 //! assert_eq!(map.insert(23, 4).is_ok(), true);
 //! assert_eq!(map.get(&23).unwrap(), 4);
 //! ```
