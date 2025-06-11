@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_container::flatmap::{FlatMap, FlatMapError};
+use iceoryx2_bb_container::flatmap::{FixedSizeFlatMap, FlatMapError};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_testing::assert_that;
@@ -41,24 +41,24 @@ mod flat_map {
 
     #[test]
     fn new_creates_empty_flat_map() {
-        let map_diff_key = FlatMap::<u8, i32, CAPACITY>::new();
+        let map_diff_key = FixedSizeFlatMap::<u8, i32, CAPACITY>::new();
         assert_that!(map_diff_key, is_empty);
         assert_that!(map_diff_key, len 0);
-        let map_same_key = FlatMap::<u16, u16, CAPACITY>::new();
+        let map_same_key = FixedSizeFlatMap::<u16, u16, CAPACITY>::new();
         assert_that!(map_same_key, is_empty);
         assert_that!(map_same_key, len 0);
     }
 
     #[test]
     fn default_creates_empty_flat_map() {
-        let map = FlatMap::<u8, u8, CAPACITY>::default();
+        let map = FixedSizeFlatMap::<u8, u8, CAPACITY>::default();
         assert_that!(map, is_empty);
         assert_that!(map, len 0);
     }
 
     #[test]
     fn placement_default_works() {
-        type Sut = FlatMap<u8, u8, CAPACITY>;
+        type Sut = FixedSizeFlatMap<u8, u8, CAPACITY>;
         let mut sut = RawMemory::<Sut>::new_zeroed();
         unsafe { Sut::placement_default(sut.as_mut_ptr()) };
 
@@ -69,7 +69,8 @@ mod flat_map {
     #[test]
     fn drop_called_for_keys_and_values() {
         let state = LifetimeTracker::start_tracking();
-        let mut map = FlatMap::<RelocLifetimeTracker, RelocLifetimeTracker, CAPACITY>::new();
+        let mut map =
+            FixedSizeFlatMap::<RelocLifetimeTracker, RelocLifetimeTracker, CAPACITY>::new();
         for _ in 0..CAPACITY {
             assert_that!(
                 map.insert(
@@ -87,7 +88,7 @@ mod flat_map {
 
     #[test]
     fn insert_into_empty_flat_map_works() {
-        let mut map = FlatMap::<u8, i8, CAPACITY>::new();
+        let mut map = FixedSizeFlatMap::<u8, i8, CAPACITY>::new();
 
         let res = map.insert(3, -4);
         assert_that!(res, is_ok);
@@ -98,7 +99,7 @@ mod flat_map {
 
     #[test]
     fn insert_the_same_key_fails() {
-        let mut map = FlatMap::<i16, i16, CAPACITY>::new();
+        let mut map = FixedSizeFlatMap::<i16, i16, CAPACITY>::new();
         let key = -2023;
 
         let res = map.insert(key, -9);
@@ -114,7 +115,7 @@ mod flat_map {
 
     #[test]
     fn insert_until_full_works() {
-        let mut map = FlatMap::<u32, u32, CAPACITY>::new();
+        let mut map = FixedSizeFlatMap::<u32, u32, CAPACITY>::new();
         for i in 0..CAPACITY as u32 {
             assert_that!(map.insert(i, i), is_ok);
             assert_that!(map.contains(&i), eq true);
@@ -129,7 +130,7 @@ mod flat_map {
 
     #[test]
     fn get_value_from_flat_map_works() {
-        let mut map = FlatMap::<u8, u8, CAPACITY>::new();
+        let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
         let key = 34;
         assert_that!(map.insert(key, 40), is_ok);
 
@@ -143,7 +144,7 @@ mod flat_map {
 
     #[test]
     fn remove_keys_from_flat_map_works() {
-        let mut map = FlatMap::<u8, u8, CAPACITY>::new();
+        let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
         assert_that!(map, is_empty);
 
         map.remove(&0);
@@ -161,7 +162,7 @@ mod flat_map {
 
     #[test]
     fn remove_until_empty_and_reinsert_works() {
-        let mut map = FlatMap::<u32, u32, CAPACITY>::new();
+        let mut map = FixedSizeFlatMap::<u32, u32, CAPACITY>::new();
         // insert until full
         for i in 0..CAPACITY as u32 {
             assert_that!(map.insert(i, i), is_ok);

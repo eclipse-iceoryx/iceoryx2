@@ -98,7 +98,7 @@ pub mod slotmap;
 /// ruleset on their content can be realized.
 #[macro_use]
 pub mod semantic_string;
+/// A container to store key-value pairs
+pub mod flatmap;
 /// A vector similar to [`std::vec::Vec`]
 pub mod vec;
-
-pub mod flatmap;
