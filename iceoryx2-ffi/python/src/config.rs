@@ -815,6 +815,45 @@ impl Global {
 }
 
 #[pyclass]
+pub struct Defaults {
+    value: Arc<Mutex<iceoryx2::config::Config>>,
+}
+
+impl Defaults {
+    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
+        self.value.lock().unwrap()
+    }
+}
+
+#[pymethods]
+impl Defaults {
+    pub fn __str__(&self) -> String {
+        format!("{:?}", self.value().global)
+    }
+
+    #[getter]
+    pub fn publish_subscribe(&self) -> PublishSubscribe {
+        PublishSubscribe {
+            value: self.value.clone(),
+        }
+    }
+
+    #[getter]
+    pub fn event(&self) -> Event {
+        Event {
+            value: self.value.clone(),
+        }
+    }
+
+    #[getter]
+    pub fn request_response(&self) -> RequestResponse {
+        RequestResponse {
+            value: self.value.clone(),
+        }
+    }
+}
+
+#[pyclass]
 pub struct Config {
     value: Arc<Mutex<iceoryx2::config::Config>>,
 }
@@ -838,69 +877,97 @@ impl Config {
         }
     }
 
-    #[staticmethod]
-    pub fn default() -> Config {
-        Config {
-            value: Arc::new(Mutex::new(iceoryx2::config::Config::default())),
+    #[getter]
+    pub fn defaults(&self) -> Defaults {
+        Defaults {
+            value: self.value.clone(),
         }
     }
+}
 
-    #[staticmethod]
-    pub fn global_config() -> Config {
-        Config {
-            value: Arc::new(Mutex::new(
-                iceoryx2::config::Config::global_config().clone(),
-            )),
-        }
+#[pyfunction]
+pub fn default() -> Config {
+    Config {
+        value: Arc::new(Mutex::new(iceoryx2::config::Config::default())),
     }
+}
 
-    #[staticmethod]
-    pub fn setup_global_config_from_file(config_file: &FilePath) -> PyResult<Config> {
-        Ok(Config {
-            value: Arc::new(Mutex::new(
-                iceoryx2::config::Config::setup_global_config_from_file(&config_file.value.clone())
-                    .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
-                    .clone(),
-            )),
-        })
+#[pyfunction]
+pub fn global_config() -> Config {
+    Config {
+        value: Arc::new(Mutex::new(
+            iceoryx2::config::Config::global_config().clone(),
+        )),
     }
+}
 
-    #[staticmethod]
-    pub fn from_file(config_file: &FilePath) -> PyResult<Config> {
-        Ok(Config {
-            value: Arc::new(Mutex::new(
-                iceoryx2::config::Config::from_file(&config_file.value.clone())
-                    .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
-                    .clone(),
-            )),
-        })
-    }
+#[pyfunction]
+pub fn setup_global_config_from_file(config_file: &FilePath) -> PyResult<Config> {
+    Ok(Config {
+        value: Arc::new(Mutex::new(
+            iceoryx2::config::Config::setup_global_config_from_file(&config_file.value.clone())
+                .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
+                .clone(),
+        )),
+    })
+}
 
-    #[staticmethod]
-    pub fn default_user_config_file_path() -> FilePath {
-        FilePath {
-            value: iceoryx2::config::Config::default_user_config_file_path(),
-        }
-    }
+#[pyfunction]
+pub fn from_file(config_file: &FilePath) -> PyResult<Config> {
+    Ok(Config {
+        value: Arc::new(Mutex::new(
+            iceoryx2::config::Config::from_file(&config_file.value.clone())
+                .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
+                .clone(),
+        )),
+    })
+}
 
-    #[staticmethod]
-    pub fn relative_config_path() -> Path {
-        Path {
-            value: iceoryx2::config::Config::relative_config_path(),
-        }
+#[pyfunction]
+pub fn default_user_config_file_path() -> FilePath {
+    FilePath {
+        value: iceoryx2::config::Config::default_user_config_file_path(),
     }
+}
 
-    #[staticmethod]
-    pub fn default_config_file_path() -> FilePath {
-        FilePath {
-            value: iceoryx2::config::Config::default_config_file_path(),
-        }
+#[pyfunction]
+pub fn relative_config_path() -> Path {
+    Path {
+        value: iceoryx2::config::Config::relative_config_path(),
     }
+}
 
-    #[staticmethod]
-    pub fn default_config_file_name() -> FileName {
-        FileName {
-            value: iceoryx2::config::Config::default_config_file_name(),
-        }
+#[pyfunction]
+pub fn default_config_file_path() -> FilePath {
+    FilePath {
+        value: iceoryx2::config::Config::default_config_file_path(),
     }
+}
+
+#[pyfunction]
+pub fn default_config_file_name() -> FileName {
+    FileName {
+        value: iceoryx2::config::Config::default_config_file_name(),
+    }
+}
+
+#[pymodule]
+pub fn config(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<crate::config::Global>()?;
+    m.add_class::<crate::config::Config>()?;
+    m.add_class::<crate::config::Defaults>()?;
+    m.add_class::<crate::config::Event>()?;
+    m.add_class::<crate::config::PublishSubscribe>()?;
+    m.add_class::<crate::config::RequestResponse>()?;
+    m.add_class::<crate::config::Node>()?;
+    m.add_class::<crate::config::Service>()?;
+    m.add_wrapped(wrap_pyfunction!(default_config_file_name))?;
+    m.add_wrapped(wrap_pyfunction!(default_config_file_path))?;
+    m.add_wrapped(wrap_pyfunction!(relative_config_path))?;
+    m.add_wrapped(wrap_pyfunction!(default_user_config_file_path))?;
+    m.add_wrapped(wrap_pyfunction!(from_file))?;
+    m.add_wrapped(wrap_pyfunction!(setup_global_config_from_file))?;
+    m.add_wrapped(wrap_pyfunction!(global_config))?;
+    m.add_wrapped(wrap_pyfunction!(default))?;
+    Ok(())
 }

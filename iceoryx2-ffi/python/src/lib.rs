@@ -20,12 +20,12 @@ pub mod path;
 pub mod unable_to_deliver_strategy;
 
 use pyo3::prelude::*;
+use pyo3::wrap_pymodule;
 
 /// A Python module implemented in Rust.
 #[pymodule]
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<crate::config::Global>()?;
-    m.add_class::<crate::config::Config>()?;
+    m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_class::<crate::node_name::NodeName>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;

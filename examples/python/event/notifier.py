@@ -14,7 +14,7 @@
 
 import iceoryx2_ffi_python as iceoryx2
 
-config = iceoryx2.Config.default()
+config = iceoryx2.config.default()
 g = config.global_cfg
 
-print(f"hello world: {iceoryx2.Config.default().global_cfg}")
+print(f"hello world: {iceoryx2.config.default().global_cfg}")
