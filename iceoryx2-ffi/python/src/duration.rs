@@ -12,12 +12,10 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(str = "{value:?}", eq)]
+#[pyclass(str = "{0:?}", eq)]
 #[derive(PartialEq)]
 /// Represents a time duration.
-pub struct Duration {
-    pub(crate) value: core::time::Duration,
-}
+pub struct Duration(pub(crate) core::time::Duration);
 
 #[pymethods]
 impl Duration {
@@ -25,7 +23,7 @@ impl Duration {
     /// Creates a new `Duration` from a given number of micro seconds
     pub fn from_micros(micros: u64) -> Duration {
         Self {
-            value: core::time::Duration::from_micros(micros),
+            0: core::time::Duration::from_micros(micros),
         }
     }
 
@@ -33,7 +31,7 @@ impl Duration {
     /// Creates a new `Duration` from a given number of milli seconds
     pub fn from_millis(millis: u64) -> Duration {
         Self {
-            value: core::time::Duration::from_millis(millis),
+            0: core::time::Duration::from_millis(millis),
         }
     }
 
@@ -41,7 +39,7 @@ impl Duration {
     /// Creates a new `Duration` from a given number of nano seconds
     pub fn from_nanos(nanos: u64) -> Duration {
         Self {
-            value: core::time::Duration::from_nanos(nanos),
+            0: core::time::Duration::from_nanos(nanos),
         }
     }
 
@@ -49,7 +47,7 @@ impl Duration {
     /// Creates a new `Duration` from a given number of seconds
     pub fn from_secs(secs: u64) -> Duration {
         Self {
-            value: core::time::Duration::from_secs(secs),
+            0: core::time::Duration::from_secs(secs),
         }
     }
 
@@ -57,47 +55,47 @@ impl Duration {
     /// Creates a new `Duration` from a given number of seconds
     pub fn from_secs_f64(secs: f64) -> Duration {
         Self {
-            value: core::time::Duration::from_secs_f64(secs),
+            0: core::time::Duration::from_secs_f64(secs),
         }
     }
 
     /// Returns the number of seconds stored in the `Duration`
     pub fn as_secs(&self) -> u64 {
-        self.value.as_secs()
+        self.0.as_secs()
     }
 
     /// Returns the number of seconds stored in the `Duration`
     pub fn as_secs_f64(&self) -> f64 {
-        self.value.as_secs_f64()
+        self.0.as_secs_f64()
     }
 
     /// Returns the number of milli seconds stored in the `Duration`
     pub fn as_millis(&self) -> u128 {
-        self.value.as_millis()
+        self.0.as_millis()
     }
 
     /// Returns the number of micro seconds stored in the `Duration`
     pub fn as_micros(&self) -> u128 {
-        self.value.as_micros()
+        self.0.as_micros()
     }
 
     /// Returns the number of nano seconds stored in the `Duration`
     pub fn as_nanos(&self) -> u128 {
-        self.value.as_nanos()
+        self.0.as_nanos()
     }
 
     /// Returns the fractional micro seconds part stored in the `Duration`
     pub fn subsec_micros(&self) -> u32 {
-        self.value.subsec_micros()
+        self.0.subsec_micros()
     }
 
     /// Returns the fractional milli seconds part stored in the `Duration`
     pub fn subsec_millis(&self) -> u32 {
-        self.value.subsec_millis()
+        self.0.subsec_millis()
     }
 
     /// Returns the fractional nano seconds part stored in the `Duration`
     pub fn subsec_nanos(&self) -> u32 {
-        self.value.subsec_nanos()
+        self.0.subsec_nanos()
     }
 }

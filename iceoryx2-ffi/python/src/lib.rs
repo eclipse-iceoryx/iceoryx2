@@ -15,7 +15,9 @@ pub mod duration;
 pub mod error;
 pub mod file_name;
 pub mod file_path;
+pub mod node_builder;
 pub mod node_name;
+pub mod parc;
 pub mod path;
 pub mod service_type;
 pub mod unable_to_deliver_strategy;
@@ -28,6 +30,7 @@ use pyo3::wrap_pymodule;
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_class::<crate::node_name::NodeName>()?;
+    m.add_class::<crate::node_builder::NodeBuilder>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;
     m.add_class::<crate::path::Path>()?;

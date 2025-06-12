@@ -41,57 +41,49 @@ impl Node {
     #[getter]
     /// The directory in which all node files are stored
     pub fn directory(&self) -> Path {
-        Path {
-            value: self.value().global.node.directory.clone(),
-        }
+        Path(self.value().global.node.directory.clone())
     }
 
     #[setter]
     /// Set the directory in which all node files are stored
     pub fn set_directory(&mut self, value: &Path) {
-        self.value().global.node.directory = value.value.clone()
+        self.value().global.node.directory = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the monitor token
     pub fn monitor_suffix(&self) -> FileName {
-        FileName {
-            value: self.value().global.node.monitor_suffix.clone(),
-        }
+        FileName(self.value().global.node.monitor_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of the monitor token
     pub fn set_monitor_suffix(&mut self, value: &FileName) {
-        self.value().global.node.monitor_suffix = value.value.clone()
+        self.value().global.node.monitor_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the files where the node configuration is stored.
     pub fn static_config_suffix(&self) -> FileName {
-        FileName {
-            value: self.value().global.node.static_config_suffix.clone(),
-        }
+        FileName(self.value().global.node.static_config_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of the files where the node configuration is stored.
     pub fn set_static_config_suffix(&mut self, value: &FileName) {
-        self.value().global.node.static_config_suffix = value.value.clone()
+        self.value().global.node.static_config_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the service tags.
     pub fn service_tag_suffix(&self) -> FileName {
-        FileName {
-            value: self.value().global.node.service_tag_suffix.clone(),
-        }
+        FileName(self.value().global.node.service_tag_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of the service tags.
     pub fn set_service_tag_suffix(&mut self, value: &FileName) {
-        self.value().global.node.service_tag_suffix = value.value.clone()
+        self.value().global.node.service_tag_suffix = value.0.clone()
     }
 
     #[getter]
@@ -144,110 +136,98 @@ impl Service {
     #[getter]
     /// The directory in which all service files are stored
     pub fn directory(&self) -> Path {
-        Path {
-            value: self.value().global.service.directory.clone(),
-        }
+        Path(self.value().global.service.directory.clone())
     }
 
     #[setter]
     /// Set the directory in which all service files are stored
     pub fn set_directory(&self, value: &Path) {
-        self.value().global.service.directory = value.value.clone()
+        self.value().global.service.directory = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the ports data segment
     pub fn data_segment_suffix(&self) -> FileName {
-        FileName {
-            value: self.value().global.service.data_segment_suffix.clone(),
-        }
+        FileName(self.value().global.service.data_segment_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of the ports data segment
     pub fn set_data_segment_suffix(&self, value: &FileName) {
-        self.value().global.service.data_segment_suffix = value.value.clone()
+        self.value().global.service.data_segment_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the static config file
     pub fn static_config_storage_suffix(&self) -> FileName {
-        FileName {
-            value: self
-                .value()
+        FileName(
+            self.value()
                 .global
                 .service
                 .static_config_storage_suffix
                 .clone(),
-        }
+        )
     }
 
     #[setter]
     /// Set the suffix of the static config file
     pub fn set_static_config_storage_suffix(&self, value: &FileName) {
-        self.value().global.service.static_config_storage_suffix = value.value.clone()
+        self.value().global.service.static_config_storage_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the dynamic config file
     pub fn dynamic_config_storage_suffix(&self) -> FileName {
-        FileName {
-            value: self
-                .value()
+        FileName(
+            self.value()
                 .global
                 .service
                 .dynamic_config_storage_suffix
                 .clone(),
-        }
+        )
     }
 
     #[setter]
     /// Set the suffix of the dynamic config file
     pub fn set_dynamic_config_storage_suffix(&self, value: &FileName) {
-        self.value().global.service.dynamic_config_storage_suffix = value.value.clone()
+        self.value().global.service.dynamic_config_storage_suffix = value.0.clone()
     }
 
     #[getter]
     /// Defines the time of how long another process will wait until the service creation is
     /// finalized
     pub fn creation_timeout(&self) -> Duration {
-        Duration {
-            value: self.value().global.service.creation_timeout,
-        }
+        Duration(self.value().global.service.creation_timeout)
     }
 
     #[setter]
     /// Set the creation timeout
     pub fn set_creation_timeout(&self, value: &Duration) {
-        self.value().global.service.creation_timeout = value.value
+        self.value().global.service.creation_timeout = value.0
     }
 
     #[getter]
     /// The suffix of a one-to-one connection
     pub fn connection_suffix(&self) -> FileName {
-        FileName {
-            value: self.value().global.service.connection_suffix.clone(),
-        }
+        FileName(self.value().global.service.connection_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of a one-to-one connection
     pub fn set_connection_suffix(&self, value: &FileName) {
-        self.value().global.service.connection_suffix = value.value.clone()
+        self.value().global.service.connection_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of a one-to-one connection
     pub fn event_connection_suffix(&self) -> FileName {
-        FileName {
-            value: self.value().global.service.event_connection_suffix.clone(),
-        }
+        FileName(self.value().global.service.event_connection_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of a one-to-one connection
     pub fn set_event_connection_suffix(&self, value: &FileName) {
-        self.value().global.service.event_connection_suffix = value.value.clone()
+        self.value().global.service.event_connection_suffix = value.0.clone()
     }
 }
 
@@ -509,23 +489,22 @@ impl Event {
     /// is not sent after the defined time, every `Listener`
     /// that is attached to a `WaitSet` will be notified.
     pub fn deadline(&self) -> Duration {
-        Duration {
-            value: self
-                .value()
+        Duration(
+            self.value()
                 .defaults
                 .event
                 .deadline
                 .unwrap_or(core::time::Duration::ZERO),
-        }
+        )
     }
 
     #[setter]
     /// Sets the deadline of the event service.
     pub fn set_deadline(&self, value: &Duration) {
-        if value.value.is_zero() {
+        if value.0.is_zero() {
             self.value().defaults.event.deadline = None
         } else {
-            self.value().defaults.event.deadline = Some(value.value)
+            self.value().defaults.event.deadline = Some(value.0)
         }
     }
 
@@ -954,45 +933,37 @@ impl Global {
     #[getter]
     /// Returns the directory under which service files are stored.
     pub fn service_dir(&self) -> Path {
-        Path {
-            value: self.value().global.service_dir().clone(),
-        }
+        Path(self.value().global.service_dir().clone())
     }
 
     #[getter]
     /// Returns the directory under which node files are stored.
     pub fn node_dir(&self) -> Path {
-        Path {
-            value: self.value().global.node_dir().clone(),
-        }
+        Path(self.value().global.node_dir().clone())
     }
 
     #[getter]
     /// The path under which all other directories or files will be created
     pub fn root_path(&self) -> Path {
-        Path {
-            value: self.value().global.root_path().clone(),
-        }
+        Path(self.value().global.root_path().clone())
     }
 
     #[setter]
     /// Defines the path under which all other directories or files will be created
     pub fn set_root_path(&self, value: &Path) {
-        self.value().global.set_root_path(&value.value.clone())
+        self.value().global.set_root_path(&value.0.clone())
     }
 
     #[getter]
     /// Prefix used for all files created during runtime
     pub fn prefix(&self) -> FileName {
-        FileName {
-            value: self.value().global.prefix.clone(),
-        }
+        FileName(self.value().global.prefix.clone())
     }
 
     #[setter]
     /// Set the prefix used for all files created during runtime
     pub fn set_prefix(&self, value: &FileName) {
-        self.value().global.prefix = value.value.clone()
+        self.value().global.prefix = value.0.clone()
     }
 }
 
@@ -1098,7 +1069,7 @@ pub fn global_config() -> Config {
 pub fn setup_global_config_from_file(config_file: &FilePath) -> PyResult<Config> {
     Ok(Config {
         value: Arc::new(Mutex::new(
-            iceoryx2::config::Config::setup_global_config_from_file(&config_file.value.clone())
+            iceoryx2::config::Config::setup_global_config_from_file(&config_file.0.clone())
                 .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
                 .clone(),
         )),
@@ -1111,7 +1082,7 @@ pub fn setup_global_config_from_file(config_file: &FilePath) -> PyResult<Config>
 pub fn from_file(config_file: &FilePath) -> PyResult<Config> {
     Ok(Config {
         value: Arc::new(Mutex::new(
-            iceoryx2::config::Config::from_file(&config_file.value.clone())
+            iceoryx2::config::Config::from_file(&config_file.0.clone())
                 .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
                 .clone(),
         )),
@@ -1121,33 +1092,25 @@ pub fn from_file(config_file: &FilePath) -> PyResult<Config> {
 #[pyfunction]
 /// Path to the default user config file
 pub fn default_user_config_file_path() -> FilePath {
-    FilePath {
-        value: iceoryx2::config::Config::default_user_config_file_path(),
-    }
+    FilePath(iceoryx2::config::Config::default_user_config_file_path())
 }
 
 #[pyfunction]
 /// Relative path to the config file
 pub fn relative_config_path() -> Path {
-    Path {
-        value: iceoryx2::config::Config::relative_config_path(),
-    }
+    Path(iceoryx2::config::Config::relative_config_path())
 }
 
 #[pyfunction]
 /// Path to the default config file
 pub fn default_config_file_path() -> FilePath {
-    FilePath {
-        value: iceoryx2::config::Config::default_config_file_path(),
-    }
+    FilePath(iceoryx2::config::Config::default_config_file_path())
 }
 
 #[pyfunction]
 /// The name of the default iceoryx2 config file
 pub fn default_config_file_name() -> FileName {
-    FileName {
-        value: iceoryx2::config::Config::default_config_file_name(),
-    }
+    FileName(iceoryx2::config::Config::default_config_file_name())
 }
 
 #[pymodule]
