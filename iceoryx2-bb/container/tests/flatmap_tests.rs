@@ -12,7 +12,6 @@
 
 use iceoryx2_bb_container::flatmap::{FixedSizeFlatMap, FlatMapError};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
 use iceoryx2_bb_testing::memory::RawMemory;
@@ -21,23 +20,6 @@ mod flat_map {
     use super::*;
 
     const CAPACITY: usize = 100;
-
-    // used to check if drop is called for the key-value pairs if the map is dropped
-    struct RelocLifetimeTracker(LifetimeTracker);
-    unsafe impl ZeroCopySend for RelocLifetimeTracker {}
-    impl PartialEq for RelocLifetimeTracker {
-        fn eq(&self, _: &Self) -> bool {
-            false
-        }
-    }
-    impl Eq for RelocLifetimeTracker {}
-    impl Clone for RelocLifetimeTracker {
-        fn clone(&self) -> Self {
-            RelocLifetimeTracker {
-                0: LifetimeTracker::default(),
-            }
-        }
-    }
 
     #[test]
     fn new_creates_empty_flat_map() {
@@ -69,14 +51,10 @@ mod flat_map {
     #[test]
     fn drop_called_for_keys_and_values() {
         let state = LifetimeTracker::start_tracking();
-        let mut map =
-            FixedSizeFlatMap::<RelocLifetimeTracker, RelocLifetimeTracker, CAPACITY>::new();
+        let mut map = FixedSizeFlatMap::<LifetimeTracker, LifetimeTracker, CAPACITY>::new();
         for _ in 0..CAPACITY {
             assert_that!(
-                map.insert(
-                    RelocLifetimeTracker(LifetimeTracker::default()),
-                    RelocLifetimeTracker(LifetimeTracker::default())
-                ),
+                map.insert(LifetimeTracker::default(), LifetimeTracker::default()),
                 is_ok
             );
         }

@@ -48,9 +48,9 @@ struct Entry<K: Eq, V: Clone> {
 
 unsafe impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend> ZeroCopySend for Entry<K, V> {}
 
-/// A data structure to store key-value pairs
+/// A compile-time fixed-size, shared-memory compatible [`FixedSizeFlatMap`].
 #[repr(C)]
-pub struct FixedSizeFlatMap<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize> {
+pub struct FixedSizeFlatMap<K: Eq, V: Clone, const CAPACITY: usize> {
     map: FixedSizeSlotMap<Entry<K, V>, CAPACITY>,
 }
 
@@ -59,26 +59,20 @@ unsafe impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize
 {
 }
 
-impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize> PlacementDefault
-    for FixedSizeFlatMap<K, V, CAPACITY>
-{
+impl<K: Eq, V: Clone, const CAPACITY: usize> PlacementDefault for FixedSizeFlatMap<K, V, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let map_ptr = core::ptr::addr_of_mut!((*ptr).map);
         PlacementDefault::placement_default(map_ptr);
     }
 }
 
-impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize> Default
-    for FixedSizeFlatMap<K, V, CAPACITY>
-{
+impl<K: Eq, V: Clone, const CAPACITY: usize> Default for FixedSizeFlatMap<K, V, CAPACITY> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize>
-    FixedSizeFlatMap<K, V, CAPACITY>
-{
+impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
     /// Creates a new FixedSizeFlatMap
     pub fn new() -> Self {
         Self {
@@ -104,8 +98,7 @@ impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize>
 
     /// Returns a copy of the value corresponding to the given key. If there is no such key, [`None`] is returned.
     pub fn get(&self, id: &K) -> Option<V> {
-        let mut iter = self.map.iter().skip_while(|kv| kv.1.id != *id);
-        iter.next().map(|kv| kv.1.value.clone())
+        self.get_ref(id).cloned()
     }
 
     /// Returns a reference to the value corresponding to the given key. If there is no such key, [`None`] is returned.
@@ -143,8 +136,7 @@ impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize>
 
     /// Returns true if the FixedSizeFlatMap contains the given key, otherwise false.
     pub fn contains(&self, id: &K) -> bool {
-        let mut iter = self.map.iter().skip_while(|kv| kv.1.id != *id);
-        iter.next().is_some()
+        self.get_ref(id).is_some()
     }
 
     /// Returns the number of stored key-value pairs.
