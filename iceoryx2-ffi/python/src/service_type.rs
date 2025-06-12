@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,20 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_SERVICE_TYPE_HPP
-#define IOX2_SERVICE_TYPE_HPP
+use pyo3::prelude::*;
 
-#include <cstdint>
-
-namespace iox2 {
+#[pyclass(eq, eq_int)]
+#[derive(PartialEq, Clone, Debug)]
 /// Defines the type of the `Service` and what kind of resources and operating system mechanisms
 /// it shall use.
-enum class ServiceType : uint8_t {
+pub enum ServiceType {
     /// Optimized for inter-thread communication does not not support inter-process communication.
     Local,
     /// Optimized for inter-process communication.
-    Ipc
-};
-} // namespace iox2
+    Ipc,
+}
 
-#endif
+#[pymethods]
+impl ServiceType {
+    pub fn __str__(&self) -> String {
+        format!("{:?}", self)
+    }
+}
