@@ -75,19 +75,19 @@ export PATH=$PATH:$HOME/.cargo/bin
 rustup default $RUST_TOOLCHAIN
 # export RUSTFLAGS="-C debug-assertions"
 cargo fmt --all -- --check
-cargo clippy -- -D warnings
+cargo clippy --workspace --exclude iceoryx2-tunnels-zenoh -- -D warnings
 
 echo "###################"
 echo "# Run cargo build #"
 echo "###################"
 
-cargo build --workspace --all-targets $RUST_BUILD_TYPE_FLAG
+cargo build --workspace --exclude iceoryx2-tunnels-zenoh --all-targets $RUST_BUILD_TYPE_FLAG
 
 echo "######################"
 echo "# Run cargo nextest #"
 echo "#####################"
 
-cargo nextest run --workspace --all-targets --no-fail-fast $RUST_BUILD_TYPE_FLAG
+cargo nextest run --workspace --exclude iceoryx2-tunnels-zenoh --all-targets --no-fail-fast $RUST_BUILD_TYPE_FLAG
 
 echo "###########################################################"
 echo "# Clean the target directory to reduce memory usage on VM #"

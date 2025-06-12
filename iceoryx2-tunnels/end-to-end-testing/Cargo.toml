@@ -1,6 +1,6 @@
 [package]
 name = "iceoryx2-tunnels-end-to-end-testing"
-description = "iceoryx2: binaries for tunnel end-to-end testing"
+description = "iceoryx2: [internal] binaries for tunnel end-to-end testing"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
