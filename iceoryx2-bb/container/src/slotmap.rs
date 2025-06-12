@@ -78,7 +78,7 @@ impl SlotMapKey {
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, ZeroCopySend)]
-struct FreeListEntry {
+pub(crate) struct FreeListEntry {
     previous: usize,
     next: usize,
 }
