@@ -10,17 +10,36 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod config;
+pub mod duration;
+pub mod error;
+pub mod file_name;
+pub mod file_path;
+pub mod node_name;
+pub mod path;
+pub mod unable_to_deliver_strategy;
+
 use pyo3::prelude::*;
+use pyo3::wrap_pymodule;
 
-/// Formats the sum of two numbers as string.
-#[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
-}
-
-/// A Python module implemented in Rust.
+/// iceoryx2 Python language bindings
 #[pymodule]
-fn iceoryx2_ffi_python(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
+fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_wrapped(wrap_pymodule!(crate::config::config))?;
+    m.add_class::<crate::node_name::NodeName>()?;
+    m.add_class::<crate::file_name::FileName>()?;
+    m.add_class::<crate::file_path::FilePath>()?;
+    m.add_class::<crate::path::Path>()?;
+    m.add_class::<crate::duration::Duration>()?;
+    m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
+    m.add(
+        "SemanticStringError",
+        py.get_type::<crate::error::SemanticStringError>(),
+    )?;
+    m.add(
+        "ConfigCreationError",
+        py.get_type::<crate::error::ConfigCreationError>(),
+    )?;
+
     Ok(())
 }

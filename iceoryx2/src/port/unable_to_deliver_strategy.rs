@@ -16,10 +16,10 @@ use serde::{de::Visitor, Deserialize, Serialize};
 /// and the service does not overflow.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum UnableToDeliverStrategy {
-    /// Blocks until the [`crate::port::subscriber::Subscriber`] has consumed the
-    /// [`crate::sample::Sample`] from the buffer and there is space again
+    /// Blocks until the receiver has consumed the
+    /// data from the buffer and there is space again
     Block,
-    /// Do not deliver the [`crate::sample::Sample`].
+    /// Do not deliver the data.
     DiscardSample,
 }
 

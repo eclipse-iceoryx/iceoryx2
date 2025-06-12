@@ -15,7 +15,6 @@ use core::time::Duration;
 use examples_common::TransmissionData;
 use iceoryx2::prelude::*;
 use iceoryx2_bb_log::{set_log_level, LogLevel};
-use iceoryx2_bb_system_types::file_name::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 

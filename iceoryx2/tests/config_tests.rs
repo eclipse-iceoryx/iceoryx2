@@ -12,8 +12,6 @@
 
 mod node_name {
     use iceoryx2::prelude::*;
-    use iceoryx2_bb_system_types::file_path::*;
-    use iceoryx2_bb_system_types::path::*;
     use iceoryx2_bb_testing::{assert_that, test_requires};
 
     #[test]

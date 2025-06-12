@@ -10,11 +10,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Notifier example for python."""
-
 import iceoryx2_ffi_python as iceoryx2
+import pytest
 
-config = iceoryx2.config.default()
-g = config.global_cfg
 
-print(f"hello world: {iceoryx2.config.default().global_cfg}")
+def test_file_name_can_be_constructed() -> None:
+    sut = iceoryx2.FileName.new("some.file")
+    assert sut.to_string() == "some.file"
+
+
+def test_file_with_invalid_content_cannot_be_constructed() -> None:
+    invalid_content = "/i/am/not/a/path"
+    with pytest.raises(iceoryx2.SemanticStringError):
+        sut = iceoryx2.FileName.new(invalid_content)
