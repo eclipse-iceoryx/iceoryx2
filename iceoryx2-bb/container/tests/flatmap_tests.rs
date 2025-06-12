@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_container::flatmap::{FixedSizeFlatMap, FlatMapError};
+use iceoryx2_bb_container::flatmap::{FixedSizeFlatMap, FlatMap, FlatMapError};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
@@ -23,6 +23,18 @@ mod flat_map {
 
     #[test]
     fn new_creates_empty_flat_map() {
+        let map_diff_key = FlatMap::<u8, i32>::new(CAPACITY);
+        assert_that!(map_diff_key, is_empty);
+        assert_that!(map_diff_key.is_full(), eq false);
+        assert_that!(map_diff_key, len 0);
+        let map_same_key = FlatMap::<u16, u16>::new(CAPACITY);
+        assert_that!(map_same_key, is_empty);
+        assert_that!(map_diff_key.is_full(), eq false);
+        assert_that!(map_same_key, len 0);
+    }
+
+    #[test]
+    fn new_creates_empty_fixed_size_flat_map() {
         let map_diff_key = FixedSizeFlatMap::<u8, i32, CAPACITY>::new();
         assert_that!(map_diff_key, is_empty);
         assert_that!(map_diff_key, len 0);
