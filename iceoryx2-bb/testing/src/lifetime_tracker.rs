@@ -68,3 +68,11 @@ impl Drop for LifetimeTracker {
         *DROP_COUNTER.lock().unwrap() += 1;
     }
 }
+
+impl PartialEq for LifetimeTracker {
+    fn eq(&self, _: &Self) -> bool {
+        false
+    }
+}
+
+impl Eq for LifetimeTracker {}
