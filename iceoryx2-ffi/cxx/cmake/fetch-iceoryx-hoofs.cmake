@@ -59,8 +59,10 @@ endif()
 if(ICEORYX_WITH_FETCH_CONTENT)
 message(WARNING "\
 #############################################################
-The project was build by obtaining iceoryx with FetchContent.
-This is fine for development but for production, it is
+The project was built by obtaining iceoryx with FetchContent.
+Language bindings produced by this build are not relocatable,
+so they have been removed from the install target.
+This is fine for development, but for production it is
 recommended to use an existing installation with
 '-DCMAKE_PREFIX_PATH=/full/path/to/installed/iceoryx'!
 #############################################################
