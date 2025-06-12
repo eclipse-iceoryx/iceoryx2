@@ -728,11 +728,14 @@ pub mod details {
                 AdaptiveWaitBuilder::new()
                     .create()
                     .unwrap()
-                    .wait_while(|| {
-                        self.storage.get().channels[channel_id.value()]
-                            .submission_queue
-                            .is_full()
-                    })
+                    .timed_wait_while(
+                        || -> Result<bool, ()> {
+                            Ok(self.storage.get().channels[channel_id.value()]
+                                .submission_queue
+                                .is_full())
+                        },
+                        Duration::from_millis(100),
+                    )
                     .unwrap();
             }
 

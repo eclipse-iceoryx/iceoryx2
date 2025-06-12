@@ -12,7 +12,10 @@
 
 mod service_discovery_service {
 
+    use std::time::Duration;
+
     use iceoryx2::prelude::*;
+    use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -20,6 +23,8 @@ mod service_discovery_service {
     use iceoryx2_services_discovery::service_discovery::{
         service_name, Config, Discovery, Payload, Service,
     };
+
+    const CYCLE_TIME: Duration = Duration::from_millis(50);
 
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
@@ -194,5 +199,192 @@ mod service_discovery_service {
         } else {
             test_fail!("expected DiscoveryEvent::Added for the internal service")
         }
+    }
+
+    #[test]
+    fn check_request_current_discovery_state_max_response_buffer_size_less_than_num_services(
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let iceoryx_config = generate_isolated_config();
+
+        // create some services in the main thread
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<ipc::Service>()
+            .unwrap();
+
+        let service_names: Vec<_> = (0..6).map(|_| generate_name()).collect();
+
+        let _created_services: Vec<_> = service_names
+            .iter()
+            .map(|name| {
+                node.service_builder(name)
+                    .publish_subscribe::<u64>()
+                    .create()
+                    .unwrap()
+            })
+            .collect();
+
+        // === Spawn discovery service in a separate thread ===
+        // here max_response_buffer_size < created_services.len()
+        let discovery_config = Config {
+            sync_on_initialization: true,
+            include_internal: false,
+            publish_events: true,
+            max_subscribers: 1,
+            send_notifications: false,
+            max_listeners: 1,
+            max_response_buffer_size: 3,
+            ..Default::default()
+        };
+
+        let iceoryx_config_clone = iceoryx_config.clone();
+
+        let handle = std::thread::spawn(move || {
+            let mut sut =
+                Service::<ipc::Service>::create(&discovery_config, &iceoryx_config_clone).unwrap();
+            loop {
+                sut.spin(|_| {}, |_| {}).unwrap();
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        });
+
+        while !node.wait(CYCLE_TIME).is_ok() {}
+
+        // === Request current discovery state ===
+        let service = node
+            .service_builder(service_name())
+            .request_response::<(), StaticConfig>()
+            .open_or_create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+
+        let request = client.loan_uninit()?;
+        let request = request.write_payload(());
+        let pending_response = request.send()?;
+
+        let mut counter = 0;
+
+        // IMPORTANT: We need to wait for the request to be sent before we can receive responses.
+        while !node.wait(CYCLE_TIME).is_ok() {}
+
+        while let Some(response) = pending_response.receive()? {
+            assert_that!(service_names.contains(response.name()), eq true);
+            counter += 1;
+        }
+        // acquire all responses to our request from our buffer that were sent by the servers
+        while pending_response.is_connected() {
+            while let Some(response) = pending_response.receive()? {
+                assert_that!(service_names.contains(response.name()), eq true);
+                counter += 1;
+            }
+        }
+
+        assert_that!(counter, eq service_names.len());
+
+        // Optional: if `sut.spin()` exits, join the thread
+        // Or detach it if it runs indefinitely (and your test exits after verification)
+        drop(handle);
+
+        Ok(())
+    }
+
+    #[test]
+    fn check_response_buffer_if_remains_full() -> Result<(), Box<dyn std::error::Error>> {
+        let iceoryx_config = generate_isolated_config();
+
+        // create some services in the main thread
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<ipc::Service>()
+            .unwrap();
+
+        let service_names: Vec<_> = (0..6).map(|_| generate_name()).collect();
+
+        let _created_services: Vec<_> = service_names
+            .iter()
+            .map(|name| {
+                node.service_builder(name)
+                    .publish_subscribe::<u64>()
+                    .create()
+                    .unwrap()
+            })
+            .collect();
+
+        // === Spawn discovery service in a separate thread ===
+        // here max_response_buffer_size < created_services.len()
+        let discovery_config = Config {
+            sync_on_initialization: true,
+            include_internal: false,
+            publish_events: true,
+            max_subscribers: 1,
+            send_notifications: false,
+            max_listeners: 1,
+            max_response_buffer_size: 3,
+            ..Default::default()
+        };
+
+        let iceoryx_config_clone = iceoryx_config.clone();
+
+        let handle = std::thread::spawn(move || {
+            let mut sut =
+                Service::<ipc::Service>::create(&discovery_config, &iceoryx_config_clone).unwrap();
+            loop {
+                sut.spin(|_| {}, |_| {}).unwrap();
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+        });
+        //wait for server to spin
+        while !node.wait(CYCLE_TIME).is_ok() {}
+
+        // === Request current discovery state ===
+        let service = node
+            .service_builder(service_name())
+            .request_response::<(), StaticConfig>()
+            .open_or_create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+
+        let mut counter = 0;
+
+        //send the request and do not retrieve it from buffer
+        let request = client.loan_uninit()?;
+        let request = request.write_payload(());
+        let pending_response = request.send()?;
+
+        // IMPORTANT: We need to wait for the request to be sent before we can receive responses.
+        while !node.wait(CYCLE_TIME).is_ok() {}
+
+        //wait till the buffer again gets ready
+        while pending_response.is_connected() {}
+
+        //send the new request and now retrive the data
+        let request = client.loan_uninit()?;
+        let request = request.write_payload(());
+        let pending_response = request.send()?;
+
+        // IMPORTANT: We need to wait for the request to be sent before we can receive responses.
+        while !node.wait(CYCLE_TIME).is_ok() {}
+
+        while let Some(response) = pending_response.receive()? {
+            assert_that!(service_names.contains(response.name()), eq true);
+            counter += 1;
+        }
+        // acquire all responses to our request from our buffer that were sent by the servers
+        while pending_response.is_connected() {
+            while let Some(response) = pending_response.receive()? {
+                assert_that!(service_names.contains(response.name()), eq true);
+                counter += 1;
+            }
+        }
+
+        assert_that!(counter, eq service_names.len());
+
+        // Optional: if `sut.spin()` exits, join the thread
+        // Or detach it if it runs indefinitely (and your test exits after verification)
+        drop(handle);
+
+        Ok(())
     }
 }
