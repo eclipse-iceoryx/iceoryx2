@@ -32,7 +32,7 @@
 //! ```
 
 use crate::slotmap::FreeListEntry;
-use crate::slotmap::{details::MetaSlotMap, RelocatableSlotMap};
+use crate::slotmap::{MetaSlotMap, RelocatableSlotMap};
 use core::mem::MaybeUninit;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
@@ -64,247 +64,248 @@ unsafe impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend> ZeroCopySend for Entr
 
 /// A runtime fixed-size, non-shared memory compatible [`FlatMap`]. The [`FlatMap`]s memory resides
 /// in the heap.
-pub type FlatMap<K, V> = details::MetaFlatMap<K, V, GenericOwningPointer>;
+pub type FlatMap<K, V> = MetaFlatMap<K, V, GenericOwningPointer>;
 
 /// A runtime fixed-size, shared-memory compatible [`RelocatableFlatMap`].
-pub type RelocatableFlatMap<K, V> = details::MetaFlatMap<K, V, GenericRelocatablePointer>;
+pub type RelocatableFlatMap<K, V> = MetaFlatMap<K, V, GenericRelocatablePointer>;
 
 #[doc(hidden)]
-pub mod details {
-    use super::*;
+#[repr(C)]
+pub struct MetaFlatMap<K: Eq, V: Clone, Ptr: GenericPointer> {
+    map: MetaSlotMap<Entry<K, V>, Ptr>,
+    is_initialized: IoxAtomicBool,
+}
 
-    #[repr(C)]
-    pub struct MetaFlatMap<K: Eq, V: Clone, Ptr: GenericPointer> {
-        map: MetaSlotMap<Entry<K, V>, Ptr>,
-        is_initialized: IoxAtomicBool,
+impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
+    pub(crate) unsafe fn insert_impl(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
+        let msg = "Unable to insert key-value pair into FlatMap";
+        let origin = "MetaFlatMap::insert_impl()";
+
+        let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != id);
+        if iter.next().is_some() {
+            fail!(from origin, with FlatMapError::KeyAlreadyExists, "{msg} since the passed key already exists.");
+        }
+        if self.map.insert_impl(Entry { id, value }).is_none() {
+            fail!(from origin, with FlatMapError::IsFull, "{msg} since the FlatMap is full.");
+        }
+        Ok(())
     }
 
-    impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
-        pub(crate) unsafe fn insert_impl(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
-            let msg = "Unable to insert key-value pair into FlatMap";
-            let origin = "MetaFlatMap::insert_impl()";
+    pub(crate) unsafe fn get_impl(&self, id: &K) -> Option<V> {
+        self.get_ref_impl(id).cloned()
+    }
 
-            let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != id);
-            if iter.next().is_some() {
-                fail!(from origin, with FlatMapError::KeyAlreadyExists, "{msg} since the passed key already exists.");
-            }
-            if self.map.insert_impl(Entry { id, value }).is_none() {
-                fail!(from origin, with FlatMapError::IsFull, "{msg} since the FlatMap is full.");
-            }
-            Ok(())
-        }
+    pub(crate) unsafe fn get_ref_impl(&self, id: &K) -> Option<&V> {
+        let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != *id);
+        iter.next().map(|kv| &kv.1.value)
+    }
 
-        pub(crate) unsafe fn get_impl(&self, id: &K) -> Option<V> {
-            self.get_ref_impl(id).cloned()
-        }
+    pub(crate) unsafe fn get_mut_ref_impl(&mut self, id: &K) -> Option<&mut V> {
+        let slot_map_entry = self.map.iter_impl().find(|kv| kv.1.id == *id)?;
+        self.map
+            .get_mut_impl(slot_map_entry.0)
+            .map(|flat_map_entry| &mut flat_map_entry.value)
+    }
 
-        pub(crate) unsafe fn get_ref_impl(&self, id: &K) -> Option<&V> {
-            let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != *id);
-            iter.next().map(|kv| &kv.1.value)
-        }
-
-        pub(crate) unsafe fn get_mut_ref_impl(&mut self, id: &K) -> Option<&mut V> {
-            let slot_map_entry = self.map.iter_impl().find(|kv| kv.1.id == *id)?;
-            self.map
-                .get_mut_impl(slot_map_entry.0)
-                .map(|flat_map_entry| &mut flat_map_entry.value)
-        }
-
-        pub(crate) unsafe fn remove_impl(&mut self, id: &K) {
-            let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != *id);
-            if let Some(kv) = iter.next() {
-                let key = kv.0;
-                self.map.remove_impl(key);
-            }
-        }
-
-        pub(crate) fn is_empty_impl(&self) -> bool {
-            self.map.is_empty_impl()
-        }
-
-        pub(crate) fn is_full_impl(&self) -> bool {
-            self.map.is_full_impl()
-        }
-
-        pub(crate) unsafe fn contains_impl(&self, id: &K) -> bool {
-            self.get_ref_impl(id).is_some()
-        }
-
-        pub(crate) fn len_impl(&self) -> usize {
-            self.map.len_impl()
+    pub(crate) unsafe fn remove_impl(&mut self, id: &K) {
+        let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != *id);
+        if let Some(kv) = iter.next() {
+            let key = kv.0;
+            self.map.remove_impl(key);
         }
     }
 
-    impl<K: Eq, V: Clone> RelocatableContainer for MetaFlatMap<K, V, GenericRelocatablePointer> {
-        unsafe fn new_uninit(capacity: usize) -> Self {
-            Self {
-                map: RelocatableSlotMap::new_uninit(capacity),
-                is_initialized: IoxAtomicBool::new(false),
-            }
-        }
+    pub(crate) fn is_empty_impl(&self) -> bool {
+        self.map.is_empty_impl()
+    }
 
-        unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
-            &mut self,
-            allocator: &Allocator,
-        ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
-            let msg = "Unable to initialize RelocatableFlatMap";
-            fail!(from "RelocatableFlatMap::init()", when self.map.init(allocator), "{msg} since the underlying RelocatableSlotMap could not be initialized.");
-            self.is_initialized
-                .store(true, core::sync::atomic::Ordering::Relaxed);
-            Ok(())
-        }
+    pub(crate) fn is_full_impl(&self) -> bool {
+        self.map.is_full_impl()
+    }
 
-        fn memory_size(capacity: usize) -> usize {
-            Self::const_memory_size(capacity)
+    pub(crate) unsafe fn contains_impl(&self, id: &K) -> bool {
+        self.get_ref_impl(id).is_some()
+    }
+
+    pub(crate) fn len_impl(&self) -> usize {
+        self.map.len_impl()
+    }
+}
+
+impl<K: Eq, V: Clone> FlatMap<K, V> {
+    /// Creates a new runtime-fixed size [`FlatMap`] on the heap with the given capacity.
+    pub fn new(capacity: usize) -> Self {
+        Self {
+            map: MetaSlotMap::new(capacity),
+            is_initialized: IoxAtomicBool::new(true),
         }
     }
 
-    impl<K: Eq, V: Clone> MetaFlatMap<K, V, GenericOwningPointer> {
-        /// Creates a new runtime-fixed size [`FlatMap`] on the heap with the given capacity.
-        pub fn new(capacity: usize) -> Self {
-            Self {
-                map: MetaSlotMap::new(capacity),
-                is_initialized: IoxAtomicBool::new(true),
-            }
-        }
-
-        /// Inserts a new key-value pair into the FlatMap. On success, the method returns [`Ok`],
-        /// otherwise a [`FlatMapError`] describing the failure.
-        pub fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
-            unsafe { self.insert_impl(id, value) }
-        }
-
-        /// Returns a copy of the value corresponding to the given key. If there is no such key,
-        /// [`None`] is returned.
-        pub fn get(&self, id: &K) -> Option<V> {
-            unsafe { self.get_impl(id) }
-        }
-
-        /// Returns a reference to the value corresponding to the given key. If there is no such
-        /// key, [`None`] is returned.
-        pub fn get_ref(&self, id: &K) -> Option<&V> {
-            unsafe { self.get_ref_impl(id) }
-        }
-
-        /// Returns a mutable reference to the value corresponding to the given key. If there is
-        /// no such key, [`None`] is returned.
-        pub fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
-            unsafe { self.get_mut_ref_impl(id) }
-        }
-
-        /// Removes the given key and the corresponding value from the FixedSizeFlatMap.
-        pub fn remove(&mut self, id: &K) {
-            unsafe {
-                self.remove_impl(id);
-            }
-        }
-
-        /// Returns true if the FlatMap is empty, otherwise false.
-        pub fn is_empty(&self) -> bool {
-            self.is_empty_impl()
-        }
-
-        /// Returns true if the FlatMap is full, otherwise false.
-        pub fn is_full(&self) -> bool {
-            self.is_full_impl()
-        }
-
-        /// Returns true if the FlatMap contains the given key, otherwise false.
-        pub fn contains(&self, id: &K) -> bool {
-            unsafe { self.contains_impl(id) }
-        }
-
-        /// Returns the number of stored key-value pairs.
-        pub fn len(&self) -> usize {
-            self.len_impl()
-        }
+    /// Inserts a new key-value pair into the [`FlatMap`]. On success, the method returns [`Ok`],
+    /// otherwise a [`FlatMapError`] describing the failure.
+    pub fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
+        unsafe { self.insert_impl(id, value) }
     }
 
-    impl<K: Eq, V: Clone> MetaFlatMap<K, V, GenericRelocatablePointer> {
-        /// Returns how much memory the [`RelocatableFlatMap`] will allocate from the allocator
-        /// in [`RelocatableFlatMap::init()`].
-        pub const fn const_memory_size(capacity: usize) -> usize {
-            RelocatableSlotMap::<Entry<K, V>>::const_memory_size(capacity)
-        }
+    /// Returns a copy of the value corresponding to the given key. If there is no such key,
+    /// [`None`] is returned.
+    pub fn get(&self, id: &K) -> Option<V> {
+        unsafe { self.get_impl(id) }
+    }
 
-        /// Inserts a new key-value pair into the map. On success, the method returns [`Ok`],
-        /// otherwise a [`FlatMapError`] describing the failure.
-        ///
-        /// # Safety
-        ///
-        ///  * [`RelocatableFlatMap::init()`] must be called once before
-        ///
-        pub unsafe fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
-            self.insert_impl(id, value)
-        }
+    /// Returns a reference to the value corresponding to the given key. If there is no such
+    /// key, [`None`] is returned.
+    pub fn get_ref(&self, id: &K) -> Option<&V> {
+        unsafe { self.get_ref_impl(id) }
+    }
 
-        /// Returns a copy of the value corresponding to the given key. If there is no such key,
-        /// [`None`] is returned.
-        ///
-        /// # Safety
-        ///
-        ///  * [`RelocatableFlatMap::init()`] must be called once before
-        ///
-        pub unsafe fn get(&self, id: &K) -> Option<V> {
-            self.get_impl(id)
-        }
+    /// Returns a mutable reference to the value corresponding to the given key. If there is
+    /// no such key, [`None`] is returned.
+    pub fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
+        unsafe { self.get_mut_ref_impl(id) }
+    }
 
-        /// Returns a reference to the value corresponding to the given key. If there is no such
-        /// key, [`None`] is returned.
-        ///
-        /// # Safety
-        ///
-        ///  * [`RelocatableFlatMap::init()`] must be called once before
-        ///
-        pub unsafe fn get_ref(&self, id: &K) -> Option<&V> {
-            self.get_ref_impl(id)
-        }
-
-        /// Returns a mutable reference to the value corresponding to the given key. If there is
-        /// no such key, [`None`] is returned.
-        ///
-        /// # Safety
-        ///
-        ///  * [`RelocatableFlatMap::init()`] must be called once before
-        ///
-        pub unsafe fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
-            self.get_mut_ref_impl(id)
-        }
-
-        /// Removes the given key and the corresponding value from the map.
-        ///
-        /// # Safety
-        ///
-        ///  * [`RelocatableFlatMap::init()`] must be called once before
-        ///
-        pub unsafe fn remove(&mut self, id: &K) {
+    /// Removes the given key and the corresponding value from the [`FlatMap`].
+    pub fn remove(&mut self, id: &K) {
+        unsafe {
             self.remove_impl(id);
         }
+    }
 
-        /// Returns true if the FixedSizeFlatMap is empty, otherwise false.
-        pub fn is_empty(&self) -> bool {
-            self.map.is_empty()
-        }
+    /// Returns true if the [`FlatMap`] is empty, otherwise false.
+    pub fn is_empty(&self) -> bool {
+        self.is_empty_impl()
+    }
 
-        /// Returns true if the FixedSizeFlatMap is full, otherwise false.
-        pub fn is_full(&self) -> bool {
-            self.map.is_full()
-        }
+    /// Returns true if the [`FlatMap`] is full, otherwise false.
+    pub fn is_full(&self) -> bool {
+        self.is_full_impl()
+    }
 
-        /// Returns true if the map contains the given key, otherwise false.
-        ///
-        /// # Safety
-        ///
-        ///  * [`RelocatableFlatMap::init()`] must be called once before
-        ///
-        pub unsafe fn contains(&self, id: &K) -> bool {
-            self.contains_impl(id)
-        }
+    /// Returns true if the [`FlatMap`] contains the given key, otherwise false.
+    pub fn contains(&self, id: &K) -> bool {
+        unsafe { self.contains_impl(id) }
+    }
 
-        /// Returns the number of stored key-value pairs.
-        pub fn len(&self) -> usize {
-            self.map.len()
+    /// Returns the number of stored key-value pairs.
+    pub fn len(&self) -> usize {
+        self.len_impl()
+    }
+}
+
+impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
+    unsafe fn new_uninit(capacity: usize) -> Self {
+        Self {
+            map: RelocatableSlotMap::new_uninit(capacity),
+            is_initialized: IoxAtomicBool::new(false),
         }
+    }
+
+    unsafe fn init<Allocator: iceoryx2_bb_elementary_traits::allocator::BaseAllocator>(
+        &mut self,
+        allocator: &Allocator,
+    ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
+        let msg = "Unable to initialize RelocatableFlatMap";
+        fail!(from "RelocatableFlatMap::init()", when self.map.init(allocator), "{msg} since the underlying RelocatableSlotMap could not be initialized.");
+        self.is_initialized
+            .store(true, core::sync::atomic::Ordering::Relaxed);
+        Ok(())
+    }
+
+    fn memory_size(capacity: usize) -> usize {
+        Self::const_memory_size(capacity)
+    }
+}
+
+unsafe impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend> ZeroCopySend
+    for RelocatableFlatMap<K, V>
+{
+}
+
+impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
+    /// Returns how much memory the [`RelocatableFlatMap`] will allocate from the allocator
+    /// in [`RelocatableFlatMap::init()`].
+    pub const fn const_memory_size(capacity: usize) -> usize {
+        RelocatableSlotMap::<Entry<K, V>>::const_memory_size(capacity)
+    }
+
+    /// Inserts a new key-value pair into the map. On success, the method returns [`Ok`],
+    /// otherwise a [`FlatMapError`] describing the failure.
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableFlatMap::init()`] must be called once before
+    ///
+    pub unsafe fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
+        self.insert_impl(id, value)
+    }
+
+    /// Returns a copy of the value corresponding to the given key. If there is no such key,
+    /// [`None`] is returned.
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableFlatMap::init()`] must be called once before
+    ///
+    pub unsafe fn get(&self, id: &K) -> Option<V> {
+        self.get_impl(id)
+    }
+
+    /// Returns a reference to the value corresponding to the given key. If there is no such
+    /// key, [`None`] is returned.
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableFlatMap::init()`] must be called once before
+    ///
+    pub unsafe fn get_ref(&self, id: &K) -> Option<&V> {
+        self.get_ref_impl(id)
+    }
+
+    /// Returns a mutable reference to the value corresponding to the given key. If there is
+    /// no such key, [`None`] is returned.
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableFlatMap::init()`] must be called once before
+    ///
+    pub unsafe fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
+        self.get_mut_ref_impl(id)
+    }
+
+    /// Removes the given key and the corresponding value from the map.
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableFlatMap::init()`] must be called once before
+    ///
+    pub unsafe fn remove(&mut self, id: &K) {
+        self.remove_impl(id);
+    }
+
+    /// Returns true if the map is empty, otherwise false.
+    pub fn is_empty(&self) -> bool {
+        self.map.is_empty()
+    }
+
+    /// Returns true if the map is full, otherwise false.
+    pub fn is_full(&self) -> bool {
+        self.map.is_full()
+    }
+
+    /// Returns true if the map contains the given key, otherwise false.
+    ///
+    /// # Safety
+    ///
+    ///  * [`RelocatableFlatMap::init()`] must be called once before
+    ///
+    pub unsafe fn contains(&self, id: &K) -> bool {
+        self.contains_impl(id)
+    }
+
+    /// Returns the number of stored key-value pairs.
+    pub fn len(&self) -> usize {
+        self.map.len()
     }
 }
 
@@ -342,7 +343,7 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> Default for FixedSizeFlatMap<K, V, 
 }
 
 impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
-    /// Creates a new FixedSizeFlatMap
+    /// Creates a new [`FixedSizeFlatMap`]
     pub fn new() -> Self {
         let mut new_self = Self {
             map: unsafe { RelocatableFlatMap::new_uninit(CAPACITY) },
@@ -361,7 +362,7 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         new_self
     }
 
-    /// Inserts a new key-value pair into the FixedSizeFlatMap. On success, the method returns [`Ok`],
+    /// Inserts a new key-value pair into the [`FixedSizeFlatMap`]. On success, the method returns [`Ok`],
     /// otherwise a [`FlatMapError`] describing the failure.
     pub fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
         unsafe { self.map.insert(id, value) }
@@ -385,24 +386,24 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         unsafe { self.map.get_mut_ref(id) }
     }
 
-    /// Removes the given key and the corresponding value from the FixedSizeFlatMap.
+    /// Removes the given key and the corresponding value from the [`FixedSizeFlatMap`].
     pub fn remove(&mut self, id: &K) {
         unsafe {
             self.map.remove(id);
         }
     }
 
-    /// Returns true if the FixedSizeFlatMap is empty, otherwise false.
+    /// Returns true if the [`FixedSizeFlatMap`] is empty, otherwise false.
     pub fn is_empty(&self) -> bool {
         self.map.is_empty()
     }
 
-    /// Returns true if the FixedSizeFlatMap is full, otherwise false.
+    /// Returns true if the [`FixedSizeFlatMap`] is full, otherwise false.
     pub fn is_full(&self) -> bool {
         self.map.is_full()
     }
 
-    /// Returns true if the FixedSizeFlatMap contains the given key, otherwise false.
+    /// Returns true if the [`FixedSizeFlatMap`] contains the given key, otherwise false.
     pub fn contains(&self, id: &K) -> bool {
         unsafe { self.map.contains(id) }
     }
