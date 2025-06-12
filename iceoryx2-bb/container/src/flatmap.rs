@@ -10,9 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! A FlatMap is a data structure to store key-value pairs. The
-//! [`FixedSizeFlatMap`](crate::flatmap::FixedSizeFlatMap) is a compile-time fixed-size flatmap
-//! that is self-contained and shared-memory compatible.
+//! A FlatMap is a data structure to store key-value pairs. Multiple variations of that container
+//! are available.
+//!
+//!  * [`FixedSizeFlatMap`](crate::flatmap::FixedSizeFlatMap), compile-time fixed-size flatmap
+//!    that is self-contained and shared-memory compatible.
+//!  * [`RelocatableFlatMap`](crate::flatmap::RelocatableFlatMap), run-time fixed-size flatmap that
+//!    is shared-memory compatible.
+//!  * [`FlatMap`](crate::flatmap::FlatMap), run-time fixed-size flatmap that is not shared-memory
+//!    compatible since the memory resides in the heap.
 //!
 //! # User Examples
 //!
@@ -25,7 +31,6 @@
 //! assert_eq!(map.get(&23).unwrap(), 4);
 //! ```
 
-/// TODO: Add documentation for RelocatableFlatMap and FlatMap
 use crate::slotmap::FreeListEntry;
 use crate::slotmap::{details::MetaSlotMap, RelocatableSlotMap};
 use core::mem::MaybeUninit;
@@ -40,7 +45,7 @@ use iceoryx2_bb_elementary_traits::{
 use iceoryx2_bb_log::fail;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
-/// Failures caused by [`FixedSizeFlatMap::insert()`]
+/// Failures caused by insert()
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FlatMapError {
     /// The FlatMap already contains the key that shall be inserted.
@@ -77,7 +82,7 @@ pub mod details {
     impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         pub(crate) unsafe fn insert_impl(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
             let msg = "Unable to insert key-value pair into FlatMap";
-            let origin = "MetaFlatMap::insert()";
+            let origin = "MetaFlatMap::insert_impl()";
 
             let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != id);
             if iter.next().is_some() {
@@ -169,17 +174,20 @@ pub mod details {
             unsafe { self.insert_impl(id, value) }
         }
 
-        /// Returns a copy of the value corresponding to the given key. If there is no such key, [`None`] is returned.
+        /// Returns a copy of the value corresponding to the given key. If there is no such key,
+        /// [`None`] is returned.
         pub fn get(&self, id: &K) -> Option<V> {
             unsafe { self.get_impl(id) }
         }
 
-        /// Returns a reference to the value corresponding to the given key. If there is no such key, [`None`] is returned.
+        /// Returns a reference to the value corresponding to the given key. If there is no such
+        /// key, [`None`] is returned.
         pub fn get_ref(&self, id: &K) -> Option<&V> {
             unsafe { self.get_ref_impl(id) }
         }
 
-        /// Returns a mutable reference to the value corresponding to the given key. If there is no such key, [`None`] is returned.
+        /// Returns a mutable reference to the value corresponding to the given key. If there is
+        /// no such key, [`None`] is returned.
         pub fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
             unsafe { self.get_mut_ref_impl(id) }
         }
@@ -213,13 +221,14 @@ pub mod details {
     }
 
     impl<K: Eq, V: Clone> MetaFlatMap<K, V, GenericRelocatablePointer> {
-        /// Returns how many memory the [`RelocatableFlatMap`] will allocate from the allocator
+        /// Returns how much memory the [`RelocatableFlatMap`] will allocate from the allocator
         /// in [`RelocatableFlatMap::init()`].
         pub const fn const_memory_size(capacity: usize) -> usize {
             RelocatableSlotMap::<Entry<K, V>>::const_memory_size(capacity)
         }
 
-        /// Inserts a new key-value pair into the map. On success, the method returns [`Ok`], otherwise a [`FlatMapError`] describing the failure.
+        /// Inserts a new key-value pair into the map. On success, the method returns [`Ok`],
+        /// otherwise a [`FlatMapError`] describing the failure.
         ///
         /// # Safety
         ///
@@ -229,7 +238,8 @@ pub mod details {
             self.insert_impl(id, value)
         }
 
-        /// Returns a copy of the value corresponding to the given key. If there is no such key, [`None`] is returned.
+        /// Returns a copy of the value corresponding to the given key. If there is no such key,
+        /// [`None`] is returned.
         ///
         /// # Safety
         ///
@@ -239,7 +249,8 @@ pub mod details {
             self.get_impl(id)
         }
 
-        /// Returns a reference to the value corresponding to the given key. If there is no such key, [`None`] is returned.
+        /// Returns a reference to the value corresponding to the given key. If there is no such
+        /// key, [`None`] is returned.
         ///
         /// # Safety
         ///
@@ -249,7 +260,8 @@ pub mod details {
             self.get_ref_impl(id)
         }
 
-        /// Returns a mutable reference to the value corresponding to the given key. If there is no such key, [`None`] is returned.
+        /// Returns a mutable reference to the value corresponding to the given key. If there is
+        /// no such key, [`None`] is returned.
         ///
         /// # Safety
         ///
@@ -355,17 +367,20 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         unsafe { self.map.insert(id, value) }
     }
 
-    /// Returns a copy of the value corresponding to the given key. If there is no such key, [`None`] is returned.
+    /// Returns a copy of the value corresponding to the given key. If there is no such key,
+    /// [`None`] is returned.
     pub fn get(&self, id: &K) -> Option<V> {
         unsafe { self.map.get(id) }
     }
 
-    /// Returns a reference to the value corresponding to the given key. If there is no such key, [`None`] is returned.
+    /// Returns a reference to the value corresponding to the given key. If there is no such
+    /// key, [`None`] is returned.
     pub fn get_ref(&self, id: &K) -> Option<&V> {
         unsafe { self.map.get_ref(id) }
     }
 
-    /// Returns a mutable reference to the value corresponding to the given key. If there is no such key, [`None`] is returned.
+    /// Returns a mutable reference to the value corresponding to the given key. If there is
+    /// no such key, [`None`] is returned.
     pub fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
         unsafe { self.map.get_mut_ref(id) }
     }
