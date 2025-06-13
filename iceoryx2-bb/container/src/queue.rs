@@ -107,6 +107,7 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::relocatable_ptr::{GenericRelocatablePointer, RelocatablePointer};
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
+use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary_traits::owning_pointer::{GenericOwningPointer, OwningPointer};
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::pointer_trait::PointerTrait;
@@ -117,337 +118,332 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 /// Queue with run-time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableQueue`] it is movable but is not shared memory compatible.
-pub type Queue<T> = details::MetaQueue<T, GenericOwningPointer>;
+pub type Queue<T> = MetaQueue<T, GenericOwningPointer>;
 /// **Non-movable** relocatable queue with runtime fixed size capacity.
-pub type RelocatableQueue<T> = details::MetaQueue<T, GenericRelocatablePointer>;
+pub type RelocatableQueue<T> = MetaQueue<T, GenericRelocatablePointer>;
 
 #[doc(hidden)]
-pub mod details {
-    use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
+/// **Non-movable** relocatable queue with runtime fixed size capacity.
+#[repr(C)]
+#[derive(Debug)]
+pub struct MetaQueue<T, Ptr: GenericPointer> {
+    data_ptr: Ptr::Type<MaybeUninit<T>>,
+    start: usize,
+    len: usize,
+    capacity: usize,
+    is_initialized: IoxAtomicBool,
+    _phantom_data: PhantomData<T>,
+}
 
-    use super::*;
-    /// **Non-movable** relocatable queue with runtime fixed size capacity.
-    #[repr(C)]
-    #[derive(Debug)]
-    pub struct MetaQueue<T, Ptr: GenericPointer> {
-        data_ptr: Ptr::Type<MaybeUninit<T>>,
-        start: usize,
-        len: usize,
-        capacity: usize,
-        is_initialized: IoxAtomicBool,
-        _phantom_data: PhantomData<T>,
-    }
+unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaQueue<T, Ptr> {}
 
-    unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaQueue<T, Ptr> {}
-
-    impl<T> MetaQueue<T, GenericOwningPointer> {
-        /// Creates a new [`Queue`] with the provided capacity
-        pub fn new(capacity: usize) -> Self {
-            Self {
-                data_ptr: OwningPointer::<MaybeUninit<T>>::new_with_alloc(capacity),
-                start: 0,
-                len: 0,
-                capacity,
-                is_initialized: IoxAtomicBool::new(true),
-                _phantom_data: PhantomData,
-            }
-        }
-
-        /// Removes all elements from the queue
-        pub fn clear(&mut self) {
-            unsafe { self.clear_impl() }
-        }
-
-        /// Returns a reference to the element from the beginning of the queue without removing it.
-        /// If the queue is empty it returns [`None`].
-        pub fn peek(&self) -> Option<&T> {
-            unsafe { self.peek_impl() }
-        }
-
-        /// Returns a mutable reference to the element from the beginning of the queue without removing it.
-        /// If the queue is empty it returns [`None`].
-        pub fn peek_mut(&mut self) -> Option<&mut T> {
-            unsafe { self.peek_mut_impl() }
-        }
-
-        /// Removes the element from the beginning of the queue. If the queue is empty it returns [`None`].
-        pub fn pop(&mut self) -> Option<T> {
-            unsafe { self.pop_impl() }
-        }
-
-        /// Adds an element at the end of the queue. If the queue is full it returns false, otherwise true.
-        pub fn push(&mut self, value: T) -> bool {
-            unsafe { self.push_impl(value) }
-        }
-
-        /// Adds an element at the end of the queue. If the queue is full it returns the oldest element,
-        /// otherwise [`None`].
-        pub fn push_with_overflow(&mut self, value: T) -> Option<T> {
-            unsafe { self.push_with_overflow_impl(value) }
+impl<T> Queue<T> {
+    /// Creates a new [`Queue`] with the provided capacity
+    pub fn new(capacity: usize) -> Self {
+        Self {
+            data_ptr: OwningPointer::<MaybeUninit<T>>::new_with_alloc(capacity),
+            start: 0,
+            len: 0,
+            capacity,
+            is_initialized: IoxAtomicBool::new(true),
+            _phantom_data: PhantomData,
         }
     }
 
-    impl<T: Copy + Debug, Ptr: GenericPointer + Debug> MetaQueue<T, Ptr> {
-        /// Returns a copy of the element stored at index. The index is starting by 0 for the first
-        /// element until [`Queue::len()`].
-        ///
-        /// # Safety
-        ///
-        ///   * Must satisfy `index` < [`Queue::len()`]
-        pub unsafe fn get_unchecked(&self, index: usize) -> T {
-            unsafe {
-                (*self
-                    .data_ptr
-                    .as_ptr()
-                    .add((self.start - self.len + index) % self.capacity))
-                .assume_init()
-            }
-        }
+    /// Removes all elements from the queue
+    pub fn clear(&mut self) {
+        unsafe { self.clear_impl() }
+    }
 
-        /// Returns a copy of the element stored at index. The index is starting by 0 for the first
-        /// element until [`Queue::len()`]queue_memory
-        pub fn get(&self, index: usize) -> T {
-            if self.len() <= index {
-                fatal_panic!(from self, "Unable to copy content since the index {} is out of range.", index);
-            }
+    /// Returns a reference to the element from the beginning of the queue without removing it.
+    /// If the queue is empty it returns [`None`].
+    pub fn peek(&self) -> Option<&T> {
+        unsafe { self.peek_impl() }
+    }
 
-            unsafe { self.get_unchecked(index) }
+    /// Returns a mutable reference to the element from the beginning of the queue without removing it.
+    /// If the queue is empty it returns [`None`].
+    pub fn peek_mut(&mut self) -> Option<&mut T> {
+        unsafe { self.peek_mut_impl() }
+    }
+
+    /// Removes the element from the beginning of the queue. If the queue is empty it returns [`None`].
+    pub fn pop(&mut self) -> Option<T> {
+        unsafe { self.pop_impl() }
+    }
+
+    /// Adds an element at the end of the queue. If the queue is full it returns false, otherwise true.
+    pub fn push(&mut self, value: T) -> bool {
+        unsafe { self.push_impl(value) }
+    }
+
+    /// Adds an element at the end of the queue. If the queue is full it returns the oldest element,
+    /// otherwise [`None`].
+    pub fn push_with_overflow(&mut self, value: T) -> Option<T> {
+        unsafe { self.push_with_overflow_impl(value) }
+    }
+}
+
+impl<T: Copy + Debug, Ptr: GenericPointer + Debug> MetaQueue<T, Ptr> {
+    /// Returns a copy of the element stored at index. The index is starting by 0 for the first
+    /// element until [`Queue::len()`].
+    ///
+    /// # Safety
+    ///
+    ///   * Must satisfy `index` < [`Queue::len()`]
+    pub unsafe fn get_unchecked(&self, index: usize) -> T {
+        unsafe {
+            (*self
+                .data_ptr
+                .as_ptr()
+                .add((self.start - self.len + index) % self.capacity))
+            .assume_init()
         }
     }
 
-    impl<T> RelocatableContainer for MetaQueue<T, GenericRelocatablePointer> {
-        unsafe fn new_uninit(capacity: usize) -> Self {
-            Self {
-                data_ptr: RelocatablePointer::new_uninit(),
-                start: 0,
-                len: 0,
-                capacity,
-                is_initialized: IoxAtomicBool::new(false),
-                _phantom_data: PhantomData,
-            }
+    /// Returns a copy of the element stored at index. The index is starting by 0 for the first
+    /// element until [`Queue::len()`]queue_memory
+    pub fn get(&self, index: usize) -> T {
+        if self.len() <= index {
+            fatal_panic!(from self, "Unable to copy content since the index {} is out of range.", index);
         }
 
-        unsafe fn init<Allocator: BaseAllocator>(
-            &mut self,
-            allocator: &Allocator,
-        ) -> Result<(), AllocationError> {
-            if self
-                .is_initialized
-                .load(core::sync::atomic::Ordering::Relaxed)
-            {
-                fatal_panic!(
-                    from "Queue::init()",
-                    "Memory already initialized. Initializing it twice may lead to undefined behavior."
-                );
-            }
+        unsafe { self.get_unchecked(index) }
+    }
+}
 
-            self.data_ptr.init(fail!(from "Queue::init", when allocator
-                 .allocate(Layout::from_size_align_unchecked(
-                     core::mem::size_of::<T>() * self.capacity,
-                     core::mem::align_of::<T>(),
-                 )), "Failed to initialize queue since the allocation of the data memory failed."
-            ));
-            self.is_initialized
-                .store(true, core::sync::atomic::Ordering::Relaxed);
-
-            Ok(())
-        }
-
-        fn memory_size(capacity: usize) -> usize {
-            Self::const_memory_size(capacity)
+impl<T> RelocatableContainer for RelocatableQueue<T> {
+    unsafe fn new_uninit(capacity: usize) -> Self {
+        Self {
+            data_ptr: RelocatablePointer::new_uninit(),
+            start: 0,
+            len: 0,
+            capacity,
+            is_initialized: IoxAtomicBool::new(false),
+            _phantom_data: PhantomData,
         }
     }
 
-    unsafe impl<T: ZeroCopySend> ZeroCopySend for MetaQueue<T, GenericRelocatablePointer> {}
-
-    impl<T> MetaQueue<T, GenericRelocatablePointer> {
-        /// Returns the required memory size for a queue with a specified capacity
-        pub const fn const_memory_size(capacity: usize) -> usize {
-            unaligned_mem_size::<T>(capacity)
+    unsafe fn init<Allocator: BaseAllocator>(
+        &mut self,
+        allocator: &Allocator,
+    ) -> Result<(), AllocationError> {
+        if self
+            .is_initialized
+            .load(core::sync::atomic::Ordering::Relaxed)
+        {
+            fatal_panic!(
+                from "Queue::init()",
+                "Memory already initialized. Initializing it twice may lead to undefined behavior."
+            );
         }
 
-        /// Removes all elements from the queue
-        ///
-        /// # Safety
-        ///
-        ///  * [`Queue::init()`] must have been called once before
-        ///
-        pub unsafe fn clear(&mut self) {
-            self.clear_impl()
-        }
+        self.data_ptr.init(fail!(from "Queue::init", when allocator
+             .allocate(Layout::from_size_align_unchecked(
+                 core::mem::size_of::<T>() * self.capacity,
+                 core::mem::align_of::<T>(),
+             )), "Failed to initialize queue since the allocation of the data memory failed."
+        ));
+        self.is_initialized
+            .store(true, core::sync::atomic::Ordering::Relaxed);
 
-        /// Returns a reference to the element from the beginning of the queue without removing it.
-        /// If the queue is empty it returns [`None`].
-        ///
-        /// # Safety
-        ///
-        ///  * [`Queue::init()`] must have been called once before
-        ///
-        pub fn peek(&self) -> Option<&T> {
-            unsafe { self.peek_impl() }
-        }
-
-        /// Returns a mutable reference to the element from the beginning of the queue without removing it.
-        /// If the queue is empty it returns [`None`].
-        ///
-        /// # Safety
-        ///
-        ///  * [`Queue::init()`] must have been called once before
-        ///
-        pub fn peek_mut(&mut self) -> Option<&mut T> {
-            unsafe { self.peek_mut_impl() }
-        }
-
-        /// Removes the element from the beginning of the queue. If the queue is empty it returns [`None`].
-        ///
-        /// # Safety
-        ///
-        ///  * [`Queue::init()`] must have been called once before
-        ///
-        pub unsafe fn pop(&mut self) -> Option<T> {
-            self.pop_impl()
-        }
-
-        /// Adds an element at the end of the queue. If the queue is full it returns false, otherwise true.
-        ///
-        /// # Safety
-        ///
-        ///  * [`Queue::init()`] must have been called once before
-        ///
-        pub unsafe fn push(&mut self, value: T) -> bool {
-            self.push_impl(value)
-        }
-
-        /// Adds an element at the end of the queue. If the queue is full it returns the oldest element,
-        /// otherwise [`None`].
-        ///
-        /// # Safety
-        ///
-        ///  * [`Queue::init()`] must have been called once before
-        ///
-        pub unsafe fn push_with_overflow(&mut self, value: T) -> Option<T> {
-            self.push_with_overflow_impl(value)
-        }
+        Ok(())
     }
 
-    impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
-        #[inline(always)]
-        fn verify_init(&self, source: &str) {
-            debug_assert!(
+    fn memory_size(capacity: usize) -> usize {
+        Self::const_memory_size(capacity)
+    }
+}
+
+unsafe impl<T: ZeroCopySend> ZeroCopySend for RelocatableQueue<T> {}
+
+impl<T> RelocatableQueue<T> {
+    /// Returns the required memory size for a queue with a specified capacity
+    pub const fn const_memory_size(capacity: usize) -> usize {
+        unaligned_mem_size::<T>(capacity)
+    }
+
+    /// Removes all elements from the queue
+    ///
+    /// # Safety
+    ///
+    ///  * [`Queue::init()`] must have been called once before
+    ///
+    pub unsafe fn clear(&mut self) {
+        self.clear_impl()
+    }
+
+    /// Returns a reference to the element from the beginning of the queue without removing it.
+    /// If the queue is empty it returns [`None`].
+    ///
+    /// # Safety
+    ///
+    ///  * [`Queue::init()`] must have been called once before
+    ///
+    pub fn peek(&self) -> Option<&T> {
+        unsafe { self.peek_impl() }
+    }
+
+    /// Returns a mutable reference to the element from the beginning of the queue without removing it.
+    /// If the queue is empty it returns [`None`].
+    ///
+    /// # Safety
+    ///
+    ///  * [`Queue::init()`] must have been called once before
+    ///
+    pub fn peek_mut(&mut self) -> Option<&mut T> {
+        unsafe { self.peek_mut_impl() }
+    }
+
+    /// Removes the element from the beginning of the queue. If the queue is empty it returns [`None`].
+    ///
+    /// # Safety
+    ///
+    ///  * [`Queue::init()`] must have been called once before
+    ///
+    pub unsafe fn pop(&mut self) -> Option<T> {
+        self.pop_impl()
+    }
+
+    /// Adds an element at the end of the queue. If the queue is full it returns false, otherwise true.
+    ///
+    /// # Safety
+    ///
+    ///  * [`Queue::init()`] must have been called once before
+    ///
+    pub unsafe fn push(&mut self, value: T) -> bool {
+        self.push_impl(value)
+    }
+
+    /// Adds an element at the end of the queue. If the queue is full it returns the oldest element,
+    /// otherwise [`None`].
+    ///
+    /// # Safety
+    ///
+    ///  * [`Queue::init()`] must have been called once before
+    ///
+    pub unsafe fn push_with_overflow(&mut self, value: T) -> Option<T> {
+        self.push_with_overflow_impl(value)
+    }
+}
+
+impl<T, Ptr: GenericPointer> MetaQueue<T, Ptr> {
+    #[inline(always)]
+    fn verify_init(&self, source: &str) {
+        debug_assert!(
                 self.is_initialized
                     .load(core::sync::atomic::Ordering::Relaxed),
                 "From: MetaQueue<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
                 core::any::type_name::<T>(), source
             );
-        }
-
-        /// Returns true if the queue is empty, otherwise false
-        pub fn is_empty(&self) -> bool {
-            self.len == 0
-        }
-
-        /// Returns the capacity of the queue
-        pub fn capacity(&self) -> usize {
-            self.capacity
-        }
-
-        /// Returns the number of elements inside the queue
-        pub fn len(&self) -> usize {
-            self.len
-        }
-
-        /// Returns true if the queue is full, otherwise false
-        pub fn is_full(&self) -> bool {
-            self.len() == self.capacity()
-        }
-
-        pub(crate) unsafe fn clear_impl(&mut self) {
-            while self.pop_impl().is_some() {}
-        }
-
-        pub(crate) unsafe fn peek_mut_impl(&mut self) -> Option<&mut T> {
-            self.verify_init("peek_mut()");
-
-            if self.is_empty() {
-                return None;
-            }
-
-            let index = (self.start - self.len) % self.capacity;
-
-            Some((*self.data_ptr.as_mut_ptr().add(index)).assume_init_mut())
-        }
-
-        pub(crate) unsafe fn peek_impl(&self) -> Option<&T> {
-            self.verify_init("peek()");
-
-            if self.is_empty() {
-                return None;
-            }
-
-            let index = (self.start - self.len) % self.capacity;
-
-            Some((*self.data_ptr.as_ptr().add(index)).assume_init_ref())
-        }
-
-        pub(crate) unsafe fn pop_impl(&mut self) -> Option<T> {
-            self.verify_init("pop()");
-
-            if self.is_empty() {
-                return None;
-            }
-
-            let index = (self.start - self.len) % self.capacity;
-            self.len -= 1;
-            let value = core::mem::replace(
-                &mut *self.data_ptr.as_mut_ptr().add(index),
-                MaybeUninit::uninit(),
-            );
-            Some(value.assume_init())
-        }
-
-        pub(crate) unsafe fn push_impl(&mut self, value: T) -> bool {
-            self.verify_init("push()");
-
-            if self.len == self.capacity {
-                return false;
-            }
-
-            self.unchecked_push(value);
-            true
-        }
-
-        pub(crate) unsafe fn push_with_overflow_impl(&mut self, value: T) -> Option<T> {
-            self.verify_init("push_with_overflow()");
-
-            let overridden_value = if self.len() == self.capacity() {
-                self.pop_impl()
-            } else {
-                None
-            };
-
-            self.unchecked_push(value);
-            overridden_value
-        }
-
-        unsafe fn unchecked_push(&mut self, value: T) {
-            let index = (self.start) % self.capacity;
-            self.data_ptr
-                .as_mut_ptr()
-                .add(index)
-                .write(MaybeUninit::new(value));
-            self.start += 1;
-            self.len += 1;
-        }
     }
 
-    impl<T, Ptr: GenericPointer> Drop for MetaQueue<T, Ptr> {
-        fn drop(&mut self) {
-            if self
-                .is_initialized
-                .load(core::sync::atomic::Ordering::Relaxed)
-            {
-                unsafe { self.clear_impl() }
-            }
+    /// Returns true if the queue is empty, otherwise false
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    /// Returns the capacity of the queue
+    pub fn capacity(&self) -> usize {
+        self.capacity
+    }
+
+    /// Returns the number of elements inside the queue
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    /// Returns true if the queue is full, otherwise false
+    pub fn is_full(&self) -> bool {
+        self.len() == self.capacity()
+    }
+
+    pub(crate) unsafe fn clear_impl(&mut self) {
+        while self.pop_impl().is_some() {}
+    }
+
+    pub(crate) unsafe fn peek_mut_impl(&mut self) -> Option<&mut T> {
+        self.verify_init("peek_mut()");
+
+        if self.is_empty() {
+            return None;
+        }
+
+        let index = (self.start - self.len) % self.capacity;
+
+        Some((*self.data_ptr.as_mut_ptr().add(index)).assume_init_mut())
+    }
+
+    pub(crate) unsafe fn peek_impl(&self) -> Option<&T> {
+        self.verify_init("peek()");
+
+        if self.is_empty() {
+            return None;
+        }
+
+        let index = (self.start - self.len) % self.capacity;
+
+        Some((*self.data_ptr.as_ptr().add(index)).assume_init_ref())
+    }
+
+    pub(crate) unsafe fn pop_impl(&mut self) -> Option<T> {
+        self.verify_init("pop()");
+
+        if self.is_empty() {
+            return None;
+        }
+
+        let index = (self.start - self.len) % self.capacity;
+        self.len -= 1;
+        let value = core::mem::replace(
+            &mut *self.data_ptr.as_mut_ptr().add(index),
+            MaybeUninit::uninit(),
+        );
+        Some(value.assume_init())
+    }
+
+    pub(crate) unsafe fn push_impl(&mut self, value: T) -> bool {
+        self.verify_init("push()");
+
+        if self.len == self.capacity {
+            return false;
+        }
+
+        self.unchecked_push(value);
+        true
+    }
+
+    pub(crate) unsafe fn push_with_overflow_impl(&mut self, value: T) -> Option<T> {
+        self.verify_init("push_with_overflow()");
+
+        let overridden_value = if self.len() == self.capacity() {
+            self.pop_impl()
+        } else {
+            None
+        };
+
+        self.unchecked_push(value);
+        overridden_value
+    }
+
+    unsafe fn unchecked_push(&mut self, value: T) {
+        let index = (self.start) % self.capacity;
+        self.data_ptr
+            .as_mut_ptr()
+            .add(index)
+            .write(MaybeUninit::new(value));
+        self.start += 1;
+        self.len += 1;
+    }
+}
+
+impl<T, Ptr: GenericPointer> Drop for MetaQueue<T, Ptr> {
+    fn drop(&mut self) {
+        if self
+            .is_initialized
+            .load(core::sync::atomic::Ordering::Relaxed)
+        {
+            unsafe { self.clear_impl() }
         }
     }
 }
