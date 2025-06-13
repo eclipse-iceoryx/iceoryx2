@@ -10,7 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_container::flatmap::{FixedSizeFlatMap, FlatMap, FlatMapError};
+use iceoryx2_bb_container::flatmap::*;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
@@ -202,5 +203,18 @@ mod flat_map {
             assert_that!(map.insert(i, i), is_ok);
         }
         assert_that!(map.is_full(), eq true);
+    }
+
+    #[test]
+    #[should_panic]
+    fn double_init_call_causes_panic() {
+        const MEM_SIZE: usize = RelocatableFlatMap::<u8, u8>::const_memory_size(CAPACITY);
+        let mut memory = [0u8; MEM_SIZE];
+        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+
+        let mut sut = unsafe { RelocatableFlatMap::<u8, u8>::new_uninit(CAPACITY) };
+        unsafe { sut.init(&bump_allocator).expect("sut init failed") };
+
+        unsafe { sut.init(&bump_allocator).expect("sut init failed") };
     }
 }

@@ -38,11 +38,11 @@ use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
-use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 /// Failures caused by insert()
@@ -205,6 +205,12 @@ impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
+        if self
+            .is_initialized
+            .load(core::sync::atomic::Ordering::Relaxed)
+        {
+            fatal_panic!(from "RelocatableFlatMap::init()", "Memory already initialized. Initializing it twice may lead to undefined behavior.");
+        }
         let msg = "Unable to initialize RelocatableFlatMap";
         fail!(from "RelocatableFlatMap::init()", when self.map.init(allocator), "{msg} since the underlying RelocatableSlotMap could not be initialized.");
         self.is_initialized

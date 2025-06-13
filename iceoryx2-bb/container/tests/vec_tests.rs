@@ -368,3 +368,22 @@ mod vec {
         }
     }
 }
+
+mod relocatable_vec {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn double_init_call_causes_panic() {
+        const CAPACITY: usize = 12;
+        const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(CAPACITY);
+        let mut memory = [0u8; MEM_SIZE];
+
+        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+
+        let mut sut = unsafe { RelocatableVec::<u128>::new_uninit(CAPACITY) };
+        unsafe { sut.init(&bump_allocator).expect("sut init failed") };
+
+        unsafe { sut.init(&bump_allocator).expect("sut init failed") };
+    }
+}

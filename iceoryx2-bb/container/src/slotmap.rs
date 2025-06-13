@@ -54,9 +54,9 @@ use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::generic_pointer::GenericPointer;
 use iceoryx2_bb_elementary_traits::owning_pointer::GenericOwningPointer;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
-use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 /// A key of a [`SlotMap`], [`RelocatableSlotMap`] or [`FixedSizeSlotMap`] that identifies a
@@ -349,6 +349,12 @@ impl<T> RelocatableContainer for RelocatableSlotMap<T> {
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
+        if self
+            .is_initialized
+            .load(core::sync::atomic::Ordering::Relaxed)
+        {
+            fatal_panic!(from "RelocatableSlotMap::init()", "Memory already initialized. Initializing it twice may lead to undefined behavior.");
+        }
         let msg = "Unable to initialize RelocatableSlotMap";
         fail!(from "RelocatableSlotMap::init()",
                   when self.idx_to_data.init(allocator),

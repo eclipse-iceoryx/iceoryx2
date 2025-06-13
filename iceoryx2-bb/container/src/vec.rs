@@ -158,11 +158,11 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
             fatal_panic!(from "Vec::init()", "Memory already initialized, Initializing it twice may lead to undefined behavior.");
         }
 
-        self.data_ptr.init(fail!(from "Queue::init", when allocator
+        self.data_ptr.init(fail!(from "Vec::init", when allocator
              .allocate(Layout::from_size_align_unchecked(
                  core::mem::size_of::<T>() * self.capacity,
                  core::mem::align_of::<T>(),
-             )), "Failed to initialize queue since the allocation of the data memory failed."
+             )), "Failed to initialize vec since the allocation of the data memory failed."
         ));
         self.is_initialized
             .store(true, core::sync::atomic::Ordering::Relaxed);

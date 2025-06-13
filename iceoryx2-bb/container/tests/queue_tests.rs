@@ -324,4 +324,17 @@ mod queue {
         assert_that!(*sut.peek().unwrap(), eq 99182);
         assert_that!(*sut.peek_mut().unwrap(), eq 99182);
     }
+
+    #[test]
+    #[should_panic]
+    fn double_init_call_causes_panic() {
+        const MEM_SIZE: usize = RelocatableQueue::<usize>::const_memory_size(SUT_CAPACITY);
+        let mut memory = [0u8; MEM_SIZE];
+        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+
+        let mut sut = unsafe { RelocatableQueue::<usize>::new_uninit(SUT_CAPACITY) };
+        unsafe { sut.init(&bump_allocator).expect("sut init failed") };
+
+        unsafe { sut.init(&bump_allocator).expect("sut init failed") };
+    }
 }

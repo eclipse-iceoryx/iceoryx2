@@ -10,15 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_bb_container::slotmap::SlotMap;
+use iceoryx2_bb_container::slotmap::*;
+use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::memory::RawMemory;
 
 mod slot_map {
-
-    use iceoryx2_bb_container::slotmap::{FixedSizeSlotMap, SlotMapKey};
-
     use super::*;
 
     const SUT_CAPACITY: usize = 128;
@@ -236,5 +234,18 @@ mod slot_map {
 
         let res = unsafe { sut.assume_init_mut() }.insert(4);
         assert_that!(res, is_some);
+    }
+
+    #[test]
+    #[should_panic]
+    fn double_init_call_causes_panic() {
+        const MEM_SIZE: usize = RelocatableSlotMap::<usize>::const_memory_size(SUT_CAPACITY);
+        let mut memory = [0u8; MEM_SIZE];
+        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+
+        let mut sut = unsafe { RelocatableSlotMap::<usize>::new_uninit(SUT_CAPACITY) };
+        unsafe { sut.init(&bump_allocator).expect("sut init failed") };
+
+        unsafe { sut.init(&bump_allocator).expect("sut init failed") };
     }
 }
