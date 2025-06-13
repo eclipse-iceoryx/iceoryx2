@@ -15,11 +15,13 @@ pub mod duration;
 pub mod error;
 pub mod file_name;
 pub mod file_path;
+pub mod node;
 pub mod node_builder;
 pub mod node_name;
 pub mod parc;
 pub mod path;
 pub mod service_type;
+pub mod signal_handling_mode;
 pub mod unable_to_deliver_strategy;
 
 use pyo3::prelude::*;
@@ -33,6 +35,7 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::node_builder::NodeBuilder>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;
+    m.add_class::<crate::signal_handling_mode::SignalHandlingMode>()?;
     m.add_class::<crate::path::Path>()?;
     m.add_class::<crate::duration::Duration>()?;
     m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;

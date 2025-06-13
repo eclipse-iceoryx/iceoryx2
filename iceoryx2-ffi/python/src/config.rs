@@ -10,80 +10,71 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::{Arc, Mutex, MutexGuard};
-
 use crate::duration::Duration;
 use crate::error::ConfigCreationError;
 use crate::file_name::FileName;
 use crate::file_path::FilePath;
+use crate::parc::Parc;
 use crate::path::Path;
 use crate::unable_to_deliver_strategy::UnableToDeliverStrategy;
 use pyo3::prelude::*;
 
 #[pyclass]
 /// All configurable settings of a `Node`.
-pub struct Node {
-    value: Arc<Mutex<iceoryx2::config::Config>>,
-}
-
-impl Node {
-    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
-        self.value.lock().unwrap()
-    }
-}
+pub struct Node(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
 impl Node {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self.value().global.node)
+        format!("{:?}", self.0.lock().global.node)
     }
 
     #[getter]
     /// The directory in which all node files are stored
     pub fn directory(&self) -> Path {
-        Path(self.value().global.node.directory.clone())
+        Path(self.0.lock().global.node.directory.clone())
     }
 
     #[setter]
     /// Set the directory in which all node files are stored
     pub fn set_directory(&mut self, value: &Path) {
-        self.value().global.node.directory = value.0.clone()
+        self.0.lock().global.node.directory = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the monitor token
     pub fn monitor_suffix(&self) -> FileName {
-        FileName(self.value().global.node.monitor_suffix.clone())
+        FileName(self.0.lock().global.node.monitor_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of the monitor token
     pub fn set_monitor_suffix(&mut self, value: &FileName) {
-        self.value().global.node.monitor_suffix = value.0.clone()
+        self.0.lock().global.node.monitor_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the files where the node configuration is stored.
     pub fn static_config_suffix(&self) -> FileName {
-        FileName(self.value().global.node.static_config_suffix.clone())
+        FileName(self.0.lock().global.node.static_config_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of the files where the node configuration is stored.
     pub fn set_static_config_suffix(&mut self, value: &FileName) {
-        self.value().global.node.static_config_suffix = value.0.clone()
+        self.0.lock().global.node.static_config_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the service tags.
     pub fn service_tag_suffix(&self) -> FileName {
-        FileName(self.value().global.node.service_tag_suffix.clone())
+        FileName(self.0.lock().global.node.service_tag_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of the service tags.
     pub fn set_service_tag_suffix(&mut self, value: &FileName) {
-        self.value().global.node.service_tag_suffix = value.0.clone()
+        self.0.lock().global.node.service_tag_suffix = value.0.clone()
     }
 
     #[getter]
@@ -91,13 +82,13 @@ impl Node {
     /// cleans up all their stale resources whenever a new [`Node`](Node) is
     /// created.
     pub fn cleanup_dead_nodes_on_creation(&self) -> bool {
-        self.value().global.node.cleanup_dead_nodes_on_creation
+        self.0.lock().global.node.cleanup_dead_nodes_on_creation
     }
 
     #[setter]
     /// Enable/disable the cleanup dead nodes on creation
     pub fn set_cleanup_dead_nodes_on_creation(&mut self, value: bool) {
-        self.value().global.node.cleanup_dead_nodes_on_creation = value
+        self.0.lock().global.node.cleanup_dead_nodes_on_creation = value
     }
 
     #[getter]
@@ -105,63 +96,56 @@ impl Node {
     /// cleans up all their stale resources whenever an existing `Node` is
     /// going out of scope.
     pub fn cleanup_dead_nodes_on_destruction(&self) -> bool {
-        self.value().global.node.cleanup_dead_nodes_on_destruction
+        self.0.lock().global.node.cleanup_dead_nodes_on_destruction
     }
 
     #[setter]
     /// Enable/disable the cleanup dead nodes on destruction
     pub fn set_cleanup_dead_nodes_on_destruction(&mut self, value: bool) {
-        self.value().global.node.cleanup_dead_nodes_on_destruction = value
+        self.0.lock().global.node.cleanup_dead_nodes_on_destruction = value
     }
 }
 
 #[pyclass]
 /// All configurable settings of a `Service`.
-pub struct Service {
-    value: Arc<Mutex<iceoryx2::config::Config>>,
-}
-
-impl Service {
-    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
-        self.value.lock().unwrap()
-    }
-}
+pub struct Service(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
 impl Service {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self.value().global.service)
+        format!("{:?}", self.0.lock().global.service)
     }
 
     #[getter]
     /// The directory in which all service files are stored
     pub fn directory(&self) -> Path {
-        Path(self.value().global.service.directory.clone())
+        Path(self.0.lock().global.service.directory.clone())
     }
 
     #[setter]
     /// Set the directory in which all service files are stored
     pub fn set_directory(&self, value: &Path) {
-        self.value().global.service.directory = value.0.clone()
+        self.0.lock().global.service.directory = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the ports data segment
     pub fn data_segment_suffix(&self) -> FileName {
-        FileName(self.value().global.service.data_segment_suffix.clone())
+        FileName(self.0.lock().global.service.data_segment_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of the ports data segment
     pub fn set_data_segment_suffix(&self, value: &FileName) {
-        self.value().global.service.data_segment_suffix = value.0.clone()
+        self.0.lock().global.service.data_segment_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the static config file
     pub fn static_config_storage_suffix(&self) -> FileName {
         FileName(
-            self.value()
+            self.0
+                .lock()
                 .global
                 .service
                 .static_config_storage_suffix
@@ -172,14 +156,15 @@ impl Service {
     #[setter]
     /// Set the suffix of the static config file
     pub fn set_static_config_storage_suffix(&self, value: &FileName) {
-        self.value().global.service.static_config_storage_suffix = value.0.clone()
+        self.0.lock().global.service.static_config_storage_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of the dynamic config file
     pub fn dynamic_config_storage_suffix(&self) -> FileName {
         FileName(
-            self.value()
+            self.0
+                .lock()
                 .global
                 .service
                 .dynamic_config_storage_suffix
@@ -190,107 +175,100 @@ impl Service {
     #[setter]
     /// Set the suffix of the dynamic config file
     pub fn set_dynamic_config_storage_suffix(&self, value: &FileName) {
-        self.value().global.service.dynamic_config_storage_suffix = value.0.clone()
+        self.0.lock().global.service.dynamic_config_storage_suffix = value.0.clone()
     }
 
     #[getter]
     /// Defines the time of how long another process will wait until the service creation is
     /// finalized
     pub fn creation_timeout(&self) -> Duration {
-        Duration(self.value().global.service.creation_timeout)
+        Duration(self.0.lock().global.service.creation_timeout)
     }
 
     #[setter]
     /// Set the creation timeout
     pub fn set_creation_timeout(&self, value: &Duration) {
-        self.value().global.service.creation_timeout = value.0
+        self.0.lock().global.service.creation_timeout = value.0
     }
 
     #[getter]
     /// The suffix of a one-to-one connection
     pub fn connection_suffix(&self) -> FileName {
-        FileName(self.value().global.service.connection_suffix.clone())
+        FileName(self.0.lock().global.service.connection_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of a one-to-one connection
     pub fn set_connection_suffix(&self, value: &FileName) {
-        self.value().global.service.connection_suffix = value.0.clone()
+        self.0.lock().global.service.connection_suffix = value.0.clone()
     }
 
     #[getter]
     /// The suffix of a one-to-one connection
     pub fn event_connection_suffix(&self) -> FileName {
-        FileName(self.value().global.service.event_connection_suffix.clone())
+        FileName(self.0.lock().global.service.event_connection_suffix.clone())
     }
 
     #[setter]
     /// Set the suffix of a one-to-one connection
     pub fn set_event_connection_suffix(&self, value: &FileName) {
-        self.value().global.service.event_connection_suffix = value.0.clone()
+        self.0.lock().global.service.event_connection_suffix = value.0.clone()
     }
 }
 
 #[pyclass]
 /// Default settings for the publish-subscribe messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
-pub struct PublishSubscribe {
-    value: Arc<Mutex<iceoryx2::config::Config>>,
-}
-
-impl PublishSubscribe {
-    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
-        self.value.lock().unwrap()
-    }
-}
+pub struct PublishSubscribe(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
 impl PublishSubscribe {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self.value().defaults.publish_subscribe)
+        format!("{:?}", self.0.lock().defaults.publish_subscribe)
     }
 
     #[getter]
     /// The maximum amount of supported `Subscriber`s
     pub fn max_subscribers(&self) -> usize {
-        self.value().defaults.publish_subscribe.max_subscribers
+        self.0.lock().defaults.publish_subscribe.max_subscribers
     }
 
     #[setter]
     /// Set the maximum amount of supported `Subscriber`s
     pub fn set_max_subscribers(&self, value: usize) {
-        self.value().defaults.publish_subscribe.max_subscribers = value
+        self.0.lock().defaults.publish_subscribe.max_subscribers = value
     }
 
     #[getter]
     /// The maximum amount of supported `Publisher`s
     pub fn max_publishers(&self) -> usize {
-        self.value().defaults.publish_subscribe.max_publishers
+        self.0.lock().defaults.publish_subscribe.max_publishers
     }
 
     #[setter]
     /// Set the maximum amount of supported `Publisher`s
     pub fn set_max_publishers(&self, value: usize) {
-        self.value().defaults.publish_subscribe.max_publishers = value
+        self.0.lock().defaults.publish_subscribe.max_publishers = value
     }
 
     #[getter]
     /// The maximum amount of supported `Node`s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
-        self.value().defaults.publish_subscribe.max_nodes
+        self.0.lock().defaults.publish_subscribe.max_nodes
     }
 
     #[setter]
     /// Set the maximum amount of supported `Node`s.
     pub fn set_max_nodes(&self, value: usize) {
-        self.value().defaults.publish_subscribe.max_nodes = value
+        self.0.lock().defaults.publish_subscribe.max_nodes = value
     }
 
     #[getter]
     /// The maximum buffer size a `Subscriber` can have
     pub fn subscriber_max_buffer_size(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .subscriber_max_buffer_size
@@ -299,7 +277,8 @@ impl PublishSubscribe {
     #[setter]
     /// Set the maximum buffer size a `Subscriber` can have
     pub fn set_subscriber_max_buffer_size(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .subscriber_max_buffer_size = value
@@ -308,7 +287,8 @@ impl PublishSubscribe {
     #[getter]
     /// The maximum amount of `Sample`s a `Subscriber` can hold at the same time.
     pub fn subscriber_max_borrowed_samples(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .subscriber_max_borrowed_samples
@@ -317,7 +297,8 @@ impl PublishSubscribe {
     #[setter]
     /// Set the maximum amount of `Sample`s a `Subscriber` can hold at the same time.
     pub fn set_subscriber_max_borrowed_samples(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .subscriber_max_borrowed_samples = value
@@ -326,7 +307,8 @@ impl PublishSubscribe {
     #[getter]
     /// The maximum amount of `SampleMut`s a `Publisher` can loan at the same time.
     pub fn publisher_max_loaned_samples(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .publisher_max_loaned_samples
@@ -335,7 +317,8 @@ impl PublishSubscribe {
     #[setter]
     /// The maximum amount of `SampleMut`s a `Publisher` can loan at the same time.
     pub fn set_publisher_max_loaned_samples(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .publisher_max_loaned_samples = value
@@ -344,7 +327,8 @@ impl PublishSubscribe {
     #[getter]
     /// The maximum history size a `Subscriber` can request from a `Publisher`.
     pub fn publisher_history_size(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .publisher_history_size
@@ -353,7 +337,8 @@ impl PublishSubscribe {
     #[setter]
     /// Set the maximum history size a `Subscriber` can request from a `Publisher`.
     pub fn set_publisher_history_size(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .publisher_history_size = value
@@ -364,20 +349,29 @@ impl PublishSubscribe {
     /// full. When safe overflow is activated, the `Publisher` will
     /// replace the oldest `Sample` with the newest one.
     pub fn enable_safe_overflow(&self) -> bool {
-        self.value().defaults.publish_subscribe.enable_safe_overflow
+        self.0
+            .lock()
+            .defaults
+            .publish_subscribe
+            .enable_safe_overflow
     }
 
     #[setter]
     /// Enables/disables safe overflow
     pub fn set_enable_safe_overflow(&self, value: bool) {
-        self.value().defaults.publish_subscribe.enable_safe_overflow = value
+        self.0
+            .lock()
+            .defaults
+            .publish_subscribe
+            .enable_safe_overflow = value
     }
 
     #[getter]
     /// If safe overflow is deactivated it defines the deliver strategy of the
     /// `Publisher` when the `Subscriber`s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .unable_to_deliver_strategy
@@ -387,7 +381,8 @@ impl PublishSubscribe {
     #[setter]
     /// Define the unable to deliver strategy
     pub fn set_unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .unable_to_deliver_strategy = (value.clone()).into()
@@ -400,7 +395,8 @@ impl PublishSubscribe {
     /// disconnected from a service and the connection
     /// still contains unconsumed `Sample`s.
     pub fn subscriber_expired_connection_buffer(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .subscriber_expired_connection_buffer
@@ -409,7 +405,8 @@ impl PublishSubscribe {
     #[setter]
     /// Set the expired connection buffer size
     pub fn set_subscriber_expired_connection_buffer(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .publish_subscribe
             .subscriber_expired_connection_buffer = value
@@ -419,69 +416,61 @@ impl PublishSubscribe {
 #[pyclass]
 /// Default settings for the event messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
-pub struct Event {
-    value: Arc<Mutex<iceoryx2::config::Config>>,
-}
-
-impl Event {
-    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
-        self.value.lock().unwrap()
-    }
-}
+pub struct Event(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
 impl Event {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self.value().defaults.event)
+        format!("{:?}", self.0.lock().defaults.event)
     }
 
     #[getter]
     /// The maximum amount of supported `Listener`
     pub fn max_listeners(&self) -> usize {
-        self.value().defaults.event.max_listeners
+        self.0.lock().defaults.event.max_listeners
     }
 
     #[setter]
     /// Set the maximum amount of supported `Listener`
     pub fn set_max_listeners(&self, value: usize) {
-        self.value().defaults.event.max_listeners = value
+        self.0.lock().defaults.event.max_listeners = value
     }
 
     #[getter]
     /// The maximum amount of supported `Notifier`
     pub fn max_notifiers(&self) -> usize {
-        self.value().defaults.event.max_notifiers
+        self.0.lock().defaults.event.max_notifiers
     }
 
     #[setter]
     /// Set the maximum amount of supported `Notifier`
     pub fn set_max_notifiers(&self, value: usize) {
-        self.value().defaults.event.max_notifiers = value
+        self.0.lock().defaults.event.max_notifiers = value
     }
 
     #[getter]
     /// The maximum amount of supported `Node`s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
-        self.value().defaults.event.max_nodes
+        self.0.lock().defaults.event.max_nodes
     }
 
     #[setter]
     /// Set the maximum amount of supported `Node`s.
     pub fn set_max_nodes(&self, value: usize) {
-        self.value().defaults.event.max_nodes = value
+        self.0.lock().defaults.event.max_nodes = value
     }
 
     #[getter]
     /// The largest event id supported by the event service
     pub fn event_id_max_value(&self) -> usize {
-        self.value().defaults.event.event_id_max_value
+        self.0.lock().defaults.event.event_id_max_value
     }
 
     #[setter]
     /// Set the largest event id supported by the event service
     pub fn set_event_id_max_value(&self, value: usize) {
-        self.value().defaults.event.event_id_max_value = value
+        self.0.lock().defaults.event.event_id_max_value = value
     }
 
     #[getter]
@@ -490,7 +479,8 @@ impl Event {
     /// that is attached to a `WaitSet` will be notified.
     pub fn deadline(&self) -> Duration {
         Duration(
-            self.value()
+            self.0
+                .lock()
                 .defaults
                 .event
                 .deadline
@@ -502,9 +492,9 @@ impl Event {
     /// Sets the deadline of the event service.
     pub fn set_deadline(&self, value: &Duration) {
         if value.0.is_zero() {
-            self.value().defaults.event.deadline = None
+            self.0.lock().defaults.event.deadline = None
         } else {
-            self.value().defaults.event.deadline = Some(value.0)
+            self.0.lock().defaults.event.deadline = Some(value.0)
         }
     }
 
@@ -512,7 +502,8 @@ impl Event {
     /// Defines the event id value that is emitted after a new notifier was created. If it is
     /// not set then `usize::MAX` is returned
     pub fn get_notifier_created_event(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .event
             .notifier_created_event
@@ -522,24 +513,30 @@ impl Event {
     #[getter]
     /// Returns true if the notifier created event was set, otherwise false.
     pub fn has_notifier_created_event(&self) -> bool {
-        self.value().defaults.event.notifier_created_event.is_some()
+        self.0
+            .lock()
+            .defaults
+            .event
+            .notifier_created_event
+            .is_some()
     }
 
     #[setter]
     /// Sets the event id value that is emitted after a new notifier was created.
     pub fn set_notifier_created_event(&self, value: usize) {
-        self.value().defaults.event.notifier_created_event = Some(value)
+        self.0.lock().defaults.event.notifier_created_event = Some(value)
     }
 
     /// Do not emit an event whenever a notifier was created.
     pub fn disable_notifier_created_event(&self) {
-        self.value().defaults.event.notifier_created_event = None
+        self.0.lock().defaults.event.notifier_created_event = None
     }
 
     #[getter]
     /// Defines the event id value that is emitted before a new notifier is dropped.
     pub fn get_notifier_dropped_event(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .event
             .notifier_dropped_event
@@ -549,24 +546,30 @@ impl Event {
     #[getter]
     /// Returns true if the notifier dropped event was set, otherwise false.
     pub fn has_notifier_dropped_event(&self) -> bool {
-        self.value().defaults.event.notifier_dropped_event.is_some()
+        self.0
+            .lock()
+            .defaults
+            .event
+            .notifier_dropped_event
+            .is_some()
     }
 
     #[setter]
     /// Sets the event id value that is emitted before a new notifier is dropped.
     pub fn set_notifier_dropped_event(&self, value: usize) {
-        self.value().defaults.event.notifier_dropped_event = Some(value)
+        self.0.lock().defaults.event.notifier_dropped_event = Some(value)
     }
 
     /// Do not emit an event whenever a notifier was dropped.
     pub fn disable_notifier_dropped_event(&self) {
-        self.value().defaults.event.notifier_dropped_event = None
+        self.0.lock().defaults.event.notifier_dropped_event = None
     }
 
     #[getter]
     /// Defines the event id value that is emitted if a notifier was identified as dead.
     pub fn get_notifier_dead_event(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .event
             .notifier_dead_event
@@ -576,44 +579,37 @@ impl Event {
     #[getter]
     /// Returns true if the notifier dead event was set, otherwise false.
     pub fn has_notifier_dead_event(&self) -> bool {
-        self.value().defaults.event.notifier_dead_event.is_some()
+        self.0.lock().defaults.event.notifier_dead_event.is_some()
     }
 
     #[setter]
     /// Sets the event id value that is emitted if a notifier was identified as dead.
     pub fn set_notifier_dead_event(&self, value: usize) {
-        self.value().defaults.event.notifier_dead_event = Some(value)
+        self.0.lock().defaults.event.notifier_dead_event = Some(value)
     }
 
     /// Do not emit an event whenever a notifier was identified as dead.
     pub fn disable_notifier_dead_event(&self) {
-        self.value().defaults.event.notifier_dead_event = None
+        self.0.lock().defaults.event.notifier_dead_event = None
     }
 }
 
 #[pyclass]
 /// Default settings for the request response messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
-pub struct RequestResponse {
-    value: Arc<Mutex<iceoryx2::config::Config>>,
-}
-
-impl RequestResponse {
-    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
-        self.value.lock().unwrap()
-    }
-}
+pub struct RequestResponse(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
 impl RequestResponse {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self.value().defaults.event)
+        format!("{:?}", self.0.lock().defaults.event)
     }
 
     #[getter]
     /// Defines if the request buffer of the `Service` safely overflows.
     pub fn enable_safe_overflow_for_requests(&self) -> bool {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .enable_safe_overflow_for_requests
@@ -622,7 +618,8 @@ impl RequestResponse {
     #[setter]
     /// Enables/disables safe overflow for the request buffer.
     pub fn set_enable_safe_overflow_for_requests(&self, value: bool) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .enable_safe_overflow_for_requests = value
@@ -631,7 +628,8 @@ impl RequestResponse {
     #[getter]
     /// Defines if the response buffer of the `Service` safely overflows.
     pub fn enable_safe_overflow_for_responses(&self) -> bool {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .enable_safe_overflow_for_responses
@@ -640,7 +638,8 @@ impl RequestResponse {
     #[setter]
     /// Enables/disables safe overflow for the response buffer.
     pub fn set_enable_safe_overflow_for_responses(&self, value: bool) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .enable_safe_overflow_for_responses = value
@@ -650,7 +649,8 @@ impl RequestResponse {
     /// The maximum of `ActiveRequest`s a `Server` can hold in
     /// parallel per `Client`.
     pub fn max_active_requests_per_client(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .max_active_requests_per_client
@@ -660,7 +660,8 @@ impl RequestResponse {
     /// Set the maximum of `ActiveRequest`s a `Server` can hold in
     /// parallel per `Client`.
     pub fn set_max_active_requests_per_client(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .max_active_requests_per_client = value
@@ -670,7 +671,8 @@ impl RequestResponse {
     /// The maximum buffer size for `Response`s for a
     /// `PendingResponse`.
     pub fn max_response_buffer_size(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .max_response_buffer_size
@@ -680,7 +682,8 @@ impl RequestResponse {
     /// Set the maximum buffer size for `Response`s for a
     /// `PendingResponse`.
     pub fn set_max_response_buffer_size(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .max_response_buffer_size = value
@@ -689,46 +692,47 @@ impl RequestResponse {
     #[getter]
     /// The maximum amount of supported `Server`
     pub fn max_servers(&self) -> usize {
-        self.value().defaults.request_response.max_servers
+        self.0.lock().defaults.request_response.max_servers
     }
 
     #[setter]
     /// Set the maximum amount of supported `Server`
     pub fn set_max_servers(&self, value: usize) {
-        self.value().defaults.request_response.max_servers = value
+        self.0.lock().defaults.request_response.max_servers = value
     }
 
     #[getter]
     /// The maximum amount of supported `Client`
     pub fn max_clients(&self) -> usize {
-        self.value().defaults.request_response.max_clients
+        self.0.lock().defaults.request_response.max_clients
     }
 
     #[setter]
     /// Set the maximum amount of supported `Client`
     pub fn set_max_clients(&self, value: usize) {
-        self.value().defaults.request_response.max_clients = value
+        self.0.lock().defaults.request_response.max_clients = value
     }
 
     #[getter]
     /// The maximum amount of supported `Node`s. Defines
     /// indirectly how many processes can open the service at the same time.
     pub fn max_nodes(&self) -> usize {
-        self.value().defaults.request_response.max_nodes
+        self.0.lock().defaults.request_response.max_nodes
     }
 
     #[setter]
     /// Set the maximum amount of supported `Node`s. Defines
     /// indirectly how many processes can open the service at the same time.
     pub fn set_max_nodes(&self, value: usize) {
-        self.value().defaults.request_response.max_nodes = value
+        self.0.lock().defaults.request_response.max_nodes = value
     }
 
     #[getter]
     /// The maximum amount of borrowed `Response` per
     /// `PendingResponse` on the `Client` side.
     pub fn max_borrowed_responses_per_pending_response(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .max_borrowed_responses_per_pending_response
@@ -738,7 +742,8 @@ impl RequestResponse {
     /// Set the maximum amount of borrowed `Response` per
     /// `PendingResponse` on the `Client` side.
     pub fn set_max_borrowed_responses_per_pending_response(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .max_borrowed_responses_per_pending_response = value
@@ -748,21 +753,22 @@ impl RequestResponse {
     /// Defines how many `RequestMut` a
     /// `Client` can loan in parallel.
     pub fn max_loaned_requests(&self) -> usize {
-        self.value().defaults.request_response.max_loaned_requests
+        self.0.lock().defaults.request_response.max_loaned_requests
     }
 
     #[setter]
     /// Set how many `RequestMut` a
     /// `Client` can loan in parallel.
     pub fn set_max_loaned_requests(&self, value: usize) {
-        self.value().defaults.request_response.max_loaned_requests = value
+        self.0.lock().defaults.request_response.max_loaned_requests = value
     }
 
     #[getter]
     /// Defines how many `ResponseMut` a `Server` can loan in
     /// parallel per `ActiveRequest`.
     pub fn server_max_loaned_responses_per_request(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .server_max_loaned_responses_per_request
@@ -772,7 +778,8 @@ impl RequestResponse {
     /// Set how many `ResponseMut` a `Server` can loan in
     /// parallel per `ActiveRequest`.
     pub fn set_server_max_loaned_responses_per_request(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .server_max_loaned_responses_per_request = value
@@ -782,7 +789,8 @@ impl RequestResponse {
     /// Defines the `UnableToDeliverStrategy` when a `Client`
     /// could not deliver the request to the `Server`.
     pub fn client_unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .client_unable_to_deliver_strategy
@@ -793,7 +801,8 @@ impl RequestResponse {
     /// Set the `UnableToDeliverStrategy` when a `Client`
     /// could not deliver the request to the `Server`.
     pub fn set_client_unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .client_unable_to_deliver_strategy = (value.clone()).into()
@@ -803,7 +812,8 @@ impl RequestResponse {
     /// Defines the `UnableToDeliverStrategy` when a `Server`
     /// could not deliver the response to the `Client`.
     pub fn server_unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .server_unable_to_deliver_strategy
@@ -814,7 +824,8 @@ impl RequestResponse {
     /// Set the `UnableToDeliverStrategy` when a `Server`
     /// could not deliver the response to the `Client`.
     pub fn set_server_unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .server_unable_to_deliver_strategy = (value.clone()).into()
@@ -827,7 +838,8 @@ impl RequestResponse {
     /// disconnected from a service and the connection
     /// still contains unconsumed `Response`s.
     pub fn client_expired_connection_buffer(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .client_expired_connection_buffer
@@ -840,7 +852,8 @@ impl RequestResponse {
     /// disconnected from a service and the connection
     /// still contains unconsumed `Response`s.
     pub fn set_client_expired_connection_buffer(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .client_expired_connection_buffer = value
@@ -853,7 +866,8 @@ impl RequestResponse {
     /// disconnected from a service and the connection
     /// still contains unconsumed `ActiveRequest`s.
     pub fn server_expired_connection_buffer(&self) -> usize {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .server_expired_connection_buffer
@@ -866,7 +880,8 @@ impl RequestResponse {
     /// disconnected from a service and the connection
     /// still contains unconsumed `ActiveRequest`s.
     pub fn set_server_expired_connection_buffer(&self, value: usize) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .server_expired_connection_buffer = value
@@ -880,7 +895,8 @@ impl RequestResponse {
     ///
     /// Consider enabling this feature if you do not want to loose any `RequestMut`.
     pub fn enable_fire_and_forget_requests(&self) -> bool {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .enable_fire_and_forget_requests
@@ -889,7 +905,8 @@ impl RequestResponse {
     #[setter]
     /// Set if fire-and-forget feature is enabled
     pub fn set_enable_fire_and_forget_requests(&self, value: bool) {
-        self.value()
+        self.0
+            .lock()
             .defaults
             .request_response
             .enable_fire_and_forget_requests = value
@@ -898,116 +915,90 @@ impl RequestResponse {
 
 #[pyclass]
 /// The global settings
-pub struct Global {
-    value: Arc<Mutex<iceoryx2::config::Config>>,
-}
-
-impl Global {
-    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
-        self.value.lock().unwrap()
-    }
-}
+pub struct Global(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
 impl Global {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self.value().global)
+        format!("{:?}", self.0.lock().global)
     }
 
     #[getter]
     /// Returns the service part of the global configuration
     pub fn service(&self) -> Service {
-        Service {
-            value: self.value.clone(),
-        }
+        Service(self.0.clone())
     }
 
     #[getter]
     /// Returns the node part of the global configuration
     pub fn node(&self) -> Node {
-        Node {
-            value: self.value.clone(),
-        }
+        Node(self.0.clone())
     }
 
     #[getter]
     /// Returns the directory under which service files are stored.
     pub fn service_dir(&self) -> Path {
-        Path(self.value().global.service_dir().clone())
+        Path(self.0.lock().global.service_dir().clone())
     }
 
     #[getter]
     /// Returns the directory under which node files are stored.
     pub fn node_dir(&self) -> Path {
-        Path(self.value().global.node_dir().clone())
+        Path(self.0.lock().global.node_dir().clone())
     }
 
     #[getter]
     /// The path under which all other directories or files will be created
     pub fn root_path(&self) -> Path {
-        Path(self.value().global.root_path().clone())
+        Path(self.0.lock().global.root_path().clone())
     }
 
     #[setter]
     /// Defines the path under which all other directories or files will be created
     pub fn set_root_path(&self, value: &Path) {
-        self.value().global.set_root_path(&value.0.clone())
+        self.0.lock().global.set_root_path(&value.0.clone())
     }
 
     #[getter]
     /// Prefix used for all files created during runtime
     pub fn prefix(&self) -> FileName {
-        FileName(self.value().global.prefix.clone())
+        FileName(self.0.lock().global.prefix.clone())
     }
 
     #[setter]
     /// Set the prefix used for all files created during runtime
     pub fn set_prefix(&self, value: &FileName) {
-        self.value().global.prefix = value.0.clone()
+        self.0.lock().global.prefix = value.0.clone()
     }
 }
 
 #[pyclass]
 /// Default settings. These values are used when the user in the code does not specify anything
 /// else.
-pub struct Defaults {
-    value: Arc<Mutex<iceoryx2::config::Config>>,
-}
-
-impl Defaults {
-    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
-        self.value.lock().unwrap()
-    }
-}
+pub struct Defaults(Parc<iceoryx2::config::Config>);
 
 #[pymethods]
 impl Defaults {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self.value().global)
+        format!("{:?}", self.0.lock().global)
     }
 
     #[getter]
     /// Returns the publish_subscribe part of the default settings
     pub fn publish_subscribe(&self) -> PublishSubscribe {
-        PublishSubscribe {
-            value: self.value.clone(),
-        }
+        PublishSubscribe(self.0.clone())
     }
 
     #[getter]
     /// Returns the event part of the default settings
     pub fn event(&self) -> Event {
-        Event {
-            value: self.value.clone(),
-        }
+        Event(self.0.clone())
     }
 
     #[getter]
     /// Returns the request_response part of the default settings
     pub fn request_response(&self) -> RequestResponse {
-        RequestResponse {
-            value: self.value.clone(),
-        }
+        RequestResponse(self.0.clone())
     }
 }
 
@@ -1016,77 +1007,55 @@ impl Defaults {
 /// the [Global] settings, which must align with the iceoryx2 instance the application intends to
 /// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
 /// flexibility to override both sections.
-pub struct Config {
-    value: Arc<Mutex<iceoryx2::config::Config>>,
-}
-
-impl Config {
-    fn value(&self) -> MutexGuard<iceoryx2::config::Config> {
-        self.value.lock().unwrap()
-    }
-}
+pub struct Config(pub(crate) Parc<iceoryx2::config::Config>);
 
 #[pymethods]
 impl Config {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self.value())
+        format!("{:?}", self.0.lock())
     }
 
     #[getter]
     /// Returns the `Global` part of the config
     pub fn global_cfg(&self) -> Global {
-        Global {
-            value: self.value.clone(),
-        }
+        Global(self.0.clone())
     }
 
     #[getter]
     /// Returns the `Defaults` part of the config
     pub fn defaults(&self) -> Defaults {
-        Defaults {
-            value: self.value.clone(),
-        }
+        Defaults(self.0.clone())
     }
 }
 
 #[pyfunction]
 pub fn default() -> Config {
-    Config {
-        value: Arc::new(Mutex::new(iceoryx2::config::Config::default())),
-    }
+    Config(Parc::new(iceoryx2::config::Config::default()))
 }
 
 #[pyfunction]
 pub fn global_config() -> Config {
-    Config {
-        value: Arc::new(Mutex::new(
-            iceoryx2::config::Config::global_config().clone(),
-        )),
-    }
+    Config(Parc::new(iceoryx2::config::Config::global_config().clone()))
 }
 
 #[pyfunction]
 pub fn setup_global_config_from_file(config_file: &FilePath) -> PyResult<Config> {
-    Ok(Config {
-        value: Arc::new(Mutex::new(
-            iceoryx2::config::Config::setup_global_config_from_file(&config_file.0.clone())
-                .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
-                .clone(),
-        )),
-    })
+    Ok(Config(Parc::new(
+        iceoryx2::config::Config::setup_global_config_from_file(&config_file.0.clone())
+            .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
+            .clone(),
+    )))
 }
 
 #[pyfunction]
 /// Loads a configuration from a file. On success it returns a `Config` object otherwise a
 /// `ConfigCreationError` describing the failure.
 pub fn from_file(config_file: &FilePath) -> PyResult<Config> {
-    Ok(Config {
-        value: Arc::new(Mutex::new(
-            iceoryx2::config::Config::from_file(&config_file.0.clone())
-                .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
-                .clone(),
-        )),
-    })
+    Ok(Config(Parc::new(
+        iceoryx2::config::Config::from_file(&config_file.0.clone())
+            .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
+            .clone(),
+    )))
 }
 
 #[pyfunction]

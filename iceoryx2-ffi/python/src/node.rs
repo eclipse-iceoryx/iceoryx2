@@ -10,26 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use pyo3::create_exception;
-use pyo3::exceptions::PyException;
+use iceoryx2::prelude::*;
+use pyo3::prelude::*;
 
-create_exception!(
-    iceoryx2_ffi_python,
-    SemanticStringError,
-    PyException,
-    "Errors caused by creating a semantic string."
-);
+use crate::parc::Parc;
 
-create_exception!(
-    iceoryx2_ffi_python,
-    ConfigCreationError,
-    PyException,
-    "Errors caused by creating a new config."
-);
+pub(crate) enum NodeType {
+    Ipc(iceoryx2::node::Node<ipc::Service>),
+    Local(iceoryx2::node::Node<local::Service>),
+}
 
-create_exception!(
-    iceoryx2_ffi_python,
-    NodeCreationFailure,
-    PyException,
-    "Errors caused by creating a new node."
-);
+#[pyclass]
+pub struct Node(pub(crate) Parc<NodeType>);
+
+#[pymethods]
+impl Node {
+    pub fn __str__(&self) -> String {
+        match &*self.0.lock() {
+            NodeType::Ipc(node) => format!("{:?}", node),
+            NodeType::Local(node) => format!("{:?}", node),
+        }
+    }
+}
