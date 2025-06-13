@@ -217,4 +217,12 @@ mod flat_map {
 
         unsafe { sut.init(&bump_allocator).expect("sut init failed") };
     }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic]
+    fn panic_is_called_in_debug_mode_if_map_is_not_initialized() {
+        let mut sut = unsafe { RelocatableFlatMap::<u8, u8>::new_uninit(CAPACITY) };
+        unsafe { sut.remove(&1) };
+    }
 }

@@ -386,4 +386,13 @@ mod relocatable_vec {
 
         unsafe { sut.init(&bump_allocator).expect("sut init failed") };
     }
+
+    #[cfg(debug_assertions)]
+    #[test]
+    #[should_panic]
+    fn panic_is_called_in_debug_mode_if_vec_is_not_initialized() {
+        const CAPACITY: usize = 12;
+        let mut sut = unsafe { RelocatableVec::<u8>::new_uninit(CAPACITY) };
+        unsafe { sut.remove(0) };
+    }
 }

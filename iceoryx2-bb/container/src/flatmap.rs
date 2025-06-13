@@ -77,7 +77,19 @@ pub struct MetaFlatMap<K: Eq, V: Clone, Ptr: GenericPointer> {
 }
 
 impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
+    #[inline(always)]
+    fn verify_init(&self, source: &str) {
+        debug_assert!(
+                self.is_initialized
+                    .load(core::sync::atomic::Ordering::Relaxed),
+                "From: MetaFlatMap<{}, {}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
+                core::any::type_name::<K>(), core::any::type_name::<V>(), source
+            );
+    }
+
     pub(crate) unsafe fn insert_impl(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
+        self.verify_init("insert()");
+
         let msg = "Unable to insert key-value pair into FlatMap";
         let origin = "MetaFlatMap::insert_impl()";
 
@@ -92,15 +104,21 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     }
 
     pub(crate) unsafe fn get_impl(&self, id: &K) -> Option<V> {
+        self.verify_init("get()");
+
         self.get_ref_impl(id).cloned()
     }
 
     pub(crate) unsafe fn get_ref_impl(&self, id: &K) -> Option<&V> {
+        self.verify_init("get_ref()");
+
         let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != *id);
         iter.next().map(|kv| &kv.1.value)
     }
 
     pub(crate) unsafe fn get_mut_ref_impl(&mut self, id: &K) -> Option<&mut V> {
+        self.verify_init("get_mut_ref()");
+
         let slot_map_entry = self.map.iter_impl().find(|kv| kv.1.id == *id)?;
         self.map
             .get_mut_impl(slot_map_entry.0)
@@ -108,6 +126,8 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     }
 
     pub(crate) unsafe fn remove_impl(&mut self, id: &K) {
+        self.verify_init("remove()");
+
         let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != *id);
         if let Some(kv) = iter.next() {
             let key = kv.0;
@@ -124,6 +144,8 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     }
 
     pub(crate) unsafe fn contains_impl(&self, id: &K) -> bool {
+        self.verify_init("contains()");
+
         self.get_ref_impl(id).is_some()
     }
 
