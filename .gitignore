@@ -12,4 +12,4 @@ Cargo.lock
 **/*.png
 **/Doxyfile*
 **/compile_commands.json
-
+**/*.pyc
