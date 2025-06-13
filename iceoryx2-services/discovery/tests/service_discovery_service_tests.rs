@@ -42,6 +42,7 @@ mod service_discovery_service {
             include_internal: false,
             publish_events: true,
             max_subscribers: 1,
+            max_buffer_size: 10,
             send_notifications: false,
             max_listeners: 1,
             ..Default::default()

@@ -1,0 +1,38 @@
+services:
+  ponger:
+    image: end-to-end-testing:latest
+    networks:
+      test-network:
+        ipv4_address: 172.20.0.10
+    environment:
+      - IOX2_LOG_LEVEL=Info
+      - PINGER_ADDR=172.20.0.11:8080
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "ponger"]
+      interval: 1s
+      timeout: 3s
+      retries: 3
+    command: ["sh", "-c", "iox2-tunnel zenoh & iceoryx2-tunnels-end-to-end-testing-ponger"]
+
+  pinger:
+    image: end-to-end-testing:latest
+    networks:
+      test-network:
+        ipv4_address: 172.20.0.11
+    environment:
+      - IOX2_LOG_LEVEL=Info
+      - PONGER_ADDR=172.20.0.10:8080
+    restart: "no"
+    depends_on:
+      ponger:
+        condition: service_healthy
+    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 1 && iceoryx2-tunnels-end-to-end-testing-pinger"]
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1

@@ -162,7 +162,9 @@ use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_log::{debug, fail, fatal_panic, trace, warn};
 use iceoryx2_bb_posix::clock::{nanosleep, NanosleepError, Time};
@@ -184,8 +186,19 @@ use std::sync::Mutex;
 
 /// The system-wide unique id of a [`Node`]
 #[derive(
-    Debug, Eq, Hash, PartialEq, Clone, Copy, PartialOrd, Ord, serde::Serialize, serde::Deserialize,
+    Debug,
+    Eq,
+    Hash,
+    PartialEq,
+    Clone,
+    Copy,
+    PartialOrd,
+    Ord,
+    ZeroCopySend,
+    serde::Serialize,
+    serde::Deserialize,
 )]
+#[repr(C)]
 pub struct NodeId(UniqueSystemId);
 
 impl NodeId {

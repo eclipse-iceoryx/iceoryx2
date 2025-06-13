@@ -31,8 +31,8 @@ maybe(
 maybe(
     name = "rules_rust",
     repo_rule = http_archive,
-    sha256 = "9d04e658878d23f4b00163a72da3db03ddb451273eb347df7d7c50838d698f49",
-    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.26.0/rules_rust-v0.26.0.tar.gz"],
+    sha256 = "962075c164a603f43fb4a3d19615ab91e41bcd0581c8da2f70a1aef27381fe53",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.58.0/rules_rust-0.58.0.tar.gz"],
 )
 
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_register_toolchains")
@@ -90,6 +90,8 @@ maybe(
         "//:benchmarks/queue/Cargo.toml",
         "//:benchmarks/request-response/Cargo.toml",
         "//:examples/Cargo.toml",
+        "//:iceoryx2-tunnels/end-to-end-testing/Cargo.toml",
+        "//:iceoryx2-tunnels/zenoh/Cargo.toml",
         "//:iceoryx2-services/discovery/Cargo.toml",
         "//:iceoryx2/Cargo.toml",
         "//:iceoryx2-bb/container/Cargo.toml",

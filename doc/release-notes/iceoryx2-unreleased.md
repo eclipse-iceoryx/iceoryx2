@@ -11,6 +11,10 @@
     conflicts when merging.
 -->
 
+* Tunnel over zenoh for publish-subscribe and event services
+  [#593](https://github.com/eclipse-iceoryx/iceoryx2/issues/593)
+* `iox2 tunnel zenoh`
+  [#593](https://github.com/eclipse-iceoryx/iceoryx2/issues/593)
 * All port factories implement `Send`
   [#768](https://github.com/eclipse-iceoryx/iceoryx2/issues/768)
 * `iox2 service listen` and `iox2 service notify`
@@ -75,6 +79,8 @@
     conflicts when merging.
 -->
 
+* Add `NodeId` to sample header (to prevent loopback in tunnels)
+  [#593](https://github.com/eclipse-iceoryx/iceoryx2/issues/593)
 * Add API to prevent self notification `Notifier::__internal_notify()`
   [#794](https://github.com/eclipse-iceoryx/iceoryx2/issues/794)
 * Enable the usage of semaphore based events in C/C++

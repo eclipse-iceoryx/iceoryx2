@@ -565,8 +565,9 @@ impl<
             .publisher_shared_state
             .sender
             .allocate(self.publisher_shared_state.sender.sample_layout(1))?;
+        let node_id = self.publisher_shared_state.service_state.shared_node.id();
         let header_ptr = chunk.header as *mut Header;
-        unsafe { header_ptr.write(Header::new(self.id(), 1)) };
+        unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
 
         let sample = unsafe {
             RawSampleMut::new_unchecked(header_ptr, chunk.user_header.cast(), chunk.payload.cast())
@@ -737,7 +738,8 @@ impl<
         let sample_layout = self.publisher_shared_state.sender.sample_layout(slice_len);
         let chunk = self.publisher_shared_state.sender.allocate(sample_layout)?;
         let header_ptr = chunk.header as *mut Header;
-        unsafe { header_ptr.write(Header::new(self.id(), slice_len as _)) };
+        let node_id = self.publisher_shared_state.service_state.shared_node.id();
+        unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
 
         let sample = unsafe {
             RawSampleMut::new_unchecked(
