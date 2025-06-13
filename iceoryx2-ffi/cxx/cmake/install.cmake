@@ -11,6 +11,9 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 # NOTE the file is included in '../CMakeLists.txt' and therefore all paths based on 'CMAKE_CURRENT_SOURCE_DIR' must be relative to '../'
+if(ICEORYX_WITH_FETCH_CONTENT)
+    return()
+endif()
 
 #
 ########## set variables for export ##########
