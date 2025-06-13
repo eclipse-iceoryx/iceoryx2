@@ -33,3 +33,10 @@ create_exception!(
     PyException,
     "Errors caused by creating a new node."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    NodeWaitFailure,
+    PyException,
+    "Errors caused by creating a new node."
+);

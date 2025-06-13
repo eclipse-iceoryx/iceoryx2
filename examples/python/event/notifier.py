@@ -13,8 +13,13 @@
 """Notifier example for python."""
 
 import iceoryx2_ffi_python as iceoryx2
+import time
 
 config = iceoryx2.config.default()
-g = config.global_cfg
 
-print(f"hello world: {iceoryx2.config.default().global_cfg}")
+node_name = iceoryx2.NodeName.new("fuubar")
+node = iceoryx2.NodeBuilder.new().name(node_name).config(config).create(iceoryx2.ServiceType.Ipc)
+
+for count in range(100):
+    print("fuu")
+    time.sleep(1)
