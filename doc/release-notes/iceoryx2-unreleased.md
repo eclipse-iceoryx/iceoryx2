@@ -39,6 +39,8 @@
     [#796](https://github.com/eclipse-iceoryx/iceoryx2/issues/796)
 * Fix startup race in `pthread_create` on mac os platform
     [#799](https://github.com/eclipse-iceoryx/iceoryx2/issues/799)
+* CMake no longer installs unusable binaries when FetchContent is used
+    [#814](https://github.com/eclipse-iceoryx/iceoryx2/issues/814)
 
 ### Refactoring
 
