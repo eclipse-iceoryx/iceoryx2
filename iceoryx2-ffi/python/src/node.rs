@@ -14,8 +14,15 @@ use iceoryx2::prelude::{ipc, local};
 use pyo3::prelude::*;
 
 use crate::{
-    cleanup_state::CleanupState, config::Config, duration::Duration, error::NodeWaitFailure,
-    node_id::NodeId, node_name::NodeName, parc::Parc, service_type::ServiceType,
+    cleanup_state::CleanupState,
+    config::Config,
+    duration::Duration,
+    error::{NodeListFailure, NodeWaitFailure},
+    node_id::NodeId,
+    node_name::NodeName,
+    node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
+    parc::Parc,
+    service_type::ServiceType,
     signal_handling_mode::SignalHandlingMode,
 };
 
@@ -61,8 +68,54 @@ impl Node {
     }
 
     #[staticmethod]
-    pub fn list(config: &Config) -> PyResult<()> {
-        todo!()
+    pub fn list(service_type: &ServiceType, config: &Config) -> PyResult<Vec<NodeState>> {
+        let mut states = vec![];
+
+        match service_type {
+            ServiceType::Ipc => {
+                iceoryx2::prelude::Node::<ipc::Service>::list(&config.0.lock(), |state| {
+                    match state {
+                        iceoryx2::node::NodeState::Alive(a) => {
+                            states.push(NodeState::Alive(AliveNodeView(AliveNodeViewType::Ipc(a))))
+                        }
+                        iceoryx2::node::NodeState::Dead(a) => {
+                            states.push(NodeState::Dead(DeadNodeView(DeadNodeViewType::Ipc(a))))
+                        }
+                        iceoryx2::node::NodeState::Inaccessible(a) => {
+                            states.push(NodeState::Inaccessible(NodeId(a)))
+                        }
+                        iceoryx2::node::NodeState::Undefined(a) => {
+                            states.push(NodeState::Undefined(NodeId(a)))
+                        }
+                    }
+
+                    iceoryx2::prelude::CallbackProgression::Continue
+                })
+                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?
+            }
+            ServiceType::Local => {
+                iceoryx2::prelude::Node::<local::Service>::list(&config.0.lock(), |state| {
+                    match state {
+                        iceoryx2::node::NodeState::Alive(a) => states
+                            .push(NodeState::Alive(AliveNodeView(AliveNodeViewType::Local(a)))),
+                        iceoryx2::node::NodeState::Dead(a) => {
+                            states.push(NodeState::Dead(DeadNodeView(DeadNodeViewType::Local(a))))
+                        }
+                        iceoryx2::node::NodeState::Inaccessible(a) => {
+                            states.push(NodeState::Inaccessible(NodeId(a)))
+                        }
+                        iceoryx2::node::NodeState::Undefined(a) => {
+                            states.push(NodeState::Undefined(NodeId(a)))
+                        }
+                    }
+
+                    iceoryx2::prelude::CallbackProgression::Continue
+                })
+                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?
+            }
+        };
+
+        Ok(states)
     }
 
     pub fn wait(&self, cycle_time: &Duration) -> PyResult<()> {

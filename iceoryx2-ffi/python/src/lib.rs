@@ -20,6 +20,7 @@ pub mod node;
 pub mod node_builder;
 pub mod node_id;
 pub mod node_name;
+pub mod node_state;
 pub mod parc;
 pub mod path;
 pub mod service_type;
@@ -35,6 +36,10 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_class::<crate::node_id::NodeId>()?;
     m.add_class::<crate::node::Node>()?;
+    m.add_class::<crate::node_state::NodeState>()?;
+    m.add_class::<crate::node_state::AliveNodeView>()?;
+    m.add_class::<crate::node_state::DeadNodeView>()?;
+    m.add_class::<crate::node_state::NodeDetails>()?;
     m.add_class::<crate::node_name::NodeName>()?;
     m.add_class::<crate::node_builder::NodeBuilder>()?;
     m.add_class::<crate::file_name::FileName>()?;
@@ -51,6 +56,10 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add(
         "NodeCreationFailure",
         py.get_type::<crate::error::NodeCreationFailure>(),
+    )?;
+    m.add(
+        "NodeCleanupFailure",
+        py.get_type::<crate::error::NodeCleanupFailure>(),
     )?;
     m.add(
         "NodeWaitFailure",

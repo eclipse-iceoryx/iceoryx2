@@ -36,6 +36,20 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    NodeCleanupFailure,
+    PyException,
+    "Errors caused by cleaning up the stale resources of a dead node."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    NodeListFailure,
+    PyException,
+    "Errors caused when listing all nodes."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     NodeWaitFailure,
     PyException,
     "Errors caused by creating a new node."

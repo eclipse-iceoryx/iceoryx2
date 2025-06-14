@@ -13,6 +13,7 @@
 use pyo3::prelude::*;
 
 #[pyclass(str = "{0:?}")]
+#[derive(Clone)]
 pub struct NodeId(pub(crate) iceoryx2::node::NodeId);
 
 #[pymethods]
