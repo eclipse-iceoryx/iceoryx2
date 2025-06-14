@@ -1009,8 +1009,18 @@ impl Defaults {
 /// flexibility to override both sections.
 pub struct Config(pub(crate) Parc<iceoryx2::config::Config>);
 
+impl PartialEq for Config {
+    fn eq(&self, other: &Self) -> bool {
+        *self.0.lock() == *other.0.lock()
+    }
+}
+
 #[pymethods]
 impl Config {
+    pub fn __eq__(&self, other: &Self) -> bool {
+        self == other
+    }
+
     pub fn __str__(&self) -> String {
         format!("{:?}", self.0.lock())
     }
