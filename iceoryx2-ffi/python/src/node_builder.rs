@@ -24,36 +24,46 @@ use crate::{
 };
 
 #[pyclass(str = "{0:?}")]
-/// Represent the name for a `Node`.
+/// Creates a new `Node`.
 pub struct NodeBuilder(iceoryx2::prelude::NodeBuilder);
 
 #[pymethods]
 impl NodeBuilder {
     #[staticmethod]
+    /// Instantiates a new `NodeBuilder`
     pub fn new() -> Self {
         Self {
             0: iceoryx2::prelude::NodeBuilder::new(),
         }
     }
 
+    /// The `NodeName` that shall be assigned to the `Node`. It does not
+    /// have to be unique. If no `NodeName` is defined then the `Node`
+    /// does not have a name.
     pub fn name(&mut self, value: &NodeName) -> Self {
         let this = self.0.clone();
         let this = this.name(&value.0);
         Self(this)
     }
 
+    /// Defines the `SignalHandlingMode` for the `Node`. It affects the `Node.wait()` call
+    /// that returns any received signal via its `NodeWaitFailure`
     pub fn signal_handling_mode(&mut self, value: &SignalHandlingMode) -> Self {
         let this = self.0.clone();
         let this = this.signal_handling_mode((value.clone()).into());
         Self(this)
     }
 
+    /// The `Config` that shall be used for the `Node`. If no `Config`
+    /// is specified the `config.global_config()` is used.
     pub fn config(&mut self, config: &Config) -> Self {
         let this = self.0.clone();
         let this = this.config(&config.0.lock());
         Self(this)
     }
 
+    /// Creates a new `Node` for a specified `ServiceType`.
+    /// Emits `NodeCreationFailure` on failure.
     pub fn create(&mut self, service_type: &ServiceType) -> PyResult<Node> {
         let this = self.0.clone();
         match service_type {

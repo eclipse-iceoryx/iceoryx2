@@ -14,6 +14,7 @@ use pyo3::prelude::*;
 
 #[pyclass(str = "{0:?}")]
 #[derive(Clone, PartialEq)]
+/// The system-wide unique id of a `Node`
 pub struct NodeId(pub(crate) iceoryx2::node::NodeId);
 
 #[pymethods]
@@ -23,11 +24,13 @@ impl NodeId {
     }
 
     #[getter]
+    /// Returns the underlying integer value of the `NodeId`.
     pub fn value(&self) -> u128 {
         self.0.value()
     }
 
     #[getter]
+    /// Returns the process id of the process that owns the `Node`.
     pub fn pid(&self) -> u32 {
         self.0.pid().value() as _
     }

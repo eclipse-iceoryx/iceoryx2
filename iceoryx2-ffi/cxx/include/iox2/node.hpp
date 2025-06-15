@@ -56,8 +56,7 @@ class Node {
     /// [`ServiceName`] of the [`Service`] is provided as argument.
     auto service_builder(const ServiceName& name) const -> ServiceBuilder<T>;
 
-    /// Waits a given time for a [`WaitEvent`]. If the [`cycle_time`] has passed
-    /// [`WaitEvent::Tick`] is returned.
+    /// Waits for a given `cycle_time`.
     auto wait(iox::units::Duration cycle_time) const -> iox::expected<void, NodeWaitFailure>;
 
     /// Lists all [`Node`]s under a provided config. The provided callback is

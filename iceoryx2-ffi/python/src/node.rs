@@ -32,6 +32,10 @@ pub(crate) enum NodeType {
 }
 
 #[pyclass]
+/// The central entry point of iceoryx2. Represents a node of the iceoryx2
+/// system. One process can have arbitrary many nodes but usually it should be
+/// only one node per process.
+/// Can be created via the `NodeBuilder`.
 pub struct Node(pub(crate) Parc<NodeType>);
 
 #[pymethods]
@@ -44,6 +48,7 @@ impl Node {
     }
 
     #[getter]
+    /// Returns the name of the node inside a `NodeName`.
     pub fn name(&self) -> NodeName {
         match &*self.0.lock() {
             NodeType::Ipc(node) => NodeName(node.name().clone()),
@@ -52,6 +57,7 @@ impl Node {
     }
 
     #[getter]
+    /// Returns the `Config` that the `Node` will use to create any iceoryx2 entity.
     pub fn config(&self) -> Config {
         match &*self.0.lock() {
             NodeType::Ipc(node) => Config(Parc::new(node.config().clone())),
@@ -60,6 +66,7 @@ impl Node {
     }
 
     #[getter]
+    /// Returns the unique id of the `Node`.
     pub fn id(&self) -> NodeId {
         match &*self.0.lock() {
             NodeType::Ipc(node) => NodeId(*node.id()),
@@ -68,6 +75,8 @@ impl Node {
     }
 
     #[staticmethod]
+    /// Returns a list of `NodeState`s of all `Node`s under a provided config.
+    /// On failure it emits a `NodeListFailure`.
     pub fn list(service_type: &ServiceType, config: &Config) -> PyResult<Vec<NodeState>> {
         let mut states = vec![];
 
@@ -118,6 +127,8 @@ impl Node {
         Ok(states)
     }
 
+    /// Waits for a given `cycle_time`.
+    /// On failure it emits a `NodeWaitFailure`.
     pub fn wait(&self, cycle_time: &Duration) -> PyResult<()> {
         match &*self.0.lock() {
             NodeType::Ipc(node) => node
@@ -132,6 +143,7 @@ impl Node {
     }
 
     #[getter]
+    /// Returns the `SignalHandlingMode` with which the `Node` was created.
     pub fn signal_handling_mode(&self) -> SignalHandlingMode {
         match &*self.0.lock() {
             NodeType::Ipc(node) => node.signal_handling_mode().into(),
@@ -140,6 +152,11 @@ impl Node {
     }
 
     #[staticmethod]
+    /// Removes the stale system resources of all dead `Node`s. The dead `Node`s are also
+    /// removed from all registered `Service`s.
+    ///
+    /// If a `Node` cannot be cleaned up since the process has insufficient permissions then
+    /// the `Node` is skipped.
     pub fn cleanup_dead_nodes(service_type: &ServiceType, config: &Config) -> CleanupState {
         match service_type {
             ServiceType::Ipc => CleanupState(
