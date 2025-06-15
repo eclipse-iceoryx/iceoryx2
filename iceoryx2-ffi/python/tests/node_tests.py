@@ -36,7 +36,28 @@ def test_cleanup_dead_nodes_can_be_called() -> None:
         raise pytest.fail("DID RAISE {0}".format(exception))
 
 def test_created_nodes_can_be_listed() -> None:
-    sut_1 = iceoryx2.NodeBuilder.new().create(iceoryx2.ServiceType.Ipc)
-    sut_2 = iceoryx2.NodeBuilder.new().create(iceoryx2.ServiceType.Ipc)
+    sut_1 = iceoryx2.NodeBuilder.new().name(iceoryx2.NodeName.new("behind you, there is")).create(iceoryx2.ServiceType.Ipc)
+    sut_2 = iceoryx2.NodeBuilder.new().name(iceoryx2.NodeName.new("a 3 headed monkey")).create(iceoryx2.ServiceType.Ipc)
 
     node_list = iceoryx2.Node.list(iceoryx2.ServiceType.Ipc, iceoryx2.config.default())
+    assert len(node_list) == 2
+    for node in node_list:
+        match node:
+            case node.Alive():
+                assert isinstance(node, iceoryx2.NodeState.Alive)
+                assert (node[0].id == sut_1.id) or (node[0].id == sut_2.id)
+                assert (node[0].details.name == sut_1.name) or (node[0].details.name == sut_2.name)
+                assert True
+            case node.Dead():
+                assert False
+            case node.Inaccessible():
+                assert False
+            case node.Undefined():
+                assert False
+
+def test_wait_can_be_called() -> None:
+    sut = iceoryx2.NodeBuilder.new().create(iceoryx2.ServiceType.Ipc)
+    try:
+        sut.wait(iceoryx2.Duration.from_millis(1))
+    except exception:
+        raise pytest.fail("DID RAISE {0}".format(exception))

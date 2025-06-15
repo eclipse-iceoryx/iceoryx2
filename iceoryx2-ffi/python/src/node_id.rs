@@ -13,11 +13,15 @@
 use pyo3::prelude::*;
 
 #[pyclass(str = "{0:?}")]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct NodeId(pub(crate) iceoryx2::node::NodeId);
 
 #[pymethods]
 impl NodeId {
+    pub fn __eq__(&self, other: &Self) -> bool {
+        self == other
+    }
+
     #[getter]
     pub fn value(&self) -> u128 {
         self.0.value()
