@@ -13,6 +13,7 @@
 mod service_discovery_service {
 
     use iceoryx2::prelude::*;
+    use iceoryx2::service::static_config::StaticConfig;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -195,5 +196,68 @@ mod service_discovery_service {
         } else {
             test_fail!("expected DiscoveryEvent::Added for the internal service")
         }
+    }
+
+    #[test]
+    fn get_current_discovery_states() -> Result<(), Box<dyn core::error::Error>> {
+        const NUM_SERVICES: usize = 100;
+
+        let iceoryx_config = generate_isolated_config();
+
+        // create some services in the main thread
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<ipc::Service>()
+            .unwrap();
+
+        let service_names: Vec<_> = (0..NUM_SERVICES).map(|_| generate_name()).collect();
+
+        let _created_services: Vec<_> = service_names
+            .iter()
+            .map(|name| {
+                node.service_builder(name)
+                    .publish_subscribe::<u64>()
+                    .create()
+                    .unwrap()
+            })
+            .collect();
+
+        let discovery_config = Config {
+            sync_on_initialization: true,
+            include_internal: false,
+            publish_events: true,
+            max_subscribers: 1,
+            send_notifications: false,
+            max_listeners: 1,
+            ..Default::default()
+        };
+
+        let mut sut = Service::<ipc::Service>::create(&discovery_config, &iceoryx_config).unwrap();
+
+        // === Request current discovery state ===
+        let service = node
+            .service_builder(service_name())
+            .request_response::<(), [StaticConfig]>()
+            .open_or_create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+
+        let pending_response = client.loan_uninit()?.write_payload(()).send()?;
+
+        let mut counter = 0;
+
+        sut.spin(|_| {}, |_| {})?;
+
+        while let Some(response) = pending_response.receive()? {
+            for service in response.payload().iter() {
+                assert_that!(service_names.contains(service.name()), eq true);
+                counter += 1;
+            }
+        }
+
+        assert_that!(counter, eq service_names.len());
+
+        Ok(())
     }
 }
