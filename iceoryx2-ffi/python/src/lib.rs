@@ -10,6 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod attribute;
+pub mod attribute_key;
+pub mod attribute_value;
 pub mod cleanup_state;
 pub mod config;
 pub mod duration;
@@ -43,6 +46,9 @@ use pyo3::wrap_pymodule;
 #[pymodule]
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
+    m.add_class::<crate::attribute::Attribute>()?;
+    m.add_class::<crate::attribute_key::AttributeKey>()?;
+    m.add_class::<crate::attribute_value::AttributeValue>()?;
     m.add_class::<crate::node_id::NodeId>()?;
     m.add_class::<crate::node::Node>()?;
     m.add_class::<crate::node_state::NodeState>()?;
