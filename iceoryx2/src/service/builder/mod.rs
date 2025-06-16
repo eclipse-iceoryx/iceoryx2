@@ -65,12 +65,12 @@ enum ServiceState {
 }
 
 #[repr(C)]
-#[derive(Debug, ZeroCopySend)]
+#[derive(Debug, ZeroCopySend, Clone)]
 #[doc(hidden)]
 pub struct CustomHeaderMarker {}
 
 #[repr(C)]
-#[derive(Debug, ZeroCopySend)]
+#[derive(Debug, ZeroCopySend, Clone)]
 #[doc(hidden)]
 pub struct CustomPayloadMarker(u8);
 

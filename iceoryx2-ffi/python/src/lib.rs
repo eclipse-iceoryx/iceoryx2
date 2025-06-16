@@ -41,6 +41,9 @@ pub mod service_id;
 pub mod service_name;
 pub mod service_type;
 pub mod signal_handling_mode;
+pub mod type_detail;
+pub mod type_name;
+pub mod type_variant;
 pub mod unable_to_deliver_strategy;
 
 use pyo3::prelude::*;
@@ -78,6 +81,9 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::file_path::FilePath>()?;
     m.add_class::<crate::signal_handling_mode::SignalHandlingMode>()?;
     m.add_class::<crate::path::Path>()?;
+    m.add_class::<crate::type_detail::TypeDetail>()?;
+    m.add_class::<crate::type_variant::TypeVariant>()?;
+    m.add_class::<crate::type_name::TypeName>()?;
     m.add_class::<crate::duration::Duration>()?;
     m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
     m.add_class::<crate::service_type::ServiceType>()?;

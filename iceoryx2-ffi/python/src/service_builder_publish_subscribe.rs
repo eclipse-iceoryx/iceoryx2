@@ -14,17 +14,20 @@ use iceoryx2::prelude::{ipc, local};
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
+use crate::type_detail::TypeDetail;
+
+#[derive(Clone)]
 pub(crate) enum ServiceBuilderPublishSubscribeType {
     Ipc(
         iceoryx2::service::builder::publish_subscribe::Builder<
-            CustomPayloadMarker,
+            [CustomPayloadMarker],
             CustomHeaderMarker,
             ipc::Service,
         >,
     ),
     Local(
         iceoryx2::service::builder::publish_subscribe::Builder<
-            CustomPayloadMarker,
+            [CustomPayloadMarker],
             CustomHeaderMarker,
             local::Service,
         >,
@@ -33,3 +36,36 @@ pub(crate) enum ServiceBuilderPublishSubscribeType {
 
 #[pyclass]
 pub struct ServiceBuilderPublishSubscribe(pub(crate) ServiceBuilderPublishSubscribeType);
+
+#[pymethods]
+impl ServiceBuilderPublishSubscribe {
+    pub fn payload_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.0 {
+            ServiceBuilderPublishSubscribeType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_payload_type_details(&value.0) };
+                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+            }
+            ServiceBuilderPublishSubscribeType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_payload_type_details(&value.0) };
+                Self(ServiceBuilderPublishSubscribeType::Local(this))
+            }
+        }
+    }
+
+    pub fn user_header_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.0 {
+            ServiceBuilderPublishSubscribeType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_user_header_type_details(&value.0) };
+                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+            }
+            ServiceBuilderPublishSubscribeType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_user_header_type_details(&value.0) };
+                Self(ServiceBuilderPublishSubscribeType::Local(this))
+            }
+        }
+    }
+}

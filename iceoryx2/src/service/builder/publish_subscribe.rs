@@ -209,7 +209,7 @@ impl core::error::Error for PublishSubscribeOpenOrCreateError {}
 /// # Example
 ///
 /// See [`crate::service`]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Builder<
     Payload: Debug + ?Sized + ZeroCopySend,
     UserHeader: Debug + ZeroCopySend,
@@ -228,6 +228,31 @@ pub struct Builder<
     verify_max_nodes: bool,
     _data: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
+}
+
+impl<
+        Payload: Debug + ?Sized + ZeroCopySend,
+        UserHeader: Debug + ZeroCopySend,
+        ServiceType: service::Service,
+    > Clone for Builder<Payload, UserHeader, ServiceType>
+{
+    fn clone(&self) -> Self {
+        Self {
+            base: self.base.clone(),
+            override_alignment: self.override_alignment.clone(),
+            override_payload_type: self.override_payload_type.clone(),
+            override_user_header_type: self.override_user_header_type.clone(),
+            verify_number_of_subscribers: self.verify_number_of_subscribers,
+            verify_number_of_publishers: self.verify_number_of_publishers,
+            verify_subscriber_max_buffer_size: self.verify_subscriber_max_buffer_size,
+            verify_subscriber_max_borrowed_samples: self.verify_subscriber_max_borrowed_samples,
+            verify_publisher_history_size: self.verify_publisher_history_size,
+            verify_enable_safe_overflow: self.verify_enable_safe_overflow,
+            verify_max_nodes: self.verify_max_nodes,
+            _data: PhantomData,
+            _user_header: PhantomData,
+        }
+    }
 }
 
 impl<

@@ -51,14 +51,14 @@ impl ServiceBuilder {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
                 ServiceBuilderPublishSubscribe(ServiceBuilderPublishSubscribeType::Ipc(
-                    this.publish_subscribe::<CustomPayloadMarker>()
+                    this.publish_subscribe::<[CustomPayloadMarker]>()
                         .user_header::<CustomHeaderMarker>(),
                 ))
             }
             ServiceBuilderType::Local(v) => {
                 let this = v.clone();
                 ServiceBuilderPublishSubscribe(ServiceBuilderPublishSubscribeType::Local(
-                    this.publish_subscribe::<CustomPayloadMarker>()
+                    this.publish_subscribe::<[CustomPayloadMarker]>()
                         .user_header::<CustomHeaderMarker>(),
                 ))
             }
