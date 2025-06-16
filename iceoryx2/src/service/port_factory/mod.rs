@@ -19,6 +19,8 @@ use super::dynamic_config::DynamicConfig;
 use super::service_id::ServiceId;
 use super::{attribute::AttributeSet, service_name::ServiceName};
 
+pub mod blackboard;
+
 pub mod request_response;
 
 pub mod client;

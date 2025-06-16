@@ -26,11 +26,22 @@
 //! ### Event
 //!
 //! Enable processes to notify and wakeup other processes by sending events that are uniquely
-//! identified by a [`crate::port::event_id::EventId`]. Hereby, `n`
+//! identified by a [`EventId`][`crate::port::event_id::EventId`]. Hereby, `n`
 //! [`Notifier`](crate::port::notifier::Notifier)s can notify `m`
 //! [`Listener`](crate::port::listener::Listener)s.
 //!
 //! **Note:** This does **not** send or receive POSIX signals nor is it based on them.
+//!
+//! ### Request-Response
+//!
+//! Enables [`Client`](crate::port::client::Client)s to send requests to
+//! [`Server`](crate::port::server::Server)s which respond with the requested
+//! data or action, making it suitable for interactive, transactional
+//! communication.
+//!
+//! ### Blackboard
+//!
+//! TODO
 
 /// Identifies the kind of messaging pattern the [`Service`](crate::service::Service) will use.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -51,4 +62,7 @@ pub enum MessagingPattern {
     /// [`Client`](crate::port::client::Client) sends arbitrary data in form of requests to the
     /// [`Server`](crate::port::server::Server) and receives a stream of responses.
     RequestResponse,
+
+    // TODO
+    Blackboard,
 }

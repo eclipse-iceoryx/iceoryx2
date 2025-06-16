@@ -166,6 +166,8 @@
 //! # }
 //! ```
 
+// TODO: documentation and example
+
 pub(crate) mod stale_resource_cleanup;
 
 /// The builder to create or open [`Service`]s

@@ -420,6 +420,8 @@
 //! For in-depth details and examples, please visit the
 //! [GitHub config folder](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/config).
 
+// TODO: documentation and example
+
 #[cfg(doctest)]
 mod compiletests;
 

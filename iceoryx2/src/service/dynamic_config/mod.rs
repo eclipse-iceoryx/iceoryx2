@@ -25,6 +25,8 @@ pub mod publish_subscribe;
 /// based service.
 pub mod request_response;
 
+pub mod blackboard;
+
 use core::fmt::Display;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -64,6 +66,7 @@ pub(crate) enum MessagingPattern {
     RequestResponse(request_response::DynamicConfig),
     PublishSubscribe(publish_subscribe::DynamicConfig),
     Event(event::DynamicConfig),
+    Blackboard(blackboard::DynamicConfig),
 }
 
 #[doc(hidden)]
@@ -105,6 +108,7 @@ impl DynamicConfig {
             MessagingPattern::PublishSubscribe(ref mut v) => v.init(allocator),
             MessagingPattern::Event(ref mut v) => v.init(allocator),
             MessagingPattern::RequestResponse(ref mut v) => v.init(allocator),
+            MessagingPattern::Blackboard(ref mut v) => v.init(allocator),
         }
     }
 
@@ -121,6 +125,9 @@ impl DynamicConfig {
             }
             MessagingPattern::Event(ref v) => v.remove_dead_node_id(node_id, port_cleanup_callback),
             MessagingPattern::RequestResponse(ref v) => {
+                v.remove_dead_node_id(node_id, port_cleanup_callback)
+            }
+            MessagingPattern::Blackboard(ref v) => {
                 v.remove_dead_node_id(node_id, port_cleanup_callback)
             }
         };
@@ -200,6 +207,15 @@ impl DynamicConfig {
             MessagingPattern::Event(ref v) => v,
             m => {
                 fatal_panic!(from self, "This should never happen! Trying to access event::DynamicConfig when the messaging pattern is actually {:?}.", m);
+            }
+        }
+    }
+
+    pub(crate) fn blackboard(&self) -> &blackboard::DynamicConfig {
+        match &self.messaging_pattern {
+            MessagingPattern::Blackboard(ref v) => v,
+            m => {
+                fatal_panic!(from self, "This should never happen! Trying to access blackboard::DynamicConfig when the messaging pattern is actually {:?}.", m);
             }
         }
     }

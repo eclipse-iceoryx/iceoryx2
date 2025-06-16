@@ -233,6 +233,8 @@ pub struct Defaults {
     pub event: Event,
     /// Default settings for the messaging pattern request-response
     pub request_response: RequestResonse,
+
+    pub blackboard: Blackboard,
 }
 
 /// Default settings for the publish-subscribe messaging pattern. These settings are used unless
@@ -369,6 +371,13 @@ pub struct RequestResonse {
     pub server_expired_connection_buffer: usize,
 }
 
+#[non_exhaustive]
+#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub struct Blackboard {
+    pub max_readers: usize,
+}
+
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
 /// the [Global] settings, which must align with the iceoryx2 instance the application intends to
 /// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
@@ -450,6 +459,7 @@ impl Default for Config {
                     notifier_dropped_event: None,
                     notifier_dead_event: None,
                 },
+                blackboard: Blackboard { max_readers: 8 },
             },
         }
     }

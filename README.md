@@ -30,6 +30,9 @@
         * [Publish Subscribe](#publish-subscribe)
             * [publisher.rs](#publisherrs)
             * [subscriber.rs](#subscriberrs)
+        * [Request Response](#request-response)
+            * [client.rs](#clientrs)
+            * [server.rs](#serverrs)
         * [Events](#events)
             * [notifier.rs](#notifierrs)
             * [listener.rs](#listenerrs)
@@ -60,8 +63,8 @@ seamless inter-process communication (IPC).
 
 It is all about providing a seamless experience for inter-process communication,
 featuring versatile messaging patterns. Whether you're diving into
-publish-subscribe, events, or the promise of upcoming features like
-request-response, pipelines, and blackboard, iceoryx2 has you covered.
+publish-subscribe, events, request-response, or the promise of upcoming features
+like pipelines, and blackboard, iceoryx2 has you covered.
 
 One of the features of iceoryx2 is its consistently low transmission latency
 regardless of payload size, ensuring a predictable and reliable communication

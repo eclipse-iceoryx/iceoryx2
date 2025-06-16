@@ -13,6 +13,7 @@
 //! Stores the [`Service`](crate::service::Service) messaging pattern specific static configuration.
 use core::fmt::Display;
 
+use crate::service::static_config::blackboard;
 use crate::service::static_config::event;
 use crate::service::static_config::publish_subscribe;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -45,6 +46,8 @@ pub enum MessagingPattern {
     /// Stores the static config of the
     /// [`service::MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event)
     Event(event::StaticConfig),
+
+    Blackboard(blackboard::StaticConfig),
 }
 
 impl Display for MessagingPattern {
@@ -53,6 +56,7 @@ impl Display for MessagingPattern {
             MessagingPattern::RequestResponse(_) => write!(f, "RequestResponse"),
             MessagingPattern::Event(_) => write!(f, "Event"),
             MessagingPattern::PublishSubscribe(_) => write!(f, "PublishSubscribe"),
+            MessagingPattern::Blackboard(_) => write!(f, "Blackboard"),
         }
     }
 }
