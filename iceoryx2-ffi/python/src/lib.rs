@@ -12,7 +12,10 @@
 
 pub mod attribute;
 pub mod attribute_key;
+pub mod attribute_set;
+pub mod attribute_specifier;
 pub mod attribute_value;
+pub mod attribute_verifier;
 pub mod cleanup_state;
 pub mod config;
 pub mod duration;
@@ -47,6 +50,9 @@ use pyo3::wrap_pymodule;
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_class::<crate::attribute::Attribute>()?;
+    m.add_class::<crate::attribute_set::AttributeSet>()?;
+    m.add_class::<crate::attribute_verifier::AttributeVerifier>()?;
+    m.add_class::<crate::attribute_specifier::AttributeSpecifier>()?;
     m.add_class::<crate::attribute_key::AttributeKey>()?;
     m.add_class::<crate::attribute_value::AttributeValue>()?;
     m.add_class::<crate::node_id::NodeId>()?;
