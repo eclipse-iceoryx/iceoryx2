@@ -17,7 +17,12 @@ import iceoryx2_ffi_python as iceoryx2
 config = iceoryx2.config.default()
 
 node_name = iceoryx2.NodeName.new("fuubar")
-node = iceoryx2.NodeBuilder.new().name(node_name).config(config).create(iceoryx2.ServiceType.Ipc)
+node = (
+    iceoryx2.NodeBuilder.new()
+    .name(node_name)
+    .config(config)
+    .create(iceoryx2.ServiceType.Ipc)
+)
 cycle_time = iceoryx2.Duration.from_millis(250)
 
 for count in range(100):
