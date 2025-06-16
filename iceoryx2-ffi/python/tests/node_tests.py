@@ -81,5 +81,5 @@ def test_wait_can_be_called() -> None:
     sut = iceoryx2.NodeBuilder.new().create(iceoryx2.ServiceType.Ipc)
     try:
         sut.wait(iceoryx2.Duration.from_millis(1))
-    except exception:
-        raise pytest.fail("DID RAISE {0}".format(exception))
+    except iceoryx2.NodeWaitFailure:
+        raise pytest.fail("DID RAISE EXCEPTION")
