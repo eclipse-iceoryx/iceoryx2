@@ -22,6 +22,8 @@ use crate::{
     node_name::NodeName,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
+    service_builder::{ServiceBuilder, ServiceBuilderType},
+    service_name::ServiceName,
     service_type::ServiceType,
     signal_handling_mode::SignalHandlingMode,
 };
@@ -125,6 +127,17 @@ impl Node {
         };
 
         Ok(states)
+    }
+
+    pub fn service_builder(&self, name: &ServiceName) -> ServiceBuilder {
+        match &*self.0.lock() {
+            NodeType::Ipc(node) => {
+                ServiceBuilder(ServiceBuilderType::Ipc(node.service_builder(&name.0)))
+            }
+            NodeType::Local(node) => {
+                ServiceBuilder(ServiceBuilderType::Local(node.service_builder(&name.0)))
+            }
+        }
     }
 
     /// Waits for a given `cycle_time`.

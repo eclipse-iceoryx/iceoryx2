@@ -209,7 +209,7 @@ impl core::error::Error for PublishSubscribeOpenOrCreateError {}
 /// # Example
 ///
 /// See [`crate::service`]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Builder<
     Payload: Debug + ?Sized + ZeroCopySend,
     UserHeader: Debug + ZeroCopySend,

@@ -113,7 +113,7 @@ impl core::error::Error for ReadStaticStorageFailure {}
 /// # Example
 ///
 /// See [`crate::service`]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Builder<S: Service> {
     name: ServiceName,
     shared_node: Arc<SharedNode<S>>,
@@ -174,7 +174,7 @@ impl<S: Service> Builder<S> {
 }
 
 #[doc(hidden)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BuilderWithServiceType<ServiceType: service::Service> {
     service_config: StaticConfig,
     shared_node: Arc<SharedNode<ServiceType>>,

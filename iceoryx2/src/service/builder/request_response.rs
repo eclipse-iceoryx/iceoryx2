@@ -214,7 +214,7 @@ enum ServiceAvailabilityState {
 /// # Example
 ///
 /// See [`crate::service`]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Builder<
     RequestPayload: Debug + ZeroCopySend + ?Sized,
     RequestHeader: Debug + ZeroCopySend,
