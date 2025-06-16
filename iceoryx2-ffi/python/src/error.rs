@@ -52,5 +52,5 @@ create_exception!(
     iceoryx2_ffi_python,
     NodeWaitFailure,
     PyException,
-    "Errors caused by creating a new node."
+    "Errors caused when waiting on a node."
 );

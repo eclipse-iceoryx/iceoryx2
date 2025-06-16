@@ -19,7 +19,7 @@ namespace iox2 {
 /// Defines the type of the `Service` and what kind of resources and operating system mechanisms
 /// it shall use.
 enum class ServiceType : uint8_t {
-    /// Optimized for inter-thread communication does not not support inter-process communication.
+    /// Optimized for inter-thread communication does not support inter-process communication.
     Local,
     /// Optimized for inter-process communication.
     Ipc
