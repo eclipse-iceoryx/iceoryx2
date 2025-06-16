@@ -28,10 +28,10 @@ impl FilePath {
     /// Creates a new `FilePath` when the provided `name` contains a valid path to a file,
     /// otherwise it emits a `SemanticStringError`.
     pub fn new(name: &str) -> PyResult<Self> {
-        Ok(Self {
-            0: iceoryx2::prelude::FilePath::new(name.as_bytes())
+        Ok(Self(
+            iceoryx2::prelude::FilePath::new(name.as_bytes())
                 .map_err(|e| SemanticStringError::new_err(format!("{:?}", e)))?,
-        })
+        ))
     }
 
     #[staticmethod]

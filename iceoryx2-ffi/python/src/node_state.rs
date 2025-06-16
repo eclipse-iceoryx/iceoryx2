@@ -70,8 +70,8 @@ impl AliveNodeView {
     /// Returns the `NodeId`.
     pub fn id(&self) -> NodeId {
         match &self.0 {
-            AliveNodeViewType::Ipc(n) => NodeId(n.id().clone()),
-            AliveNodeViewType::Local(n) => NodeId(n.id().clone()),
+            AliveNodeViewType::Ipc(n) => NodeId(*n.id()),
+            AliveNodeViewType::Local(n) => NodeId(*n.id()),
         }
     }
 
@@ -97,8 +97,8 @@ impl DeadNodeView {
     /// Returns the `NodeId`.
     pub fn id(&self) -> NodeId {
         match &self.0 {
-            DeadNodeViewType::Ipc(n) => NodeId(n.id().clone()),
-            DeadNodeViewType::Local(n) => NodeId(n.id().clone()),
+            DeadNodeViewType::Ipc(n) => NodeId(*n.id()),
+            DeadNodeViewType::Local(n) => NodeId(*n.id()),
         }
     }
 

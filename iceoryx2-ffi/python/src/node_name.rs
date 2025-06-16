@@ -25,10 +25,9 @@ impl NodeName {
     /// If the provided name does not contain a valid `NodeName` it will emit
     /// `SemanticStringError`, otherwise the `NodeName`.
     pub fn new(name: &str) -> PyResult<Self> {
-        Ok(Self {
-            0: iceoryx2::prelude::NodeName::new(name)
-                .map_err(|e| SemanticStringError::new_err(format!("{:?}", e)))?,
-        })
+        Ok(Self(iceoryx2::prelude::NodeName::new(name).map_err(
+            |e| SemanticStringError::new_err(format!("{:?}", e)),
+        )?))
     }
 
     #[staticmethod]

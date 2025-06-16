@@ -27,14 +27,18 @@ use crate::{
 /// Creates a new `Node`.
 pub struct NodeBuilder(iceoryx2::prelude::NodeBuilder);
 
+impl Default for NodeBuilder {
+    fn default() -> Self {
+        Self(iceoryx2::prelude::NodeBuilder::new())
+    }
+}
+
 #[pymethods]
 impl NodeBuilder {
     #[staticmethod]
     /// Instantiates a new `NodeBuilder`
     pub fn new() -> Self {
-        Self {
-            0: iceoryx2::prelude::NodeBuilder::new(),
-        }
+        Self::default()
     }
 
     /// The `NodeName` that shall be assigned to the `Node`. It does not

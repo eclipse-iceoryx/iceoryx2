@@ -22,41 +22,31 @@ impl Duration {
     #[staticmethod]
     /// Creates a new `Duration` from a given number of micro seconds
     pub fn from_micros(micros: u64) -> Duration {
-        Self {
-            0: core::time::Duration::from_micros(micros),
-        }
+        Self(core::time::Duration::from_micros(micros))
     }
 
     #[staticmethod]
     /// Creates a new `Duration` from a given number of milli seconds
     pub fn from_millis(millis: u64) -> Duration {
-        Self {
-            0: core::time::Duration::from_millis(millis),
-        }
+        Self(core::time::Duration::from_millis(millis))
     }
 
     #[staticmethod]
     /// Creates a new `Duration` from a given number of nano seconds
     pub fn from_nanos(nanos: u64) -> Duration {
-        Self {
-            0: core::time::Duration::from_nanos(nanos),
-        }
+        Self(core::time::Duration::from_nanos(nanos))
     }
 
     #[staticmethod]
     /// Creates a new `Duration` from a given number of seconds
     pub fn from_secs(secs: u64) -> Duration {
-        Self {
-            0: core::time::Duration::from_secs(secs),
-        }
+        Self(core::time::Duration::from_secs(secs))
     }
 
     #[staticmethod]
     /// Creates a new `Duration` from a given number of seconds
     pub fn from_secs_f64(secs: f64) -> Duration {
-        Self {
-            0: core::time::Duration::from_secs_f64(secs),
-        }
+        Self(core::time::Duration::from_secs_f64(secs))
     }
 
     /// Returns the number of seconds stored in the `Duration`

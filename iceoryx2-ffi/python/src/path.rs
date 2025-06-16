@@ -28,10 +28,10 @@ impl Path {
     /// Creates a new `Path` when the provided `name` contains a valid path, otherwise it emits a
     /// `SemanticStringError`.
     pub fn new(name: &str) -> PyResult<Self> {
-        Ok(Self {
-            0: iceoryx2::prelude::Path::new(name.as_bytes())
+        Ok(Self(
+            iceoryx2::prelude::Path::new(name.as_bytes())
                 .map_err(|e| SemanticStringError::new_err(format!("{:?}", e)))?,
-        })
+        ))
     }
 
     #[staticmethod]
