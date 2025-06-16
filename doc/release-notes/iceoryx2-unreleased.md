@@ -62,6 +62,8 @@
 * Add `recommended::Ipc` and `recommended::Local` to iceoryx2 concepts for
   to provide link the best implementation for the specific platform
   [#806](https://github.com/eclipse-iceoryx/iceoryx2/issues/806)
+* Introduce newtypes for 'uid' and 'gid'
+  [#822](https://github.com/eclipse-iceoryx/iceoryx2/issues/822)
 
 ### Workflow
 
