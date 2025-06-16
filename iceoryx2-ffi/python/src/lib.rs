@@ -62,6 +62,10 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
         py.get_type::<crate::error::NodeCleanupFailure>(),
     )?;
     m.add(
+        "NodeListFailure",
+        py.get_type::<crate::error::NodeListFailure>(),
+    )?;
+    m.add(
         "NodeWaitFailure",
         py.get_type::<crate::error::NodeWaitFailure>(),
     )?;
