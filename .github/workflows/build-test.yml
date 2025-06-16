@@ -146,10 +146,14 @@ jobs:
       - name: Install clang-tidy and clang-format
         uses: ./.github/actions/install-iceoryx-deps-and-clang
 
-      - name: clang-format and clang-tidy versions
-        run: |
-          clang-format --version
-          clang-tidy --version
+      - name: clang-format version
+        run: clang-format --version
+
+      - name: clang-tidy version
+        run: clang-tidy --version
+
+      - name: cmake version
+        run: cmake --version
 
       - name: Run clang-format
         run: git ls-files | grep -E "\.(c|cc|cpp|cxx|inl|h|hh|hpp|hxx)$" | xargs clang-format -i -style=file --Werror --dry-run
