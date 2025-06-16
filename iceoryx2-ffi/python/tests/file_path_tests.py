@@ -10,21 +10,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Notifier example for python."""
-
 import iceoryx2_ffi_python as iceoryx2
+import pytest
 
-config = iceoryx2.config.default()
 
-node_name = iceoryx2.NodeName.new("fuubar")
-node = (
-    iceoryx2.NodeBuilder.new()
-    .name(node_name)
-    .config(config)
-    .create(iceoryx2.ServiceType.Ipc)
-)
-cycle_time = iceoryx2.Duration.from_millis(250)
+def test_file_path_can_be_constructed() -> None:
+    sut = iceoryx2.FilePath.new("some/file")
+    assert sut.to_string() == "some/file"
 
-for count in range(100):
-    print("fuu")
-    node.wait(cycle_time)
+
+def test_file_path_with_invalid_content_cannot_be_constructed() -> None:
+    invalid_content = "*/i/am/not/a/path*"
+    with pytest.raises(iceoryx2.SemanticStringError):
+        sut = iceoryx2.FilePath.new(invalid_content)

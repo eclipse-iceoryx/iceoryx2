@@ -1206,7 +1206,7 @@ impl<Service: service::Service> Node<Service> {
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct NodeBuilder {
     name: Option<NodeName>,
     signal_handling_mode: SignalHandlingMode,

@@ -13,12 +13,10 @@
 use crate::error::SemanticStringError;
 use pyo3::prelude::*;
 
-#[pyclass(str = "{value:?}", eq)]
+#[pyclass(str = "{0:?}", eq)]
 #[derive(PartialEq)]
 /// Represent the name for a `Node`.
-pub struct NodeName {
-    value: iceoryx2::prelude::NodeName,
-}
+pub struct NodeName(pub(crate) iceoryx2::prelude::NodeName);
 
 #[pymethods]
 impl NodeName {
@@ -27,10 +25,9 @@ impl NodeName {
     /// If the provided name does not contain a valid `NodeName` it will emit
     /// `SemanticStringError`, otherwise the `NodeName`.
     pub fn new(name: &str) -> PyResult<Self> {
-        Ok(Self {
-            value: iceoryx2::prelude::NodeName::new(name)
-                .map_err(|e| SemanticStringError::new_err(format!("{:?}", e)))?,
-        })
+        Ok(Self(iceoryx2::prelude::NodeName::new(name).map_err(
+            |e| SemanticStringError::new_err(format!("{:?}", e)),
+        )?))
     }
 
     #[staticmethod]
@@ -41,6 +38,6 @@ impl NodeName {
 
     /// Converts the `NodeName` into a `String`
     pub fn as_str(&self) -> String {
-        self.value.as_str().to_string()
+        self.0.as_str().to_string()
     }
 }

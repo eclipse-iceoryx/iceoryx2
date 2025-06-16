@@ -14,15 +14,13 @@ use crate::error::SemanticStringError;
 use iceoryx2::prelude::SemanticString;
 use pyo3::prelude::*;
 
-#[pyclass(str = "{value:?}", eq)]
+#[pyclass(str = "{0:?}", eq)]
 #[derive(PartialEq)]
 /// Relocatable (inter-process shared memory compatible) `SemanticString` implementation for
 /// `FileName`. All modification operations ensure that never an
 /// invalid file or path name can be generated. All strings have a fixed size so that the maximum
 /// path or file name length the system supports can be stored.
-pub struct FileName {
-    pub(crate) value: iceoryx2::prelude::FileName,
-}
+pub struct FileName(pub(crate) iceoryx2::prelude::FileName);
 
 #[pymethods]
 impl FileName {
@@ -30,10 +28,10 @@ impl FileName {
     /// Creates a new `FileName` when the provided `name` contains a valid path to a file,
     /// otherwise it emits a `SemanticStringError`.
     pub fn new(name: &str) -> PyResult<Self> {
-        Ok(Self {
-            value: iceoryx2::prelude::FileName::new(name.as_bytes())
+        Ok(Self(
+            iceoryx2::prelude::FileName::new(name.as_bytes())
                 .map_err(|e| SemanticStringError::new_err(format!("{:?}", e)))?,
-        })
+        ))
     }
 
     #[staticmethod]
@@ -45,6 +43,6 @@ impl FileName {
     /// Converts the `FileName` into a `String`
     #[allow(clippy::inherent_to_string)] // method required to generate this API in Python
     pub fn to_string(&self) -> String {
-        self.value.to_string()
+        self.0.to_string()
     }
 }

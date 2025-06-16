@@ -38,7 +38,7 @@ class AliveNodeView {
     /// Returns the [`NodeId`].
     auto id() const -> const NodeId&;
 
-    /// Returns a optional [`NodeDetails`] that contains further information about the [`Node`].
+    /// Returns optional [`NodeDetails`] that contains further information about the [`Node`].
     /// Can only be acquired when the process has the access right to read it.
     auto details() const -> const iox::optional<NodeDetails>&;
 

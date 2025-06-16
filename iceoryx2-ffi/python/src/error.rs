@@ -26,3 +26,31 @@ create_exception!(
     PyException,
     "Errors caused by creating a new config."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    NodeCreationFailure,
+    PyException,
+    "Errors caused by creating a new node."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    NodeCleanupFailure,
+    PyException,
+    "Errors caused by cleaning up the stale resources of a dead node."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    NodeListFailure,
+    PyException,
+    "Errors caused when listing all nodes."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    NodeWaitFailure,
+    PyException,
+    "Errors caused when waiting on a node."
+);

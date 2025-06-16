@@ -34,6 +34,13 @@ FULL_MODE=false
 CACHED_COMMIT_MODE=false
 MODIFIED_MODE=false
 
+NUM_JOBS=1
+if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then
+    NUM_JOBS=$(nproc)
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    NUM_JOBS=$(sysctl -n hw.ncpu)
+fi
+
 while (( "$#" )); do
     case "$1" in
         --directories)
@@ -153,8 +160,18 @@ fi
 echo -e "${COLOR_YELLOW}Building iceoryx-ffi and C/C++ bindings as preparation for clang-tidy${COLOR_OFF}"
 export CXX=clang++
 export CC=clang
-cmake -S . -B target/clang-tidy-scan -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON
-cmake --build target/clang-tidy-scan
+
+rm -rf target/iceoryx
+${WORKSPACE}/internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+cargo build --package iceoryx2-ffi
+cmake -S . -B target/clang-tidy-scan \
+    -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
+    -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DBUILD_CXX_BINDING=ON \
+    -DBUILD_EXAMPLES=ON \
+    -DBUILD_TESTING=ON
+cmake --build target/clang-tidy-scan -j$NUM_JOBS
 
 echo "Using clang-tidy version: $(clang-tidy --version | sed -n "s/.*version \([0-9.]*\)/\1/p" )"
 
@@ -186,7 +203,7 @@ function scan() {
     fi
 
     echo -e "${COLOR_GREEN}Processing files ...${COLOR_OFF}"
-    MAX_CONCURRENT_EXECUTIONS=$(nproc)
+    MAX_CONCURRENT_EXECUTIONS=$NUM_JOBS
     CURRENT_CONCURRENT_EXECUTIONS=0
     echo "Concurrency set to '${MAX_CONCURRENT_EXECUTIONS}'"
     FILE_COUNTER=1
