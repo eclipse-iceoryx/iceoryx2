@@ -229,6 +229,7 @@ mod service_discovery_service {
             max_subscribers: 1,
             send_notifications: false,
             max_listeners: 1,
+            initial_max_slice_len: NUM_SERVICES,
             ..Default::default()
         };
 
