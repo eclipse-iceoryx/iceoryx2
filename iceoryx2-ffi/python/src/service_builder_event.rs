@@ -13,7 +13,14 @@
 use iceoryx2::prelude::{ipc, local};
 use pyo3::prelude::*;
 
-use crate::{duration::Duration, event_id::EventId, port_factory_event::PortFactoryEvent};
+use crate::{
+    attribute_specifier::AttributeSpecifier,
+    attribute_verifier::AttributeVerifier,
+    duration::Duration,
+    error::{EventCreateError, EventOpenError, EventOpenOrCreateError},
+    event_id::EventId,
+    port_factory_event::{PortFactoryEvent, PortFactoryEventType},
+};
 
 pub(crate) enum ServiceBuilderEventType {
     Ipc(iceoryx2::service::builder::event::Builder<ipc::Service>),
@@ -206,14 +213,122 @@ impl ServiceBuilderEvent {
     }
 
     pub fn open_or_create(&self) -> PyResult<PortFactoryEvent> {
-        todo!()
+        match &self.0 {
+            ServiceBuilderEventType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                    this.open_or_create()
+                        .map_err(|e| EventOpenOrCreateError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+            ServiceBuilderEventType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                    this.open_or_create()
+                        .map_err(|e| EventOpenOrCreateError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+        }
+    }
+
+    pub fn open_or_create_with_attributes(
+        &self,
+        verifier: &AttributeVerifier,
+    ) -> PyResult<PortFactoryEvent> {
+        match &self.0 {
+            ServiceBuilderEventType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                    this.open_or_create_with_attributes(&verifier.0)
+                        .map_err(|e| EventOpenOrCreateError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+            ServiceBuilderEventType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                    this.open_or_create_with_attributes(&verifier.0)
+                        .map_err(|e| EventOpenOrCreateError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+        }
     }
 
     pub fn open(&self) -> PyResult<PortFactoryEvent> {
-        todo!()
+        match &self.0 {
+            ServiceBuilderEventType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                    this.open()
+                        .map_err(|e| EventOpenError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+            ServiceBuilderEventType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                    this.open()
+                        .map_err(|e| EventOpenError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+        }
+    }
+
+    pub fn open_with_attributes(&self, verifier: &AttributeVerifier) -> PyResult<PortFactoryEvent> {
+        match &self.0 {
+            ServiceBuilderEventType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                    this.open_with_attributes(&verifier.0)
+                        .map_err(|e| EventOpenError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+            ServiceBuilderEventType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                    this.open_with_attributes(&verifier.0)
+                        .map_err(|e| EventOpenError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+        }
     }
 
     pub fn create(&self) -> PyResult<PortFactoryEvent> {
-        todo!()
+        match &self.0 {
+            ServiceBuilderEventType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                    this.create()
+                        .map_err(|e| EventCreateError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+            ServiceBuilderEventType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                    this.create()
+                        .map_err(|e| EventCreateError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+        }
+    }
+
+    pub fn create_with_attributes(
+        &self,
+        attributes: &AttributeSpecifier,
+    ) -> PyResult<PortFactoryEvent> {
+        match &self.0 {
+            ServiceBuilderEventType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                    this.create_with_attributes(&attributes.0)
+                        .map_err(|e| EventCreateError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+            ServiceBuilderEventType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                    this.create_with_attributes(&attributes.0)
+                        .map_err(|e| EventCreateError::new_err(format!("{:?}", e)))?,
+                )))
+            }
+        }
     }
 }

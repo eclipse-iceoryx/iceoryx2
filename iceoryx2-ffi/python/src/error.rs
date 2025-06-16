@@ -54,3 +54,24 @@ create_exception!(
     PyException,
     "Errors caused when waiting on a node."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    EventOpenError,
+    PyException,
+    "Errors caused when opening an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    EventCreateError,
+    PyException,
+    "Errors caused when creating an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    EventOpenOrCreateError,
+    PyException,
+    "Errors caused when open or creating an event service."
+);

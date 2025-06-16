@@ -84,6 +84,18 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
         py.get_type::<crate::error::ConfigCreationError>(),
     )?;
     m.add(
+        "EventOpenError",
+        py.get_type::<crate::error::EventOpenError>(),
+    )?;
+    m.add(
+        "EventCreateError",
+        py.get_type::<crate::error::EventCreateError>(),
+    )?;
+    m.add(
+        "EventOpenOrCreateError",
+        py.get_type::<crate::error::EventOpenOrCreateError>(),
+    )?;
+    m.add(
         "NodeCreationFailure",
         py.get_type::<crate::error::NodeCreationFailure>(),
     )?;
