@@ -265,6 +265,12 @@ pub struct Config {
 
     /// The maximum number of listeners to the service permitted.
     pub max_listeners: usize,
+
+    /// Whether to enable the server for handling requests.
+    pub enable_server: bool,
+
+    /// The initial maximum slice length for the server.
+    pub initial_max_slice_len: usize,
 }
 
 impl Default for Config {
@@ -280,6 +286,8 @@ impl Default for Config {
             max_borrrowed_samples: defaults.publish_subscribe.subscriber_max_borrowed_samples,
             send_notifications: true,
             max_listeners: defaults.event.max_listeners,
+            enable_server: true,
+            initial_max_slice_len: 10,
         }
     }
 }
@@ -356,16 +364,24 @@ impl<S: ServiceType> Service<S> {
         if discovery_config.sync_on_initialization {
             tracker.sync(iceoryx_config)?;
         }
-        let server = Some(
-            node.service_builder(service_name())
+
+        let mut server = None;
+        if discovery_config.enable_server {
+            let request_response = node
+                .service_builder(service_name())
                 .request_response::<(), [StaticConfig]>()
                 .open_or_create()
-                .map_err(|_| CreationError::ServiceCreationFailure)?
-                .server_builder()
-                .allocation_strategy(AllocationStrategy::PowerOfTwo)
-                .create()
-                .map_err(|_| CreationError::ServiceCreationFailure)?,
-        );
+                .map_err(|_| CreationError::ServiceCreationFailure)?;
+
+            server = Some(
+                request_response
+                    .server_builder()
+                    .initial_max_slice_len(discovery_config.initial_max_slice_len)
+                    .allocation_strategy(AllocationStrategy::PowerOfTwo)
+                    .create()
+                    .map_err(|_| CreationError::ServiceCreationFailure)?,
+            );
+        }
 
         Ok(Service::<S> {
             discovery_config: discovery_config.clone(),
