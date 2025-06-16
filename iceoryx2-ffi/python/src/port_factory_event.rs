@@ -10,8 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc, local};
+use iceoryx2::prelude::{ipc, local, CallbackProgression, PortFactory};
 use pyo3::prelude::*;
+
+use crate::{
+    attribute_set::AttributeSet,
+    error::NodeListFailure,
+    node_id::NodeId,
+    node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
+    service_id::ServiceId,
+    service_name::ServiceName,
+};
 
 pub(crate) enum PortFactoryEventType {
     Ipc(iceoryx2::service::port_factory::event::PortFactory<ipc::Service>),
@@ -19,4 +28,88 @@ pub(crate) enum PortFactoryEventType {
 }
 
 #[pyclass]
+/// The factory for
+/// `MessagingPattern::Event`. It can
+/// acquire dynamic and static service informations and create `Notifier`
+/// or `Listener` ports.
 pub struct PortFactoryEvent(pub(crate) PortFactoryEventType);
+
+#[pymethods]
+impl PortFactoryEvent {
+    #[getter]
+    /// Returns the `ServiceName` of the service
+    pub fn name(&self) -> ServiceName {
+        match &self.0 {
+            PortFactoryEventType::Ipc(v) => ServiceName(v.name().clone()),
+            PortFactoryEventType::Local(v) => ServiceName(v.name().clone()),
+        }
+    }
+
+    #[getter]
+    /// Returns the `ServiceId` of the `Service`
+    pub fn service_id(&self) -> ServiceId {
+        match &self.0 {
+            PortFactoryEventType::Ipc(v) => ServiceId(v.service_id().clone()),
+            PortFactoryEventType::Local(v) => ServiceId(v.service_id().clone()),
+        }
+    }
+
+    #[getter]
+    /// Returns the `AttributeSet` defined in the `Service`
+    pub fn attributes(&self) -> AttributeSet {
+        match &self.0 {
+            PortFactoryEventType::Ipc(v) => AttributeSet(v.attributes().clone()),
+            PortFactoryEventType::Local(v) => AttributeSet(v.attributes().clone()),
+        }
+    }
+
+    #[getter]
+    /// Returns a list of all `NodeState` of all the `Node`s which have opened the `Service`.
+    pub fn nodes(&self) -> PyResult<Vec<NodeState>> {
+        match &self.0 {
+            PortFactoryEventType::Ipc(v) => {
+                let mut ret_val = vec![];
+                v.nodes(|state| {
+                    match state {
+                        iceoryx2::prelude::NodeState::Alive(n) => {
+                            ret_val.push(NodeState::Alive(AliveNodeView(AliveNodeViewType::Ipc(n))))
+                        }
+                        iceoryx2::prelude::NodeState::Dead(n) => {
+                            ret_val.push(NodeState::Dead(DeadNodeView(DeadNodeViewType::Ipc(n))))
+                        }
+                        iceoryx2::prelude::NodeState::Inaccessible(n) => {
+                            ret_val.push(NodeState::Inaccessible(NodeId(n)))
+                        }
+                        iceoryx2::prelude::NodeState::Undefined(n) => {
+                            ret_val.push(NodeState::Undefined(NodeId(n)))
+                        }
+                    }
+                    CallbackProgression::Continue
+                })
+                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?;
+                Ok(ret_val)
+            }
+            PortFactoryEventType::Local(v) => {
+                let mut ret_val = vec![];
+                v.nodes(|state| {
+                    match state {
+                        iceoryx2::prelude::NodeState::Alive(n) => ret_val
+                            .push(NodeState::Alive(AliveNodeView(AliveNodeViewType::Local(n)))),
+                        iceoryx2::prelude::NodeState::Dead(n) => {
+                            ret_val.push(NodeState::Dead(DeadNodeView(DeadNodeViewType::Local(n))))
+                        }
+                        iceoryx2::prelude::NodeState::Inaccessible(n) => {
+                            ret_val.push(NodeState::Inaccessible(NodeId(n)))
+                        }
+                        iceoryx2::prelude::NodeState::Undefined(n) => {
+                            ret_val.push(NodeState::Undefined(NodeId(n)))
+                        }
+                    }
+                    CallbackProgression::Continue
+                })
+                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?;
+                Ok(ret_val)
+            }
+        }
+    }
+}
