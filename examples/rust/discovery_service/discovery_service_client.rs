@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let client = service.client_builder().create()?;
 
-    let pending_response = client.loan_uninit()?.write_payload(()).send()?;
+    let pending_response = client.send_copy(())?;
 
     // IMPORTANT: We need to wait for the request to be sent before we can receive responses.
     while !node.wait(CYCLE_TIME).is_ok() {}
