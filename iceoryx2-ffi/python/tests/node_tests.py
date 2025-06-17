@@ -10,60 +10,69 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import iceoryx2_ffi_python as iceoryx2
+import iceoryx2_ffi_python as iox2
 import pytest
 
 
-def test_creating_node_works() -> None:
-    sut = iceoryx2.NodeBuilder.new().create(iceoryx2.ServiceType.Ipc)
+service_types = [
+    iox2.ServiceType.Ipc,
+    iox2.ServiceType.Local
+]
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_creating_node_works(service_type) -> None:
+    sut = iox2.NodeBuilder.new().create(service_type)
     assert sut.name.as_str() == ""
 
 
-def test_creating_node_with_properties_works() -> None:
-    node_name = iceoryx2.NodeName.new("all glory to the hypnotoad")
-    signal_handling_mode = iceoryx2.SignalHandlingMode.Disabled
-    config = iceoryx2.config.default()
-    config.global_cfg.prefix = iceoryx2.FileName.new("dont touch my spider")
+@pytest.mark.parametrize("service_type", service_types)
+def test_creating_node_with_properties_works(service_type) -> None:
+    node_name = iox2.NodeName.new("all glory to the hypnotoad")
+    signal_handling_mode = iox2.SignalHandlingMode.Disabled
+    config = iox2.config.default()
+    config.global_cfg.prefix = iox2.FileName.new("dont touch my spider")
 
     sut = (
-        iceoryx2.NodeBuilder.new()
+        iox2.NodeBuilder.new()
         .name(node_name)
         .signal_handling_mode(signal_handling_mode)
         .config(config)
-        .create(iceoryx2.ServiceType.Ipc)
+        .create(service_type)
     )
     assert sut.name == node_name
     assert sut.signal_handling_mode == signal_handling_mode
     assert sut.config == config
 
 
-def test_cleanup_dead_nodes_can_be_called() -> None:
+@pytest.mark.parametrize("service_type", service_types)
+def test_cleanup_dead_nodes_can_be_called(service_type) -> None:
     try:
-        iceoryx2.Node.cleanup_dead_nodes(
-            iceoryx2.ServiceType.Local, iceoryx2.config.default()
+        iox2.Node.cleanup_dead_nodes(
+            service_type, iox2.config.default()
         )
-    except iceoryx2.NodeCleanupFailure:
+    except iox2.NodeCleanupFailure:
         raise pytest.fail("DID RAISE EXCEPTION")
 
 
-def test_created_nodes_can_be_listed() -> None:
+@pytest.mark.parametrize("service_type", service_types)
+def test_created_nodes_can_be_listed(service_type) -> None:
     sut_1 = (
-        iceoryx2.NodeBuilder.new()
-        .name(iceoryx2.NodeName.new("behind you, there is"))
-        .create(iceoryx2.ServiceType.Ipc)
+        iox2.NodeBuilder.new()
+        .name(iox2.NodeName.new("behind you, there is"))
+        .create(service_type)
     )
     sut_2 = (
-        iceoryx2.NodeBuilder.new()
-        .name(iceoryx2.NodeName.new("a 3 headed monkey"))
-        .create(iceoryx2.ServiceType.Ipc)
+        iox2.NodeBuilder.new()
+        .name(iox2.NodeName.new("a 3 headed monkey"))
+        .create(service_type)
     )
 
-    node_list = iceoryx2.Node.list(iceoryx2.ServiceType.Ipc, iceoryx2.config.default())
+    node_list = iox2.Node.list(service_type, iox2.config.default())
     assert len(node_list) == 2
     for node in node_list:
         match node:
             case node.Alive():
-                assert isinstance(node, iceoryx2.NodeState.Alive)
+                assert isinstance(node, iox2.NodeState.Alive)
                 assert (node[0].id == sut_1.id) or (node[0].id == sut_2.id)
                 assert (node[0].details.name == sut_1.name) or (
                     node[0].details.name == sut_2.name
@@ -77,9 +86,10 @@ def test_created_nodes_can_be_listed() -> None:
                 assert False
 
 
-def test_wait_can_be_called() -> None:
-    sut = iceoryx2.NodeBuilder.new().create(iceoryx2.ServiceType.Ipc)
+@pytest.mark.parametrize("service_type", service_types)
+def test_wait_can_be_called(service_type) -> None:
+    sut = iox2.NodeBuilder.new().create(service_type)
     try:
-        sut.wait(iceoryx2.Duration.from_millis(1))
-    except iceoryx2.NodeWaitFailure:
+        sut.wait(iox2.Duration.from_millis(1))
+    except iox2.NodeWaitFailure:
         raise pytest.fail("DID RAISE EXCEPTION")
