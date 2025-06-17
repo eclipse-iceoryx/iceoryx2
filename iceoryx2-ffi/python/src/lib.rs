@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod alignment;
 pub mod attribute;
 pub mod attribute_key;
 pub mod attribute_set;
@@ -53,6 +54,7 @@ use pyo3::wrap_pymodule;
 #[pymodule]
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
+    m.add_class::<crate::alignment::Alignment>()?;
     m.add_class::<crate::attribute::Attribute>()?;
     m.add_class::<crate::attribute_set::AttributeSet>()?;
     m.add_class::<crate::attribute_verifier::AttributeVerifier>()?;
@@ -87,6 +89,10 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::duration::Duration>()?;
     m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
     m.add_class::<crate::service_type::ServiceType>()?;
+    m.add(
+        "InvalidAlignmentValue",
+        py.get_type::<crate::error::InvalidAlignmentValue>(),
+    )?;
     m.add(
         "ConfigCreationError",
         py.get_type::<crate::error::ConfigCreationError>(),

@@ -18,14 +18,14 @@ pub(crate) enum PortFactoryPublishSubscribeType {
     Ipc(
         iceoryx2::service::port_factory::publish_subscribe::PortFactory<
             ipc::Service,
-            CustomPayloadMarker,
+            [CustomPayloadMarker],
             CustomHeaderMarker,
         >,
     ),
     Local(
         iceoryx2::service::port_factory::publish_subscribe::PortFactory<
             local::Service,
-            CustomPayloadMarker,
+            [CustomPayloadMarker],
             CustomHeaderMarker,
         >,
     ),
