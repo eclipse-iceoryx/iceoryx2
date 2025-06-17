@@ -57,7 +57,7 @@ def test_existing_service_cannot_be_created(service_type) -> None:
         sut = node.service_builder(service_name).event().create()
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_existing_service_not_be_opened(service_type) -> None:
+def test_existing_service_can_be_opened(service_type) -> None:
     config = iox2.testing.generate_isolated_config()
     node = (
         iox2.NodeBuilder.new()
@@ -79,4 +79,63 @@ def test_existing_service_not_be_opened(service_type) -> None:
         )
         assert sut.name == service_name
     except iox2.EventOpenError:
+        raise pytest.fail("DID RAISE EXCEPTION")
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_non_existing_service_cannot_be_opened(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    with pytest.raises(iox2.EventOpenError):
+        node.service_builder(service_name).event().open()
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_non_existing_service_is_created_with_open_or_create(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    try:
+        sut = (
+            node.service_builder(service_name)
+                .event()
+                .open_or_create()
+        )
+        assert sut.name == service_name
+    except iox2.EventOpenOrCreateError:
+        raise pytest.fail("DID RAISE EXCEPTION")
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_existing_service_is_opened_with_open_or_create(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    existing_service = (
+        node.service_builder(service_name)
+            .event()
+            .create()
+    )
+
+    try:
+        sut = (
+            node.service_builder(service_name)
+                .event()
+                .open_or_create()
+        )
+        assert sut.name == service_name
+    except iox2.EventOpenOrCreateError:
         raise pytest.fail("DID RAISE EXCEPTION")
