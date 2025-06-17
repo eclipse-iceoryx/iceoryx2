@@ -27,10 +27,9 @@ def test_creating_node_works(service_type) -> None:
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_creating_node_with_properties_works(service_type) -> None:
-    node_name = iox2.NodeName.new("all glory to the hypnotoad")
+    node_name = iox2.testing.generate_node_name()
     signal_handling_mode = iox2.SignalHandlingMode.Disabled
-    config = iox2.config.default()
-    config.global_cfg.prefix = iox2.FileName.new("dont touch my spider")
+    config = iox2.testing.generate_isolated_config()
 
     sut = (
         iox2.NodeBuilder.new()
@@ -48,7 +47,7 @@ def test_creating_node_with_properties_works(service_type) -> None:
 def test_cleanup_dead_nodes_can_be_called(service_type) -> None:
     try:
         iox2.Node.cleanup_dead_nodes(
-            service_type, iox2.config.default()
+            service_type, iox2.testing.generate_isolated_config()
         )
     except iox2.NodeCleanupFailure:
         raise pytest.fail("DID RAISE EXCEPTION")
@@ -56,18 +55,21 @@ def test_cleanup_dead_nodes_can_be_called(service_type) -> None:
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_created_nodes_can_be_listed(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
     sut_1 = (
         iox2.NodeBuilder.new()
         .name(iox2.NodeName.new("behind you, there is"))
+        .config(config)
         .create(service_type)
     )
     sut_2 = (
         iox2.NodeBuilder.new()
         .name(iox2.NodeName.new("a 3 headed monkey"))
+        .config(config)
         .create(service_type)
     )
 
-    node_list = iox2.Node.list(service_type, iox2.config.default())
+    node_list = iox2.Node.list(service_type, config)
     assert len(node_list) == 2
     for node in node_list:
         match node:
@@ -88,7 +90,8 @@ def test_created_nodes_can_be_listed(service_type) -> None:
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_wait_can_be_called(service_type) -> None:
-    sut = iox2.NodeBuilder.new().create(service_type)
+    config = iox2.testing.generate_isolated_config()
+    sut = iox2.NodeBuilder.new().config(config).create(service_type)
     try:
         sut.wait(iox2.Duration.from_millis(1))
     except iox2.NodeWaitFailure:

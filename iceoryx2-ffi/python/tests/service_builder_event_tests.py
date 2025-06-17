@@ -20,12 +20,14 @@ service_types = [
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_non_existing_service_can_be_created(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
     node = (
         iox2.NodeBuilder.new()
+        .config(config)
         .create(service_type)
     )
     try:
-        service_name = iox2.ServiceName.new("dum/didel/dum")
+        service_name = iox2.testing.generate_service_name()
         sut = (
             node.service_builder(service_name)
                 .event()
@@ -37,12 +39,14 @@ def test_non_existing_service_can_be_created(service_type) -> None:
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_existing_service_cannot_be_created(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
     node = (
         iox2.NodeBuilder.new()
+        .config(config)
         .create(service_type)
     )
 
-    service_name = iox2.ServiceName.new("its.not.easy.being.green - hypnotoad")
+    service_name = iox2.testing.generate_service_name()
     existing_service = (
         node.service_builder(service_name)
             .event()
@@ -54,12 +58,14 @@ def test_existing_service_cannot_be_created(service_type) -> None:
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_existing_service_not_be_opened(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
     node = (
         iox2.NodeBuilder.new()
+        .config(config)
         .create(service_type)
     )
 
-    service_name = iox2.ServiceName.new("its.not.easy.being.green - hypnotoad")
+    service_name = iox2.testing.generate_service_name()
     existing_service = (
         node.service_builder(service_name)
             .event()
@@ -74,6 +80,3 @@ def test_existing_service_not_be_opened(service_type) -> None:
         assert sut.name == service_name
     except iox2.EventOpenError:
         raise pytest.fail("DID RAISE EXCEPTION")
-
-
-   
