@@ -42,6 +42,7 @@ pub mod service_id;
 pub mod service_name;
 pub mod service_type;
 pub mod signal_handling_mode;
+pub mod static_config_event;
 pub mod type_detail;
 pub mod type_name;
 pub mod type_variant;
@@ -61,34 +62,36 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::attribute_specifier::AttributeSpecifier>()?;
     m.add_class::<crate::attribute_key::AttributeKey>()?;
     m.add_class::<crate::attribute_value::AttributeValue>()?;
-    m.add_class::<crate::node_id::NodeId>()?;
+    m.add_class::<crate::duration::Duration>()?;
+    m.add_class::<crate::event_id::EventId>()?;
+    m.add_class::<crate::file_name::FileName>()?;
+    m.add_class::<crate::file_path::FilePath>()?;
     m.add_class::<crate::node::Node>()?;
+    m.add_class::<crate::node_builder::NodeBuilder>()?;
+    m.add_class::<crate::node_id::NodeId>()?;
+    m.add_class::<crate::node_name::NodeName>()?;
     m.add_class::<crate::node_state::NodeState>()?;
     m.add_class::<crate::node_state::AliveNodeView>()?;
     m.add_class::<crate::node_state::DeadNodeView>()?;
     m.add_class::<crate::node_state::NodeDetails>()?;
-    m.add_class::<crate::node_name::NodeName>()?;
-    m.add_class::<crate::node_builder::NodeBuilder>()?;
+    m.add_class::<crate::path::Path>()?;
+    m.add_class::<crate::port_factory_event::PortFactoryEvent>()?;
+    m.add_class::<crate::port_factory_publish_subscribe::PortFactoryPublishSubscribe>()?;
+    m.add_class::<crate::port_factory_request_response::PortFactoryRequestResponse>()?;
     m.add_class::<crate::service_builder::ServiceBuilder>()?;
     m.add_class::<crate::service_builder_event::ServiceBuilderEvent>()?;
     m.add_class::<crate::service_builder_publish_subscribe::ServiceBuilderPublishSubscribe>()?;
     m.add_class::<crate::service_builder_request_response::ServiceBuilderRequestResponse>()?;
     m.add_class::<crate::service_id::ServiceId>()?;
-    m.add_class::<crate::event_id::EventId>()?;
-    m.add_class::<crate::port_factory_event::PortFactoryEvent>()?;
-    m.add_class::<crate::port_factory_publish_subscribe::PortFactoryPublishSubscribe>()?;
-    m.add_class::<crate::port_factory_request_response::PortFactoryRequestResponse>()?;
     m.add_class::<crate::service_name::ServiceName>()?;
-    m.add_class::<crate::file_name::FileName>()?;
-    m.add_class::<crate::file_path::FilePath>()?;
+    m.add_class::<crate::service_type::ServiceType>()?;
     m.add_class::<crate::signal_handling_mode::SignalHandlingMode>()?;
-    m.add_class::<crate::path::Path>()?;
+    m.add_class::<crate::static_config_event::StaticConfigEvent>()?;
     m.add_class::<crate::type_detail::TypeDetail>()?;
     m.add_class::<crate::type_variant::TypeVariant>()?;
     m.add_class::<crate::type_name::TypeName>()?;
-    m.add_class::<crate::duration::Duration>()?;
     m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
-    m.add_class::<crate::service_type::ServiceType>()?;
+
     m.add(
         "InvalidAlignmentValue",
         py.get_type::<crate::error::InvalidAlignmentValue>(),
