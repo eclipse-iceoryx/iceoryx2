@@ -20,6 +20,7 @@ use crate::{
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     service_id::ServiceId,
     service_name::ServiceName,
+    static_config_event::StaticConfigEvent,
 };
 
 pub(crate) enum PortFactoryEventType {
@@ -60,6 +61,16 @@ impl PortFactoryEvent {
         match &self.0 {
             PortFactoryEventType::Ipc(v) => AttributeSet(v.attributes().clone()),
             PortFactoryEventType::Local(v) => AttributeSet(v.attributes().clone()),
+        }
+    }
+
+    #[getter]
+    /// Returns the StaticConfig of the `Service`.
+    /// Contains all settings that never change during the lifetime of the service.
+    pub fn static_config(&self) -> StaticConfigEvent {
+        match &self.0 {
+            PortFactoryEventType::Ipc(v) => StaticConfigEvent(v.static_config().clone()),
+            PortFactoryEventType::Local(v) => StaticConfigEvent(v.static_config().clone()),
         }
     }
 

@@ -22,6 +22,7 @@ use crate::node_state::{
 };
 use crate::service_id::ServiceId;
 use crate::service_name::ServiceName;
+use crate::static_config_request_response::StaticConfigRequestResponse;
 
 pub(crate) enum PortFactoryRequestResponseType {
     Ipc(
@@ -73,6 +74,20 @@ impl PortFactoryRequestResponse {
         match &self.0 {
             PortFactoryRequestResponseType::Ipc(v) => AttributeSet(v.attributes().clone()),
             PortFactoryRequestResponseType::Local(v) => AttributeSet(v.attributes().clone()),
+        }
+    }
+
+    #[getter]
+    /// Returns the StaticConfig of the `Service`.
+    /// Contains all settings that never change during the lifetime of the service.
+    pub fn static_config(&self) -> StaticConfigRequestResponse {
+        match &self.0 {
+            PortFactoryRequestResponseType::Ipc(v) => {
+                StaticConfigRequestResponse(v.static_config().clone())
+            }
+            PortFactoryRequestResponseType::Local(v) => {
+                StaticConfigRequestResponse(v.static_config().clone())
+            }
         }
     }
 

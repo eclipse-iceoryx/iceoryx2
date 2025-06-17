@@ -236,3 +236,77 @@ def test_open_service_with_attributes_work(service_type) -> None:
 
     assert sut_create.attributes == attribute_spec.attributes
     assert sut_create.attributes == sut_open.attributes
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_node_listing_works(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    sut = (
+        node.service_builder(service_name)
+            .event()
+            .create()
+    )
+
+    nodes = sut.nodes
+
+    assert len(nodes) == 1
+    for n in nodes:
+        match n:
+            case n.Alive():
+                assert n[0].id == node.id
+            case node.Dead():
+                assert False
+            case node.Inaccessible():
+                assert False
+            case node.Undefined():
+                assert False
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_service_builder_configuration_works(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    deadline = iox2.Duration.from_millis(123)
+    max_nodes = 456
+    event_id_max = 78
+    max_notifiers = 9
+    max_listeners = 10
+    notifier_created = iox2.EventId.new(321)
+    notifier_dead = iox2.EventId.new(654)
+    notifier_dropped = iox2.EventId.new(987)
+    sut = (
+        node.service_builder(service_name)
+            .event()
+            .deadline(deadline)
+            .max_nodes(max_nodes)
+            .event_id_max_value(event_id_max)
+            .max_notifiers(max_notifiers)
+            .max_listeners(max_listeners)
+            .notifier_created_event(notifier_created)
+            .notifier_dropped_event(notifier_dropped)
+            .notifier_dead_event(notifier_dead)
+            .create()
+    )
+
+    static_config = sut.static_config
+    assert static_config.deadline == deadline
+    assert static_config.max_nodes == max_nodes
+    assert static_config.max_listeners == max_listeners
+    assert static_config.max_notifiers == max_notifiers
+    assert static_config.event_id_max_value == event_id_max
+    assert static_config.notifier_created_event == notifier_created
+    assert static_config.notifier_dead_event == notifier_dead
+    assert static_config.notifier_dropped_event == notifier_dropped
+
+

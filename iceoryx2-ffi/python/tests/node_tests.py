@@ -79,7 +79,6 @@ def test_created_nodes_can_be_listed(service_type) -> None:
                 assert (node[0].details.name == sut_1.name) or (
                     node[0].details.name == sut_2.name
                 )
-                assert True
             case node.Dead():
                 assert False
             case node.Inaccessible():

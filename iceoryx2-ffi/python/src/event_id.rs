@@ -12,7 +12,8 @@
 
 use pyo3::prelude::*;
 
-#[pyclass]
+#[pyclass(eq)]
+#[derive(PartialEq)]
 pub struct EventId(pub(crate) iceoryx2::prelude::EventId);
 
 #[pymethods]

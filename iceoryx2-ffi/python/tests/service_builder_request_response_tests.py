@@ -236,3 +236,35 @@ def test_open_service_with_attributes_work(service_type) -> None:
 
     assert sut_create.attributes == attribute_spec.attributes
     assert sut_create.attributes == sut_open.attributes
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_node_listing_works(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    sut = (
+        node.service_builder(service_name)
+            .request_response()
+            .create()
+    )
+
+    nodes = sut.nodes
+
+    assert len(nodes) == 1
+    for n in nodes:
+        match n:
+            case n.Alive():
+                assert n[0].id == node.id
+            case node.Dead():
+                assert False
+            case node.Inaccessible():
+                assert False
+            case node.Undefined():
+                assert False
+
+

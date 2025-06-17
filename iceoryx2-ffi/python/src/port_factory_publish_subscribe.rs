@@ -22,6 +22,7 @@ use crate::node_state::{
 };
 use crate::service_id::ServiceId;
 use crate::service_name::ServiceName;
+use crate::static_config_publish_subscribe::StaticConfigPublishSubscribe;
 
 pub(crate) enum PortFactoryPublishSubscribeType {
     Ipc(
@@ -69,6 +70,20 @@ impl PortFactoryPublishSubscribe {
         match &self.0 {
             PortFactoryPublishSubscribeType::Ipc(v) => AttributeSet(v.attributes().clone()),
             PortFactoryPublishSubscribeType::Local(v) => AttributeSet(v.attributes().clone()),
+        }
+    }
+
+    #[getter]
+    /// Returns the StaticConfig of the `Service`.
+    /// Contains all settings that never change during the lifetime of the service.
+    pub fn static_config(&self) -> StaticConfigPublishSubscribe {
+        match &self.0 {
+            PortFactoryPublishSubscribeType::Ipc(v) => {
+                StaticConfigPublishSubscribe(v.static_config().clone())
+            }
+            PortFactoryPublishSubscribeType::Local(v) => {
+                StaticConfigPublishSubscribe(v.static_config().clone())
+            }
         }
     }
 
