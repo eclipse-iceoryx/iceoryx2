@@ -27,48 +27,56 @@
 //! println!("The uid/gid of root/root is: {}/{}", ownership.uid(), ownership.gid());
 //! ```
 
+use crate::group::Gid;
+use crate::user::Uid;
+
 /// Defines the owner in a unix environment consisting of user and group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Ownership {
-    uid: u32,
-    gid: u32,
+    uid: Uid,
+    gid: Gid,
 }
 
 /// The builder to the [`Ownership`] struct.
 /// One can use [`crate::user::User`] and [`crate::group::Group`] to acquire the ids quickly from
 /// the names.
-pub struct OwnershipBuilder {
-    ownership: Ownership,
-}
+pub struct OwnershipBuilder {}
 
 impl Default for OwnershipBuilder {
     fn default() -> Self {
-        OwnershipBuilder {
-            ownership: Ownership {
-                uid: u32::MAX,
-                gid: u32::MAX,
-            },
+        Self::new()
+    }
+}
+
+pub struct OwnershipBuilderWithUid {
+    uid: Uid,
+}
+
+pub struct OwnershipBuilderWithUidAndGid {
+    ownership: Ownership,
+}
+
+impl OwnershipBuilder {
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    /// Sets the user id
+    pub fn uid(self, uid: Uid) -> OwnershipBuilderWithUid {
+        OwnershipBuilderWithUid { uid }
+    }
+}
+
+impl OwnershipBuilderWithUid {
+    /// Sets the group id
+    pub fn gid(self, gid: Gid) -> OwnershipBuilderWithUidAndGid {
+        OwnershipBuilderWithUidAndGid {
+            ownership: Ownership { uid: self.uid, gid },
         }
     }
 }
 
-impl OwnershipBuilder {
-    pub fn new() -> OwnershipBuilder {
-        Self::default()
-    }
-
-    /// Sets the user id
-    pub fn uid(mut self, uid: u32) -> Self {
-        self.ownership.uid = uid;
-        self
-    }
-
-    /// Sets the group id
-    pub fn gid(mut self, gid: u32) -> Self {
-        self.ownership.gid = gid;
-        self
-    }
-
+impl OwnershipBuilderWithUidAndGid {
     pub fn create(self) -> Ownership {
         self.ownership
     }
@@ -76,12 +84,12 @@ impl OwnershipBuilder {
 
 impl Ownership {
     /// returns the user id
-    pub fn uid(&self) -> u32 {
+    pub fn uid(&self) -> Uid {
         self.uid
     }
 
     /// returns the group id
-    pub fn gid(&self) -> u32 {
+    pub fn gid(&self) -> Gid {
         self.gid
     }
 }

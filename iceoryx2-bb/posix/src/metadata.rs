@@ -17,7 +17,9 @@
 
 use crate::clock::{ClockType, Time, TimeBuilder};
 use crate::file_type::FileType;
+use crate::group::Gid;
 use crate::permission::{Permission, PermissionExt};
+use crate::user::Uid;
 use iceoryx2_pal_posix::*;
 
 /// Contains all informations like type, credentials, size, access times about every
@@ -27,8 +29,8 @@ use iceoryx2_pal_posix::*;
 #[derive(Debug)]
 pub struct Metadata {
     file_type: FileType,
-    uid: u32,
-    gid: u32,
+    uid: Uid,
+    gid: Gid,
     size: u64,
     block_size: u64,
     permission: Permission,
@@ -75,12 +77,12 @@ impl Metadata {
     }
 
     /// returns the user id (uid) of the files owner
-    pub fn uid(&self) -> u32 {
+    pub fn uid(&self) -> Uid {
         self.uid
     }
 
     /// returns the group id (gid) of the files owner
-    pub fn gid(&self) -> u32 {
+    pub fn gid(&self) -> Gid {
         self.gid
     }
 
@@ -103,8 +105,8 @@ impl Metadata {
                 .create(),
             permission: attr.st_mode.as_permission(),
             file_type: FileType::from_mode_t(attr.st_mode),
-            uid: attr.st_uid,
-            gid: attr.st_gid,
+            uid: Uid::new_from_native(attr.st_uid),
+            gid: Gid::new_from_native(attr.st_gid),
         }
     }
 }

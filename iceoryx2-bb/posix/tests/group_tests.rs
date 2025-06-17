@@ -31,10 +31,10 @@ fn group_works() {
         unreachable!("Neither group 'root' not group 'wheel' is found!")
     };
 
-    let group_from_gid = Group::from_gid(0).unwrap();
+    let group_from_gid = Group::from_gid(Gid::new_from_native(0)).unwrap();
 
     assert_that!(group_from_name.gid(), eq group_from_gid.gid());
-    assert_that!(group_from_name.gid(), eq 0);
+    assert_that!(group_from_name.gid().value(), eq 0);
 
     let group_details = group_from_name.details().unwrap();
     let group_from_gid_details = group_from_gid.details().unwrap();
@@ -58,8 +58,8 @@ fn group_as_works() {
         .as_group()
         .unwrap();
 
-    assert_that!(root_2.gid(), eq 0);
-    assert_that!(root_3.gid(), eq 0);
+    assert_that!(root_2.gid().value(), eq 0);
+    assert_that!(root_3.gid().value(), eq 0);
 
     assert_that!(root_1.details().unwrap().members().len(), ge 0);
 }

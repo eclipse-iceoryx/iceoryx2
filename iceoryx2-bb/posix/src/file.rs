@@ -41,10 +41,11 @@
 //! ```
 
 use crate::file_descriptor::{FileDescriptor, FileDescriptorBased, FileDescriptorManagement};
+use crate::group::Gid;
 use crate::group::GroupError;
 use crate::handle_errno;
 use crate::ownership::OwnershipBuilder;
-use crate::user::UserError;
+use crate::user::{Uid, UserError};
 use core::fmt::Debug;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::enum_gen;
@@ -267,8 +268,8 @@ pub struct FileBuilder {
     access_mode: AccessMode,
     permission: Permission,
     has_ownership: bool,
-    owner: Option<u32>,
-    group: Option<u32>,
+    owner: Option<Uid>,
+    group: Option<Gid>,
     truncate_size: Option<usize>,
     creation_mode: Option<CreationMode>,
 }
@@ -356,7 +357,7 @@ impl FileCreationBuilder {
     ///                              .owner("testuser1".as_user().expect("user invalid").uid())
     ///                              .create().expect("failed to create file");
     /// ```
-    pub fn owner(mut self, value: u32) -> Self {
+    pub fn owner(mut self, value: Uid) -> Self {
         self.config.owner = Some(value);
         self
     }
@@ -374,10 +375,10 @@ impl FileCreationBuilder {
     /// let file_name = FilePath::new(b"fileName.md").unwrap();
     /// let file = FileBuilder::new(&file_name)
     ///                              .creation_mode(CreationMode::CreateExclusive)
-    ///                              .owner("testgroup1".as_group().expect("group invalid").gid())
+    ///                              .group("testgroup1".as_group().expect("group invalid").gid())
     ///                              .create().expect("failed to create file");
     /// ```
-    pub fn group(mut self, value: u32) -> Self {
+    pub fn group(mut self, value: Gid) -> Self {
         self.config.group = Some(value);
         self
     }
@@ -842,10 +843,17 @@ impl File {
 
     pub(crate) fn set_ownership<T: FileDescriptorBased + Debug>(
         this: &T,
-        uid: u32,
-        gid: u32,
+        uid: Uid,
+        gid: Gid,
     ) -> Result<(), FileSetOwnerError> {
-        if unsafe { posix::fchown(this.file_descriptor().native_handle(), uid, gid) } == 0 {
+        if unsafe {
+            posix::fchown(
+                this.file_descriptor().native_handle(),
+                uid.to_native(),
+                gid.to_native(),
+            )
+        } == 0
+        {
             return Ok(());
         }
 

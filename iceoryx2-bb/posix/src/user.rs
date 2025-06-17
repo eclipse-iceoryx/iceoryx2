@@ -29,7 +29,9 @@
 //! ```
 
 use core::ffi::CStr;
+use core::fmt::Display;
 
+use crate::group::Gid;
 use crate::handle_errno;
 use crate::{config::PASSWD_BUFFER_SIZE, system_configuration::*};
 use iceoryx2_bb_container::semantic_string::*;
@@ -56,6 +58,7 @@ enum_gen! { UserError
     InvalidSymbolsInShellPath,
     ConfigPathIsTooLong,
     SystemUserNameLengthLongerThanSupportedLength,
+    UserIdOutOfRange,
     UnknownError(i32)
 }
 
@@ -67,7 +70,8 @@ pub trait UserExt {
 
 impl UserExt for u32 {
     fn as_user(&self) -> Result<User, UserError> {
-        User::from_uid(*self)
+        let uid = Uid::new(*self).ok_or(UserError::UserIdOutOfRange)?;
+        User::from_uid(uid)
     }
 }
 
@@ -103,7 +107,7 @@ impl UserExt for UserName {
 /// on every platform configuration.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UserDetails {
-    gid: u32,
+    gid: Gid,
     name: UserName,
     home_dir: Path,
     config_dir: Path,
@@ -112,7 +116,7 @@ pub struct UserDetails {
 
 impl UserDetails {
     /// Return the group id of the users group
-    pub fn gid(&self) -> u32 {
+    pub fn gid(&self) -> Gid {
         self.gid
     }
 
@@ -137,22 +141,72 @@ impl UserDetails {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct Uid {
+    uid: u32,
+}
+
+trait UidInRange {
+    fn uid_in_range(other: u32) -> bool;
+}
+
+impl UidInRange for u32 {
+    fn uid_in_range(_other: u32) -> bool {
+        true
+    }
+}
+
+impl UidInRange for u16 {
+    fn uid_in_range(other: u32) -> bool {
+        other <= u16::MAX as u32
+    }
+}
+
+impl Uid {
+    pub fn new(uid: u32) -> Option<Self> {
+        if posix::uid_t::uid_in_range(uid) {
+            Some(Self { uid })
+        } else {
+            None
+        }
+    }
+
+    pub fn new_from_native(uid: posix::uid_t) -> Self {
+        Self { uid: uid as _ }
+    }
+
+    pub fn value(&self) -> u32 {
+        self.uid
+    }
+
+    pub fn to_native(&self) -> posix::uid_t {
+        // NOTE: this is safe since the range is checked on construction
+        self.uid as _
+    }
+}
+
+impl Display for Uid {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.uid)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 /// Represents a user in a POSIX system
 pub struct User {
-    uid: u32,
+    uid: Uid,
     details: Option<UserDetails>,
 }
 
 impl User {
     /// Create an user object from the owner of the process
     pub fn from_self() -> Result<User, UserError> {
-        Self::from_uid(unsafe { posix::getuid() })
+        Self::from_uid(Uid::new_from_native(unsafe { posix::getuid() }))
     }
 
     /// Create an user object from a given uid. If the uid does not exist an error will be
     /// returned.
-    pub fn from_uid(uid: u32) -> Result<User, UserError> {
+    pub fn from_uid(uid: Uid) -> Result<User, UserError> {
         let msg = "Unable to acquire user entry";
         let origin = format!("User::from_uid({})", uid);
 
@@ -162,7 +216,7 @@ impl User {
 
         let errno_value = unsafe {
             posix::getpwuid_r(
-                uid,
+                uid.to_native(),
                 &mut passwd,
                 buffer.as_mut_ptr(),
                 PASSWD_BUFFER_SIZE,
@@ -213,7 +267,7 @@ impl User {
     }
 
     /// Return the user id
-    pub fn uid(&self) -> u32 {
+    pub fn uid(&self) -> Uid {
         self.uid
     }
 
@@ -263,8 +317,8 @@ impl User {
             fail!(from origin, with UserError::UserNotFound, "{} since the user does not exist.", msg);
         }
 
-        let uid = passwd.pw_uid;
-        let gid = passwd.pw_gid;
+        let uid = Uid::new_from_native(passwd.pw_uid);
+        let gid = Gid::new_from_native(passwd.pw_gid);
         let name = fail!(from origin, when unsafe { UserName::from_c_str(passwd.pw_name) },
                             with UserError::SystemUserNameLengthLongerThanSupportedLength,
                             "{} since the user name on the system is longer than the supported length of {}.",
