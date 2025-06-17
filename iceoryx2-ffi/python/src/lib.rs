@@ -46,6 +46,7 @@ pub mod signal_handling_mode;
 pub mod static_config_event;
 pub mod static_config_publish_subscribe;
 pub mod static_config_request_response;
+pub mod testing;
 pub mod type_detail;
 pub mod type_name;
 pub mod type_variant;
@@ -58,6 +59,7 @@ use pyo3::wrap_pymodule;
 #[pymodule]
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
+    m.add_wrapped(wrap_pymodule!(crate::testing::testing))?;
     m.add_class::<crate::alignment::Alignment>()?;
     m.add_class::<crate::attribute::Attribute>()?;
     m.add_class::<crate::attribute_set::AttributeSet>()?;
