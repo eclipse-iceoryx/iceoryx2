@@ -65,3 +65,9 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
         )
     }
 }
+
+impl<Service: service::Service> PortFactory<Service> {
+    pub(crate) fn new(service: Service) -> Self {
+        Self { service }
+    }
+}

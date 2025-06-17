@@ -17,20 +17,20 @@ use iceoryx2::prelude::*;
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
-    set_log_level_from_env_or(LogLevel::Info);
+    set_log_level_from_env_or(LogLevel::Trace);
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .publish_subscribe::<TransmissionData>()
+        .publish_subscribe::<u64>()
         .open_or_create()?;
 
     let subscriber = service.subscriber_builder().create()?;
 
     while node.wait(CYCLE_TIME).is_ok() {
-        while let Some(sample) = subscriber.receive()? {
-            println!("received: {:?}", *sample);
-        }
+        //while let Some(sample) = subscriber.receive()? {
+        //println!("received: {:?}", *sample);
+        //}
     }
 
     println!("exit");

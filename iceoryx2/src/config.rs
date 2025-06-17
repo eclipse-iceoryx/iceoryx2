@@ -376,6 +376,8 @@ pub struct RequestResonse {
 #[serde(rename_all = "kebab-case")]
 pub struct Blackboard {
     pub max_readers: usize,
+    pub max_writers: usize,
+    pub max_nodes: usize,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
@@ -459,7 +461,11 @@ impl Default for Config {
                     notifier_dropped_event: None,
                     notifier_dead_event: None,
                 },
-                blackboard: Blackboard { max_readers: 8 },
+                blackboard: Blackboard {
+                    max_readers: 8,
+                    max_writers: 1,
+                    max_nodes: 20,
+                },
             },
         }
     }
