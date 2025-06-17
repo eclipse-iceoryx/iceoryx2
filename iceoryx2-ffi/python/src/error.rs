@@ -103,3 +103,24 @@ create_exception!(
     PyException,
     "Errors caused when open or creating a publish-subscribe service."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    RequestResponseOpenError,
+    PyException,
+    "Errors caused when opening a request-response service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    RequestResponseCreateError,
+    PyException,
+    "Errors caused when creating a request-response service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    RequestResponseOpenOrCreateError,
+    PyException,
+    "Errors caused when open or creating a request-response service."
+);

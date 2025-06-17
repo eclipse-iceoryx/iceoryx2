@@ -14,21 +14,33 @@ use iceoryx2::prelude::{ipc, local};
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
+use crate::alignment::Alignment;
+use crate::attribute_specifier::AttributeSpecifier;
+use crate::attribute_verifier::AttributeVerifier;
+use crate::error::{
+    RequestResponseCreateError, RequestResponseOpenError, RequestResponseOpenOrCreateError,
+};
+use crate::port_factory_request_response::{
+    PortFactoryRequestResponse, PortFactoryRequestResponseType,
+};
+use crate::type_detail::TypeDetail;
+
+#[derive(Clone)]
 pub(crate) enum ServiceBuilderRequestResponseType {
     Ipc(
         iceoryx2::service::builder::request_response::Builder<
-            CustomPayloadMarker,
+            [CustomPayloadMarker],
             CustomHeaderMarker,
-            CustomPayloadMarker,
+            [CustomPayloadMarker],
             CustomHeaderMarker,
             ipc::Service,
         >,
     ),
     Local(
         iceoryx2::service::builder::request_response::Builder<
-            CustomPayloadMarker,
+            [CustomPayloadMarker],
             CustomHeaderMarker,
-            CustomPayloadMarker,
+            [CustomPayloadMarker],
             CustomHeaderMarker,
             local::Service,
         >,
@@ -37,3 +49,395 @@ pub(crate) enum ServiceBuilderRequestResponseType {
 
 #[pyclass]
 pub struct ServiceBuilderRequestResponse(pub(crate) ServiceBuilderRequestResponseType);
+
+#[pymethods]
+impl ServiceBuilderRequestResponse {
+    pub fn request_payload_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_request_payload_type_details(&value.0) };
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_request_payload_type_details(&value.0) };
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn request_header_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_request_header_type_details(&value.0) };
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_request_header_type_details(&value.0) };
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn response_payload_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_response_payload_type_details(&value.0) };
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_response_payload_type_details(&value.0) };
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn response_header_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_response_header_type_details(&value.0) };
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = unsafe { this.__internal_set_response_header_type_details(&value.0) };
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn request_payload_alignment(&self, value: &Alignment) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.request_payload_alignment(value.0);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.request_payload_alignment(value.0);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn response_payload_alignment(&self, value: &Alignment) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.response_payload_alignment(value.0);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.response_payload_alignment(value.0);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn enable_safe_overflow_for_requests(&self, value: bool) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.enable_safe_overflow_for_requests(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.enable_safe_overflow_for_requests(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn enable_safe_overflow_for_responses(&self, value: bool) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.enable_safe_overflow_for_responses(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.enable_safe_overflow_for_responses(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn enable_fire_and_forget_requests(&self, value: bool) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.enable_fire_and_forget_requests(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.enable_fire_and_forget_requests(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn max_active_requests_per_client(&self, value: usize) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.max_active_requests_per_client(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.max_active_requests_per_client(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn max_loaned_requests(&self, value: usize) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.max_loaned_requests(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.max_loaned_requests(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn max_response_buffer_size(&self, value: usize) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.max_response_buffer_size(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.max_response_buffer_size(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn max_servers(&self, value: usize) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.max_servers(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.max_servers(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn max_clients(&self, value: usize) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.max_clients(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.max_clients(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn max_nodes(&self, value: usize) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.max_nodes(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.max_nodes(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn max_borrowed_responses_per_pending_response(&self, value: usize) -> Self {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                let this = this.max_borrowed_responses_per_pending_response(value);
+                Self(ServiceBuilderRequestResponseType::Ipc(this))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                let this = this.max_borrowed_responses_per_pending_response(value);
+                Self(ServiceBuilderRequestResponseType::Local(this))
+            }
+        }
+    }
+
+    pub fn open_or_create(&self) -> PyResult<PortFactoryRequestResponse> {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Ipc(this.open_or_create().map_err(|e| {
+                        RequestResponseOpenOrCreateError::new_err(format!("{:?}", e))
+                    })?),
+                ))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Local(this.open_or_create().map_err(|e| {
+                        RequestResponseOpenOrCreateError::new_err(format!("{:?}", e))
+                    })?),
+                ))
+            }
+        }
+    }
+
+    pub fn open_or_create_with_attributes(
+        &self,
+        verifier: &AttributeVerifier,
+    ) -> PyResult<PortFactoryRequestResponse> {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Ipc(
+                        this.open_or_create_with_attributes(&verifier.0)
+                            .map_err(|e| {
+                                RequestResponseOpenOrCreateError::new_err(format!("{:?}", e))
+                            })?,
+                    ),
+                ))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Local(
+                        this.open_or_create_with_attributes(&verifier.0)
+                            .map_err(|e| {
+                                RequestResponseOpenOrCreateError::new_err(format!("{:?}", e))
+                            })?,
+                    ),
+                ))
+            }
+        }
+    }
+
+    pub fn open(&self) -> PyResult<PortFactoryRequestResponse> {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Ipc(
+                        this.open()
+                            .map_err(|e| RequestResponseOpenError::new_err(format!("{:?}", e)))?,
+                    ),
+                ))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Local(
+                        this.open()
+                            .map_err(|e| RequestResponseOpenError::new_err(format!("{:?}", e)))?,
+                    ),
+                ))
+            }
+        }
+    }
+
+    pub fn open_with_attributes(
+        &self,
+        verifier: &AttributeVerifier,
+    ) -> PyResult<PortFactoryRequestResponse> {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Ipc(
+                        this.open_with_attributes(&verifier.0)
+                            .map_err(|e| RequestResponseOpenError::new_err(format!("{:?}", e)))?,
+                    ),
+                ))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Local(
+                        this.open_with_attributes(&verifier.0)
+                            .map_err(|e| RequestResponseOpenError::new_err(format!("{:?}", e)))?,
+                    ),
+                ))
+            }
+        }
+    }
+
+    pub fn create(&self) -> PyResult<PortFactoryRequestResponse> {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Ipc(
+                        this.create()
+                            .map_err(|e| RequestResponseCreateError::new_err(format!("{:?}", e)))?,
+                    ),
+                ))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Local(
+                        this.create()
+                            .map_err(|e| RequestResponseCreateError::new_err(format!("{:?}", e)))?,
+                    ),
+                ))
+            }
+        }
+    }
+
+    pub fn create_with_attributes(
+        &self,
+        attributes: &AttributeSpecifier,
+    ) -> PyResult<PortFactoryRequestResponse> {
+        match &self.0 {
+            ServiceBuilderRequestResponseType::Ipc(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Ipc(
+                        this.create_with_attributes(&attributes.0)
+                            .map_err(|e| RequestResponseCreateError::new_err(format!("{:?}", e)))?,
+                    ),
+                ))
+            }
+            ServiceBuilderRequestResponseType::Local(v) => {
+                let this = v.clone();
+                Ok(PortFactoryRequestResponse(
+                    PortFactoryRequestResponseType::Local(
+                        this.create_with_attributes(&attributes.0)
+                            .map_err(|e| RequestResponseCreateError::new_err(format!("{:?}", e)))?,
+                    ),
+                ))
+            }
+        }
+    }
+}

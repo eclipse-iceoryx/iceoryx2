@@ -86,9 +86,9 @@ unsafe impl<
 }
 unsafe impl<
         Service: service::Service,
-        RequestPayload: Debug + ZeroCopySend,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Sync
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>

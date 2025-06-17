@@ -129,6 +129,30 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
         "SemanticStringError",
         py.get_type::<crate::error::SemanticStringError>(),
     )?;
+    m.add(
+        "PublishSubscribeOpenError",
+        py.get_type::<crate::error::PublishSubscribeOpenError>(),
+    )?;
+    m.add(
+        "PublishSubscribeCreateError",
+        py.get_type::<crate::error::PublishSubscribeCreateError>(),
+    )?;
+    m.add(
+        "PublishSubscribeOpenOrCreateError",
+        py.get_type::<crate::error::PublishSubscribeOpenOrCreateError>(),
+    )?;
+    m.add(
+        "RequestResponseOpenError",
+        py.get_type::<crate::error::RequestResponseOpenError>(),
+    )?;
+    m.add(
+        "RequestResponseCreateError",
+        py.get_type::<crate::error::RequestResponseCreateError>(),
+    )?;
+    m.add(
+        "RequestResponseOpenOrCreateError",
+        py.get_type::<crate::error::RequestResponseOpenOrCreateError>(),
+    )?;
 
     Ok(())
 }

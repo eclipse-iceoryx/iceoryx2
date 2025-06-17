@@ -70,7 +70,7 @@ impl ServiceBuilder {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
                 ServiceBuilderRequestResponse(ServiceBuilderRequestResponseType::Ipc(
-                    this.request_response::<CustomPayloadMarker, CustomPayloadMarker>()
+                    this.request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
                         .request_user_header::<CustomHeaderMarker>()
                         .response_user_header::<CustomHeaderMarker>(),
                 ))
@@ -78,7 +78,7 @@ impl ServiceBuilder {
             ServiceBuilderType::Local(v) => {
                 let this = v.clone();
                 ServiceBuilderRequestResponse(ServiceBuilderRequestResponseType::Local(
-                    this.request_response::<CustomPayloadMarker, CustomPayloadMarker>()
+                    this.request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
                         .request_user_header::<CustomHeaderMarker>()
                         .response_user_header::<CustomHeaderMarker>(),
                 ))
