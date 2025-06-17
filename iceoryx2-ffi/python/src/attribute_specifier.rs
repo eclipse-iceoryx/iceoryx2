@@ -36,6 +36,7 @@ impl AttributeSpecifier {
         AttributeSpecifier(this)
     }
 
+    #[getter]
     /// Returns the underlying `AttributeSet`
     pub fn attributes(&self) -> AttributeSet {
         AttributeSet(self.0.attributes().clone())

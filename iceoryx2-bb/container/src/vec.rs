@@ -85,6 +85,7 @@
 
 use core::{
     alloc::Layout,
+    fmt::Debug,
     marker::PhantomData,
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
@@ -117,13 +118,36 @@ pub type RelocatableVec<T> = MetaVec<T, GenericRelocatablePointer>;
 #[doc(hidden)]
 /// **Non-movable** relocatable vector with runtime fixed size capacity.
 #[repr(C)]
-#[derive(Debug)]
 pub struct MetaVec<T, Ptr: GenericPointer> {
     data_ptr: Ptr::Type<MaybeUninit<T>>,
     capacity: usize,
     len: usize,
     is_initialized: IoxAtomicBool,
     _phantom_data: PhantomData<T>,
+}
+
+impl<T: Debug, Ptr: GenericPointer> Debug for MetaVec<T, Ptr> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "MetaVec<{}, {}> {{ capacity: {}, len: {}, is_initialized: {}, content: [ ",
+            core::any::type_name::<T>(),
+            core::any::type_name::<Ptr>(),
+            self.capacity,
+            self.len,
+            self.is_initialized.load(Ordering::Relaxed)
+        )?;
+
+        if self.len > 0 {
+            write!(f, "{:?}", self[0])?;
+        }
+
+        for n in 1..self.len {
+            write!(f, ", {:?}", self[n])?;
+        }
+
+        write!(f, " ] }}")
+    }
 }
 
 unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaVec<T, Ptr> {}
@@ -522,10 +546,21 @@ impl<T> RelocatableVec<T> {
 /// Relocatable vector with compile time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableVec`] it is movable.
 #[repr(C)]
-#[derive(Debug)]
 pub struct FixedSizeVec<T, const CAPACITY: usize> {
     state: RelocatableVec<T>,
     _data: [MaybeUninit<T>; CAPACITY],
+}
+
+impl<T: Debug, const CAPACITY: usize> Debug for FixedSizeVec<T, CAPACITY> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "FixedSizeVec<{}, {}> {{ {:?} }}",
+            core::any::type_name::<T>(),
+            CAPACITY,
+            self.state
+        )
+    }
 }
 
 unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for FixedSizeVec<T, CAPACITY> {}

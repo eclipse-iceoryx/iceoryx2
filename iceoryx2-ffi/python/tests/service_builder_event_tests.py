@@ -139,3 +139,100 @@ def test_existing_service_is_opened_with_open_or_create(service_type) -> None:
         assert sut.name == service_name
     except iox2.EventOpenOrCreateError:
         raise pytest.fail("DID RAISE EXCEPTION")
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_create_service_with_attributes_work(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
+    attribute_spec = (
+        iox2.AttributeSpecifier.new()
+            .define(iox2.AttributeKey.new("fuu"), iox2.AttributeValue.new("bar"))
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    sut_create = (
+        node.service_builder(service_name)
+            .event()
+            .create_with_attributes(attribute_spec)
+    )
+
+    sut_open = (
+        node.service_builder(service_name)
+            .event()
+            .open()
+    )
+
+    assert sut_create.attributes == attribute_spec.attributes
+    assert sut_create.attributes == sut_open.attributes
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_open_or_create_service_with_attributes_work(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
+
+    attribute_spec = (
+        iox2.AttributeSpecifier.new()
+            .define(iox2.AttributeKey.new("what"), iox2.AttributeValue.new("ever"))
+    )
+    attribute_verifier = (
+        iox2.AttributeVerifier.new()
+            .require(iox2.AttributeKey.new("what"), iox2.AttributeValue.new("ever"))
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    sut_create = (
+        node.service_builder(service_name)
+            .event()
+            .open_or_create_with_attributes(attribute_verifier)
+    )
+
+    sut_open = (
+        node.service_builder(service_name)
+            .event()
+            .open()
+    )
+
+    assert sut_create.attributes == attribute_spec.attributes
+    assert sut_create.attributes == sut_open.attributes
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_open_service_with_attributes_work(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
+
+    attribute_spec = (
+        iox2.AttributeSpecifier.new()
+            .define(iox2.AttributeKey.new("knock"), iox2.AttributeValue.new("knock"))
+    )
+    attribute_verifier = (
+        iox2.AttributeVerifier.new()
+            .require(iox2.AttributeKey.new("knock"), iox2.AttributeValue.new("knock"))
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    sut_create = (
+        node.service_builder(service_name)
+            .event()
+            .create_with_attributes(attribute_spec)
+    )
+
+    sut_open = (
+        node.service_builder(service_name)
+            .event()
+            .open_with_attributes(attribute_verifier)
+    )
+
+    assert sut_create.attributes == attribute_spec.attributes
+    assert sut_create.attributes == sut_open.attributes
