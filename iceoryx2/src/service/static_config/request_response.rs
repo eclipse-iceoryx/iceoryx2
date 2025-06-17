@@ -31,7 +31,7 @@
 //! println!("max nodes: {:?}", req_res.static_config().max_nodes());
 //! println!("request safe overflow: {:?}", req_res.static_config().has_safe_overflow_for_requests());
 //! println!("response safe overflow: {:?}", req_res.static_config().has_safe_overflow_for_responses());
-//! println!("max borrowed responses per pending response: {:?}", req_res.static_config().max_borrowed_responses_per_pending_responses());
+//! println!("max borrowed responses per pending response: {:?}", req_res.static_config().max_borrowed_responses_per_pending_response());
 //! println!("does support fire and forget requests: {:?}", req_res.static_config().does_support_fire_and_forget_requests());
 //!
 //! # Ok(())
@@ -163,7 +163,7 @@ impl StaticConfig {
     /// Returns the maximum number of borrowed [`Response`](crate::response::Response)s a
     /// [`Client`](`crate::port::client::Client`) can hold in
     /// parallel per [`PendingResponse`](crate::pending_response::PendingResponse)
-    pub fn max_borrowed_responses_per_pending_responses(&self) -> usize {
+    pub fn max_borrowed_responses_per_pending_response(&self) -> usize {
         self.max_borrowed_responses_per_pending_response
     }
 

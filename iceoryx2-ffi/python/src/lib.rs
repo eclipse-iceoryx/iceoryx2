@@ -45,6 +45,7 @@ pub mod service_type;
 pub mod signal_handling_mode;
 pub mod static_config_event;
 pub mod static_config_publish_subscribe;
+pub mod static_config_request_response;
 pub mod type_detail;
 pub mod type_name;
 pub mod type_variant;
@@ -91,6 +92,7 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::signal_handling_mode::SignalHandlingMode>()?;
     m.add_class::<crate::static_config_event::StaticConfigEvent>()?;
     m.add_class::<crate::static_config_publish_subscribe::StaticConfigPublishSubscribe>()?;
+    m.add_class::<crate::static_config_request_response::StaticConfigRequestResponse>()?;
     m.add_class::<crate::type_detail::TypeDetail>()?;
     m.add_class::<crate::type_variant::TypeVariant>()?;
     m.add_class::<crate::type_name::TypeName>()?;
