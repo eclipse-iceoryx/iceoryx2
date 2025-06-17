@@ -9,7 +9,7 @@
     <url type="bugtracker">https://github.com/eclipse-iceoryx/iceoryx2/issues</url>
     <url type="repository">https://github.com/eclipse-iceoryx/iceoryx2</url>
     <buildtool_depend>cmake</buildtool_depend>
-    <depend version_gte="2.95.4">iceoryx_hoofs</depend>
+    <depend version_gte="2.95.5">iceoryx_hoofs</depend>
     <export>
         <build_type>cmake</build_type>
     </export>

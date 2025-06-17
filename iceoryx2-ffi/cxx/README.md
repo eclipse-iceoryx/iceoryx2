@@ -38,7 +38,7 @@ specify the path to the install directory with `-DCMAKE_PREFIX_PATH`.
 `iceoryx_hoofs` can be build with this steps:
 
 ```bash
-git clone https://github.com/eclipse-iceoryx/iceoryx.git target/iceoryx/src
+git clone --depth 1 --branch v2.95.5 https://github.com/eclipse-iceoryx/iceoryx.git target/iceoryx/src
 
 cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=target/iceoryx/install
 cmake --build target/iceoryx/build/platform

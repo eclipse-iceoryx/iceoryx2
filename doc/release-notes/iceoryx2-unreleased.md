@@ -19,6 +19,8 @@
   [#768](https://github.com/eclipse-iceoryx/iceoryx2/issues/768)
 * `iox2 service listen` and `iox2 service notify`
   [#790](https://github.com/eclipse-iceoryx/iceoryx2/issues/790)
+* Use minimal iceoryx_hoofs subset for iceoryx2 C++ bindings
+  [#824](https://github.com/eclipse-iceoryx/iceoryx2/issues/824)
 
 ### Bugfixes
 

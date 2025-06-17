@@ -26,12 +26,12 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     NUM_JOBS=$(sysctl -n hw.ncpu)
 fi
 
-git clone --depth 1 --branch v2.95.4 https://github.com/eclipse-iceoryx/iceoryx.git target/iceoryx/src
+git clone --depth 1 --branch v2.95.5 https://github.com/eclipse-iceoryx/iceoryx.git target/iceoryx/src
 
 cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=target/iceoryx/install
 cmake --build target/iceoryx/build/platform -j$NUM_JOBS
 cmake --install target/iceoryx/build/platform
 
-cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install"
+cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install" -DIOX_USE_HOOFS_SUBSET_ONLY=ON
 cmake --build target/iceoryx/build/hoofs -j$NUM_JOBS
 cmake --install target/iceoryx/build/hoofs
