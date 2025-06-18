@@ -178,7 +178,7 @@ impl From<ServiceState> for EventOpenOrCreateError {
 /// # Example
 ///
 /// See [`crate::service`]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Builder<ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify_max_notifiers: bool,

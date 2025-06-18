@@ -722,7 +722,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().max_servers(), eq 1);
         assert_that!(sut_create.static_config().max_clients(), eq 1);
         assert_that!(sut_create.static_config().max_nodes(), eq 1);
-        assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 1);
+        assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_response(), eq 1);
         assert_that!(sut_create.static_config().max_loaned_requests(), eq 1);
     }
 
@@ -769,7 +769,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().max_servers(), eq 7);
         assert_that!(sut_create.static_config().max_clients(), eq 8);
         assert_that!(sut_create.static_config().max_nodes(), eq 9);
-        assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 10);
+        assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_response(), eq 10);
         assert_that!(sut_create.static_config().max_loaned_requests(), eq 11);
     }
 
@@ -806,7 +806,7 @@ mod service_request_response {
         assert_that!(sut_create.static_config().max_servers(), eq 17);
         assert_that!(sut_create.static_config().max_clients(), eq 18);
         assert_that!(sut_create.static_config().max_nodes(), eq 19);
-        assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_responses(), eq 20);
+        assert_that!(sut_create.static_config().max_borrowed_responses_per_pending_response(), eq 20);
         assert_that!(sut_create.static_config().max_loaned_requests(), eq 21);
     }
 
@@ -846,7 +846,7 @@ mod service_request_response {
         assert_that!(sut_open.static_config().max_servers(), eq 7);
         assert_that!(sut_open.static_config().max_clients(), eq 8);
         assert_that!(sut_open.static_config().max_nodes(), eq 9);
-        assert_that!(sut_open.static_config().max_borrowed_responses_per_pending_responses(), eq 20);
+        assert_that!(sut_open.static_config().max_borrowed_responses_per_pending_response(), eq 20);
         assert_that!(sut_open.static_config().max_loaned_requests(), eq 21);
     }
 

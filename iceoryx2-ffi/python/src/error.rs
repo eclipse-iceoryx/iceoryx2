@@ -15,6 +15,13 @@ use pyo3::exceptions::PyException;
 
 create_exception!(
     iceoryx2_ffi_python,
+    InvalidAlignmentValue,
+    PyException,
+    "Errors caused when the value of the alignment is not a power of two or exceeds the maximum supported value."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     SemanticStringError,
     PyException,
     "Errors caused by creating a semantic string."
@@ -53,4 +60,67 @@ create_exception!(
     NodeWaitFailure,
     PyException,
     "Errors caused when waiting on a node."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    EventOpenError,
+    PyException,
+    "Errors caused when opening an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    EventCreateError,
+    PyException,
+    "Errors caused when creating an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    EventOpenOrCreateError,
+    PyException,
+    "Errors caused when open or creating an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    PublishSubscribeOpenError,
+    PyException,
+    "Errors caused when opening a publish-subscribe service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    PublishSubscribeCreateError,
+    PyException,
+    "Errors caused when creating a publish-subscribe service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    PublishSubscribeOpenOrCreateError,
+    PyException,
+    "Errors caused when open or creating a publish-subscribe service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    RequestResponseOpenError,
+    PyException,
+    "Errors caused when opening a request-response service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    RequestResponseCreateError,
+    PyException,
+    "Errors caused when creating a request-response service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    RequestResponseOpenOrCreateError,
+    PyException,
+    "Errors caused when open or creating a request-response service."
 );

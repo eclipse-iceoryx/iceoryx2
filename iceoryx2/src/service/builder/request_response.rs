@@ -252,6 +252,44 @@ impl<
         ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
         ServiceType: Service,
+    > Clone
+    for Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
+{
+    fn clone(&self) -> Self {
+        Self {
+            base: self.base.clone(),
+            override_request_alignment: self.override_request_alignment,
+            override_response_alignment: self.override_response_alignment,
+            override_request_payload_type: self.override_request_payload_type.clone(),
+            override_response_payload_type: self.override_response_payload_type.clone(),
+            override_request_header_type: self.override_request_header_type.clone(),
+            override_response_header_type: self.override_response_header_type.clone(),
+            verify_enable_safe_overflow_for_requests: self.verify_enable_safe_overflow_for_requests,
+            verify_enable_safe_overflow_for_responses: self
+                .verify_enable_safe_overflow_for_responses,
+            verify_max_active_requests_per_client: self.verify_max_active_requests_per_client,
+            verify_max_loaned_requests: self.verify_max_loaned_requests,
+            verify_max_response_buffer_size: self.verify_max_response_buffer_size,
+            verify_max_servers: self.verify_max_servers,
+            verify_max_clients: self.verify_max_clients,
+            verify_max_nodes: self.verify_max_nodes,
+            verify_max_borrowed_responses_per_pending_response: self
+                .verify_max_borrowed_responses_per_pending_response,
+            verify_enable_fire_and_forget_requests: self.verify_enable_fire_and_forget_requests,
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
+    }
+}
+
+impl<
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+        ServiceType: Service,
     > Builder<RequestPayload, RequestHeader, ResponsePayload, ResponseHeader, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {

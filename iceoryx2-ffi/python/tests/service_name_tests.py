@@ -14,12 +14,12 @@ import iceoryx2_ffi_python as iox2
 import pytest
 
 
-def test_path_can_be_constructed() -> None:
-    sut = iox2.Path.new("/path/to/some/file")
-    assert sut.to_string() == "/path/to/some/file"
+def test_service_name_can_be_constructed() -> None:
+    sut = iox2.ServiceName.new("hello world")
+    assert sut.to_string() == "hello world"
 
 
-def test_path_with_invalid_content_cannot_be_constructed() -> None:
-    invalid_content = "/wildcards/***/are/*/forbidden"
+def test_service_name_construction_fails_when_max_len_is_exceeded() -> None:
+    sut_value = "x" * (iox2.ServiceName.max_len() + 1)
     with pytest.raises(iox2.SemanticStringError):
-        sut = iox2.Path.new(invalid_content)
+        sut = iox2.ServiceName.new(sut_value)

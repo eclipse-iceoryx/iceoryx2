@@ -43,7 +43,7 @@ use iceoryx2_cal::*;
 use super::ServiceState;
 
 /// Defines a process local or single address space communication setup.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Service {
     state: Arc<ServiceState<Self>>,
 }

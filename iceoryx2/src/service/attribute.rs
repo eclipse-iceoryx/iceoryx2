@@ -207,6 +207,7 @@ impl Attribute {
 
 /// Represents the set of [`Attribute`]s that are defined when the [`crate::service::Service`]
 /// is created.
+#[derive(Debug, Clone)]
 pub struct AttributeSpecifier(pub(crate) AttributeSet);
 
 impl Default for AttributeSpecifier {
@@ -235,7 +236,7 @@ impl AttributeSpecifier {
 
 /// Represents the set of [`Attribute`]s that are required when the [`crate::service::Service`]
 /// is opened.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AttributeVerifier {
     required_attributes: AttributeSet,
     required_keys: KeyStorage,

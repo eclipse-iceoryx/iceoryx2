@@ -42,7 +42,7 @@ use iceoryx2_cal::*;
 use super::ServiceState;
 
 /// Defines a zero copy inter-process communication setup based on posix mechanisms.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Service {
     state: Arc<ServiceState<Self>>,
 }

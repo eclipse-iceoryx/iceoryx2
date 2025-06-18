@@ -64,14 +64,14 @@ class ServiceBuilderRequestResponse {
     /// [`Service`] is opened it defines the minimum required.
     IOX_BUILDER_OPTIONAL(uint64_t, max_response_buffer_size);
 
-    /// If the [`Service`] is created it defines how many [`crate::port::server::Server`]s shall
+    /// If the [`Service`] is created it defines how many [`Server`]s shall
     /// be supported at most. If an existing [`Service`] is opened it defines how many
-    /// [`crate::port::server::Server`]s must be at least supported.
+    /// [`Server`]s must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_servers);
 
-    /// If the [`Service`] is created it defines how many [`crate::port::client::Client`]s shall
+    /// If the [`Service`] is created it defines how many [`Client`]s shall
     /// be supported at most. If an existing [`Service`] is opened it defines how many
-    /// [`crate::port::client::Client`]s must be at least supported.
+    /// [`Client`]s must be at least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_clients);
 
     /// If the [`Service`] is created it defines how many [`Node`]s shall

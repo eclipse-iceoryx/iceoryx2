@@ -46,7 +46,7 @@ impl From<&StaticConfig> for iox2_static_config_request_response_t {
             max_clients: c.max_clients(),
             max_nodes: c.max_nodes(),
             max_borrowed_responses_per_pending_response: c
-                .max_borrowed_responses_per_pending_responses(),
+                .max_borrowed_responses_per_pending_response(),
             request_message_type_details: c.request_message_type_details().into(),
             response_message_type_details: c.response_message_type_details().into(),
         }

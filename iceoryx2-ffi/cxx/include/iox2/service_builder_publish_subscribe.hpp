@@ -39,34 +39,33 @@ class ServiceBuilderPublishSubscribe {
     /// [`Service`] is opened it requires the service to have the defined overflow behavior.
     IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow);
 
-    /// If the [`Service`] is created it defines how many [`crate::sample::Sample`] a
-    /// [`crate::port::subscriber::Subscriber`] can borrow at most in parallel. If an existing
+    /// If the [`Service`] is created it defines how many [`Sample`]s a
+    /// [`Subscriber`] can borrow at most in parallel. If an existing
     /// [`Service`] is opened it defines the minimum required.
     IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_borrowed_samples);
 
     /// If the [`Service`] is created it defines the maximum history size a
-    /// [`crate::port::subscriber::Subscriber`] can request on connection. If an existing
+    /// [`Subscriber`] can request on connection. If an existing
     /// [`Service`] is opened it defines the minimum required.
     IOX_BUILDER_OPTIONAL(uint64_t, history_size);
 
-    /// If the [`Service`] is created it defines how many [`crate::sample::Sample`] a
-    /// [`crate::port::subscriber::Subscriber`] can store in its internal buffer. If an existing
-    /// [`Service`] is opened it defines the minimum required.
+    /// If the [`Service`] is created it defines how many [`Sample`] a `Subscriber` can store in
+    /// its internal buffer. If an existing [`Service`] is opened it defines the minimum required.
     IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_buffer_size);
 
-    /// If the [`Service`] is created it defines how many [`crate::port::subscriber::Subscriber`] shall
-    /// be supported at most. If an existing [`Service`] is opened it defines how many
-    /// [`crate::port::subscriber::Subscriber`] must be at least supported.
+    /// If the [`Service`] is created it defines how many [`Subscriber`] shall be supported at
+    /// most. If an existing [`Service`] is opened it defines how many [`Subscriber`] must be at
+    /// least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_subscribers);
 
-    /// If the [`Service`] is created it defines how many [`crate::port::publisher::Publisher`] shall
-    /// be supported at most. If an existing [`Service`] is opened it defines how many
-    /// [`crate::port::publisher::Publisher`] must be at least supported.
+    /// If the [`Service`] is created it defines how many [`Publisher`] shall be supported at
+    /// most. If an existing [`Service`] is opened it defines how many [`Publisher`] must be at
+    /// least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_publishers);
 
-    /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
-    /// be able to open it in parallel. If an existing [`Service`] is opened it defines how many
-    /// [`Node`](crate::node::Node)s must be at least supported.
+    /// If the [`Service`] is created it defines how many [`Node`]s shall be able to open it in
+    /// parallel. If an existing [`Service`] is opened it defines how many [`Node`]s must be at
+    /// least supported.
     IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
 
   public:
