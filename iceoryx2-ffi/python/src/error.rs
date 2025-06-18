@@ -85,6 +85,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    ListenerWaitError,
+    PyException,
+    "Errors caused when waiting on a Listener port in an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     PublishSubscribeOpenError,
     PyException,
     "Errors caused when opening a publish-subscribe service."

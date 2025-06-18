@@ -53,6 +53,7 @@ pub mod type_detail;
 pub mod type_name;
 pub mod type_variant;
 pub mod unable_to_deliver_strategy;
+pub mod unique_listener_id;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
@@ -103,6 +104,7 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::type_variant::TypeVariant>()?;
     m.add_class::<crate::type_name::TypeName>()?;
     m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
+    m.add_class::<crate::unique_listener_id::UniqueListenerId>()?;
 
     m.add(
         "InvalidAlignmentValue",
@@ -123,6 +125,10 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add(
         "EventOpenOrCreateError",
         py.get_type::<crate::error::EventOpenOrCreateError>(),
+    )?;
+    m.add(
+        "ListenerWaitError",
+        py.get_type::<crate::error::ListenerWaitError>(),
     )?;
     m.add(
         "NodeCreationFailure",
