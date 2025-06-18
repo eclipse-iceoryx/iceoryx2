@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::node::NodeId;
-use crate::port::port_identifiers::{UniquePortId, UniqueReaderId, UniqueWriterId};
+use crate::port::port_identifiers::{UniquePortId, UniqueReaderId};
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_lock_free::mpmc::container::Container;
 use iceoryx2_bb_log::fatal_panic;
@@ -23,35 +23,33 @@ use super::PortCleanupAction;
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct DynamicConfigSettings {
     pub number_of_readers: usize,
-    pub number_of_writers: usize,
 }
 
+/// Contains the communication settings of the connected
+/// [`Reader`](crate::port::reader::Reader).
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct ReaderDetails {
+    /// The [`UniqueReaderId`] of the [`Reader`](crate::port::reader::Reader).
     pub reader_id: UniqueReaderId,
+    /// The [`NodeId`] of the [`Node`](crate::node::Node) under which the
+    /// [`Reader`](crate::port::reader::Reader) was created.
     pub node_id: NodeId,
 }
 
-#[repr(C)]
-#[derive(Debug, Clone, Copy)]
-pub struct WriterDetails {
-    pub writer_id: UniqueWriterId,
-    pub node_id: NodeId,
-}
-
+/// The dynamic configuration of an
+/// [`crate::service::messaging_pattern::MessagingPattern::Blackboard`]
+/// based service. Contains dynamic parameters like the connected endpoints etc..
 #[repr(C)]
 #[derive(Debug)]
 pub struct DynamicConfig {
     pub(crate) readers: Container<ReaderDetails>,
-    pub(crate) writers: Container<WriterDetails>,
 }
 
 impl DynamicConfig {
     pub(crate) fn new(config: &DynamicConfigSettings) -> Self {
         Self {
             readers: unsafe { Container::new_uninit(config.number_of_readers) },
-            writers: unsafe { Container::new_uninit(config.number_of_writers) },
         }
     }
 
@@ -59,22 +57,18 @@ impl DynamicConfig {
         fatal_panic!(from self,
             when self.readers.init(allocator),
             "This should never happen! Unable to initialize reader port id container.");
-        fatal_panic!(from self,
-            when self.writers.init(allocator),
-            "This should never happen! Unable to initialize writer port id container.");
     }
 
     pub(crate) fn memory_size(config: &DynamicConfigSettings) -> usize {
         Container::<ReaderDetails>::memory_size(config.number_of_readers)
-            + Container::<WriterDetails>::memory_size(config.number_of_writers)
     }
 
     pub(crate) unsafe fn remove_dead_node_id<
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
         &self,
-        node_id: &NodeId,
-        mut port_cleanup_callback: PortCleanup,
+        _node_id: &NodeId,
+        mut _port_cleanup_callback: PortCleanup,
     ) {
     }
 }

@@ -41,7 +41,10 @@
 //!
 //! ### Blackboard
 //!
-//! TODO
+//! Realizes a key-value store in shared memory which can be modified by one
+//! [`Writer`](crate::port::writer::Writer) and read by many
+//! [`Reader`](crate::port::reader::Reader)s. Updates and reads are made on a key basis, not
+//! on the entire shared memory.
 
 /// Identifies the kind of messaging pattern the [`Service`](crate::service::Service) will use.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -63,6 +66,8 @@ pub enum MessagingPattern {
     /// [`Server`](crate::port::server::Server) and receives a stream of responses.
     RequestResponse,
 
-    // TODO
+    /// Unidirectional communication pattern where the [`Writer`](crate::port::writer::Writer)
+    /// writes arbitrary data to a key-value store which can be read by many
+    /// [`Reader`](crate::port::reader::Reader)s.
     Blackboard,
 }

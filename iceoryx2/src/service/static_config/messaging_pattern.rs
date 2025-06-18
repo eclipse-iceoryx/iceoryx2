@@ -47,6 +47,8 @@ pub enum MessagingPattern {
     /// [`service::MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event)
     Event(event::StaticConfig),
 
+    /// Stores the static config of the
+    /// [`service::MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
     Blackboard(blackboard::StaticConfig),
 }
 

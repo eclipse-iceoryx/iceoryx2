@@ -166,8 +166,6 @@
 //! # }
 //! ```
 
-// TODO: documentation and example
-
 pub(crate) mod stale_resource_cleanup;
 
 /// The builder to create or open [`Service`]s
@@ -605,11 +603,8 @@ pub(crate) mod internal {
                             return PortCleanupAction::SkipPort;
                         }
                     }
-                    UniquePortId::Reader(ref id) => {
-                        // TODO
-                    }
-                    UniquePortId::Writer(ref id) => {
-                        // TODO
+                    UniquePortId::Reader(ref _id) => {
+                        todo!()
                     }
                 };
 

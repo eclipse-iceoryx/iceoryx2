@@ -10,6 +10,24 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard::<u64>()
+//!     .open_or_create()?;
+//!
+//! println!("type details: {:?}", blackboard.static_config().type_details());
+//! println!("max readers: {:?}", blackboard.static_config().max_readers());
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use serde::{Deserialize, Serialize};
@@ -25,7 +43,6 @@ use super::message_type_details::TypeDetail;
 #[repr(C)]
 pub struct StaticConfig {
     pub(crate) max_readers: usize,
-    pub(crate) max_writers: usize,
     pub(crate) max_nodes: usize,
     pub(crate) type_details: TypeDetail,
 }
@@ -34,24 +51,23 @@ impl StaticConfig {
     pub(crate) fn new(config: &config::Config) -> Self {
         Self {
             max_readers: config.defaults.blackboard.max_readers,
-            max_writers: config.defaults.blackboard.max_writers,
             max_nodes: config.defaults.blackboard.max_nodes,
             type_details: TypeDetail::default(),
         }
     }
 
+    /// Returns the maximum supported amount of [`Node`](crate::node::Node)s that can open the
+    /// [`Service`](crate::service::Service) in parallel.
     pub fn max_nodes(&self) -> usize {
         self.max_nodes
     }
 
+    /// Returns the maximum supported amount of [`crate::port::reader::Reader`] ports
     pub fn max_readers(&self) -> usize {
         self.max_readers
     }
 
-    pub fn max_writers(&self) -> usize {
-        self.max_writers
-    }
-
+    /// Returns the type details of the [`crate::service::Service`].
     pub fn type_details(&self) -> &TypeDetail {
         &self.type_details
     }

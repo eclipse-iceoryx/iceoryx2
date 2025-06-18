@@ -410,8 +410,6 @@ mod service_blackboard {
         let mut custom_config = config.clone();
         custom_config.defaults.blackboard.max_nodes = 2;
         custom_config.defaults.blackboard.max_readers = 9;
-        // TODO: remove max_writers so that it can't be modified for now?
-        custom_config.defaults.blackboard.max_writers = 10;
         let node_1 = NodeBuilder::new()
             .config(&custom_config)
             .create::<Sut>()

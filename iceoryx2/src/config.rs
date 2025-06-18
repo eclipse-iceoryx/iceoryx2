@@ -233,7 +233,7 @@ pub struct Defaults {
     pub event: Event,
     /// Default settings for the messaging pattern request-response
     pub request_response: RequestResonse,
-
+    /// Default settings for the messaging pattern blackboard
     pub blackboard: Blackboard,
 }
 
@@ -371,12 +371,16 @@ pub struct RequestResonse {
     pub server_expired_connection_buffer: usize,
 }
 
+/// Default settings for the blackboard messaging pattern. These settings are used unless
+/// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub struct Blackboard {
+    /// The maximum amount of supported [`crate::port::reader::Reader`]s.
     pub max_readers: usize,
-    pub max_writers: usize,
+    /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
+    /// processes can open the service at the same time.
     pub max_nodes: usize,
 }
 
@@ -463,7 +467,6 @@ impl Default for Config {
                 },
                 blackboard: Blackboard {
                     max_readers: 8,
-                    max_writers: 1,
                     max_nodes: 20,
                 },
             },

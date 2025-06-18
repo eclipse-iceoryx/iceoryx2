@@ -420,8 +420,6 @@
 //! For in-depth details and examples, please visit the
 //! [GitHub config folder](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/config).
 
-// TODO: documentation and example
-
 #[cfg(doctest)]
 mod compiletests;
 
@@ -463,6 +461,9 @@ pub mod response;
 /// [`Client`](crate::port::client::Client)
 pub mod response_mut;
 
+/// The uninitialized answer a [`Server`](crate::port::server::Server) allocates to respond to
+/// a received [`RequestMut`](crate::request_mut::RequestMut) from a
+/// [`Client`](crate::port::client::Client)
 pub mod response_mut_uninit;
 
 /// The payload that is received by a [`Subscriber`](crate::port::subscriber::Subscriber).

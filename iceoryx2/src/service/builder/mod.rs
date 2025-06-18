@@ -23,6 +23,7 @@ pub mod publish_subscribe;
 /// Builder for [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 pub mod request_response;
 
+/// Builder for [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
 pub mod blackboard;
 
 use crate::node::SharedNode;
@@ -174,7 +175,8 @@ impl<S: Service> Builder<S> {
         .event()
     }
 
-    // TODO: requirements on KeyType
+    /// Create a new builder to create a
+    /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) [`Service`].
     pub fn blackboard<KeyType: ZeroCopySend + Debug>(self) -> blackboard::Builder<KeyType, S> {
         BuilderWithServiceType::new(
             StaticConfig::new_blackboard::<S::ServiceNameHasher>(

@@ -25,6 +25,9 @@ pub mod publish_subscribe;
 /// based service.
 pub mod request_response;
 
+/// The dynamic service configuration of an
+/// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
+/// based service.
 pub mod blackboard;
 
 use core::fmt::Display;

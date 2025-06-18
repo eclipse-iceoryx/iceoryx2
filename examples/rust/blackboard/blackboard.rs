@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .open_or_create()?;
 
     println!("max readers: {}", service.static_config().max_readers());
-    println!("max writers: {}", service.static_config().max_writers());
+    //println!("max writers: {}", service.static_config().max_writers());
     println!("max nodes: {}", service.static_config().max_nodes());
 
     let result = node
@@ -54,10 +54,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         "max readers: {}",
         opened_service.static_config().max_readers()
     );
-    println!(
-        "max writers: {}",
-        opened_service.static_config().max_writers()
-    );
+    //println!(
+    //"max writers: {}",
+    //opened_service.static_config().max_writers()
+    //);
     println!("max nodes: {}", opened_service.static_config().max_nodes());
 
     let result = node

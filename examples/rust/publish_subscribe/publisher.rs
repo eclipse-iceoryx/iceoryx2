@@ -23,10 +23,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .publish_subscribe::<TransmissionData>()
-        .enable_safe_overflow(false)
         .open_or_create()?;
 
-    println!("{}", service.static_config().has_safe_overflow());
     let publisher = service.publisher_builder().create()?;
 
     let mut counter: u64 = 0;

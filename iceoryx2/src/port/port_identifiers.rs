@@ -71,10 +71,8 @@ generate_id! {
     UniqueServerId
 }
 generate_id! {
+    /// The system-wide unique id of a [`Reader`](crate::port::reader::Reader).
     UniqueReaderId
-}
-generate_id! {
-    UniqueWriterId
 }
 
 /// Enum that contains the unique port id
@@ -92,6 +90,6 @@ pub enum UniquePortId {
     Client(UniqueClientId),
     /// The system-wide unique id of a [`Server`](crate::port::server::Server).
     Server(UniqueServerId),
+    /// The system-wide unique id of a [`Reader`](crate::port::reader::Reader).
     Reader(UniqueReaderId),
-    Writer(UniqueWriterId),
 }

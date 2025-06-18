@@ -10,6 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! See [`crate::service`]
+//!
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
 use super::{OpenDynamicStorageFailure, ServiceState};
 use crate::service;
@@ -30,19 +34,35 @@ enum ServiceAvailabilityState {
     IncompatibleKeys,
 }
 
+/// Errors that can occur when an existing [`MessagingPattern::Blackboard`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlackboardOpenError {
+    /// Service could not be openen since it does not exist
     DoesNotExist,
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
+    /// The [`Service`] has the wrong key type.
     IncompatibleKeys,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// The [`AttributeVerifier`] required attributes that the [`Service`] does not satisfy.
     IncompatibleAttributes,
+    /// The [`Service`] has the wrong messaging pattern.
     IncompatibleMessagingPattern,
+    /// The [`Service`] supports less [`Reader`](crate::port::reader::Reader)s than requested.
     DoesNotSupportRequestedAmountOfReaders,
+    /// The process has not enough permissions to open the [`Service`]
     InsufficientPermissions,
+    /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
+    /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
+    /// The [`Service`] is marked for destruction and currently cleaning up since no one is using it anymore.
+    /// When the call creation call is repeated with a little delay the [`Service`] should be
+    /// recreatable.
     IsMarkedForDestruction,
+    /// The maximum number of [`Node`](crate::node::Node)s have already opened the [`Service`].
     ExceedsMaxNumberOfNodes,
+    /// The [`Service`] supports less [`Node`](crate::node::Node)s than requested.
     DoesNotSupportRequestedAmountOfNodes,
 }
 
@@ -74,13 +94,21 @@ impl From<ServiceAvailabilityState> for BlackboardOpenError {
     }
 }
 
+/// Errors that can occur when a new [`MessagingPattern::Blackboard`] [`Service`] shall be created.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlackboardCreateError {
+    /// The [`Service`] already exists.
     AlreadyExists,
+    /// Multiple processes are trying to create the same [`Service`].
     IsBeingCreatedByAnotherInstance,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
+    /// The process has insufficient permissions to create the [`Service`].
     InsufficientPermissions,
+    /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
+    /// The [`Service`]s creation timeout has passed and it is still not initialized. Can be caused
+    /// by a process that crashed during [`Service`] creation.
     HangsInCreation,
 }
 
@@ -112,10 +140,16 @@ impl From<ServiceAvailabilityState> for BlackboardCreateError {
     }
 }
 
+/// Errors that can occur when a [`MessagingPattern::Blackboard`] [`Service`] shall be
+/// created or opened.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum BlackboardOpenOrCreateError {
+    /// Failures that can occur when an existing [`Service`] could not be opened.
     BlackboardOpenError(BlackboardOpenError),
+    /// Failures that can occur when a [`Service`] could not be created.
     BlackboardCreateError(BlackboardCreateError),
+    /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
+    /// high frequency.
     SystemInFlux,
 }
 
@@ -145,6 +179,11 @@ impl From<BlackboardCreateError> for BlackboardOpenOrCreateError {
     }
 }
 
+/// Builder to create new [`MessagingPattern::Blackboard`] based [`Service`]s
+///
+/// # Example
+///
+/// See [`crate::service`]
 #[derive(Debug)]
 pub struct Builder<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
@@ -218,20 +257,28 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
         }
     }
 
+    /// If the [`Service`] is created it defines how many [`crate::port::reader::Reader`]s shall
+    /// be supported at most. If an existing [`Service`] is opened it defines how many
+    /// [`crate::port::reader::Reader`]s must be at least supported.
     pub fn max_readers(mut self, value: usize) -> Self {
         self.config_details_mut().max_readers = value;
         self.verify_max_readers = true;
         self
     }
 
+    /// If the [`Service`] is created it defines how many [`Node`](crate::node::Node)s shall
+    /// be able to open it in parallel. If an existing [`Service`] is opened it defines how many
+    /// [`Node`](crate::node::Node)s must be at least supported.
     pub fn max_nodes(mut self, value: usize) -> Self {
         self.config_details_mut().max_nodes = value;
         self.verify_max_nodes = true;
         self
     }
 
-    pub fn add<ValueType: ZeroCopySend>(mut self, key: KeyType, value: ValueType) -> Self {
-        // TODO
+    #[doc(hidden)]
+    #[allow(unused_mut)]
+    pub fn add<ValueType: ZeroCopySend>(mut self, _key: KeyType, _value: ValueType) -> Self {
+        // TODO: implement logic
         self
     }
 
@@ -279,6 +326,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
         Ok(existing_settings.clone())
     }
 
+    /// Validates configuration and overrides the invalid setting with meaningful values.
     fn adjust_configuration_to_meaningful_values(&mut self) {
         let origin = format!("{:?}", self);
         let settings = self.base.service_config.blackboard_mut();
@@ -497,7 +545,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                 // create dynamic config
                 let dynamic_config_setting = DynamicConfigSettings {
                     number_of_readers: blackboard_config.max_readers,
-                    number_of_writers: blackboard_config.max_writers,
+                    //number_of_writers: blackboard_config.max_writers,
                 };
 
                 let dynamic_config = match self.base.create_dynamic_config_storage(
