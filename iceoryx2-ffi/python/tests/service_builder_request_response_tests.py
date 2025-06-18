@@ -267,4 +267,154 @@ def test_node_listing_works(service_type) -> None:
             case node.Undefined():
                 assert False
 
+@pytest.mark.parametrize("service_type", service_types)
+def test_service_builder_configuration_works(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
 
+    service_name = iox2.testing.generate_service_name()
+    safe_overflow_requests = False
+    safe_overflow_responses = False
+    fire_and_forget = False
+    max_active_requests_per_client = 99
+    max_loaned_requests = 88
+    max_response_buffer_size = 77
+    max_servers = 66
+    max_clients = 55
+    max_nodes = 44
+    max_borrowed_responses_per_pending_response = 33
+    sut = (
+        node.service_builder(service_name)
+            .request_response()
+            .enable_safe_overflow_for_requests(safe_overflow_requests)
+            .enable_safe_overflow_for_responses(safe_overflow_responses)
+            .enable_fire_and_forget_requests(fire_and_forget)
+            .max_active_requests_per_client(max_active_requests_per_client)
+            .max_loaned_requests(max_loaned_requests)
+            .max_response_buffer_size(max_response_buffer_size)
+            .max_servers(max_servers)
+            .max_clients(max_clients)
+            .max_nodes(max_nodes)
+            .max_borrowed_responses_per_pending_response(max_borrowed_responses_per_pending_response)
+            .create()
+    )
+
+    static_config = sut.static_config
+    assert static_config.has_safe_overflow_for_requests == safe_overflow_requests
+    assert static_config.has_safe_overflow_for_responses == safe_overflow_responses
+    assert static_config.does_support_fire_and_forget_requests == fire_and_forget
+    assert static_config.max_borrowed_responses_per_pending_response == max_borrowed_responses_per_pending_response
+    assert static_config.max_active_requests_per_client == max_active_requests_per_client
+    assert static_config.max_response_buffer_size == max_response_buffer_size
+    assert static_config.max_loaned_requests == max_loaned_requests
+    assert static_config.max_servers == max_servers
+    assert static_config.max_clients == max_clients
+    assert static_config.max_nodes == max_nodes
+    
+@pytest.mark.parametrize("service_type", service_types)
+def test_custom_request_payload_works(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+            .config(config)
+            .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    payload = (
+        iox2.TypeDetail.new()
+            .type_variant(iox2.TypeVariant.Dynamic)
+            .type_name(iox2.TypeName.new("froooogs"))
+            .size(512)
+            .alignment(128)
+    )
+    sut = (
+        node.service_builder(service_name)
+            .request_response()
+            .request_payload_type_details(payload)
+            .create()
+    )
+
+    assert sut.static_config.request_message_type_details.payload == payload
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_custom_request_header_works(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+            .config(config)
+            .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    user_header = (
+        iox2.TypeDetail.new()
+            .type_variant(iox2.TypeVariant.FixedSize)
+            .type_name(iox2.TypeName.new("touch the stone, but gently"))
+            .size(8192)
+            .alignment(4096)
+    )
+    sut = (
+        node.service_builder(service_name)
+            .request_response()
+            .request_header_type_details(user_header)
+            .create()
+    )
+
+    assert sut.static_config.request_message_type_details.user_header == user_header
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_custom_response_payload_works(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+            .config(config)
+            .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    payload = (
+        iox2.TypeDetail.new()
+            .type_variant(iox2.TypeVariant.Dynamic)
+            .type_name(iox2.TypeName.new("you crinkled the candle"))
+            .size(8)
+            .alignment(8)
+    )
+    sut = (
+        node.service_builder(service_name)
+            .request_response()
+            .response_payload_type_details(payload)
+            .create()
+    )
+
+    assert sut.static_config.response_message_type_details.payload == payload
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_custom_response_header_works(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = (
+        iox2.NodeBuilder.new()
+            .config(config)
+            .create(service_type)
+    )
+
+    service_name = iox2.testing.generate_service_name()
+    user_header = (
+        iox2.TypeDetail.new()
+            .type_variant(iox2.TypeVariant.FixedSize)
+            .type_name(iox2.TypeName.new("now the candle bends you"))
+            .size(16)
+            .alignment(1)
+    )
+    sut = (
+        node.service_builder(service_name)
+            .request_response()
+            .response_header_type_details(user_header)
+            .create()
+    )
+
+    assert sut.static_config.response_message_type_details.user_header == user_header
