@@ -64,6 +64,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    NotifierNotifyError,
+    PyException,
+    "Errors caused when sending a notificiation via the Notifier port in an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     EventOpenError,
     PyException,
     "Errors caused when opening an event service."

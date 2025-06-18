@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Listener example"""
+"""Notifier example"""
 
 import iceoryx2_ffi_python as iox2
 
@@ -22,15 +22,18 @@ event = (
         .event()
         .open_or_create()
 )
+max_event_id = event.static_config.event_id_max_value
+notifier = event.notifier_builder().create()
 
-listener = event.listener_builder().create()
-
+counter = 0
 cycle_time = iox2.Duration.from_secs(1)
 
 try:
     while True:
-        event_id = listener.timed_wait_one(cycle_time)
-        if event_id is not None:
-            print("event was triggered with id: ", event_id)
-except iox2.ListenerWaitError:
+        node.wait(cycle_time)
+        counter += 1
+        notifier.notify_with_custom_event_id(iox2.EventId.new(counter % max_event_id))
+
+        print("Trigger event with id ", counter, " ...")
+except iox2.NodeWaitFailure:
     print("exit")

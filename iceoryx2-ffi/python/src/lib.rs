@@ -33,10 +33,12 @@ pub mod node_builder;
 pub mod node_id;
 pub mod node_name;
 pub mod node_state;
+pub mod notifier;
 pub mod parc;
 pub mod path;
 pub mod port_factory_event;
 pub mod port_factory_listener;
+pub mod port_factory_notifier;
 pub mod port_factory_publish_subscribe;
 pub mod port_factory_request_response;
 pub mod service_builder;
@@ -56,6 +58,7 @@ pub mod type_name;
 pub mod type_variant;
 pub mod unable_to_deliver_strategy;
 pub mod unique_listener_id;
+pub mod unique_notifier_id;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
@@ -93,9 +96,11 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::node_state::AliveNodeView>()?;
     m.add_class::<crate::node_state::DeadNodeView>()?;
     m.add_class::<crate::node_state::NodeDetails>()?;
+    m.add_class::<crate::notifier::Notifier>()?;
     m.add_class::<crate::path::Path>()?;
     m.add_class::<crate::port_factory_event::PortFactoryEvent>()?;
     m.add_class::<crate::port_factory_listener::PortFactoryListener>()?;
+    m.add_class::<crate::port_factory_notifier::PortFactoryNotifier>()?;
     m.add_class::<crate::port_factory_publish_subscribe::PortFactoryPublishSubscribe>()?;
     m.add_class::<crate::port_factory_request_response::PortFactoryRequestResponse>()?;
     m.add_class::<crate::service_builder::ServiceBuilder>()?;
@@ -114,6 +119,7 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::type_name::TypeName>()?;
     m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
     m.add_class::<crate::unique_listener_id::UniqueListenerId>()?;
+    m.add_class::<crate::unique_notifier_id::UniqueNotifierId>()?;
 
     m.add(
         "InvalidAlignmentValue",
@@ -154,6 +160,10 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add(
         "NodeWaitFailure",
         py.get_type::<crate::error::NodeWaitFailure>(),
+    )?;
+    m.add(
+        "NotifierNotifyError",
+        py.get_type::<crate::error::NotifierNotifyError>(),
     )?;
     m.add(
         "SemanticStringError",
