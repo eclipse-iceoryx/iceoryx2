@@ -48,10 +48,14 @@ pub(crate) enum ServiceBuilderRequestResponseType {
 }
 
 #[pyclass]
+/// Builder to create new `MessagingPattern::RequestResponse` based `Service`s
 pub struct ServiceBuilderRequestResponse(pub(crate) ServiceBuilderRequestResponseType);
 
 #[pymethods]
 impl ServiceBuilderRequestResponse {
+    /// Defines the payload type for requests. To be able to connect to a `Service` the
+    /// `TypeDetail` must be identical in all participants since the communication is always
+    /// strongly typed.
     pub fn request_payload_type_details(&self, value: &TypeDetail) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -67,6 +71,8 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Defines the request header type. To be able to connect to a `Service` the `TypeDetail` must
+    /// be identical in all participants since the communication is always strongly typed.
     pub fn request_header_type_details(&self, value: &TypeDetail) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -82,6 +88,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Defines the payload type for responses. To be able to connect to a `Service` the
+    /// `TypeDetail` must be identical in all participants since the communication is always
+    /// strongly typed.
     pub fn response_payload_type_details(&self, value: &TypeDetail) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -97,6 +106,8 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Defines the response header type. To be able to connect to a `Service` the `TypeDetail`
+    /// must be identical in all participants since the communication is always strongly typed.
     pub fn response_header_type_details(&self, value: &TypeDetail) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -112,6 +123,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Overrides and increases the alignment of the request payload - useful when the payload is
+    /// used in SIMD operations. To be able to connect to a `Service` the payload alignment must be
+    /// identical in all participants since the communication is always strongly typed.
     pub fn request_payload_alignment(&self, value: &Alignment) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -127,6 +141,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Overrides and increases the alignment of the response payload - useful when the payload is
+    /// used in SIMD operations. To be able to connect to a `Service` the payload alignment must be
+    /// identical in all participants since the communication is always strongly typed.
     pub fn response_payload_alignment(&self, value: &Alignment) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -142,6 +159,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` is created, defines the overflow behavior of the service for requests.
+    /// If an existing `Service` is opened it requires the service to have the defined overflow
+    /// behavior.
     pub fn enable_safe_overflow_for_requests(&self, value: bool) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -157,6 +177,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` is created, defines the overflow behavior of the service for responses.
+    /// If an existing `Service` is opened it requires the service to have the defined overflow
+    /// behavior.
     pub fn enable_safe_overflow_for_responses(&self, value: bool) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -172,6 +195,8 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` is created, defines the fire-and-forget behavior of the service for
+    /// requests.
     pub fn enable_fire_and_forget_requests(&self, value: bool) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -187,6 +212,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Defines how many active requests a `Server` can hold in
+    /// parallel per `Client`. The objects are used to send answers to a request that was
+    /// received earlier from a `Client`.
     pub fn max_active_requests_per_client(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -202,6 +230,8 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` is created it defines how many `RequestMut` a
+    /// `Client` can loan in parallel.
     pub fn max_loaned_requests(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -217,6 +247,8 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` is created it defines how many responses fit in the
+    /// `Clients`s buffer. If an existing `Service` is opened it defines the minimum required.
     pub fn max_response_buffer_size(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -232,6 +264,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` is created it defines how many `Server`s shall
+    /// be supported at most. If an existing `Service` is opened it defines how many
+    /// `Server`s must be at least supported.
     pub fn max_servers(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -247,6 +282,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` is created it defines how many `Client`s shall
+    /// be supported at most. If an existing `Service` is opened it defines how many
+    /// `Client`s must be at least supported.
     pub fn max_clients(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -262,6 +300,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` is created it defines how many `Node`s shall
+    /// be able to open it in parallel. If an existing `Service` is opened it defines how many
+    /// `Node`s must be at least supported.
     pub fn max_nodes(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -277,6 +318,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` is created it defines how many `Response`s shall
+    /// be able to be borrowed in parallel per `PendingResponse`. If an
+    /// existing `Service` is opened it defines how many borrows must be at least supported.
     pub fn max_borrowed_responses_per_pending_response(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -292,6 +336,8 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` exists, it will be opened otherwise a new `Service` will be created.
+    /// On failure `RequestResponseOpenOrCreateError` will be emitted.
     pub fn open_or_create(&self) -> PyResult<PortFactoryRequestResponse> {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -313,6 +359,13 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// If the `Service` exists, it will be opened otherwise a new `Service` will be
+    /// created. It defines a set of attributes.
+    ///
+    /// If the `Service` already exists all attribute requirements must be satisfied,
+    /// and service payload type must be the same, otherwise the open process will fail.
+    /// If the `Service` does not exist the required attributes will be defined in the `Service`.
+    /// On failure `RequestResponseOpenOrCreateError` will be emitted.
     pub fn open_or_create_with_attributes(
         &self,
         verifier: &AttributeVerifier,
@@ -343,6 +396,8 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Opens an existing `Service`.
+    /// On failure `RequestResponseOpenError` will be emitted.
     pub fn open(&self) -> PyResult<PortFactoryRequestResponse> {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -366,6 +421,9 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Opens an existing `Service` with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    /// On failure `RequestResponseOpenError` will be emitted.
     pub fn open_with_attributes(
         &self,
         verifier: &AttributeVerifier,
@@ -392,6 +450,8 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Creates a new `Service`.
+    /// On failure `RequestResponseCreateError` will be emitted.
     pub fn create(&self) -> PyResult<PortFactoryRequestResponse> {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
@@ -415,6 +475,8 @@ impl ServiceBuilderRequestResponse {
         }
     }
 
+    /// Creates a new `Service` with a set of attributes.
+    /// On failure `RequestResponseCreateError` will be emitted.
     pub fn create_with_attributes(
         &self,
         attributes: &AttributeSpecifier,

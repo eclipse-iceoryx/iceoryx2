@@ -30,6 +30,7 @@ impl Default for TypeDetail {
 #[pymethods]
 impl TypeDetail {
     #[staticmethod]
+    /// Creates a new `TypeDetail` for the unit type. Meaning size == 0, alignment == 1
     pub fn new() -> Self {
         Self(
             iceoryx2::service::static_config::message_type_details::TypeDetail::__internal_new::<()>(
@@ -38,24 +39,30 @@ impl TypeDetail {
         )
     }
 
+    /// Defines the `TypeVariant` of the defined type. `TypeVariant::FixedSize` if the type has
+    /// always the same size like an `uint64_t` or `TypeVariant::Dynamic` when it is a dynamic
+    /// array or vector
     pub fn type_variant(&self, value: &TypeVariant) -> Self {
         let mut this = self.0.clone();
         this.variant = (value.clone()).into();
         Self(this)
     }
 
+    /// Sets the unique `TypeName` of the type
     pub fn type_name(&self, name: &TypeName) -> Self {
         let mut this = self.0.clone();
         this.type_name = name.0.clone();
         Self(this)
     }
 
+    /// Sets the size of the type
     pub fn size(&self, size: usize) -> Self {
         let mut this = self.0.clone();
         this.size = size;
         Self(this)
     }
 
+    /// Sets the alignment of the type
     pub fn alignment(&self, alignment: usize) -> Self {
         let mut this = self.0.clone();
         this.alignment = alignment;

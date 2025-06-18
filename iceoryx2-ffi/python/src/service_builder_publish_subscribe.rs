@@ -44,10 +44,13 @@ pub(crate) enum ServiceBuilderPublishSubscribeType {
 }
 
 #[pyclass]
+/// Builder to create new `MessagingPattern::PublishSubscribe` based `Service`s
 pub struct ServiceBuilderPublishSubscribe(pub(crate) ServiceBuilderPublishSubscribeType);
 
 #[pymethods]
 impl ServiceBuilderPublishSubscribe {
+    /// Defines the payload type. To be able to connect to a `Service` the `TypeDetail` must be
+    /// identical in all participants since the communication is always strongly typed.
     pub fn payload_type_details(&self, value: &TypeDetail) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -63,6 +66,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// Defines the user header type. To be able to connect to a `Service` the `TypeDetail` must be
+    /// identical in all participants since the communication is always strongly typed.
     pub fn user_header_type_details(&self, value: &TypeDetail) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -78,6 +83,9 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// Overrides and increases the alignment of the payload - useful when the payload is used in
+    /// SIMD operations. To be able to connect to a `Service` the payload alignment must be
+    /// identical in all participants since the communication is always strongly typed.
     pub fn payload_alignment(&self, value: &Alignment) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -93,6 +101,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// If the `Service` is created, defines the overflow behavior of the service. If an existing
+    /// `Service` is opened it requires the service to have the defined overflow behavior.
     pub fn enable_safe_overflow(&self, value: bool) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -108,6 +118,9 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// If the `Service` is created it defines how many `Sample`s a
+    /// [`crate::port::subscriber::Subscriber`] can borrow at most in parallel. If an existing
+    /// [`Service`] is opened it defines the minimum required.
     pub fn subscriber_max_borrowed_samples(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -123,6 +136,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// If the `Service` is created it defines the maximum history size a `Subscriber` can request
+    /// on connection. If an existing `Service` is opened it defines the minimum required.
     pub fn history_size(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -138,6 +153,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// If the `Service` is created it defines how many `Sample` a `Subscriber` can store in its
+    /// internal buffer. If an existing `Service` is opened it defines the minimum required.
     pub fn subscriber_max_buffer_size(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -153,6 +170,9 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// If the `Service` is created it defines how many `Subscriber` shall be supported at
+    /// most. If an existing `Service` is opened it defines how many `Subscriber` must be at
+    /// least supported.
     pub fn max_subscribers(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -168,6 +188,9 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// If the `Service` is created it defines how many `Publisher` shall be supported at
+    /// most. If an existing `Service` is opened it defines how many `Publisher` must be at
+    /// least supported.
     pub fn max_publishers(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -183,6 +206,9 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// If the `Service` is created it defines how many [`Node`]s shall be able to open it in
+    /// parallel. If an existing `Service` is opened it defines how many [`Node`]s must be at
+    /// least supported.
     pub fn max_nodes(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -198,6 +224,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// If the `Service` exists, it will be opened otherwise a new `Service` will be created.
+    /// On failure it emits `PublishSubscribeOpenOrCreateError`
     pub fn open_or_create(&self) -> PyResult<PortFactoryPublishSubscribe> {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -219,6 +247,11 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// If the `Service` exists, it will be opened otherwise a new `Service` will be
+    /// created. It defines a set of attributes. If the `Service` already exists all attribute
+    /// requirements must be satisfied otherwise the open process will fail. If the `Service`
+    /// does not exist the required attributes will be defined in the `Service`.
+    /// On failure it emits `PublishSubscribeOpenOrCreateError`
     pub fn open_or_create_with_attributes(
         &self,
         verifier: &AttributeVerifier,
@@ -249,6 +282,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// Opens an existing `Service`.
+    /// On failure it emits `PublishSubscribeOpenError`.
     pub fn open(&self) -> PyResult<PortFactoryPublishSubscribe> {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -272,6 +307,9 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// Opens an existing `Service` with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail.
+    /// On failure it emits `PublishSubscribeOpenError`.
     pub fn open_with_attributes(
         &self,
         verifier: &AttributeVerifier,
@@ -298,6 +336,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// Creates a new `Service`.
+    /// On failure it emits `PublishSubscribeCreateError`.
     pub fn create(&self) -> PyResult<PortFactoryPublishSubscribe> {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -323,6 +363,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
+    /// Creates a new `Service` with a set of attributes.
+    /// On failure it emits `PublishSubscribeCreateError`.
     pub fn create_with_attributes(
         &self,
         attributes: &AttributeSpecifier,

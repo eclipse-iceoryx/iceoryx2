@@ -15,6 +15,8 @@ use pyo3::prelude::*;
 
 #[pyclass(str = "{0:?}", eq)]
 #[derive(PartialEq, Clone)]
+/// Represents the string name of a type. The name shall uniquely identify the type in the
+/// communication system.
 pub struct TypeName(
     pub(crate) iceoryx2::service::static_config::message_type_details::TypeNameString,
 );
@@ -22,6 +24,8 @@ pub struct TypeName(
 #[pymethods]
 impl TypeName {
     #[staticmethod]
+    /// Creates a new `TypeName`. If the provided `name` exceeds the maximum supported length
+    /// it emits an `SemanticStringError`.
     pub fn new(name: &str) -> PyResult<Self> {
         Ok(Self(
             iceoryx2::service::static_config::message_type_details::TypeNameString::from_bytes(
@@ -32,11 +36,13 @@ impl TypeName {
     }
 
     #[staticmethod]
+    /// The maximum supported length of a `TypeName`
     pub fn max_len() -> usize {
         iceoryx2::service::static_config::message_type_details::TypeNameString::capacity()
     }
 
     #[allow(clippy::inherent_to_string)] // method required to generate this API in Python
+    /// Returns the underlying `String` of the `TypeName`
     pub fn to_string(&self) -> String {
         self.0.to_string()
     }

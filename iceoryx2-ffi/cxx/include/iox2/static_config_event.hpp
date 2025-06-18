@@ -50,7 +50,7 @@ class StaticConfigEvent {
 
     /// Returns the deadline of the service. If no new notification is signaled from any
     /// [`Notifier`] after the given deadline, it is rated
-    /// as an error and all [`Listener`] that are attached
+    /// as an error and all [`Listener`]s that are attached
     /// to a [`WaitSet`] are woken up and notified about the missed
     /// deadline.
     auto deadline() const -> iox::optional<iox::units::Duration>;

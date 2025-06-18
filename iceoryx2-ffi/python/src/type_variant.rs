@@ -17,7 +17,9 @@ use pyo3::prelude::*;
 /// Defines if the type is a slice with a runtime-size (`TypeVariant::Dynamic`)
 /// or if its a type that satisfies `Sized` (`TypeVariant::FixedSize`).
 pub enum TypeVariant {
+    /// A fixed size type like `uint64_t`
     FixedSize,
+    /// A dynamic sized type like a slice (dynamic array)
     Dynamic,
 }
 
