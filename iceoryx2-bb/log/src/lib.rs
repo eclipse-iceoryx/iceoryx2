@@ -210,13 +210,13 @@ impl LogLevel {
     }
 }
 
-/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it wiht LogLevel::INFO
+/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with LogLevel::INFO
 pub fn set_log_level_from_env_or_default() {
     set_log_level_from_env_or(DEFAULT_LOG_LEVEL);
 }
 
 /// Sets the log level by reading environment variable "IOX2_LOG_LEVEL", and if the environment variable
-/// doesn't exits it sets it with a user-defined logging level
+/// doesn't exit it sets it with a user-defined logging level
 pub fn set_log_level_from_env_or(v: LogLevel) {
     let log_level = env::var("IOX2_LOG_LEVEL")
         .ok()

@@ -125,10 +125,12 @@ impl PortFactoryEvent {
         }
     }
 
+    /// Returns a `PortFactoryListener` to create a new `Listener` port
     pub fn listener_builder(&self) -> PortFactoryListener {
         PortFactoryListener::new(self.0.clone())
     }
 
+    /// Returns a `PortFactoryNotifier` to create a new `Notifier` port
     pub fn notifier_builder(&self) -> PortFactoryNotifier {
         PortFactoryNotifier::new(self.0.clone())
     }

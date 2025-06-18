@@ -23,13 +23,13 @@ pub fn set_log_level(value: LogLevel) {
 
 #[pyfunction]
 /// Sets the log level by reading environment variable "IOX2_LOG_LEVEL", and if the environment variable
-/// doesn't exits it sets it with a user-defined logging level
+/// doesn't exit it sets it with a user-defined logging level
 pub fn set_log_level_from_env_or(value: LogLevel) {
     iceoryx2::prelude::set_log_level_from_env_or(value.into());
 }
 
 #[pyfunction]
-/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it wiht LogLevel::INFO
+/// Sets the log level by reading environment variable "IOX2_LOG_LEVEL" or default it with LogLevel::INFO
 pub fn set_log_level_from_env_or_default() {
     iceoryx2::prelude::set_log_level_from_env_or_default();
 }

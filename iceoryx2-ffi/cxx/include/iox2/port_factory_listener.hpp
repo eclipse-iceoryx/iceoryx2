@@ -19,8 +19,7 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
-/// Factory to create a new [`Listener`] port/endpoint for
-/// [`MessagingPattern::Event`] based
+/// Factory to create a new [`Listener`] port/endpoint for [`MessagingPattern::Event`] based
 /// communication.
 template <ServiceType S>
 class PortFactoryListener {

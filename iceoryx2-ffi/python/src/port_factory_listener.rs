@@ -14,6 +14,7 @@ use iceoryx2::prelude::{ipc, local};
 use pyo3::prelude::*;
 
 use crate::{
+    error::ListenerCreateError,
     listener::{Listener, ListenerType},
     parc::Parc,
     port_factory_event::PortFactoryEventType,
@@ -26,6 +27,8 @@ pub(crate) enum PortFactoryListenerType {
 }
 
 #[pyclass]
+/// Factory to create a new `Listener` port/endpoint for `MessagingPattern::Event` based
+/// communication.
 pub struct PortFactoryListener {
     // required to hold since the PortFactoryListener has a reference to it and thanks to the
     // garbage collector we do not know how long it will be available
@@ -64,16 +67,21 @@ impl PortFactoryListener {
 
 #[pymethods]
 impl PortFactoryListener {
+    /// Creates the `Listener` port or emits a `ListenerCreateError` on failure.
     pub fn create(&self) -> PyResult<Listener> {
         let _guard = self.factory.lock();
         match &self.value {
             PortFactoryListenerType::Ipc(v) => {
                 let this = v.clone();
-                Ok(Listener(ListenerType::Ipc(this.create().unwrap())))
+                Ok(Listener(ListenerType::Ipc(this.create().map_err(|e| {
+                    ListenerCreateError::new_err(format!("{e:?}"))
+                })?)))
             }
             PortFactoryListenerType::Local(v) => {
                 let this = v.clone();
-                Ok(Listener(ListenerType::Local(this.create().unwrap())))
+                Ok(Listener(ListenerType::Local(this.create().map_err(
+                    |e| ListenerCreateError::new_err(format!("{e:?}")),
+                )?)))
             }
         }
     }

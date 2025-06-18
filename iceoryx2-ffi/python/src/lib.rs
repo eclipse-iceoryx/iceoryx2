@@ -142,6 +142,10 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
         py.get_type::<crate::error::EventOpenOrCreateError>(),
     )?;
     m.add(
+        "ListenerCreateError",
+        py.get_type::<crate::error::ListenerCreateError>(),
+    )?;
+    m.add(
         "ListenerWaitError",
         py.get_type::<crate::error::ListenerWaitError>(),
     )?;
@@ -160,6 +164,10 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add(
         "NodeWaitFailure",
         py.get_type::<crate::error::NodeWaitFailure>(),
+    )?;
+    m.add(
+        "NotifierCreateError",
+        py.get_type::<crate::error::NotifierCreateError>(),
     )?;
     m.add(
         "NotifierNotifyError",

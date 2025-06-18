@@ -16,6 +16,7 @@ use iceoryx2::prelude::{ipc, local};
 use pyo3::prelude::*;
 
 use crate::{
+    error::NotifierCreateError,
     event_id::EventId,
     notifier::{Notifier, NotifierType},
     parc::Parc,
@@ -29,6 +30,8 @@ pub(crate) enum PortFactoryNotifierType {
 }
 
 #[pyclass]
+/// Factory to create a new `Notifier` port/endpoint for `MessagingPattern::Event` based
+/// communication.
 pub struct PortFactoryNotifier {
     // required to hold since the PortFactoryNotifier has a reference to it and thanks to the
     // garbage collector we do not know how long it will be available
@@ -67,24 +70,28 @@ impl PortFactoryNotifier {
 
 #[pymethods]
 impl PortFactoryNotifier {
+    /// Creates a new `Notifier` port or emits a `NotifierCreateError` on failure.
     pub fn create(&self) -> PyResult<Notifier> {
         let _guard = self.factory.lock();
         match &self.value {
             PortFactoryNotifierType::Ipc(v) => {
                 let this = v.clone();
                 Ok(Notifier(Mutex::new(NotifierType::Ipc(
-                    this.create().unwrap(),
+                    this.create()
+                        .map_err(|e| NotifierCreateError::new_err(format!("{e:?}")))?,
                 ))))
             }
             PortFactoryNotifierType::Local(v) => {
                 let this = v.clone();
                 Ok(Notifier(Mutex::new(NotifierType::Local(
-                    this.create().unwrap(),
+                    this.create()
+                        .map_err(|e| NotifierCreateError::new_err(format!("{e:?}")))?,
                 ))))
             }
         }
     }
 
+    /// Sets a default `EventId` for the `Notifier` that is used in `Notifier.notify()`
     pub fn default_event_id(&self, value: &EventId) -> Self {
         let _guard = self.factory.lock();
         match &self.value {

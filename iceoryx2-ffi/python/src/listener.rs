@@ -26,11 +26,13 @@ pub(crate) enum ListenerType {
 }
 
 #[pyclass]
+/// Represents the receiving endpoint of an event based communication.
 pub struct Listener(pub(crate) ListenerType);
 
 #[pymethods]
 impl Listener {
     #[getter]
+    /// Returns the deadline of the corresponding `Service`.
     pub fn deadline(&self) -> Option<Duration> {
         match &self.0 {
             ListenerType::Ipc(v) => v.deadline().map(Duration),
@@ -38,6 +40,8 @@ impl Listener {
         }
     }
 
+    /// Non-blocking wait for a new `EventId`. If no `EventId` was notified it returns `None`.
+    /// On error it emits `ListenerWaitError`.
     pub fn try_wait_one(&self) -> PyResult<Option<EventId>> {
         match &self.0 {
             ListenerType::Ipc(v) => Ok(v
@@ -51,6 +55,9 @@ impl Listener {
         }
     }
 
+    /// Blocking wait for a new `EventId` until either an `EventId` was received or the timeout
+    /// has passed. If no `EventId` was notified it returns `None`.
+    /// On error it emits `ListenerWaitError`.
     pub fn timed_wait_one(&self, timeout: &Duration) -> PyResult<Option<EventId>> {
         match &self.0 {
             ListenerType::Ipc(v) => Ok(v
@@ -64,6 +71,9 @@ impl Listener {
         }
     }
 
+    /// Blocking wait for a new `EventId`.
+    /// Sporadic wakeups can occur and if no `EventId` was notified it returns `None`.
+    /// On error it emits `ListenerWaitError`.
     pub fn blocking_wait_one(&self) -> PyResult<Option<EventId>> {
         match &self.0 {
             ListenerType::Ipc(v) => Ok(v
@@ -77,6 +87,9 @@ impl Listener {
         }
     }
 
+    /// Non-blocking wait for new `EventId`s. Collects all `EventId`s that were received and
+    /// calls the provided callback is with the `EventId` as input argument.
+    /// On error it emits `ListenerWaitError`.
     pub fn try_wait_all(&self) -> PyResult<Vec<EventId>> {
         let mut event_ids = vec![];
         match &self.0 {
@@ -91,6 +104,10 @@ impl Listener {
         Ok(event_ids)
     }
 
+    /// Blocking wait for new `EventId`s until the provided timeout has passed. Unblocks as soon
+    /// as an `EventId` was received and then collects all `EventId`s that were received and
+    /// calls the provided callback is with the `EventId` as input argument.
+    /// On error it emits `ListenerWaitError`.
     pub fn timed_wait_all(&self, timeout: &Duration) -> PyResult<Vec<EventId>> {
         let mut event_ids = vec![];
         match &self.0 {
@@ -105,6 +122,10 @@ impl Listener {
         Ok(event_ids)
     }
 
+    /// Blocking wait for new `EventId`s. Unblocks as soon
+    /// as an `EventId` was received and then collects all `EventId`s that were received and
+    /// calls the provided callback is with the `EventId` as input argument.
+    /// On error it emits `ListenerWaitError`.
     pub fn blocking_wait_all(&self) -> PyResult<Vec<EventId>> {
         let mut event_ids = vec![];
         match &self.0 {

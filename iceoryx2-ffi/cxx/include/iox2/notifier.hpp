@@ -38,15 +38,12 @@ class Notifier {
 
     /// Notifies all [`Listener`] connected to the service with the default
     /// event id provided on creation.
-    /// On success the number of
-    /// [`Listener`]s that were notified otherwise it returns
+    /// Returns on success the number of [`Listener`]s that were notified otherwise it returns
     /// [`NotifierNotifyError`].
     auto notify() const -> iox::expected<size_t, NotifierNotifyError>;
 
-    /// Notifies all [`Listener`] connected to the service with a custom
-    /// [`EventId`].
-    /// On success the number of
-    /// [`Listener`]s that were notified otherwise it returns
+    /// Notifies all [`Listener`] connected to the service with a custom [`EventId`].
+    /// Returns on success the number of [`Listener`]s that were notified otherwise it returns
     /// [`NotifierNotifyError`].
     auto notify_with_custom_event_id(EventId event_id) const -> iox::expected<size_t, NotifierNotifyError>;
 

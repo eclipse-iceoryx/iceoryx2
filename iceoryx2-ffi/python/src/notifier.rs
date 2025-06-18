@@ -26,11 +26,13 @@ pub(crate) enum NotifierType {
 }
 
 #[pyclass]
+/// Represents the sending endpoint of an event based communication.
 pub struct Notifier(pub(crate) Mutex<NotifierType>);
 
 #[pymethods]
 impl Notifier {
     #[getter]
+    /// Returns the `UniqueNotifierId` of the `Notifier`
     pub fn id(&self) -> UniqueNotifierId {
         match &*self.0.lock().unwrap() {
             NotifierType::Ipc(v) => UniqueNotifierId(v.id()),
@@ -39,6 +41,7 @@ impl Notifier {
     }
 
     #[getter]
+    /// Returns the deadline of the corresponding `Service`.
     pub fn deadline(&self) -> Option<Duration> {
         match &*self.0.lock().unwrap() {
             NotifierType::Ipc(v) => v.deadline().map(Duration),
@@ -46,6 +49,10 @@ impl Notifier {
         }
     }
 
+    /// Notifies all `Listener` connected to the service with the default
+    /// event id provided on creation.
+    /// Returns on success the number of `Listener`s that were notified otherwise it emits
+    /// `NotifierNotifyError`.
     pub fn notify(&self) -> PyResult<usize> {
         match &*self.0.lock().unwrap() {
             NotifierType::Ipc(v) => Ok(v
@@ -57,6 +64,9 @@ impl Notifier {
         }
     }
 
+    /// Notifies all `Listener` connected to the service with a custom `EventId`.
+    /// Returns on success the number of `Listener`s that were notified otherwise it returns
+    /// `NotifierNotifyError`.
     pub fn notify_with_custom_event_id(&self, event_id: &EventId) -> PyResult<usize> {
         match &*self.0.lock().unwrap() {
             NotifierType::Ipc(v) => Ok(v
