@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
-use super::ServiceState;
+use super::{OpenDynamicStorageFailure, ServiceState};
 use crate::service;
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
 use crate::service::port_factory::blackboard;
@@ -24,6 +24,12 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+enum ServiceAvailabilityState {
+    ServiceState(ServiceState),
+    IncompatibleKeys,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlackboardOpenError {
     DoesNotExist,
@@ -33,6 +39,10 @@ pub enum BlackboardOpenError {
     IncompatibleAttributes,
     IncompatibleMessagingPattern,
     DoesNotSupportRequestedAmountOfReaders,
+    InsufficientPermissions,
+    HangsInCreation,
+    IsMarkedForDestruction,
+    ExceedsMaxNumberOfNodes,
 }
 
 impl core::fmt::Display for BlackboardOpenError {
@@ -47,7 +57,18 @@ impl From<ServiceAvailabilityState> for BlackboardOpenError {
     fn from(value: ServiceAvailabilityState) -> Self {
         match value {
             ServiceAvailabilityState::IncompatibleKeys => BlackboardOpenError::IncompatibleKeys,
-            _ => BlackboardOpenError::DoesNotExist,
+            ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+                BlackboardOpenError::IncompatibleMessagingPattern
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+                BlackboardOpenError::InsufficientPermissions
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
+                BlackboardOpenError::HangsInCreation
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
+                BlackboardOpenError::ServiceInCorruptedState
+            }
         }
     }
 }
@@ -59,16 +80,33 @@ pub enum BlackboardCreateError {
     InternalFailure,
     InsufficientPermissions,
     ServiceInCorruptedState,
+    HangsInCreation,
 }
 
 impl From<ServiceAvailabilityState> for BlackboardCreateError {
     fn from(value: ServiceAvailabilityState) -> Self {
-        BlackboardCreateError::AlreadyExists
+        match value {
+            ServiceAvailabilityState::IncompatibleKeys
+            | ServiceAvailabilityState::ServiceState(ServiceState::IncompatibleMessagingPattern) => {
+                BlackboardCreateError::AlreadyExists
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::InsufficientPermissions) => {
+                BlackboardCreateError::InsufficientPermissions
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::HangsInCreation) => {
+                BlackboardCreateError::HangsInCreation
+            }
+            ServiceAvailabilityState::ServiceState(ServiceState::Corrupted) => {
+                BlackboardCreateError::ServiceInCorruptedState
+            }
+        }
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum BlackboardOpenOrCreateError {
+    BlackboardOpenError(BlackboardOpenError),
+    BlackboardCreateError(BlackboardCreateError),
     SystemInFlux,
 }
 
@@ -80,27 +118,21 @@ impl core::fmt::Display for BlackboardOpenOrCreateError {
 
 impl core::error::Error for BlackboardOpenOrCreateError {}
 
-#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
-enum ServiceAvailabilityState {
-    ServiceState(ServiceState),
-    IncompatibleKeys,
-}
-
 impl From<ServiceAvailabilityState> for BlackboardOpenOrCreateError {
     fn from(value: ServiceAvailabilityState) -> Self {
-        BlackboardOpenOrCreateError::SystemInFlux
+        Self::BlackboardOpenError(value.into())
     }
 }
 
 impl From<BlackboardOpenError> for BlackboardOpenOrCreateError {
     fn from(value: BlackboardOpenError) -> Self {
-        BlackboardOpenOrCreateError::SystemInFlux
+        Self::BlackboardOpenError(value)
     }
 }
 
 impl From<BlackboardCreateError> for BlackboardOpenOrCreateError {
     fn from(value: BlackboardCreateError) -> Self {
-        BlackboardOpenOrCreateError::SystemInFlux
+        Self::BlackboardCreateError(value)
     }
 }
 
@@ -108,6 +140,7 @@ impl From<BlackboardCreateError> for BlackboardOpenOrCreateError {
 pub struct Builder<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify_max_readers: bool,
+    verify_max_nodes: bool,
     _key: PhantomData<KeyType>,
 }
 
@@ -116,6 +149,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
         let mut new_self = Self {
             base,
             verify_max_readers: false,
+            verify_max_nodes: false,
             _key: PhantomData,
         };
 
@@ -181,7 +215,14 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
         self
     }
 
+    pub fn max_nodes(mut self, value: usize) -> Self {
+        self.config_details_mut().max_nodes = value;
+        self.verify_max_nodes = true;
+        self
+    }
+
     pub fn add<ValueType: ZeroCopySend>(mut self, key: KeyType, value: ValueType) -> Self {
+        // TODO
         self
     }
 
@@ -221,6 +262,21 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
         }
 
         Ok(existing_settings.clone())
+    }
+
+    fn adjust_configuration_to_meaningful_values(&mut self) {
+        let origin = format!("{:?}", self);
+        let settings = self.base.service_config.blackboard_mut();
+
+        if settings.max_readers == 0 {
+            warn!(from origin, "Setting the maximum amount of readers to 0 is not supported, Adjust it to 1, the smallest supported value.");
+        }
+
+        if settings.max_nodes == 0 {
+            warn!(from origin,
+                "Setting the maximum amount of nodes to 0 is not supported. Adjust it to 1, the smallest supported value.");
+            settings.max_nodes = 1;
+        }
     }
 
     /// If the [`Service`] exists, it will be opened otherwise a new [`Service`] will be
@@ -316,7 +372,20 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
 
                     let dynamic_config = match self.base.open_dynamic_config_storage() {
                         Ok(v) => v,
-                        // TODO
+                        Err(OpenDynamicStorageFailure::IsMarkedForDestruction) => {
+                            fail!(from self, with BlackboardOpenError::IsMarkedForDestruction,
+                                "{} since the service is marked for destruction.", msg);
+                        }
+                        Err(OpenDynamicStorageFailure::ExceedsMaxNumberOfNodes) => {
+                            fail!(from self, with BlackboardOpenError::ExceedsMaxNumberOfNodes,
+                                "{} since it would exceed the maximum number of supported nodes.", msg);
+                        }
+                        Err(OpenDynamicStorageFailure::DynamicStorageOpenError(
+                            DynamicStorageOpenError::DoesNotExist,
+                        )) => {
+                            fail!(from self, with BlackboardOpenError::ServiceInCorruptedState,
+                                "{} since the dynamic segment of the service is missing.", msg);
+                        }
                         Err(e) => {
                             if self.is_service_available(msg)?.is_none() {
                                 fail!(from self, with BlackboardOpenError::DoesNotExist, "{}, since the service does not exist.", msg);
@@ -373,7 +442,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
         &mut self,
         attributes: &AttributeSpecifier,
     ) -> Result<blackboard::PortFactory<ServiceType>, BlackboardCreateError> {
-        // TODO: adjust configuration to meaningful values
+        self.adjust_configuration_to_meaningful_values();
 
         let msg = "Unable to create blackboard service";
 

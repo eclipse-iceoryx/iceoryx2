@@ -213,4 +213,14 @@ impl StaticConfig {
             }
         }
     }
+
+    pub(crate) fn blackboard_mut(&mut self) -> &mut blackboard::StaticConfig {
+        let origin = format!("{:?}", self);
+        match &mut self.messaging_pattern {
+            MessagingPattern::Blackboard(ref mut v) => v,
+            m => {
+                fatal_panic!(from origin, "This should never happen! Trying to access blackboard::StaticConfig when the messaging pattern is actually {:?}!", m)
+            }
+        }
+    }
 }

@@ -19,6 +19,7 @@ mod service {
 
     use iceoryx2::node::NodeView;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::builder::blackboard::{BlackboardCreateError, BlackboardOpenError};
     use iceoryx2::service::builder::event::{EventCreateError, EventOpenError};
     use iceoryx2::service::builder::publish_subscribe::{
         PublishSubscribeCreateError, PublishSubscribeOpenError,
@@ -27,7 +28,7 @@ mod service {
         RequestResponseCreateError, RequestResponseOpenError,
     };
     use iceoryx2::service::messaging_pattern::MessagingPattern;
-    use iceoryx2::service::port_factory::{event, publish_subscribe, request_response};
+    use iceoryx2::service::port_factory::{blackboard, event, publish_subscribe, request_response};
     use iceoryx2::service::{ServiceDetailsError, ServiceListError};
     use iceoryx2::testing::*;
     use iceoryx2_bb_log::{set_log_level, LogLevel};
@@ -89,6 +90,13 @@ mod service {
 
     unsafe impl<Sut: Service> Send for RequestResponseTests<Sut> {}
     unsafe impl<Sut: Service> Sync for RequestResponseTests<Sut> {}
+
+    struct BlackboardTests<Sut: Service> {
+        _data: PhantomData<Sut>,
+    }
+
+    unsafe impl<Sut: Service> Send for BlackboardTests<Sut> {}
+    unsafe impl<Sut: Service> Sync for BlackboardTests<Sut> {}
 
     impl<Sut: Service> SutFactory<Sut> for PubSubTests<Sut> {
         type Factory = publish_subscribe::PortFactory<Sut, u64, ()>;
@@ -283,6 +291,70 @@ mod service {
 
         fn messaging_pattern() -> MessagingPattern {
             MessagingPattern::RequestResponse
+        }
+    }
+
+    impl<Sut: Service> SutFactory<Sut> for BlackboardTests<Sut> {
+        type Factory = blackboard::PortFactory<Sut>;
+        type CreateError = BlackboardCreateError;
+        type OpenError = BlackboardOpenError;
+
+        fn new() -> Self {
+            Self { _data: PhantomData }
+        }
+
+        fn open(
+            &self,
+            node: &Node<Sut>,
+            service_name: &ServiceName,
+            attributes: &AttributeVerifier,
+        ) -> Result<Self::Factory, Self::OpenError> {
+            node.service_builder(service_name)
+                .blackboard::<u64>()
+                .open_with_attributes(attributes)
+        }
+
+        fn create(
+            &self,
+            node: &Node<Sut>,
+            service_name: &ServiceName,
+            attributes: &AttributeSpecifier,
+        ) -> Result<Self::Factory, Self::CreateError> {
+            let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
+            node.service_builder(service_name)
+                .blackboard::<u64>()
+                .max_nodes(number_of_nodes)
+                .create_with_attributes(attributes)
+        }
+
+        fn assert_attribute_error(error: Self::OpenError) {
+            assert_that!(error, eq BlackboardOpenError::IncompatibleAttributes);
+        }
+
+        fn assert_create_error(error: Self::CreateError) {
+            assert_that!(
+                error,
+                any_of([
+                    BlackboardCreateError::AlreadyExists,
+                    BlackboardCreateError::HangsInCreation,
+                    BlackboardCreateError::IsBeingCreatedByAnotherInstance
+                ])
+            );
+        }
+        fn assert_open_error(error: Self::OpenError) {
+            assert_that!(
+                error,
+                any_of([
+                    BlackboardOpenError::DoesNotExist,
+                    BlackboardOpenError::HangsInCreation,
+                    BlackboardOpenError::IsMarkedForDestruction,
+                    BlackboardOpenError::ServiceInCorruptedState
+                ])
+            )
+        }
+
+        fn messaging_pattern() -> MessagingPattern {
+            MessagingPattern::Blackboard
         }
     }
 
@@ -736,34 +808,34 @@ mod service {
     #[test]
     fn details_error_display_works<Sut: Service, Factory: SutFactory<Sut>>() {
         assert_that!(format!("{}", ServiceDetailsError::FailedToOpenStaticServiceInfo), eq
-                                  "ServiceDetailsError::FailedToOpenStaticServiceInfo");
+    "ServiceDetailsError::FailedToOpenStaticServiceInfo");
 
         assert_that!(format!("{}", ServiceDetailsError::FailedToReadStaticServiceInfo), eq
-                                  "ServiceDetailsError::FailedToReadStaticServiceInfo");
+    "ServiceDetailsError::FailedToReadStaticServiceInfo");
 
         assert_that!(format!("{}", ServiceDetailsError::FailedToDeserializeStaticServiceInfo), eq
-                                  "ServiceDetailsError::FailedToDeserializeStaticServiceInfo");
+    "ServiceDetailsError::FailedToDeserializeStaticServiceInfo");
 
         assert_that!(format!("{}", ServiceDetailsError::ServiceInInconsistentState), eq
-                                  "ServiceDetailsError::ServiceInInconsistentState");
+    "ServiceDetailsError::ServiceInInconsistentState");
 
         assert_that!(format!("{}", ServiceDetailsError::VersionMismatch), eq
-                                  "ServiceDetailsError::VersionMismatch");
+    "ServiceDetailsError::VersionMismatch");
 
         assert_that!(format!("{}", ServiceDetailsError::InternalError), eq
-                                  "ServiceDetailsError::InternalError");
+    "ServiceDetailsError::InternalError");
 
         assert_that!(format!("{}", ServiceDetailsError::FailedToAcquireNodeState), eq
-                                  "ServiceDetailsError::FailedToAcquireNodeState");
+    "ServiceDetailsError::FailedToAcquireNodeState");
     }
 
     #[test]
     fn list_error_display_works<Sut: Service, Factory: SutFactory<Sut>>() {
         assert_that!(format!("{}", ServiceListError::InsufficientPermissions), eq
-                                  "ServiceListError::InsufficientPermissions");
+    "ServiceListError::InsufficientPermissions");
 
         assert_that!(format!("{}", ServiceListError::InternalError), eq
-                                  "ServiceListError::InternalError");
+    "ServiceListError::InternalError");
     }
 
     #[test]
@@ -1116,6 +1188,9 @@ mod service {
 
         #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
         mod request_response {}
+
+        #[instantiate_tests(<Service, crate::service::BlackboardTests::<Service>>)]
+        mod blackboard {}
     }
 
     mod local {
@@ -1129,5 +1204,8 @@ mod service {
 
         #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
         mod request_response {}
+
+        #[instantiate_tests(<Service, crate::service::BlackboardTests::<Service>>)]
+        mod blackboard {}
     }
 }

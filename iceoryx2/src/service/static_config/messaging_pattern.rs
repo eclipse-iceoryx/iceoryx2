@@ -109,13 +109,31 @@ mod tests {
         assert_that!(p1.is_same_pattern(&p2), eq true);
         assert_that!(p2.is_same_pattern(&p1), eq true);
 
+        let e1 = MessagingPattern::Event(event::StaticConfig::new(&cfg));
+        let e2 = MessagingPattern::Event(event::StaticConfig::new(&cfg));
+        assert_that!(e1.is_same_pattern(&e2), eq true);
+        assert_that!(e2.is_same_pattern(&e1), eq true);
+
+        let r1 = MessagingPattern::RequestResponse(request_response::StaticConfig::new(&cfg));
+        let r2 = MessagingPattern::RequestResponse(request_response::StaticConfig::new(&cfg));
+        assert_that!(r1.is_same_pattern(&r2), eq true);
+        assert_that!(r2.is_same_pattern(&r1), eq true);
+
+        let b1 = MessagingPattern::Blackboard(blackboard::StaticConfig::new(&cfg));
+        let b2 = MessagingPattern::Blackboard(blackboard::StaticConfig::new(&cfg));
+        assert_that!(b1.is_same_pattern(&b2), eq true);
+        assert_that!(b2.is_same_pattern(&b1), eq true);
+
         let mut new_defaults = config::Defaults {
             request_response: cfg.defaults.request_response.clone(),
             publish_subscribe: cfg.defaults.publish_subscribe.clone(),
             event: cfg.defaults.event.clone(),
+            blackboard: cfg.defaults.blackboard.clone(),
         };
         new_defaults.event.event_id_max_value -= 1;
         new_defaults.publish_subscribe.max_nodes -= 1;
+        new_defaults.request_response.max_nodes -= 1;
+        new_defaults.blackboard.max_nodes -= 1;
 
         let cfg2 = config::Config {
             defaults: new_defaults,
@@ -124,20 +142,34 @@ mod tests {
 
         // ensure the cfg and cfg2 are not equal
         assert_that!(cfg, ne cfg2);
+
         let p3 = MessagingPattern::PublishSubscribe(publish_subscribe::StaticConfig::new(&cfg2));
         assert_that!(p1.is_same_pattern(&p3), eq true);
         assert_that!(p3.is_same_pattern(&p1), eq true);
-
-        let e1 = MessagingPattern::Event(event::StaticConfig::new(&cfg));
-        let e2 = MessagingPattern::Event(event::StaticConfig::new(&cfg));
-        assert_that!(e1.is_same_pattern(&e2), eq true);
-        assert_that!(e2.is_same_pattern(&e1), eq true);
 
         let e3 = MessagingPattern::Event(event::StaticConfig::new(&cfg2));
         assert_that!(e1.is_same_pattern(&e3), eq true);
         assert_that!(e2.is_same_pattern(&e3), eq true);
 
+        let r3 = MessagingPattern::RequestResponse(request_response::StaticConfig::new(&cfg));
+        assert_that!(r1.is_same_pattern(&r3), eq true);
+        assert_that!(r2.is_same_pattern(&r3), eq true);
+
+        let b3 = MessagingPattern::Blackboard(blackboard::StaticConfig::new(&cfg));
+        assert_that!(b1.is_same_pattern(&b3), eq true);
+        assert_that!(b2.is_same_pattern(&b3), eq true);
+
         assert_that!(p1.is_same_pattern(&e1), eq false);
         assert_that!(p3.is_same_pattern(&e3), eq false);
+        assert_that!(p1.is_same_pattern(&r1), eq false);
+        assert_that!(p3.is_same_pattern(&r3), eq false);
+        assert_that!(p1.is_same_pattern(&b1), eq false);
+        assert_that!(p3.is_same_pattern(&b3), eq false);
+        assert_that!(e1.is_same_pattern(&r1), eq false);
+        assert_that!(e3.is_same_pattern(&r3), eq false);
+        assert_that!(e1.is_same_pattern(&b1), eq false);
+        assert_that!(e3.is_same_pattern(&b3), eq false);
+        assert_that!(r1.is_same_pattern(&b1), eq false);
+        assert_that!(r3.is_same_pattern(&b3), eq false);
     }
 }
