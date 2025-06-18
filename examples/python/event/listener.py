@@ -18,9 +18,7 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 event = (
-    node.service_builder(iox2.ServiceName.new("MyEventName"))
-        .event()
-        .open_or_create()
+    node.service_builder(iox2.ServiceName.new("MyEventName")).event().open_or_create()
 )
 
 listener = event.listener_builder().create()

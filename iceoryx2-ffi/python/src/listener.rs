@@ -18,6 +18,8 @@ use crate::{
     unique_listener_id::UniqueListenerId,
 };
 
+#[allow(clippy::large_enum_variant)] // used purely for python and there it will reside always in
+                                     // the heap
 pub(crate) enum ListenerType {
     Ipc(iceoryx2::port::listener::Listener<ipc::Service>),
     Local(iceoryx2::port::listener::Listener<local::Service>),
