@@ -25,6 +25,8 @@ pub mod event_id;
 pub mod file_name;
 pub mod file_path;
 pub mod listener;
+pub mod log;
+pub mod log_level;
 pub mod message_type_details;
 pub mod node;
 pub mod node_builder;
@@ -63,6 +65,12 @@ use pyo3::wrap_pymodule;
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_wrapped(wrap_pymodule!(crate::testing::testing))?;
+    m.add_wrapped(wrap_pyfunction!(crate::log::set_log_level))?;
+    m.add_wrapped(wrap_pyfunction!(crate::log::set_log_level_from_env_or))?;
+    m.add_wrapped(wrap_pyfunction!(
+        crate::log::set_log_level_from_env_or_default
+    ))?;
+
     m.add_class::<crate::alignment::Alignment>()?;
     m.add_class::<crate::attribute::Attribute>()?;
     m.add_class::<crate::attribute_set::AttributeSet>()?;
@@ -75,6 +83,7 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;
     m.add_class::<crate::listener::Listener>()?;
+    m.add_class::<crate::log_level::LogLevel>()?;
     m.add_class::<crate::message_type_details::MessageTypeDetails>()?;
     m.add_class::<crate::node::Node>()?;
     m.add_class::<crate::node_builder::NodeBuilder>()?;

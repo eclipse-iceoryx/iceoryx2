@@ -14,8 +14,9 @@
 
 import iceoryx2_ffi_python as iox2
 
+iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
-cycle_time = iox2.Duration.from_millis(250)
+
 event = (
     node.service_builder(iox2.ServiceName.new("MyEventName"))
         .event()
@@ -24,6 +25,7 @@ event = (
 
 listener = event.listener_builder().create()
 
+cycle_time = iox2.Duration.from_millis(250)
 while True:
     event_id = listener.timed_wait_one(cycle_time)
     if event_id is not None:
