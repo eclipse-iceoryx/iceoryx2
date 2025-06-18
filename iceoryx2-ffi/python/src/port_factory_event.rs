@@ -19,6 +19,7 @@ use crate::{
     node_id::NodeId,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
     parc::Parc,
+    port_factory_listener::PortFactoryListener,
     service_id::ServiceId,
     service_name::ServiceName,
     static_config_event::StaticConfigEvent,
@@ -121,5 +122,9 @@ impl PortFactoryEvent {
                 Ok(ret_val)
             }
         }
+    }
+
+    pub fn listener_builder(&self) -> PortFactoryListener {
+        PortFactoryListener::new(self.0.clone())
     }
 }

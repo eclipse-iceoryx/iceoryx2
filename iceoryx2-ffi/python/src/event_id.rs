@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(eq)]
+#[pyclass(eq, str = "{0:?}")]
 #[derive(PartialEq)]
 /// User defined identifier that can be provided in `Notifier.notify()` to signal a specific
 /// kind of event.

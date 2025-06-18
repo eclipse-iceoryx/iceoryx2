@@ -10,21 +10,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Notifier example for python."""
+"""Listener example"""
 
-import iceoryx2_ffi_python as iceoryx2
+import iceoryx2_ffi_python as iox2
 
-config = iceoryx2.config.default()
-
-node_name = iceoryx2.NodeName.new("fuubar")
-node = (
-    iceoryx2.NodeBuilder.new()
-    .name(node_name)
-    .config(config)
-    .create(iceoryx2.ServiceType.Ipc)
+node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
+cycle_time = iox2.Duration.from_millis(250)
+event = (
+    node.service_builder(iox2.ServiceName.new("MyEventName"))
+        .event()
+        .open_or_create()
 )
-cycle_time = iceoryx2.Duration.from_millis(250)
 
-for count in range(100):
-    print("fuu")
-    node.wait(cycle_time)
+listener = event.listener_builder().create()
+
+while True:
+    event_id = listener.timed_wait_one(cycle_time)
+    if event_id is not None:
+        print("event was triggered with id: ", event_id)
