@@ -129,6 +129,7 @@ impl Node {
         Ok(states)
     }
 
+    /// Instantiates a `ServiceBuilder` for a service with the provided name.
     pub fn service_builder(&self, name: &ServiceName) -> ServiceBuilder {
         match &*self.0.lock() {
             NodeType::Ipc(node) => {

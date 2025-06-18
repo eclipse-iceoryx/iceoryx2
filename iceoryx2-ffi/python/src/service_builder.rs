@@ -29,10 +29,12 @@ pub(crate) enum ServiceBuilderType {
 }
 
 #[pyclass]
+/// Builder to create or open `Service`s
 pub struct ServiceBuilder(pub(crate) ServiceBuilderType);
 
 #[pymethods]
 impl ServiceBuilder {
+    /// Create a new builder to create a `MessagingPattern::Event` `Service`.
     pub fn event(&self) -> ServiceBuilderEvent {
         match &self.0 {
             ServiceBuilderType::Ipc(v) => {
@@ -46,6 +48,7 @@ impl ServiceBuilder {
         }
     }
 
+    /// Create a new builder to create a `MessagingPattern::PublishSubscribe` `Service`.
     pub fn publish_subscribe(&self) -> ServiceBuilderPublishSubscribe {
         match &self.0 {
             ServiceBuilderType::Ipc(v) => {
@@ -65,6 +68,7 @@ impl ServiceBuilder {
         }
     }
 
+    /// Create a new builder to create a `MessagingPattern::RequestResponse` `Service`.
     pub fn request_response(&self) -> ServiceBuilderRequestResponse {
         match &self.0 {
             ServiceBuilderType::Ipc(v) => {

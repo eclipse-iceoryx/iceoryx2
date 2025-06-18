@@ -14,16 +14,20 @@ use pyo3::prelude::*;
 
 #[pyclass(eq)]
 #[derive(PartialEq)]
+/// User defined identifier that can be provided in `Notifier.notify()` to signal a specific
+/// kind of event.
 pub struct EventId(pub(crate) iceoryx2::prelude::EventId);
 
 #[pymethods]
 impl EventId {
     #[staticmethod]
+    /// Creates a new `EventId` from a given integer value
     pub fn new(value: usize) -> Self {
         EventId(iceoryx2::prelude::EventId::new(value))
     }
 
     #[getter]
+    /// Returns the integer value of the `EventId`
     pub fn as_value(&self) -> usize {
         self.0.as_value()
     }

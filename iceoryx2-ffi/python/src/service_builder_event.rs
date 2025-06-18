@@ -28,10 +28,13 @@ pub(crate) enum ServiceBuilderEventType {
 }
 
 #[pyclass]
+/// Builder to create new `MessagingPattern::Event` based `Service`s
 pub struct ServiceBuilderEvent(pub(crate) ServiceBuilderEventType);
 
 #[pymethods]
 impl ServiceBuilderEvent {
+    /// Enables the deadline property of the service. There must be a notification emitted by any
+    /// `Notifier` after at least the provided `deadline`.
     pub fn deadline(&self, deadline: &Duration) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -47,6 +50,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// Disables the deadline property of the service. `Notifier` can signal notifications at any
+    /// rate.
     pub fn disable_deadline(&self) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -62,6 +67,9 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it defines how many `Node`s shall be able to open it in
+    /// parallel. If an existing `Service` is opened it defines how many `Node`s must be at least
+    /// supported.
     pub fn max_nodes(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -77,6 +85,9 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it set the greatest supported `NodeId` value
+    /// If an existing `Service` is opened it defines the value size the `NodeId`
+    /// must at least support.
     pub fn event_id_max_value(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -92,6 +103,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it defines how many `Notifier` shall be supported at most. If
+    /// an existing `Service` is opened it defines how many `Notifier` must be at least supported.
     pub fn max_notifiers(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -107,6 +120,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it defines how many `Listener` shall be supported at most. If
+    /// an existing `Service` is opened it defines how many `Listener` must be at least supported.
     pub fn max_listeners(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -122,6 +137,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it defines the event that shall be emitted by every newly
+    /// created `Notifier`.
     pub fn notifier_created_event(&self, value: &EventId) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -137,6 +154,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it disables the event that shall be emitted by every newly
+    /// created `Notifier`.
     pub fn disable_notifier_created_event(&self) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -152,6 +171,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it defines the event that shall be emitted by every
+    /// `Notifier` before it is dropped.
     pub fn notifier_dropped_event(&self, value: &EventId) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -167,6 +188,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it disables the event that shall be emitted by every
+    /// `Notifier` before it is dropped.
     pub fn disable_notifier_dropped_event(&self) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -182,6 +205,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it defines the event that shall be emitted when a
+    /// `Notifier` is identified as dead.
     pub fn notifier_dead_event(&self, value: &EventId) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -197,6 +222,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` is created it disables the event that shall be emitted when a
+    /// `Notifier` is identified as dead.
     pub fn disable_notifier_dead_event(&self) -> Self {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -212,6 +239,8 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` exists, it will be opened otherwise a new `Service` will be
+    /// created. On failure it emits an `EventOpenOrCreateError`
     pub fn open_or_create(&self) -> PyResult<PortFactoryEvent> {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -231,6 +260,11 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// If the `Service` exists, it will be opened otherwise a new `Service` will be
+    /// created. It defines a set of attributes. If the `Service` already exists all attribute
+    /// requirements must be satisfied otherwise the open process will fail. If the `Service`
+    /// does not exist the required attributes will be defined in the `Service`.
+    /// Emits and `EventOpenOrCreateError` on failure.
     pub fn open_or_create_with_attributes(
         &self,
         verifier: &AttributeVerifier,
@@ -253,6 +287,7 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// Opens an existing `Service`. Emits an `EventOpenError` on failure.
     pub fn open(&self) -> PyResult<PortFactoryEvent> {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -272,6 +307,9 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// Opens an existing `Service` with attribute requirements. If the defined attribute
+    /// requirements are not satisfied the open process will fail. Emits an `EventOpenError`
+    /// on failure.
     pub fn open_with_attributes(&self, verifier: &AttributeVerifier) -> PyResult<PortFactoryEvent> {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -291,6 +329,7 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// Creates a new `Service`.
     pub fn create(&self) -> PyResult<PortFactoryEvent> {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
@@ -310,6 +349,7 @@ impl ServiceBuilderEvent {
         }
     }
 
+    /// Creates a new `Service` with a set of attributes.
     pub fn create_with_attributes(
         &self,
         attributes: &AttributeSpecifier,
