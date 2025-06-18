@@ -30,6 +30,8 @@ pub mod notifier;
 pub mod port_identifiers;
 /// Sending endpoint (port) for publish-subscribe based communication
 pub mod publisher;
+/// Receiving endpoint (port) for blackboard based communication
+pub mod reader;
 /// Receives requests from a [`Client`](crate::port::client::Client) port and sends back responses.
 pub mod server;
 /// Receiving endpoint (port) for publish-subscribe based communication
@@ -37,6 +39,8 @@ pub mod subscriber;
 /// Interface to perform cyclic updates to the ports. Required to deliver history to new
 /// participants or to perform other management tasks.
 pub mod update_connections;
+/// Sending endpoint (port) for blackboard based communication
+pub mod writer;
 
 /// Defines the strategy a sender shall pursue when the buffer of a
 /// receiver is full and the service does not overflow.
