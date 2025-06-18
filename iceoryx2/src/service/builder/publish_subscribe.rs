@@ -239,7 +239,7 @@ impl<
     fn clone(&self) -> Self {
         Self {
             base: self.base.clone(),
-            override_alignment: self.override_alignment.clone(),
+            override_alignment: self.override_alignment,
             override_payload_type: self.override_payload_type.clone(),
             override_user_header_type: self.override_user_header_type.clone(),
             verify_number_of_subscribers: self.verify_number_of_subscribers,

@@ -21,6 +21,12 @@ pub struct TypeDetail(
     pub(crate) iceoryx2::service::static_config::message_type_details::TypeDetail,
 );
 
+impl Default for TypeDetail {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[pymethods]
 impl TypeDetail {
     #[staticmethod]

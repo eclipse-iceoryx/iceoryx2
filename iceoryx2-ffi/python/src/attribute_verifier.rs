@@ -22,6 +22,12 @@ use iceoryx2::prelude::SemanticString;
 /// is being created.
 pub struct AttributeVerifier(pub(crate) iceoryx2::service::attribute::AttributeVerifier);
 
+impl Default for AttributeVerifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[pymethods]
 impl AttributeVerifier {
     #[staticmethod]

@@ -127,7 +127,7 @@ pub struct MetaVec<T, Ptr: GenericPointer> {
 }
 
 impl<T: Debug, Ptr: GenericPointer> Debug for MetaVec<T, Ptr> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "MetaVec<{}, {}> {{ capacity: {}, len: {}, is_initialized: {}, content: [ ",
@@ -552,7 +552,7 @@ pub struct FixedSizeVec<T, const CAPACITY: usize> {
 }
 
 impl<T: Debug, const CAPACITY: usize> Debug for FixedSizeVec<T, CAPACITY> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
             "FixedSizeVec<{}, {}> {{ {:?} }}",

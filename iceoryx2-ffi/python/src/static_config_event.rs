@@ -21,7 +21,7 @@ pub struct StaticConfigEvent(pub(crate) iceoryx2::service::static_config::event:
 impl StaticConfigEvent {
     #[getter]
     pub fn deadline(&self) -> Option<Duration> {
-        self.0.deadline().map(|v| Duration(v))
+        self.0.deadline().map(Duration)
     }
 
     #[getter]
@@ -46,16 +46,16 @@ impl StaticConfigEvent {
 
     #[getter]
     pub fn notifier_created_event(&self) -> Option<EventId> {
-        self.0.notifier_created_event().map(|v| EventId(v))
+        self.0.notifier_created_event().map(EventId)
     }
 
     #[getter]
     pub fn notifier_dropped_event(&self) -> Option<EventId> {
-        self.0.notifier_dropped_event().map(|v| EventId(v))
+        self.0.notifier_dropped_event().map(EventId)
     }
 
     #[getter]
     pub fn notifier_dead_event(&self) -> Option<EventId> {
-        self.0.notifier_dead_event().map(|v| EventId(v))
+        self.0.notifier_dead_event().map(EventId)
     }
 }

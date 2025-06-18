@@ -21,6 +21,12 @@ use crate::{
 /// is being created.
 pub struct AttributeSpecifier(pub(crate) iceoryx2::service::attribute::AttributeSpecifier);
 
+impl Default for AttributeSpecifier {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[pymethods]
 impl AttributeSpecifier {
     #[staticmethod]
