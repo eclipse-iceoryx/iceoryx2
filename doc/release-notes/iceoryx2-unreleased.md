@@ -66,6 +66,8 @@
   [#806](https://github.com/eclipse-iceoryx/iceoryx2/issues/806)
 * Introduce newtypes for 'uid' and 'gid'
   [#822](https://github.com/eclipse-iceoryx/iceoryx2/issues/822)
+* Make default max event ID smaller
+  [#828](https://github.com/eclipse-iceoryx/iceoryx2/issues/828)
 
 ### Workflow
 
@@ -89,6 +91,21 @@
   [#794](https://github.com/eclipse-iceoryx/iceoryx2/issues/794)
 * Enable the usage of semaphore based events in C/C++
   [#795](https://github.com/eclipse-iceoryx/iceoryx2/issues/795)
+
+### Config Breaking Changes
+
+1. The default max event ID was reduced to 255 in order to have make bitset
+   based event implementations work out of the box. If a larger event ID is
+   required, it can either be changed in the `iceoryx2.toml` file or with the
+   `event_id_max_value` in the event service builder.
+
+    ```rust
+    let event = node
+        .service_builder(&"MyEventName".try_into()?)
+        .event()
+        .event_id_max_value(511)
+        .open_or_create()?;
+    ```
 
 ### API Breaking Changes
 

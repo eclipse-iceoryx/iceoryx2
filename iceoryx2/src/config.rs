@@ -444,7 +444,7 @@ impl Default for Config {
                     max_listeners: 16,
                     max_notifiers: 16,
                     max_nodes: 36,
-                    event_id_max_value: 4294967295,
+                    event_id_max_value: 255,
                     deadline: None,
                     notifier_created_event: None,
                     notifier_dropped_event: None,
