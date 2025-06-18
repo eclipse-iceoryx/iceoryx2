@@ -45,6 +45,7 @@ impl AttributeSet {
         ret_val
     }
 
+    #[getter]
     /// Returns all `Attribute`s stored in the `AttributeSet`
     pub fn values(&self) -> Vec<Attribute> {
         let mut ret_val = vec![];

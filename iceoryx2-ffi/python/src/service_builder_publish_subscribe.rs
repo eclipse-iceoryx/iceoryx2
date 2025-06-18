@@ -119,8 +119,8 @@ impl ServiceBuilderPublishSubscribe {
     }
 
     /// If the `Service` is created it defines how many `Sample`s a
-    /// [`crate::port::subscriber::Subscriber`] can borrow at most in parallel. If an existing
-    /// [`Service`] is opened it defines the minimum required.
+    /// `Subscriber` can borrow at most in parallel. If an existing
+    /// `Service` is opened it defines the minimum required.
     pub fn subscriber_max_borrowed_samples(&self, value: usize) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
@@ -206,8 +206,8 @@ impl ServiceBuilderPublishSubscribe {
         }
     }
 
-    /// If the `Service` is created it defines how many [`Node`]s shall be able to open it in
-    /// parallel. If an existing `Service` is opened it defines how many [`Node`]s must be at
+    /// If the `Service` is created it defines how many `Node`s shall be able to open it in
+    /// parallel. If an existing `Service` is opened it defines how many `Node`s must be at
     /// least supported.
     pub fn max_nodes(&self, value: usize) -> Self {
         match &self.0 {
