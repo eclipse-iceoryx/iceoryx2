@@ -19,6 +19,7 @@ use crate::{
     duration::Duration,
     error::{EventCreateError, EventOpenError, EventOpenOrCreateError},
     event_id::EventId,
+    parc::Parc,
     port_factory_event::{PortFactoryEvent, PortFactoryEventType},
 };
 
@@ -245,17 +246,17 @@ impl ServiceBuilderEvent {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Ipc(
                     this.open_or_create()
                         .map_err(|e| EventOpenOrCreateError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
             ServiceBuilderEventType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Local(
                     this.open_or_create()
                         .map_err(|e| EventOpenOrCreateError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
         }
     }
@@ -272,17 +273,17 @@ impl ServiceBuilderEvent {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Ipc(
                     this.open_or_create_with_attributes(&verifier.0)
                         .map_err(|e| EventOpenOrCreateError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
             ServiceBuilderEventType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Local(
                     this.open_or_create_with_attributes(&verifier.0)
                         .map_err(|e| EventOpenOrCreateError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
         }
     }
@@ -292,17 +293,17 @@ impl ServiceBuilderEvent {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Ipc(
                     this.open()
                         .map_err(|e| EventOpenError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
             ServiceBuilderEventType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Local(
                     this.open()
                         .map_err(|e| EventOpenError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
         }
     }
@@ -314,17 +315,17 @@ impl ServiceBuilderEvent {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Ipc(
                     this.open_with_attributes(&verifier.0)
                         .map_err(|e| EventOpenError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
             ServiceBuilderEventType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Local(
                     this.open_with_attributes(&verifier.0)
                         .map_err(|e| EventOpenError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
         }
     }
@@ -334,17 +335,17 @@ impl ServiceBuilderEvent {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Ipc(
                     this.create()
                         .map_err(|e| EventCreateError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
             ServiceBuilderEventType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Local(
                     this.create()
                         .map_err(|e| EventCreateError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
         }
     }
@@ -357,17 +358,17 @@ impl ServiceBuilderEvent {
         match &self.0 {
             ServiceBuilderEventType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Ipc(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Ipc(
                     this.create_with_attributes(&attributes.0)
                         .map_err(|e| EventCreateError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
             ServiceBuilderEventType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryEvent(PortFactoryEventType::Local(
+                Ok(PortFactoryEvent(Parc::new(PortFactoryEventType::Local(
                     this.create_with_attributes(&attributes.0)
                         .map_err(|e| EventCreateError::new_err(format!("{:?}", e)))?,
-                )))
+                ))))
             }
         }
     }

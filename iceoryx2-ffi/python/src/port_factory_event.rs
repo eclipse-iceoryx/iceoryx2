@@ -18,6 +18,7 @@ use crate::{
     error::NodeListFailure,
     node_id::NodeId,
     node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
+    parc::Parc,
     service_id::ServiceId,
     service_name::ServiceName,
     static_config_event::StaticConfigEvent,
@@ -31,14 +32,14 @@ pub(crate) enum PortFactoryEventType {
 #[pyclass]
 /// The factory for `MessagingPattern::Event`. It can acquire dynamic and static service
 /// informations and create `Notifier` or `Listener` ports.
-pub struct PortFactoryEvent(pub(crate) PortFactoryEventType);
+pub struct PortFactoryEvent(pub(crate) Parc<PortFactoryEventType>);
 
 #[pymethods]
 impl PortFactoryEvent {
     #[getter]
     /// Returns the `ServiceName` of the service
     pub fn name(&self) -> ServiceName {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryEventType::Ipc(v) => ServiceName(v.name().clone()),
             PortFactoryEventType::Local(v) => ServiceName(v.name().clone()),
         }
@@ -47,7 +48,7 @@ impl PortFactoryEvent {
     #[getter]
     /// Returns the `ServiceId` of the `Service`
     pub fn service_id(&self) -> ServiceId {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryEventType::Ipc(v) => ServiceId(v.service_id().clone()),
             PortFactoryEventType::Local(v) => ServiceId(v.service_id().clone()),
         }
@@ -56,7 +57,7 @@ impl PortFactoryEvent {
     #[getter]
     /// Returns the `AttributeSet` defined in the `Service`
     pub fn attributes(&self) -> AttributeSet {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryEventType::Ipc(v) => AttributeSet(v.attributes().clone()),
             PortFactoryEventType::Local(v) => AttributeSet(v.attributes().clone()),
         }
@@ -66,7 +67,7 @@ impl PortFactoryEvent {
     /// Returns the StaticConfig of the `Service`.
     /// Contains all settings that never change during the lifetime of the service.
     pub fn static_config(&self) -> StaticConfigEvent {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryEventType::Ipc(v) => StaticConfigEvent(*v.static_config()),
             PortFactoryEventType::Local(v) => StaticConfigEvent(*v.static_config()),
         }
@@ -75,7 +76,7 @@ impl PortFactoryEvent {
     #[getter]
     /// Returns a list of all `NodeState` of all the `Node`s which have opened the `Service`.
     pub fn nodes(&self) -> PyResult<Vec<NodeState>> {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryEventType::Ipc(v) => {
                 let mut ret_val = vec![];
                 v.nodes(|state| {
