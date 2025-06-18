@@ -309,4 +309,23 @@ def test_service_builder_configuration_works(service_type) -> None:
     assert static_config.notifier_dead_event == notifier_dead
     assert static_config.notifier_dropped_event == notifier_dropped
 
+@pytest.mark.parametrize("service_type", service_types)
+def test_service_builder_based_on_custom_config_works(service_type) -> None:
+    config = iox2.testing.generate_isolated_config()
+    max_nodes = 112
+    config.defaults.event.max_nodes = max_nodes
+    node = (
+        iox2.NodeBuilder.new()
+        .config(config)
+        .create(service_type)
+    )
 
+    service_name = iox2.testing.generate_service_name()
+    sut = (
+        node.service_builder(service_name)
+            .event()
+            .create()
+    )
+
+    static_config = sut.static_config
+    assert static_config.max_nodes == max_nodes
