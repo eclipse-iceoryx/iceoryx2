@@ -43,6 +43,7 @@ pub enum BlackboardOpenError {
     HangsInCreation,
     IsMarkedForDestruction,
     ExceedsMaxNumberOfNodes,
+    DoesNotSupportRequestedAmountOfNodes,
 }
 
 impl core::fmt::Display for BlackboardOpenError {
@@ -82,6 +83,14 @@ pub enum BlackboardCreateError {
     ServiceInCorruptedState,
     HangsInCreation,
 }
+
+impl core::fmt::Display for BlackboardCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "BlackboardCreateError::{:?}", self)
+    }
+}
+
+impl core::error::Error for BlackboardCreateError {}
 
 impl From<ServiceAvailabilityState> for BlackboardCreateError {
     fn from(value: ServiceAvailabilityState) -> Self {
@@ -261,6 +270,12 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                                 msg, existing_settings.max_readers, required_settings.max_readers);
         }
 
+        if self.verify_max_nodes && existing_settings.max_nodes < required_settings.max_nodes {
+            fail!(from self, with BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes,
+                                "{} since the service supports only {} nodes but {} are required.",
+                                msg, existing_settings.max_nodes, required_settings.max_nodes);
+        }
+
         Ok(existing_settings.clone())
     }
 
@@ -270,6 +285,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
 
         if settings.max_readers == 0 {
             warn!(from origin, "Setting the maximum amount of readers to 0 is not supported, Adjust it to 1, the smallest supported value.");
+            settings.max_readers = 1;
         }
 
         if settings.max_nodes == 0 {
