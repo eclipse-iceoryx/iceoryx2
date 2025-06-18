@@ -545,7 +545,6 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                 // create dynamic config
                 let dynamic_config_setting = DynamicConfigSettings {
                     number_of_readers: blackboard_config.max_readers,
-                    //number_of_writers: blackboard_config.max_writers,
                 };
 
                 let dynamic_config = match self.base.create_dynamic_config_storage(
