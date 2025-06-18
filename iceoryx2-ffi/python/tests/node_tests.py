@@ -13,20 +13,17 @@
 import iceoryx2_ffi_python as iox2
 import pytest
 
+service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
-service_types = [
-    iox2.ServiceType.Ipc,
-    iox2.ServiceType.Local
-]
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_creating_node_works(service_type) -> None:
+def test_creating_node_works(service_type: iox2.ServiceType) -> None:
     sut = iox2.NodeBuilder.new().create(service_type)
     assert sut.name.as_str() == ""
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_creating_node_with_properties_works(service_type) -> None:
+def test_creating_node_with_properties_works(service_type: iox2.ServiceType) -> None:
     node_name = iox2.testing.generate_node_name()
     signal_handling_mode = iox2.SignalHandlingMode.Disabled
     config = iox2.testing.generate_isolated_config()
@@ -44,7 +41,7 @@ def test_creating_node_with_properties_works(service_type) -> None:
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_cleanup_dead_nodes_can_be_called(service_type) -> None:
+def test_cleanup_dead_nodes_can_be_called(service_type: iox2.ServiceType) -> None:
     try:
         iox2.Node.cleanup_dead_nodes(
             service_type, iox2.testing.generate_isolated_config()
@@ -54,7 +51,7 @@ def test_cleanup_dead_nodes_can_be_called(service_type) -> None:
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_created_nodes_can_be_listed(service_type) -> None:
+def test_created_nodes_can_be_listed(service_type: iox2.ServiceType) -> None:
     config = iox2.testing.generate_isolated_config()
     sut_1 = (
         iox2.NodeBuilder.new()
@@ -88,7 +85,7 @@ def test_created_nodes_can_be_listed(service_type) -> None:
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_wait_can_be_called(service_type) -> None:
+def test_wait_can_be_called(service_type: iox2.ServiceType) -> None:
     config = iox2.testing.generate_isolated_config()
     sut = iox2.NodeBuilder.new().config(config).create(service_type)
     try:
