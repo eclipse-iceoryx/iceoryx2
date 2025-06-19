@@ -23,7 +23,9 @@ def test_creating_node_works(service_type: iox2.ServiceType) -> None:
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_creating_node_with_properties_works(service_type: iox2.ServiceType) -> None:
+def test_creating_node_with_properties_works(
+    service_type: iox2.ServiceType,
+) -> None:
     node_name = iox2.testing.generate_node_name()
     signal_handling_mode = iox2.SignalHandlingMode.Disabled
     config = iox2.testing.generate_isolated_config()
@@ -41,7 +43,9 @@ def test_creating_node_with_properties_works(service_type: iox2.ServiceType) -> 
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_cleanup_dead_nodes_can_be_called(service_type: iox2.ServiceType) -> None:
+def test_cleanup_dead_nodes_can_be_called(
+    service_type: iox2.ServiceType,
+) -> None:
     try:
         iox2.Node.cleanup_dead_nodes(
             service_type, iox2.testing.generate_isolated_config()
