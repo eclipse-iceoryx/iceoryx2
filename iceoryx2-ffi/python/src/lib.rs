@@ -24,15 +24,21 @@ pub mod error;
 pub mod event_id;
 pub mod file_name;
 pub mod file_path;
+pub mod listener;
+pub mod log;
+pub mod log_level;
 pub mod message_type_details;
 pub mod node;
 pub mod node_builder;
 pub mod node_id;
 pub mod node_name;
 pub mod node_state;
+pub mod notifier;
 pub mod parc;
 pub mod path;
 pub mod port_factory_event;
+pub mod port_factory_listener;
+pub mod port_factory_notifier;
 pub mod port_factory_publish_subscribe;
 pub mod port_factory_request_response;
 pub mod service_builder;
@@ -51,6 +57,8 @@ pub mod type_detail;
 pub mod type_name;
 pub mod type_variant;
 pub mod unable_to_deliver_strategy;
+pub mod unique_listener_id;
+pub mod unique_notifier_id;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
@@ -60,6 +68,12 @@ use pyo3::wrap_pymodule;
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_wrapped(wrap_pymodule!(crate::testing::testing))?;
+    m.add_wrapped(wrap_pyfunction!(crate::log::set_log_level))?;
+    m.add_wrapped(wrap_pyfunction!(crate::log::set_log_level_from_env_or))?;
+    m.add_wrapped(wrap_pyfunction!(
+        crate::log::set_log_level_from_env_or_default
+    ))?;
+
     m.add_class::<crate::alignment::Alignment>()?;
     m.add_class::<crate::attribute::Attribute>()?;
     m.add_class::<crate::attribute_set::AttributeSet>()?;
@@ -71,6 +85,8 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::event_id::EventId>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;
+    m.add_class::<crate::listener::Listener>()?;
+    m.add_class::<crate::log_level::LogLevel>()?;
     m.add_class::<crate::message_type_details::MessageTypeDetails>()?;
     m.add_class::<crate::node::Node>()?;
     m.add_class::<crate::node_builder::NodeBuilder>()?;
@@ -80,8 +96,11 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::node_state::AliveNodeView>()?;
     m.add_class::<crate::node_state::DeadNodeView>()?;
     m.add_class::<crate::node_state::NodeDetails>()?;
+    m.add_class::<crate::notifier::Notifier>()?;
     m.add_class::<crate::path::Path>()?;
     m.add_class::<crate::port_factory_event::PortFactoryEvent>()?;
+    m.add_class::<crate::port_factory_listener::PortFactoryListener>()?;
+    m.add_class::<crate::port_factory_notifier::PortFactoryNotifier>()?;
     m.add_class::<crate::port_factory_publish_subscribe::PortFactoryPublishSubscribe>()?;
     m.add_class::<crate::port_factory_request_response::PortFactoryRequestResponse>()?;
     m.add_class::<crate::service_builder::ServiceBuilder>()?;
@@ -99,6 +118,8 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::type_variant::TypeVariant>()?;
     m.add_class::<crate::type_name::TypeName>()?;
     m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
+    m.add_class::<crate::unique_listener_id::UniqueListenerId>()?;
+    m.add_class::<crate::unique_notifier_id::UniqueNotifierId>()?;
 
     m.add(
         "InvalidAlignmentValue",
@@ -121,6 +142,14 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
         py.get_type::<crate::error::EventOpenOrCreateError>(),
     )?;
     m.add(
+        "ListenerCreateError",
+        py.get_type::<crate::error::ListenerCreateError>(),
+    )?;
+    m.add(
+        "ListenerWaitError",
+        py.get_type::<crate::error::ListenerWaitError>(),
+    )?;
+    m.add(
         "NodeCreationFailure",
         py.get_type::<crate::error::NodeCreationFailure>(),
     )?;
@@ -135,6 +164,14 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add(
         "NodeWaitFailure",
         py.get_type::<crate::error::NodeWaitFailure>(),
+    )?;
+    m.add(
+        "NotifierCreateError",
+        py.get_type::<crate::error::NotifierCreateError>(),
+    )?;
+    m.add(
+        "NotifierNotifyError",
+        py.get_type::<crate::error::NotifierNotifyError>(),
     )?;
     m.add(
         "SemanticStringError",

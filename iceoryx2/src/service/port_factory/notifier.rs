@@ -40,7 +40,7 @@ use super::event::PortFactory;
 /// Factory to create a new [`Notifier`] port/endpoint for
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) based
 /// communication.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PortFactoryNotifier<'factory, Service: service::Service> {
     pub(crate) factory: &'factory PortFactory<Service>,
     default_event_id: EventId,

@@ -21,8 +21,7 @@
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
-/// Factory to create a new [`Notifier`] port/endpoint for
-/// [`MessagingPattern::Event`] based
+/// Factory to create a new [`Notifier`] port/endpoint for [`MessagingPattern::Event`] based
 /// communication.
 template <ServiceType S>
 class PortFactoryNotifier {

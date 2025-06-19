@@ -17,7 +17,9 @@ service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_non_existing_service_can_be_created(service_type: iox2.ServiceType) -> None:
+def test_non_existing_service_can_be_created(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     try:
@@ -29,7 +31,9 @@ def test_non_existing_service_can_be_created(service_type: iox2.ServiceType) -> 
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_existing_service_cannot_be_created(service_type: iox2.ServiceType) -> None:
+def test_existing_service_cannot_be_created(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
@@ -55,7 +59,9 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_non_existing_service_cannot_be_opened(service_type: iox2.ServiceType) -> None:
+def test_non_existing_service_cannot_be_opened(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
@@ -97,7 +103,9 @@ def test_existing_service_is_opened_with_open_or_create(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_create_service_with_attributes_work(service_type: iox2.ServiceType) -> None:
+def test_create_service_with_attributes_work(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     attribute_spec = iox2.AttributeSpecifier.new().define(
@@ -145,7 +153,9 @@ def test_open_or_create_service_with_attributes_work(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_open_service_with_attributes_work(service_type: iox2.ServiceType) -> None:
+def test_open_service_with_attributes_work(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
@@ -197,7 +207,9 @@ def test_node_listing_works(service_type: iox2.ServiceType) -> None:
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_service_builder_configuration_works(service_type: iox2.ServiceType) -> None:
+def test_service_builder_configuration_works(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 

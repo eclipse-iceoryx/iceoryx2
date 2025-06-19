@@ -74,7 +74,7 @@ fi
 
 
 echo -e "${COLOR_CYAN}code formatting python bindings: examples${COLOR_RESET}"
-black --check examples/python/
+black --line-length=80 --check examples/python/
 if [[ $? != "0" ]]; then
     echo -e "${COLOR_RED}${FONT_BOLD}code formatting python bindings: examples - failed${COLOR_RESET}"
     SUCCESS_CODE=1;
@@ -84,7 +84,7 @@ fi
 
 
 echo -e "${COLOR_CYAN}code formatting python bindings: tests${COLOR_RESET}"
-black --check iceoryx2-ffi/python/tests/
+black --line-length=80 --check iceoryx2-ffi/python/tests/
 if [[ $? != "0" ]]; then
     echo -e "${COLOR_RED}${FONT_BOLD}code formatting python bindings: tests - failed${COLOR_RESET}"
     SUCCESS_CODE=1;

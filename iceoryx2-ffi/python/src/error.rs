@@ -36,6 +36,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    ListenerCreateError,
+    PyException,
+    "Errors caused when creating a new Listener port."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     NodeCreationFailure,
     PyException,
     "Errors caused by creating a new node."
@@ -64,6 +71,20 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    NotifierCreateError,
+    PyException,
+    "Errors caused when creating a new Notifier port."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    NotifierNotifyError,
+    PyException,
+    "Errors caused when sending a notification via the Notifier port in an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     EventOpenError,
     PyException,
     "Errors caused when opening an event service."
@@ -81,6 +102,13 @@ create_exception!(
     EventOpenOrCreateError,
     PyException,
     "Errors caused when open or creating an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ListenerWaitError,
+    PyException,
+    "Errors caused when waiting on a Listener port in an event service."
 );
 
 create_exception!(

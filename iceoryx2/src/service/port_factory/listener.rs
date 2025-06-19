@@ -37,7 +37,7 @@ use super::event::PortFactory;
 /// Factory to create a new [`Listener`] port/endpoint for
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event) based
 /// communication.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PortFactoryListener<'factory, Service: service::Service> {
     pub(crate) factory: &'factory PortFactory<Service>,
 }

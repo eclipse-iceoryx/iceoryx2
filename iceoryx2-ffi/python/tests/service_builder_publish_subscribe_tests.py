@@ -17,7 +17,9 @@ service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_non_existing_service_can_be_created(service_type: iox2.ServiceType) -> None:
+def test_non_existing_service_can_be_created(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     try:
@@ -29,12 +31,16 @@ def test_non_existing_service_can_be_created(service_type: iox2.ServiceType) -> 
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_existing_service_cannot_be_created(service_type: iox2.ServiceType) -> None:
+def test_existing_service_cannot_be_created(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    existing_service = node.service_builder(service_name).publish_subscribe().create()
+    existing_service = (
+        node.service_builder(service_name).publish_subscribe().create()
+    )
 
     with pytest.raises(iox2.PublishSubscribeCreateError):
         sut = node.service_builder(service_name).publish_subscribe().create()
@@ -46,7 +52,9 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    existing_service = node.service_builder(service_name).publish_subscribe().create()
+    existing_service = (
+        node.service_builder(service_name).publish_subscribe().create()
+    )
     try:
         sut = node.service_builder(service_name).publish_subscribe().open()
         assert sut.name == service_name
@@ -55,7 +63,9 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_non_existing_service_cannot_be_opened(service_type: iox2.ServiceType) -> None:
+def test_non_existing_service_cannot_be_opened(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
@@ -73,7 +83,11 @@ def test_non_existing_service_is_created_with_open_or_create(
 
     service_name = iox2.testing.generate_service_name()
     try:
-        sut = node.service_builder(service_name).publish_subscribe().open_or_create()
+        sut = (
+            node.service_builder(service_name)
+            .publish_subscribe()
+            .open_or_create()
+        )
         assert sut.name == service_name
     except iox2.PublishSubscribeOpenOrCreateError:
         raise pytest.fail("DID RAISE EXCEPTION")
@@ -87,17 +101,25 @@ def test_existing_service_is_opened_with_open_or_create(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    existing_service = node.service_builder(service_name).publish_subscribe().create()
+    existing_service = (
+        node.service_builder(service_name).publish_subscribe().create()
+    )
 
     try:
-        sut = node.service_builder(service_name).publish_subscribe().open_or_create()
+        sut = (
+            node.service_builder(service_name)
+            .publish_subscribe()
+            .open_or_create()
+        )
         assert sut.name == service_name
     except iox2.PublishSubscribeOpenOrCreateError:
         raise pytest.fail("DID RAISE EXCEPTION")
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_create_service_with_attributes_work(service_type: iox2.ServiceType) -> None:
+def test_create_service_with_attributes_work(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     attribute_spec = iox2.AttributeSpecifier.new().define(
@@ -145,7 +167,9 @@ def test_open_or_create_service_with_attributes_work(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_open_service_with_attributes_work(service_type: iox2.ServiceType) -> None:
+def test_open_service_with_attributes_work(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
@@ -197,7 +221,9 @@ def test_node_listing_works(service_type: iox2.ServiceType) -> None:
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_service_builder_configuration_works(service_type: iox2.ServiceType) -> None:
+def test_service_builder_configuration_works(
+    service_type: iox2.ServiceType,
+) -> None:
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
@@ -227,9 +253,12 @@ def test_service_builder_configuration_works(service_type: iox2.ServiceType) -> 
     assert static_config.max_publishers == max_publishers
     assert static_config.max_subscribers == max_subscribers
     assert static_config.history_size == history_size
-    assert static_config.subscriber_max_buffer_size == subscriber_max_buffer_size
     assert (
-        static_config.subscriber_max_borrowed_samples == subscriber_max_borrowed_samples
+        static_config.subscriber_max_buffer_size == subscriber_max_buffer_size
+    )
+    assert (
+        static_config.subscriber_max_borrowed_samples
+        == subscriber_max_borrowed_samples
     )
     assert static_config.has_safe_overflow == safe_overflow
 
