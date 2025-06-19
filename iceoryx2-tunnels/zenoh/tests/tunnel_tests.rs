@@ -1016,8 +1016,8 @@ mod zenoh_tunnel {
         // ==================== TEST =====================
         // Send multiple notifications on different event ids
         let event_a = EventId::new(42);
-        let event_b = EventId::new(777);
-        let event_c = EventId::new(1234);
+        let event_b = EventId::new(73);
+        let event_c = EventId::new(127);
 
         const NUM_NOTIFICATIONS: usize = 10;
         for _ in 0..NUM_NOTIFICATIONS {
