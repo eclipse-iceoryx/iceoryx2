@@ -28,6 +28,8 @@ pub mod request_response;
 
 pub mod messaging_pattern;
 
+pub mod blackboard;
+
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
@@ -94,6 +96,22 @@ impl StaticConfig {
             service_id: ServiceId::new::<Hasher>(
                 service_name,
                 crate::service::messaging_pattern::MessagingPattern::PublishSubscribe,
+            ),
+            service_name: service_name.clone(),
+            messaging_pattern,
+            attributes: AttributeSet::new(),
+        }
+    }
+
+    pub(crate) fn new_blackboard<Hasher: Hash>(
+        service_name: &ServiceName,
+        config: &config::Config,
+    ) -> Self {
+        let messaging_pattern = MessagingPattern::Blackboard(blackboard::StaticConfig::new(config));
+        Self {
+            service_id: ServiceId::new::<Hasher>(
+                service_name,
+                crate::service::messaging_pattern::MessagingPattern::Blackboard,
             ),
             service_name: service_name.clone(),
             messaging_pattern,
@@ -182,6 +200,26 @@ impl StaticConfig {
             MessagingPattern::PublishSubscribe(ref mut v) => v,
             m => {
                 fatal_panic!(from origin, "This should never happen! Trying to access publish_subscribe::StaticConfig when the messaging pattern is actually {:?}!", m)
+            }
+        }
+    }
+
+    /// Unwrap the Blackboard static configuration.
+    pub fn blackboard(&self) -> &blackboard::StaticConfig {
+        match &self.messaging_pattern {
+            MessagingPattern::Blackboard(ref v) => v,
+            m => {
+                fatal_panic!(from self, "This should never happen! Trying to access blackboard::StaticConfig when the messaging pattern is actually {:?}!", m)
+            }
+        }
+    }
+
+    pub(crate) fn blackboard_mut(&mut self) -> &mut blackboard::StaticConfig {
+        let origin = format!("{:?}", self);
+        match &mut self.messaging_pattern {
+            MessagingPattern::Blackboard(ref mut v) => v,
+            m => {
+                fatal_panic!(from origin, "This should never happen! Trying to access blackboard::StaticConfig when the messaging pattern is actually {:?}!", m)
             }
         }
     }

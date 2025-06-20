@@ -26,11 +26,25 @@
 //! ### Event
 //!
 //! Enable processes to notify and wakeup other processes by sending events that are uniquely
-//! identified by a [`crate::port::event_id::EventId`]. Hereby, `n`
+//! identified by a [`EventId`][`crate::port::event_id::EventId`]. Hereby, `n`
 //! [`Notifier`](crate::port::notifier::Notifier)s can notify `m`
 //! [`Listener`](crate::port::listener::Listener)s.
 //!
 //! **Note:** This does **not** send or receive POSIX signals nor is it based on them.
+//!
+//! ### Request-Response
+//!
+//! Enables [`Client`](crate::port::client::Client)s to send requests to
+//! [`Server`](crate::port::server::Server)s which respond with the requested
+//! data or action, making it suitable for interactive, transactional
+//! communication.
+//!
+//! ### Blackboard
+//!
+//! Realizes a key-value store in shared memory which can be modified by one
+//! [`Writer`](crate::port::writer::Writer) and read by many
+//! [`Reader`](crate::port::reader::Reader)s. Updates and reads are made on a key basis, not
+//! on the entire shared memory.
 
 /// Identifies the kind of messaging pattern the [`Service`](crate::service::Service) will use.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -51,4 +65,9 @@ pub enum MessagingPattern {
     /// [`Client`](crate::port::client::Client) sends arbitrary data in form of requests to the
     /// [`Server`](crate::port::server::Server) and receives a stream of responses.
     RequestResponse,
+
+    /// Unidirectional communication pattern where the [`Writer`](crate::port::writer::Writer)
+    /// writes arbitrary data to a key-value store which can be read by many
+    /// [`Reader`](crate::port::reader::Reader)s.
+    Blackboard,
 }

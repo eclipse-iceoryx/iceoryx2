@@ -19,6 +19,11 @@ use super::dynamic_config::DynamicConfig;
 use super::service_id::ServiceId;
 use super::{attribute::AttributeSet, service_name::ServiceName};
 
+/// Factory to create the endpoints of
+/// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) based
+/// communication and to acquire static and dynamic service information
+pub mod blackboard;
+
 pub mod request_response;
 
 pub mod client;

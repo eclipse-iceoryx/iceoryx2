@@ -603,6 +603,9 @@ pub(crate) mod internal {
                             return PortCleanupAction::SkipPort;
                         }
                     }
+                    UniquePortId::Reader(ref _id) => {
+                        todo!()
+                    }
                 };
 
                 trace!(from origin, "Remove port {:?} from service.", port_id);

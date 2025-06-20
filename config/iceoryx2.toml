@@ -60,3 +60,7 @@ event-id-max-value = 255
 # notifier-created-event                      = 1 # uncomment to enable setting
 # notifier-dropped-event                      = 2 # uncomment to enable setting
 # notifier-dead-event                         = 3 # uncomment to enable setting
+
+[defaults.blackboard]
+max-readers = 8
+max-nodes = 20

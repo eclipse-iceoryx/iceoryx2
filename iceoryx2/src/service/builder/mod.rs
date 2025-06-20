@@ -23,6 +23,9 @@ pub mod publish_subscribe;
 /// Builder for [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse)
 pub mod request_response;
 
+/// Builder for [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
+pub mod blackboard;
+
 use crate::node::SharedNode;
 use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
@@ -171,6 +174,19 @@ impl<S: Service> Builder<S> {
         )
         .event()
     }
+
+    /// Create a new builder to create a
+    /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) [`Service`].
+    pub fn blackboard<KeyType: ZeroCopySend + Debug>(self) -> blackboard::Builder<KeyType, S> {
+        BuilderWithServiceType::new(
+            StaticConfig::new_blackboard::<S::ServiceNameHasher>(
+                &self.name,
+                self.shared_node.config(),
+            ),
+            self.shared_node,
+        )
+        .blackboard()
+    }
 }
 
 #[doc(hidden)]
@@ -207,6 +223,12 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
 
     fn event(self) -> event::Builder<ServiceType> {
         event::Builder::new(self)
+    }
+
+    fn blackboard<KeyType: ZeroCopySend + Debug>(
+        self,
+    ) -> blackboard::Builder<KeyType, ServiceType> {
+        blackboard::Builder::new(self)
     }
 
     fn is_service_available(
