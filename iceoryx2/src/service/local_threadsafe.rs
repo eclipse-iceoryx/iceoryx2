@@ -36,6 +36,7 @@ use alloc::sync::Arc;
 use core::fmt::Debug;
 
 use crate::service::dynamic_config::DynamicConfig;
+use core::sync::atomic::AtomicU32;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::*;
 
@@ -60,6 +61,8 @@ impl crate::service::Service for Service {
     type Reactor = reactor::recommended::Local;
     type ArcThreadSafetyPolicy<T: Send + Debug> =
         arc_sync_policy::mutex_protected::MutexProtected<T>;
+    // replace DynamicConfig
+    type BlackboardMgmt = dynamic_storage::recommended::Local<AtomicU32>;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {

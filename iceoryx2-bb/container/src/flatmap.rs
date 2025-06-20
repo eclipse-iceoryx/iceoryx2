@@ -33,6 +33,7 @@
 
 use crate::slotmap::FreeListEntry;
 use crate::slotmap::{MetaSlotMap, RelocatableSlotMap};
+use core::fmt::Debug;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
@@ -369,6 +370,13 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> Default for FixedSizeFlatMap<K, V, 
         Self::new()
     }
 }
+
+// impl whem K+V is Debug
+//impl<K: Eq, V: Clone, const CAPACITY: usize> Debug for FixedSizeFlatMap<K, V, CAPACITY> {
+//fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+//write!(f, "")
+//}
+//}
 
 impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
     /// Creates a new [`FixedSizeFlatMap`]

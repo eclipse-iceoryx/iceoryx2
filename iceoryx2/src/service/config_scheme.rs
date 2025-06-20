@@ -114,3 +114,12 @@ pub(crate) fn service_tag_config<Service: crate::service::Service>(
         .suffix(&global_config.global.node.service_tag_suffix)
         .path_hint(&node_details_path(global_config, node_id))
 }
+
+pub(crate) fn blackboard_mgmt_data_segment_config<Service: crate::service::Service>(
+    global_config: &config::Config,
+) -> <Service::BlackboardMgmt as NamedConceptMgmt>::Configuration {
+    <<Service::BlackboardMgmt as NamedConceptMgmt>::Configuration>::default()
+        .prefix(&global_config.global.prefix)
+        .suffix(&global_config.global.service.blackboard_mgmt_data_suffix)
+        .path_hint(&global_config.global.root_path())
+}

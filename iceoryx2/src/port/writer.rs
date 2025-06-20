@@ -10,5 +10,43 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[doc(hidden)]
-pub struct Writer {}
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
+
+use crate::service;
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum WriterCreateError {
+    ExceedsMaxSupportedWriters,
+}
+
+impl core::fmt::Display for WriterCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "WriterCreateError::{:?}", self)
+    }
+}
+
+impl core::error::Error for WriterCreateError {}
+
+#[derive(Debug)]
+pub struct Writer<'mgmt, Service: service::Service> {
+    //service: Service,
+    map: &'mgmt Service::BlackboardMgmt,
+}
+
+impl<'mgmt, Service: service::Service> Writer<'mgmt, Service> {
+    pub(crate) fn new(mgmt: &'mgmt Service::BlackboardMgmt) -> Result<Self, WriterCreateError> {
+        let new_self = Self { map: mgmt };
+        Ok(new_self)
+    }
+
+    pub fn write(&self) {
+        self.map
+            .get()
+            .store(3, core::sync::atomic::Ordering::Relaxed);
+    }
+
+    // TODO: remove
+    pub fn read(&self) -> u32 {
+        self.map.get().load(core::sync::atomic::Ordering::Relaxed)
+    }
+}

@@ -17,7 +17,9 @@
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
 use super::{OpenDynamicStorageFailure, ServiceState};
 use crate::service;
+use crate::service::config_scheme::blackboard_mgmt_data_segment_config;
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
+use crate::service::naming_scheme::blackboard_mgmt_data_segment_name;
 use crate::service::port_factory::blackboard;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
@@ -267,7 +269,8 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     #[doc(hidden)]
     #[allow(unused_mut)]
     pub fn add<ValueType: ZeroCopySend>(mut self, _key: KeyType, _value: ValueType) -> Self {
-        todo!()
+        //todo!()
+        self
     }
 
     fn prepare_config_details(&mut self) {
@@ -455,7 +458,18 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::Blackboard(blackboard_static_config.clone());
 
-                    if let Some(service_tag) = service_tag {
+                    let storage_name = blackboard_mgmt_data_segment_name(
+                        self.base.service_config.service_id().as_str(),
+                    );
+                    let storage_config = blackboard_mgmt_data_segment_config::<ServiceType>(
+                        self.base.shared_node.config(),
+                    );
+                    // TODO: error type and message
+                    let storage = fail!(from self, 
+                        when <ServiceType::BlackboardMgmt as iceoryx2_cal::dynamic_storage::DynamicStorage<AtomicU32>>::Builder::new(&storage_name).config(&storage_config).open(), with BlackboardOpenError::ServiceInCorruptedState,
+                        "{} blub", msg);
+
+                    if let Some(mut service_tag) = service_tag {
                         service_tag.release_ownership();
                     }
 
@@ -466,6 +480,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                             dynamic_config,
                             static_storage,
                         )),
+                        storage,
                     ));
                 }
             }
@@ -556,6 +571,26 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                             with BlackboardCreateError::ServiceInCorruptedState,
                             "{} since the configuration could not be serialized.", msg);
 
+                // create the management data segment including the flatmap; dynamic storage
+                // additional size can be acquired by flatmap::memory_size()?
+                // create naming scheme: iox2 + service id + blackboard_mgmt suffix
+                // dynamic storage returns bump allocator?
+                let storage_name = blackboard_mgmt_data_segment_name(
+                    self.base.service_config.service_id().as_str(),
+                );
+                let storage_config = blackboard_mgmt_data_segment_config::<ServiceType>(
+                    self.base.shared_node.config(),
+                );
+                // TODO: error type and message
+                let storage = fail!(from self, when
+                    <ServiceType::BlackboardMgmt as iceoryx2_cal::dynamic_storage::DynamicStorage<
+                        AtomicU32,
+                    >>::Builder::new(&storage_name)
+                        .config(&storage_config)
+                    .create(AtomicU32::new(0)), with BlackboardCreateError::ServiceInCorruptedState, "{} blub", msg);
+
+                // create the payload data segment for the writer; shm concept with allocator
+
                 // only unlock the static details when the service is successfully created
                 let unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
                             with BlackboardCreateError::ServiceInCorruptedState,
@@ -573,6 +608,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                         dynamic_config,
                         unlocked_static_details,
                     )),
+                    storage,
                 ))
             }
         }

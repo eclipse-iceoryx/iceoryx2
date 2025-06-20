@@ -24,6 +24,8 @@ use super::{attribute::AttributeSet, service_name::ServiceName};
 /// communication and to acquire static and dynamic service information
 pub mod blackboard;
 
+pub mod writer;
+
 pub mod request_response;
 
 pub mod client;

@@ -166,6 +166,8 @@
 //! # }
 //! ```
 
+use core::sync::atomic::AtomicU32;
+
 pub(crate) mod stale_resource_cleanup;
 
 /// The builder to create or open [`Service`]s
@@ -697,6 +699,8 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// the [`Service`]s ports and payload cannot be shared ([`Sync`]) between threads or moved
     /// ([`Send`]) into other threads.
     type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
+    // replace DynamicConfig
+    type BlackboardMgmt: DynamicStorage<AtomicU32>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

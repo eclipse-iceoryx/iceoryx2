@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use super::nodes;
+use super::writer::PortFactoryWriter;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::service_id::ServiceId;
@@ -18,8 +20,6 @@ use crate::service::{self, dynamic_config, static_config};
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
-use super::nodes;
-
 /// The factory for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard).
 /// It can acquire dynamic and static service informations and create
@@ -27,6 +27,7 @@ use super::nodes;
 #[derive(Debug)]
 pub struct PortFactory<Service: service::Service> {
     pub(crate) service: Service,
+    pub(crate) mgmt: Service::BlackboardMgmt,
 }
 
 impl<Service: service::Service> crate::service::port_factory::PortFactory for PortFactory<Service> {
@@ -71,7 +72,12 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
 }
 
 impl<Service: service::Service> PortFactory<Service> {
-    pub(crate) fn new(service: Service) -> Self {
-        Self { service }
+    pub(crate) fn new(service: Service, mgmt: Service::BlackboardMgmt) -> Self {
+        Self { service, mgmt }
+    }
+
+    pub fn writer_builder(&self) -> PortFactoryWriter<Service> {
+        println!("WriterBuilder");
+        PortFactoryWriter::new(self)
     }
 }
