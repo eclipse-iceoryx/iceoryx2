@@ -121,7 +121,7 @@ impl core::fmt::Display for ConfigCreationError {
 
 impl core::error::Error for ConfigCreationError {}
 
-/// All configurable settings of a [`crate::service::Service`].
+/// All configurable settings of a [`Service`](crate::service::Service).
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
@@ -143,7 +143,7 @@ pub struct Service {
     pub event_connection_suffix: FileName,
 }
 
-/// All configurable settings of a [`crate::node::Node`].
+/// All configurable settings of a [`Node`](crate::node::Node).
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
@@ -175,9 +175,9 @@ pub struct Global {
     root_path_windows: Path,
     /// Prefix used for all files created during runtime
     pub prefix: FileName,
-    /// [`crate::service::Service`] settings
+    /// [`Service`](crate::service::Service) settings
     pub service: Service,
-    /// [`crate::node::Node`] settings
+    /// [`Node`](crate::node::Node) settings
     pub node: Node,
 }
 
@@ -243,30 +243,30 @@ pub struct Defaults {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub struct PublishSubscribe {
-    /// The maximum amount of supported [`crate::port::subscriber::Subscriber`]
+    /// The maximum amount of supported [`Subscriber`](crate::port::subscriber::Subscriber)
     pub max_subscribers: usize,
-    /// The maximum amount of supported [`crate::port::publisher::Publisher`]
+    /// The maximum amount of supported [`Publisher`](crate::port::publisher::Publisher)
     pub max_publishers: usize,
-    /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
+    /// The maximum amount of supported [`Node`](crate::node::Node)s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub max_nodes: usize,
-    /// The maximum buffer size a [`crate::port::subscriber::Subscriber`] can have
+    /// The maximum buffer size a [`Subscriber`](crate::port::subscriber::Subscriber) can have
     pub subscriber_max_buffer_size: usize,
-    /// The maximum amount of [`crate::sample::Sample`]s a [`crate::port::subscriber::Subscriber`] can
+    /// The maximum amount of [`Sample`](crate::sample::Sample)s a [`Subscriber`](crate::port::subscriber::Subscriber) can
     /// hold at the same time.
     pub subscriber_max_borrowed_samples: usize,
-    /// The maximum amount of [`crate::sample_mut::SampleMut`]s a [`crate::port::publisher::Publisher`] can
+    /// The maximum amount of [`SampleMut`](crate::sample_mut::SampleMut)s a [`Publisher`](crate::port::publisher::Publisher) can
     /// loan at the same time.
     pub publisher_max_loaned_samples: usize,
-    /// The maximum history size a [`crate::port::subscriber::Subscriber`] can request from a
+    /// The maximum history size a [`Subscriber`](crate::port::subscriber::Subscriber) can request from a
     /// [`crate::port::publisher::Publisher`].
     pub publisher_history_size: usize,
-    /// Defines how the [`crate::port::subscriber::Subscriber`] buffer behaves when it is
-    /// full. When safe overflow is activated, the [`crate::port::publisher::Publisher`] will
-    /// replace the oldest [`crate::sample::Sample`] with the newest one.
+    /// Defines how the [`Subscriber`](crate::port::subscriber::Subscriber) buffer behaves when it is
+    /// full. When safe overflow is activated, the [`Publisher`](crate::port::publisher::Publisher) will
+    /// replace the oldest [`Sample`](crate::sample::Sample) with the newest one.
     pub enable_safe_overflow: bool,
     /// If safe overflow is deactivated it defines the deliver strategy of the
-    /// [`crate::port::publisher::Publisher`] when the [`crate::port::subscriber::Subscriber`]s
+    /// [`Publisher`](crate::port::publisher::Publisher) when the [`Subscriber`](crate::port::subscriber::Subscriber)s
     /// buffer is full.
     pub unable_to_deliver_strategy: UnableToDeliverStrategy,
     /// Defines the size of the internal [`Subscriber`](crate::port::subscriber::Subscriber)
@@ -283,11 +283,11 @@ pub struct PublishSubscribe {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub struct Event {
-    /// The maximum amount of supported [`crate::port::listener::Listener`]
+    /// The maximum amount of supported [`Listener`](crate::port::listener::Listener)
     pub max_listeners: usize,
-    /// The maximum amount of supported [`crate::port::notifier::Notifier`]
+    /// The maximum amount of supported [`Notifier`](crate::port::notifier::Notifier)
     pub max_notifiers: usize,
-    /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
+    /// The maximum amount of supported [`Node`](crate::node::Node)s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub max_nodes: usize,
     /// The largest event id supported by the event service
@@ -310,31 +310,34 @@ pub struct Event {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub struct RequestResonse {
-    /// Defines if the request buffer of the [`Service`] safely overflows.
+    /// Defines if the request buffer of the [`Service`](crate::service::Service) safely overflows.
     pub enable_safe_overflow_for_requests: bool,
-    /// Defines if the response buffer of the [`Service`] safely overflows.
+    /// Defines if the response buffer of the [`Service`](crate::service::Service) safely overflows.
     pub enable_safe_overflow_for_responses: bool,
-    /// The maximum of [`crate::active_request::ActiveRequest`]s a [`crate::port::server::Server`] can hold in parallel per [`crate::port::client::Client`].
+    /// The maximum of [`ActiveRequest`](crate::active_request::ActiveRequest)s a
+    /// [`Server`](crate::port::server::Server) can hold in parallel per [`Client`](crate::port::client::Client).
     pub max_active_requests_per_client: usize,
-    /// The maximum buffer size for [`crate::response::Response`]s for a [`crate::pending_response::PendingResponse`]
+    /// The maximum buffer size for [`Response`](crate::response::Response)s for a [`PendingResponse`](crate::pending_response::PendingResponse)
     /// for each [`Server`](crate::port::server::Server) connection.
     /// In a multi [`Server`](crate::port::server::Server) scenario every
     /// [`Response`](crate::response::Response) stream from every
     /// [`Server`](crate::port::server::Server) has the same buffer size resulting in a total
     /// buffer size of `NUMBER_OF_SERVERS * max_response_buffer_size`
     pub max_response_buffer_size: usize,
-    /// The maximum amount of supported [`crate::port::server::Server`]
+    /// The maximum amount of supported [`Server`](crate::port::server::Server)
     pub max_servers: usize,
-    /// The maximum amount of supported [`crate::port::client::Client`]
+    /// The maximum amount of supported [`Client`](crate::port::client::Client)
     pub max_clients: usize,
-    /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
+    /// The maximum amount of supported [`Node`](crate::node::Node)s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub max_nodes: usize,
-    /// The maximum amount of borrowed [`crate::response::Response`] per [`crate::pending_response::PendingResponse`] on the [`crate::port::client::Client`] side.
+    /// The maximum amount of borrowed [`Response`](crate::response::Response) per
+    /// [`PendingResponse`](crate::pending_response::PendingResponse) on the [`Client`](crate::port::client::Client) side.
     pub max_borrowed_responses_per_pending_response: usize,
-    /// Defines how many [`crate::request_mut::RequestMut`] a [`crate::port::client::Client`] can loan in parallel.
+    /// Defines how many [`RequestMut`](crate::request_mut::RequestMut) a [`Client`](crate::port::client::Client) can loan in parallel.
     pub max_loaned_requests: usize,
-    /// Defines how many [`crate::response_mut::ResponseMut`] a [`crate::port::server::Server`] can loan in parallel per [`crate::active_request::ActiveRequest`].
+    /// Defines how many [`ResponseMut`](crate::response_mut::ResponseMut) a [`Server`](crate::port::server::Server)
+    /// can loan in parallel per [`ActiveRequest`](crate::active_request::ActiveRequest).
     pub server_max_loaned_responses_per_request: usize,
     /// Defines the [`UnableToDeliverStrategy`] when a [`Client`](crate::port::client::Client)
     /// could not deliver the request to the [`Server`](crate::port::server::Server).
@@ -377,16 +380,16 @@ pub struct RequestResonse {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub struct Blackboard {
-    /// The maximum amount of supported [`crate::port::reader::Reader`]s.
+    /// The maximum amount of supported [`Reader`](crate::port::reader::Reader)s.
     pub max_readers: usize,
-    /// The maximum amount of supported [`crate::node::Node`]s. Defines indirectly how many
+    /// The maximum amount of supported [`Node`](crate::node::Node)s. Defines indirectly how many
     /// processes can open the service at the same time.
     pub max_nodes: usize,
 }
 
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
-/// the [Global] settings, which must align with the iceoryx2 instance the application intends to
-/// join, and the [Defaults] for communication within that iceoryx2 instance. The user has the
+/// the [`Global`] settings, which must align with the iceoryx2 instance the application intends to
+/// join, and the [`Defaults`] for communication within that iceoryx2 instance. The user has the
 /// flexibility to override both sections.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]

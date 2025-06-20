@@ -215,12 +215,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     ) -> Result<Option<(StaticConfig, ServiceType::StaticStorage)>, ServiceAvailabilityState> {
         match self.base.is_service_available(error_msg) {
             Ok(Some((config, storage))) => {
-                println!("is_service_available: Ok(Some)");
-                if !self
-                    .config_details()
-                    .type_details
-                    .is_compatible_to(&config.blackboard().type_details)
-                {
+                if !(self.config_details().type_details == config.blackboard().type_details) {
                     fail!(from self, with ServiceAvailabilityState::IncompatibleKeys,
                         "{} since the service offers the type \"{:?}\" which is not compatible to the requested type \"{:?}\".",
                         error_msg, &config.blackboard().type_details , self.config_details().type_details);
@@ -228,14 +223,8 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
 
                 Ok(Some((config, storage)))
             }
-            Ok(None) => {
-                println!("is_service_available: Ok(None)");
-                Ok(None)
-            }
-            Err(e) => {
-                println!("is_service_available: Err");
-                Err(ServiceAvailabilityState::ServiceState(e))
-            }
+            Ok(None) => Ok(None),
+            Err(e) => Err(ServiceAvailabilityState::ServiceState(e)),
         }
     }
 
@@ -257,9 +246,9 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
         }
     }
 
-    /// If the [`Service`] is created it defines how many [`crate::port::reader::Reader`]s shall
-    /// be supported at most. If an existing [`Service`] is opened it defines how many
-    /// [`crate::port::reader::Reader`]s must be at least supported.
+    /// If the [`Service`] is created it defines how many [`Reader`](crate::port::reader::Reader)s
+    /// shall be supported at most. If an existing [`Service`] is opened it defines how many
+    /// [`Reader`](crate::port::reader::Reader)s must be at least supported.
     pub fn max_readers(mut self, value: usize) -> Self {
         self.config_details_mut().max_readers = value;
         self.verify_max_readers = true;
@@ -278,8 +267,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     #[doc(hidden)]
     #[allow(unused_mut)]
     pub fn add<ValueType: ZeroCopySend>(mut self, _key: KeyType, _value: ValueType) -> Self {
-        // TODO: implement logic
-        self
+        todo!()
     }
 
     fn prepare_config_details(&mut self) {
@@ -381,16 +369,13 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                         .create_impl(&AttributeSpecifier(verifier.required_attributes().clone()))
                     {
                         Ok(factory) => {
-                            println!("open_or_create_with_attributes: Ok(factory)");
                             return Ok(factory);
                         }
                         Err(BlackboardCreateError::AlreadyExists)
                         | Err(BlackboardCreateError::IsBeingCreatedByAnotherInstance) => {
-                            println!("open_or_create_with_attributes: Err");
                             continue;
                         }
                         Err(e) => {
-                            println!("open_or_create_with_attributes: Err(e)");
                             return Err(e.into());
                         }
                     }

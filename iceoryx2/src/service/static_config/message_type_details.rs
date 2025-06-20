@@ -84,13 +84,6 @@ impl TypeDetail {
             alignment: core::mem::align_of::<T>(),
         }
     }
-
-    pub(crate) fn is_compatible_to(&self, rhs: &Self) -> bool {
-        self.variant == rhs.variant
-            && self.type_name == rhs.type_name
-            && self.size == rhs.size
-            && self.alignment == rhs.alignment
-    }
 }
 
 /// Contains all type information to the header and payload type.
