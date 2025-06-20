@@ -516,6 +516,9 @@ impl<'a, T: Debug> IpcCapable<'a, MutexHandle<T>> for Mutex<'a, T> {
 }
 
 impl<'a, T: Debug> Mutex<'a, T> {
+    /// Instantiates a [`Mutex`] from an already initialized [`MutexHandle`]. Useful for
+    /// inter-process usage where the [`MutexHandle`] was created by [`MutexBuilder`] in another
+    /// process.
     pub fn from_handle<'b: 'a>(handle: &'b MutexHandle<T>) -> Mutex<'a, T> {
         Self::new(handle)
     }

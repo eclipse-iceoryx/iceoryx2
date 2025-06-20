@@ -63,8 +63,9 @@ impl<'a, T: Debug + 'a> ThreadSafety<T> for MutexProtected<'a, T> {
     }
 
     fn lock(&self) -> Self::LockGuard {
-        Guard {
-            guard: Mutex::from_handle(&self.handle).lock().unwrap(),
-        }
+        todo!()
+        // Guard {
+        //     guard: Mutex::from_handle(&self.handle).lock().unwrap(),
+        // }
     }
 }
