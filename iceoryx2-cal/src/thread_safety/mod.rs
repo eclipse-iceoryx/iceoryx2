@@ -15,11 +15,14 @@ pub mod single_threaded;
 
 use core::ops::{Deref, DerefMut};
 
-pub trait LockGuard<T>: Deref + DerefMut {}
+pub trait LockGuard<'parent, T: Send>: Deref + DerefMut {}
 
-pub trait ThreadSafety<T> {
-    type LockGuard: LockGuard<T>;
+pub trait ThreadSafety<T: Send> {
+    type LockGuard<'parent>: LockGuard<'parent, T>
+    where
+        Self: 'parent,
+        T: 'parent;
 
     fn new(value: T) -> Self;
-    fn lock(&self) -> Self::LockGuard;
+    fn lock<'this>(&'this self) -> Self::LockGuard<'this>;
 }

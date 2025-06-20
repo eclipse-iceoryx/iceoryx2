@@ -12,7 +12,6 @@
 
 use core::{
     fmt::Debug,
-    marker::PhantomData,
     ops::{Deref, DerefMut},
 };
 use std::sync::Arc;
@@ -21,11 +20,11 @@ use iceoryx2_bb_posix::mutex::{Handle, Mutex, MutexBuilder, MutexGuard, MutexHan
 
 use crate::thread_safety::{LockGuard, ThreadSafety};
 
-pub struct Guard<'handle, T: Debug> {
-    guard: MutexGuard<'handle, T>,
+pub struct Guard<'parent, T: Send + Debug> {
+    guard: MutexGuard<'parent, T>,
 }
 
-impl<T: Debug> Deref for Guard<'_, T> {
+impl<T: Send + Debug> Deref for Guard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -33,39 +32,43 @@ impl<T: Debug> Deref for Guard<'_, T> {
     }
 }
 
-impl<T: Debug> DerefMut for Guard<'_, T> {
+impl<T: Send + Debug> DerefMut for Guard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.guard.deref_mut()
     }
 }
 
-impl<T: Debug> LockGuard<T> for Guard<'_, T> {}
+impl<'parent, T: Send + Debug> LockGuard<'parent, T> for Guard<'parent, T> {}
 
-pub struct MutexProtected<'a, T: Debug> {
+pub struct MutexProtected<T: Send + Debug> {
     handle: Arc<MutexHandle<T>>,
-    _data: PhantomData<&'a ()>,
 }
 
-impl<'a, T: Debug + 'a> ThreadSafety<T> for MutexProtected<'a, T> {
-    type LockGuard = Guard<'a, T>;
+unsafe impl<T: Send + Debug> Send for MutexProtected<T> {}
+unsafe impl<T: Send + Debug> Sync for MutexProtected<T> {}
+
+impl<T: Send + Debug> ThreadSafety<T> for MutexProtected<T> {
+    type LockGuard<'parent>
+        = Guard<'parent, T>
+    where
+        Self: 'parent,
+        T: 'parent;
 
     fn new(value: T) -> Self {
         let handle = Arc::new(MutexHandle::new());
         MutexBuilder::new()
-            .is_interprocess_capable(true)
+            .is_interprocess_capable(false)
             .create(value, &handle)
             .unwrap();
 
-        Self {
-            handle,
-            _data: PhantomData,
-        }
+        Self { handle }
     }
 
-    fn lock(&self) -> Self::LockGuard {
-        todo!()
-        // Guard {
-        //     guard: Mutex::from_handle(&self.handle).lock().unwrap(),
-        // }
+    fn lock<'this>(&'this self) -> Self::LockGuard<'this> {
+        Guard {
+            guard: unsafe {
+                core::mem::transmute(Mutex::from_handle(&self.handle).lock().unwrap())
+            },
+        }
     }
 }
