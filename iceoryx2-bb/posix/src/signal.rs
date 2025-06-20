@@ -532,7 +532,7 @@ impl SignalHandler {
         sighandle
     }
 
-    fn instance() -> MutexGuard<'static, 'static, Self> {
+    fn instance() -> MutexGuard<'static, Self> {
         lazy_static! {
             static ref HANDLE: MutexHandle<SignalHandler> = MutexHandle::new();
             static ref MTX: Mutex<'static, SignalHandler> = fatal_panic!(from "SignalHandler::instance",

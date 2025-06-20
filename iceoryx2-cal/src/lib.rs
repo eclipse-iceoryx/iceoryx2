@@ -27,6 +27,7 @@ pub mod shared_memory;
 pub mod shared_memory_directory;
 pub mod shm_allocator;
 pub mod static_storage;
+pub mod thread_safety;
 pub mod zero_copy_connection;
 
 #[doc(hidden)]

@@ -356,7 +356,7 @@ impl<T: Send + Sync + Debug + 'static> NamedConceptBuilder<Storage<T>> for Build
 impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
     fn open_impl(
         &self,
-        guard: &mut MutexGuard<'static, 'static, HashMap<FilePath, StorageEntry>>,
+        guard: &mut MutexGuard<'static, HashMap<FilePath, StorageEntry>>,
     ) -> Result<Storage<T>, DynamicStorageOpenError> {
         let msg = "Failed to open dynamic storage";
 
@@ -383,7 +383,7 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
 
     fn create_impl(
         &mut self,
-        guard: &mut MutexGuard<'static, 'static, HashMap<FilePath, StorageEntry>>,
+        guard: &mut MutexGuard<'static, HashMap<FilePath, StorageEntry>>,
         initial_value: T,
     ) -> Result<Storage<T>, DynamicStorageCreateError> {
         let msg = "Failed to create dynamic storage";
