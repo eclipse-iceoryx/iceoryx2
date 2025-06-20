@@ -13,7 +13,10 @@
 use iceoryx2::{
     config::Config,
     prelude::CallbackProgression,
-    service::{service_id::ServiceId, Service, ServiceDetails, ServiceListError},
+    service::{
+        service_id::ServiceId, static_config::StaticConfig, Service, ServiceDetails,
+        ServiceListError,
+    },
 };
 use std::collections::{HashMap, HashSet};
 
@@ -135,5 +138,17 @@ impl<S: Service> Tracker<S> {
     /// An `Option` containing a reference to the service details if tracked, or `None` if not tracked
     pub fn get(&self, id: &ServiceId) -> Option<&ServiceDetails<S>> {
         self.services.get(id)
+    }
+
+    /// Retrieves service details all the services that are being currently tracked.
+    ///
+    /// # Returns
+    ///
+    /// An `Vec` containing a reference to the service details all the services that are being tracked
+    pub fn get_all(&self) -> Vec<StaticConfig> {
+        self.services
+            .values()
+            .map(|details| details.static_details.clone())
+            .collect()
     }
 }

@@ -11,13 +11,15 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::service_discovery::{SyncError, Tracker};
-use iceoryx2::prelude::ZeroCopySend;
+use iceoryx2::port::ReceiveError;
+use iceoryx2::prelude::{AllocationStrategy, ZeroCopySend};
 use iceoryx2::{
     config::Config as IceoryxConfig,
     node::{Node, NodeBuilder, NodeCreationFailure},
     port::{
         notifier::{Notifier, NotifierCreateError, NotifierNotifyError},
         publisher::{Publisher, PublisherCreateError},
+        server::Server,
         LoanError, SendError,
     },
     prelude::ServiceName,
@@ -146,6 +148,9 @@ pub enum SpinError {
 
     /// Failed to send a notification about service changes.
     NotifyFailure,
+
+    /// Server error while requesting, receiving or loaning services.
+    ServerSpinError(ServerSpinError),
 }
 
 impl core::fmt::Display for SpinError {
@@ -183,6 +188,51 @@ impl From<NotifierNotifyError> for SpinError {
     }
 }
 
+impl From<ServerSpinError> for SpinError {
+    fn from(error: ServerSpinError) -> Self {
+        SpinError::ServerSpinError(error)
+    }
+}
+
+/// Errors that can occur when running the server of the service discovery_service.
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum ServerSpinError {
+    /// The caller does not have sufficient permissions to create the service.
+    ReceptionFailure,
+
+    /// Failed to send a response to the client.
+    ResponseSendFailure,
+
+    /// Failed to loan a response sample.
+    LoanFailure,
+}
+
+impl core::fmt::Display for ServerSpinError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "ServerSpinError::{:?}", self)
+    }
+}
+
+impl core::error::Error for ServerSpinError {}
+
+impl From<ReceiveError> for ServerSpinError {
+    fn from(_: ReceiveError) -> Self {
+        ServerSpinError::ReceptionFailure
+    }
+}
+
+impl From<SendError> for ServerSpinError {
+    fn from(_: SendError) -> Self {
+        ServerSpinError::ResponseSendFailure
+    }
+}
+
+impl From<LoanError> for ServerSpinError {
+    fn from(_: LoanError) -> Self {
+        ServerSpinError::LoanFailure
+    }
+}
+
 /// Configuration for the service discovery service.
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -214,6 +264,12 @@ pub struct Config {
 
     /// The maximum number of listeners to the service permitted.
     pub max_listeners: usize,
+
+    /// Whether to enable the server for handling requests.
+    pub enable_server: bool,
+
+    /// The initial maximum slice length for the server.
+    pub initial_max_slice_len: usize,
 }
 
 impl Default for Config {
@@ -229,6 +285,8 @@ impl Default for Config {
             max_borrrowed_samples: defaults.publish_subscribe.subscriber_max_borrowed_samples,
             send_notifications: true,
             max_listeners: defaults.event.max_listeners,
+            enable_server: true,
+            initial_max_slice_len: 10,
         }
     }
 }
@@ -247,6 +305,7 @@ pub struct Service<S: ServiceType> {
     iceoryx_config: IceoryxConfig,
     _node: Node<S>,
     publisher: Option<Publisher<S, Payload, ()>>,
+    server: Option<Server<S, (), (), [StaticConfig], ()>>,
     notifier: Option<Notifier<S>>,
     tracker: Tracker<S>,
 }
@@ -305,11 +364,30 @@ impl<S: ServiceType> Service<S> {
             tracker.sync(iceoryx_config)?;
         }
 
+        let mut server = None;
+        if discovery_config.enable_server {
+            let request_response = node
+                .service_builder(service_name())
+                .request_response::<(), [StaticConfig]>()
+                .open_or_create()
+                .map_err(|_| CreationError::ServiceCreationFailure)?;
+
+            server = Some(
+                request_response
+                    .server_builder()
+                    .initial_max_slice_len(discovery_config.initial_max_slice_len)
+                    .allocation_strategy(AllocationStrategy::PowerOfTwo)
+                    .create()
+                    .map_err(|_| CreationError::ServiceCreationFailure)?,
+            );
+        }
+
         Ok(Service::<S> {
             discovery_config: discovery_config.clone(),
             iceoryx_config: iceoryx_config.clone(),
             _node: node,
             publisher,
+            server,
             notifier,
             tracker,
         })
@@ -345,7 +423,6 @@ impl<S: ServiceType> Service<S> {
         // Detect changes
         let (added_ids, removed_services) = self.tracker.sync(&self.iceoryx_config)?;
         let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
-
         // Publish
         for id in &added_ids {
             if let Some(service) = self.tracker.get(id) {
@@ -386,6 +463,39 @@ impl<S: ServiceType> Service<S> {
             }
         }
 
+        // Handle server requests
+        self.handle_discovery_requests()?;
+
+        Ok(())
+    }
+
+    /// Returns the service details of all the current services.
+    ///
+    /// This function is called within the spin function, so that
+    /// if any requests are recieved for the discovery states,
+    /// it can be provided via the RequestResponse method.
+    ///
+    /// # Returns
+    ///
+    /// A result containing `()` if successful.
+    ///
+    /// # Errors
+    ///
+    /// Returns a `ServerSpinError` if there was an error in Responsding,
+    /// Loaning or recieving Requests.
+    pub fn handle_discovery_requests(&mut self) -> Result<(), ServerSpinError> {
+        if let Some(server) = &mut self.server {
+            while let Some(active_request) = server.receive()? {
+                // Handle the request
+                let mut service_details = self.tracker.get_all();
+                if !self.discovery_config.include_internal {
+                    service_details.retain(|service| !ServiceName::has_iox2_prefix(service.name()));
+                }
+                let response = active_request.loan_slice_uninit(service_details.len())?;
+                let response = response.write_from_fn(|idx| service_details[idx].clone());
+                response.send()?;
+            }
+        }
         Ok(())
     }
 }
