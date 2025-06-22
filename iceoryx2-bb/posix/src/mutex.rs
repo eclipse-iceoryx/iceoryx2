@@ -49,6 +49,7 @@ pub use crate::ipc_capable::{Handle, IpcCapable};
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::time::Duration;
 use iceoryx2_bb_elementary::scope_guard::*;
@@ -496,30 +497,40 @@ impl<T: Sized + Debug> MutexHandle<T> {
 /// };
 /// ```
 #[derive(Debug)]
-pub struct Mutex<'a, T: Sized + Debug> {
-    pub(crate) handle: &'a MutexHandle<T>,
+pub struct Mutex<'this, 'handle, T: Sized + Debug> {
+    pub(crate) handle: &'handle MutexHandle<T>,
+    _lifetime: PhantomData<&'this ()>,
 }
 
-unsafe impl<T: Sized + Send + Debug> Send for Mutex<'_, T> {}
-unsafe impl<T: Sized + Send + Debug> Sync for Mutex<'_, T> {}
+unsafe impl<T: Sized + Send + Debug> Send for Mutex<'_, '_, T> {}
+unsafe impl<T: Sized + Send + Debug> Sync for Mutex<'_, '_, T> {}
 
-impl<'a, T: Debug> IpcConstructible<'a, MutexHandle<T>> for Mutex<'a, T> {
-    fn new(handle: &'a MutexHandle<T>) -> Self {
-        Self { handle }
+impl<'handle, T: Debug> IpcConstructible<'handle, MutexHandle<T>> for Mutex<'_, 'handle, T> {
+    fn new(handle: &'handle MutexHandle<T>) -> Self {
+        Self {
+            handle,
+            _lifetime: PhantomData,
+        }
     }
 }
 
-impl<'a, T: Debug> IpcCapable<'a, MutexHandle<T>> for Mutex<'a, T> {
+impl<'handle, T: Debug> IpcCapable<'handle, MutexHandle<T>> for Mutex<'_, 'handle, T> {
     fn is_interprocess_capable(&self) -> bool {
         self.handle.is_inter_process_capable()
     }
 }
 
-impl<'a, T: Debug> Mutex<'a, T> {
+impl<'this, 'handle, T: Debug> Mutex<'this, 'handle, T> {
     /// Instantiates a [`Mutex`] from an already initialized [`MutexHandle`]. Useful for
     /// inter-process usage where the [`MutexHandle`] was created by [`MutexBuilder`] in another
     /// process.
-    pub fn from_handle<'b: 'a>(handle: &'b MutexHandle<T>) -> Mutex<'a, T> {
+    ///
+    /// # Safety
+    ///
+    /// * `handle` must have been successfully initialized by the [`MutexBuilder`].
+    pub unsafe fn from_handle(handle: &'handle MutexHandle<T>) -> Mutex<'this, 'handle, T> {
+        debug_assert!(handle.is_initialized());
+
         Self::new(handle)
     }
 
@@ -531,7 +542,7 @@ impl<'a, T: Debug> Mutex<'a, T> {
     /// new owner now has the responsibility to either repair the underlying value of the mutex and
     /// call [`Mutex::make_consistent()`] when it is repaired or to undertake other measures when
     /// it is unrepairable.
-    pub fn lock(&self) -> Result<MutexGuard<'_, T>, MutexLockError<'_, T>> {
+    pub fn lock(&'this self) -> Result<MutexGuard<'handle, T>, MutexLockError<'handle, T>> {
         let msg = "Failed to lock";
         handle_errno!(MutexLockError, from self,
             errno_source unsafe { posix::pthread_mutex_lock(self.handle.handle.get()) }.into(),
@@ -553,7 +564,9 @@ impl<'a, T: Debug> Mutex<'a, T> {
     /// new owner now has the responsibility to either repair the underlying value of the mutex and
     /// call [`Mutex::make_consistent()`] when it is repaired or to undertake other measures when
     /// it is unrepairable.
-    pub fn try_lock(&self) -> Result<Option<MutexGuard<'_, T>>, MutexLockError<'_, T>> {
+    pub fn try_lock(
+        &'this self,
+    ) -> Result<Option<MutexGuard<'handle, T>>, MutexLockError<'handle, T>> {
         let msg = "Try lock failed";
         handle_errno!(MutexLockError, from self,
             errno_source unsafe { posix::pthread_mutex_trylock(self.handle.handle.get()) }.into(),
@@ -577,9 +590,9 @@ impl<'a, T: Debug> Mutex<'a, T> {
     /// call [`Mutex::make_consistent()`] when it is repaired or to undertake other measures when
     /// it is unrepairable.
     pub fn timed_lock(
-        &self,
+        &'this self,
         duration: Duration,
-    ) -> Result<Option<MutexGuard<'_, T>>, MutexTimedLockError<'_, T>> {
+    ) -> Result<Option<MutexGuard<'handle, T>>, MutexTimedLockError<'handle, T>> {
         let msg = "Timed lock failed";
 
         match self.handle.clock_type() {

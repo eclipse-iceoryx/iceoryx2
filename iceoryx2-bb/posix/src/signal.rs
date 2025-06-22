@@ -535,7 +535,7 @@ impl SignalHandler {
     fn instance() -> MutexGuard<'static, Self> {
         lazy_static! {
             static ref HANDLE: MutexHandle<SignalHandler> = MutexHandle::new();
-            static ref MTX: Mutex<'static, SignalHandler> = fatal_panic!(from "SignalHandler::instance",
+            static ref MTX: Mutex<'static, 'static, SignalHandler> = fatal_panic!(from "SignalHandler::instance",
                 when MutexBuilder::new().create(SignalHandler::new(), &HANDLE),
                 "Unable to create global signal handler");
         }
