@@ -21,9 +21,9 @@ pub enum ArcSyncPolicyCreationError {
     InternalFailure,
 }
 
-pub trait LockGuard<'parent, T: Send>: Deref {}
+pub trait LockGuard<'parent, T: Send>: Deref<Target = T> {}
 
-pub trait ArcSyncPolicy<T: Send>: Sized {
+pub trait ArcSyncPolicy<T: Send>: Sized + Clone {
     type LockGuard<'parent>: LockGuard<'parent, T>
     where
         Self: 'parent,

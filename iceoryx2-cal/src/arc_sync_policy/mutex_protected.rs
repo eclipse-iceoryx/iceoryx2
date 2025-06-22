@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::mutex::{
-    Handle, Mutex, MutexBuilder, MutexCreationError, MutexGuard, MutexHandle,
+    Handle, Mutex, MutexBuilder, MutexCreationError, MutexGuard, MutexHandle, MutexType,
 };
 
 use crate::arc_sync_policy::{ArcSyncPolicy, ArcSyncPolicyCreationError, LockGuard};
@@ -39,6 +39,14 @@ pub struct MutexProtected<T: Send + Debug> {
     handle: Arc<MutexHandle<T>>,
 }
 
+impl<T: Send + Debug> Clone for MutexProtected<T> {
+    fn clone(&self) -> Self {
+        Self {
+            handle: self.handle.clone(),
+        }
+    }
+}
+
 unsafe impl<T: Send + Debug> Send for MutexProtected<T> {}
 unsafe impl<T: Send + Debug> Sync for MutexProtected<T> {}
 
@@ -54,6 +62,7 @@ impl<T: Send + Debug> ArcSyncPolicy<T> for MutexProtected<T> {
         let handle = Arc::new(MutexHandle::new());
         match MutexBuilder::new()
             .is_interprocess_capable(false)
+            .mutex_type(MutexType::Recursive)
             .create(value, &handle)
         {
             Ok(_) => (),

@@ -35,6 +35,14 @@ pub struct SingleThreaded<T: Send + Debug> {
     data: Rc<T>,
 }
 
+impl<T: Send + Debug> Clone for SingleThreaded<T> {
+    fn clone(&self) -> Self {
+        Self {
+            data: self.data.clone(),
+        }
+    }
+}
+
 impl<T: Send + Debug> ArcSyncPolicy<T> for SingleThreaded<T> {
     type LockGuard<'parent>
         = Guard<'parent, T>
