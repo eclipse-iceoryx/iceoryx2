@@ -10,10 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::{
-    fmt::Debug,
-    ops::{Deref, DerefMut},
-};
+use core::{fmt::Debug, ops::Deref};
 use std::sync::Arc;
 
 use iceoryx2_bb_log::{fail, fatal_panic};
@@ -32,12 +29,6 @@ impl<T: Send + Debug> Deref for Guard<'_, T> {
 
     fn deref(&self) -> &Self::Target {
         self.guard.deref()
-    }
-}
-
-impl<T: Send + Debug> DerefMut for Guard<'_, T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.guard.deref_mut()
     }
 }
 
@@ -82,7 +73,7 @@ impl<T: Send + Debug> ArcSyncPolicy<T> for MutexProtected<T> {
         Ok(Self { handle })
     }
 
-    fn lock<'this>(&'this self) -> Self::LockGuard<'this> {
+    fn lock(&self) -> Self::LockGuard<'_> {
         Guard {
             guard:
                 // handle was successfully initialized in `new()`

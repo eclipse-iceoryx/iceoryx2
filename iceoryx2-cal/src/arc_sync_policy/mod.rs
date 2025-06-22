@@ -13,7 +13,7 @@
 pub mod mutex_protected;
 pub mod single_threaded;
 
-use core::ops::{Deref, DerefMut};
+use core::ops::Deref;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ArcSyncPolicyCreationError {
@@ -21,7 +21,7 @@ pub enum ArcSyncPolicyCreationError {
     InternalFailure,
 }
 
-pub trait LockGuard<'parent, T: Send>: Deref + DerefMut {}
+pub trait LockGuard<'parent, T: Send>: Deref {}
 
 pub trait ArcSyncPolicy<T: Send>: Sized {
     type LockGuard<'parent>: LockGuard<'parent, T>
@@ -30,5 +30,5 @@ pub trait ArcSyncPolicy<T: Send>: Sized {
         T: 'parent;
 
     fn new(value: T) -> Result<Self, ArcSyncPolicyCreationError>;
-    fn lock<'this>(&'this self) -> Self::LockGuard<'this>;
+    fn lock(&self) -> Self::LockGuard<'_>;
 }

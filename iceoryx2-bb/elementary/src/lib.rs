@@ -30,6 +30,7 @@ pub mod relocatable_ptr;
 pub mod scope_guard;
 pub mod static_assert;
 pub mod unique_id;
+pub mod unsendable_marker;
 
 /// Defines how a callback based iteration shall progress after the calling the callback. Either
 /// stop the iteration with [`CallbackProgression::Stop`] or continue with
