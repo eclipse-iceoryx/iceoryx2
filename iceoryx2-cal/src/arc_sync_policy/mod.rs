@@ -17,7 +17,7 @@ use core::ops::{Deref, DerefMut};
 
 pub trait LockGuard<'parent, T: Send>: Deref + DerefMut {}
 
-pub trait ThreadSafety<T: Send> {
+pub trait ArcSyncPolicy<T: Send> {
     type LockGuard<'parent>: LockGuard<'parent, T>
     where
         Self: 'parent,

@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 use iceoryx2_bb_posix::mutex::{Handle, Mutex, MutexBuilder, MutexGuard, MutexHandle};
 
-use crate::thread_safety::{LockGuard, ThreadSafety};
+use crate::arc_sync_policy::{ArcSyncPolicy, LockGuard};
 
 pub struct Guard<'parent, T: Send + Debug> {
     guard: MutexGuard<'parent, T>,
@@ -47,7 +47,7 @@ pub struct MutexProtected<T: Send + Debug> {
 unsafe impl<T: Send + Debug> Send for MutexProtected<T> {}
 unsafe impl<T: Send + Debug> Sync for MutexProtected<T> {}
 
-impl<T: Send + Debug> ThreadSafety<T> for MutexProtected<T> {
+impl<T: Send + Debug> ArcSyncPolicy<T> for MutexProtected<T> {
     type LockGuard<'parent>
         = Guard<'parent, T>
     where
