@@ -210,7 +210,7 @@ impl FileLockBuilder {
 /// read/writer locks will block the processes.
 #[derive(Debug)]
 pub struct FileLock<'a, T: FileDescriptorBased + Debug> {
-    file: ReadWriteMutex<'a, T>,
+    file: ReadWriteMutex<'a, 'a, T>,
     lock_state: IoxAtomicI64,
 }
 

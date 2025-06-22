@@ -54,6 +54,7 @@ use iceoryx2_pal_posix::posix::errno::Errno;
 use iceoryx2_pal_posix::posix::MemZeroedStruct;
 use iceoryx2_pal_posix::*;
 
+use core::marker::PhantomData;
 use core::{
     cell::UnsafeCell,
     fmt::Debug,
@@ -189,7 +190,7 @@ impl ReadWriteMutexBuilder {
         self,
         t: T,
         handle: &ReadWriteMutexHandle<T>,
-    ) -> Result<ReadWriteMutex<'_, T>, ReadWriteMutexCreationError> {
+    ) -> Result<ReadWriteMutex<'_, '_, T>, ReadWriteMutexCreationError> {
         unsafe {
             handle
                 .handle
@@ -311,38 +312,57 @@ impl<T: Sized + Debug> Drop for ReadWriteMutexHandle<T> {
 /// writer can acquire a write-lock.
 /// It is built by the [`ReadWriteMutexBuilder`].
 #[derive(Debug)]
-pub struct ReadWriteMutex<'a, T: Sized + Debug> {
-    handle: &'a ReadWriteMutexHandle<T>,
+pub struct ReadWriteMutex<'this, 'handle, T: Sized + Debug> {
+    handle: &'handle ReadWriteMutexHandle<T>,
+    _lifetime: PhantomData<&'this ()>,
 }
 
-unsafe impl<T: Send + Debug> Send for ReadWriteMutex<'_, T> {}
-unsafe impl<T: Sync + Debug> Sync for ReadWriteMutex<'_, T> {}
+unsafe impl<T: Send + Debug> Send for ReadWriteMutex<'_, '_, T> {}
+unsafe impl<T: Sync + Debug> Sync for ReadWriteMutex<'_, '_, T> {}
 
-impl<'a, T: Sized + Debug> IpcConstructible<'a, ReadWriteMutexHandle<T>> for ReadWriteMutex<'a, T> {
-    fn new(handle: &'a ReadWriteMutexHandle<T>) -> Self {
-        Self { handle }
+impl<'handle, T: Sized + Debug> IpcConstructible<'handle, ReadWriteMutexHandle<T>>
+    for ReadWriteMutex<'_, 'handle, T>
+{
+    fn new(handle: &'handle ReadWriteMutexHandle<T>) -> Self {
+        Self {
+            handle,
+            _lifetime: PhantomData,
+        }
     }
 }
 
-impl<'a, T: Sized + Debug> IpcCapable<'a, ReadWriteMutexHandle<T>> for ReadWriteMutex<'a, T> {
+impl<'handle, T: Sized + Debug> IpcCapable<'handle, ReadWriteMutexHandle<T>>
+    for ReadWriteMutex<'_, 'handle, T>
+{
     fn is_interprocess_capable(&self) -> bool {
         self.handle.is_inter_process_capable()
     }
 }
 
-impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
+impl<'this, 'handle, T: Sized + Debug> ReadWriteMutex<'this, 'handle, T> {
     /// Instantiates a [`ReadWriteMutex`] from an already initialized [`ReadWriteMutexHandle`].
     /// Useful for inter-process usage where the [`ReadWriteMutexHandle`] was created by
     /// [`ReadWriteMutexBuilder`] in another process.
-    pub fn from_handle<'b: 'a>(handle: &'b ReadWriteMutexHandle<T>) -> ReadWriteMutex<'a, T> {
+    ///
+    /// # Safety
+    ///
+    /// * `handle` must have been successfully initialized by the [`ReadWriteMutexBuilder`].
+    pub fn from_handle(
+        handle: &'handle ReadWriteMutexHandle<T>,
+    ) -> ReadWriteMutex<'this, 'handle, T> {
         Self::new(handle)
     }
 
-    fn new(handle: &'a ReadWriteMutexHandle<T>) -> Self {
-        Self { handle }
+    fn new(handle: &'handle ReadWriteMutexHandle<T>) -> Self {
+        Self {
+            handle,
+            _lifetime: PhantomData,
+        }
     }
 
-    pub fn read_blocking_lock(&self) -> Result<MutexReadGuard<'_, T>, ReadWriteMutexReadLockError> {
+    pub fn read_blocking_lock(
+        &'this self,
+    ) -> Result<MutexReadGuard<'handle, T>, ReadWriteMutexReadLockError> {
         let msg = "Failed to acquire read-lock";
         handle_errno!(ReadWriteMutexReadLockError, from self,
             errno_source unsafe { posix::pthread_rwlock_rdlock(self.handle.handle.get()).into() },
@@ -356,8 +376,8 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
     /// Tries to acquire a read-lock. If a write-locks was already acquired it returns [`None`]
     /// otherwise a [`MutexReadGuard`].
     pub fn read_try_lock(
-        &self,
-    ) -> Result<Option<MutexReadGuard<'_, T>>, ReadWriteMutexReadLockError> {
+        &'this self,
+    ) -> Result<Option<MutexReadGuard<'handle, T>>, ReadWriteMutexReadLockError> {
         let msg = "Failed to try to acquire read-lock";
         handle_errno!(ReadWriteMutexReadLockError, from self,
             errno_source unsafe { posix::pthread_rwlock_tryrdlock(self.handle.handle.get()).into() },
@@ -372,8 +392,8 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
     /// Blocks until a write-lock could be acquired and returns a [`MutexWriteGuard`] to provide
     /// read-write access to the underlying value.
     pub fn write_blocking_lock(
-        &self,
-    ) -> Result<MutexWriteGuard<'_, T>, ReadWriteMutexWriteLockError> {
+        &'this self,
+    ) -> Result<MutexWriteGuard<'handle, T>, ReadWriteMutexWriteLockError> {
         let msg = "Failed to acquire write-lock";
         handle_errno!(ReadWriteMutexWriteLockError, from self,
             errno_source unsafe { posix::pthread_rwlock_wrlock(self.handle.handle.get()).into() },
@@ -386,8 +406,8 @@ impl<'a, T: Sized + Debug> ReadWriteMutex<'a, T> {
     /// Tries to acquire a read-lock. If a read-locks was already acquired it returns [`None`]
     /// otherwise a [`MutexWriteGuard`].
     pub fn write_try_lock(
-        &self,
-    ) -> Result<Option<MutexWriteGuard<'_, T>>, ReadWriteMutexWriteLockError> {
+        &'this self,
+    ) -> Result<Option<MutexWriteGuard<'handle, T>>, ReadWriteMutexWriteLockError> {
         let msg = "Failed to try to acquire write-lock";
         handle_errno!(ReadWriteMutexWriteLockError, from self,
             errno_source unsafe { posix::pthread_rwlock_trywrlock(self.handle.handle.get()).into() },
