@@ -15,14 +15,20 @@ pub mod single_threaded;
 
 use core::ops::{Deref, DerefMut};
 
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+pub enum ArcSyncPolicyCreationError {
+    InsufficientResources,
+    InternalFailure,
+}
+
 pub trait LockGuard<'parent, T: Send>: Deref + DerefMut {}
 
-pub trait ArcSyncPolicy<T: Send> {
+pub trait ArcSyncPolicy<T: Send>: Sized {
     type LockGuard<'parent>: LockGuard<'parent, T>
     where
         Self: 'parent,
         T: 'parent;
 
-    fn new(value: T) -> Self;
+    fn new(value: T) -> Result<Self, ArcSyncPolicyCreationError>;
     fn lock<'this>(&'this self) -> Self::LockGuard<'this>;
 }

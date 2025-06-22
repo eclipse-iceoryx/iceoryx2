@@ -16,9 +16,12 @@ use core::{
 };
 use std::sync::Arc;
 
-use iceoryx2_bb_posix::mutex::{Handle, Mutex, MutexBuilder, MutexGuard, MutexHandle};
+use iceoryx2_bb_log::{fail, fatal_panic};
+use iceoryx2_bb_posix::mutex::{
+    Handle, Mutex, MutexBuilder, MutexCreationError, MutexGuard, MutexHandle,
+};
 
-use crate::arc_sync_policy::{ArcSyncPolicy, LockGuard};
+use crate::arc_sync_policy::{ArcSyncPolicy, ArcSyncPolicyCreationError, LockGuard};
 
 pub struct Guard<'parent, T: Send + Debug> {
     guard: MutexGuard<'parent, T>,
@@ -40,6 +43,7 @@ impl<T: Send + Debug> DerefMut for Guard<'_, T> {
 
 impl<'parent, T: Send + Debug> LockGuard<'parent, T> for Guard<'parent, T> {}
 
+#[derive(Debug)]
 pub struct MutexProtected<T: Send + Debug> {
     handle: Arc<MutexHandle<T>>,
 }
@@ -54,21 +58,37 @@ impl<T: Send + Debug> ArcSyncPolicy<T> for MutexProtected<T> {
         Self: 'parent,
         T: 'parent;
 
-    fn new(value: T) -> Self {
+    fn new(value: T) -> Result<Self, ArcSyncPolicyCreationError> {
+        let msg = "Unable to create new arc_sync_policy::MutexProtected";
         let handle = Arc::new(MutexHandle::new());
-        MutexBuilder::new()
+        match MutexBuilder::new()
             .is_interprocess_capable(false)
             .create(value, &handle)
-            .unwrap();
+        {
+            Ok(_) => (),
+            Err(MutexCreationError::InsufficientMemory)
+            | Err(MutexCreationError::InsufficientResources) => {
+                fail!(from format!("MutexProtected::<{}>::new()", core::any::type_name::<T>()),
+                        with ArcSyncPolicyCreationError::InsufficientResources,
+                        "{msg} due to insufficient resources");
+            }
+            Err(e) => {
+                fail!(from format!("MutexProtected::<{}>::new()", core::any::type_name::<T>()),
+                        with ArcSyncPolicyCreationError::InternalFailure,
+                        "{msg} due to an internal failure during creation ({e:?})");
+            }
+        };
 
-        Self { handle }
+        Ok(Self { handle })
     }
 
     fn lock<'this>(&'this self) -> Self::LockGuard<'this> {
         Guard {
-            guard: unsafe {
-                core::mem::transmute(Mutex::from_handle(&self.handle).lock().unwrap())
-            },
+            guard:
+                // handle was successfully initialized in `new()`
+                fatal_panic!(from self,
+                    when unsafe { Mutex::from_handle(&self.handle) }.lock(),
+                    "asd")
         }
     }
 }
