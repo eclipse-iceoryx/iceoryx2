@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+extern crate alloc;
+
+use alloc::rc::Rc;
 use core::{fmt::Debug, marker::PhantomData, ops::Deref};
-use std::rc::Rc;
 
 use crate::arc_sync_policy::{ArcSyncPolicy, LockGuard};
 
