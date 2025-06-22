@@ -88,9 +88,14 @@ impl<T: Send + Debug> ArcSyncPolicy<T> for MutexProtected<T> {
         Guard {
             guard:
                 // handle was successfully initialized in `new()`
-                fatal_panic!(from self,
-                    when unsafe { Mutex::from_handle(&self.handle) }.lock(),
-                    "asd")
+                match unsafe {Mutex::from_handle(&self.handle)}.lock() {
+                    Ok(guard) => guard,
+                    Err(e) => {
+                        fatal_panic!(from self,
+                            when unsafe { Mutex::from_handle(&self.handle) }.lock(),
+                            "This should never happen! Failed to lock the underlying mutex ({e:?}).")
+                    }
+                }
         }
     }
 }
