@@ -202,7 +202,7 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
 /// [`ResizableSharedMemory::allocate()`] memory and distribute the memory to all
 /// [`ResizableSharedMemoryView`]s.
 pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
-    Sized + NamedConcept + NamedConceptMgmt + Debug
+    Sized + NamedConcept + NamedConceptMgmt + Debug + Send
 {
     /// Type alias to the [`ResizableSharedMemoryViewBuilder`] to open a
     /// [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`].
