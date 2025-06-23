@@ -102,7 +102,7 @@ pub trait StaticStorageLocked<T: StaticStorage>: Sized + NamedConcept {
 
 /// A static storage which owns its underlying resources. When it goes out of scope those resources
 /// shall be removed.
-pub trait StaticStorage: Debug + Sized + NamedConceptMgmt + NamedConcept {
+pub trait StaticStorage: Debug + Sized + NamedConceptMgmt + NamedConcept + Send + Sync {
     type Builder: StaticStorageBuilder<Self> + NamedConceptBuilder<Self>;
     type Locked: StaticStorageLocked<Self>;
 
@@ -119,11 +119,11 @@ pub trait StaticStorage: Debug + Sized + NamedConceptMgmt + NamedConcept {
 
     /// Releases the ownership of the static storage. When the object goes out of scope the
     /// static storage is no longer removed.
-    fn release_ownership(&mut self);
+    fn release_ownership(&self);
 
     /// Acquires the ownership of the static storage. If the object goes out of scope the
     /// underlying resources are removed.
-    fn acquire_ownership(&mut self);
+    fn acquire_ownership(&self);
 
     /// The default suffix of every static storage
     fn default_suffix() -> FileName {

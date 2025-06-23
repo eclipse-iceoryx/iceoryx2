@@ -44,6 +44,8 @@
 //! println!("Storage {} content: {}", reader.name(), content);
 //! ```
 
+use core::sync::atomic::Ordering;
+
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
 
@@ -52,6 +54,7 @@ use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::{
     directory::*, file::*, file_descriptor::FileDescriptorManagement, file_type::FileType,
 };
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 const FINAL_PERMISSIONS: Permission = Permission::OWNER_READ;
 
@@ -146,14 +149,14 @@ impl StaticStorageLocked<Storage> for Locked {
 pub struct Storage {
     name: FileName,
     config: Configuration,
-    has_ownership: bool,
+    has_ownership: IoxAtomicBool,
     file: File,
     len: u64,
 }
 
 impl Drop for Storage {
     fn drop(&mut self) {
-        if self.has_ownership {
+        if self.has_ownership.load(Ordering::Relaxed) {
             match unsafe { Self::remove_cfg(&self.name, &self.config) } {
                 Ok(true) => (),
                 Ok(false) => {
@@ -306,12 +309,12 @@ impl crate::static_storage::StaticStorage for Storage {
     type Builder = Builder;
     type Locked = Locked;
 
-    fn release_ownership(&mut self) {
-        self.has_ownership = false
+    fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed);
     }
 
-    fn acquire_ownership(&mut self) {
-        self.has_ownership = true
+    fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed);
     }
 
     fn len(&self) -> u64 {
@@ -409,7 +412,7 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
             static_storage: Storage {
                 name: self.storage_name,
                 config: self.config,
-                has_ownership: self.has_ownership,
+                has_ownership: IoxAtomicBool::new(self.has_ownership),
                 file,
                 len: 0,
             },
@@ -453,7 +456,7 @@ impl crate::static_storage::StaticStorageBuilder<Storage> for Builder {
                 return Ok(Storage {
                     name: self.storage_name,
                     config: self.config,
-                    has_ownership: self.has_ownership,
+                    has_ownership: IoxAtomicBool::new(self.has_ownership),
                     file,
                     len: metadata.size(),
                 });

@@ -39,9 +39,11 @@
 //! ```
 pub use crate::named_concept::*;
 pub use crate::static_storage::*;
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::adaptive_wait::AdaptiveWaitBuilder;
 use iceoryx2_bb_posix::mutex::*;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 
@@ -164,14 +166,14 @@ impl StaticStorageLocked<Storage> for Locked {
 #[derive(Debug)]
 pub struct Storage {
     name: FileName,
-    has_ownership: bool,
+    has_ownership: IoxAtomicBool,
     config: Configuration,
     content: Arc<StorageContent>,
 }
 
 impl Drop for Storage {
     fn drop(&mut self) {
-        if self.has_ownership {
+        if self.has_ownership.load(Ordering::Relaxed) {
             if let Err(v) = unsafe { Self::remove_cfg(&self.name, &self.config) } {
                 fatal_panic!(from self, "This should never happen! Failed to remove underlying storage ({:?})", v);
             }
@@ -268,12 +270,12 @@ impl StaticStorage for Storage {
         Ok(())
     }
 
-    fn release_ownership(&mut self) {
-        self.has_ownership = false;
+    fn release_ownership(&self) {
+        self.has_ownership.store(false, Ordering::Relaxed);
     }
 
-    fn acquire_ownership(&mut self) {
-        self.has_ownership = true
+    fn acquire_ownership(&self) {
+        self.has_ownership.store(true, Ordering::Relaxed);
     }
 }
 
@@ -339,7 +341,7 @@ impl StaticStorageBuilder<Storage> for Builder {
             } else {
                 return Ok(Storage {
                     name: self.name,
-                    has_ownership: self.has_ownership,
+                    has_ownership: IoxAtomicBool::new(self.has_ownership),
                     config: self.config,
                     content: entry.content.clone(),
                 });
@@ -376,7 +378,7 @@ impl StaticStorageBuilder<Storage> for Builder {
         Ok(Locked {
             storage: Storage {
                 name: self.name,
-                has_ownership: self.has_ownership,
+                has_ownership: IoxAtomicBool::new(self.has_ownership),
                 config: self.config,
                 content,
             },
