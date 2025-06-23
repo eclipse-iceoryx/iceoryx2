@@ -490,10 +490,13 @@ impl<S: ServiceType> Service<S> {
                 // Handle the request
                 let mut service_details = self.tracker.get_all();
                 if !self.discovery_config.include_internal {
-                    service_details.retain(|service| !ServiceName::has_iox2_prefix(service.name()));
+                    service_details.retain(|&service| {
+                        !ServiceName::has_iox2_prefix(service.static_details.name())
+                    });
                 }
                 let response = active_request.loan_slice_uninit(service_details.len())?;
-                let response = response.write_from_fn(|idx| service_details[idx].clone());
+                let response =
+                    response.write_from_fn(|idx| (service_details[idx].static_details).clone());
                 response.send()?;
             }
         }
