@@ -497,7 +497,7 @@ impl<T: Sized + Debug> MutexHandle<T> {
 /// };
 /// ```
 #[derive(Debug)]
-pub struct Mutex<'this, 'handle, T: Sized + Debug> {
+pub struct Mutex<'this, 'handle: 'this, T: Sized + Debug> {
     pub(crate) handle: &'handle MutexHandle<T>,
     _lifetime: PhantomData<&'this ()>,
 }
@@ -520,7 +520,7 @@ impl<'handle, T: Debug> IpcCapable<'handle, MutexHandle<T>> for Mutex<'_, 'handl
     }
 }
 
-impl<'this, 'handle, T: Debug> Mutex<'this, 'handle, T> {
+impl<'this, 'handle: 'this, T: Debug> Mutex<'this, 'handle, T> {
     /// Instantiates a [`Mutex`] from an already initialized [`MutexHandle`]. Useful for
     /// inter-process usage where the [`MutexHandle`] was created by [`MutexBuilder`] in another
     /// process.

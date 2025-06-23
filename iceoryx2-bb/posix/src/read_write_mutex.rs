@@ -312,7 +312,7 @@ impl<T: Sized + Debug> Drop for ReadWriteMutexHandle<T> {
 /// writer can acquire a write-lock.
 /// It is built by the [`ReadWriteMutexBuilder`].
 #[derive(Debug)]
-pub struct ReadWriteMutex<'this, 'handle, T: Sized + Debug> {
+pub struct ReadWriteMutex<'this, 'handle: 'this, T: Sized + Debug> {
     handle: &'handle ReadWriteMutexHandle<T>,
     _lifetime: PhantomData<&'this ()>,
 }
@@ -339,7 +339,7 @@ impl<'handle, T: Sized + Debug> IpcCapable<'handle, ReadWriteMutexHandle<T>>
     }
 }
 
-impl<'this, 'handle, T: Sized + Debug> ReadWriteMutex<'this, 'handle, T> {
+impl<'this, 'handle: 'this, T: Sized + Debug> ReadWriteMutex<'this, 'handle, T> {
     /// Instantiates a [`ReadWriteMutex`] from an already initialized [`ReadWriteMutexHandle`].
     /// Useful for inter-process usage where the [`ReadWriteMutexHandle`] was created by
     /// [`ReadWriteMutexBuilder`] in another process.

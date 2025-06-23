@@ -57,6 +57,9 @@
 pub mod mutex_protected;
 pub mod single_threaded;
 
+#[cfg(doctest)]
+mod single_threaded_compile_tests;
+
 use core::ops::Deref;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
