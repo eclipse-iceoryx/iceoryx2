@@ -10,9 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
-
 use crate::service;
+use core::fmt::Debug;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum WriterCreateError {
@@ -28,25 +27,26 @@ impl core::fmt::Display for WriterCreateError {
 impl core::error::Error for WriterCreateError {}
 
 #[derive(Debug)]
-pub struct Writer<'mgmt, Service: service::Service> {
-    //service: Service,
-    map: &'mgmt Service::BlackboardMgmt,
+pub struct Writer<Service: service::Service, T: Send + Sync + Debug + 'static> {
+    //service: Service, or ServiceState with BlackboardResources
+    map: Service::BlackboardMgmt<T>,
 }
 
-impl<'mgmt, Service: service::Service> Writer<'mgmt, Service> {
-    pub(crate) fn new(mgmt: &'mgmt Service::BlackboardMgmt) -> Result<Self, WriterCreateError> {
+impl<Service: service::Service, T: Send + Sync + Debug + 'static> Writer<Service, T> {
+    pub(crate) fn new(mgmt: Service::BlackboardMgmt<T>) -> Result<Self, WriterCreateError> {
         let new_self = Self { map: mgmt };
         Ok(new_self)
     }
 
     pub fn write(&self) {
-        self.map
-            .get()
-            .store(3, core::sync::atomic::Ordering::Relaxed);
+        //self.map
+        //.get()
+        //.store(3, core::sync::atomic::Ordering::Relaxed);
     }
 
     // TODO: remove
     pub fn read(&self) -> u32 {
-        self.map.get().load(core::sync::atomic::Ordering::Relaxed)
+        6
+        //self.map.get().load(core::sync::atomic::Ordering::Relaxed)
     }
 }

@@ -699,8 +699,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// the [`Service`]s ports and payload cannot be shared ([`Sync`]) between threads or moved
     /// ([`Send`]) into other threads.
     type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
-    // replace DynamicConfig
-    type BlackboardMgmt: DynamicStorage<AtomicU32>;
+    type BlackboardMgmt<T: Send + Sync + Debug + 'static>: DynamicStorage<T>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

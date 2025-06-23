@@ -338,7 +338,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     /// created.
     pub fn open_or_create(
         self,
-    ) -> Result<blackboard::PortFactory<ServiceType>, BlackboardOpenOrCreateError> {
+    ) -> Result<blackboard::PortFactory<ServiceType, AtomicU32>, BlackboardOpenOrCreateError> {
         self.open_or_create_with_attributes(&AttributeVerifier::new())
     }
 
@@ -349,7 +349,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     pub fn open_or_create_with_attributes(
         mut self,
         verifier: &AttributeVerifier,
-    ) -> Result<blackboard::PortFactory<ServiceType>, BlackboardOpenOrCreateError> {
+    ) -> Result<blackboard::PortFactory<ServiceType, AtomicU32>, BlackboardOpenOrCreateError> {
         self.prepare_config_details();
 
         let msg = "Unable to open or create blackboard service";
@@ -388,7 +388,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     }
 
     /// Opens an existing [`Service`].
-    pub fn open(self) -> Result<blackboard::PortFactory<ServiceType>, BlackboardOpenError> {
+    pub fn open(self) -> Result<blackboard::PortFactory<ServiceType, AtomicU32>, BlackboardOpenError> {
         self.open_with_attributes(&AttributeVerifier::new())
     }
 
@@ -397,7 +397,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     pub fn open_with_attributes(
         mut self,
         verifier: &AttributeVerifier,
-    ) -> Result<blackboard::PortFactory<ServiceType>, BlackboardOpenError> {
+    ) -> Result<blackboard::PortFactory<ServiceType, AtomicU32>, BlackboardOpenError> {
         self.prepare_config_details();
         self.open_impl(verifier)
     }
@@ -405,7 +405,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     fn open_impl(
         &mut self,
         attributes: &AttributeVerifier,
-    ) -> Result<blackboard::PortFactory<ServiceType>, BlackboardOpenError> {
+    ) -> Result<blackboard::PortFactory<ServiceType, AtomicU32>, BlackboardOpenError> {
         let msg = "Unable to open blackboard service";
 
         let mut service_open_retry_count = 0;
@@ -461,19 +461,19 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                     let storage_name = blackboard_mgmt_data_segment_name(
                         self.base.service_config.service_id().as_str(),
                     );
-                    let storage_config = blackboard_mgmt_data_segment_config::<ServiceType>(
+                    let storage_config = blackboard_mgmt_data_segment_config::<ServiceType, AtomicU32>(
                         self.base.shared_node.config(),
                     );
                     // TODO: error type and message
                     let storage = fail!(from self, 
-                        when <ServiceType::BlackboardMgmt as iceoryx2_cal::dynamic_storage::DynamicStorage<AtomicU32>>::Builder::new(&storage_name).config(&storage_config).open(), with BlackboardOpenError::ServiceInCorruptedState,
+                        when <ServiceType::BlackboardMgmt<AtomicU32> as iceoryx2_cal::dynamic_storage::DynamicStorage<AtomicU32>>::Builder::new(&storage_name).config(&storage_config).has_ownership(false).open(), with BlackboardOpenError::ServiceInCorruptedState,
                         "{} blub", msg);
 
                     if let Some(mut service_tag) = service_tag {
                         service_tag.release_ownership();
                     }
 
-                    return Ok(blackboard::PortFactory::new(
+                    return Ok(blackboard::PortFactory::<ServiceType, AtomicU32>::new(
                         ServiceType::__internal_from_state(service::ServiceState::new(
                             static_config,
                             self.base.shared_node.clone(),
@@ -488,7 +488,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     }
 
     /// Creates a new [`Service`].
-    pub fn create(mut self) -> Result<blackboard::PortFactory<ServiceType>, BlackboardCreateError> {
+    pub fn create(mut self) -> Result<blackboard::PortFactory<ServiceType, AtomicU32>, BlackboardCreateError> {
         self.prepare_config_details();
         self.create_impl(&AttributeSpecifier::new())
     }
@@ -497,7 +497,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     pub fn create_with_attributes(
         mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<blackboard::PortFactory<ServiceType>, BlackboardCreateError> {
+    ) -> Result<blackboard::PortFactory<ServiceType, AtomicU32>, BlackboardCreateError> {
         self.prepare_config_details();
         self.create_impl(attributes)
     }
@@ -505,7 +505,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
     fn create_impl(
         &mut self,
         attributes: &AttributeSpecifier,
-    ) -> Result<blackboard::PortFactory<ServiceType>, BlackboardCreateError> {
+    ) -> Result<blackboard::PortFactory<ServiceType, AtomicU32>, BlackboardCreateError> {
         self.adjust_configuration_to_meaningful_values();
 
         let msg = "Unable to create blackboard service";
@@ -578,15 +578,16 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                 let storage_name = blackboard_mgmt_data_segment_name(
                     self.base.service_config.service_id().as_str(),
                 );
-                let storage_config = blackboard_mgmt_data_segment_config::<ServiceType>(
+                let storage_config = blackboard_mgmt_data_segment_config::<ServiceType, AtomicU32>(
                     self.base.shared_node.config(),
                 );
                 // TODO: error type and message
                 let storage = fail!(from self, when
-                    <ServiceType::BlackboardMgmt as iceoryx2_cal::dynamic_storage::DynamicStorage<
+                    <ServiceType::BlackboardMgmt<AtomicU32> as iceoryx2_cal::dynamic_storage::DynamicStorage<
                         AtomicU32,
                     >>::Builder::new(&storage_name)
                         .config(&storage_config)
+                        .has_ownership(false)
                     .create(AtomicU32::new(0)), with BlackboardCreateError::ServiceInCorruptedState, "{} blub", msg);
 
                 // create the payload data segment for the writer; shm concept with allocator
@@ -601,7 +602,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                     service_tag.release_ownership();
                 }
 
-                Ok(blackboard::PortFactory::new(
+                Ok(blackboard::PortFactory::<ServiceType, AtomicU32>::new(
                     ServiceType::__internal_from_state(service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.shared_node.clone(),

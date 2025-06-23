@@ -32,8 +32,6 @@
 //!
 //! See [`Service`](crate::service) for more detailed examples.
 
-use core::sync::atomic::AtomicU32;
-
 use alloc::sync::Arc;
 use core::fmt::Debug;
 
@@ -62,8 +60,7 @@ impl crate::service::Service for Service {
     type Reactor = reactor::recommended::Ipc;
     type ArcThreadSafetyPolicy<T: Send + Debug> =
         arc_sync_policy::mutex_protected::MutexProtected<T>;
-    // replace DynamicConfig
-    type BlackboardMgmt = dynamic_storage::recommended::Ipc<AtomicU32>;
+    type BlackboardMgmt<T: Send + Sync + Debug + 'static> = dynamic_storage::recommended::Ipc<T>;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {

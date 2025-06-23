@@ -17,6 +17,7 @@ use crate::service::attribute::AttributeSet;
 use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config};
+use core::fmt::Debug;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
@@ -25,17 +26,20 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 /// It can acquire dynamic and static service informations and create
 /// [`crate::port::reader::Reader`] or [`crate::port::writer::Writer`] ports.
 #[derive(Debug)]
-pub struct PortFactory<Service: service::Service> {
+pub struct PortFactory<Service: service::Service, T: Send + Sync + Debug + 'static> {
     pub(crate) service: Service,
-    pub(crate) mgmt: Service::BlackboardMgmt,
+    pub(crate) mgmt: Service::BlackboardMgmt<T>,
 }
 
-impl<Service: service::Service> crate::service::port_factory::PortFactory for PortFactory<Service> {
+impl<Service: service::Service, T: Send + Sync + Debug + 'static>
+    crate::service::port_factory::PortFactory for PortFactory<Service, T>
+{
     type Service = Service;
     type StaticConfig = static_config::blackboard::StaticConfig;
     type DynamicConfig = dynamic_config::blackboard::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
+        //println!("service has ownership: {}", self.mgmt.has_ownership());
         self.service.__internal_state().static_config.name()
     }
 
@@ -71,12 +75,12 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
     }
 }
 
-impl<Service: service::Service> PortFactory<Service> {
-    pub(crate) fn new(service: Service, mgmt: Service::BlackboardMgmt) -> Self {
+impl<Service: service::Service, T: Send + Sync + Debug + 'static> PortFactory<Service, T> {
+    pub(crate) fn new(service: Service, mgmt: Service::BlackboardMgmt<T>) -> Self {
         Self { service, mgmt }
     }
 
-    pub fn writer_builder(&self) -> PortFactoryWriter<Service> {
+    pub fn writer_builder(&self) -> PortFactoryWriter<Service, T> {
         println!("WriterBuilder");
         PortFactoryWriter::new(self)
     }

@@ -13,7 +13,7 @@
 #[generic_tests::define]
 mod service {
     use core::marker::PhantomData;
-    use core::sync::atomic::{AtomicU64, Ordering};
+    use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
     use core::time::Duration;
     use std::sync::Barrier;
 
@@ -297,7 +297,7 @@ mod service {
     }
 
     impl<Sut: Service> SutFactory<Sut> for BlackboardTests<Sut> {
-        type Factory = blackboard::PortFactory<Sut>;
+        type Factory = blackboard::PortFactory<Sut, AtomicU32>;
         type CreateError = BlackboardCreateError;
         type OpenError = BlackboardOpenError;
 

@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{config, node::NodeId};
+use core::fmt::Debug;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
 
@@ -115,10 +116,13 @@ pub(crate) fn service_tag_config<Service: crate::service::Service>(
         .path_hint(&node_details_path(global_config, node_id))
 }
 
-pub(crate) fn blackboard_mgmt_data_segment_config<Service: crate::service::Service>(
+pub(crate) fn blackboard_mgmt_data_segment_config<
+    Service: crate::service::Service,
+    T: Send + Sync + Debug + 'static,
+>(
     global_config: &config::Config,
-) -> <Service::BlackboardMgmt as NamedConceptMgmt>::Configuration {
-    <<Service::BlackboardMgmt as NamedConceptMgmt>::Configuration>::default()
+) -> <Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration {
+    <<Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.blackboard_mgmt_data_suffix)
         .path_hint(&global_config.global.root_path())

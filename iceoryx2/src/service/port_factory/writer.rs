@@ -12,27 +12,42 @@
 
 // TODO: example
 
-use iceoryx2_bb_log::fail;
-
+use super::blackboard::PortFactory;
 use crate::port::writer::{Writer, WriterCreateError};
 use crate::service;
-
-use super::blackboard::PortFactory;
+use crate::service::config_scheme::blackboard_mgmt_data_segment_config;
+use core::fmt::Debug;
+use iceoryx2_bb_log::fail;
+use iceoryx2_cal::dynamic_storage::DynamicStorageBuilder;
+use iceoryx2_cal::event::{NamedConcept, NamedConceptBuilder};
 
 #[derive(Debug)]
-pub struct PortFactoryWriter<'factory, Service: service::Service> {
-    pub(crate) factory: &'factory PortFactory<Service>,
+pub struct PortFactoryWriter<'factory, Service: service::Service, T: Send + Sync + Debug + 'static>
+{
+    pub(crate) factory: &'factory PortFactory<Service, T>,
 }
 
-impl<'factory, Service: service::Service> PortFactoryWriter<'factory, Service> {
-    pub(crate) fn new(factory: &'factory PortFactory<Service>) -> Self {
+impl<'factory, Service: service::Service, T: Send + Sync + Debug + 'static>
+    PortFactoryWriter<'factory, Service, T>
+{
+    pub(crate) fn new(factory: &'factory PortFactory<Service, T>) -> Self {
         Self { factory }
     }
 
-    pub fn create(self) -> Result<Writer<'factory, Service>, WriterCreateError> {
+    pub fn create(self) -> Result<Writer<Service, T>, WriterCreateError> {
         let origin = format!("{:?}", self);
-        Ok(
-            fail!(from origin, when Writer::new(&self.factory.mgmt),"Failed to create new Writer port."),
-        )
+
+        let mgmt_config = blackboard_mgmt_data_segment_config::<Service, T>(
+            self.factory.service.__internal_state().shared_node.config(),
+        );
+        // TODO: error type and message
+        let storage = fail!(from origin,
+            when <Service::BlackboardMgmt<T> as iceoryx2_cal::dynamic_storage::DynamicStorage<T>>::Builder::new(self.factory.mgmt.name())
+                .config(&mgmt_config)
+                .has_ownership(false)
+                .open(),
+            with WriterCreateError::ExceedsMaxSupportedWriters,
+            "blub");
+        Ok(fail!(from origin, when Writer::new(storage),"Failed to create new Writer port."))
     }
 }
