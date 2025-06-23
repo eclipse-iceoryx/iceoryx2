@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -16,7 +16,7 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
-//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let node = NodeBuilder::new().create::<ipc_threadsafe::Service>()?;
 //!
 //! // use `ipc` as communication variant
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -61,7 +61,7 @@ impl crate::service::Service for Service {
     type Monitoring = monitoring::recommended::Ipc;
     type Reactor = reactor::recommended::Ipc;
     type ArcThreadSafetyPolicy<T: Send + Debug> =
-        arc_sync_policy::single_threaded::SingleThreaded<T>;
+        arc_sync_policy::mutex_protected::MutexProtected<T>;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {

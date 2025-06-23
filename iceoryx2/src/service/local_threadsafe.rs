@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -16,9 +16,9 @@
 //! use iceoryx2::prelude::*;
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
-//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let node = NodeBuilder::new().create::<local_threadsafe::Service>()?;
 //!
-//! // use `ipc` as communication variant
+//! // use `local` as communication variant
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .publish_subscribe::<u64>()
 //!     .open_or_create()?;
@@ -33,6 +33,7 @@
 //! See [`Service`](crate::service) for more detailed examples.
 
 extern crate alloc;
+
 use core::fmt::Debug;
 
 use alloc::sync::Arc;
@@ -43,25 +44,25 @@ use iceoryx2_cal::*;
 
 use super::ServiceState;
 
-/// Defines a zero copy inter-process communication setup based on posix mechanisms.
+/// Defines a process local or single address space communication setup.
 #[derive(Debug, Clone)]
 pub struct Service {
     state: Arc<ServiceState<Self>>,
 }
 
 impl crate::service::Service for Service {
-    type StaticStorage = static_storage::recommended::Ipc;
+    type StaticStorage = static_storage::recommended::Local;
     type ConfigSerializer = serialize::recommended::Recommended;
-    type DynamicStorage = dynamic_storage::recommended::Ipc<DynamicConfig>;
+    type DynamicStorage = dynamic_storage::recommended::Local<DynamicConfig>;
     type ServiceNameHasher = hash::recommended::Recommended;
-    type SharedMemory = shared_memory::recommended::Ipc<PoolAllocator>;
-    type ResizableSharedMemory = resizable_shared_memory::recommended::Ipc<PoolAllocator>;
-    type Connection = zero_copy_connection::recommended::Ipc;
-    type Event = event::recommended::Ipc;
-    type Monitoring = monitoring::recommended::Ipc;
-    type Reactor = reactor::recommended::Ipc;
+    type SharedMemory = shared_memory::recommended::Local<PoolAllocator>;
+    type ResizableSharedMemory = resizable_shared_memory::recommended::Local<PoolAllocator>;
+    type Connection = zero_copy_connection::recommended::Local;
+    type Event = event::recommended::Local;
+    type Monitoring = monitoring::recommended::Local;
+    type Reactor = reactor::recommended::Local;
     type ArcThreadSafetyPolicy<T: Send + Debug> =
-        arc_sync_policy::single_threaded::SingleThreaded<T>;
+        arc_sync_policy::mutex_protected::MutexProtected<T>;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {
