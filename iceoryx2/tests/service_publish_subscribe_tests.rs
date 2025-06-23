@@ -3451,4 +3451,10 @@ mod service_publish_subscribe {
 
     #[instantiate_tests(<iceoryx2::service::local::Service>)]
     mod local {}
+
+    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
+    mod ipc_threadsafe {}
+
+    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
+    mod local_threadsafe {}
 }

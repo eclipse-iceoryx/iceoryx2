@@ -262,9 +262,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     }
 
     perform_request_benchmark::<ipc::Service>(&args)?;
+    perform_request_benchmark::<ipc_threadsafe::Service>(&args)?;
     perform_request_benchmark::<local::Service>(&args)?;
+    perform_request_benchmark::<local_threadsafe::Service>(&args)?;
     perform_response_stream_benchmark::<ipc::Service>(&args)?;
+    perform_response_stream_benchmark::<ipc_threadsafe::Service>(&args)?;
     perform_response_stream_benchmark::<local::Service>(&args)?;
+    perform_response_stream_benchmark::<local_threadsafe::Service>(&args)?;
 
     Ok(())
 }

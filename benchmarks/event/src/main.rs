@@ -167,11 +167,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     if args.bench_ipc || args.bench_all {
         perform_benchmark::<ipc::Service>(&args)?;
+        perform_benchmark::<ipc_threadsafe::Service>(&args)?;
         at_least_one_benchmark_did_run = true;
     }
 
     if args.bench_local || args.bench_all {
         perform_benchmark::<local::Service>(&args)?;
+        perform_benchmark::<local_threadsafe::Service>(&args)?;
         at_least_one_benchmark_did_run = true;
     }
 
