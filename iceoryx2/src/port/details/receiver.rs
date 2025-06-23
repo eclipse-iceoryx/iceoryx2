@@ -27,7 +27,7 @@ use crate::service::{self, config_scheme::connection_config, naming_scheme::conn
 use alloc::sync::Arc;
 use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
-use iceoryx2_bb_log::{fail, warn};
+use iceoryx2_bb_log::{error, fail, warn};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
 
@@ -122,6 +122,22 @@ pub(crate) struct Receiver<Service: service::Service> {
 }
 
 impl<Service: service::Service> Receiver<Service> {
+    pub(crate) fn release_offset(
+        &self,
+        offset: PointerOffset,
+        channel_id: ChannelId,
+        connection: Arc<Connection<Service>>,
+    ) {
+        unsafe { connection.data_segment.unregister_offset(offset) };
+
+        match connection.receiver.release(offset, channel_id) {
+            Ok(()) => (),
+            Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
+                error!(from self, "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
+            }
+        }
+    }
+
     pub(crate) fn set_channel_state(&self, channel_id: ChannelId, state: u64) -> bool {
         let mut ret_val = true;
         for i in 0..self.len() {

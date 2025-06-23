@@ -31,16 +31,17 @@
 //! ```
 
 use core::{fmt::Debug, ops::Deref};
+use std::sync::Arc;
 
 extern crate alloc;
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::error;
-use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError};
+use iceoryx2_cal::shm_allocator::PointerOffset;
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 
-use crate::port::details::chunk_details::ChunkDetails;
+use crate::port::details::receiver::Connection;
 use crate::port::port_identifiers::UniquePublisherId;
+use crate::port::subscriber::SharedSubscriberState;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
 
@@ -53,7 +54,10 @@ pub struct Sample<
     UserHeader: ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<Header, UserHeader, Payload>,
-    pub(crate) details: ChunkDetails<Service>,
+    pub(crate) subscriber_shared_state: Arc<SharedSubscriberState<Service>>,
+    pub(crate) connection: Arc<Connection<Service>>,
+    pub(crate) offset: PointerOffset,
+    pub(crate) origin: UniquePublisherId,
 }
 
 impl<
@@ -65,11 +69,13 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "Sample<{}, {}, {}> {{ details: {:?} }}",
+            "Sample<{}, {}, {}> {{ ptr: {:?}, offset: {:?}, origin: {:?} }}",
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
             core::any::type_name::<Service>(),
-            self.details
+            self.ptr,
+            self.offset,
+            self.origin
         )
     }
 }
@@ -93,24 +99,11 @@ impl<
     > Drop for Sample<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        unsafe {
-            self.details
-                .connection
-                .data_segment
-                .unregister_offset(self.details.offset)
-        };
-
-        match self
-            .details
-            .connection
-            .receiver
-            .release(self.details.offset, ChannelId::new(0))
-        {
-            Ok(()) => (),
-            Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
-                error!(from self, "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
-            }
-        }
+        self.subscriber_shared_state.receiver.release_offset(
+            self.offset,
+            ChannelId::new(0),
+            self.connection.clone(),
+        );
     }
 }
 
@@ -137,6 +130,6 @@ impl<
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     pub fn origin(&self) -> UniquePublisherId {
-        UniquePublisherId(UniqueSystemId::from(self.details.origin))
+        self.origin
     }
 }

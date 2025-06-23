@@ -2300,6 +2300,7 @@ mod service_publish_subscribe {
         drop(subscriber);
         drop(sut);
         drop(publisher);
+        drop(sample);
 
         let sut = node
             .service_builder(&service_name)
@@ -2354,6 +2355,7 @@ mod service_publish_subscribe {
         drop(publisher);
         drop(sut);
         drop(subscriber);
+        drop(sample);
 
         let sut = node
             .service_builder(&service_name)

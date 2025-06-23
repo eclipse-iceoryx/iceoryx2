@@ -36,6 +36,7 @@ use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
+use std::sync::Arc;
 
 extern crate alloc;
 
@@ -49,6 +50,7 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
+use crate::port::port_identifiers::UniquePublisherId;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
@@ -85,6 +87,12 @@ impl core::fmt::Display for SubscriberCreateError {
 
 impl core::error::Error for SubscriberCreateError {}
 
+#[derive(Debug)]
+pub(crate) struct SharedSubscriberState<Service: service::Service> {
+    pub(crate) receiver: Receiver<Service>,
+    pub(crate) publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
+}
+
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
 pub struct Subscriber<
@@ -93,9 +101,8 @@ pub struct Subscriber<
     UserHeader: Debug + ZeroCopySend,
 > {
     dynamic_subscriber_handle: Option<ContainerHandle>,
-    receiver: Receiver<Service>,
+    subscriber_shared_state: Arc<SharedSubscriberState<Service>>,
 
-    publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -108,7 +115,8 @@ impl<
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_subscriber_handle {
-            self.receiver
+            self.subscriber_shared_state
+                .receiver
                 .service_state
                 .dynamic_storage
                 .get()
@@ -175,8 +183,10 @@ impl<
         };
 
         let mut new_self = Self {
-            receiver,
-            publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
+            subscriber_shared_state: Arc::new(SharedSubscriberState {
+                receiver,
+                publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
+            }),
             dynamic_subscriber_handle: None,
             _payload: PhantomData,
             _user_header: PhantomData,
@@ -214,12 +224,14 @@ impl<
     }
 
     fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
-        self.receiver.start_update_connection_cycle();
+        self.subscriber_shared_state
+            .receiver
+            .start_update_connection_cycle();
 
         let mut result = Ok(());
         unsafe {
-            (*self.publisher_list_state.get()).for_each(|h, details| {
-                let inner_result = self.receiver.update_connection(
+            (*self.subscriber_shared_state.publisher_list_state.get()).for_each(|h, details| {
+                let inner_result = self.subscriber_shared_state.receiver.update_connection(
                     h.index() as usize,
                     SenderDetails {
                         port_id: details.publisher_id.value(),
@@ -236,44 +248,54 @@ impl<
             })
         };
 
-        self.receiver.finish_update_connection_cycle();
+        self.subscriber_shared_state
+            .receiver
+            .finish_update_connection_cycle();
 
         result
     }
 
     /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
     pub fn id(&self) -> UniqueSubscriberId {
-        UniqueSubscriberId(UniqueSystemId::from(self.receiver.receiver_port_id()))
+        UniqueSubscriberId(UniqueSystemId::from(
+            self.subscriber_shared_state.receiver.receiver_port_id(),
+        ))
     }
 
     /// Returns the internal buffer size of the [`Subscriber`].
     pub fn buffer_size(&self) -> usize {
-        self.receiver.buffer_size
+        self.subscriber_shared_state.receiver.buffer_size
     }
 
     /// Returns true if the [`Subscriber`] has samples in the buffer that can be received with [`Subscriber::receive`].
     pub fn has_samples(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
-        Ok(self.receiver.has_samples(ChannelId::new(0)))
+        Ok(self
+            .subscriber_shared_state
+            .receiver
+            .has_samples(ChannelId::new(0)))
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
         fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
 
-        self.receiver.receive(ChannelId::new(0))
+        self.subscriber_shared_state
+            .receiver
+            .receive(ChannelId::new(0))
     }
 
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
-            self.receiver
+            self.subscriber_shared_state
+                .receiver
                 .service_state
                 .dynamic_storage
                 .get()
                 .publish_subscribe()
                 .publishers
-                .update_state(&mut *self.publisher_list_state.get())
+                .update_state(&mut *self.subscriber_shared_state.publisher_list_state.get())
         } {
             fail!(from self, when self.force_update_connections(),
                 "Connections were updated only partially since at least one connection to a publisher failed.");
@@ -293,7 +315,10 @@ impl<
     /// received [`None`] is returned. If a failure occurs [`ReceiveError`] is returned.
     pub fn receive(&self) -> Result<Option<Sample<Service, Payload, UserHeader>>, ReceiveError> {
         Ok(self.receive_impl()?.map(|(details, chunk)| Sample {
-            details,
+            subscriber_shared_state: self.subscriber_shared_state.clone(),
+            offset: details.offset,
+            origin: UniquePublisherId(UniqueSystemId::from(details.origin)),
+            connection: details.connection,
             ptr: unsafe {
                 RawSample::new_unchecked(
                     chunk.header.cast(),
@@ -321,7 +346,10 @@ impl<
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
 
             Sample {
-                details,
+                subscriber_shared_state: self.subscriber_shared_state.clone(),
+                offset: details.offset,
+                origin: UniquePublisherId(UniqueSystemId::from(details.origin)),
+                connection: details.connection,
                 ptr: unsafe {
                     RawSample::<Header, UserHeader, [Payload]>::new_slice_unchecked(
                         header_ptr,
@@ -353,10 +381,14 @@ impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
         Ok(self.receive_impl()?.map(|(details, chunk)| {
             let header_ptr = chunk.header as *const Header;
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
-            let number_of_bytes = number_of_elements as usize * self.receiver.payload_size();
+            let number_of_bytes =
+                number_of_elements as usize * self.subscriber_shared_state.receiver.payload_size();
 
             Sample {
-                details,
+                subscriber_shared_state: self.subscriber_shared_state.clone(),
+                offset: details.offset,
+                origin: UniquePublisherId(UniqueSystemId::from(details.origin)),
+                connection: details.connection,
                 ptr: unsafe {
                     RawSample::<Header, UserHeader, [CustomPayloadMarker]>::new_slice_unchecked(
                         header_ptr,
