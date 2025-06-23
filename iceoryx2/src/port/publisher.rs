@@ -131,6 +131,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shm_allocator::{AllocationStrategy, PointerOffset};
 use iceoryx2_cal::zero_copy_connection::{
@@ -152,6 +153,9 @@ pub enum PublisherCreateError {
     ExceedsMaxSupportedPublishers,
     /// The datasegment in which the payload of the [`Publisher`] is stored, could not be created.
     UnableToCreateDataSegment,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 }
 
 impl core::fmt::Display for PublisherCreateError {
@@ -302,7 +306,8 @@ pub struct Publisher<
     Payload: Debug + ZeroCopySend + ?Sized + 'static,
     UserHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) publisher_shared_state: Arc<PublisherSharedState<Service>>,
+    pub(crate) publisher_shared_state:
+        Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
     dynamic_publisher_handle: Option<ContainerHandle>,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
@@ -315,11 +320,10 @@ impl<
     > Drop for Publisher<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        self.publisher_shared_state
-            .is_active
-            .store(false, Ordering::Relaxed);
+        let shared_state = self.publisher_shared_state.lock();
+        shared_state.is_active.store(false, Ordering::Relaxed);
         if let Some(handle) = self.dynamic_publisher_handle {
-            self.publisher_shared_state
+            shared_state
                 .service_state
                 .dynamic_storage
                 .get()
@@ -401,45 +405,55 @@ impl<
                 with PublisherCreateError::UnableToCreateDataSegment,
                 "{} since the data segment could not be acquired.", msg);
 
-        let publisher_shared_state = Arc::new(PublisherSharedState {
-            is_active: IoxAtomicBool::new(true),
-            service_state: service.__internal_state().clone(),
-            sender: Sender {
-                data_segment,
-                segment_states: {
-                    let mut v: Vec<SegmentState> =
-                        Vec::with_capacity(max_number_of_segments as usize);
-                    for _ in 0..max_number_of_segments {
-                        v.push(SegmentState::new(number_of_samples))
-                    }
-                    v
-                },
-                connections: (0..subscriber_list.capacity())
-                    .map(|_| UnsafeCell::new(None))
-                    .collect(),
-                sender_port_id: port_id.value(),
-                shared_node: service.__internal_state().shared_node.clone(),
-                receiver_max_buffer_size: static_config.subscriber_max_buffer_size,
-                receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
-                enable_safe_overflow: static_config.enable_safe_overflow,
-                number_of_samples,
-                max_number_of_segments,
-                degradation_callback: None,
+        let publisher_shared_state =
+            <Service as service::Service>::ArcThreadSafetyPolicy::new(PublisherSharedState {
+                is_active: IoxAtomicBool::new(true),
                 service_state: service.__internal_state().clone(),
-                tagger: CyclicTagger::new(),
-                loan_counter: IoxAtomicUsize::new(0),
-                sender_max_borrowed_samples: config.max_loaned_samples,
-                unable_to_deliver_strategy: config.unable_to_deliver_strategy,
-                message_type_details: static_config.message_type_details.clone(),
-                number_of_channels: 1,
-            },
-            config,
-            subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
-            history: match static_config.history_size == 0 {
-                true => None,
-                false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
-            },
-        });
+                sender: Sender {
+                    data_segment,
+                    segment_states: {
+                        let mut v: Vec<SegmentState> =
+                            Vec::with_capacity(max_number_of_segments as usize);
+                        for _ in 0..max_number_of_segments {
+                            v.push(SegmentState::new(number_of_samples))
+                        }
+                        v
+                    },
+                    connections: (0..subscriber_list.capacity())
+                        .map(|_| UnsafeCell::new(None))
+                        .collect(),
+                    sender_port_id: port_id.value(),
+                    shared_node: service.__internal_state().shared_node.clone(),
+                    receiver_max_buffer_size: static_config.subscriber_max_buffer_size,
+                    receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
+                    enable_safe_overflow: static_config.enable_safe_overflow,
+                    number_of_samples,
+                    max_number_of_segments,
+                    degradation_callback: None,
+                    service_state: service.__internal_state().clone(),
+                    tagger: CyclicTagger::new(),
+                    loan_counter: IoxAtomicUsize::new(0),
+                    sender_max_borrowed_samples: config.max_loaned_samples,
+                    unable_to_deliver_strategy: config.unable_to_deliver_strategy,
+                    message_type_details: static_config.message_type_details.clone(),
+                    number_of_channels: 1,
+                },
+                config,
+                subscriber_list_state: UnsafeCell::new(unsafe { subscriber_list.get_state() }),
+                history: match static_config.history_size == 0 {
+                    true => None,
+                    false => Some(UnsafeCell::new(Queue::new(static_config.history_size))),
+                },
+            });
+
+        let publisher_shared_state = match publisher_shared_state {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin,
+                            with PublisherCreateError::FailedToDeployThreadsafetyPolicy,
+                            "{msg} since the threadsafety policy could not be instantiated ({e:?}).");
+            }
+        };
 
         let mut new_self = Self {
             publisher_shared_state,
@@ -448,8 +462,13 @@ impl<
             _user_header: PhantomData,
         };
 
-        if let Err(e) = new_self.publisher_shared_state.force_update_connections() {
-            warn!(from new_self, "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
+        if let Err(e) = new_self
+            .publisher_shared_state
+            .lock()
+            .force_update_connections()
+        {
+            warn!(from new_self,
+                "The new Publisher port is unable to connect to every Subscriber port, caused by {:?}.", e);
         }
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
@@ -479,7 +498,7 @@ impl<
     /// Returns the [`UniquePublisherId`] of the [`Publisher`]
     pub fn id(&self) -> UniquePublisherId {
         UniquePublisherId(UniqueSystemId::from(
-            self.publisher_shared_state.sender.sender_port_id,
+            self.publisher_shared_state.lock().sender.sender_port_id,
         ))
     }
 
@@ -487,6 +506,7 @@ impl<
     /// since the [`Subscriber`](crate::port::subscriber::Subscriber)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
         self.publisher_shared_state
+            .lock()
             .sender
             .unable_to_deliver_strategy
     }
@@ -561,11 +581,11 @@ impl<
     pub fn loan_uninit(
         &self,
     ) -> Result<SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>, LoanError> {
-        let chunk = self
-            .publisher_shared_state
+        let shared_state = self.publisher_shared_state.lock();
+        let chunk = shared_state
             .sender
-            .allocate(self.publisher_shared_state.sender.sample_layout(1))?;
-        let node_id = self.publisher_shared_state.service_state.shared_node.id();
+            .allocate(shared_state.sender.sample_layout(1))?;
+        let node_id = shared_state.service_state.shared_node.id();
         let header_ptr = chunk.header as *mut Header;
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
 
@@ -681,7 +701,10 @@ impl<
 {
     /// Returns the maximum initial slice length configured for this [`Publisher`].
     pub fn initial_max_slice_len(&self) -> usize {
-        self.publisher_shared_state.config.initial_max_slice_len
+        self.publisher_shared_state
+            .lock()
+            .config
+            .initial_max_slice_len
     }
 
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
@@ -726,8 +749,9 @@ impl<
         slice_len: usize,
         underlying_number_of_slice_elements: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>, LoanError> {
-        let max_slice_len = self.publisher_shared_state.config.initial_max_slice_len;
-        if self.publisher_shared_state.config.allocation_strategy == AllocationStrategy::Static
+        let shared_state = self.publisher_shared_state.lock();
+        let max_slice_len = shared_state.config.initial_max_slice_len;
+        if shared_state.config.allocation_strategy == AllocationStrategy::Static
             && max_slice_len < slice_len
         {
             fail!(from self, with LoanError::ExceedsMaxLoanSize,
@@ -735,10 +759,10 @@ impl<
                 slice_len, max_slice_len);
         }
 
-        let sample_layout = self.publisher_shared_state.sender.sample_layout(slice_len);
-        let chunk = self.publisher_shared_state.sender.allocate(sample_layout)?;
+        let sample_layout = shared_state.sender.sample_layout(slice_len);
+        let chunk = shared_state.sender.allocate(sample_layout)?;
         let header_ptr = chunk.header as *mut Header;
-        let node_id = self.publisher_shared_state.service_state.shared_node.id();
+        let node_id = shared_state.service_state.shared_node.id();
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
 
         let sample = unsafe {
@@ -779,17 +803,14 @@ impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
         slice_len: usize,
     ) -> Result<SampleMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], UserHeader>, LoanError>
     {
+        let shared_state = self.publisher_shared_state.lock();
+
         // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
         debug_assert!(
-            slice_len == 1
-                || self.publisher_shared_state.sender.payload_type_variant()
-                    == TypeVariant::Dynamic
+            slice_len == 1 || shared_state.sender.payload_type_variant() == TypeVariant::Dynamic
         );
 
-        self.loan_slice_uninit_impl(
-            slice_len,
-            self.publisher_shared_state.sender.payload_size() * slice_len,
-        )
+        self.loan_slice_uninit_impl(slice_len, shared_state.sender.payload_size() * slice_len)
     }
 }
 ////////////////////////
@@ -803,6 +824,6 @@ impl<
     > UpdateConnections for Publisher<Service, Payload, UserHeader>
 {
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
-        self.publisher_shared_state.update_connections()
+        self.publisher_shared_state.lock().update_connections()
     }
 }
