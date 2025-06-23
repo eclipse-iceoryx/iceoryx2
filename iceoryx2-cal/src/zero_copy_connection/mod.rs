@@ -166,7 +166,7 @@ pub trait ZeroCopyPortDetails {
     fn channel_state(&self, channel_id: ChannelId) -> &IoxAtomicU64;
 }
 
-pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
+pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept + Send {
     fn try_send(
         &self,
         ptr: PointerOffset,
@@ -193,7 +193,7 @@ pub trait ZeroCopySender: Debug + ZeroCopyPortDetails + NamedConcept {
     unsafe fn acquire_used_offsets<F: FnMut(PointerOffset)>(&self, callback: F);
 }
 
-pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept {
+pub trait ZeroCopyReceiver: Debug + ZeroCopyPortDetails + NamedConcept + Send {
     fn has_data(&self, channel_id: ChannelId) -> bool;
     fn receive(&self, channel_id: ChannelId)
         -> Result<Option<PointerOffset>, ZeroCopyReceiveError>;
