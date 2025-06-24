@@ -27,6 +27,7 @@ use iceoryx2::{
         builder::{
             event::EventOpenOrCreateError, publish_subscribe::PublishSubscribeOpenOrCreateError,
         },
+        port_factory::request_response::PortFactory,
         static_config::StaticConfig,
         Service as ServiceType, ServiceDetails,
     },
@@ -301,11 +302,13 @@ impl Default for Config {
 /// # Type Parameters
 ///
 /// * `S` - The service type that this discovery service operates on.
+#[allow(dead_code)]
 pub struct Service<S: ServiceType> {
     discovery_config: Config,
     iceoryx_config: IceoryxConfig,
     _node: Node<S>,
     publisher: Option<Publisher<S, Payload, ()>>,
+    request_response: Option<PortFactory<S, (), (), [StaticConfig], ()>>,
     server: Option<Server<S, (), (), [StaticConfig], ()>>,
     notifier: Option<Notifier<S>>,
     tracker: Tracker<S>,
@@ -365,15 +368,14 @@ impl<S: ServiceType> Service<S> {
             tracker.sync(iceoryx_config)?;
         }
 
-        let mut server = None;
-        if discovery_config.enable_server {
+        let (request_response, server) = if discovery_config.enable_server {
             let request_response = node
                 .service_builder(service_name())
                 .request_response::<(), [StaticConfig]>()
                 .open_or_create()
                 .map_err(|_| CreationError::ServiceCreationFailure)?;
 
-            server = Some(
+            let server = Some(
                 request_response
                     .server_builder()
                     .initial_max_slice_len(discovery_config.initial_max_slice_len)
@@ -381,13 +383,17 @@ impl<S: ServiceType> Service<S> {
                     .create()
                     .map_err(|_| CreationError::ServiceCreationFailure)?,
             );
-        }
+            (Some(request_response), server)
+        } else {
+            (None, None)
+        };
 
         Ok(Service::<S> {
             discovery_config: discovery_config.clone(),
             iceoryx_config: iceoryx_config.clone(),
             _node: node,
             publisher,
+            request_response,
             server,
             notifier,
             tracker,
