@@ -100,6 +100,16 @@ pub struct SampleMut<
     pub(crate) sample_size: usize,
 }
 
+unsafe impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > Send for SampleMut<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
+{
+}
+
 impl<
         Service: crate::service::Service,
         Payload: Debug + ZeroCopySend + ?Sized,

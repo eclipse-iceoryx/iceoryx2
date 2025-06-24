@@ -41,7 +41,7 @@ use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::port_identifiers::UniquePublisherId;
-use crate::port::subscriber::SharedSubscriberState;
+use crate::port::subscriber::SubscriberSharedState;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
 
@@ -55,8 +55,18 @@ pub struct Sample<
 > {
     pub(crate) ptr: RawSample<Header, UserHeader, Payload>,
     pub(crate) subscriber_shared_state:
-        Service::ArcThreadSafetyPolicy<SharedSubscriberState<Service>>,
+        Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>,
     pub(crate) details: ChunkDetails,
+}
+
+unsafe impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > Send for Sample<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
+{
 }
 
 impl<

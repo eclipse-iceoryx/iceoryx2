@@ -311,6 +311,26 @@ pub struct Publisher<
     _user_header: PhantomData<UserHeader>,
 }
 
+unsafe impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Send for Publisher<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
+{
+}
+
+unsafe impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Sync for Publisher<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
+{
+}
+
 impl<
         Service: service::Service,
         Payload: Debug + ZeroCopySend + ?Sized,

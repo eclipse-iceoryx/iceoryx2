@@ -125,6 +125,16 @@ pub struct SampleMutUninit<
     sample: SampleMut<Service, Payload, UserHeader>,
 }
 
+unsafe impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > Send for SampleMutUninit<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
+{
+}
+
 impl<
         Service: crate::service::Service,
         Payload: Debug + ZeroCopySend + ?Sized,

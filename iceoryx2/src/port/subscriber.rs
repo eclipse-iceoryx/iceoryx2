@@ -91,7 +91,7 @@ impl core::fmt::Display for SubscriberCreateError {
 impl core::error::Error for SubscriberCreateError {}
 
 #[derive(Debug)]
-pub(crate) struct SharedSubscriberState<Service: service::Service> {
+pub(crate) struct SubscriberSharedState<Service: service::Service> {
     pub(crate) receiver: Receiver<Service>,
     pub(crate) publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
 }
@@ -104,10 +104,30 @@ pub struct Subscriber<
     UserHeader: Debug + ZeroCopySend,
 > {
     dynamic_subscriber_handle: Option<ContainerHandle>,
-    subscriber_shared_state: Service::ArcThreadSafetyPolicy<SharedSubscriberState<Service>>,
+    subscriber_shared_state: Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>,
 
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
+}
+
+unsafe impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Send for Subscriber<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
+{
+}
+
+unsafe impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > Sync for Subscriber<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
+{
 }
 
 impl<
@@ -175,7 +195,7 @@ impl<
         let number_of_connections =
             number_of_to_be_removed_connections + number_of_active_connections;
 
-        let subscriber_shared_state = Service::ArcThreadSafetyPolicy::new(SharedSubscriberState {
+        let subscriber_shared_state = Service::ArcThreadSafetyPolicy::new(SubscriberSharedState {
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             receiver: Receiver {
                 connections: Vec::from_fn(number_of_active_connections, |_| UnsafeCell::new(None)),
@@ -245,7 +265,7 @@ impl<
 
     fn force_update_connections(
         &self,
-        subscriber_shared_state: &SharedSubscriberState<Service>,
+        subscriber_shared_state: &SubscriberSharedState<Service>,
     ) -> Result<(), ConnectionFailure> {
         subscriber_shared_state
             .receiver
