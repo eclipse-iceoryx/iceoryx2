@@ -37,12 +37,13 @@ impl<'factory, Service: service::Service, T: Send + Sync + Debug + 'static>
     pub fn create(self) -> Result<Writer<Service, T>, WriterCreateError> {
         let origin = format!("{:?}", self);
 
+        let mgmt_name = self.factory.service.additional_resource.mgmt.name();
         let mgmt_config = blackboard_mgmt_data_segment_config::<Service, T>(
             self.factory.service.shared_node.config(),
         );
         // TODO: error type and message
         let storage = fail!(from origin,
-            when <Service::BlackboardMgmt<T> as iceoryx2_cal::dynamic_storage::DynamicStorage<T>>::Builder::new(self.factory.mgmt.name())
+            when <Service::BlackboardMgmt<T> as iceoryx2_cal::dynamic_storage::DynamicStorage<T>>::Builder::new(mgmt_name)
                 .config(&mgmt_config)
                 .has_ownership(false)
                 .open(),

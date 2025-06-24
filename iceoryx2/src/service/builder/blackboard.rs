@@ -181,6 +181,16 @@ impl From<BlackboardCreateError> for BlackboardOpenOrCreateError {
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct BlackboardResources<ServiceType: service::Service> {
+    pub(crate) mgmt: ServiceType::BlackboardMgmt<AtomicU32>,
+}
+
+impl<ServiceType: service::Service> ServiceResource for BlackboardResources<ServiceType> {
+    fn acquire_ownership() {
+    }
+}
+
 /// Builder to create new [`MessagingPattern::Blackboard`] based [`Service`]s
 ///
 /// # Example
@@ -479,9 +489,8 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                             self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
-                            NoResource,
+                            BlackboardResources { mgmt: storage },
                         ),
-                        storage,
                     ));
                 }
             }
@@ -609,9 +618,8 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                         self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
-                        NoResource,
+                        BlackboardResources { mgmt: storage }
                     ),
-                    storage,
                 ))
             }
         }

@@ -14,10 +14,12 @@ use super::nodes;
 use super::writer::PortFactoryWriter;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
+use crate::service::builder::blackboard::BlackboardResources;
 use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
-use crate::service::{self, dynamic_config, static_config, NoResource, ServiceState};
+use crate::service::{self, dynamic_config, static_config, ServiceState};
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
@@ -30,8 +32,8 @@ use alloc::sync::Arc;
 /// [`crate::port::reader::Reader`] or [`crate::port::writer::Writer`] ports.
 #[derive(Debug)]
 pub struct PortFactory<Service: service::Service, T: Send + Sync + Debug + 'static> {
-    pub(crate) service: Arc<ServiceState<Service, NoResource>>,
-    pub(crate) mgmt: Service::BlackboardMgmt<T>,
+    pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
+    _entry: PhantomData<T>,
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static>
@@ -75,13 +77,10 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static>
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static> PortFactory<Service, T> {
-    pub(crate) fn new(
-        service: ServiceState<Service, NoResource>,
-        mgmt: Service::BlackboardMgmt<T>,
-    ) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, BlackboardResources<Service>>) -> Self {
         Self {
             service: Arc::new(service),
-            mgmt,
+            _entry: PhantomData,
         }
     }
 
