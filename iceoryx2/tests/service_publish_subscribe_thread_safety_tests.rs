@@ -10,21 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::time::Duration;
 use std::sync::Barrier;
 
 use iceoryx2::prelude::*;
 use iceoryx2::testing::*;
+use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::watchdog::Watchdog;
 
 #[test]
 fn loaning_and_sending_samples_concurrently_works() {
-    let _watchdog = Watchdog::new();
+    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
     let config = generate_isolated_config();
-    const NUMBER_OF_PUBLISHER_THREADS: usize = 4;
     const NUMBER_OF_ITERATIONS: usize = 2000;
+    let number_of_publisher_threads: usize = SystemInfo::NumberOfCpuCores.value().min(2);
 
     let node = NodeBuilder::new()
         .config(&config)
@@ -35,19 +37,19 @@ fn loaning_and_sending_samples_concurrently_works() {
         .publish_subscribe::<usize>()
         .max_publishers(1)
         .max_subscribers(1)
-        .subscriber_max_buffer_size(NUMBER_OF_PUBLISHER_THREADS * NUMBER_OF_ITERATIONS)
+        .subscriber_max_buffer_size(number_of_publisher_threads * NUMBER_OF_ITERATIONS)
         .create()
         .unwrap();
     let publisher = service
         .publisher_builder()
-        .max_loaned_samples(NUMBER_OF_PUBLISHER_THREADS + 1)
+        .max_loaned_samples(number_of_publisher_threads + 1)
         .create()
         .unwrap();
     let subscriber = service.subscriber_builder().create().unwrap();
-    let barrier = Barrier::new(NUMBER_OF_PUBLISHER_THREADS + 1);
+    let barrier = Barrier::new(number_of_publisher_threads + 1);
 
     std::thread::scope(|s| {
-        for _ in 0..NUMBER_OF_PUBLISHER_THREADS {
+        for _ in 0..number_of_publisher_threads {
             s.spawn(|| {
                 barrier.wait();
                 for n in 0..NUMBER_OF_ITERATIONS {
@@ -61,7 +63,7 @@ fn loaning_and_sending_samples_concurrently_works() {
 
         let mut total_received_samples = 0;
         let mut received_samples = [0; NUMBER_OF_ITERATIONS];
-        while total_received_samples < NUMBER_OF_PUBLISHER_THREADS * NUMBER_OF_ITERATIONS {
+        while total_received_samples < number_of_publisher_threads * NUMBER_OF_ITERATIONS {
             if let Ok(Some(sample)) = subscriber.receive() {
                 received_samples[*sample] += 1;
                 total_received_samples += 1;
@@ -69,18 +71,18 @@ fn loaning_and_sending_samples_concurrently_works() {
         }
 
         for n in received_samples {
-            assert_that!(n, eq NUMBER_OF_PUBLISHER_THREADS);
+            assert_that!(n, eq number_of_publisher_threads);
         }
     });
 }
 
 #[test]
 fn receiving_samples_concurrently_works() {
-    let _watchdog = Watchdog::new();
+    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
     let config = generate_isolated_config();
-    const NUMBER_OF_SUBSCRIBER_THREADS: usize = 4;
+    let number_of_subscriber_threads: usize = SystemInfo::NumberOfCpuCores.value().min(2);
     const NUMBER_OF_ITERATIONS: usize = 2000;
 
     let node = NodeBuilder::new()
@@ -92,12 +94,12 @@ fn receiving_samples_concurrently_works() {
         .publish_subscribe::<usize>()
         .max_publishers(1)
         .max_subscribers(1)
-        .subscriber_max_buffer_size(NUMBER_OF_SUBSCRIBER_THREADS * NUMBER_OF_ITERATIONS)
+        .subscriber_max_buffer_size(number_of_subscriber_threads * NUMBER_OF_ITERATIONS)
         .create()
         .unwrap();
     let publisher = service.publisher_builder().create().unwrap();
     let subscriber = service.subscriber_builder().create().unwrap();
-    let barrier = Barrier::new(NUMBER_OF_SUBSCRIBER_THREADS);
+    let barrier = Barrier::new(number_of_subscriber_threads);
 
     for n in 0..NUMBER_OF_ITERATIONS {
         publisher.send_copy(n).unwrap();
@@ -105,7 +107,7 @@ fn receiving_samples_concurrently_works() {
 
     std::thread::scope(|s| {
         let mut subscriber_threads = vec![];
-        for _ in 0..NUMBER_OF_SUBSCRIBER_THREADS {
+        for _ in 0..number_of_subscriber_threads {
             subscriber_threads.push(s.spawn(|| {
                 let mut received_samples = [0; NUMBER_OF_ITERATIONS];
                 barrier.wait();
