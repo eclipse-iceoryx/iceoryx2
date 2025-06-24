@@ -36,7 +36,6 @@ use core::cell::UnsafeCell;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
-use std::sync::Arc;
 
 extern crate alloc;
 
@@ -47,6 +46,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
@@ -77,6 +77,9 @@ pub enum SubscriberCreateError {
     /// When the [`Subscriber`] requires a larger buffer size than the
     /// [`Service`](crate::service::Service) offers the creation will fail.
     BufferSizeExceedsMaxSupportedBufferSizeOfService,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 }
 
 impl core::fmt::Display for SubscriberCreateError {
@@ -93,6 +96,9 @@ pub(crate) struct SharedSubscriberState<Service: service::Service> {
     pub(crate) publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
 }
 
+// TODO: remove!!
+unsafe impl<Service: service::Service> Send for SharedSubscriberState<Service> {}
+
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
 pub struct Subscriber<
@@ -101,7 +107,7 @@ pub struct Subscriber<
     UserHeader: Debug + ZeroCopySend,
 > {
     dynamic_subscriber_handle: Option<ContainerHandle>,
-    subscriber_shared_state: Arc<SharedSubscriberState<Service>>,
+    subscriber_shared_state: Service::ArcThreadSafetyPolicy<SharedSubscriberState<Service>>,
 
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
@@ -116,6 +122,7 @@ impl<
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_subscriber_handle {
             self.subscriber_shared_state
+                .lock()
                 .receiver
                 .service_state
                 .dynamic_storage
@@ -160,39 +167,49 @@ impl<
             None => static_config.subscriber_max_buffer_size,
         };
 
-        let receiver = Receiver {
-            connections: Vec::from_fn(publisher_list.capacity(), |_| UnsafeCell::new(None)),
-            receiver_port_id: subscriber_id.value(),
-            service_state: service.__internal_state().clone(),
-            message_type_details: static_config.message_type_details.clone(),
-            receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
-            enable_safe_overflow: static_config.enable_safe_overflow,
-            buffer_size,
-            tagger: CyclicTagger::new(),
-            to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
-                service
-                    .__internal_state()
-                    .shared_node
-                    .config()
-                    .defaults
-                    .publish_subscribe
-                    .subscriber_expired_connection_buffer,
-            ))),
-            degradation_callback: config.degradation_callback,
-            number_of_channels: 1,
+        let subscriber_shared_state = Service::ArcThreadSafetyPolicy::new(SharedSubscriberState {
+            publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
+            receiver: Receiver {
+                connections: Vec::from_fn(publisher_list.capacity(), |_| UnsafeCell::new(None)),
+                receiver_port_id: subscriber_id.value(),
+                service_state: service.__internal_state().clone(),
+                message_type_details: static_config.message_type_details.clone(),
+                receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
+                enable_safe_overflow: static_config.enable_safe_overflow,
+                buffer_size,
+                tagger: CyclicTagger::new(),
+                to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
+                    service
+                        .__internal_state()
+                        .shared_node
+                        .config()
+                        .defaults
+                        .publish_subscribe
+                        .subscriber_expired_connection_buffer,
+                ))),
+                degradation_callback: config.degradation_callback,
+                number_of_channels: 1,
+            },
+        });
+
+        let subscriber_shared_state = match subscriber_shared_state {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin,
+                            with SubscriberCreateError::FailedToDeployThreadsafetyPolicy,
+                            "{msg} since the threadsafety policy could not be instantiated ({e:?}).");
+            }
         };
 
         let mut new_self = Self {
-            subscriber_shared_state: Arc::new(SharedSubscriberState {
-                receiver,
-                publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
-            }),
+            subscriber_shared_state,
             dynamic_subscriber_handle: None,
             _payload: PhantomData,
             _user_header: PhantomData,
         };
 
-        if let Err(e) = new_self.force_update_connections() {
+        if let Err(e) = new_self.force_update_connections(&new_self.subscriber_shared_state.lock())
+        {
             warn!(from new_self, "The new subscriber is unable to connect to every publisher, caused by {:?}.", e);
         }
 
@@ -223,15 +240,18 @@ impl<
         Ok(new_self)
     }
 
-    fn force_update_connections(&self) -> Result<(), ConnectionFailure> {
-        self.subscriber_shared_state
+    fn force_update_connections(
+        &self,
+        subscriber_shared_state: &SharedSubscriberState<Service>,
+    ) -> Result<(), ConnectionFailure> {
+        subscriber_shared_state
             .receiver
             .start_update_connection_cycle();
 
         let mut result = Ok(());
         unsafe {
-            (*self.subscriber_shared_state.publisher_list_state.get()).for_each(|h, details| {
-                let inner_result = self.subscriber_shared_state.receiver.update_connection(
+            (*subscriber_shared_state.publisher_list_state.get()).for_each(|h, details| {
+                let inner_result = subscriber_shared_state.receiver.update_connection(
                     h.index() as usize,
                     SenderDetails {
                         port_id: details.publisher_id.value(),
@@ -248,7 +268,7 @@ impl<
             })
         };
 
-        self.subscriber_shared_state
+        subscriber_shared_state
             .receiver
             .finish_update_connection_cycle();
 
@@ -258,13 +278,16 @@ impl<
     /// Returns the [`UniqueSubscriberId`] of the [`Subscriber`]
     pub fn id(&self) -> UniqueSubscriberId {
         UniqueSubscriberId(UniqueSystemId::from(
-            self.subscriber_shared_state.receiver.receiver_port_id(),
+            self.subscriber_shared_state
+                .lock()
+                .receiver
+                .receiver_port_id(),
         ))
     }
 
     /// Returns the internal buffer size of the [`Subscriber`].
     pub fn buffer_size(&self) -> usize {
-        self.subscriber_shared_state.receiver.buffer_size
+        self.subscriber_shared_state.lock().receiver.buffer_size
     }
 
     /// Returns true if the [`Subscriber`] has samples in the buffer that can be received with [`Subscriber::receive`].
@@ -273,6 +296,7 @@ impl<
                 "Some samples are not being received since not all connections to publishers could be established.");
         Ok(self
             .subscriber_shared_state
+            .lock()
             .receiver
             .has_samples(ChannelId::new(0)))
     }
@@ -282,22 +306,24 @@ impl<
                 "Some samples are not being received since not all connections to publishers could be established.");
 
         self.subscriber_shared_state
+            .lock()
             .receiver
             .receive(ChannelId::new(0))
     }
 
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
+        let subscriber_shared_state = self.subscriber_shared_state.lock();
         if unsafe {
-            self.subscriber_shared_state
+            subscriber_shared_state
                 .receiver
                 .service_state
                 .dynamic_storage
                 .get()
                 .publish_subscribe()
                 .publishers
-                .update_state(&mut *self.subscriber_shared_state.publisher_list_state.get())
+                .update_state(&mut *subscriber_shared_state.publisher_list_state.get())
         } {
-            fail!(from self, when self.force_update_connections(),
+            fail!(from self, when self.force_update_connections(&subscriber_shared_state),
                 "Connections were updated only partially since at least one connection to a publisher failed.");
         }
 
@@ -381,8 +407,8 @@ impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
         Ok(self.receive_impl()?.map(|(details, chunk)| {
             let header_ptr = chunk.header as *const Header;
             let number_of_elements = unsafe { (*header_ptr).number_of_elements() };
-            let number_of_bytes =
-                number_of_elements as usize * self.subscriber_shared_state.receiver.payload_size();
+            let number_of_bytes = number_of_elements as usize
+                * self.subscriber_shared_state.lock().receiver.payload_size();
 
             Sample {
                 subscriber_shared_state: self.subscriber_shared_state.clone(),

@@ -36,6 +36,7 @@ use std::sync::Arc;
 extern crate alloc;
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
@@ -54,7 +55,8 @@ pub struct Sample<
     UserHeader: ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<Header, UserHeader, Payload>,
-    pub(crate) subscriber_shared_state: Arc<SharedSubscriberState<Service>>,
+    pub(crate) subscriber_shared_state:
+        Service::ArcThreadSafetyPolicy<SharedSubscriberState<Service>>,
     pub(crate) connection: Arc<Connection<Service>>,
     pub(crate) offset: PointerOffset,
     pub(crate) origin: UniquePublisherId,
@@ -99,7 +101,7 @@ impl<
     > Drop for Sample<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        self.subscriber_shared_state.receiver.release_offset(
+        self.subscriber_shared_state.lock().receiver.release_offset(
             self.offset,
             ChannelId::new(0),
             self.connection.clone(),
