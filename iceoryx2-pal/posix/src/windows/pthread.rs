@@ -770,6 +770,7 @@ pub unsafe fn pthread_mutex_unlock(mtx: *mut pthread_mutex_t) -> int {
         (*mtx).unrecoverable_state = true;
     }
 
+    let mut unlock_thread = false;
     if (*mtx).mtype & PTHREAD_MUTEX_RECURSIVE != 0 {
         let mut current_value = (*mtx).current_owner.load(Ordering::Relaxed);
         loop {
@@ -782,17 +783,25 @@ pub unsafe fn pthread_mutex_unlock(mtx: *mut pthread_mutex_t) -> int {
                 Ordering::Relaxed,
                 Ordering::Relaxed,
             ) {
-                Ok(_) => break,
+                Ok(v) => {
+                    if new_value == 0 {
+                        unlock_thread = true;
+                    }
+                    break;
+                }
                 Err(v) => current_value = v,
             }
         }
     } else {
         (*mtx).current_owner.store(0, Ordering::Relaxed);
+        unlock_thread = true;
     }
 
-    (*mtx).mtx.unlock(|atomic| {
-        WakeByAddressSingle((atomic as *const IoxAtomicU32).cast());
-    });
+    if unlock_thread {
+        (*mtx).mtx.unlock(|atomic| {
+            WakeByAddressSingle((atomic as *const IoxAtomicU32).cast());
+        });
+    }
 
     Errno::ESUCCES as _
 }
