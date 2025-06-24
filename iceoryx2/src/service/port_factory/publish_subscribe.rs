@@ -51,7 +51,7 @@ use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
-use crate::service::{self, dynamic_config, static_config, ServiceState};
+use crate::service::{self, dynamic_config, static_config, NoResource, ServiceState};
 use alloc::sync::Arc;
 
 use super::nodes;
@@ -68,7 +68,7 @@ pub struct PortFactory<
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: Arc<ServiceState<Service>>,
+    pub(crate) service: Arc<ServiceState<Service, NoResource>>,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -136,7 +136,7 @@ impl<
         UserHeader: Debug + ZeroCopySend,
     > PortFactory<Service, Payload, UserHeader>
 {
-    pub(crate) fn new(service: ServiceState<Service>) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
         Self {
             service: Arc::new(service),
             _payload: PhantomData,

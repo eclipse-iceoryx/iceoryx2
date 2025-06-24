@@ -92,6 +92,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
+use crate::service::NoResource;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
@@ -129,7 +130,7 @@ pub(crate) struct SharedServerState<Service: service::Service> {
     server_handle: UnsafeCell<Option<ContainerHandle>>,
     pub(crate) request_receiver: Receiver<Service>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
-    service_state: Arc<ServiceState<Service>>,
+    service_state: Arc<ServiceState<Service, NoResource>>,
 }
 
 impl<Service: service::Service> Drop for SharedServerState<Service> {

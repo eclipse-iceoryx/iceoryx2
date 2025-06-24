@@ -118,7 +118,7 @@ use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::LocalPublisherConfig;
 use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::static_config::publish_subscribe;
-use crate::service::{self, ServiceState};
+use crate::service::{self, NoResource, ServiceState};
 use alloc::sync::Arc;
 use core::any::TypeId;
 use core::cell::UnsafeCell;
@@ -358,7 +358,7 @@ impl<
     > Publisher<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service>>,
+        service: Arc<ServiceState<Service, NoResource>>,
         static_config: &publish_subscribe::StaticConfig,
         config: LocalPublisherConfig,
     ) -> Result<Self, PublisherCreateError> {

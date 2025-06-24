@@ -44,7 +44,7 @@ use crate::{
         config_scheme::event_config,
         dynamic_config::event::{ListenerDetails, NotifierDetails},
         naming_scheme::event_concept_name,
-        ServiceState,
+        NoResource, ServiceState,
     },
 };
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -115,14 +115,14 @@ struct Connection<Service: service::Service> {
 struct ListenerConnections<Service: service::Service> {
     #[allow(clippy::type_complexity)]
     connections: Vec<UnsafeCell<Option<Connection<Service>>>>,
-    service_state: Arc<ServiceState<Service>>,
+    service_state: Arc<ServiceState<Service, NoResource>>,
     list_state: UnsafeCell<ContainerState<ListenerDetails>>,
 }
 
 impl<Service: service::Service> ListenerConnections<Service> {
     fn new(
         size: usize,
-        service_state: Arc<ServiceState<Service>>,
+        service_state: Arc<ServiceState<Service, NoResource>>,
         list_state: UnsafeCell<ContainerState<ListenerDetails>>,
     ) -> Self {
         let mut new_self = Self {
@@ -287,7 +287,7 @@ impl<Service: service::Service> Drop for Notifier<Service> {
 
 impl<Service: service::Service> Notifier<Service> {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service>>,
+        service: Arc<ServiceState<Service, NoResource>>,
         default_event_id: EventId,
     ) -> Result<Self, NotifierCreateError> {
         let mut new_self =
@@ -315,7 +315,7 @@ impl<Service: service::Service> Notifier<Service> {
     }
 
     pub(crate) fn new_without_auto_event_emission(
-        service: Arc<ServiceState<Service>>,
+        service: Arc<ServiceState<Service, NoResource>>,
         default_event_id: EventId,
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";

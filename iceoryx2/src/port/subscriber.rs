@@ -54,7 +54,7 @@ use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, Subscr
 use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
-use crate::service::ServiceState;
+use crate::service::{NoResource, ServiceState};
 use crate::{raw_sample::RawSample, sample::Sample, service};
 
 use super::details::chunk::Chunk;
@@ -158,7 +158,7 @@ impl<
     > Subscriber<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service>>,
+        service: Arc<ServiceState<Service, NoResource>>,
         static_config: &StaticConfig,
         config: SubscriberConfig,
     ) -> Result<Self, SubscriberCreateError> {

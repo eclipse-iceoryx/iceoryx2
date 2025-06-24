@@ -49,7 +49,7 @@ use crate::{
     prelude::AttributeSet,
     service::{
         self, dynamic_config, service_id::ServiceId, service_name::ServiceName, static_config,
-        ServiceState,
+        NoResource, ServiceState,
     },
 };
 
@@ -71,7 +71,7 @@ pub struct PortFactory<
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: Arc<ServiceState<Service>>,
+    pub(crate) service: Arc<ServiceState<Service, NoResource>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -173,7 +173,7 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    pub(crate) fn new(service: ServiceState<Service>) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
         Self {
             service: Arc::new(service),
             _request_payload: PhantomData,

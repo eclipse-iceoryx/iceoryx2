@@ -32,20 +32,14 @@
 //!
 //! See [`Service`](crate::service) for more detailed examples.
 
-use alloc::sync::Arc;
-use core::fmt::Debug;
-
 use crate::service::dynamic_config::DynamicConfig;
+use core::fmt::Debug;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::*;
 
-use super::ServiceState;
-
 /// Defines a zero copy inter-process communication setup based on posix mechanisms.
 #[derive(Debug, Clone)]
-pub struct Service {
-    state: Arc<ServiceState<Self>>,
-}
+pub struct Service {}
 
 impl crate::service::Service for Service {
     type StaticStorage = static_storage::recommended::Ipc;

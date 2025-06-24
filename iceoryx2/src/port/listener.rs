@@ -71,7 +71,7 @@ use crate::config::Config;
 use crate::service::config_scheme::event_config;
 use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
-use crate::service::ServiceState;
+use crate::service::{NoResource, ServiceState};
 use crate::{port::port_identifiers::UniqueListenerId, service};
 use alloc::sync::Arc;
 use core::sync::atomic::Ordering;
@@ -109,7 +109,7 @@ pub struct Listener<Service: service::Service> {
     dynamic_listener_handle: Option<ContainerHandle>,
     listener:
         Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>,
-    service_state: Arc<ServiceState<Service>>,
+    service_state: Arc<ServiceState<Service, NoResource>>,
     listener_id: UniqueListenerId,
 }
 
@@ -155,7 +155,9 @@ impl<Service: service::Service> Drop for Listener<Service> {
 }
 
 impl<Service: service::Service> Listener<Service> {
-    pub(crate) fn new(service: Arc<ServiceState<Service>>) -> Result<Self, ListenerCreateError> {
+    pub(crate) fn new(
+        service: Arc<ServiceState<Service, NoResource>>,
+    ) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
         let listener_id = UniqueListenerId::new();

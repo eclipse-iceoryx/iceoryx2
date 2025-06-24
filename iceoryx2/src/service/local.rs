@@ -32,20 +32,15 @@
 //!
 //! See [`Service`](crate::service) for more detailed examples.
 
-use alloc::sync::Arc;
 use core::fmt::Debug;
 
 use crate::service::dynamic_config::DynamicConfig;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::*;
 
-use super::ServiceState;
-
 /// Defines a process local or single address space communication setup.
 #[derive(Debug, Clone)]
-pub struct Service {
-    state: Arc<ServiceState<Self>>,
-}
+pub struct Service {}
 
 impl crate::service::Service for Service {
     type StaticStorage = static_storage::recommended::Local;

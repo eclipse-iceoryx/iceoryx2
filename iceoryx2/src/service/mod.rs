@@ -337,25 +337,28 @@ pub struct ServiceDetails<S: Service> {
 
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
-pub struct ServiceState<S: Service> {
+pub struct ServiceState<S: Service, R: ServiceResource> {
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: Arc<SharedNode<S>>,
     pub(crate) dynamic_storage: S::DynamicStorage,
     pub(crate) static_storage: S::StaticStorage,
+    pub(crate) additional_resource: R,
 }
 
-impl<S: Service> ServiceState<S> {
+impl<S: Service, R: ServiceResource> ServiceState<S, R> {
     pub(crate) fn new(
         static_config: StaticConfig,
         shared_node: Arc<SharedNode<S>>,
         dynamic_storage: S::DynamicStorage,
         static_storage: S::StaticStorage,
+        additional_resource: R,
     ) -> Self {
         let new_self = Self {
             static_config,
             shared_node,
             dynamic_storage,
             static_storage,
+            additional_resource,
         };
         trace!(from "Service::open()", "open service: {} ({:?})",
             new_self.static_config.name(), new_self.static_config.service_id());
@@ -363,7 +366,7 @@ impl<S: Service> ServiceState<S> {
     }
 }
 
-impl<S: Service> Drop for ServiceState<S> {
+impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
     fn drop(&mut self) {
         let origin = "ServiceState::drop()";
         let id = self.static_config.service_id();
@@ -648,6 +651,16 @@ pub(crate) mod internal {
             Ok(())
         }
     }
+}
+
+pub trait ServiceResource {
+    fn acquire_ownership();
+}
+
+#[derive(Debug)]
+pub(crate) struct NoResource;
+impl ServiceResource for NoResource {
+    fn acquire_ownership() {}
 }
 
 /// Represents a service. Used to create or open new services with the

@@ -442,6 +442,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                         self.base.shared_node,
                         dynamic_config,
                         static_storage,
+                        NoResource,
                     )));
                 }
             }
@@ -549,6 +550,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     self.base.shared_node.clone(),
                     dynamic_config,
                     unlocked_static_details,
+                    NoResource,
                 )))
             }
             Some(_) => {

@@ -619,6 +619,7 @@ impl<
                         self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
+                        NoResource,
                     ),
                 ))
             }
@@ -700,6 +701,7 @@ impl<
                             self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
+                            NoResource,
                         ),
                     ));
                 }

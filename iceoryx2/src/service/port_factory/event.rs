@@ -40,7 +40,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::service_id::ServiceId;
-use crate::service::{self, static_config, ServiceState};
+use crate::service::{self, static_config, NoResource, ServiceState};
 use crate::service::{dynamic_config, ServiceName};
 
 use super::listener::PortFactoryListener;
@@ -56,7 +56,7 @@ use alloc::sync::Arc;
 /// or [`crate::port::listener::Listener`] ports.
 #[derive(Debug)]
 pub struct PortFactory<Service: service::Service> {
-    pub(crate) service: Arc<ServiceState<Service>>,
+    pub(crate) service: Arc<ServiceState<Service, NoResource>>,
 }
 
 unsafe impl<Service: service::Service> Send for PortFactory<Service> {}
@@ -100,7 +100,7 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
 }
 
 impl<Service: service::Service> PortFactory<Service> {
-    pub(crate) fn new(service: ServiceState<Service>) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
         Self {
             service: Arc::new(service),
         }

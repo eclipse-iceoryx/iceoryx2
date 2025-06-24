@@ -19,7 +19,7 @@ use crate::service::dynamic_config::request_response::DynamicConfigSettings;
 use crate::service::port_factory::request_response;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
-use crate::service::{self, header, static_config};
+use crate::service::{self, header, static_config, NoResource};
 use crate::service::{builder, dynamic_config, Service};
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -769,6 +769,7 @@ impl<
                         self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
+                        NoResource,
                     ),
                 ))
             }
@@ -857,6 +858,7 @@ impl<
                             self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
+                            NoResource,
                         ),
                     ));
                 }

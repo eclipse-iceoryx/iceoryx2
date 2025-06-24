@@ -479,6 +479,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                             self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
+                            NoResource,
                         ),
                         storage,
                     ));
@@ -608,6 +609,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                         self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
+                        NoResource,
                     ),
                     storage,
                 ))
