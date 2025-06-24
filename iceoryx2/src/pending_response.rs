@@ -209,7 +209,7 @@ impl<
             .has_samples(self.request.channel_id)
     }
 
-    fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
+    fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {
         let msg = "Unable to receive response";
         fail!(from self, when self.request.client_shared_state.update_connections(),
                 "{msg} since the connections could not be updated.");
@@ -268,6 +268,7 @@ impl<
                 Some((details, chunk)) => {
                     let response = Response {
                         details,
+                        client_shared_state: self.request.client_shared_state.clone(),
                         channel_id: self.request.channel_id,
                         ptr: unsafe {
                             RawSample::new_unchecked(
@@ -341,6 +342,7 @@ impl<
                     let response = Response {
                         details,
                         channel_id: self.request.channel_id,
+                        client_shared_state: self.request.client_shared_state.clone(),
                         ptr: unsafe {
                             RawSample::new_slice_unchecked(
                                 chunk.header.cast(),
@@ -401,6 +403,7 @@ impl<
                     let response = Response {
                         details,
                         channel_id: self.request.channel_id,
+                        client_shared_state: self.request.client_shared_state.clone(),
                         ptr: unsafe {
                             RawSample::new_slice_unchecked(
                                 chunk.header.cast(),

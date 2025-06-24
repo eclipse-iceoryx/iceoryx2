@@ -78,6 +78,7 @@ extern crate alloc;
 use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
@@ -127,7 +128,7 @@ pub(crate) struct SharedServerState<Service: service::Service> {
     pub(crate) config: LocalServerConfig,
     pub(crate) response_sender: Sender<Service>,
     server_handle: UnsafeCell<Option<ContainerHandle>>,
-    request_receiver: Receiver<Service>,
+    pub(crate) request_receiver: Receiver<Service>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
     service_state: Arc<ServiceState<Service>>,
 }
@@ -277,8 +278,19 @@ impl<
             .request_response()
             .clients;
 
+        let number_of_to_be_removed_connections = service
+            .__internal_state()
+            .shared_node
+            .config()
+            .defaults
+            .request_response
+            .server_expired_connection_buffer;
+        let number_of_active_connections = client_list.capacity();
+        let number_of_connections =
+            number_of_to_be_removed_connections + number_of_active_connections;
+
         let request_receiver = Receiver {
-            connections: Vec::from_fn(client_list.capacity(), |_| UnsafeCell::new(None)),
+            connections: Vec::from_fn(number_of_active_connections, |_| UnsafeCell::new(None)),
             receiver_port_id: server_id.value(),
             service_state: service.__internal_state().clone(),
             message_type_details: static_config.request_message_type_details.clone(),
@@ -288,19 +300,14 @@ impl<
             tagger: CyclicTagger::new(),
             to_be_removed_connections: if static_config.enable_fire_and_forget_requests {
                 Some(UnsafeCell::new(Vec::new(
-                    service
-                        .__internal_state()
-                        .shared_node
-                        .config()
-                        .defaults
-                        .request_response
-                        .server_expired_connection_buffer,
+                    number_of_to_be_removed_connections,
                 )))
             } else {
                 None
             },
             degradation_callback: server_factory.request_degradation_callback,
             number_of_channels: 1,
+            connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
         };
 
         let global_config = service.__internal_state().shared_node.config();
@@ -435,13 +442,20 @@ impl<
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
         fail!(from self, when self.shared_state.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
-        Ok(self
-            .shared_state
-            .request_receiver
-            .has_samples(REQUEST_CHANNEL_ID))
+        if self.enable_fire_and_forget {
+            Ok(self
+                .shared_state
+                .request_receiver
+                .has_samples(REQUEST_CHANNEL_ID))
+        } else {
+            Ok(self
+                .shared_state
+                .request_receiver
+                .has_samples_in_active_connection(REQUEST_CHANNEL_ID))
+        }
     }
 
-    fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
+    fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {
         if let Err(e) = self.shared_state.update_connections() {
             fail!(from self,
                   with ReceiveError::ConnectionFailure(e),
@@ -464,7 +478,7 @@ impl<
 {
     fn create_active_request(
         &self,
-        details: ChunkDetails<Service>,
+        details: ChunkDetails,
         chunk: Chunk,
         connection_id: usize,
     ) -> ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -571,7 +585,7 @@ impl<
 {
     fn create_active_request(
         &self,
-        details: ChunkDetails<Service>,
+        details: ChunkDetails,
         chunk: Chunk,
         connection_id: usize,
         number_of_elements: usize,

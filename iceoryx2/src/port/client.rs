@@ -78,7 +78,7 @@ use core::{
     any::TypeId, cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit,
     sync::atomic::Ordering,
 };
-use iceoryx2_bb_container::{queue::Queue, vec::Vec};
+use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vec::Vec};
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -421,20 +421,25 @@ impl<
             number_of_channels: 1,
         };
 
+        let number_of_to_be_removed_connections = service
+            .__internal_state()
+            .shared_node
+            .config()
+            .defaults
+            .request_response
+            .client_expired_connection_buffer;
+        let number_of_active_connections = server_list.capacity();
+        let number_of_connections =
+            number_of_to_be_removed_connections + number_of_active_connections;
+
         let response_receiver = Receiver {
-            connections: Vec::from_fn(server_list.capacity(), |_| UnsafeCell::new(None)),
+            connections: Vec::from_fn(number_of_active_connections, |_| UnsafeCell::new(None)),
             receiver_port_id: client_id.value(),
             service_state: service.__internal_state().clone(),
             buffer_size: static_config.max_response_buffer_size,
             tagger: CyclicTagger::new(),
             to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
-                service
-                    .__internal_state()
-                    .shared_node
-                    .config()
-                    .defaults
-                    .request_response
-                    .client_expired_connection_buffer,
+                number_of_to_be_removed_connections,
             ))),
             degradation_callback: client_factory.response_degradation_callback,
             message_type_details: static_config.response_message_type_details.clone(),
@@ -442,6 +447,7 @@ impl<
                 .max_borrowed_responses_per_pending_response,
             enable_safe_overflow: static_config.enable_safe_overflow_for_responses,
             number_of_channels: number_of_requests,
+            connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
         };
 
         let new_self = Self {

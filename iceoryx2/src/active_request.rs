@@ -49,12 +49,9 @@ use core::{
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
-use iceoryx2_bb_log::{error, fail};
+use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::{
-    shm_allocator::AllocationStrategy,
-    zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError},
-};
+use iceoryx2_cal::{shm_allocator::AllocationStrategy, zero_copy_connection::ChannelId};
 
 use crate::{
     port::{
@@ -94,7 +91,7 @@ pub struct ActiveRequest<
     pub(crate) shared_state: Arc<SharedServerState<Service>>,
     pub(crate) shared_loan_counter: Arc<IoxAtomicUsize>,
     pub(crate) max_loan_count: usize,
-    pub(crate) details: ChunkDetails<Service>,
+    pub(crate) details: ChunkDetails,
     pub(crate) request_id: u64,
     pub(crate) channel_id: ChannelId,
     pub(crate) connection_id: usize,
@@ -152,25 +149,9 @@ impl<
     for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        unsafe {
-            self.details
-                .connection
-                .data_segment
-                .unregister_offset(self.details.offset)
-        };
-
-        match self
-            .details
-            .connection
-            .receiver
-            .release(self.details.offset, ChannelId::new(0))
-        {
-            Ok(()) => (),
-            Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
-                error!(from self, "This should never happen! The clients retrieve channel is full and the request cannot be returned.");
-            }
-        }
-
+        self.shared_state
+            .request_receiver
+            .release_offset(&self.details, ChannelId::new(0));
         self.finish();
     }
 }

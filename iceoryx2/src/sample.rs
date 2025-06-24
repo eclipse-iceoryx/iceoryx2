@@ -31,16 +31,15 @@
 //! ```
 
 use core::{fmt::Debug, ops::Deref};
-use std::sync::Arc;
 
 extern crate alloc;
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
-use iceoryx2_cal::shm_allocator::PointerOffset;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
-use crate::port::details::receiver::Connection;
+use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::port_identifiers::UniquePublisherId;
 use crate::port::subscriber::SharedSubscriberState;
 use crate::raw_sample::RawSample;
@@ -57,9 +56,7 @@ pub struct Sample<
     pub(crate) ptr: RawSample<Header, UserHeader, Payload>,
     pub(crate) subscriber_shared_state:
         Service::ArcThreadSafetyPolicy<SharedSubscriberState<Service>>,
-    pub(crate) connection: Arc<Connection<Service>>,
-    pub(crate) offset: PointerOffset,
-    pub(crate) origin: UniquePublisherId,
+    pub(crate) details: ChunkDetails,
 }
 
 impl<
@@ -71,13 +68,12 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "Sample<{}, {}, {}> {{ ptr: {:?}, offset: {:?}, origin: {:?} }}",
+            "Sample<{}, {}, {}> {{ ptr: {:?}, details: {:?} }}",
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
             core::any::type_name::<Service>(),
             self.ptr,
-            self.offset,
-            self.origin
+            self.details,
         )
     }
 }
@@ -101,11 +97,10 @@ impl<
     > Drop for Sample<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        self.subscriber_shared_state.lock().receiver.release_offset(
-            self.offset,
-            ChannelId::new(0),
-            self.connection.clone(),
-        );
+        self.subscriber_shared_state
+            .lock()
+            .receiver
+            .release_offset(&self.details, ChannelId::new(0));
     }
 }
 
@@ -132,6 +127,6 @@ impl<
 
     /// Returns the [`UniquePublisherId`] of the [`Publisher`](crate::port::publisher::Publisher)
     pub fn origin(&self) -> UniquePublisherId {
-        self.origin
+        UniquePublisherId(UniqueSystemId::from(self.details.origin))
     }
 }

@@ -39,6 +39,7 @@ use core::sync::atomic::Ordering;
 
 extern crate alloc;
 
+use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -50,7 +51,6 @@ use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
-use crate::port::port_identifiers::UniquePublisherId;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
@@ -95,9 +95,6 @@ pub(crate) struct SharedSubscriberState<Service: service::Service> {
     pub(crate) receiver: Receiver<Service>,
     pub(crate) publisher_list_state: UnsafeCell<ContainerState<PublisherDetails>>,
 }
-
-// TODO: remove!!
-unsafe impl<Service: service::Service> Send for SharedSubscriberState<Service> {}
 
 /// The receiving endpoint of a publish-subscribe communication.
 #[derive(Debug)]
@@ -167,10 +164,21 @@ impl<
             None => static_config.subscriber_max_buffer_size,
         };
 
+        let number_of_to_be_removed_connections = service
+            .__internal_state()
+            .shared_node
+            .config()
+            .defaults
+            .publish_subscribe
+            .subscriber_expired_connection_buffer;
+        let number_of_active_connections = publisher_list.capacity();
+        let number_of_connections =
+            number_of_to_be_removed_connections + number_of_active_connections;
+
         let subscriber_shared_state = Service::ArcThreadSafetyPolicy::new(SharedSubscriberState {
             publisher_list_state: UnsafeCell::new(unsafe { publisher_list.get_state() }),
             receiver: Receiver {
-                connections: Vec::from_fn(publisher_list.capacity(), |_| UnsafeCell::new(None)),
+                connections: Vec::from_fn(number_of_active_connections, |_| UnsafeCell::new(None)),
                 receiver_port_id: subscriber_id.value(),
                 service_state: service.__internal_state().clone(),
                 message_type_details: static_config.message_type_details.clone(),
@@ -179,16 +187,11 @@ impl<
                 buffer_size,
                 tagger: CyclicTagger::new(),
                 to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
-                    service
-                        .__internal_state()
-                        .shared_node
-                        .config()
-                        .defaults
-                        .publish_subscribe
-                        .subscriber_expired_connection_buffer,
+                    number_of_to_be_removed_connections,
                 ))),
                 degradation_callback: config.degradation_callback,
                 number_of_channels: 1,
+                connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
             },
         });
 
@@ -301,7 +304,7 @@ impl<
             .has_samples(ChannelId::new(0)))
     }
 
-    fn receive_impl(&self) -> Result<Option<(ChunkDetails<Service>, Chunk)>, ReceiveError> {
+    fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {
         fail!(from self, when self.update_connections(),
                 "Some samples are not being received since not all connections to publishers could be established.");
 
@@ -342,9 +345,7 @@ impl<
     pub fn receive(&self) -> Result<Option<Sample<Service, Payload, UserHeader>>, ReceiveError> {
         Ok(self.receive_impl()?.map(|(details, chunk)| Sample {
             subscriber_shared_state: self.subscriber_shared_state.clone(),
-            offset: details.offset,
-            origin: UniquePublisherId(UniqueSystemId::from(details.origin)),
-            connection: details.connection,
+            details,
             ptr: unsafe {
                 RawSample::new_unchecked(
                     chunk.header.cast(),
@@ -373,9 +374,7 @@ impl<
 
             Sample {
                 subscriber_shared_state: self.subscriber_shared_state.clone(),
-                offset: details.offset,
-                origin: UniquePublisherId(UniqueSystemId::from(details.origin)),
-                connection: details.connection,
+                details,
                 ptr: unsafe {
                     RawSample::<Header, UserHeader, [Payload]>::new_slice_unchecked(
                         header_ptr,
@@ -412,9 +411,7 @@ impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
 
             Sample {
                 subscriber_shared_state: self.subscriber_shared_state.clone(),
-                offset: details.offset,
-                origin: UniquePublisherId(UniqueSystemId::from(details.origin)),
-                connection: details.connection,
+                details,
                 ptr: unsafe {
                     RawSample::<Header, UserHeader, [CustomPayloadMarker]>::new_slice_unchecked(
                         header_ptr,
