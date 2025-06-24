@@ -60,7 +60,7 @@ pub mod single_threaded;
 #[cfg(doctest)]
 mod single_threaded_compile_tests;
 
-use core::ops::Deref;
+use core::{fmt::Debug, ops::Deref};
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum ArcSyncPolicyCreationError {
@@ -72,7 +72,7 @@ pub enum ArcSyncPolicyCreationError {
 pub trait LockGuard<'parent, T: Send>: Deref<Target = T> {}
 
 /// The actual [`ArcSyncPolicy`] concept trait.
-pub trait ArcSyncPolicy<T: Send>: Sized + Clone {
+pub trait ArcSyncPolicy<T: Send>: Sized + Clone + Debug {
     type LockGuard<'parent>: LockGuard<'parent, T>
     where
         Self: 'parent,

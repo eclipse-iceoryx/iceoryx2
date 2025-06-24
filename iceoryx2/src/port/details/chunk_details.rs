@@ -12,12 +12,12 @@
 
 extern crate alloc;
 
-use alloc::sync::Arc;
+use iceoryx2_bb_container::slotmap::SlotMapKey;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 
 #[derive(Debug)]
-pub(crate) struct ChunkDetails<Service: crate::service::Service> {
-    pub(crate) connection: Arc<super::receiver::Connection<Service>>,
+pub(crate) struct ChunkDetails {
+    pub(crate) connection_key: SlotMapKey,
     pub(crate) offset: PointerOffset,
     pub(crate) origin: u128,
 }

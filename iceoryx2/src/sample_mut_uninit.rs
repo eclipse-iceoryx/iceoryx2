@@ -93,7 +93,6 @@
 use core::{fmt::Debug, mem::MaybeUninit};
 
 extern crate alloc;
-use alloc::sync::Arc;
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::shm_allocator::PointerOffset;
@@ -124,6 +123,16 @@ pub struct SampleMutUninit<
     UserHeader: ZeroCopySend,
 > {
     sample: SampleMut<Service, Payload, UserHeader>,
+}
+
+unsafe impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > Send for SampleMutUninit<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
+{
 }
 
 impl<
@@ -273,14 +282,14 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     SampleMutUninit<Service, MaybeUninit<Payload>, UserHeader>
 {
     pub(crate) fn new(
-        publisher_shared_state: &Arc<PublisherSharedState<Service>>,
+        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         ptr: RawSampleMut<Header, UserHeader, MaybeUninit<Payload>>,
         offset_to_chunk: PointerOffset,
         sample_size: usize,
     ) -> Self {
         Self {
             sample: SampleMut {
-                publisher_shared_state: Arc::clone(publisher_shared_state),
+                publisher_shared_state: publisher_shared_state.clone(),
                 ptr,
                 offset_to_chunk,
                 sample_size,
@@ -347,7 +356,9 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     /// ```
     pub unsafe fn assume_init(self) -> SampleMut<Service, Payload, UserHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        core::mem::transmute(self.sample)
+        let initialized_sample = core::mem::transmute_copy(&self.sample);
+        core::mem::forget(self);
+        initialized_sample
     }
 }
 
@@ -355,14 +366,14 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     SampleMutUninit<Service, [MaybeUninit<Payload>], UserHeader>
 {
     pub(crate) fn new(
-        publisher_shared_state: &Arc<PublisherSharedState<Service>>,
+        publisher_shared_state: &Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
         ptr: RawSampleMut<Header, UserHeader, [MaybeUninit<Payload>]>,
         offset_to_chunk: PointerOffset,
         sample_size: usize,
     ) -> Self {
         Self {
             sample: SampleMut {
-                publisher_shared_state: Arc::clone(publisher_shared_state),
+                publisher_shared_state: publisher_shared_state.clone(),
                 ptr,
                 offset_to_chunk,
                 sample_size,
@@ -408,7 +419,9 @@ impl<Service: crate::service::Service, Payload: Debug + ZeroCopySend, UserHeader
     /// ```
     pub unsafe fn assume_init(self) -> SampleMut<Service, [Payload], UserHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        core::mem::transmute(self.sample)
+        let initialized_sample = core::mem::transmute_copy(&self.sample);
+        core::mem::forget(self);
+        initialized_sample
     }
 
     /// Writes the payload to the sample and labels the sample as initialized

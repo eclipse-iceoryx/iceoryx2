@@ -206,8 +206,18 @@ pub mod attribute;
 /// A configuration when communicating within a single process or single address space.
 pub mod local;
 
+/// A threadsafe configuration when communicating within a single process or single address space.
+/// All [`Service`] ports implement [`Send`] and [`Sync`], the payload constructs will implement
+/// [`Send`] but at the cost of an additional internal mutex.
+pub mod local_threadsafe;
+
 /// A configuration when communicating between different processes using posix mechanisms.
 pub mod ipc;
+
+/// A threadsafe configuration when communicating between different processes using posix mechanisms.
+/// All [`Service`] ports implement [`Send`] and [`Sync`], the payload constructs will implement
+/// [`Send`] but at the cost of an additional internal mutex.
+pub mod ipc_threadsafe;
 
 pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
@@ -217,6 +227,7 @@ use core::time::Duration;
 
 extern crate alloc;
 use alloc::sync::Arc;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
 use crate::config;
 use crate::node::{NodeId, NodeListFailure, NodeState, SharedNode};
@@ -683,6 +694,14 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
 
     /// Event multiplexing mechanisms to wait on multiple events.
     type Reactor: Reactor;
+
+    /// Defines the thread-safety policy of the service. If it is defined as
+    /// [`MutexProtected`](iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected), the
+    /// [`Service`]s ports are threadsafe and the payload can be moved into threads. If it is set
+    /// to to [`SingleThreaded`](iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded),
+    /// the [`Service`]s ports and payload cannot be shared ([`Sync`]) between threads or moved
+    /// ([`Send`]) into other threads.
+    type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

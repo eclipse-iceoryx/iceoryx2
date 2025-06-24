@@ -29,6 +29,9 @@ enum class PublisherCreateError : uint8_t {
     /// The datasegment in which the payload of the [`Publisher`] is stored,
     /// could not be created.
     UnableToCreateDataSegment,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`] as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 };
 } // namespace iox2
 

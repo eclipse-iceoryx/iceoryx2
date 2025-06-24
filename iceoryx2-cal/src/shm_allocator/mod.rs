@@ -22,7 +22,7 @@ use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 pub use pointer_offset::*;
 
 /// Trait that identifies a configuration of a [`ShmAllocator`].
-pub trait ShmAllocatorConfig: Copy + Default + Debug {}
+pub trait ShmAllocatorConfig: Copy + Default + Debug + Send {}
 
 enum_gen! {
 /// Describes the errors that can occur when [`ShmAllocator::allocate()`] is called.

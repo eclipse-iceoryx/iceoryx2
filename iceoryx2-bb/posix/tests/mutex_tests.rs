@@ -261,6 +261,39 @@ fn mutex_recursive_mutex_can_be_locked_multiple_times_by_same_thread() {
 }
 
 #[test]
+fn mutex_recursive_does_not_unlock_in_the_first_unlock_call() {
+    let _watchdog = Watchdog::new();
+    let handle = MutexHandle::new();
+    let sut = MutexBuilder::new()
+        .mutex_type(MutexType::Recursive)
+        .create(5123, &handle)
+        .unwrap();
+
+    let barrier = Barrier::new(2);
+    std::thread::scope(|s| {
+        let guard1 = sut.try_lock().unwrap();
+        assert_that!(guard1, is_some);
+        let guard2 = sut.try_lock().unwrap();
+        assert_that!(guard2, is_some);
+
+        drop(guard1);
+        s.spawn(|| {
+            let guard = sut.try_lock().unwrap();
+            assert_that!(guard, is_none);
+            barrier.wait();
+        });
+
+        barrier.wait();
+        drop(guard2);
+
+        s.spawn(|| {
+            let guard = sut.try_lock().unwrap();
+            assert_that!(guard, is_some);
+        });
+    });
+}
+
+#[test]
 fn mutex_deadlock_detection_works() {
     for clock_type in ClockType::all_supported_clocks() {
         let handle = MutexHandle::new();

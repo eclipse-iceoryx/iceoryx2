@@ -15,6 +15,7 @@ mod sample {
     use iceoryx2::port::publisher::Publisher;
     use iceoryx2::port::subscriber::Subscriber;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::builder::publish_subscribe::PublishSubscribeCreateError;
     use iceoryx2::service::port_factory::publish_subscribe::PortFactory;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
@@ -82,7 +83,7 @@ mod sample {
     }
 
     #[test]
-    fn sample_of_dropped_service_does_not_block_new_service_creation<Sut: Service>() {
+    fn sample_of_dropped_service_does_block_new_service_creation<Sut: Service>() {
         let config = generate_isolated_config();
         let test_context = TestContext::<Sut>::new(&config);
 
@@ -101,7 +102,7 @@ mod sample {
             .service_builder(&service_name)
             .publish_subscribe::<u64>()
             .create();
-        assert_that!(result, is_ok);
+        assert_that!(result.err(), eq Some(PublishSubscribeCreateError::AlreadyExists));
     }
 
     #[test]
@@ -179,4 +180,10 @@ mod sample {
 
     #[instantiate_tests(<iceoryx2::service::local::Service>)]
     mod local {}
+
+    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
+    mod ipc_threadsafe {}
+
+    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
+    mod local_threadsafe {}
 }

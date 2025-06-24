@@ -104,7 +104,8 @@ impl From<PublisherCreateError> for CreationError {
             PublisherCreateError::ExceedsMaxSupportedPublishers => {
                 CreationError::PublisherAlreadyExists
             }
-            PublisherCreateError::UnableToCreateDataSegment => {
+            PublisherCreateError::UnableToCreateDataSegment
+            | PublisherCreateError::FailedToDeployThreadsafetyPolicy => {
                 CreationError::PublisherCreationError
             }
         }

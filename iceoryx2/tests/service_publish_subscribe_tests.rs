@@ -2300,6 +2300,7 @@ mod service_publish_subscribe {
         drop(subscriber);
         drop(sut);
         drop(publisher);
+        drop(sample);
 
         let sut = node
             .service_builder(&service_name)
@@ -2354,6 +2355,7 @@ mod service_publish_subscribe {
         drop(publisher);
         drop(sut);
         drop(subscriber);
+        drop(sample);
 
         let sut = node
             .service_builder(&service_name)
@@ -3451,4 +3453,10 @@ mod service_publish_subscribe {
 
     #[instantiate_tests(<iceoryx2::service::local::Service>)]
     mod local {}
+
+    #[instantiate_tests(<iceoryx2::service::ipc_threadsafe::Service>)]
+    mod ipc_threadsafe {}
+
+    #[instantiate_tests(<iceoryx2::service::local_threadsafe::Service>)]
+    mod local_threadsafe {}
 }

@@ -139,7 +139,7 @@ pub trait SharedMemoryBuilder<Allocator: ShmAllocator, Shm: SharedMemory<Allocat
 /// Abstract concept of a memory shared between multiple processes. Can be created with the
 /// [`SharedMemoryBuilder`].
 pub trait SharedMemory<Allocator: ShmAllocator>:
-    Sized + Debug + NamedConcept + NamedConceptMgmt + details::SharedMemoryLowLevelAPI<Allocator>
+    Sized + Debug + NamedConcept + NamedConceptMgmt + details::SharedMemoryLowLevelAPI<Allocator> + Send
 {
     type Builder: SharedMemoryBuilder<Allocator, Self>;
 

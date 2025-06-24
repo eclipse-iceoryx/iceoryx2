@@ -38,14 +38,17 @@
 //! # }
 //! ```
 
+extern crate alloc;
+
+use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::ops::Deref;
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::error;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError};
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 
+use crate::port::client::ClientSharedState;
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::port_identifiers::UniqueServerId;
 use crate::raw_sample::RawSample;
@@ -65,7 +68,8 @@ pub struct Response<
         ResponseHeader,
         ResponsePayload,
     >,
-    pub(crate) details: ChunkDetails<Service>,
+    pub(crate) client_shared_state: Arc<ClientSharedState<Service>>,
+    pub(crate) details: ChunkDetails,
     pub(crate) channel_id: ChannelId,
 }
 
@@ -76,24 +80,9 @@ impl<
     > Drop for Response<Service, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        unsafe {
-            self.details
-                .connection
-                .data_segment
-                .unregister_offset(self.details.offset);
-        }
-
-        match self
-            .details
-            .connection
-            .receiver
-            .release(self.details.offset, self.channel_id)
-        {
-            Ok(()) => (),
-            Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
-                error!(from self, "This should never happen! The servers retrieve channel is full and the response cannot be returned.");
-            }
-        }
+        self.client_shared_state
+            .response_receiver
+            .release_offset(&self.details, self.channel_id);
     }
 }
 

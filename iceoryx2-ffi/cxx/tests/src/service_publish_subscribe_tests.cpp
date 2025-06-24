@@ -778,8 +778,10 @@ TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_pu
         node.service_builder(service_name).template publish_subscribe<uint64_t>().open().expect(""));
     subscriber = iox::optional<Subscriber<SERVICE_TYPE, uint64_t, void>>(sut->subscriber_builder().create().expect(""));
     publisher->send_copy(payload).expect("");
-    auto sample = subscriber->receive().expect("");
-    ASSERT_THAT(sample->payload(), Eq(payload));
+    {
+        auto sample = subscriber->receive().expect("");
+        ASSERT_THAT(sample->payload(), Eq(payload));
+    }
 
     subscriber.reset();
     sut.reset();
@@ -823,8 +825,10 @@ TYPED_TEST(ServicePublishSubscribeTest, service_can_be_opened_when_there_is_a_su
         node.service_builder(service_name).template publish_subscribe<uint64_t>().open().expect(""));
     publisher = iox::optional<Publisher<SERVICE_TYPE, uint64_t, void>>(sut->publisher_builder().create().expect(""));
     publisher->send_copy(payload).expect("");
-    auto sample = subscriber->receive().expect("");
-    ASSERT_THAT(sample->payload(), Eq(payload));
+    {
+        auto sample = subscriber->receive().expect("");
+        ASSERT_THAT(sample->payload(), Eq(payload));
+    }
 
     publisher.reset();
     sut.reset();

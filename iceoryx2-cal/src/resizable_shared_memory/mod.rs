@@ -169,7 +169,7 @@ pub trait ResizableSharedMemoryBuilder<
 
 /// A read-only view to a [`ResizableSharedMemory`]. Can be created by arbitrary many processes.
 pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
-    Debug
+    Debug + Send
 {
     /// Registers a received [`PointerOffset`] at the [`ResizableSharedMemoryView`] and returns the
     /// absolut pointer to the data. If the segment of the received [`PointerOffset`] was not yet
@@ -202,7 +202,7 @@ pub trait ResizableSharedMemoryView<Allocator: ShmAllocator, Shm: SharedMemory<A
 /// [`ResizableSharedMemory::allocate()`] memory and distribute the memory to all
 /// [`ResizableSharedMemoryView`]s.
 pub trait ResizableSharedMemory<Allocator: ShmAllocator, Shm: SharedMemory<Allocator>>:
-    Sized + NamedConcept + NamedConceptMgmt + Debug
+    Sized + NamedConcept + NamedConceptMgmt + Debug + Send
 {
     /// Type alias to the [`ResizableSharedMemoryViewBuilder`] to open a
     /// [`ResizableSharedMemoryView`] to an existing [`ResizableSharedMemory`].

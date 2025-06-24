@@ -34,6 +34,8 @@
 
 extern crate alloc;
 
+use core::fmt::Debug;
+
 use alloc::sync::Arc;
 
 use crate::service::dynamic_config::DynamicConfig;
@@ -59,6 +61,8 @@ impl crate::service::Service for Service {
     type Event = event::recommended::Local;
     type Monitoring = monitoring::recommended::Local;
     type Reactor = reactor::recommended::Local;
+    type ArcThreadSafetyPolicy<T: Send + Debug> =
+        arc_sync_policy::single_threaded::SingleThreaded<T>;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {

@@ -68,13 +68,13 @@ use crate::{
     service::header::publish_subscribe::Header,
 };
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::shared_memory::*;
 
 use core::fmt::{Debug, Formatter};
 use core::ops::{Deref, DerefMut};
 
 extern crate alloc;
-use alloc::sync::Arc;
 
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 ///  * [`crate::port::publisher::Publisher::loan()`],
@@ -93,10 +93,21 @@ pub struct SampleMut<
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: ZeroCopySend,
 > {
-    pub(crate) publisher_shared_state: Arc<PublisherSharedState<Service>>,
+    pub(crate) publisher_shared_state:
+        Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>,
     pub(crate) ptr: RawSampleMut<Header, UserHeader, Payload>,
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
+}
+
+unsafe impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > Send for SampleMut<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<PublisherSharedState<Service>>: Send + Sync,
+{
 }
 
 impl<
@@ -150,6 +161,7 @@ impl<
 {
     fn drop(&mut self) {
         self.publisher_shared_state
+            .lock()
             .sender
             .return_loaned_sample(self.offset_to_chunk);
     }
@@ -328,6 +340,7 @@ impl<
     /// ```
     pub fn send(self) -> Result<usize, SendError> {
         self.publisher_shared_state
+            .lock()
             .send_sample(self.offset_to_chunk, self.sample_size)
     }
 }

@@ -420,9 +420,6 @@
 //! For in-depth details and examples, please visit the
 //! [GitHub config folder](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/config).
 
-#[cfg(doctest)]
-mod compiletests;
-
 pub(crate) mod constants;
 
 /// Handles iceoryx2s global configuration

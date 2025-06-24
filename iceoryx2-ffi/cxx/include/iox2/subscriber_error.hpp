@@ -24,10 +24,12 @@ enum class SubscriberCreateError : uint8_t {
     /// [`Subscriber`]s
     /// can be created for a specific [`Service`].
     ExceedsMaxSupportedSubscribers,
-
     /// When the [`Subscriber`] requires a larger buffer size than the
     /// [`Service`] offers the creation will fail.
     BufferSizeExceedsMaxSupportedBufferSizeOfService,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`] as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 };
 
 } // namespace iox2

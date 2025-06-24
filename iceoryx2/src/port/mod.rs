@@ -67,6 +67,8 @@ tiny_fn! {
     pub struct DegradationCallback = Fn(service: &service::static_config::StaticConfig, sender_port_id: u128, receiver_port_id: u128) -> DegradationAction;
 }
 
+unsafe impl Send for DegradationCallback<'_> {}
+
 impl Debug for DegradationCallback<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")

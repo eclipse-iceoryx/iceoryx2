@@ -35,12 +35,13 @@ use core::{fmt::Debug, ops::Deref};
 extern crate alloc;
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_log::error;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyReceiver, ZeroCopyReleaseError};
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
+use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::port::port_identifiers::UniquePublisherId;
+use crate::port::subscriber::SubscriberSharedState;
 use crate::raw_sample::RawSample;
 use crate::service::header::publish_subscribe::Header;
 
@@ -53,7 +54,19 @@ pub struct Sample<
     UserHeader: ZeroCopySend,
 > {
     pub(crate) ptr: RawSample<Header, UserHeader, Payload>,
-    pub(crate) details: ChunkDetails<Service>,
+    pub(crate) subscriber_shared_state:
+        Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>,
+    pub(crate) details: ChunkDetails,
+}
+
+unsafe impl<
+        Service: crate::service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: ZeroCopySend,
+    > Send for Sample<Service, Payload, UserHeader>
+where
+    Service::ArcThreadSafetyPolicy<SubscriberSharedState<Service>>: Send + Sync,
+{
 }
 
 impl<
@@ -65,11 +78,12 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "Sample<{}, {}, {}> {{ details: {:?} }}",
+            "Sample<{}, {}, {}> {{ ptr: {:?}, details: {:?} }}",
             core::any::type_name::<Payload>(),
             core::any::type_name::<UserHeader>(),
             core::any::type_name::<Service>(),
-            self.details
+            self.ptr,
+            self.details,
         )
     }
 }
@@ -93,24 +107,10 @@ impl<
     > Drop for Sample<Service, Payload, UserHeader>
 {
     fn drop(&mut self) {
-        unsafe {
-            self.details
-                .connection
-                .data_segment
-                .unregister_offset(self.details.offset)
-        };
-
-        match self
-            .details
-            .connection
+        self.subscriber_shared_state
+            .lock()
             .receiver
-            .release(self.details.offset, ChannelId::new(0))
-        {
-            Ok(()) => (),
-            Err(ZeroCopyReleaseError::RetrieveBufferFull) => {
-                error!(from self, "This should never happen! The publishers retrieve channel is full and the sample cannot be returned.");
-            }
-        }
+            .release_offset(&self.details, ChannelId::new(0));
     }
 }
 

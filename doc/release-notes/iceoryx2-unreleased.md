@@ -21,6 +21,9 @@
   [#790](https://github.com/eclipse-iceoryx/iceoryx2/issues/790)
 * Use minimal iceoryx_hoofs subset for iceoryx2 C++ bindings
   [#824](https://github.com/eclipse-iceoryx/iceoryx2/issues/824)
+* PubSub ports implement `Send` + `Sync`, samples implement `Send` when using
+  `**_threadsafe` service variant
+  [#836](https://github.com/eclipse-iceoryx/iceoryx2/issues/836)
 
 ### Bugfixes
 

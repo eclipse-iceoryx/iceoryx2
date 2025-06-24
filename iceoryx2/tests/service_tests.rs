@@ -1193,8 +1193,40 @@ mod service {
         mod blackboard {}
     }
 
+    mod ipc_threadsafe {
+        use iceoryx2::service::ipc_threadsafe::Service;
+
+        #[instantiate_tests(<Service, crate::service::EventTests::<Service>>)]
+        mod event {}
+
+        #[instantiate_tests(<Service, crate::service::PubSubTests::<Service>>)]
+        mod publish_subscribe {}
+
+        #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
+        mod request_response {}
+
+        #[instantiate_tests(<Service, crate::service::BlackboardTests::<Service>>)]
+        mod blackboard {}
+    }
+
     mod local {
         use iceoryx2::service::local::Service;
+
+        #[instantiate_tests(<Service, crate::service::EventTests::<Service>>)]
+        mod event {}
+
+        #[instantiate_tests(<Service, crate::service::PubSubTests::<Service>>)]
+        mod publish_subscribe {}
+
+        #[instantiate_tests(<Service, crate::service::RequestResponseTests::<Service>>)]
+        mod request_response {}
+
+        #[instantiate_tests(<Service, crate::service::BlackboardTests::<Service>>)]
+        mod blackboard {}
+    }
+
+    mod local_threadsafe {
+        use iceoryx2::service::local_threadsafe::Service;
 
         #[instantiate_tests(<Service, crate::service::EventTests::<Service>>)]
         mod event {}
