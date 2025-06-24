@@ -385,6 +385,7 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
                 DeregisterNodeState::NoMoreOwners => {
                     self.static_storage.acquire_ownership();
                     self.dynamic_storage.acquire_ownership();
+                    self.additional_resource.acquire_ownership();
                     trace!(from origin, "close and remove service: {} ({:?})",
                             self.static_config.name(), id);
                 }
@@ -654,13 +655,13 @@ pub(crate) mod internal {
 }
 
 pub trait ServiceResource {
-    fn acquire_ownership();
+    fn acquire_ownership(&self);
 }
 
 #[derive(Debug)]
 pub(crate) struct NoResource;
 impl ServiceResource for NoResource {
-    fn acquire_ownership() {}
+    fn acquire_ownership(&self) {}
 }
 
 /// Represents a service. Used to create or open new services with the

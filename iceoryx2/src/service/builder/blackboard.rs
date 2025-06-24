@@ -187,7 +187,8 @@ pub(crate) struct BlackboardResources<ServiceType: service::Service> {
 }
 
 impl<ServiceType: service::Service> ServiceResource for BlackboardResources<ServiceType> {
-    fn acquire_ownership() {
+    fn acquire_ownership(&self) {
+        self.mgmt.acquire_ownership();
     }
 }
 
