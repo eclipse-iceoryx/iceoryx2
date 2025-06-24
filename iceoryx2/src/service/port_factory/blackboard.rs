@@ -16,10 +16,13 @@ use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
-use crate::service::{self, dynamic_config, static_config};
+use crate::service::{self, dynamic_config, static_config, ServiceState};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 /// The factory for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard).
@@ -27,7 +30,7 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 /// [`crate::port::reader::Reader`] or [`crate::port::writer::Writer`] ports.
 #[derive(Debug)]
 pub struct PortFactory<Service: service::Service, T: Send + Sync + Debug + 'static> {
-    pub(crate) service: Service,
+    pub(crate) service: Arc<ServiceState<Service>>,
     pub(crate) mgmt: Service::BlackboardMgmt<T>,
 }
 
@@ -40,27 +43,23 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static>
 
     fn name(&self) -> &ServiceName {
         //println!("service has ownership: {}", self.mgmt.has_ownership());
-        self.service.__internal_state().static_config.name()
+        self.service.static_config.name()
     }
 
     fn service_id(&self) -> &ServiceId {
-        self.service.__internal_state().static_config.service_id()
+        self.service.static_config.service_id()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.__internal_state().static_config.attributes()
+        self.service.static_config.attributes()
     }
 
     fn static_config(&self) -> &static_config::blackboard::StaticConfig {
-        self.service.__internal_state().static_config.blackboard()
+        self.service.static_config.blackboard()
     }
 
     fn dynamic_config(&self) -> &dynamic_config::blackboard::DynamicConfig {
-        self.service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .blackboard()
+        self.service.dynamic_storage.get().blackboard()
     }
 
     fn nodes<F: FnMut(crate::node::NodeState<Service>) -> CallbackProgression>(
@@ -68,16 +67,19 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static>
         callback: F,
     ) -> Result<(), NodeListFailure> {
         nodes(
-            self.service.__internal_state().dynamic_storage.get(),
-            self.service.__internal_state().shared_node.config(),
+            self.service.dynamic_storage.get(),
+            self.service.shared_node.config(),
             callback,
         )
     }
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static> PortFactory<Service, T> {
-    pub(crate) fn new(service: Service, mgmt: Service::BlackboardMgmt<T>) -> Self {
-        Self { service, mgmt }
+    pub(crate) fn new(service: ServiceState<Service>, mgmt: Service::BlackboardMgmt<T>) -> Self {
+        Self {
+            service: Arc::new(service),
+            mgmt,
+        }
     }
 
     pub fn writer_builder(&self) -> PortFactoryWriter<Service, T> {

@@ -155,17 +155,17 @@ impl<Service: service::Service> Drop for Listener<Service> {
 }
 
 impl<Service: service::Service> Listener<Service> {
-    pub(crate) fn new(service: &Service) -> Result<Self, ListenerCreateError> {
+    pub(crate) fn new(service: Arc<ServiceState<Service>>) -> Result<Self, ListenerCreateError> {
         let msg = "Failed to create listener";
         let origin = "Listener::new()";
         let listener_id = UniqueListenerId::new();
 
         let event_name = event_concept_name(&listener_id);
-        let event_config = event_config::<Service>(service.__internal_state().shared_node.config());
+        let event_config = event_config::<Service>(service.shared_node.config());
 
         let listener = fail!(from origin,
                              when <Service::Event as iceoryx2_cal::event::Event>::ListenerBuilder::new(&event_name).config(&event_config)
-                                .trigger_id_max(TriggerId::new(service.__internal_state().static_config.event().event_id_max_value))
+                                .trigger_id_max(TriggerId::new(service.static_config.event().event_id_max_value))
                                 .create(),
                              with ListenerCreateError::ResourceCreationFailed,
                              "{} since the underlying event concept \"{}\" could not be created.", msg, event_name);
@@ -179,7 +179,7 @@ impl<Service: service::Service> Listener<Service> {
         };
 
         let mut new_self = Self {
-            service_state: service.__internal_state().clone(),
+            service_state: service.clone(),
             dynamic_listener_handle: None,
             listener,
             listener_id,
@@ -189,20 +189,17 @@ impl<Service: service::Service> Listener<Service> {
 
         // !MUST! be the last task otherwise a listener is added to the dynamic config without
         // the creation of all required channels
-        let dynamic_listener_handle = match service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .event()
-            .add_listener_id(ListenerDetails {
+        let dynamic_listener_handle = match service.dynamic_storage.get().event().add_listener_id(
+            ListenerDetails {
                 listener_id,
-                node_id: *service.__internal_state().shared_node.id(),
-            }) {
+                node_id: *service.shared_node.id(),
+            },
+        ) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with ListenerCreateError::ExceedsMaxSupportedListeners,
                                  "{} since it would exceed the maximum supported amount of listeners of {}.",
-                                 msg, service.__internal_state().static_config.event().max_listeners);
+                                 msg, service.static_config.event().max_listeners);
             }
         };
 

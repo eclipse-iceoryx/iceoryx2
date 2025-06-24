@@ -287,12 +287,13 @@ impl<Service: service::Service> Drop for Notifier<Service> {
 
 impl<Service: service::Service> Notifier<Service> {
     pub(crate) fn new(
-        service: &Service,
+        service: Arc<ServiceState<Service>>,
         default_event_id: EventId,
     ) -> Result<Self, NotifierCreateError> {
-        let mut new_self = Self::new_without_auto_event_emission(service, default_event_id)?;
+        let mut new_self =
+            Self::new_without_auto_event_emission(service.clone(), default_event_id)?;
 
-        let static_config = service.__internal_state().static_config.event();
+        let static_config = service.static_config.event();
         new_self.on_drop_notification = static_config.notifier_dropped_event.map(EventId::new);
 
         if let Some(event_id) = static_config.notifier_created_event() {
@@ -314,25 +315,20 @@ impl<Service: service::Service> Notifier<Service> {
     }
 
     pub(crate) fn new_without_auto_event_emission(
-        service: &Service,
+        service: Arc<ServiceState<Service>>,
         default_event_id: EventId,
     ) -> Result<Self, NotifierCreateError> {
         let msg = "Unable to create Notifier port";
         let origin = "Notifier::new()";
         let notifier_id = UniqueNotifierId::new();
 
-        let listener_list = &service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .event()
-            .listeners;
+        let listener_list = &service.dynamic_storage.get().event().listeners;
 
-        let node_id = *service.__internal_state().shared_node.id();
-        let static_config = service.__internal_state().static_config.event();
+        let node_id = *service.shared_node.id();
+        let static_config = service.static_config.event();
         let listener_connections = Service::ArcThreadSafetyPolicy::new(ListenerConnections::new(
             listener_list.capacity(),
-            service.__internal_state().clone(),
+            service.clone(),
             UnsafeCell::new(unsafe { listener_list.get_state() }),
         ));
 
@@ -378,7 +374,7 @@ impl<Service: service::Service> Notifier<Service> {
             None => {
                 fail!(from origin, with NotifierCreateError::ExceedsMaxSupportedNotifiers,
                             "{} since it would exceed the maximum supported amount of notifiers of {}.",
-                            msg, service.__internal_state().static_config.event().max_notifiers);
+                            msg, service.static_config.event().max_notifiers);
             }
         };
         new_self.dynamic_notifier_handle = Some(dynamic_notifier_handle);

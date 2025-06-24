@@ -38,7 +38,7 @@ impl<'factory, Service: service::Service, T: Send + Sync + Debug + 'static>
         let origin = format!("{:?}", self);
 
         let mgmt_config = blackboard_mgmt_data_segment_config::<Service, T>(
-            self.factory.service.__internal_state().shared_node.config(),
+            self.factory.service.shared_node.config(),
         );
         // TODO: error type and message
         let storage = fail!(from origin,

@@ -474,12 +474,12 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                     }
 
                     return Ok(blackboard::PortFactory::<ServiceType, AtomicU32>::new(
-                        ServiceType::__internal_from_state(service::ServiceState::new(
+                        service::ServiceState::new(
                             static_config,
                             self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
-                        )),
+                        ),
                         storage,
                     ));
                 }
@@ -603,12 +603,12 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                 }
 
                 Ok(blackboard::PortFactory::<ServiceType, AtomicU32>::new(
-                    ServiceType::__internal_from_state(service::ServiceState::new(
+                    service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
-                    )),
+                    ),
                     storage,
                 ))
             }

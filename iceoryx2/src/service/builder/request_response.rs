@@ -764,12 +764,12 @@ impl<
                 }
 
                 Ok(request_response::PortFactory::new(
-                    ServiceType::__internal_from_state(service::ServiceState::new(
+                    service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
-                    )),
+                    ),
                 ))
             }
         }
@@ -852,12 +852,12 @@ impl<
                     }
 
                     return Ok(request_response::PortFactory::new(
-                        ServiceType::__internal_from_state(service::ServiceState::new(
+                        service::ServiceState::new(
                             static_config,
                             self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
-                        )),
+                        ),
                     ));
                 }
             }

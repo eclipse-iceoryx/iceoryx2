@@ -63,14 +63,4 @@ impl crate::service::Service for Service {
     type BlackboardMgmt<T: Send + Sync + Debug + 'static> = dynamic_storage::recommended::Ipc<T>;
 }
 
-impl crate::service::internal::ServiceInternal<Service> for Service {
-    fn __internal_from_state(state: ServiceState<Self>) -> Self {
-        Self {
-            state: Arc::new(state),
-        }
-    }
-
-    fn __internal_state(&self) -> &Arc<ServiceState<Self>> {
-        &self.state
-    }
-}
+impl crate::service::internal::ServiceInternal<Service> for Service {}

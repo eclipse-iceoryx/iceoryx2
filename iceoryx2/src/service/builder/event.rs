@@ -437,13 +437,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                         service_tag.release_ownership();
                     }
 
-                    return Ok(event::PortFactory::new(ServiceType::__internal_from_state(
-                        service::ServiceState::new(
-                            static_config,
-                            self.base.shared_node,
-                            dynamic_config,
-                            static_storage,
-                        ),
+                    return Ok(event::PortFactory::new(service::ServiceState::new(
+                        static_config,
+                        self.base.shared_node,
+                        dynamic_config,
+                        static_storage,
                     )));
                 }
             }
@@ -546,13 +544,11 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                     service_tag.release_ownership();
                 }
 
-                Ok(event::PortFactory::new(ServiceType::__internal_from_state(
-                    service::ServiceState::new(
-                        self.base.service_config.clone(),
-                        self.base.shared_node.clone(),
-                        dynamic_config,
-                        unlocked_static_details,
-                    ),
+                Ok(event::PortFactory::new(service::ServiceState::new(
+                    self.base.service_config.clone(),
+                    self.base.shared_node.clone(),
+                    dynamic_config,
+                    unlocked_static_details,
                 )))
             }
             Some(_) => {
