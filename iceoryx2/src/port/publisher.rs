@@ -118,7 +118,7 @@ use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::LocalPublisherConfig;
 use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::static_config::publish_subscribe;
-use crate::service::{self, ServiceState};
+use crate::service::{self};
 use core::any::TypeId;
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
@@ -140,7 +140,6 @@ use iceoryx2_cal::zero_copy_connection::{
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
 
 extern crate alloc;
-use alloc::sync::Arc;
 
 /// Defines a failure that can occur when a [`Publisher`] is created with
 /// [`crate::service::port_factory::publisher::PortFactoryPublisher`].
@@ -175,8 +174,6 @@ struct OffsetAndSize {
 #[derive(Debug)]
 pub(crate) struct PublisherSharedState<Service: service::Service> {
     config: LocalPublisherConfig,
-    service_state: Arc<ServiceState<Service>>,
-
     pub(crate) sender: Sender<Service>,
     subscriber_list_state: UnsafeCell<ContainerState<SubscriberDetails>>,
     history: Option<UnsafeCell<Queue<OffsetAndSize>>>,
@@ -232,7 +229,8 @@ impl<Service: service::Service> PublisherSharedState<Service> {
 
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         if unsafe {
-            self.service_state
+            self.sender
+                .service_state
                 .dynamic_storage
                 .get()
                 .publish_subscribe()
@@ -324,6 +322,7 @@ impl<
         shared_state.is_active.store(false, Ordering::Relaxed);
         if let Some(handle) = self.dynamic_publisher_handle {
             shared_state
+                .sender
                 .service_state
                 .dynamic_storage
                 .get()
@@ -408,7 +407,6 @@ impl<
         let publisher_shared_state =
             <Service as service::Service>::ArcThreadSafetyPolicy::new(PublisherSharedState {
                 is_active: IoxAtomicBool::new(true),
-                service_state: service.__internal_state().clone(),
                 sender: Sender {
                     data_segment,
                     segment_states: {
@@ -585,7 +583,7 @@ impl<
         let chunk = shared_state
             .sender
             .allocate(shared_state.sender.sample_layout(1))?;
-        let node_id = shared_state.service_state.shared_node.id();
+        let node_id = shared_state.sender.service_state.shared_node.id();
         let header_ptr = chunk.header as *mut Header;
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
 
@@ -762,7 +760,7 @@ impl<
         let sample_layout = shared_state.sender.sample_layout(slice_len);
         let chunk = shared_state.sender.allocate(sample_layout)?;
         let header_ptr = chunk.header as *mut Header;
-        let node_id = shared_state.service_state.shared_node.id();
+        let node_id = shared_state.sender.service_state.shared_node.id();
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
 
         let sample = unsafe {
