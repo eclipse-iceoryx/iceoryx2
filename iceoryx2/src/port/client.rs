@@ -73,7 +73,6 @@
 //! ```
 extern crate alloc;
 
-use alloc::sync::Arc;
 use core::{
     any::TypeId, cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit,
     sync::atomic::Ordering,
@@ -85,6 +84,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
 use iceoryx2_cal::{
+    arc_sync_policy::ArcSyncPolicy,
     dynamic_storage::DynamicStorage,
     shm_allocator::{AllocationStrategy, PointerOffset},
     zero_copy_connection::ChannelId,
@@ -298,7 +298,7 @@ pub struct Client<
     ResponseHeader: Debug + ZeroCopySend,
 > {
     client_id: UniqueClientId,
-    client_shared_state: Arc<ClientSharedState<Service>>,
+    client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
     request_id_counter: IoxAtomicU64,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
@@ -450,23 +450,33 @@ impl<
             connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
         };
 
+        let client_shared_state = Service::ArcThreadSafetyPolicy::new(ClientSharedState {
+            config: client_factory.config,
+            client_handle: UnsafeCell::new(None),
+            available_channel_ids: {
+                let mut queue = Queue::new(number_of_requests);
+                for n in 0..number_of_requests {
+                    queue.push(ChannelId::new(n));
+                }
+                UnsafeCell::new(queue)
+            },
+            request_sender,
+            response_receiver,
+            server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
+            active_request_counter: IoxAtomicUsize::new(0),
+        });
+
+        let client_shared_state = match client_shared_state {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with ClientCreateError::FailedToDeployThreadsafetyPolicy,
+                            "{msg} since the threadsafety policy could not be instantiated ({e:?}).");
+            }
+        };
+
         let new_self = Self {
             request_id_counter: IoxAtomicU64::new(0),
-            client_shared_state: Arc::new(ClientSharedState {
-                config: client_factory.config,
-                client_handle: UnsafeCell::new(None),
-                available_channel_ids: {
-                    let mut queue = Queue::new(number_of_requests);
-                    for n in 0..number_of_requests {
-                        queue.push(ChannelId::new(n));
-                    }
-                    UnsafeCell::new(queue)
-                },
-                request_sender,
-                response_receiver,
-                server_list_state: UnsafeCell::new(unsafe { server_list.get_state() }),
-                active_request_counter: IoxAtomicUsize::new(0),
-            }),
+            client_shared_state,
             client_id,
             _request_payload: PhantomData,
             _request_header: PhantomData,
@@ -474,7 +484,11 @@ impl<
             _response_header: PhantomData,
         };
 
-        if let Err(e) = new_self.client_shared_state.force_update_connections() {
+        if let Err(e) = new_self
+            .client_shared_state
+            .lock()
+            .force_update_connections()
+        {
             warn!(from new_self,
                 "The new Client port is unable to connect to every Server port, caused by {:?}.", e);
         }
@@ -484,7 +498,7 @@ impl<
         // !MUST! be the last task otherwise a client is added to the dynamic config without the
         // creation of all required resources
         unsafe {
-            *new_self.client_shared_state.client_handle.get() = match service
+            *new_self.client_shared_state.lock().client_handle.get() = match service
                 .__internal_state()
                 .dynamic_storage
                 .get()
@@ -513,6 +527,7 @@ impl<
     /// if the [`Server`](crate::port::server::Server)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
         self.client_shared_state
+            .lock()
             .request_sender
             .unable_to_deliver_strategy
     }
@@ -599,13 +614,13 @@ impl<
         >,
         LoanError,
     > {
-        let chunk = self
-            .client_shared_state
+        let client_shared_state = self.client_shared_state.lock();
+        let chunk = client_shared_state
             .request_sender
-            .allocate(self.client_shared_state.request_sender.sample_layout(1))?;
+            .allocate(client_shared_state.request_sender.sample_layout(1))?;
 
         let channel_id =
-            match unsafe { &mut *self.client_shared_state.available_channel_ids.get() }.pop() {
+            match unsafe { &mut *client_shared_state.available_channel_ids.get() }.pop() {
                 Some(channel_id) => channel_id,
                 None => {
                     fatal_panic!(from self,
@@ -789,7 +804,7 @@ impl<
 {
     /// Returns the maximum initial slice length configured for this [`Client`].
     pub fn initial_max_slice_len(&self) -> usize {
-        self.client_shared_state.config.initial_max_slice_len
+        self.client_shared_state.lock().config.initial_max_slice_len
     }
 
     /// Loans/allocates a [`RequestMutUninit`] from the underlying data segment of the [`Client`].
@@ -860,9 +875,10 @@ impl<
         >,
         LoanError,
     > {
-        let max_slice_len = self.client_shared_state.config.initial_max_slice_len;
+        let client_shared_state = self.client_shared_state.lock();
+        let max_slice_len = client_shared_state.config.initial_max_slice_len;
 
-        if self.client_shared_state.config.allocation_strategy == AllocationStrategy::Static
+        if client_shared_state.config.allocation_strategy == AllocationStrategy::Static
             && max_slice_len < slice_len
         {
             fail!(from self, with LoanError::ExceedsMaxLoanSize,
@@ -870,17 +886,13 @@ impl<
                 slice_len, max_slice_len);
         }
 
-        let request_layout = self
-            .client_shared_state
-            .request_sender
-            .sample_layout(slice_len);
-        let chunk = self
-            .client_shared_state
+        let request_layout = client_shared_state.request_sender.sample_layout(slice_len);
+        let chunk = client_shared_state
             .request_sender
             .allocate(request_layout)?;
 
         let channel_id =
-            match unsafe { &mut *self.client_shared_state.available_channel_ids.get() }.pop() {
+            match unsafe { &mut *client_shared_state.available_channel_ids.get() }.pop() {
                 Some(channel_id) => channel_id,
                 None => {
                     fatal_panic!(from self,
@@ -950,19 +962,17 @@ impl<
         >,
         LoanError,
     > {
+        let client_shared_state = self.client_shared_state.lock();
         // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
         debug_assert!(
             slice_len == 1
-                || self
-                    .client_shared_state
-                    .request_sender
-                    .payload_type_variant()
+                || client_shared_state.request_sender.payload_type_variant()
                     == TypeVariant::Dynamic
         );
 
         self.loan_slice_uninit_impl(
             slice_len,
-            self.client_shared_state.request_sender.payload_size() * slice_len,
+            client_shared_state.request_sender.payload_size() * slice_len,
         )
     }
 }

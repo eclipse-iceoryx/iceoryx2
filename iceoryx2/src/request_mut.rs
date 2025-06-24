@@ -37,7 +37,6 @@
 
 extern crate alloc;
 
-use alloc::sync::Arc;
 use core::{fmt::Debug, marker::PhantomData};
 use core::{
     ops::{Deref, DerefMut},
@@ -45,6 +44,7 @@ use core::{
 };
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use iceoryx2_cal::shm_allocator::PointerOffset;
@@ -74,7 +74,7 @@ pub struct RequestMut<
     >,
     pub(crate) sample_size: usize,
     pub(crate) offset_to_chunk: PointerOffset,
-    pub(crate) client_shared_state: Arc<ClientSharedState<Service>>,
+    pub(crate) client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
     pub(crate) was_sample_sent: IoxAtomicBool,
     pub(crate) channel_id: ChannelId,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
@@ -90,18 +90,19 @@ impl<
     > Drop for RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     fn drop(&mut self) {
-        if !unsafe { &mut *self.client_shared_state.available_channel_ids.get() }
+        let client_shared_state = self.client_shared_state.lock();
+        if !unsafe { &mut *client_shared_state.available_channel_ids.get() }
             .push(self.header().channel_id)
         {
             fatal_panic!(from self,
                     "This should never happen! The channel id could not be returned.");
         }
 
-        self.client_shared_state
+        client_shared_state
             .request_sender
             .release_sample(self.offset_to_chunk);
         if !self.was_sample_sent.load(Ordering::Relaxed) {
-            self.client_shared_state
+            client_shared_state
                 .request_sender
                 .loan_counter
                 .fetch_sub(1, Ordering::Relaxed);
@@ -208,7 +209,8 @@ impl<
         PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         RequestSendError,
     > {
-        match self.client_shared_state.send_request(
+        let client_shared_state = self.client_shared_state.lock();
+        match client_shared_state.send_request(
             self.offset_to_chunk,
             self.sample_size,
             self.channel_id,
@@ -216,10 +218,11 @@ impl<
         ) {
             Ok(number_of_server_connections) => {
                 self.was_sample_sent.store(true, Ordering::Relaxed);
-                self.client_shared_state
+                client_shared_state
                     .request_sender
                     .loan_counter
                     .fetch_sub(1, Ordering::Relaxed);
+                drop(client_shared_state);
                 let active_request = PendingResponse {
                     number_of_server_connections,
                     request: self,
