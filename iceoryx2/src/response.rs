@@ -38,9 +38,11 @@
 //! # }
 //! ```
 
+extern crate alloc;
+
+use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::ops::Deref;
-use std::sync::Arc;
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;

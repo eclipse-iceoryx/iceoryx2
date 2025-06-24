@@ -35,6 +35,7 @@ use core::mem::ManuallyDrop;
 pub enum iox2_subscriber_create_error_e {
     EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS = IOX2_OK as isize + 1,
     BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE,
+    FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
 }
 
 impl IntoCInt for SubscriberCreateError {
@@ -45,6 +46,9 @@ impl IntoCInt for SubscriberCreateError {
             }
             SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService => {
                 iox2_subscriber_create_error_e::BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE
+            }
+            SubscriberCreateError::FailedToDeployThreadsafetyPolicy => {
+                iox2_subscriber_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
             }
         }) as c_int
     }

@@ -455,7 +455,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::Blackboard(blackboard_static_config.clone());
 
-                    if let Some(mut service_tag) = service_tag {
+                    if let Some(service_tag) = service_tag {
                         service_tag.release_ownership();
                     }
 
@@ -557,12 +557,12 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
                             "{} since the configuration could not be serialized.", msg);
 
                 // only unlock the static details when the service is successfully created
-                let mut unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
+                let unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
                             with BlackboardCreateError::ServiceInCorruptedState,
                             "{} since the configuration could not be written to the static storage.", msg);
 
                 unlocked_static_details.release_ownership();
-                if let Some(mut service_tag) = service_tag {
+                if let Some(service_tag) = service_tag {
                     service_tag.release_ownership();
                 }
 

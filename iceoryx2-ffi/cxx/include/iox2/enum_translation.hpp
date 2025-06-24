@@ -1317,6 +1317,8 @@ constexpr auto from<int, iox2::PublisherCreateError>(const int value) noexcept -
         return iox2::PublisherCreateError::ExceedsMaxSupportedPublishers;
     case iox2_publisher_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT:
         return iox2::PublisherCreateError::UnableToCreateDataSegment;
+    case iox2_publisher_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
+        return iox2::PublisherCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
     IOX_UNREACHABLE();
@@ -1331,6 +1333,8 @@ from<iox2::PublisherCreateError, iox2_publisher_create_error_e>(const iox2::Publ
         return iox2_publisher_create_error_e_EXCEEDS_MAX_SUPPORTED_PUBLISHERS;
     case iox2::PublisherCreateError::UnableToCreateDataSegment:
         return iox2_publisher_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT;
+    case iox2::PublisherCreateError::FailedToDeployThreadsafetyPolicy:
+        return iox2_publisher_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
     IOX_UNREACHABLE();
@@ -1350,6 +1354,8 @@ constexpr auto from<int, iox2::SubscriberCreateError>(const int value) noexcept 
         return iox2::SubscriberCreateError::BufferSizeExceedsMaxSupportedBufferSizeOfService;
     case iox2_subscriber_create_error_e_EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS:
         return iox2::SubscriberCreateError::ExceedsMaxSupportedSubscribers;
+    case iox2_subscriber_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
+        return iox2::SubscriberCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
     IOX_UNREACHABLE();
@@ -1364,6 +1370,8 @@ from<iox2::SubscriberCreateError, iox2_subscriber_create_error_e>(const iox2::Su
         return iox2_subscriber_create_error_e_BUFFER_SIZE_EXCEEDS_MAX_SUPPORTED_BUFFER_SIZE_OF_SERVICE;
     case iox2::SubscriberCreateError::ExceedsMaxSupportedSubscribers:
         return iox2_subscriber_create_error_e_EXCEEDS_MAX_SUPPORTED_SUBSCRIBERS;
+    case iox2::SubscriberCreateError::FailedToDeployThreadsafetyPolicy:
+        return iox2_subscriber_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
     IOX_UNREACHABLE();

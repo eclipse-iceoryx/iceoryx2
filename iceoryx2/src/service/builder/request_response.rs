@@ -752,14 +752,14 @@ impl<
                           "{} since the configuration could not be serialized.",
                           msg);
 
-                let mut unlocked_static_details = fail!(from self,
+                let unlocked_static_details = fail!(from self,
                         when static_config.unlock(serialized_service_config.as_slice()),
                         with RequestResponseCreateError::ServiceInCorruptedState,
                         "{} since the configuration could not be written into the static storage.",
                         msg);
 
                 unlocked_static_details.release_ownership();
-                if let Some(mut service_tag) = service_tag {
+                if let Some(service_tag) = service_tag {
                     service_tag.release_ownership();
                 }
 
@@ -847,7 +847,7 @@ impl<
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::RequestResponse(request_response_static_config.clone());
 
-                    if let Some(mut service_tag) = service_tag {
+                    if let Some(service_tag) = service_tag {
                         service_tag.release_ownership();
                     }
 
