@@ -14,6 +14,7 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+pub mod arc_sync_policy;
 pub mod communication_channel;
 pub mod dynamic_storage;
 pub mod event;

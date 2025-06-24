@@ -54,7 +54,7 @@ const INTER_PROCESS_SUPPORT: bool = true;
 
 #[derive(Debug)]
 pub struct TriggerQueue<'a, T: Debug, const CAPACITY: usize> {
-    queue: Mutex<'a, FixedSizeQueue<T, CAPACITY>>,
+    queue: Mutex<'a, 'a, FixedSizeQueue<T, CAPACITY>>,
     free_slots: UnnamedSemaphore<'a>,
     used_slots: UnnamedSemaphore<'a>,
     _phantom_data: PhantomData<T>,

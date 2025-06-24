@@ -49,6 +49,7 @@ pub use crate::ipc_capable::{Handle, IpcCapable};
 use crate::ipc_capable::internal::{Capability, HandleStorage, IpcConstructible};
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::time::Duration;
 use iceoryx2_bb_elementary::scope_guard::*;
@@ -74,44 +75,44 @@ pub enum MutexCreationError {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum MutexLockError<'mutex, 'handle, T: Sized + Debug> {
+pub enum MutexLockError<'handle, T: Sized + Debug> {
     ExceededMaximumNumberOfRecursiveLocks,
     DeadlockDetected,
-    LockAcquiredButOwnerDied(MutexGuard<'mutex, 'handle, T>),
+    LockAcquiredButOwnerDied(MutexGuard<'handle, T>),
     UnrecoverableState,
     UnknownError(i32),
 }
 
-impl<T: Sized + Debug> PartialEq for MutexGuard<'_, '_, T> {
+impl<T: Sized + Debug> PartialEq for MutexGuard<'_, T> {
     fn eq(&self, other: &Self) -> bool {
-        core::ptr::eq(self.mutex, other.mutex)
+        core::ptr::eq(self.handle, other.handle)
     }
 }
 
-impl<T: Sized + Debug> Eq for MutexGuard<'_, '_, T> {}
+impl<T: Sized + Debug> Eq for MutexGuard<'_, T> {}
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum MutexTimedLockError<'mutex, 'handle, T: Sized + Debug> {
+pub enum MutexTimedLockError<'handle, T: Sized + Debug> {
     TimeoutExceedsMaximumSupportedDuration,
-    MutexLockError(MutexLockError<'mutex, 'handle, T>),
+    MutexLockError(MutexLockError<'handle, T>),
     NanosleepError(NanosleepError),
     AdaptiveWaitError(AdaptiveWaitError),
     FailureInInternalClockWhileWait(TimeError),
 }
 
-impl<T: Debug> From<TimeError> for MutexTimedLockError<'_, '_, T> {
+impl<T: Debug> From<TimeError> for MutexTimedLockError<'_, T> {
     fn from(v: TimeError) -> Self {
         MutexTimedLockError::FailureInInternalClockWhileWait(v)
     }
 }
 
-impl<T: Debug> From<NanosleepError> for MutexTimedLockError<'_, '_, T> {
+impl<T: Debug> From<NanosleepError> for MutexTimedLockError<'_, T> {
     fn from(v: NanosleepError) -> Self {
         MutexTimedLockError::NanosleepError(v)
     }
 }
 
-impl<T: Debug> From<AdaptiveWaitError> for MutexTimedLockError<'_, '_, T> {
+impl<T: Debug> From<AdaptiveWaitError> for MutexTimedLockError<'_, T> {
     fn from(v: AdaptiveWaitError) -> Self {
         MutexTimedLockError::AdaptiveWaitError(v)
     }
@@ -134,14 +135,14 @@ pub enum MutexError {
     UnlockFailed,
 }
 
-impl<'mutex, 'handle, T: Debug> From<MutexLockError<'mutex, 'handle, T>> for MutexError {
-    fn from(_: MutexLockError<'mutex, 'handle, T>) -> Self {
+impl<'handle, T: Debug> From<MutexLockError<'handle, T>> for MutexError {
+    fn from(_: MutexLockError<'handle, T>) -> Self {
         MutexError::LockFailed
     }
 }
 
-impl<'mutex, 'handle, T: Debug> From<MutexTimedLockError<'mutex, 'handle, T>> for MutexError {
-    fn from(_: MutexTimedLockError<'mutex, 'handle, T>) -> Self {
+impl<'handle, T: Debug> From<MutexTimedLockError<'handle, T>> for MutexError {
+    fn from(_: MutexTimedLockError<'handle, T>) -> Self {
         MutexError::LockFailed
     }
 }
@@ -177,31 +178,40 @@ impl From<MutexCreationError> for MutexError {
 /// }
 /// ```
 #[derive(Debug)]
-pub struct MutexGuard<'mutex, 'handle, T: Debug> {
-    mutex: &'mutex Mutex<'handle, T>,
+pub struct MutexGuard<'handle, T: Debug> {
+    handle: &'handle MutexHandle<T>,
 }
 
-unsafe impl<T: Send + Debug> Send for MutexGuard<'_, '_, T> {}
-unsafe impl<T: Send + Sync + Debug> Sync for MutexGuard<'_, '_, T> {}
-
-impl<T: Debug> Deref for MutexGuard<'_, '_, T> {
+impl<T: Debug> Deref for MutexGuard<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        unsafe { (*self.mutex.handle.value.get()).as_ref().unwrap() }
+        unsafe { (*self.handle.value.get()).as_ref().unwrap() }
     }
 }
 
-impl<T: Debug> DerefMut for MutexGuard<'_, '_, T> {
+impl<T: Debug> DerefMut for MutexGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        unsafe { (*self.mutex.handle.value.get()).as_mut().unwrap() }
+        unsafe { (*self.handle.value.get()).as_mut().unwrap() }
     }
 }
 
-impl<T: Debug> Drop for MutexGuard<'_, '_, T> {
+impl<T: Debug> MutexGuard<'_, T> {
+    pub(crate) fn release(&self) -> Result<(), MutexUnlockError> {
+        let msg = "Unable to release lock";
+        handle_errno!(MutexUnlockError, from self,
+            errno_source unsafe { posix::pthread_mutex_unlock(self.handle.handle.get()) }.into(),
+            success Errno::ESUCCES => (),
+            Errno::EPERM => (OwnedByDifferentEntity, "{} since the current thread/process does not own the lock", msg),
+            v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
+        );
+    }
+}
+
+impl<T: Debug> Drop for MutexGuard<'_, T> {
     fn drop(&mut self) {
-        if self.mutex.release().is_err() {
-            fatal_panic!(from self.mutex, "This should never happen! The MutexGuard is unable to release the mutex.");
+        if self.release().is_err() {
+            fatal_panic!(from self.handle, "This should never happen! The MutexGuard is unable to release the mutex.");
         }
     }
 }
@@ -487,26 +497,43 @@ impl<T: Sized + Debug> MutexHandle<T> {
 /// };
 /// ```
 #[derive(Debug)]
-pub struct Mutex<'a, T: Sized + Debug> {
-    pub(crate) handle: &'a MutexHandle<T>,
+pub struct Mutex<'this, 'handle: 'this, T: Sized + Debug> {
+    pub(crate) handle: &'handle MutexHandle<T>,
+    _lifetime: PhantomData<&'this ()>,
 }
 
-unsafe impl<T: Sized + Send + Debug> Send for Mutex<'_, T> {}
-unsafe impl<T: Sized + Send + Debug> Sync for Mutex<'_, T> {}
+unsafe impl<T: Sized + Send + Debug> Send for Mutex<'_, '_, T> {}
+unsafe impl<T: Sized + Send + Debug> Sync for Mutex<'_, '_, T> {}
 
-impl<'a, T: Debug> IpcConstructible<'a, MutexHandle<T>> for Mutex<'a, T> {
-    fn new(handle: &'a MutexHandle<T>) -> Self {
-        Self { handle }
+impl<'handle, T: Debug> IpcConstructible<'handle, MutexHandle<T>> for Mutex<'_, 'handle, T> {
+    fn new(handle: &'handle MutexHandle<T>) -> Self {
+        Self {
+            handle,
+            _lifetime: PhantomData,
+        }
     }
 }
 
-impl<'a, T: Debug> IpcCapable<'a, MutexHandle<T>> for Mutex<'a, T> {
+impl<'handle, T: Debug> IpcCapable<'handle, MutexHandle<T>> for Mutex<'_, 'handle, T> {
     fn is_interprocess_capable(&self) -> bool {
         self.handle.is_inter_process_capable()
     }
 }
 
-impl<T: Debug> Mutex<'_, T> {
+impl<'this, 'handle: 'this, T: Debug> Mutex<'this, 'handle, T> {
+    /// Instantiates a [`Mutex`] from an already initialized [`MutexHandle`]. Useful for
+    /// inter-process usage where the [`MutexHandle`] was created by [`MutexBuilder`] in another
+    /// process.
+    ///
+    /// # Safety
+    ///
+    /// * `handle` must have been successfully initialized by the [`MutexBuilder`].
+    pub unsafe fn from_handle(handle: &'handle MutexHandle<T>) -> Mutex<'this, 'handle, T> {
+        debug_assert!(handle.is_initialized());
+
+        Self::new(handle)
+    }
+
     /// Blocks until the ownership of the lock could be acquired. If it was successful it returns a
     /// [`MutexGuard`] to allow access to the underlying value.
     /// If the previously owning thread has died and
@@ -515,14 +542,14 @@ impl<T: Debug> Mutex<'_, T> {
     /// new owner now has the responsibility to either repair the underlying value of the mutex and
     /// call [`Mutex::make_consistent()`] when it is repaired or to undertake other measures when
     /// it is unrepairable.
-    pub fn lock(&self) -> Result<MutexGuard<'_, '_, T>, MutexLockError<'_, '_, T>> {
+    pub fn lock(&'this self) -> Result<MutexGuard<'handle, T>, MutexLockError<'handle, T>> {
         let msg = "Failed to lock";
         handle_errno!(MutexLockError, from self,
             errno_source unsafe { posix::pthread_mutex_lock(self.handle.handle.get()) }.into(),
-            success Errno::ESUCCES => MutexGuard { mutex: self },
+            success Errno::ESUCCES => MutexGuard { handle: self.handle },
             Errno::EAGAIN => (ExceededMaximumNumberOfRecursiveLocks, "{} since the maximum number of recursive locks exceeded.", msg),
             Errno::EDEADLK => (DeadlockDetected, "{} since the operation would lead to a deadlock.", msg),
-            Errno::EOWNERDEAD => (LockAcquiredButOwnerDied(MutexGuard { mutex: self }), "{} since the thread/process holding the mutex died.", msg),
+            Errno::EOWNERDEAD => (LockAcquiredButOwnerDied(MutexGuard { handle: self.handle }), "{} since the thread/process holding the mutex died.", msg),
             Errno::ENOTRECOVERABLE => (UnrecoverableState, "{} since the thread/process holding the mutex died and the next owner did not repair the state with Mutex::make_consistent.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred while acquiring the lock ({})", msg, v)
         );
@@ -537,15 +564,17 @@ impl<T: Debug> Mutex<'_, T> {
     /// new owner now has the responsibility to either repair the underlying value of the mutex and
     /// call [`Mutex::make_consistent()`] when it is repaired or to undertake other measures when
     /// it is unrepairable.
-    pub fn try_lock(&self) -> Result<Option<MutexGuard<'_, '_, T>>, MutexLockError<'_, '_, T>> {
+    pub fn try_lock(
+        &'this self,
+    ) -> Result<Option<MutexGuard<'handle, T>>, MutexLockError<'handle, T>> {
         let msg = "Try lock failed";
         handle_errno!(MutexLockError, from self,
             errno_source unsafe { posix::pthread_mutex_trylock(self.handle.handle.get()) }.into(),
-            success Errno::ESUCCES => Some(MutexGuard { mutex: self });
+            success Errno::ESUCCES => Some(MutexGuard { handle: self.handle });
             success Errno::EDEADLK => None;
             success Errno::EBUSY => None,
             Errno::EAGAIN => (ExceededMaximumNumberOfRecursiveLocks, "{} since the maximum number of recursive locks exceeded.", msg),
-            Errno::EOWNERDEAD => (LockAcquiredButOwnerDied(MutexGuard { mutex: self }), "{} since the thread/process holding the mutex dies.", msg),
+            Errno::EOWNERDEAD => (LockAcquiredButOwnerDied(MutexGuard { handle: self.handle }), "{} since the thread/process holding the mutex dies.", msg),
             Errno::ENOTRECOVERABLE => (UnrecoverableState, "{} since the thread/process holding the mutex died and the next owner did not repair the state with Mutex::make_consistent.", msg),
             v => (UnknownError(v as i32), "{} since unknown error occurred while acquiring the lock ({})", msg, v)
         );
@@ -561,9 +590,9 @@ impl<T: Debug> Mutex<'_, T> {
     /// call [`Mutex::make_consistent()`] when it is repaired or to undertake other measures when
     /// it is unrepairable.
     pub fn timed_lock(
-        &self,
+        &'this self,
         duration: Duration,
-    ) -> Result<Option<MutexGuard<'_, '_, T>>, MutexTimedLockError<'_, '_, T>> {
+    ) -> Result<Option<MutexGuard<'handle, T>>, MutexTimedLockError<'handle, T>> {
         let msg = "Timed lock failed";
 
         match self.handle.clock_type() {
@@ -573,7 +602,7 @@ impl<T: Debug> Mutex<'_, T> {
                 let timeout = now.as_duration() + duration;
                 handle_errno!(MutexTimedLockError, from self,
                     errno_source unsafe { posix::pthread_mutex_timedlock(self.handle.handle.get(), &timeout.as_timespec()) }.into(),
-                    success Errno::ESUCCES => Some(MutexGuard { mutex: self });
+                    success Errno::ESUCCES => Some(MutexGuard { handle: self.handle });
                     success Errno::ETIMEDOUT => None;
                     success Errno::EDEADLK => None,
                     Errno::EAGAIN => (MutexLockError(MutexLockError::ExceededMaximumNumberOfRecursiveLocks), "{} since the maximum number of recursive locks exceeded.", msg),
@@ -621,15 +650,5 @@ impl<T: Debug> Mutex<'_, T> {
         if unsafe { posix::pthread_mutex_consistent(self.handle.handle.get()) } != 0 {
             warn!(from self, "pthread_mutex_consistent has no effect since either the mutex was not a robust mutex or the mutex was not in an inconsistent state.");
         }
-    }
-
-    pub(crate) fn release(&self) -> Result<(), MutexUnlockError> {
-        let msg = "Unable to release lock";
-        handle_errno!(MutexUnlockError, from self,
-            errno_source unsafe { posix::pthread_mutex_unlock(self.handle.handle.get()) }.into(),
-            success Errno::ESUCCES => (),
-            Errno::EPERM => (OwnedByDifferentEntity, "{} since the current thread/process does not own the lock", msg),
-            v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
-        );
     }
 }

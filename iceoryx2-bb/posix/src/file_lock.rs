@@ -121,9 +121,9 @@ enum_gen! {
 /// It provides read and write access to the underlying file and unlocks it as soon as it goes out
 /// of scope.
 #[derive(Debug)]
-pub struct FileLockWriteGuard<'a, 'b, T: FileDescriptorBased + Debug> {
-    file_lock: &'a FileLock<'b, T>,
-    guard: MutexWriteGuard<'a, 'b, T>,
+pub struct FileLockWriteGuard<'handle, 'b, T: FileDescriptorBased + Debug> {
+    file_lock: &'handle FileLock<'b, T>,
+    guard: MutexWriteGuard<'handle, T>,
 }
 
 unsafe impl<T: Send + FileDescriptorBased + Debug> Send for FileLockWriteGuard<'_, '_, T> {}
@@ -154,9 +154,9 @@ impl<T: FileDescriptorBased + Debug> Drop for FileLockWriteGuard<'_, '_, T> {
 /// It provides read access to the underlying file and unlocks it as soon as it goes out
 /// of scope.
 #[derive(Debug)]
-pub struct FileLockReadGuard<'a, 'b, T: FileDescriptorBased + Debug> {
-    file_lock: &'a FileLock<'b, T>,
-    guard: MutexReadGuard<'a, 'b, T>,
+pub struct FileLockReadGuard<'handle, 'b, T: FileDescriptorBased + Debug> {
+    file_lock: &'handle FileLock<'b, T>,
+    guard: MutexReadGuard<'handle, T>,
 }
 
 unsafe impl<T: Send + FileDescriptorBased + Debug> Send for FileLockReadGuard<'_, '_, T> {}
@@ -210,7 +210,7 @@ impl FileLockBuilder {
 /// read/writer locks will block the processes.
 #[derive(Debug)]
 pub struct FileLock<'a, T: FileDescriptorBased + Debug> {
-    file: ReadWriteMutex<'a, T>,
+    file: ReadWriteMutex<'a, 'a, T>,
     lock_state: IoxAtomicI64,
 }
 

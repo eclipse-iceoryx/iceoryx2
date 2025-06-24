@@ -154,7 +154,7 @@ mod ipc_capable {
 
     impl TestSut for MutexTest {
         type Handle = MutexHandle<u64>;
-        type Sut<'a> = Mutex<'a, u64>;
+        type Sut<'a> = Mutex<'a, 'a, u64>;
 
         fn init_process_local_handle(handle: &Self::Handle) {
             MutexBuilder::new()
@@ -178,7 +178,7 @@ mod ipc_capable {
 
     impl TestSut for ReadWriteMutexTest {
         type Handle = ReadWriteMutexHandle<u64>;
-        type Sut<'a> = ReadWriteMutex<'a, u64>;
+        type Sut<'a> = ReadWriteMutex<'a, 'a, u64>;
 
         fn init_process_local_handle(handle: &Self::Handle) {
             ReadWriteMutexBuilder::new()
