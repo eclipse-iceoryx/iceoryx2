@@ -256,6 +256,16 @@ pub struct Notifier<Service: service::Service> {
     node_id: NodeId,
 }
 
+unsafe impl<Service: service::Service> Send for Notifier<Service> where
+    Service::ArcThreadSafetyPolicy<ListenerConnections<Service>>: Send + Sync
+{
+}
+
+unsafe impl<Service: service::Service> Sync for Notifier<Service> where
+    Service::ArcThreadSafetyPolicy<ListenerConnections<Service>>: Send + Sync
+{
+}
+
 impl<Service: service::Service> Drop for Notifier<Service> {
     fn drop(&mut self) {
         if let Some(event_id) = self.on_drop_notification {

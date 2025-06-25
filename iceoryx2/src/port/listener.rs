@@ -115,6 +115,18 @@ pub struct Listener<Service: service::Service> {
     listener_id: UniqueListenerId,
 }
 
+unsafe impl<Service: service::Service> Send for Listener<Service> where
+    Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>:
+        Send + Sync
+{
+}
+
+unsafe impl<Service: service::Service> Sync for Listener<Service> where
+    Service::ArcThreadSafetyPolicy<<Service::Event as iceoryx2_cal::event::Event>::Listener>:
+        Send + Sync
+{
+}
+
 impl<Service: service::Service> FileDescriptorBased for Listener<Service>
 where
     <Service::Event as iceoryx2_cal::event::Event>::Listener: FileDescriptorBased,
