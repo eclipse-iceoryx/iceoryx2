@@ -1121,6 +1121,8 @@ constexpr auto from<int, iox2::ClientCreateError>(const int value) noexcept -> i
         return iox2::ClientCreateError::ExceedsMaxSupportedClients;
     case iox2_client_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT:
         return iox2::ClientCreateError::UnableToCreateDataSegment;
+    case iox2_client_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
+        return iox2::ClientCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
     IOX_UNREACHABLE();
@@ -1134,6 +1136,8 @@ constexpr auto from<iox2::ClientCreateError, iox2_client_create_error_e>(const i
         return iox2_client_create_error_e_EXCEEDS_MAX_SUPPORTED_CLIENTS;
     case iox2::ClientCreateError::UnableToCreateDataSegment:
         return iox2_client_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT;
+    case iox2::ClientCreateError::FailedToDeployThreadsafetyPolicy:
+        return iox2_client_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
     IOX_UNREACHABLE();
@@ -1152,6 +1156,8 @@ constexpr auto from<int, iox2::ServerCreateError>(const int value) noexcept -> i
         return iox2::ServerCreateError::ExceedsMaxSupportedServers;
     case iox2_server_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT:
         return iox2::ServerCreateError::UnableToCreateDataSegment;
+    case iox2_server_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
+        return iox2::ServerCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
     IOX_UNREACHABLE();
@@ -1165,6 +1171,8 @@ constexpr auto from<iox2::ServerCreateError, iox2_server_create_error_e>(const i
         return iox2_server_create_error_e_EXCEEDS_MAX_SUPPORTED_SERVERS;
     case iox2::ServerCreateError::UnableToCreateDataSegment:
         return iox2_server_create_error_e_UNABLE_TO_CREATE_DATA_SEGMENT;
+    case iox2::ServerCreateError::FailedToDeployThreadsafetyPolicy:
+        return iox2_server_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
     IOX_UNREACHABLE();
@@ -1181,6 +1189,8 @@ constexpr auto from<int, iox2::NotifierCreateError>(const int value) noexcept ->
     switch (error) {
     case iox2_notifier_create_error_e_EXCEEDS_MAX_SUPPORTED_NOTIFIERS:
         return iox2::NotifierCreateError::ExceedsMaxSupportedNotifiers;
+    case iox2_notifier_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
+        return iox2::NotifierCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
     IOX_UNREACHABLE();
@@ -1193,6 +1203,8 @@ from<iox2::NotifierCreateError, iox2_notifier_create_error_e>(const iox2::Notifi
     switch (value) {
     case iox2::NotifierCreateError::ExceedsMaxSupportedNotifiers:
         return iox2_notifier_create_error_e_EXCEEDS_MAX_SUPPORTED_NOTIFIERS;
+    case iox2::NotifierCreateError::FailedToDeployThreadsafetyPolicy:
+        return iox2_notifier_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
     IOX_UNREACHABLE();
@@ -1212,6 +1224,8 @@ constexpr auto from<int, iox2::ListenerCreateError>(const int value) noexcept ->
         return iox2::ListenerCreateError::ExceedsMaxSupportedListeners;
     case iox2_listener_create_error_e_RESOURCE_CREATION_FAILED:
         return iox2::ListenerCreateError::ResourceCreationFailed;
+    case iox2_listener_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY:
+        return iox2::ListenerCreateError::FailedToDeployThreadsafetyPolicy;
     }
 
     IOX_UNREACHABLE();
@@ -1226,6 +1240,8 @@ from<iox2::ListenerCreateError, iox2_listener_create_error_e>(const iox2::Listen
         return iox2_listener_create_error_e_EXCEEDS_MAX_SUPPORTED_LISTENERS;
     case iox2::ListenerCreateError::ResourceCreationFailed:
         return iox2_listener_create_error_e_RESOURCE_CREATION_FAILED;
+    case iox2::ListenerCreateError::FailedToDeployThreadsafetyPolicy:
+        return iox2_listener_create_error_e_FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY;
     }
 
     IOX_UNREACHABLE();
