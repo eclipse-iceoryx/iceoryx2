@@ -10,5 +10,40 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#[doc(hidden)]
-pub struct Reader {}
+use crate::service;
+use core::{fmt::Debug, marker::PhantomData, sync::atomic::AtomicU32};
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum ReaderCreateError {
+    ExceedsMaxSupportedReaders,
+}
+
+impl core::fmt::Display for ReaderCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "ReaderCreateError::{:?}", self)
+    }
+}
+
+impl core::error::Error for ReaderCreateError {}
+
+#[derive(Debug)]
+pub struct Reader<Service: service::Service, T: Send + Sync + Debug + 'static> {
+    //service: Service, or ServiceState with BlackboardResources
+    map: Service::BlackboardMgmt<AtomicU32>,
+    _to_be_removed: PhantomData<T>, // remove when AtomicU32 is replaced by map
+}
+
+impl<Service: service::Service, T: Send + Sync + Debug + 'static> Reader<Service, T> {
+    pub(crate) fn new(mgmt: Service::BlackboardMgmt<AtomicU32>) -> Result<Self, ReaderCreateError> {
+        let new_self = Self {
+            map: mgmt,
+            _to_be_removed: PhantomData,
+        };
+        Ok(new_self)
+    }
+
+    pub fn read(&self) -> u32 {
+        self.map.get().load(core::sync::atomic::Ordering::Relaxed)
+    }
+}

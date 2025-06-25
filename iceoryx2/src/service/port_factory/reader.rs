@@ -13,7 +13,7 @@
 // TODO: example
 
 use super::blackboard::PortFactory;
-use crate::port::writer::{Writer, WriterCreateError};
+use crate::port::reader::{Reader, ReaderCreateError};
 use crate::service;
 use crate::service::config_scheme::blackboard_mgmt_data_segment_config;
 use core::fmt::Debug;
@@ -23,19 +23,19 @@ use iceoryx2_cal::dynamic_storage::DynamicStorageBuilder;
 use iceoryx2_cal::event::{NamedConcept, NamedConceptBuilder};
 
 #[derive(Debug)]
-pub struct PortFactoryWriter<'factory, Service: service::Service, T: Send + Sync + Debug + 'static>
+pub struct PortFactoryReader<'factory, Service: service::Service, T: Send + Sync + Debug + 'static>
 {
     pub(crate) factory: &'factory PortFactory<Service, T>,
 }
 
 impl<'factory, Service: service::Service, T: Send + Sync + Debug + 'static>
-    PortFactoryWriter<'factory, Service, T>
+    PortFactoryReader<'factory, Service, T>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, T>) -> Self {
         Self { factory }
     }
 
-    pub fn create(self) -> Result<Writer<Service, AtomicU32>, WriterCreateError> {
+    pub fn create(self) -> Result<Reader<Service, AtomicU32>, ReaderCreateError> {
         let origin = format!("{:?}", self);
 
         let mgmt_name = self.factory.service.additional_resource.mgmt.name();
@@ -48,8 +48,8 @@ impl<'factory, Service: service::Service, T: Send + Sync + Debug + 'static>
                 .config(&mgmt_config)
                 .has_ownership(false)
                 .open(),
-            with WriterCreateError::ExceedsMaxSupportedWriters,
+            with ReaderCreateError::ExceedsMaxSupportedReaders,
             "blub");
-        Ok(fail!(from origin, when Writer::new(storage),"Failed to create new Writer port."))
+        Ok(fail!(from origin, when Reader::new(storage),"Failed to create new Reader port."))
     }
 }

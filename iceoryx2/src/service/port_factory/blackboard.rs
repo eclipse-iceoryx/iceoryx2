@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use super::nodes;
+use super::reader::PortFactoryReader;
 use super::writer::PortFactoryWriter;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
@@ -85,7 +86,10 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static> PortFactory<Se
     }
 
     pub fn writer_builder(&self) -> PortFactoryWriter<Service, T> {
-        println!("WriterBuilder");
         PortFactoryWriter::new(self)
+    }
+
+    pub fn reader_builder(&self) -> PortFactoryReader<Service, T> {
+        PortFactoryReader::new(self)
     }
 }
