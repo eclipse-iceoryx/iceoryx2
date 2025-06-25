@@ -12,6 +12,7 @@
 
 mod testing;
 
+// TODO: test discovery of event services
 #[generic_tests::define]
 mod zenoh_tunnel_events {
 
