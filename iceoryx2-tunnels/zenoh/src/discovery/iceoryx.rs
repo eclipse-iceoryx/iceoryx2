@@ -22,6 +22,7 @@ use iceoryx2_bb_log::info;
 use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryUpdate;
 use iceoryx2_services_discovery::service_discovery::Tracker as IceoryxServiceTracker;
 
+// TODO: More granularity in errors
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     Error,

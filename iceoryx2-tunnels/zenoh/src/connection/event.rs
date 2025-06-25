@@ -36,6 +36,7 @@ use zenoh::Wait;
 
 use std::collections::HashSet;
 
+// TODO: More granularity in errors
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     Error,

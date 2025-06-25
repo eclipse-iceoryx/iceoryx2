@@ -38,6 +38,7 @@ use zenoh::sample::Sample;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
 
+// TODO: More granularity in errors
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     Error,

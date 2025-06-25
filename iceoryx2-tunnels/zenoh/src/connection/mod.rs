@@ -16,6 +16,7 @@ mod publish_subscribe;
 pub use event::*;
 pub use publish_subscribe::*;
 
+// TODO: More granularity in errors
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PropagationError {
     Error,
