@@ -28,12 +28,12 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let client = service.client_builder().create()?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
-    let guard_1 = waitset.attach_interval(CYCLE_TIME)?;
+    let guard = waitset.attach_interval(CYCLE_TIME)?;
 
     let pending_response = client.send_copy(())?;
 
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
-        if attachment_id.has_event_from(&guard_1) {
+        if attachment_id.has_event_from(&guard) {
             while let Some(response) = pending_response.receive().unwrap() {
                 for service in response.payload().iter() {
                     println!("Service ID: {:?}", service.service_id().as_str());
