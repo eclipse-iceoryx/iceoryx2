@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc_threadsafe, local_threadsafe};
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
@@ -33,7 +32,7 @@ pub(crate) enum ServiceBuilderRequestResponseType {
             CustomHeaderMarker,
             [CustomPayloadMarker],
             CustomHeaderMarker,
-            ipc_threadsafe::Service,
+            crate::IpcService,
         >,
     ),
     Local(
@@ -42,7 +41,7 @@ pub(crate) enum ServiceBuilderRequestResponseType {
             CustomHeaderMarker,
             [CustomPayloadMarker],
             CustomHeaderMarker,
-            local_threadsafe::Service,
+            crate::LocalService,
         >,
     ),
 }

@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc_threadsafe, local_threadsafe};
 use pyo3::prelude::*;
 
 use crate::{
@@ -29,8 +28,8 @@ use crate::{
 };
 
 pub(crate) enum NodeType {
-    Ipc(iceoryx2::node::Node<ipc_threadsafe::Service>),
-    Local(iceoryx2::node::Node<local_threadsafe::Service>),
+    Ipc(iceoryx2::node::Node<crate::IpcService>),
+    Local(iceoryx2::node::Node<crate::LocalService>),
 }
 
 #[pyclass]
@@ -83,9 +82,8 @@ impl Node {
         let mut states = vec![];
 
         match service_type {
-            ServiceType::Ipc => iceoryx2::prelude::Node::<ipc_threadsafe::Service>::list(
-                &config.0.lock(),
-                |state| {
+            ServiceType::Ipc => {
+                iceoryx2::prelude::Node::<crate::IpcService>::list(&config.0.lock(), |state| {
                     match state {
                         iceoryx2::node::NodeState::Alive(a) => {
                             states.push(NodeState::Alive(AliveNodeView(AliveNodeViewType::Ipc(a))))
@@ -102,12 +100,11 @@ impl Node {
                     }
 
                     iceoryx2::prelude::CallbackProgression::Continue
-                },
-            )
-            .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?,
-            ServiceType::Local => iceoryx2::prelude::Node::<local_threadsafe::Service>::list(
-                &config.0.lock(),
-                |state| {
+                })
+                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?
+            }
+            ServiceType::Local => {
+                iceoryx2::prelude::Node::<crate::LocalService>::list(&config.0.lock(), |state| {
                     match state {
                         iceoryx2::node::NodeState::Alive(a) => states
                             .push(NodeState::Alive(AliveNodeView(AliveNodeViewType::Local(a)))),
@@ -123,9 +120,9 @@ impl Node {
                     }
 
                     iceoryx2::prelude::CallbackProgression::Continue
-                },
-            )
-            .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?,
+                })
+                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?
+            }
         };
 
         Ok(states)
@@ -176,12 +173,10 @@ impl Node {
     pub fn cleanup_dead_nodes(service_type: &ServiceType, config: &Config) -> CleanupState {
         match service_type {
             ServiceType::Ipc => CleanupState(
-                iceoryx2::prelude::Node::<ipc_threadsafe::Service>::cleanup_dead_nodes(
-                    &config.0.lock(),
-                ),
+                iceoryx2::prelude::Node::<crate::IpcService>::cleanup_dead_nodes(&config.0.lock()),
             ),
             ServiceType::Local => CleanupState(
-                iceoryx2::prelude::Node::<local_threadsafe::Service>::cleanup_dead_nodes(
+                iceoryx2::prelude::Node::<crate::LocalService>::cleanup_dead_nodes(
                     &config.0.lock(),
                 ),
             ),

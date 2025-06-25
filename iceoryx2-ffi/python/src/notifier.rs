@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc_threadsafe, local_threadsafe};
 use pyo3::prelude::*;
 
 use crate::{
@@ -19,8 +18,8 @@ use crate::{
 };
 
 pub(crate) enum NotifierType {
-    Ipc(iceoryx2::port::notifier::Notifier<ipc_threadsafe::Service>),
-    Local(iceoryx2::port::notifier::Notifier<local_threadsafe::Service>),
+    Ipc(iceoryx2::port::notifier::Notifier<crate::IpcService>),
+    Local(iceoryx2::port::notifier::Notifier<crate::LocalService>),
 }
 
 #[pyclass]
