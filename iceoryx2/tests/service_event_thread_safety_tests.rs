@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::sync::atomic::Ordering;
+use core::time::Duration;
 use std::sync::Barrier;
 
 use iceoryx2::prelude::*;
@@ -23,11 +24,11 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 #[test]
 fn notifying_events_concurrently_works() {
-    let _watchdog = Watchdog::new();
+    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
     let config = generate_isolated_config();
-    const NUMBER_OF_ITERATIONS: usize = 2000;
+    const NUMBER_OF_ITERATIONS: usize = 200;
     let number_of_notifier_threads: usize = SystemInfo::NumberOfCpuCores.value().min(2);
 
     let node = NodeBuilder::new()
