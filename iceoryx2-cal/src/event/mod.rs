@@ -103,7 +103,7 @@ impl TriggerId {
     }
 }
 
-pub trait Notifier: NamedConcept + Debug {
+pub trait Notifier: NamedConcept + Debug + Send {
     fn trigger_id_max(&self) -> TriggerId {
         TriggerId::new(usize::MAX)
     }
@@ -115,7 +115,7 @@ pub trait NotifierBuilder<T: Event>: NamedConceptBuilder<T> + Debug {
     fn open(self) -> Result<T::Notifier, NotifierCreateError>;
 }
 
-pub trait Listener: NamedConcept + Debug {
+pub trait Listener: NamedConcept + Debug + Send {
     const IS_FILE_DESCRIPTOR_BASED: bool = false;
 
     fn try_wait_one(&self) -> Result<Option<TriggerId>, ListenerWaitError>;
