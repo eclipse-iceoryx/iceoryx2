@@ -289,7 +289,9 @@ impl<
     /// ```
     pub unsafe fn assume_init(self) -> ResponseMut<Service, ResponsePayload, ResponseHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        core::mem::transmute(self.response)
+        let initialized_response = core::mem::transmute_copy(&self.response);
+        core::mem::forget(self);
+        initialized_response
     }
 }
 
@@ -335,7 +337,9 @@ impl<
     /// ```
     pub unsafe fn assume_init(self) -> ResponseMut<Service, [ResponsePayload], ResponseHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        core::mem::transmute(self.response)
+        let initialized_response = core::mem::transmute_copy(&self.response);
+        core::mem::forget(self);
+        initialized_response
     }
 
     /// Writes the payload to the [`ResponseMutUninit`] and labels the [`ResponseMutUninit`] as

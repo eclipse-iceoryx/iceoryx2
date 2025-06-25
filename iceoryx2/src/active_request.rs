@@ -51,7 +51,10 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-use iceoryx2_cal::{shm_allocator::AllocationStrategy, zero_copy_connection::ChannelId};
+use iceoryx2_cal::{
+    arc_sync_policy::ArcSyncPolicy, shm_allocator::AllocationStrategy,
+    zero_copy_connection::ChannelId,
+};
 
 use crate::{
     port::{
@@ -88,7 +91,7 @@ pub struct ActiveRequest<
         RequestHeader,
         RequestPayload,
     >,
-    pub(crate) shared_state: Arc<SharedServerState<Service>>,
+    pub(crate) shared_state: Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
     pub(crate) shared_loan_counter: Arc<IoxAtomicUsize>,
     pub(crate) max_loan_count: usize,
     pub(crate) details: ChunkDetails,
@@ -150,6 +153,7 @@ impl<
 {
     fn drop(&mut self) {
         self.shared_state
+            .lock()
             .request_receiver
             .release_offset(&self.details, ChannelId::new(0));
         self.finish();
@@ -166,11 +170,10 @@ impl<
 {
     fn finish(&self) {
         if self.connection_id != INVALID_CONNECTION_ID {
-            self.shared_state.response_sender.invalidate_channel_state(
-                self.channel_id,
-                self.connection_id,
-                self.request_id,
-            );
+            self.shared_state
+                .lock()
+                .response_sender
+                .invalidate_channel_state(self.channel_id, self.connection_id, self.request_id);
         }
     }
 
@@ -179,7 +182,7 @@ impl<
     /// [`Client`](crate::port::client::Client) no longer receives the [`ResponseMut`].
     pub fn is_connected(&self) -> bool {
         if self.connection_id != INVALID_CONNECTION_ID {
-            self.shared_state.response_sender.has_channel_state(
+            self.shared_state.lock().response_sender.has_channel_state(
                 self.channel_id,
                 self.connection_id,
                 self.request_id,
@@ -277,17 +280,17 @@ impl<
     ) -> Result<ResponseMutUninit<Service, MaybeUninit<ResponsePayload>, ResponseHeader>, LoanError>
     {
         self.increment_loan_counter()?;
+        let shared_state = self.shared_state.lock();
 
-        let chunk = self
-            .shared_state
+        let chunk = shared_state
             .response_sender
-            .allocate(self.shared_state.response_sender.sample_layout(1))?;
+            .allocate(shared_state.response_sender.sample_layout(1))?;
 
         unsafe {
             (chunk.header as *mut service::header::request_response::ResponseHeader).write(
                 service::header::request_response::ResponseHeader {
                     server_id: UniqueServerId(UniqueSystemId::from(
-                        self.shared_state.response_sender.sender_port_id,
+                        shared_state.response_sender.sender_port_id,
                     )),
                     request_id: self.request_id,
                     number_of_elements: 1,
@@ -515,9 +518,10 @@ impl<
         underlying_number_of_slice_elements: usize,
     ) -> Result<ResponseMutUninit<Service, [MaybeUninit<ResponsePayload>], ResponseHeader>, LoanError>
     {
-        let max_slice_len = self.shared_state.config.initial_max_slice_len;
+        let shared_state = self.shared_state.lock();
+        let max_slice_len = shared_state.config.initial_max_slice_len;
 
-        if self.shared_state.config.allocation_strategy == AllocationStrategy::Static
+        if shared_state.config.allocation_strategy == AllocationStrategy::Static
             && max_slice_len < slice_len
         {
             fail!(from self, with LoanError::ExceedsMaxLoanSize,
@@ -527,17 +531,14 @@ impl<
 
         self.increment_loan_counter()?;
 
-        let response_layout = self.shared_state.response_sender.sample_layout(slice_len);
-        let chunk = self
-            .shared_state
-            .response_sender
-            .allocate(response_layout)?;
+        let response_layout = shared_state.response_sender.sample_layout(slice_len);
+        let chunk = shared_state.response_sender.allocate(response_layout)?;
 
         unsafe {
             (chunk.header as *mut service::header::request_response::ResponseHeader).write(
                 service::header::request_response::ResponseHeader {
                     server_id: UniqueServerId(UniqueSystemId::from(
-                        self.shared_state.response_sender.sender_port_id,
+                        shared_state.response_sender.sender_port_id,
                     )),
                     request_id: self.request_id,
                     number_of_elements: slice_len as _,
@@ -597,15 +598,16 @@ impl<
         ResponseMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], ResponseHeader>,
         LoanError,
     > {
+        let shared_state = self.shared_state.lock();
         // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element
         debug_assert!(
             slice_len == 1
-                || self.shared_state.response_sender.payload_type_variant() == TypeVariant::Dynamic
+                || shared_state.response_sender.payload_type_variant() == TypeVariant::Dynamic
         );
 
         self.loan_slice_uninit_impl(
             slice_len,
-            self.shared_state.response_sender.payload_size() * slice_len,
+            shared_state.response_sender.payload_size() * slice_len,
         )
     }
 }

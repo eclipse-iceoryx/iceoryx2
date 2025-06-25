@@ -88,6 +88,7 @@ use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 use crate::service::builder::CustomPayloadMarker;
@@ -219,7 +220,7 @@ pub struct Server<
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    shared_state: Arc<SharedServerState<Service>>,
+    shared_state: Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
     max_loaned_responses_per_request: usize,
     enable_fire_and_forget: bool,
     _request_payload: PhantomData<RequestPayload>,
@@ -374,6 +375,23 @@ impl<
             number_of_channels: number_of_requests_per_client,
         };
 
+        let shared_state = Service::ArcThreadSafetyPolicy::new(SharedServerState {
+            config: server_factory.config,
+            request_receiver,
+            client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
+            server_handle: UnsafeCell::new(None),
+            service_state: service.__internal_state().clone(),
+            response_sender,
+        });
+
+        let shared_state = match shared_state {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with ServerCreateError::FailedToDeployThreadsafetyPolicy,
+                      "{msg} since the threadsafety policy could not be instantiated ({e:?}).");
+            }
+        };
+
         let new_self = Self {
             max_loaned_responses_per_request: server_factory.max_loaned_responses_per_request,
             enable_fire_and_forget: service
@@ -381,21 +399,14 @@ impl<
                 .static_config
                 .request_response()
                 .enable_fire_and_forget_requests,
-            shared_state: Arc::new(SharedServerState {
-                config: server_factory.config,
-                request_receiver,
-                client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
-                server_handle: UnsafeCell::new(None),
-                service_state: service.__internal_state().clone(),
-                response_sender,
-            }),
+            shared_state,
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,
             _response_header: PhantomData,
         };
 
-        if let Err(e) = new_self.shared_state.force_update_connections() {
+        if let Err(e) = new_self.shared_state.lock().force_update_connections() {
             warn!(from new_self, "The new server is unable to connect to every client, caused by {:?}.", e);
         }
 
@@ -404,7 +415,7 @@ impl<
         // !MUST! be the last task otherwise a server is added to the dynamic config without the
         // creation of all required resources
         unsafe {
-            *new_self.shared_state.server_handle.get() = match service
+            *new_self.shared_state.lock().server_handle.get() = match service
                 .__internal_state()
                 .dynamic_storage
                 .get()
@@ -434,37 +445,35 @@ impl<
     /// Returns the [`UniqueServerId`] of the [`Server`]
     pub fn id(&self) -> UniqueServerId {
         UniqueServerId(UniqueSystemId::from(
-            self.shared_state.request_receiver.receiver_port_id,
+            self.shared_state.lock().request_receiver.receiver_port_id,
         ))
     }
 
     /// Returns true if the [`Server`] has [`RequestMut`](crate::request_mut::RequestMut)s in its buffer.
     pub fn has_requests(&self) -> Result<bool, ConnectionFailure> {
-        fail!(from self, when self.shared_state.update_connections(),
+        let shared_state = self.shared_state.lock();
+        fail!(from self, when shared_state.update_connections(),
                 "Some requests are not being received since not all connections to clients could be established.");
         if self.enable_fire_and_forget {
-            Ok(self
-                .shared_state
+            Ok(shared_state
                 .request_receiver
                 .has_samples(REQUEST_CHANNEL_ID))
         } else {
-            Ok(self
-                .shared_state
+            Ok(shared_state
                 .request_receiver
                 .has_samples_in_active_connection(REQUEST_CHANNEL_ID))
         }
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {
-        if let Err(e) = self.shared_state.update_connections() {
+        let shared_state = self.shared_state.lock();
+        if let Err(e) = shared_state.update_connections() {
             fail!(from self,
                   with ReceiveError::ConnectionFailure(e),
                   "Some requests are not being received since not all connections to the clients could be established.");
         }
 
-        self.shared_state
-            .request_receiver
-            .receive(REQUEST_CHANNEL_ID)
+        shared_state.request_receiver.receive(REQUEST_CHANNEL_ID)
     }
 }
 
@@ -552,6 +561,7 @@ impl<
 
                     if let Some(connection_id) = self
                         .shared_state
+                        .lock()
                         .response_sender
                         .get_connection_id_of(header.client_id.value())
                     {
@@ -668,6 +678,7 @@ impl<
 
                     if let Some(connection_id) = self
                         .shared_state
+                        .lock()
                         .response_sender
                         .get_connection_id_of(header.client_id.value())
                     {
@@ -701,7 +712,7 @@ impl<
 {
     /// Returns the maximum initial slice length configured for this [`Server`].
     pub fn initial_max_slice_len(&self) -> usize {
-        self.shared_state.config.initial_max_slice_len
+        self.shared_state.lock().config.initial_max_slice_len
     }
 }
 
@@ -728,6 +739,7 @@ impl<
         >,
         ReceiveError,
     > {
+        let shared_state = self.shared_state.lock();
         loop {
             match self.receive_impl()? {
                 Some((details, chunk)) => {
@@ -735,11 +747,10 @@ impl<
                         &*(chunk.header as *const service::header::request_response::RequestHeader)
                     };
                     let number_of_elements = (*header).number_of_elements();
-                    let number_of_bytes = number_of_elements as usize
-                        * self.shared_state.request_receiver.payload_size();
+                    let number_of_bytes =
+                        number_of_elements as usize * shared_state.request_receiver.payload_size();
 
-                    if let Some(connection_id) = self
-                        .shared_state
+                    if let Some(connection_id) = shared_state
                         .response_sender
                         .get_connection_id_of(header.client_id.value())
                     {
