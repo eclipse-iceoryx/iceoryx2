@@ -17,6 +17,8 @@
   [#593](https://github.com/eclipse-iceoryx/iceoryx2/issues/593)
 * All port factories implement `Send`
   [#768](https://github.com/eclipse-iceoryx/iceoryx2/issues/768)
+* `RequestResponse` for entire current discovery state
+  [#777](https://github.com/eclipse-iceoryx/iceoryx2/issues/777)
 * `iox2 service listen` and `iox2 service notify`
   [#790](https://github.com/eclipse-iceoryx/iceoryx2/issues/790)
 * Use minimal iceoryx_hoofs subset for iceoryx2 C++ bindings

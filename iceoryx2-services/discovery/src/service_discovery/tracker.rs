@@ -136,4 +136,13 @@ impl<S: Service> Tracker<S> {
     pub fn get(&self, id: &ServiceId) -> Option<&ServiceDetails<S>> {
         self.services.get(id)
     }
+
+    /// Retrieves service details all the services that are being currently tracked.
+    ///
+    /// # Returns
+    ///
+    /// An `Vec` containing a reference to the service details all the services that are being tracked
+    pub fn get_all(&self) -> Vec<&ServiceDetails<S>> {
+        self.services.values().collect()
+    }
 }

@@ -43,6 +43,10 @@ path = "rust/discovery/discovery.rs"
 name = "discovery_service"
 path = "rust/discovery_service/discovery_service.rs"
 
+[[example]]
+name = "discovery_service_client"
+path = "rust/discovery_service/discovery_service_client.rs"
+
 # event
 
 [[example]]
