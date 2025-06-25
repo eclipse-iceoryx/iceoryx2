@@ -12,7 +12,7 @@
 
 use iceoryx2::{
     node::NodeView,
-    prelude::{ipc, local},
+    prelude::{ipc_threadsafe, local_threadsafe},
 };
 use pyo3::prelude::*;
 
@@ -23,14 +23,14 @@ use crate::{
 
 #[derive(Clone)]
 pub(crate) enum AliveNodeViewType {
-    Ipc(iceoryx2::node::AliveNodeView<ipc::Service>),
-    Local(iceoryx2::node::AliveNodeView<local::Service>),
+    Ipc(iceoryx2::node::AliveNodeView<ipc_threadsafe::Service>),
+    Local(iceoryx2::node::AliveNodeView<local_threadsafe::Service>),
 }
 
 #[derive(Clone)]
 pub(crate) enum DeadNodeViewType {
-    Ipc(iceoryx2::node::DeadNodeView<ipc::Service>),
-    Local(iceoryx2::node::DeadNodeView<local::Service>),
+    Ipc(iceoryx2::node::DeadNodeView<ipc_threadsafe::Service>),
+    Local(iceoryx2::node::DeadNodeView<local_threadsafe::Service>),
 }
 
 #[pyclass]

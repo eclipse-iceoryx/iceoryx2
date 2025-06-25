@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc, local, CallbackProgression, PortFactory};
+use iceoryx2::prelude::{ipc_threadsafe, local_threadsafe, CallbackProgression, PortFactory};
 use pyo3::prelude::*;
 
 use crate::{
@@ -27,8 +27,8 @@ use crate::{
 };
 
 pub(crate) enum PortFactoryEventType {
-    Ipc(iceoryx2::service::port_factory::event::PortFactory<ipc::Service>),
-    Local(iceoryx2::service::port_factory::event::PortFactory<local::Service>),
+    Ipc(iceoryx2::service::port_factory::event::PortFactory<ipc_threadsafe::Service>),
+    Local(iceoryx2::service::port_factory::event::PortFactory<local_threadsafe::Service>),
 }
 
 #[pyclass]

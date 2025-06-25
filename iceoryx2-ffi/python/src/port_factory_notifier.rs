@@ -10,9 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Mutex;
-
-use iceoryx2::prelude::{ipc, local};
+use iceoryx2::prelude::{ipc_threadsafe, local_threadsafe};
 use pyo3::prelude::*;
 
 use crate::{
@@ -25,8 +23,18 @@ use crate::{
 
 #[derive(Clone)]
 pub(crate) enum PortFactoryNotifierType {
-    Ipc(iceoryx2::service::port_factory::notifier::PortFactoryNotifier<'static, ipc::Service>),
-    Local(iceoryx2::service::port_factory::notifier::PortFactoryNotifier<'static, local::Service>),
+    Ipc(
+        iceoryx2::service::port_factory::notifier::PortFactoryNotifier<
+            'static,
+            ipc_threadsafe::Service,
+        >,
+    ),
+    Local(
+        iceoryx2::service::port_factory::notifier::PortFactoryNotifier<
+            'static,
+            local_threadsafe::Service,
+        >,
+    ),
 }
 
 #[pyclass]
@@ -47,7 +55,7 @@ impl PortFactoryNotifier {
             value: match &*factory.lock() {
                 PortFactoryEventType::Ipc(v) => {
                     let v: *const iceoryx2::service::port_factory::event::PortFactory<
-                        ipc::Service,
+                        ipc_threadsafe::Service,
                     > = v;
                     // by converting the factory into a pointer we change the lifetime into 'static
                     // and with the factory reference hold by this object we ensure that it
@@ -56,7 +64,7 @@ impl PortFactoryNotifier {
                 }
                 PortFactoryEventType::Local(v) => {
                     let v: *const iceoryx2::service::port_factory::event::PortFactory<
-                        local::Service,
+                        local_threadsafe::Service,
                     > = v;
                     // by converting the factory into a pointer we change the lifetime into 'static
                     // and with the factory reference hold by this object we ensure that it
@@ -76,17 +84,15 @@ impl PortFactoryNotifier {
         match &self.value {
             PortFactoryNotifierType::Ipc(v) => {
                 let this = v.clone();
-                Ok(Notifier(Mutex::new(NotifierType::Ipc(
-                    this.create()
-                        .map_err(|e| NotifierCreateError::new_err(format!("{e:?}")))?,
-                ))))
+                Ok(Notifier(NotifierType::Ipc(this.create().map_err(|e| {
+                    NotifierCreateError::new_err(format!("{e:?}"))
+                })?)))
             }
             PortFactoryNotifierType::Local(v) => {
                 let this = v.clone();
-                Ok(Notifier(Mutex::new(NotifierType::Local(
-                    this.create()
-                        .map_err(|e| NotifierCreateError::new_err(format!("{e:?}")))?,
-                ))))
+                Ok(Notifier(NotifierType::Local(this.create().map_err(
+                    |e| NotifierCreateError::new_err(format!("{e:?}")),
+                )?)))
             }
         }
     }

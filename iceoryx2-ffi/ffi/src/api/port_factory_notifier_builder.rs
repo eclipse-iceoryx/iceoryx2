@@ -34,6 +34,7 @@ use core::mem::ManuallyDrop;
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_notifier_create_error_e {
     EXCEEDS_MAX_SUPPORTED_NOTIFIERS = IOX2_OK as isize + 1,
+    FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
 }
 
 impl IntoCInt for NotifierCreateError {
@@ -41,6 +42,9 @@ impl IntoCInt for NotifierCreateError {
         (match self {
             NotifierCreateError::ExceedsMaxSupportedNotifiers => {
                 iox2_notifier_create_error_e::EXCEEDS_MAX_SUPPORTED_NOTIFIERS
+            }
+            NotifierCreateError::FailedToDeployThreadsafetyPolicy => {
+                iox2_notifier_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
             }
         }) as c_int
     }

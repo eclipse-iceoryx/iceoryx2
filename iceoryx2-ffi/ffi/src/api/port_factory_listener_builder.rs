@@ -35,6 +35,7 @@ use core::mem::ManuallyDrop;
 pub enum iox2_listener_create_error_e {
     EXCEEDS_MAX_SUPPORTED_LISTENERS = IOX2_OK as isize + 1,
     RESOURCE_CREATION_FAILED,
+    FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
 }
 
 impl IntoCInt for ListenerCreateError {
@@ -45,6 +46,9 @@ impl IntoCInt for ListenerCreateError {
             }
             ListenerCreateError::ResourceCreationFailed => {
                 iox2_listener_create_error_e::RESOURCE_CREATION_FAILED
+            }
+            ListenerCreateError::FailedToDeployThreadsafetyPolicy => {
+                iox2_listener_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
             }
         }) as c_int
     }

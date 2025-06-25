@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc, local};
+use iceoryx2::prelude::{ipc_threadsafe, local_threadsafe};
 use pyo3::prelude::*;
 
 use crate::{
@@ -21,8 +21,8 @@ use crate::{
 #[allow(clippy::large_enum_variant)] // used purely for python and there it will reside always in
                                      // the heap
 pub(crate) enum ListenerType {
-    Ipc(iceoryx2::port::listener::Listener<ipc::Service>),
-    Local(iceoryx2::port::listener::Listener<local::Service>),
+    Ipc(iceoryx2::port::listener::Listener<ipc_threadsafe::Service>),
+    Local(iceoryx2::port::listener::Listener<local_threadsafe::Service>),
 }
 
 #[pyclass]

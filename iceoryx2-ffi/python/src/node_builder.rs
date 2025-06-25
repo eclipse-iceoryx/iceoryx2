@@ -72,11 +72,11 @@ impl NodeBuilder {
         let this = self.0.clone();
         match service_type {
             ServiceType::Ipc => Ok(Node(Parc::new(NodeType::Ipc(
-                this.create::<ipc::Service>()
+                this.create::<ipc_threadsafe::Service>()
                     .map_err(|e| NodeCreationFailure::new_err(format!("{:?}", e)))?,
             )))),
             ServiceType::Local => Ok(Node(Parc::new(NodeType::Local(
-                this.create::<local::Service>()
+                this.create::<local_threadsafe::Service>()
                     .map_err(|e| NodeCreationFailure::new_err(format!("{:?}", e)))?,
             )))),
         }

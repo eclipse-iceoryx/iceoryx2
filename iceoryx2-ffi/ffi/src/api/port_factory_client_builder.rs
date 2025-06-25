@@ -34,6 +34,7 @@ use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
 pub enum iox2_client_create_error_e {
     UNABLE_TO_CREATE_DATA_SEGMENT = IOX2_OK as isize + 1,
     EXCEEDS_MAX_SUPPORTED_CLIENTS,
+    FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
 }
 
 impl IntoCInt for ClientCreateError {
@@ -44,6 +45,9 @@ impl IntoCInt for ClientCreateError {
             }
             ClientCreateError::ExceedsMaxSupportedClients => {
                 iox2_client_create_error_e::EXCEEDS_MAX_SUPPORTED_CLIENTS
+            }
+            ClientCreateError::FailedToDeployThreadsafetyPolicy => {
+                iox2_client_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
             }
         }) as c_int
     }

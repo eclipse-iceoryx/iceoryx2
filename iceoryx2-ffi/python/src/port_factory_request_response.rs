@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc, local, CallbackProgression, PortFactory};
+use iceoryx2::prelude::{ipc_threadsafe, local_threadsafe, CallbackProgression, PortFactory};
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
@@ -27,7 +27,7 @@ use crate::static_config_request_response::StaticConfigRequestResponse;
 pub(crate) enum PortFactoryRequestResponseType {
     Ipc(
         iceoryx2::service::port_factory::request_response::PortFactory<
-            ipc::Service,
+            ipc_threadsafe::Service,
             [CustomPayloadMarker],
             CustomHeaderMarker,
             [CustomPayloadMarker],
@@ -36,7 +36,7 @@ pub(crate) enum PortFactoryRequestResponseType {
     ),
     Local(
         iceoryx2::service::port_factory::request_response::PortFactory<
-            local::Service,
+            local_threadsafe::Service,
             [CustomPayloadMarker],
             CustomHeaderMarker,
             [CustomPayloadMarker],

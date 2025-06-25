@@ -35,6 +35,7 @@ use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
 pub enum iox2_server_create_error_e {
     EXCEEDS_MAX_SUPPORTED_SERVERS = IOX2_OK as isize + 1,
     UNABLE_TO_CREATE_DATA_SEGMENT,
+    FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
 }
 
 impl IntoCInt for ServerCreateError {
@@ -45,6 +46,9 @@ impl IntoCInt for ServerCreateError {
             }
             ServerCreateError::ExceedsMaxSupportedServers => {
                 iox2_server_create_error_e::EXCEEDS_MAX_SUPPORTED_SERVERS
+            }
+            ServerCreateError::FailedToDeployThreadsafetyPolicy => {
+                iox2_server_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
             }
         }) as c_int
     }
