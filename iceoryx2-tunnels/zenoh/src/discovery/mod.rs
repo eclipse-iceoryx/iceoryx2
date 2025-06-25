@@ -18,6 +18,7 @@ mod zenoh;
 pub(crate) use iceoryx::*;
 pub(crate) use zenoh::*;
 
+// TODO: More granularity in errors
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
     Error,

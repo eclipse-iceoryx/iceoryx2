@@ -24,6 +24,7 @@ use zenoh::sample::Locality;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
 
+// TODO: More granularity in errors
 pub enum CreationError {
     Error,
 }
