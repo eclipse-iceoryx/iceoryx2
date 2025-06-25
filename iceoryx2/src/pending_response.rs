@@ -63,6 +63,7 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
+use crate::port::client::ClientSharedState;
 use crate::port::details::chunk::Chunk;
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::raw_sample::RawSample;
@@ -89,6 +90,19 @@ pub struct PendingResponse<
     pub(crate) _service: PhantomData<Service>,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
+}
+
+unsafe impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send
+    for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
+{
 }
 
 impl<

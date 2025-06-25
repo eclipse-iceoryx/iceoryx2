@@ -102,6 +102,19 @@ pub struct ActiveRequest<
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
 
+unsafe impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send
+    for ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
+{
+}
+
 impl<
         Service: crate::service::Service,
         RequestPayload: Debug + ZeroCopySend + ?Sized,

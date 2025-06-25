@@ -94,6 +94,16 @@ pub struct ResponseMut<
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
 
+unsafe impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send for ResponseMut<Service, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
+{
+}
+
 impl<
         Service: crate::service::Service,
         ResponsePayload: Debug + ZeroCopySend + ?Sized,

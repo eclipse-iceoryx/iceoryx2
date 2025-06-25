@@ -43,7 +43,7 @@
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use crate::{response_mut::ResponseMut, service};
+use crate::{port::server::SharedServerState, response_mut::ResponseMut, service};
 use core::{fmt::Debug, mem::MaybeUninit};
 
 /// Acquired by a [`ActiveRequest`](crate::active_request::ActiveRequest) with
@@ -63,6 +63,16 @@ pub struct ResponseMutUninit<
     ResponseHeader: Debug + ZeroCopySend,
 > {
     pub(crate) response: ResponseMut<Service, ResponsePayload, ResponseHeader>,
+}
+
+unsafe impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send for ResponseMutUninit<Service, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
+{
 }
 
 impl<

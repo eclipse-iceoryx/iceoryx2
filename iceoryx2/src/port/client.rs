@@ -306,6 +306,30 @@ pub struct Client<
     _response_header: PhantomData<ResponseHeader>,
 }
 
+unsafe impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
+{
+}
+
+unsafe impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Sync for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
+{
+}
+
 impl<
         Service: service::Service,
         RequestPayload: Debug + ZeroCopySend + ?Sized,

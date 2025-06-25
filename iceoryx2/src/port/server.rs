@@ -229,6 +229,30 @@ pub struct Server<
     _response_header: PhantomData<ResponseHeader>,
 }
 
+unsafe impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
+{
+}
+
+unsafe impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Sync for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
+{
+}
+
 impl<
         Service: service::Service,
         RequestPayload: Debug + ZeroCopySend + ?Sized,

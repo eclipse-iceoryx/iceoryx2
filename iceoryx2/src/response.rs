@@ -73,6 +73,16 @@ pub struct Response<
     pub(crate) channel_id: ChannelId,
 }
 
+unsafe impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send for Response<Service, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
+{
+}
+
 impl<
         Service: crate::service::Service,
         ResponsePayload: Debug + ZeroCopySend + ?Sized,
