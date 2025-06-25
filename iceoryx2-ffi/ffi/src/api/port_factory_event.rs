@@ -20,7 +20,6 @@ use crate::api::{
 };
 use crate::{iox2_node_list_impl, IOX2_OK};
 
-use iceoryx2::prelude::*;
 use iceoryx2::service::dynamic_config::event::{ListenerDetails, NotifierDetails};
 use iceoryx2::service::port_factory::{event::PortFactory as PortFactoryEvent, PortFactory};
 use iceoryx2_bb_elementary::static_assert::*;
@@ -38,17 +37,17 @@ use super::{
 // BEGIN types definition
 
 pub(super) union PortFactoryEventUnion {
-    ipc: ManuallyDrop<PortFactoryEvent<ipc::Service>>,
-    local: ManuallyDrop<PortFactoryEvent<local::Service>>,
+    ipc: ManuallyDrop<PortFactoryEvent<crate::IpcService>>,
+    local: ManuallyDrop<PortFactoryEvent<crate::LocalService>>,
 }
 
 impl PortFactoryEventUnion {
-    pub(super) fn new_ipc(port_factory: PortFactoryEvent<ipc::Service>) -> Self {
+    pub(super) fn new_ipc(port_factory: PortFactoryEvent<crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
-    pub(super) fn new_local(port_factory: PortFactoryEvent<local::Service>) -> Self {
+    pub(super) fn new_local(port_factory: PortFactoryEvent<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),
         }

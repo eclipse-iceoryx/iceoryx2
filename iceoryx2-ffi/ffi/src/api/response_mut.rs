@@ -14,7 +14,7 @@
 
 use core::{ffi::c_int, ffi::c_void, mem::ManuallyDrop};
 
-use iceoryx2::{prelude::*, response_mut_uninit::ResponseMutUninit};
+use iceoryx2::response_mut_uninit::ResponseMutUninit;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -27,20 +27,20 @@ use super::{
 
 // BEGIN types definition
 pub(super) union ResponseMutUninitUnion {
-    ipc: ManuallyDrop<ResponseMutUninit<ipc::Service, UninitPayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<ResponseMutUninit<local::Service, UninitPayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<ResponseMutUninit<crate::IpcService, UninitPayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<ResponseMutUninit<crate::LocalService, UninitPayloadFfi, UserHeaderFfi>>,
 }
 
 impl ResponseMutUninitUnion {
     pub(super) fn new_ipc(
-        sample: ResponseMutUninit<ipc::Service, UninitPayloadFfi, UserHeaderFfi>,
+        sample: ResponseMutUninit<crate::IpcService, UninitPayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(sample),
         }
     }
     pub(super) fn new_local(
-        sample: ResponseMutUninit<local::Service, UninitPayloadFfi, UserHeaderFfi>,
+        sample: ResponseMutUninit<crate::LocalService, UninitPayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(sample),

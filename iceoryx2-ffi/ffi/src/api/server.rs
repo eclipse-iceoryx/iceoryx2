@@ -22,27 +22,30 @@ use super::{
 use super::{PayloadFfi, UserHeaderFfi};
 use core::ffi::c_int;
 use core::mem::ManuallyDrop;
-use iceoryx2::{port::server::Server, prelude::*};
+use iceoryx2::port::server::Server;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
 pub(super) union ServerUnion {
-    ipc: ManuallyDrop<Server<ipc::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>>,
-    local:
-        ManuallyDrop<Server<local::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<
+        Server<crate::IpcService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+    >,
+    local: ManuallyDrop<
+        Server<crate::LocalService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+    >,
 }
 
 impl ServerUnion {
     pub(super) fn new_ipc(
-        server: Server<ipc::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        server: Server<crate::IpcService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(server),
         }
     }
     pub(super) fn new_local(
-        server: Server<local::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        server: Server<crate::LocalService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(server),

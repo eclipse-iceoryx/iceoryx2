@@ -932,11 +932,12 @@ unsafe fn iox2_service_builder_pub_sub_open_create_impl<E: IntoCInt>(
     port_factory_struct_ptr: *mut iox2_port_factory_pub_sub_t,
     port_factory_handle_ptr: *mut iox2_port_factory_pub_sub_h,
     func_ipc: impl FnOnce(
-        Builder<PayloadFfi, UserHeaderFfi, ipc::Service>,
-    ) -> Result<PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi>, E>,
+        Builder<PayloadFfi, UserHeaderFfi, crate::IpcService>,
+    ) -> Result<PortFactory<crate::IpcService, PayloadFfi, UserHeaderFfi>, E>,
     func_local: impl FnOnce(
-        Builder<PayloadFfi, UserHeaderFfi, local::Service>,
-    ) -> Result<PortFactory<local::Service, PayloadFfi, UserHeaderFfi>, E>,
+        Builder<PayloadFfi, UserHeaderFfi, crate::LocalService>,
+    )
+        -> Result<PortFactory<crate::LocalService, PayloadFfi, UserHeaderFfi>, E>,
 ) -> c_int {
     service_builder_handle.assert_non_null();
     debug_assert!(!port_factory_handle_ptr.is_null());

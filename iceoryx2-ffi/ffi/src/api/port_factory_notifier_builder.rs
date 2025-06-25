@@ -18,7 +18,6 @@ use crate::api::{
 };
 
 use iceoryx2::port::notifier::NotifierCreateError;
-use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::notifier::PortFactoryNotifier;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
@@ -51,17 +50,19 @@ impl IntoCInt for NotifierCreateError {
 }
 
 pub(super) union PortFactoryNotifierBuilderUnion {
-    ipc: ManuallyDrop<PortFactoryNotifier<'static, ipc::Service>>,
-    local: ManuallyDrop<PortFactoryNotifier<'static, local::Service>>,
+    ipc: ManuallyDrop<PortFactoryNotifier<'static, crate::IpcService>>,
+    local: ManuallyDrop<PortFactoryNotifier<'static, crate::LocalService>>,
 }
 
 impl PortFactoryNotifierBuilderUnion {
-    pub(super) fn new_ipc(port_factory: PortFactoryNotifier<'static, ipc::Service>) -> Self {
+    pub(super) fn new_ipc(port_factory: PortFactoryNotifier<'static, crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
-    pub(super) fn new_local(port_factory: PortFactoryNotifier<'static, local::Service>) -> Self {
+    pub(super) fn new_local(
+        port_factory: PortFactoryNotifier<'static, crate::LocalService>,
+    ) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),
         }

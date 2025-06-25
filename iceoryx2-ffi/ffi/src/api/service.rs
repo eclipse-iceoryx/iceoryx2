@@ -18,7 +18,7 @@
 use core::ffi::{c_char, c_int};
 
 use iceoryx2::service::{
-    ipc, local, messaging_pattern::MessagingPattern, Service, ServiceDetails, ServiceDetailsError,
+    messaging_pattern::MessagingPattern, Service, ServiceDetails, ServiceDetailsError,
     ServiceListError,
 };
 use iceoryx2_bb_elementary::CallbackProgression;
@@ -46,6 +46,9 @@ pub enum iox2_messaging_pattern_e {
     EVENT,
     REQUEST_RESPONSE,
 }
+
+pub(crate) type IpcService = iceoryx2::prelude::ipc_threadsafe::Service;
+pub(crate) type LocalService = iceoryx2::prelude::ipc_threadsafe::Service;
 
 impl From<iox2_messaging_pattern_e> for MessagingPattern {
     fn from(value: iox2_messaging_pattern_e) -> Self {
@@ -207,11 +210,9 @@ pub unsafe extern "C" fn iox2_service_does_exist(
     let messaging_pattern = messaging_pattern.into();
 
     let result = match service_type {
-        iox2_service_type_e::IPC => {
-            ipc::Service::does_exist(service_name, config, messaging_pattern)
-        }
+        iox2_service_type_e::IPC => IpcService::does_exist(service_name, config, messaging_pattern),
         iox2_service_type_e::LOCAL => {
-            local::Service::does_exist(service_name, config, messaging_pattern)
+            LocalService::does_exist(service_name, config, messaging_pattern)
         }
     };
 
@@ -254,7 +255,7 @@ pub unsafe extern "C" fn iox2_service_details(
 
     match service_type {
         iox2_service_type_e::IPC => {
-            match ipc::Service::details(service_name, config, messaging_pattern) {
+            match IpcService::details(service_name, config, messaging_pattern) {
                 Ok(None) => {
                     does_exist.write(false);
                     IOX2_OK
@@ -268,7 +269,7 @@ pub unsafe extern "C" fn iox2_service_details(
             }
         }
         iox2_service_type_e::LOCAL => {
-            match local::Service::details(service_name, config, messaging_pattern) {
+            match LocalService::details(service_name, config, messaging_pattern) {
                 Ok(None) => {
                     does_exist.write(false);
                     IOX2_OK
@@ -310,11 +311,11 @@ pub unsafe extern "C" fn iox2_service_list(
     debug_assert!(!config_ptr.is_null());
 
     let result = match service_type {
-        iox2_service_type_e::IPC => ipc::Service::list(&*config_ptr, |service_details| {
-            list_callback::<ipc::Service>(callback, callback_ctx, &service_details)
+        iox2_service_type_e::IPC => IpcService::list(&*config_ptr, |service_details| {
+            list_callback::<IpcService>(callback, callback_ctx, &service_details)
         }),
-        iox2_service_type_e::LOCAL => local::Service::list(&*config_ptr, |service_details| {
-            list_callback::<local::Service>(callback, callback_ctx, &service_details)
+        iox2_service_type_e::LOCAL => LocalService::list(&*config_ptr, |service_details| {
+            list_callback::<LocalService>(callback, callback_ctx, &service_details)
         }),
     };
 

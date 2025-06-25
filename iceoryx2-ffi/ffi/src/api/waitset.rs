@@ -21,11 +21,8 @@ use crate::{
 };
 
 use super::{iox2_signal_handling_mode_e, AssertNonNullHandle, HandleToType, IntoCInt};
-use iceoryx2::{
-    service::{ipc, local},
-    waitset::{
-        WaitSet, WaitSetAttachmentError, WaitSetCreateError, WaitSetRunError, WaitSetRunResult,
-    },
+use iceoryx2::waitset::{
+    WaitSet, WaitSetAttachmentError, WaitSetCreateError, WaitSetRunError, WaitSetRunResult,
 };
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
@@ -121,18 +118,18 @@ impl IntoCInt for WaitSetCreateError {
 }
 
 pub(crate) union WaitSetUnion {
-    ipc: ManuallyDrop<WaitSet<ipc::Service>>,
-    local: ManuallyDrop<WaitSet<local::Service>>,
+    ipc: ManuallyDrop<WaitSet<crate::IpcService>>,
+    local: ManuallyDrop<WaitSet<crate::LocalService>>,
 }
 
 impl WaitSetUnion {
-    pub(crate) fn new_ipc(waitset: WaitSet<ipc::Service>) -> Self {
+    pub(crate) fn new_ipc(waitset: WaitSet<crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(waitset),
         }
     }
 
-    pub(crate) fn new_local(waitset: WaitSet<local::Service>) -> Self {
+    pub(crate) fn new_local(waitset: WaitSet<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(waitset),
         }

@@ -17,7 +17,6 @@ use crate::api::{
     iox2_service_type_e, AssertNonNullHandle, HandleToType, PayloadFfi, UserHeaderFfi,
 };
 
-use iceoryx2::prelude::*;
 use iceoryx2::sample::Sample;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -28,17 +27,19 @@ use core::mem::ManuallyDrop;
 // BEGIN types definition
 
 pub(super) union SampleUnion {
-    ipc: ManuallyDrop<Sample<ipc::Service, PayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<Sample<local::Service, PayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<Sample<crate::IpcService, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<Sample<crate::LocalService, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl SampleUnion {
-    pub(super) fn new_ipc(sample: Sample<ipc::Service, PayloadFfi, UserHeaderFfi>) -> Self {
+    pub(super) fn new_ipc(sample: Sample<crate::IpcService, PayloadFfi, UserHeaderFfi>) -> Self {
         Self {
             ipc: ManuallyDrop::new(sample),
         }
     }
-    pub(super) fn new_local(sample: Sample<local::Service, PayloadFfi, UserHeaderFfi>) -> Self {
+    pub(super) fn new_local(
+        sample: Sample<crate::LocalService, PayloadFfi, UserHeaderFfi>,
+    ) -> Self {
         Self {
             local: ManuallyDrop::new(sample),
         }

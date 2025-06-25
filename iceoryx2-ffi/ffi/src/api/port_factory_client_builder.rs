@@ -22,7 +22,6 @@ use crate::api::ClientUnion;
 use crate::IOX2_OK;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
-use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::client::{ClientCreateError, PortFactoryClient};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
@@ -57,7 +56,7 @@ pub(super) union PortFactoryClientBuilderUnion {
     ipc: ManuallyDrop<
         PortFactoryClient<
             'static,
-            ipc::Service,
+            crate::IpcService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -67,7 +66,7 @@ pub(super) union PortFactoryClientBuilderUnion {
     local: ManuallyDrop<
         PortFactoryClient<
             'static,
-            local::Service,
+            crate::LocalService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -80,7 +79,7 @@ impl PortFactoryClientBuilderUnion {
     pub(super) fn new_ipc(
         port_factory: PortFactoryClient<
             'static,
-            ipc::Service,
+            crate::IpcService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -94,7 +93,7 @@ impl PortFactoryClientBuilderUnion {
     pub(super) fn new_local(
         port_factory: PortFactoryClient<
             'static,
-            local::Service,
+            crate::LocalService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,

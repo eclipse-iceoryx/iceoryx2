@@ -20,7 +20,6 @@ use crate::api::{
 use crate::iox2_file_descriptor_ptr;
 
 use iceoryx2::port::listener::Listener;
-use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_bb_posix::file_descriptor::{FileDescriptor, FileDescriptorBased};
@@ -81,17 +80,17 @@ impl<T: FileDescriptorBased> AcquireFileDescriptorHopper<'_, T> {
 }
 
 pub(super) union ListenerUnion {
-    ipc: ManuallyDrop<Listener<ipc::Service>>,
-    local: ManuallyDrop<Listener<local::Service>>,
+    ipc: ManuallyDrop<Listener<crate::IpcService>>,
+    local: ManuallyDrop<Listener<crate::LocalService>>,
 }
 
 impl ListenerUnion {
-    pub(super) fn new_ipc(listener: Listener<ipc::Service>) -> Self {
+    pub(super) fn new_ipc(listener: Listener<crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(listener),
         }
     }
-    pub(super) fn new_local(listener: Listener<local::Service>) -> Self {
+    pub(super) fn new_local(listener: Listener<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(listener),
         }

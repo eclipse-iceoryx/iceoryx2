@@ -15,7 +15,6 @@
 // BEGIN types definition
 
 use core::{ffi::c_void, mem::ManuallyDrop};
-use iceoryx2::prelude::*;
 use iceoryx2::response::Response;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -26,17 +25,19 @@ use super::{
 };
 
 pub(super) union ResponseUnion {
-    ipc: ManuallyDrop<Response<ipc::Service, PayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<Response<local::Service, PayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<Response<crate::IpcService, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<Response<crate::LocalService, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl ResponseUnion {
-    pub(super) fn new_ipc(sample: Response<ipc::Service, PayloadFfi, UserHeaderFfi>) -> Self {
+    pub(super) fn new_ipc(sample: Response<crate::IpcService, PayloadFfi, UserHeaderFfi>) -> Self {
         Self {
             ipc: ManuallyDrop::new(sample),
         }
     }
-    pub(super) fn new_local(sample: Response<local::Service, PayloadFfi, UserHeaderFfi>) -> Self {
+    pub(super) fn new_local(
+        sample: Response<crate::LocalService, PayloadFfi, UserHeaderFfi>,
+    ) -> Self {
         Self {
             local: ManuallyDrop::new(sample),
         }

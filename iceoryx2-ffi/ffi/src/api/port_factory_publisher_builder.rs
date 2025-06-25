@@ -115,20 +115,21 @@ impl IntoCInt for PublisherCreateError {
 }
 
 pub(super) union PortFactoryPublisherBuilderUnion {
-    ipc: ManuallyDrop<PortFactoryPublisher<'static, ipc::Service, PayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<PortFactoryPublisher<'static, local::Service, PayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<PortFactoryPublisher<'static, crate::IpcService, PayloadFfi, UserHeaderFfi>>,
+    local:
+        ManuallyDrop<PortFactoryPublisher<'static, crate::LocalService, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl PortFactoryPublisherBuilderUnion {
     pub(super) fn new_ipc(
-        port_factory: PortFactoryPublisher<'static, ipc::Service, PayloadFfi, UserHeaderFfi>,
+        port_factory: PortFactoryPublisher<'static, crate::IpcService, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
     pub(super) fn new_local(
-        port_factory: PortFactoryPublisher<'static, local::Service, PayloadFfi, UserHeaderFfi>,
+        port_factory: PortFactoryPublisher<'static, crate::LocalService, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),

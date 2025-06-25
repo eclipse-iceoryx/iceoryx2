@@ -21,7 +21,6 @@ use crate::api::{
 use iceoryx2::port::subscriber::Subscriber;
 use iceoryx2::port::update_connections::ConnectionFailure;
 use iceoryx2::port::ReceiveError;
-use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -75,18 +74,20 @@ impl IntoCInt for ConnectionFailure {
 }
 
 pub(super) union SubscriberUnion {
-    ipc: ManuallyDrop<Subscriber<ipc::Service, PayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<Subscriber<local::Service, PayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<Subscriber<crate::IpcService, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<Subscriber<crate::LocalService, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl SubscriberUnion {
-    pub(super) fn new_ipc(subscriber: Subscriber<ipc::Service, PayloadFfi, UserHeaderFfi>) -> Self {
+    pub(super) fn new_ipc(
+        subscriber: Subscriber<crate::IpcService, PayloadFfi, UserHeaderFfi>,
+    ) -> Self {
         Self {
             ipc: ManuallyDrop::new(subscriber),
         }
     }
     pub(super) fn new_local(
-        subscriber: Subscriber<local::Service, PayloadFfi, UserHeaderFfi>,
+        subscriber: Subscriber<crate::LocalService, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(subscriber),

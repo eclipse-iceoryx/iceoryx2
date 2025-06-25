@@ -23,11 +23,11 @@ use crate::{
     iox2_node_list_impl, IOX2_OK,
 };
 
+use iceoryx2::service::dynamic_config::publish_subscribe::SubscriberDetails;
 use iceoryx2::service::{
     dynamic_config::publish_subscribe::PublisherDetails,
     port_factory::publish_subscribe::PortFactory,
 };
-use iceoryx2::{prelude::*, service::dynamic_config::publish_subscribe::SubscriberDetails};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -45,20 +45,20 @@ use super::{
 // BEGIN types definition
 
 pub(super) union PortFactoryPubSubUnion {
-    ipc: ManuallyDrop<PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<PortFactory<local::Service, PayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<PortFactory<crate::IpcService, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<PortFactory<crate::LocalService, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl PortFactoryPubSubUnion {
     pub(super) fn new_ipc(
-        port_factory: PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi>,
+        port_factory: PortFactory<crate::IpcService, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
     pub(super) fn new_local(
-        port_factory: PortFactory<local::Service, PayloadFfi, UserHeaderFfi>,
+        port_factory: PortFactory<crate::LocalService, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),
