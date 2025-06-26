@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::sync::atomic::Ordering;
-use core::time::Duration;
 use std::sync::Barrier;
 
 use iceoryx2::prelude::*;
@@ -24,11 +23,11 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 #[test]
 fn notifying_events_concurrently_works() {
-    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
+    let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
     let config = generate_isolated_config();
-    const NUMBER_OF_ITERATIONS: usize = 200;
+    const NUMBER_OF_ITERATIONS: usize = 2000;
     let number_of_notifier_threads: usize = SystemInfo::NumberOfCpuCores.value().min(2);
 
     let node = NodeBuilder::new()
@@ -46,34 +45,45 @@ fn notifying_events_concurrently_works() {
     let notifier = service.notifier_builder().create().unwrap();
     let listener = service.listener_builder().create().unwrap();
     let barrier = Barrier::new(number_of_notifier_threads + 1);
-    let completion_counter = IoxAtomicUsize::new(0);
 
+    let number_of_finished_notifier_threads = IoxAtomicUsize::new(0);
     std::thread::scope(|s| {
         for _ in 0..number_of_notifier_threads {
             s.spawn(|| {
                 barrier.wait();
                 for n in 0..NUMBER_OF_ITERATIONS {
-                    notifier
+                    while notifier
                         .notify_with_custom_event_id(EventId::new(n))
-                        .unwrap();
+                        .unwrap()
+                        == 0
+                    {}
                 }
-                completion_counter.fetch_add(1, Ordering::Relaxed);
+                number_of_finished_notifier_threads.fetch_add(1, Ordering::Relaxed);
             });
         }
         barrier.wait();
 
         let mut total_received_events = 0;
         let mut received_events = [0; NUMBER_OF_ITERATIONS];
-        while total_received_events < number_of_notifier_threads * NUMBER_OF_ITERATIONS
-            || completion_counter.load(Ordering::Relaxed) != number_of_notifier_threads
-        {
+        while total_received_events < number_of_notifier_threads * NUMBER_OF_ITERATIONS {
             if let Ok(Some(event)) = listener.try_wait_one() {
                 received_events[event.as_value()] += 1;
                 total_received_events += 1;
+            } else if number_of_finished_notifier_threads.load(Ordering::Relaxed)
+                == number_of_notifier_threads
+            {
+                break;
             }
         }
 
+        // ensure all events are read
+        while let Ok(Some(event)) = listener.try_wait_one() {
+            received_events[event.as_value()] += 1;
+            total_received_events += 1;
+        }
+
         for n in received_events {
+            assert_that!(n, ge 1);
             assert_that!(n, le number_of_notifier_threads);
         }
     });
@@ -111,9 +121,11 @@ fn listening_on_events_concurrently_works() {
             listener_threads.push(s.spawn(|| {
                 let mut received_events = [0; NUMBER_OF_ITERATIONS];
                 barrier.wait();
-                while notification_finished.load(Ordering::Relaxed) {
+                loop {
                     if let Ok(Some(event)) = listener.try_wait_one() {
                         received_events[event.as_value()] += 1;
+                    } else if notification_finished.load(Ordering::Relaxed) {
+                        break;
                     }
                 }
 
