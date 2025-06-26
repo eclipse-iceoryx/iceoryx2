@@ -56,12 +56,12 @@ pub enum FlatMapError {
 }
 
 #[repr(C)]
-struct Entry<K: Eq, V: Clone> {
+struct Entry<K: Eq + Clone, V: Clone> {
     id: K,
     value: V,
 }
 
-unsafe impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend> ZeroCopySend for Entry<K, V> {}
+unsafe impl<K: Eq + Clone + ZeroCopySend, V: Clone + ZeroCopySend> ZeroCopySend for Entry<K, V> {}
 
 /// A runtime fixed-size, non-shared memory compatible [`FlatMap`]. The [`FlatMap`]s memory resides
 /// in the heap.
@@ -72,12 +72,12 @@ pub type RelocatableFlatMap<K, V> = MetaFlatMap<K, V, GenericRelocatablePointer>
 
 #[doc(hidden)]
 #[repr(C)]
-pub struct MetaFlatMap<K: Eq, V: Clone, Ptr: GenericPointer> {
+pub struct MetaFlatMap<K: Eq + Clone, V: Clone, Ptr: GenericPointer> {
     map: MetaSlotMap<Entry<K, V>, Ptr>,
     is_initialized: IoxAtomicBool,
 }
 
-impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
+impl<K: Eq + Clone, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
@@ -155,7 +155,7 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     }
 }
 
-impl<K: Eq, V: Clone> FlatMap<K, V> {
+impl<K: Eq + Clone, V: Clone> FlatMap<K, V> {
     /// Creates a new runtime-fixed size [`FlatMap`] on the heap with the given capacity.
     pub fn new(capacity: usize) -> Self {
         Self {
@@ -216,7 +216,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     }
 }
 
-impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
+impl<K: Eq + Clone, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
     unsafe fn new_uninit(capacity: usize) -> Self {
         Self {
             map: RelocatableSlotMap::new_uninit(capacity),
@@ -246,12 +246,12 @@ impl<K: Eq, V: Clone> RelocatableContainer for RelocatableFlatMap<K, V> {
     }
 }
 
-unsafe impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend> ZeroCopySend
+unsafe impl<K: Eq + Clone + ZeroCopySend, V: Clone + ZeroCopySend> ZeroCopySend
     for RelocatableFlatMap<K, V>
 {
 }
 
-impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
+impl<K: Eq + Clone, V: Clone> RelocatableFlatMap<K, V> {
     /// Returns how much memory the [`RelocatableFlatMap`] will allocate from the allocator
     /// in [`RelocatableFlatMap::init()`].
     pub const fn const_memory_size(capacity: usize) -> usize {
@@ -340,7 +340,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
 
 /// A compile-time fixed-size, shared-memory compatible [`FixedSizeFlatMap`].
 #[repr(C)]
-pub struct FixedSizeFlatMap<K: Eq, V: Clone, const CAPACITY: usize> {
+pub struct FixedSizeFlatMap<K: Eq + Clone, V: Clone, const CAPACITY: usize> {
     map: RelocatableFlatMap<K, V>,
     _idx_to_data: MaybeUninit<[usize; CAPACITY]>,
     _idx_to_data_free_list: MaybeUninit<[FreeListEntry; CAPACITY]>,
@@ -348,12 +348,14 @@ pub struct FixedSizeFlatMap<K: Eq, V: Clone, const CAPACITY: usize> {
     _data_next_free_index: MaybeUninit<[usize; CAPACITY]>,
 }
 
-unsafe impl<K: Eq + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize> ZeroCopySend
-    for FixedSizeFlatMap<K, V, CAPACITY>
+unsafe impl<K: Eq + Clone + ZeroCopySend, V: Clone + ZeroCopySend, const CAPACITY: usize>
+    ZeroCopySend for FixedSizeFlatMap<K, V, CAPACITY>
 {
 }
 
-impl<K: Eq, V: Clone, const CAPACITY: usize> PlacementDefault for FixedSizeFlatMap<K, V, CAPACITY> {
+impl<K: Eq + Clone, V: Clone, const CAPACITY: usize> PlacementDefault
+    for FixedSizeFlatMap<K, V, CAPACITY>
+{
     unsafe fn placement_default(ptr: *mut Self) {
         let map_ptr = core::ptr::addr_of_mut!((*ptr).map);
         map_ptr.write(unsafe { RelocatableFlatMap::new_uninit(CAPACITY) });
@@ -365,20 +367,23 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> PlacementDefault for FixedSizeFlatM
     }
 }
 
-impl<K: Eq, V: Clone, const CAPACITY: usize> Default for FixedSizeFlatMap<K, V, CAPACITY> {
+impl<K: Eq + Clone, V: Clone, const CAPACITY: usize> Default for FixedSizeFlatMap<K, V, CAPACITY> {
     fn default() -> Self {
         Self::new()
     }
 }
 
 // impl whem K+V is Debug
-//impl<K: Eq, V: Clone, const CAPACITY: usize> Debug for FixedSizeFlatMap<K, V, CAPACITY> {
-//fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-//write!(f, "")
-//}
-//}
+impl<K: Eq + Clone + Debug, V: Clone + Debug, const CAPACITY: usize> Debug
+    for FixedSizeFlatMap<K, V, CAPACITY>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // TODO: improve Debug output; use slotmap?
+        write!(f, "")
+    }
+}
 
-impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
+impl<K: Eq + Clone, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
     /// Creates a new [`FixedSizeFlatMap`]
     pub fn new() -> Self {
         let mut new_self = Self {

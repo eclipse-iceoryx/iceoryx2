@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::service;
+use crate::service::builder::blackboard::Entry;
 use core::{fmt::Debug, marker::PhantomData, sync::atomic::AtomicU32};
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -28,22 +30,33 @@ impl core::fmt::Display for ReaderCreateError {
 impl core::error::Error for ReaderCreateError {}
 
 #[derive(Debug)]
-pub struct Reader<Service: service::Service, T: Send + Sync + Debug + 'static> {
+pub struct Reader<
+    Service: service::Service,
+    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+> {
     //service: Service, or ServiceState with BlackboardResources
-    map: Service::BlackboardMgmt<AtomicU32>,
-    _to_be_removed: PhantomData<T>, // remove when AtomicU32 is replaced by map
+    map: Service::BlackboardMgmt<Entry<T>>,
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static> Reader<Service, T> {
-    pub(crate) fn new(mgmt: Service::BlackboardMgmt<AtomicU32>) -> Result<Self, ReaderCreateError> {
-        let new_self = Self {
-            map: mgmt,
-            _to_be_removed: PhantomData,
-        };
+impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
+    Reader<Service, T>
+{
+    pub(crate) fn new(mgmt: Service::BlackboardMgmt<Entry<T>>) -> Result<Self, ReaderCreateError> {
+        let new_self = Self { map: mgmt };
         Ok(new_self)
     }
 
-    pub fn read(&self) -> u32 {
-        self.map.get().load(core::sync::atomic::Ordering::Relaxed)
+    pub fn read(&self, key: &T) -> Option<(u32, u32)> {
+        let map_value = self.map.get().map.get(key);
+        if map_value.is_none() {
+            return None;
+        }
+        Some((
+            self.map
+                .get()
+                .counter
+                .load(core::sync::atomic::Ordering::Relaxed),
+            map_value.unwrap(),
+        ))
     }
 }

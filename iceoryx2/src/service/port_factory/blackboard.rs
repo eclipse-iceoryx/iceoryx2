@@ -22,6 +22,7 @@ use crate::service::{self, dynamic_config, static_config, ServiceState};
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use iceoryx2_bb_elementary::CallbackProgression;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 extern crate alloc;
@@ -32,12 +33,14 @@ use alloc::sync::Arc;
 /// It can acquire dynamic and static service informations and create
 /// [`crate::port::reader::Reader`] or [`crate::port::writer::Writer`] ports.
 #[derive(Debug)]
-pub struct PortFactory<Service: service::Service, T: Send + Sync + Debug + 'static> {
-    pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service>>>,
-    _entry: PhantomData<T>,
+pub struct PortFactory<
+    Service: service::Service,
+    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+> {
+    pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static>
+impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
     crate::service::port_factory::PortFactory for PortFactory<Service, T>
 {
     type Service = Service;
@@ -77,11 +80,12 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static>
     }
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static> PortFactory<Service, T> {
-    pub(crate) fn new(service: ServiceState<Service, BlackboardResources<Service>>) -> Self {
+impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
+    PortFactory<Service, T>
+{
+    pub(crate) fn new(service: ServiceState<Service, BlackboardResources<Service, T>>) -> Self {
         Self {
             service: Arc::new(service),
-            _entry: PhantomData,
         }
     }
 

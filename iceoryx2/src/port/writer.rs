@@ -11,7 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::service;
+use crate::service::builder::blackboard::Entry;
 use core::{fmt::Debug, marker::PhantomData, sync::atomic::AtomicU32};
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -28,24 +30,26 @@ impl core::fmt::Display for WriterCreateError {
 impl core::error::Error for WriterCreateError {}
 
 #[derive(Debug)]
-pub struct Writer<Service: service::Service, T: Send + Sync + Debug + 'static> {
+pub struct Writer<
+    Service: service::Service,
+    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+> {
     //service: Service, or ServiceState with BlackboardResources
-    map: Service::BlackboardMgmt<AtomicU32>,
-    _to_be_removed: PhantomData<T>, // remove when AtomicU32 is replaced by map
+    map: Service::BlackboardMgmt<Entry<T>>,
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static> Writer<Service, T> {
-    pub(crate) fn new(mgmt: Service::BlackboardMgmt<AtomicU32>) -> Result<Self, WriterCreateError> {
-        let new_self = Self {
-            map: mgmt,
-            _to_be_removed: PhantomData,
-        };
+impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
+    Writer<Service, T>
+{
+    pub(crate) fn new(mgmt: Service::BlackboardMgmt<Entry<T>>) -> Result<Self, WriterCreateError> {
+        let new_self = Self { map: mgmt };
         Ok(new_self)
     }
 
     pub fn write(&self, value: u32) {
-        self.map
-            .get()
+        let entry = self.map.get();
+        entry
+            .counter
             .store(value, core::sync::atomic::Ordering::Relaxed);
     }
 }

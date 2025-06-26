@@ -175,7 +175,9 @@ impl<S: Service> Builder<S> {
 
     /// Create a new builder to create a
     /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) [`Service`].
-    pub fn blackboard<KeyType: ZeroCopySend + Debug>(self) -> blackboard::Builder<KeyType, S> {
+    pub fn blackboard<KeyType: ZeroCopySend + Debug + Send + Sync + Eq + 'static + Clone>(
+        self,
+    ) -> blackboard::Builder<KeyType, S> {
         BuilderWithServiceType::new(
             StaticConfig::new_blackboard::<S::ServiceNameHasher>(
                 &self.name,
@@ -223,7 +225,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         event::Builder::new(self)
     }
 
-    fn blackboard<KeyType: ZeroCopySend + Debug>(
+    fn blackboard<KeyType: ZeroCopySend + Debug + Send + Sync + Eq + 'static + Clone>(
         self,
     ) -> blackboard::Builder<KeyType, ServiceType> {
         blackboard::Builder::new(self)
