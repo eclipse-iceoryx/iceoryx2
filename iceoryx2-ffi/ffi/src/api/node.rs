@@ -108,17 +108,17 @@ impl IntoCInt for NodeCleanupFailure {
 }
 
 pub(super) union NodeUnion {
-    ipc: ManuallyDrop<Node<ipc::Service>>,
-    local: ManuallyDrop<Node<local::Service>>,
+    ipc: ManuallyDrop<Node<crate::IpcService>>,
+    local: ManuallyDrop<Node<crate::LocalService>>,
 }
 
 impl NodeUnion {
-    pub(super) fn new_ipc(node: Node<ipc::Service>) -> Self {
+    pub(super) fn new_ipc(node: Node<crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(node),
         }
     }
-    pub(super) fn new_local(node: Node<local::Service>) -> Self {
+    pub(super) fn new_local(node: Node<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(node),
         }
@@ -388,13 +388,13 @@ pub unsafe extern "C" fn iox2_dead_node_remove_stale_resources(
 
     let result = match service_type {
         iox2_service_type_e::IPC => {
-            DeadNodeView::<ipc::Service>::__internal_remove_stale_resources(
+            DeadNodeView::<crate::IpcService>::__internal_remove_stale_resources(
                 *node_id,
                 NodeDetails::__internal_new(&None, &config.value),
             )
         }
         iox2_service_type_e::LOCAL => {
-            DeadNodeView::<local::Service>::__internal_remove_stale_resources(
+            DeadNodeView::<crate::LocalService>::__internal_remove_stale_resources(
                 *node_id,
                 NodeDetails::__internal_new(&None, &config.value),
             )
@@ -509,10 +509,10 @@ pub unsafe extern "C" fn iox2_node_list(
     let config = &*config_ptr;
 
     let list_result = match service_type {
-        iox2_service_type_e::IPC => Node::<ipc::Service>::list(config, |node_state| {
+        iox2_service_type_e::IPC => Node::<crate::IpcService>::list(config, |node_state| {
             iox2_node_list_impl(&node_state, callback, callback_ctx)
         }),
-        iox2_service_type_e::LOCAL => Node::<local::Service>::list(config, |node_state| {
+        iox2_service_type_e::LOCAL => Node::<crate::LocalService>::list(config, |node_state| {
             iox2_node_list_impl(&node_state, callback, callback_ctx)
         }),
     };

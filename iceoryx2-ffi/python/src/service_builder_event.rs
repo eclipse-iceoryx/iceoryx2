@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc, local};
 use pyo3::prelude::*;
 
 use crate::{
@@ -24,8 +23,8 @@ use crate::{
 };
 
 pub(crate) enum ServiceBuilderEventType {
-    Ipc(iceoryx2::service::builder::event::Builder<ipc::Service>),
-    Local(iceoryx2::service::builder::event::Builder<local::Service>),
+    Ipc(iceoryx2::service::builder::event::Builder<crate::IpcService>),
+    Local(iceoryx2::service::builder::event::Builder<crate::LocalService>),
 }
 
 #[pyclass]

@@ -52,7 +52,9 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use iceoryx2_bb_log::fail;
-use iceoryx2_cal::{shm_allocator::PointerOffset, zero_copy_connection::ChannelId};
+use iceoryx2_cal::{
+    arc_sync_policy::ArcSyncPolicy, shm_allocator::PointerOffset, zero_copy_connection::ChannelId,
+};
 
 use crate::{
     port::{
@@ -82,7 +84,7 @@ pub struct ResponseMut<
         ResponseHeader,
         ResponsePayload,
     >,
-    pub(crate) shared_state: Arc<SharedServerState<Service>>,
+    pub(crate) shared_state: Service::ArcThreadSafetyPolicy<SharedServerState<Service>>,
     pub(crate) shared_loan_counter: Arc<IoxAtomicUsize>,
     pub(crate) offset_to_chunk: PointerOffset,
     pub(crate) sample_size: usize,
@@ -90,6 +92,16 @@ pub struct ResponseMut<
     pub(crate) connection_id: usize,
     pub(crate) _response_payload: PhantomData<ResponsePayload>,
     pub(crate) _response_header: PhantomData<ResponseHeader>,
+}
+
+unsafe impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send for ResponseMut<Service, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
+{
 }
 
 impl<
@@ -121,6 +133,7 @@ impl<
 {
     fn drop(&mut self) {
         self.shared_state
+            .lock()
             .response_sender
             .return_loaned_sample(self.offset_to_chunk);
         self.shared_loan_counter.fetch_sub(1, Ordering::Relaxed);
@@ -322,18 +335,17 @@ impl<
     pub fn send(self) -> Result<(), SendError> {
         let msg = "Unable to send response";
 
-        fail!(from self, when self.shared_state.update_connections(),
+        let shared_state = self.shared_state.lock();
+        fail!(from self, when shared_state.update_connections(),
             "{} since the connections could not be updated.", msg);
 
         if self.connection_id != INVALID_CONNECTION_ID {
-            self.shared_state
-                .response_sender
-                .deliver_offset_to_connection(
-                    self.offset_to_chunk,
-                    self.sample_size,
-                    self.channel_id,
-                    self.connection_id,
-                )?;
+            shared_state.response_sender.deliver_offset_to_connection(
+                self.offset_to_chunk,
+                self.sample_size,
+                self.channel_id,
+                self.connection_id,
+            )?;
         }
 
         Ok(())

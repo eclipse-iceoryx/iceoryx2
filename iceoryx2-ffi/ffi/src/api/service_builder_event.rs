@@ -875,8 +875,8 @@ unsafe fn iox2_service_builder_event_open_create_impl<E: IntoCInt>(
     service_builder_handle: iox2_service_builder_event_h,
     port_factory_struct_ptr: *mut iox2_port_factory_event_t,
     port_factory_handle_ptr: *mut iox2_port_factory_event_h,
-    func_ipc: impl FnOnce(Builder<ipc::Service>) -> Result<PortFactory<ipc::Service>, E>,
-    func_local: impl FnOnce(Builder<local::Service>) -> Result<PortFactory<local::Service>, E>,
+    func_ipc: impl FnOnce(Builder<crate::IpcService>) -> Result<PortFactory<crate::IpcService>, E>,
+    func_local: impl FnOnce(Builder<crate::LocalService>) -> Result<PortFactory<crate::LocalService>, E>,
 ) -> c_int {
     debug_assert!(!service_builder_handle.is_null());
     debug_assert!(!port_factory_handle_ptr.is_null());

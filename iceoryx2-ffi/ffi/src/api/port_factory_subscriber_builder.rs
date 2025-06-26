@@ -18,7 +18,6 @@ use crate::api::{
 };
 
 use iceoryx2::port::subscriber::SubscriberCreateError;
-use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::subscriber::PortFactorySubscriber;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
@@ -55,20 +54,27 @@ impl IntoCInt for SubscriberCreateError {
 }
 
 pub(super) union PortFactorySubscriberBuilderUnion {
-    ipc: ManuallyDrop<PortFactorySubscriber<'static, ipc::Service, PayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<PortFactorySubscriber<'static, local::Service, PayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<PortFactorySubscriber<'static, crate::IpcService, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<
+        PortFactorySubscriber<'static, crate::LocalService, PayloadFfi, UserHeaderFfi>,
+    >,
 }
 
 impl PortFactorySubscriberBuilderUnion {
     pub(super) fn new_ipc(
-        port_factory: PortFactorySubscriber<'static, ipc::Service, PayloadFfi, UserHeaderFfi>,
+        port_factory: PortFactorySubscriber<'static, crate::IpcService, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(port_factory),
         }
     }
     pub(super) fn new_local(
-        port_factory: PortFactorySubscriber<'static, local::Service, PayloadFfi, UserHeaderFfi>,
+        port_factory: PortFactorySubscriber<
+            'static,
+            crate::LocalService,
+            PayloadFfi,
+            UserHeaderFfi,
+        >,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(port_factory),

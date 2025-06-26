@@ -17,15 +17,18 @@
 
 namespace iox2 {
 /// Defines a failure that can occur when a [`Client`] is created with
-/// [`crate::service::port_factory::client::PortFactoryClient`].
+/// [`PortFactoryClient`].
 enum class ClientCreateError : uint8_t {
     /// The datasegment in which the payload of the [`Client`] is stored, could not be created.
     UnableToCreateDataSegment,
     /// The maximum amount of [`Client`]s that can connect to a
-    /// [`Service`](crate::service::Service) is
-    /// defined in [`crate::config::Config`]. When this is exceeded no more [`Client`]s
-    /// can be created for a specific [`Service`](crate::service::Service).
+    /// [`Service`] is
+    /// defined in [`Config`]. When this is exceeded no more [`Client`]s
+    /// can be created for a specific [`Service`].
     ExceedsMaxSupportedClients,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 };
 } // namespace iox2
 #endif

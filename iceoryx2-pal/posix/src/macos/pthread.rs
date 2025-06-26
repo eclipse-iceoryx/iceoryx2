@@ -726,11 +726,11 @@ pub unsafe fn pthread_mutex_unlock(mtx: *mut pthread_mutex_t) -> int {
     } else {
         (*mtx).current_owner.store(0, Ordering::Relaxed);
         unlock_thread = true;
-        (*mtx).thread_handle = core::ptr::null_mut();
     }
 
     if unlock_thread {
         (*mtx).mtx.unlock(wake_one);
+        (*mtx).thread_handle = core::ptr::null_mut();
     }
 
     Errno::ESUCCES as _

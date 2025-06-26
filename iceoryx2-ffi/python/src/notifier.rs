@@ -10,9 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Mutex;
-
-use iceoryx2::prelude::{ipc, local};
 use pyo3::prelude::*;
 
 use crate::{
@@ -21,20 +18,20 @@ use crate::{
 };
 
 pub(crate) enum NotifierType {
-    Ipc(iceoryx2::port::notifier::Notifier<ipc::Service>),
-    Local(iceoryx2::port::notifier::Notifier<local::Service>),
+    Ipc(iceoryx2::port::notifier::Notifier<crate::IpcService>),
+    Local(iceoryx2::port::notifier::Notifier<crate::LocalService>),
 }
 
 #[pyclass]
 /// Represents the sending endpoint of an event based communication.
-pub struct Notifier(pub(crate) Mutex<NotifierType>);
+pub struct Notifier(pub(crate) NotifierType);
 
 #[pymethods]
 impl Notifier {
     #[getter]
     /// Returns the `UniqueNotifierId` of the `Notifier`
     pub fn id(&self) -> UniqueNotifierId {
-        match &*self.0.lock().unwrap() {
+        match &self.0 {
             NotifierType::Ipc(v) => UniqueNotifierId(v.id()),
             NotifierType::Local(v) => UniqueNotifierId(v.id()),
         }
@@ -43,7 +40,7 @@ impl Notifier {
     #[getter]
     /// Returns the deadline of the corresponding `Service`.
     pub fn deadline(&self) -> Option<Duration> {
-        match &*self.0.lock().unwrap() {
+        match &self.0 {
             NotifierType::Ipc(v) => v.deadline().map(Duration),
             NotifierType::Local(v) => v.deadline().map(Duration),
         }
@@ -54,7 +51,7 @@ impl Notifier {
     /// Returns on success the number of `Listener`s that were notified otherwise it emits
     /// `NotifierNotifyError`.
     pub fn notify(&self) -> PyResult<usize> {
-        match &*self.0.lock().unwrap() {
+        match &self.0 {
             NotifierType::Ipc(v) => Ok(v
                 .notify()
                 .map_err(|e| NotifierNotifyError::new_err(format!("{e:?}")))?),
@@ -68,7 +65,7 @@ impl Notifier {
     /// Returns on success the number of `Listener`s that were notified otherwise it returns
     /// `NotifierNotifyError`.
     pub fn notify_with_custom_event_id(&self, event_id: &EventId) -> PyResult<usize> {
-        match &*self.0.lock().unwrap() {
+        match &self.0 {
             NotifierType::Ipc(v) => Ok(v
                 .notify_with_custom_event_id(event_id.0)
                 .map_err(|e| NotifierNotifyError::new_err(format!("{e:?}")))?),

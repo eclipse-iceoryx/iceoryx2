@@ -22,7 +22,6 @@ use crate::api::ClientUnion;
 use crate::IOX2_OK;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
-use iceoryx2::prelude::*;
 use iceoryx2::service::port_factory::client::{ClientCreateError, PortFactoryClient};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
@@ -34,6 +33,7 @@ use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
 pub enum iox2_client_create_error_e {
     UNABLE_TO_CREATE_DATA_SEGMENT = IOX2_OK as isize + 1,
     EXCEEDS_MAX_SUPPORTED_CLIENTS,
+    FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY,
 }
 
 impl IntoCInt for ClientCreateError {
@@ -45,6 +45,9 @@ impl IntoCInt for ClientCreateError {
             ClientCreateError::ExceedsMaxSupportedClients => {
                 iox2_client_create_error_e::EXCEEDS_MAX_SUPPORTED_CLIENTS
             }
+            ClientCreateError::FailedToDeployThreadsafetyPolicy => {
+                iox2_client_create_error_e::FAILED_TO_DEPLOY_THREAD_SAFETY_POLICY
+            }
         }) as c_int
     }
 }
@@ -53,7 +56,7 @@ pub(super) union PortFactoryClientBuilderUnion {
     ipc: ManuallyDrop<
         PortFactoryClient<
             'static,
-            ipc::Service,
+            crate::IpcService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -63,7 +66,7 @@ pub(super) union PortFactoryClientBuilderUnion {
     local: ManuallyDrop<
         PortFactoryClient<
             'static,
-            local::Service,
+            crate::LocalService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -76,7 +79,7 @@ impl PortFactoryClientBuilderUnion {
     pub(super) fn new_ipc(
         port_factory: PortFactoryClient<
             'static,
-            ipc::Service,
+            crate::IpcService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -90,7 +93,7 @@ impl PortFactoryClientBuilderUnion {
     pub(super) fn new_local(
         port_factory: PortFactoryClient<
             'static,
-            local::Service,
+            crate::LocalService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,

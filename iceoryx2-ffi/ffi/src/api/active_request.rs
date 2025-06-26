@@ -31,17 +31,17 @@ use iceoryx2_ffi_macros::iceoryx2_ffi;
 // BEGIN types definition
 pub(super) union ActiveRequestUnion {
     ipc: ManuallyDrop<
-        ActiveRequest<ipc::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        ActiveRequest<crate::IpcService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     >,
     local: ManuallyDrop<
-        ActiveRequest<local::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        ActiveRequest<crate::LocalService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     >,
 }
 
 impl ActiveRequestUnion {
     pub(super) fn new_ipc(
         active_request: ActiveRequest<
-            ipc::Service,
+            crate::IpcService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -54,7 +54,7 @@ impl ActiveRequestUnion {
     }
     pub(super) fn new_local(
         active_request: ActiveRequest<
-            local::Service,
+            crate::LocalService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,

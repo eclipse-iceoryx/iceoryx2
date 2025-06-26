@@ -61,7 +61,9 @@ use core::{fmt::Debug, marker::PhantomData};
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
+use crate::port::client::ClientSharedState;
 use crate::port::details::chunk::Chunk;
 use crate::port::details::chunk_details::ChunkDetails;
 use crate::raw_sample::RawSample;
@@ -90,6 +92,19 @@ pub struct PendingResponse<
     pub(crate) _response_header: PhantomData<ResponseHeader>,
 }
 
+unsafe impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send
+    for PendingResponse<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
+{
+}
+
 impl<
         Service: crate::service::Service,
         RequestPayload: Debug + ZeroCopySend + ?Sized,
@@ -102,6 +117,7 @@ impl<
     fn drop(&mut self) {
         self.request
             .client_shared_state
+            .lock()
             .active_request_counter
             .fetch_sub(1, Ordering::Relaxed);
         self.close();
@@ -157,6 +173,7 @@ impl<
     fn close(&self) {
         self.request
             .client_shared_state
+            .lock()
             .response_receiver
             .invalidate_channel_state(self.request.channel_id, self.request.header().request_id);
     }
@@ -168,6 +185,7 @@ impl<
     pub fn is_connected(&self) -> bool {
         self.request
             .client_shared_state
+            .lock()
             .response_receiver
             .at_least_one_channel_has_state(
                 self.request.channel_id,
@@ -205,17 +223,18 @@ impl<
     pub fn has_response(&self) -> bool {
         self.request
             .client_shared_state
+            .lock()
             .response_receiver
             .has_samples(self.request.channel_id)
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {
+        let client_shared_state = self.request.client_shared_state.lock();
         let msg = "Unable to receive response";
-        fail!(from self, when self.request.client_shared_state.update_connections(),
+        fail!(from self, when client_shared_state.update_connections(),
                 "{msg} since the connections could not be updated.");
 
-        self.request
-            .client_shared_state
+        client_shared_state
             .response_receiver
             .receive(self.request.channel_id)
     }
@@ -397,6 +416,7 @@ impl<
                         * self
                             .request
                             .client_shared_state
+                            .lock()
                             .response_receiver
                             .payload_size();
 

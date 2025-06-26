@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc, local};
 use pyo3::prelude::*;
 
 use crate::{
@@ -22,8 +21,13 @@ use crate::{
 
 #[derive(Clone)]
 pub(crate) enum PortFactoryListenerType {
-    Ipc(iceoryx2::service::port_factory::listener::PortFactoryListener<'static, ipc::Service>),
-    Local(iceoryx2::service::port_factory::listener::PortFactoryListener<'static, local::Service>),
+    Ipc(iceoryx2::service::port_factory::listener::PortFactoryListener<'static, crate::IpcService>),
+    Local(
+        iceoryx2::service::port_factory::listener::PortFactoryListener<
+            'static,
+            crate::LocalService,
+        >,
+    ),
 }
 
 #[pyclass]
@@ -44,7 +48,7 @@ impl PortFactoryListener {
             value: match &*factory.lock() {
                 PortFactoryEventType::Ipc(v) => {
                     let v: *const iceoryx2::service::port_factory::event::PortFactory<
-                        ipc::Service,
+                        crate::IpcService,
                     > = v;
                     // by converting the factory into a pointer we change the lifetime into 'static
                     // and with the factory reference hold by this object we ensure that it
@@ -53,7 +57,7 @@ impl PortFactoryListener {
                 }
                 PortFactoryEventType::Local(v) => {
                     let v: *const iceoryx2::service::port_factory::event::PortFactory<
-                        local::Service,
+                        crate::LocalService,
                     > = v;
                     // by converting the factory into a pointer we change the lifetime into 'static
                     // and with the factory reference hold by this object we ensure that it

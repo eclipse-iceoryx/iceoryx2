@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::*;
 use pyo3::prelude::*;
 
 use crate::{
@@ -72,11 +71,11 @@ impl NodeBuilder {
         let this = self.0.clone();
         match service_type {
             ServiceType::Ipc => Ok(Node(Parc::new(NodeType::Ipc(
-                this.create::<ipc::Service>()
+                this.create::<crate::IpcService>()
                     .map_err(|e| NodeCreationFailure::new_err(format!("{:?}", e)))?,
             )))),
             ServiceType::Local => Ok(Node(Parc::new(NodeType::Local(
-                this.create::<local::Service>()
+                this.create::<crate::LocalService>()
                     .map_err(|e| NodeCreationFailure::new_err(format!("{:?}", e)))?,
             )))),
         }

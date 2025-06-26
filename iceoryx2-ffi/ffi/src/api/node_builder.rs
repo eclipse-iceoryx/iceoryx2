@@ -285,7 +285,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
     debug_assert!(!node_struct_ptr.is_null());
 
     match service_type {
-        iox2_service_type_e::IPC => match node_builder.create::<ipc::Service>() {
+        iox2_service_type_e::IPC => match node_builder.create::<crate::IpcService>() {
             Ok(node) => unsafe {
                 (*node_struct_ptr).init(service_type, NodeUnion::new_ipc(node), deleter);
             },
@@ -293,7 +293,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
                 return error.into_c_int();
             }
         },
-        iox2_service_type_e::LOCAL => match node_builder.create::<local::Service>() {
+        iox2_service_type_e::LOCAL => match node_builder.create::<crate::LocalService>() {
             Ok(node) => unsafe {
                 (*node_struct_ptr).init(service_type, NodeUnion::new_local(node), deleter);
             },

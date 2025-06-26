@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc, local, CallbackProgression, PortFactory};
+use iceoryx2::prelude::{CallbackProgression, PortFactory};
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
@@ -27,14 +27,14 @@ use crate::static_config_publish_subscribe::StaticConfigPublishSubscribe;
 pub(crate) enum PortFactoryPublishSubscribeType {
     Ipc(
         iceoryx2::service::port_factory::publish_subscribe::PortFactory<
-            ipc::Service,
+            crate::IpcService,
             [CustomPayloadMarker],
             CustomHeaderMarker,
         >,
     ),
     Local(
         iceoryx2::service::port_factory::publish_subscribe::PortFactory<
-            local::Service,
+            crate::LocalService,
             [CustomPayloadMarker],
             CustomHeaderMarker,
         >,

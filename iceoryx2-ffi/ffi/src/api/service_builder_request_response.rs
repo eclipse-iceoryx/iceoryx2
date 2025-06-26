@@ -1162,15 +1162,15 @@ unsafe fn iox2_service_builder_request_response_open_create_impl<E: IntoCInt>(
     port_factory_struct_ptr: *mut iox2_port_factory_request_response_t,
     port_factory_handle_ptr: *mut iox2_port_factory_request_response_h,
     func_ipc: impl FnOnce(
-        Builder<PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi, ipc::Service>,
+        Builder<PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi, crate::IpcService>,
     ) -> Result<
-        PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        PortFactory<crate::IpcService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
         E,
     >,
     func_local: impl FnOnce(
-        Builder<PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi, local::Service>,
+        Builder<PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi, crate::LocalService>,
     ) -> Result<
-        PortFactory<local::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        PortFactory<crate::LocalService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
         E,
     >,
 ) -> c_int {

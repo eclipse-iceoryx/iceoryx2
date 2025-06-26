@@ -18,7 +18,6 @@ use crate::api::{
 };
 
 use iceoryx2::port::notifier::{Notifier, NotifierNotifyError};
-use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -52,17 +51,17 @@ impl IntoCInt for NotifierNotifyError {
 }
 
 pub(super) union NotifierUnion {
-    ipc: ManuallyDrop<Notifier<ipc::Service>>,
-    local: ManuallyDrop<Notifier<local::Service>>,
+    ipc: ManuallyDrop<Notifier<crate::IpcService>>,
+    local: ManuallyDrop<Notifier<crate::LocalService>>,
 }
 
 impl NotifierUnion {
-    pub(super) fn new_ipc(notifier: Notifier<ipc::Service>) -> Self {
+    pub(super) fn new_ipc(notifier: Notifier<crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(notifier),
         }
     }
-    pub(super) fn new_local(notifier: Notifier<local::Service>) -> Self {
+    pub(super) fn new_local(notifier: Notifier<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(notifier),
         }

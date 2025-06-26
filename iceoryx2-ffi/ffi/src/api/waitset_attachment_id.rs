@@ -15,10 +15,7 @@
 use crate::c_size_t;
 use core::{ffi::c_char, mem::ManuallyDrop};
 
-use iceoryx2::{
-    prelude::WaitSetAttachmentId,
-    service::{ipc, local},
-};
+use iceoryx2::prelude::WaitSetAttachmentId;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -28,18 +25,18 @@ use super::{AssertNonNullHandle, HandleToType};
 
 // BEGIN types definition
 pub(crate) union AttachmentIdUnion {
-    ipc: ManuallyDrop<WaitSetAttachmentId<ipc::Service>>,
-    local: ManuallyDrop<WaitSetAttachmentId<local::Service>>,
+    ipc: ManuallyDrop<WaitSetAttachmentId<crate::IpcService>>,
+    local: ManuallyDrop<WaitSetAttachmentId<crate::LocalService>>,
 }
 
 impl AttachmentIdUnion {
-    pub(crate) fn new_ipc(attachment: WaitSetAttachmentId<ipc::Service>) -> Self {
+    pub(crate) fn new_ipc(attachment: WaitSetAttachmentId<crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(attachment),
         }
     }
 
-    pub(crate) fn new_local(attachment: WaitSetAttachmentId<local::Service>) -> Self {
+    pub(crate) fn new_local(attachment: WaitSetAttachmentId<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(attachment),
         }

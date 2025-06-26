@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::time::Duration;
 use std::sync::Barrier;
 
 use iceoryx2::prelude::*;
@@ -21,7 +20,7 @@ use iceoryx2_bb_testing::watchdog::Watchdog;
 
 #[test]
 fn loaning_and_sending_samples_concurrently_works() {
-    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
+    let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
     let config = generate_isolated_config();
@@ -78,7 +77,7 @@ fn loaning_and_sending_samples_concurrently_works() {
 
 #[test]
 fn receiving_samples_concurrently_works() {
-    let _watchdog = Watchdog::new_with_timeout(Duration::from_secs(60));
+    let _watchdog = Watchdog::new();
     type ServiceType = ipc_threadsafe::Service;
     let service_name = generate_service_name();
     let config = generate_isolated_config();

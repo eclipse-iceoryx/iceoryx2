@@ -92,18 +92,20 @@ pub enum iox2_loan_error_e {
 }
 
 pub(super) union PublisherUnion {
-    ipc: ManuallyDrop<Publisher<ipc::Service, PayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<Publisher<local::Service, PayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<Publisher<crate::IpcService, PayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<Publisher<crate::LocalService, PayloadFfi, UserHeaderFfi>>,
 }
 
 impl PublisherUnion {
-    pub(super) fn new_ipc(publisher: Publisher<ipc::Service, PayloadFfi, UserHeaderFfi>) -> Self {
+    pub(super) fn new_ipc(
+        publisher: Publisher<crate::IpcService, PayloadFfi, UserHeaderFfi>,
+    ) -> Self {
         Self {
             ipc: ManuallyDrop::new(publisher),
         }
     }
     pub(super) fn new_local(
-        publisher: Publisher<local::Service, PayloadFfi, UserHeaderFfi>,
+        publisher: Publisher<crate::LocalService, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(publisher),

@@ -10,10 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::{
-    node::NodeView,
-    prelude::{ipc, local},
-};
+use iceoryx2::node::NodeView;
 use pyo3::prelude::*;
 
 use crate::{
@@ -23,14 +20,14 @@ use crate::{
 
 #[derive(Clone)]
 pub(crate) enum AliveNodeViewType {
-    Ipc(iceoryx2::node::AliveNodeView<ipc::Service>),
-    Local(iceoryx2::node::AliveNodeView<local::Service>),
+    Ipc(iceoryx2::node::AliveNodeView<crate::IpcService>),
+    Local(iceoryx2::node::AliveNodeView<crate::LocalService>),
 }
 
 #[derive(Clone)]
 pub(crate) enum DeadNodeViewType {
-    Ipc(iceoryx2::node::DeadNodeView<ipc::Service>),
-    Local(iceoryx2::node::DeadNodeView<local::Service>),
+    Ipc(iceoryx2::node::DeadNodeView<crate::IpcService>),
+    Local(iceoryx2::node::DeadNodeView<crate::LocalService>),
 }
 
 #[pyclass]

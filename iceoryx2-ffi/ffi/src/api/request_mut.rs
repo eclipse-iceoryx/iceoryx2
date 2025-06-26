@@ -21,7 +21,6 @@ use crate::api::{
 use iceoryx2::port::client::RequestSendError;
 use iceoryx2::port::LoanError;
 use iceoryx2::port::SendError;
-use iceoryx2::prelude::*;
 use iceoryx2::request_mut_uninit::RequestMutUninit;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
@@ -81,11 +80,17 @@ impl IntoCInt for RequestSendError {
 
 pub(super) union RequestMutUninitUnion {
     ipc: ManuallyDrop<
-        RequestMutUninit<ipc::Service, UninitPayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        RequestMutUninit<
+            crate::IpcService,
+            UninitPayloadFfi,
+            UserHeaderFfi,
+            PayloadFfi,
+            UserHeaderFfi,
+        >,
     >,
     local: ManuallyDrop<
         RequestMutUninit<
-            local::Service,
+            crate::LocalService,
             UninitPayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -97,7 +102,7 @@ pub(super) union RequestMutUninitUnion {
 impl RequestMutUninitUnion {
     pub(super) fn new_ipc(
         sample: RequestMutUninit<
-            ipc::Service,
+            crate::IpcService,
             UninitPayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -110,7 +115,7 @@ impl RequestMutUninitUnion {
     }
     pub(super) fn new_local(
         sample: RequestMutUninit<
-            local::Service,
+            crate::LocalService,
             UninitPayloadFfi,
             UserHeaderFfi,
             PayloadFfi,

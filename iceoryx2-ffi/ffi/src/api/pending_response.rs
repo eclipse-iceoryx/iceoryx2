@@ -17,7 +17,6 @@
 use core::{ffi::c_int, ffi::c_void, mem::ManuallyDrop};
 
 use iceoryx2::pending_response::PendingResponse;
-use iceoryx2::prelude::*;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -33,17 +32,17 @@ use super::{
 
 pub(super) union PendingResponseUnion {
     ipc: ManuallyDrop<
-        PendingResponse<ipc::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        PendingResponse<crate::IpcService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     >,
     local: ManuallyDrop<
-        PendingResponse<local::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        PendingResponse<crate::LocalService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     >,
 }
 
 impl PendingResponseUnion {
     pub(super) fn new_ipc(
         pending_response: PendingResponse<
-            ipc::Service,
+            crate::IpcService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -56,7 +55,7 @@ impl PendingResponseUnion {
     }
     pub(super) fn new_local(
         pending_response: PendingResponse<
-            local::Service,
+            crate::LocalService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,

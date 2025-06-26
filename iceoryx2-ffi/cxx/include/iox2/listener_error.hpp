@@ -20,14 +20,15 @@ namespace iox2 {
 /// [`PortFactoryListener`].
 enum class ListenerCreateError : uint8_t {
     /// The maximum amount of [`Listener`]s that can connect to a
-    /// [`Service`] is
-    /// defined in [`Config`]. When this is exceeded no more
-    /// [`Listener`]s
-    /// can be created for a specific [`Service`].
+    /// [`Service`] is defined in [`Config`]. When this is exceeded no more
+    /// [`Listener`]s can be created for a specific [`Service`].
     ExceedsMaxSupportedListeners,
     /// An underlying resource of the [`Service`] could
     /// not be created
     ResourceCreationFailed,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`] as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 };
 
 /// Defines failures that can occur while waiting for a notification from a

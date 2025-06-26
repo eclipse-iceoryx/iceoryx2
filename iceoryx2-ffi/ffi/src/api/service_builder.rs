@@ -47,32 +47,32 @@ pub(super) union ServiceBuilderUnionNested<S: Service> {
 }
 
 pub(super) union ServiceBuilderUnion {
-    pub(super) ipc: ManuallyDrop<ServiceBuilderUnionNested<ipc::Service>>,
-    pub(super) local: ManuallyDrop<ServiceBuilderUnionNested<local::Service>>,
+    pub(super) ipc: ManuallyDrop<ServiceBuilderUnionNested<crate::IpcService>>,
+    pub(super) local: ManuallyDrop<ServiceBuilderUnionNested<crate::LocalService>>,
 }
 
 impl ServiceBuilderUnion {
-    pub(super) fn new_ipc_base(service_builder: ServiceBuilderBase<ipc::Service>) -> Self {
+    pub(super) fn new_ipc_base(service_builder: ServiceBuilderBase<crate::IpcService>) -> Self {
         Self {
-            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<ipc::Service> {
+            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::IpcService> {
                 base: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
-    pub(super) fn new_ipc_event(service_builder: ServiceBuilderEvent<ipc::Service>) -> Self {
+    pub(super) fn new_ipc_event(service_builder: ServiceBuilderEvent<crate::IpcService>) -> Self {
         Self {
-            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<ipc::Service> {
+            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::IpcService> {
                 event: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
     pub(super) fn new_ipc_pub_sub(
-        service_builder: ServiceBuilderPubSub<PayloadFfi, UserHeaderFfi, ipc::Service>,
+        service_builder: ServiceBuilderPubSub<PayloadFfi, UserHeaderFfi, crate::IpcService>,
     ) -> Self {
         Self {
-            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<ipc::Service> {
+            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::IpcService> {
                 pub_sub: ManuallyDrop::new(service_builder),
             }),
         }
@@ -84,37 +84,39 @@ impl ServiceBuilderUnion {
             UserHeaderFfi,
             PayloadFfi,
             UserHeaderFfi,
-            ipc::Service,
+            crate::IpcService,
         >,
     ) -> Self {
         Self {
-            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<ipc::Service> {
+            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::IpcService> {
                 request_response: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
-    pub(super) fn new_local_base(service_builder: ServiceBuilderBase<local::Service>) -> Self {
+    pub(super) fn new_local_base(service_builder: ServiceBuilderBase<crate::LocalService>) -> Self {
         Self {
-            local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
+            local: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::LocalService> {
                 base: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
-    pub(super) fn new_local_event(service_builder: ServiceBuilderEvent<local::Service>) -> Self {
+    pub(super) fn new_local_event(
+        service_builder: ServiceBuilderEvent<crate::LocalService>,
+    ) -> Self {
         Self {
-            local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
+            local: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::LocalService> {
                 event: ManuallyDrop::new(service_builder),
             }),
         }
     }
 
     pub(super) fn new_local_pub_sub(
-        service_builder: ServiceBuilderPubSub<PayloadFfi, UserHeaderFfi, local::Service>,
+        service_builder: ServiceBuilderPubSub<PayloadFfi, UserHeaderFfi, crate::LocalService>,
     ) -> Self {
         Self {
-            local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
+            local: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::LocalService> {
                 pub_sub: ManuallyDrop::new(service_builder),
             }),
         }
@@ -126,11 +128,11 @@ impl ServiceBuilderUnion {
             UserHeaderFfi,
             PayloadFfi,
             UserHeaderFfi,
-            local::Service,
+            crate::LocalService,
         >,
     ) -> Self {
         Self {
-            local: ManuallyDrop::new(ServiceBuilderUnionNested::<local::Service> {
+            local: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::LocalService> {
                 request_response: ManuallyDrop::new(service_builder),
             }),
         }

@@ -17,7 +17,6 @@ use crate::api::{
     iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, UserHeaderFfi, IOX2_OK,
 };
 
-use iceoryx2::prelude::*;
 use iceoryx2::sample_mut_uninit::SampleMutUninit;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -30,20 +29,20 @@ use super::UninitPayloadFfi;
 // BEGIN types definition
 
 pub(super) union SampleMutUninitUnion {
-    ipc: ManuallyDrop<SampleMutUninit<ipc::Service, UninitPayloadFfi, UserHeaderFfi>>,
-    local: ManuallyDrop<SampleMutUninit<local::Service, UninitPayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<SampleMutUninit<crate::IpcService, UninitPayloadFfi, UserHeaderFfi>>,
+    local: ManuallyDrop<SampleMutUninit<crate::LocalService, UninitPayloadFfi, UserHeaderFfi>>,
 }
 
 impl SampleMutUninitUnion {
     pub(super) fn new_ipc(
-        sample: SampleMutUninit<ipc::Service, UninitPayloadFfi, UserHeaderFfi>,
+        sample: SampleMutUninit<crate::IpcService, UninitPayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(sample),
         }
     }
     pub(super) fn new_local(
-        sample: SampleMutUninit<local::Service, UninitPayloadFfi, UserHeaderFfi>,
+        sample: SampleMutUninit<crate::LocalService, UninitPayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(sample),

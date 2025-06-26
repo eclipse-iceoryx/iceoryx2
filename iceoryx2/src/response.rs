@@ -40,12 +40,12 @@
 
 extern crate alloc;
 
-use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::ops::Deref;
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
 use crate::port::client::ClientSharedState;
@@ -68,9 +68,19 @@ pub struct Response<
         ResponseHeader,
         ResponsePayload,
     >,
-    pub(crate) client_shared_state: Arc<ClientSharedState<Service>>,
+    pub(crate) client_shared_state: Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>,
     pub(crate) details: ChunkDetails,
     pub(crate) channel_id: ChannelId,
+}
+
+unsafe impl<
+        Service: crate::service::Service,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send for Response<Service, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
+{
 }
 
 impl<
@@ -81,6 +91,7 @@ impl<
 {
     fn drop(&mut self) {
         self.client_shared_state
+            .lock()
             .response_receiver
             .release_offset(&self.details, self.channel_id);
     }

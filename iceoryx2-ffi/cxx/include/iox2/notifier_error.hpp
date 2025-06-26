@@ -20,18 +20,18 @@ namespace iox2 {
 /// [`PortFactoryNotifier`].
 enum class NotifierCreateError : uint8_t {
     /// The maximum amount of [`Notifier`]s that can connect to a
-    /// [`Service`] is
-    /// defined in [`Config`]. When this is exceeded no more
-    /// [`Notifier`]s
-    /// can be created for a specific [`Service`].
+    /// [`Service`] is defined in [`Config`]. When this is exceeded no more
+    /// [`Notifier`]s can be created for a specific [`Service`].
     ExceedsMaxSupportedNotifiers,
+    /// Caused by a failure when instantiating a [`ArcSyncPolicy`] defined in the
+    /// [`Service`] as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 };
 
 /// Defines the failures that can occur while a [`Notifier::notify()`] call.
 enum class NotifierNotifyError : uint8_t {
     /// A [`Notifier::notify_with_custom_event_id()`] was called and the
-    /// provided [`EventId`]
-    /// is greater than the maximum supported [`EventId`] by the
+    /// provided [`EventId`] is greater than the maximum supported [`EventId`] by the
     /// [`Service`]
     EventIdOutOfBounds,
     /// The notification was delivered to all [`Listener`] ports

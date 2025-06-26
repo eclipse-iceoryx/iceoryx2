@@ -19,10 +19,7 @@ use crate::{
 };
 
 use super::{iox2_signal_handling_mode_e, AssertNonNullHandle, HandleToType};
-use iceoryx2::{
-    prelude::WaitSetBuilder,
-    service::{ipc, local},
-};
+use iceoryx2::prelude::WaitSetBuilder;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -176,7 +173,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
 
     match service_type {
         iox2_service_type_e::IPC => {
-            let waitset = match waitset_builder.create::<ipc::Service>() {
+            let waitset = match waitset_builder.create::<crate::IpcService>() {
                 Ok(waitset) => waitset,
                 Err(e) => return e.into_c_int(),
             };
@@ -186,7 +183,7 @@ pub unsafe extern "C" fn iox2_waitset_builder_create(
             (*struct_ptr).init(service_type, WaitSetUnion::new_ipc(waitset), deleter);
         }
         iox2_service_type_e::LOCAL => {
-            let waitset = match waitset_builder.create::<local::Service>() {
+            let waitset = match waitset_builder.create::<crate::LocalService>() {
                 Ok(waitset) => waitset,
                 Err(e) => return e.into_c_int(),
             };

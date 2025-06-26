@@ -60,6 +60,10 @@ pub enum ServerCreateError {
     ExceedsMaxSupportedServers,
     /// The datasegment in which the payload of the [`Server`] is stored, could not be created.
     UnableToCreateDataSegment,
+    /// Caused by a failure when instantiating a
+    /// [`ArcSyncPolicy`](iceoryx2_cal::arc_sync_policy::ArcSyncPolicy) defined in the
+    /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 }
 
 impl core::fmt::Display for ServerCreateError {

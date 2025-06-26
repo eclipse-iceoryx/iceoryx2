@@ -433,7 +433,7 @@ mod static_storage {
 
         let content = "whooo hoo hoo".to_string();
 
-        let mut storage_guard = Sut::Builder::new(&storage_name)
+        let storage_guard = Sut::Builder::new(&storage_name)
             .create(content.as_bytes())
             .unwrap();
 
@@ -471,7 +471,7 @@ mod static_storage {
 
         let content = "whooo hoo hoo".to_string();
 
-        let mut storage_guard = Sut::Builder::new(&storage_name)
+        let storage_guard = Sut::Builder::new(&storage_name)
             .has_ownership(false)
             .create(content.as_bytes())
             .unwrap();
@@ -498,7 +498,7 @@ mod static_storage {
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 0);
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
 
-        let mut storage_guard_1 = Sut::Builder::new(&storage_name)
+        let storage_guard_1 = Sut::Builder::new(&storage_name)
             .config(&config_1)
             .create(b"")
             .unwrap();
@@ -508,7 +508,7 @@ mod static_storage {
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_1).unwrap(), len 1);
         assert_that!(<Sut as NamedConceptMgmt>::list_cfg(&config_2).unwrap(), len 0);
 
-        let mut storage_guard_2 = Sut::Builder::new(&storage_name)
+        let storage_guard_2 = Sut::Builder::new(&storage_name)
             .config(&config_2)
             .create(b"")
             .unwrap();

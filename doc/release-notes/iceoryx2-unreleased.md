@@ -26,6 +26,9 @@
 * PubSub ports implement `Send` + `Sync`, samples implement `Send` when using
   `**_threadsafe` service variant
   [#836](https://github.com/eclipse-iceoryx/iceoryx2/issues/836)
+* ReqRes & events implement `Send` + `Sync` in
+  `**_threadsafe` service variant
+  [#838](https://github.com/eclipse-iceoryx/iceoryx2/issues/838)
 
 ### Bugfixes
 

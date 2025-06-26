@@ -42,21 +42,24 @@ use core::ffi::c_int;
 
 // BEGIN types definition
 pub(super) union ClientUnion {
-    ipc: ManuallyDrop<Client<ipc::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>>,
-    local:
-        ManuallyDrop<Client<local::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>>,
+    ipc: ManuallyDrop<
+        Client<crate::IpcService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+    >,
+    local: ManuallyDrop<
+        Client<crate::LocalService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+    >,
 }
 
 impl ClientUnion {
     pub(super) fn new_ipc(
-        client: Client<ipc::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        client: Client<crate::IpcService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             ipc: ManuallyDrop::new(client),
         }
     }
     pub(super) fn new_local(
-        client: Client<local::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        client: Client<crate::LocalService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     ) -> Self {
         Self {
             local: ManuallyDrop::new(client),

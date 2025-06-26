@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::{ipc, local};
 use pyo3::prelude::*;
 
 use crate::{
@@ -29,8 +28,8 @@ use crate::{
 };
 
 pub(crate) enum NodeType {
-    Ipc(iceoryx2::node::Node<ipc::Service>),
-    Local(iceoryx2::node::Node<local::Service>),
+    Ipc(iceoryx2::node::Node<crate::IpcService>),
+    Local(iceoryx2::node::Node<crate::LocalService>),
 }
 
 #[pyclass]
@@ -84,7 +83,7 @@ impl Node {
 
         match service_type {
             ServiceType::Ipc => {
-                iceoryx2::prelude::Node::<ipc::Service>::list(&config.0.lock(), |state| {
+                iceoryx2::prelude::Node::<crate::IpcService>::list(&config.0.lock(), |state| {
                     match state {
                         iceoryx2::node::NodeState::Alive(a) => {
                             states.push(NodeState::Alive(AliveNodeView(AliveNodeViewType::Ipc(a))))
@@ -105,7 +104,7 @@ impl Node {
                 .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?
             }
             ServiceType::Local => {
-                iceoryx2::prelude::Node::<local::Service>::list(&config.0.lock(), |state| {
+                iceoryx2::prelude::Node::<crate::LocalService>::list(&config.0.lock(), |state| {
                     match state {
                         iceoryx2::node::NodeState::Alive(a) => states
                             .push(NodeState::Alive(AliveNodeView(AliveNodeViewType::Local(a)))),
@@ -174,10 +173,12 @@ impl Node {
     pub fn cleanup_dead_nodes(service_type: &ServiceType, config: &Config) -> CleanupState {
         match service_type {
             ServiceType::Ipc => CleanupState(
-                iceoryx2::prelude::Node::<ipc::Service>::cleanup_dead_nodes(&config.0.lock()),
+                iceoryx2::prelude::Node::<crate::IpcService>::cleanup_dead_nodes(&config.0.lock()),
             ),
             ServiceType::Local => CleanupState(
-                iceoryx2::prelude::Node::<local::Service>::cleanup_dead_nodes(&config.0.lock()),
+                iceoryx2::prelude::Node::<crate::LocalService>::cleanup_dead_nodes(
+                    &config.0.lock(),
+                ),
             ),
         }
     }

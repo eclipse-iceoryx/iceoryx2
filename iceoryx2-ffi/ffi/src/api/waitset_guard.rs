@@ -15,7 +15,6 @@
 use core::mem::ManuallyDrop;
 
 use crate::iox2_service_type_e;
-use iceoryx2::service::{ipc, local};
 use iceoryx2::waitset::WaitSetGuard;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -24,18 +23,18 @@ use super::{AssertNonNullHandle, HandleToType};
 
 // BEGIN types definition
 pub(crate) union GuardUnion {
-    pub(crate) ipc: ManuallyDrop<WaitSetGuard<'static, 'static, ipc::Service>>,
-    pub(crate) local: ManuallyDrop<WaitSetGuard<'static, 'static, local::Service>>,
+    pub(crate) ipc: ManuallyDrop<WaitSetGuard<'static, 'static, crate::IpcService>>,
+    pub(crate) local: ManuallyDrop<WaitSetGuard<'static, 'static, crate::LocalService>>,
 }
 
 impl GuardUnion {
-    pub(super) fn new_ipc(guard: WaitSetGuard<'static, 'static, ipc::Service>) -> Self {
+    pub(super) fn new_ipc(guard: WaitSetGuard<'static, 'static, crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(guard),
         }
     }
 
-    pub(super) fn new_local(guard: WaitSetGuard<'static, 'static, local::Service>) -> Self {
+    pub(super) fn new_local(guard: WaitSetGuard<'static, 'static, crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(guard),
         }

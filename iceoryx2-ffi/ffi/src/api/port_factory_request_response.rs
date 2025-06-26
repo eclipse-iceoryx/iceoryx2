@@ -16,10 +16,10 @@ use core::{
     ffi::{c_char, c_int},
     mem::ManuallyDrop,
 };
+use iceoryx2::service::dynamic_config::request_response::ServerDetails;
 use iceoryx2::service::{
     dynamic_config::request_response::ClientDetails, port_factory::request_response::PortFactory,
 };
-use iceoryx2::{prelude::*, service::dynamic_config::request_response::ServerDetails};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -40,17 +40,17 @@ use super::{
 // BEGIN types definition
 pub(super) union PortFactoryRequestResponseUnion {
     ipc: ManuallyDrop<
-        PortFactory<ipc::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        PortFactory<crate::IpcService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     >,
     local: ManuallyDrop<
-        PortFactory<local::Service, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
+        PortFactory<crate::LocalService, PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi>,
     >,
 }
 
 impl PortFactoryRequestResponseUnion {
     pub(super) fn new_ipc(
         port_factory: PortFactory<
-            ipc::Service,
+            crate::IpcService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,
@@ -63,7 +63,7 @@ impl PortFactoryRequestResponseUnion {
     }
     pub(super) fn new_local(
         port_factory: PortFactory<
-            local::Service,
+            crate::LocalService,
             PayloadFfi,
             UserHeaderFfi,
             PayloadFfi,

@@ -23,6 +23,9 @@ pub enum ServiceType {
     Ipc,
 }
 
+pub(crate) type IpcService = iceoryx2::prelude::ipc_threadsafe::Service;
+pub(crate) type LocalService = iceoryx2::prelude::local_threadsafe::Service;
+
 #[pymethods]
 impl ServiceType {
     pub fn __str__(&self) -> String {

@@ -39,7 +39,7 @@
 
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use crate::{request_mut::RequestMut, service};
+use crate::{port::client::ClientSharedState, request_mut::RequestMut, service};
 use core::{fmt::Debug, mem::MaybeUninit};
 
 /// A version of the [`RequestMut`] where the payload is not initialized which allows
@@ -55,6 +55,19 @@ pub struct RequestMutUninit<
 > {
     pub(crate) request:
         RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
+}
+
+unsafe impl<
+        Service: crate::service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Send
+    for RequestMutUninit<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+where
+    Service::ArcThreadSafetyPolicy<ClientSharedState<Service>>: Send + Sync,
+{
 }
 
 impl<
@@ -169,7 +182,9 @@ impl<
         self,
     ) -> RequestMut<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        core::mem::transmute(self.request)
+        let initialized_request = core::mem::transmute_copy(&self.request);
+        core::mem::forget(self);
+        initialized_request
     }
 }
 
@@ -230,7 +245,9 @@ impl<
         self,
     ) -> RequestMut<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader> {
         // the transmute is not nice but safe since MaybeUninit is #[repr(transparent)] to the inner type
-        core::mem::transmute(self.request)
+        let initialized_request = core::mem::transmute_copy(&self.request);
+        core::mem::forget(self);
+        initialized_request
     }
 
     /// Writes the payload to the [`RequestMutUninit`] and labels the [`RequestMutUninit`] as

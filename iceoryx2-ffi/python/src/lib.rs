@@ -63,6 +63,9 @@ pub mod unique_notifier_id;
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
 
+pub(crate) use service_type::IpcService;
+pub(crate) use service_type::LocalService;
+
 /// iceoryx2 Python language bindings
 #[pymodule]
 fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {

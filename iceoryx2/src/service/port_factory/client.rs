@@ -51,6 +51,10 @@ pub enum ClientCreateError {
     /// defined in [`crate::config::Config`]. When this is exceeded no more [`Client`]s
     /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedClients,
+    /// Caused by a failure when instantiating a
+    /// [`ArcSyncPolicy`](iceoryx2_cal::arc_sync_policy::ArcSyncPolicy) defined in the
+    /// [`Service`](crate::service::Service) as `ArcThreadSafetyPolicy`.
+    FailedToDeployThreadsafetyPolicy,
 }
 
 impl core::fmt::Display for ClientCreateError {
