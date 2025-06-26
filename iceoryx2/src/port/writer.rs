@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::service;
-use crate::service::builder::blackboard::Entry;
+use crate::service::builder::blackboard::Mgmt;
 use core::{fmt::Debug, marker::PhantomData, sync::atomic::AtomicU32};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -35,21 +35,21 @@ pub struct Writer<
     T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
     //service: Service, or ServiceState with BlackboardResources
-    map: Service::BlackboardMgmt<Entry<T>>,
+    map: Service::BlackboardMgmt<Mgmt<T>>,
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
     Writer<Service, T>
 {
-    pub(crate) fn new(mgmt: Service::BlackboardMgmt<Entry<T>>) -> Result<Self, WriterCreateError> {
+    pub(crate) fn new(mgmt: Service::BlackboardMgmt<Mgmt<T>>) -> Result<Self, WriterCreateError> {
         let new_self = Self { map: mgmt };
         Ok(new_self)
     }
 
-    pub fn write(&self, value: u32) {
+    pub fn write(&self, value: u64) {
         let entry = self.map.get();
-        entry
-            .counter
+        entry.entries[0]
+            .offset
             .store(value, core::sync::atomic::Ordering::Relaxed);
     }
 }

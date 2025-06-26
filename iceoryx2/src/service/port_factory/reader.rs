@@ -15,7 +15,7 @@
 use super::blackboard::PortFactory;
 use crate::port::reader::{Reader, ReaderCreateError};
 use crate::service;
-use crate::service::builder::blackboard::Entry;
+use crate::service::builder::blackboard::Mgmt;
 use crate::service::config_scheme::blackboard_mgmt_data_segment_config;
 use core::fmt::Debug;
 use core::sync::atomic::AtomicU32;
@@ -47,12 +47,12 @@ impl<
         let origin = format!("{:?}", self);
 
         let mgmt_name = self.factory.service.additional_resource.mgmt.name();
-        let mgmt_config = blackboard_mgmt_data_segment_config::<Service, Entry<T>>(
+        let mgmt_config = blackboard_mgmt_data_segment_config::<Service, Mgmt<T>>(
             self.factory.service.shared_node.config(),
         );
         // TODO: error type and message
         let storage = fail!(from origin,
-            when <Service::BlackboardMgmt<Entry<T>> as iceoryx2_cal::dynamic_storage::DynamicStorage<Entry<T>>>::Builder::new(mgmt_name)
+            when <Service::BlackboardMgmt<Mgmt<T>> as iceoryx2_cal::dynamic_storage::DynamicStorage<Mgmt<T>>>::Builder::new(mgmt_name)
                 .config(&mgmt_config)
                 .has_ownership(false)
                 .open(),

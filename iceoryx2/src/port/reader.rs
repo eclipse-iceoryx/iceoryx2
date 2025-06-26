@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::service;
-use crate::service::builder::blackboard::Entry;
+use crate::service::builder::blackboard::Mgmt;
 use core::{fmt::Debug, marker::PhantomData, sync::atomic::AtomicU32};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -35,26 +35,25 @@ pub struct Reader<
     T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
     //service: Service, or ServiceState with BlackboardResources
-    map: Service::BlackboardMgmt<Entry<T>>,
+    map: Service::BlackboardMgmt<Mgmt<T>>,
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
     Reader<Service, T>
 {
-    pub(crate) fn new(mgmt: Service::BlackboardMgmt<Entry<T>>) -> Result<Self, ReaderCreateError> {
+    pub(crate) fn new(mgmt: Service::BlackboardMgmt<Mgmt<T>>) -> Result<Self, ReaderCreateError> {
         let new_self = Self { map: mgmt };
         Ok(new_self)
     }
 
-    pub fn read(&self, key: &T) -> Option<(u32, u32)> {
+    pub fn read(&self, key: &T) -> Option<(u64, usize)> {
         let map_value = self.map.get().map.get(key);
         if map_value.is_none() {
             return None;
         }
         Some((
-            self.map
-                .get()
-                .counter
+            self.map.get().entries[0]
+                .offset
                 .load(core::sync::atomic::Ordering::Relaxed),
             map_value.unwrap(),
         ))
