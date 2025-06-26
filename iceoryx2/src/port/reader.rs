@@ -46,16 +46,14 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         Ok(new_self)
     }
 
-    pub fn read(&self, key: &T) -> Option<(u64, usize)> {
-        let map_value = self.map.get().map.get(key);
-        if map_value.is_none() {
+    pub fn read<ValueType>(&self, key: &T) -> Option<u64> {
+        let entries_index = self.map.get().map.get(key);
+        if entries_index.is_none() {
             return None;
         }
-        Some((
-            self.map.get().entries[0]
-                .offset
-                .load(core::sync::atomic::Ordering::Relaxed),
-            map_value.unwrap(),
-        ))
+        let offset = self.map.get().entries[entries_index.unwrap()]
+            .offset
+            .load(core::sync::atomic::Ordering::Relaxed);
+        Some(offset)
     }
 }

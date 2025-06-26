@@ -249,7 +249,8 @@ use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::reactor::Reactor;
 use iceoryx2_cal::resizable_shared_memory::ResizableSharedMemoryForPoolAllocator;
 use iceoryx2_cal::serialize::Serialize;
-use iceoryx2_cal::shared_memory::SharedMemoryForPoolAllocator;
+use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryForPoolAllocator};
+use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use service_id::ServiceId;
@@ -710,6 +711,8 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// ([`Send`]) into other threads.
     type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
     type BlackboardMgmt<T: Send + Sync + Debug + 'static>: DynamicStorage<T>;
+
+    type BlackboardPayload: SharedMemory<BumpAllocator>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

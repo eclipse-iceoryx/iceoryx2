@@ -77,7 +77,7 @@ impl core::fmt::Display for FixedSizeByteStringModificationError {
 impl core::error::Error for FixedSizeByteStringModificationError {}
 
 /// Relocatable string with compile time fixed size capacity.
-#[derive(PlacementDefault, ZeroCopySend)]
+#[derive(PlacementDefault, ZeroCopySend, Copy)]
 #[repr(C)]
 pub struct FixedSizeByteString<const CAPACITY: usize> {
     len: usize,

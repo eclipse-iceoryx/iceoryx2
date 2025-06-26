@@ -47,9 +47,9 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     }
 
     pub fn write(&self, value: u64) {
-        let entry = self.map.get();
-        entry.entries[0]
-            .offset
-            .store(value, core::sync::atomic::Ordering::Relaxed);
+        //let entry = self.map.get();
+        //entry.entries[0]
+        //.offset
+        //.store(value, core::sync::atomic::Ordering::Relaxed);
     }
 }

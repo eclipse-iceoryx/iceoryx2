@@ -34,6 +34,7 @@
 
 use crate::service::dynamic_config::DynamicConfig;
 use core::fmt::Debug;
+use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::*;
 
@@ -55,6 +56,7 @@ impl crate::service::Service for Service {
     type ArcThreadSafetyPolicy<T: Send + Debug> =
         arc_sync_policy::single_threaded::SingleThreaded<T>;
     type BlackboardMgmt<T: Send + Sync + Debug + 'static> = dynamic_storage::recommended::Ipc<T>;
+    type BlackboardPayload = shared_memory::recommended::Ipc<BumpAllocator>;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {}

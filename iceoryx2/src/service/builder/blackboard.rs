@@ -15,11 +15,13 @@
 //! See [`crate::service`]
 //!
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
+use iceoryx2_cal::shared_memory::{SharedMemoryBuilder, SharedMemory};
 use super::{OpenDynamicStorageFailure, ServiceState};
 use crate::service;
-use crate::service::config_scheme::blackboard_mgmt_data_segment_config;
+use crate::service::config_scheme::{blackboard_mgmt_config, blackboard_data_config};
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
-use crate::service::naming_scheme::blackboard_mgmt_data_segment_name;
+use crate::service::naming_scheme::blackboard_name;
 use crate::service::port_factory::blackboard;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
@@ -28,10 +30,7 @@ use builder::RETRY_LIMIT;
 use iceoryx2_bb_container::flatmap::FixedSizeFlatMap;
 use iceoryx2_bb_container::vec::FixedSizeVec;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use core::alloc::Layout;
-use core::iter::FlatMap;
-use core::marker::PhantomData;
 use core::sync::atomic::AtomicU64;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
@@ -192,7 +191,8 @@ impl From<BlackboardCreateError> for BlackboardOpenOrCreateError {
 struct BuilderItems<KeyType> {
     key: KeyType,
     type_details: TypeDetail,
-    writer: Box<dyn FnMut(*mut u8)>,
+    value_writer: Box<dyn FnMut(*mut u8)>,
+    value_size: usize,
 }
 
 impl<KeyType> Debug for BuilderItems<KeyType> {
@@ -313,12 +313,15 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
     }
 
     #[doc(hidden)]
-    pub fn add<ValueType: ZeroCopySend + Clone + 'static>(mut self, key: KeyType, value: ValueType) -> Self {
-        //todo!()
+    // TODO: ValuType has more restrictions than described in design document
+    pub fn add<ValueType: ZeroCopySend + Clone + 'static + Copy>(mut self, key: KeyType, value: ValueType) -> Self {
         // this method should not add keys when the service was already created - in the static use
         // case
         // differentiate between creator and opener builder and remove open_or_create?
-        self.items.push(BuilderItems { key, type_details: TypeDetail::__internal_new::<ValueType>(message_type_details::TypeVariant::FixedSize), writer: Box::new(move |mem: *mut u8| { let mem: *mut ValueType = mem as *mut ValueType; unsafe { mem.write(value.clone()) };}) });
+        self.items.push(BuilderItems { key, 
+                                       type_details: TypeDetail::__internal_new::<ValueType>(message_type_details::TypeVariant::FixedSize), 
+                                       value_writer: Box::new(move |mem: *mut u8| { let mem: *mut ValueType = mem as *mut ValueType; unsafe { mem.write(value.clone()) };}), 
+                                       value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(), });
         self
     }
 
@@ -507,16 +510,25 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                     self.base.service_config.messaging_pattern =
                         MessagingPattern::Blackboard(blackboard_static_config.clone());
 
-                    let storage_name = blackboard_mgmt_data_segment_name(
+                    let storage_name = blackboard_name(
                         self.base.service_config.service_id().as_str(),
                     );
-                    let storage_config = blackboard_mgmt_data_segment_config::<ServiceType, Mgmt<KeyType>>(
+                    let storage_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                         self.base.shared_node.config(),
                     );
                     // TODO: error type and message
-                    let storage = fail!(from self, 
+                    let mgmt_storage = fail!(from self, 
                         when <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as iceoryx2_cal::dynamic_storage::DynamicStorage<Mgmt<KeyType>>>::Builder::new(&storage_name).config(&storage_config).has_ownership(false).open(), with BlackboardOpenError::ServiceInCorruptedState,
                         "{} blub", msg);
+
+                    ////// test
+                    /// config/name scheme seems wrong; orient on publisher data segment
+                    let shm_config = blackboard_data_config::<ServiceType, Mgmt<KeyType>>(
+                        self.base.shared_node.config(),
+                    );
+                    let payload_shm = <<ServiceType::BlackboardPayload as iceoryx2_cal::shared_memory::SharedMemory<iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator>>::Builder as NamedConceptBuilder<
+                        ServiceType::BlackboardPayload>>::new(&FileName::new(&storage_name).unwrap()).config(&shm_config).has_ownership(true).open().unwrap();
+                    //////
 
                     if let Some(mut service_tag) = service_tag {
                         service_tag.release_ownership();
@@ -528,7 +540,7 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                             self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
-                            BlackboardResources { mgmt: storage, },
+                            BlackboardResources { mgmt: mgmt_storage, },
                         ),
                     ));
                 }
@@ -620,31 +632,47 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                             with BlackboardCreateError::ServiceInCorruptedState,
                             "{} since the configuration could not be serialized.", msg);
 
-                // create the management data segment including the flatmap; dynamic storage
-                // additional size can be acquired by flatmap::memory_size()?
-                // create naming scheme: iox2 + service id + blackboard_mgmt suffix
-                // dynamic storage returns bump allocator?
-                let storage_name = blackboard_mgmt_data_segment_name(
+                // create the payload data segment for the writer
+                let name = blackboard_name(
                     self.base.service_config.service_id().as_str(),
                 );
-                let storage_config = blackboard_mgmt_data_segment_config::<ServiceType, Mgmt<KeyType>>(
+                let shm_config = blackboard_data_config::<ServiceType, Mgmt<KeyType>>(
+                    self.base.shared_node.config(),
+                );
+                let mut payload_size = 0;
+                for i in &self.items {
+                    payload_size += i.value_size + i.type_details.alignment - 1;
+                }
+                let payload_shm = <<ServiceType::BlackboardPayload as iceoryx2_cal::shared_memory::SharedMemory<iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator>>::Builder as NamedConceptBuilder<
+                    ServiceType::BlackboardPayload>>::new(&FileName::new(&name).unwrap()).config(&shm_config).has_ownership(true).size(payload_size).create(&iceoryx2_cal::shared_memory::bump_allocator::Config::default()).unwrap();
+
+                // create the management segment
+                let storage_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                     self.base.shared_node.config(),
                 );
                 // TODO: error type and message
-                let storage = fail!(from self, when
+                let mgmt_storage = fail!(from self, when
                     <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as iceoryx2_cal::dynamic_storage::DynamicStorage<
                         Mgmt<KeyType>,
-                    >>::Builder::new(&storage_name)
+                    >>::Builder::new(&name)
                         .config(&storage_config)
                         .has_ownership(false)
                         .initializer(|entry: &mut Mgmt<KeyType>, _allocator: &mut BumpAllocator| {
                             for i in 0..self.items.len() {
+                                // - write value to payload shm
                                 // TODO: error handling layout + allocate
-                                //let _mem = allocator.allocate(Layout::from_size_align(self.items[i].type_details.size, self.items[i].type_details.alignment).unwrap()).unwrap();
-                                let res = entry.entries.push(Entry{type_details: self.items[i].type_details.clone(), offset: AtomicU64::new(0)});
+                                // alignment of UnrestrictedAtomic<ValueType>?
+                                // at least page size aligned?
+                                println!("size: {}, alignment: {}", self.items[i].value_size, self.items[i].type_details.alignment);
+                                let mem = payload_shm.allocate(Layout::from_size_align(self.items[i].value_size, self.items[i].type_details.alignment).unwrap()).unwrap();
+                                (*self.items[i].value_writer)(mem.data_ptr);
+                                // - write offset to entries (relative ptr)
+                                // TODO: offset must be a relative ptr
+                                let res = entry.entries.push(Entry{type_details: self.items[i].type_details.clone(), offset: AtomicU64::new(mem.offset.as_value())});
                                 if !res {
                                     return false
                                 }
+                                // - write index of entries to map
                                 let res = entry.map.insert(self.items[i].key.clone(), entry.entries.len() - 1);
                                 if res.is_err() {
                                     let _removed = entry.entries.pop();
@@ -654,7 +682,6 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                             true})
                     .create(Mgmt{ map: FixedSizeFlatMap::<KeyType, usize, 10>::new(), entries: FixedSizeVec::<Entry, 10>::new()}), with BlackboardCreateError::ServiceInCorruptedState, "{} blub", msg);
 
-                // create the payload data segment for the writer; shm concept with allocator
 
                 // only unlock the static details when the service is successfully created
                 let unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
@@ -672,7 +699,7 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                         self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
-                        BlackboardResources { mgmt: storage }
+                        BlackboardResources { mgmt: mgmt_storage }
                     ),
                 ))
             }

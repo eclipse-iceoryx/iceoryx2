@@ -144,7 +144,8 @@ pub struct Service {
     /// The suffix of a one-to-one connection
     pub event_connection_suffix: FileName,
 
-    pub blackboard_mgmt_data_suffix: FileName,
+    pub blackboard_mgmt_suffix: FileName,
+    pub blackboard_data_suffix: FileName,
 }
 
 /// All configurable settings of a [`Node`](crate::node::Node).
@@ -406,7 +407,8 @@ impl Default for Config {
                     creation_timeout: Duration::from_millis(500),
                     connection_suffix: FileName::new(b".connection").unwrap(),
                     event_connection_suffix: FileName::new(b".event").unwrap(),
-                    blackboard_mgmt_data_suffix: FileName::new(b".blackboard_mgmt").unwrap(),
+                    blackboard_mgmt_suffix: FileName::new(b".blackboard_mgmt").unwrap(),
+                    blackboard_data_suffix: FileName::new(b".blackboard_data").unwrap(),
                 },
                 node: Node {
                     directory: Path::new(b"nodes").unwrap(),

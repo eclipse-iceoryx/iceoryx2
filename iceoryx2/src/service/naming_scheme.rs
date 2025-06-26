@@ -52,9 +52,9 @@ pub(crate) fn data_segment_name(port_id_value: u128) -> FileName {
                  "{}", msg)
 }
 
-pub(crate) fn blackboard_mgmt_data_segment_name(service_id: &str) -> FileName {
-    let msg = "The system does not support the required file name length for the blackboard's management data segment.";
-    let origin = "blackboard_mgmt_data_segment_name()";
+pub(crate) fn blackboard_name(service_id: &str) -> FileName {
+    let msg = "The system does not support the required file name length for the blackboard's management segment.";
+    let origin = "blackboard_name()";
 
     fatal_panic!(from origin, when FileName::new(service_id.as_bytes()), "{}", msg)
 }
