@@ -129,15 +129,22 @@ fn listening_on_events_concurrently_works() {
                     }
                 }
 
+                // ensure all events are received
+                while let Ok(Some(event)) = listener.try_wait_one() {
+                    received_events[event.as_value()] += 1;
+                }
+
                 received_events
             }));
         }
 
         barrier.wait();
         for n in 0..NUMBER_OF_ITERATIONS {
-            notifier
+            while notifier
                 .notify_with_custom_event_id(EventId::new(n))
-                .unwrap();
+                .unwrap()
+                == 0
+            {}
         }
         notification_finished.store(true, Ordering::Relaxed);
 
@@ -150,7 +157,7 @@ fn listening_on_events_concurrently_works() {
         }
 
         for n in received_events {
-            assert_that!(n, le 1);
+            assert_that!(n, eq 1);
         }
     });
 }
