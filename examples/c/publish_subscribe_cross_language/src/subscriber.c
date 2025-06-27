@@ -99,13 +99,14 @@ int main(void) {
             const struct CustomHeader* user_header = NULL;
             iox2_sample_user_header(&sample, (const void**) &user_header);
 
-            printf("received: TransmissionData { .x: %d, .y: %d, .funky: %lf}, user_header: version = %d, timestamp = "
-                   "%lu\n",
-                   payload->x,
-                   payload->y,
-                   payload->funky,
-                   user_header->version,
-                   (long unsigned) user_header->timestamp);
+            printf(
+                "received: TransmissionData { .x: %d, .y: %d, .funky: %.2lf }, user_header: version = %d, timestamp = "
+                "%lu\n",
+                payload->x,
+                payload->y,
+                payload->funky,
+                user_header->version,
+                (long unsigned) user_header->timestamp);
             iox2_sample_drop(sample);
         }
     }
