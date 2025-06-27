@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+set -e
+
+COLOR_OFF='\033[0m'
+COLOR_RED='\033[1;31m'
+COLOR_GREEN='\033[1;32m'
+COLOR_YELLOW='\033[1;33m'
+
+echo "##################################"
+echo "# Build and run end to end tests #"
+echo "##################################"
+
+WORKSPACE=$(git rev-parse --show-toplevel)
+cd "${WORKSPACE}"
+
+cargo build --examples
+
+NUM_JOBS=1
+if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then
+    NUM_JOBS=$(nproc)
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    NUM_JOBS=$(sysctl -n hw.ncpu)
+fi
+
+rm -rf ${WORKSPACE}/target/iceoryx
+${WORKSPACE}/internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+cargo build --package iceoryx2-ffi
+cmake -S . -B target/ffi/build \
+    -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
+    -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DBUILD_CXX_BINDING=ON \
+    -DBUILD_EXAMPLES=ON \
+    -DBUILD_TESTING=OFF
+cmake --build target/ffi/build -j$NUM_JOBS
+
+FILES=$(find ${WORKSPACE} -type f | grep -E "test_e2e_.*\.exp" | sort)
+FILES_ARRAY=(${FILES})
+NUMBER_OF_FILES=${#FILES_ARRAY[@]}
+
+if [[ ${NUMBER_OF_FILES} -eq 0 ]]; then
+    echo -e "${COLOR_YELLOW}-> nothing to do${COLOR_OFF}"
+    return 0
+fi
+
+echo -e "${COLOR_GREEN}Running tests ...${COLOR_OFF}"
+FILE_COUNTER=1
+for FILE in $FILES; do
+    echo -e "${COLOR_GREEN}[${FILE_COUNTER}/${NUMBER_OF_FILES}]${COLOR_OFF} RUN ${FILE}"
+    FILE_COUNTER=$((FILE_COUNTER + 1))
+
+    if test -f "$FILE"; then
+        bash -c ${FILE}
+    else
+        echo -e "${COLOR_RED}File does not exist! Aborting!${COLOR_OFF}"
+        return 1
+    fi
+done
+
+echo -e "${COLOR_GREEN}... done!${COLOR_OFF}"
