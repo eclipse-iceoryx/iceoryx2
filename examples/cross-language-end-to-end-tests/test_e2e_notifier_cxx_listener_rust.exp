@@ -1,0 +1,36 @@
+#!/usr/bin/expect
+
+# define some colors
+set C_RED "\033\[1;31m"
+set C_GREEN "\033\[1;32m"
+set C_YELLOW "\033\[1;33m"
+set C_BLUE "\033\[1;34m"
+set C_OFF "\033\[0m"
+
+# go to repo root
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+#### Test Setup
+
+set timeout 10
+
+spawn target/ffi/build/examples/cxx/event/example_cxx_event_notifier
+
+spawn cargo run --example event_listener
+
+set EXPECTED_OUTPUT "event was triggered with id: TriggerId(3)"
+
+#### Test Assertion
+
+expect {
+    "${EXPECTED_OUTPUT}" {
+        puts "${C_GREEN}Test passed!${C_OFF}"
+    }
+    timeout {
+        puts "${C_RED}Test failed!${C_OFF}"
+        puts "${C_YELLOW}Expected string:${C_OFF} ${EXPECTED_OUTPUT}"
+        puts "${C_YELLOW}Actual:${C_OFF} \[timed out\]"
+        exit 1
+    }
+}
