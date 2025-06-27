@@ -29,31 +29,33 @@ auto main() -> int {
 
     auto client = service.client_builder().create().expect("successful client creation");
 
-    auto counter = 0;
+    auto request_counter = 0;
+    auto response_counter = 0;
 
     // sending first request by using slower, inefficient copy API
-    std::cout << "send request " << counter << " ..." << std::endl;
-    auto pending_response = client.send_copy(counter).expect("send successful");
+    std::cout << "send request " << request_counter << " ..." << std::endl;
+    auto pending_response = client.send_copy(request_counter).expect("send successful");
 
     while (node.wait(CYCLE_TIME).has_value()) {
         // acquire all responses to our request from our buffer that were sent by the servers
         while (true) {
             auto response = pending_response.receive().expect("receive successful");
             if (response.has_value()) {
-                std::cout << "received response: " << response->payload() << std::endl;
+                std::cout << "received response " << response_counter << ": " << response->payload() << std::endl;
+                response_counter += 1;
             } else {
                 break;
             }
         }
 
-        counter += 1;
+        request_counter += 1;
         // send all other requests by using zero copy API
         auto request = client.loan_uninit().expect("loan successful");
-        auto initialized_request = request.write_payload(counter);
+        auto initialized_request = request.write_payload(request_counter);
 
         pending_response = send(std::move(initialized_request)).expect("send successful");
 
-        std::cout << "send request " << counter << " ..." << std::endl;
+        std::cout << "send request " << request_counter << " ..." << std::endl;
     }
 
     std::cout << "exit" << std::endl;

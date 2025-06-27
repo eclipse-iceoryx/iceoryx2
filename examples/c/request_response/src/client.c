@@ -50,7 +50,7 @@ int main(void) { // NOLINT
 
     // Set request and response type details
     const char* request_type_name = "u64";
-    const char* response_type_name = "16TransmissionData";
+    const char* response_type_name = "TransmissionData";
 
     if (iox2_service_builder_request_response_set_request_payload_type_details(&service_builder_request_response,
                                                                                iox2_type_variant_e_FIXED_SIZE,
@@ -92,12 +92,13 @@ int main(void) { // NOLINT
     }
 
     // Start sending requests
-    uint64_t counter = 0;
+    uint64_t request_counter = 0;
+    uint64_t response_counter = 0;
 
     // For the first request, we use the copy API
-    printf("send request %d ...\n", (int32_t) counter);
+    printf("send request %d ...\n", (int32_t) request_counter);
     iox2_pending_response_h pending_response = NULL;
-    if (iox2_client_send_copy(&client, &counter, sizeof(uint64_t), 1, NULL, &pending_response) != IOX2_OK) {
+    if (iox2_client_send_copy(&client, &request_counter, sizeof(uint64_t), 1, NULL, &pending_response) != IOX2_OK) {
         printf("Failed to send initial request\n");
         goto drop_client;
     }
@@ -120,20 +121,22 @@ int main(void) { // NOLINT
             }
 
             iox2_response_payload(&response, (const void**) &response_data, NULL);
-            printf("  received response: x=%d, y=%d, funky=%f\n",
+            printf("  received response %d: x=%d, y=%d, funky=%f\n",
+                   response_counter,
                    response_data->x,
                    response_data->y,
                    response_data->funky);
+            response_counter += 1;
             iox2_response_drop(response);
         }
 
-        counter++;
+        request_counter++;
 
         iox2_pending_response_drop(pending_response);
         pending_response = NULL;
 
         // For subsequent requests, use the zero-copy API
-        printf("send request %d ...\n", (int32_t) counter);
+        printf("send request %d ...\n", (int32_t) request_counter);
 
         // Loan request sample
         iox2_request_mut_h request = NULL;
@@ -145,7 +148,7 @@ int main(void) { // NOLINT
         // Write payload
         uint64_t* payload = NULL;
         iox2_request_mut_payload_mut(&request, (void**) &payload, NULL);
-        *payload = counter;
+        *payload = request_counter;
 
         // Send request
         if (iox2_request_mut_send(request, NULL, &pending_response) != IOX2_OK) {
