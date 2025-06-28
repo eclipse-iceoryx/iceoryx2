@@ -82,6 +82,11 @@ fn main() -> Result<()> {
                         .expect("Failed to print help");
                 }
             },
+            Action::Explain => {
+                if let Err(e) = commands::print_config_description() {
+                    eprintln!("Failed to display configuration description: {}", e);
+                }
+            }
         }
     } else {
         Cli::command().print_help().expect("Failed to print help");
