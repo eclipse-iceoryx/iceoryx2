@@ -49,7 +49,7 @@ mod zenoh_tunnel_events {
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a =
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
-        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+        assert_that!(tunnel_a.open_channels().len(), eq 0);
 
         // Notifier
         let iox_node_a = NodeBuilder::new()
@@ -65,10 +65,12 @@ mod zenoh_tunnel_events {
 
         // Discover
         tunnel_a.discover(Scope::Iceoryx).unwrap();
-        let tunneled_services_a = tunnel_a.tunneled_services();
-        assert_that!(tunneled_services_a.len(), eq 1);
-        assert_that!(tunneled_services_a
-            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+        let tunneled_ports_a = tunnel_a.open_channels();
+        assert_that!(tunneled_ports_a.len(), eq 2);
+        assert_that!(tunneled_ports_a
+            .contains(&ChannelInfo::Notifier(String::from(iox_service_a.service_id().as_str()))), eq true);
+        assert_that!(tunneled_ports_a
+            .contains(&ChannelInfo::Listener(String::from(iox_service_a.service_id().as_str()))), eq true);
 
         // [[ HOST B ]]
         // Tunnel
@@ -77,18 +79,22 @@ mod zenoh_tunnel_events {
         let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b =
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
-        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+        assert_that!(tunnel_b.open_channels().len(), eq 0);
 
         // Discover
         retry(
             || {
                 tunnel_b.discover(Scope::Zenoh).unwrap();
 
-                let tunneled_services = tunnel_b.tunneled_services();
-                let success =
-                    tunneled_services.contains(&String::from(iox_service_a.service_id().as_str()));
+                let tunneled_ports = tunnel_b.open_channels();
+                let tunneled_notifier = tunneled_ports.contains(&ChannelInfo::Notifier(
+                    String::from(iox_service_a.service_id().as_str()),
+                ));
+                let tunneled_listener = tunneled_ports.contains(&ChannelInfo::Notifier(
+                    String::from(iox_service_a.service_id().as_str()),
+                ));
 
-                if success {
+                if tunneled_notifier && tunneled_listener {
                     return Ok(());
                 }
                 return Err("failed to discover remote service");
@@ -154,7 +160,7 @@ mod zenoh_tunnel_events {
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a =
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
-        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+        assert_that!(tunnel_a.open_channels().len(), eq 0);
 
         // Notifier
         let iox_node_a = NodeBuilder::new()
@@ -173,10 +179,12 @@ mod zenoh_tunnel_events {
 
         // Discover
         tunnel_a.discover(Scope::Iceoryx).unwrap();
-        let tunneled_services_a = tunnel_a.tunneled_services();
-        assert_that!(tunneled_services_a.len(), eq 1);
-        assert_that!(tunneled_services_a
-            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+        let tunneled_ports_a = tunnel_a.open_channels();
+        assert_that!(tunneled_ports_a.len(), eq 2);
+        assert_that!(tunneled_ports_a
+            .contains(&ChannelInfo::Notifier(String::from(iox_service_a.service_id().as_str()))), eq true);
+        assert_that!(tunneled_ports_a
+            .contains(&ChannelInfo::Listener(String::from(iox_service_a.service_id().as_str()))), eq true);
 
         // [[ HOST B ]]
         // Tunnel
@@ -185,20 +193,25 @@ mod zenoh_tunnel_events {
         let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b =
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
-        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+        assert_that!(tunnel_b.open_channels().len(), eq 0);
 
         // Discover
         retry(
             || {
                 tunnel_b.discover(Scope::Zenoh).unwrap();
 
-                let tunneled_services = tunnel_b.tunneled_services();
-                let success =
-                    tunneled_services.contains(&String::from(iox_service_a.service_id().as_str()));
+                let tunneled_ports = tunnel_b.open_channels();
+                let tunneled_notifier = tunneled_ports.contains(&ChannelInfo::Notifier(
+                    String::from(iox_service_a.service_id().as_str()),
+                ));
+                let tunneled_listener = tunneled_ports.contains(&ChannelInfo::Notifier(
+                    String::from(iox_service_a.service_id().as_str()),
+                ));
 
-                if success {
+                if tunneled_notifier && tunneled_listener {
                     return Ok(());
                 }
+
                 return Err("failed to discover remote service");
             },
             TIME_BETWEEN_RETRIES,
@@ -279,7 +292,7 @@ mod zenoh_tunnel_events {
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a =
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
-        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+        assert_that!(tunnel_a.open_channels().len(), eq 0);
 
         // Notifier
         let iox_node_a = NodeBuilder::new()
@@ -295,10 +308,12 @@ mod zenoh_tunnel_events {
 
         // Discover
         tunnel_a.discover(Scope::Iceoryx).unwrap();
-        let tunneled_services_a = tunnel_a.tunneled_services();
-        assert_that!(tunneled_services_a.len(), eq 1);
-        assert_that!(tunneled_services_a
-            .contains(&String::from(iox_service_a.service_id().as_str())), eq true);
+        let tunneled_ports_a = tunnel_a.open_channels();
+        assert_that!(tunneled_ports_a.len(), eq 2);
+        assert_that!(tunneled_ports_a
+            .contains(&ChannelInfo::Notifier(String::from(iox_service_a.service_id().as_str()))), eq true);
+        assert_that!(tunneled_ports_a
+            .contains(&ChannelInfo::Listener(String::from(iox_service_a.service_id().as_str()))), eq true);
 
         // [[ HOST B ]]
         // Tunnel
@@ -307,18 +322,22 @@ mod zenoh_tunnel_events {
         let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b =
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
-        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+        assert_that!(tunnel_b.open_channels().len(), eq 0);
 
         // Discover
         retry(
             || {
                 tunnel_b.discover(Scope::Zenoh).unwrap();
 
-                let tunneled_services = tunnel_b.tunneled_services();
-                let success =
-                    tunneled_services.contains(&String::from(iox_service_a.service_id().as_str()));
+                let tunneled_ports = tunnel_b.open_channels();
+                let tunneled_notifier = tunneled_ports.contains(&ChannelInfo::Notifier(
+                    String::from(iox_service_a.service_id().as_str()),
+                ));
+                let tunneled_listener = tunneled_ports.contains(&ChannelInfo::Notifier(
+                    String::from(iox_service_a.service_id().as_str()),
+                ));
 
-                if success {
+                if tunneled_notifier && tunneled_listener {
                     return Ok(());
                 }
                 return Err("failed to discover remote service");

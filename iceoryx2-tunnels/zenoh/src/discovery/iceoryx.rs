@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use super::Discovery;
-use super::DiscoveryError;
+use crate::discovery::Discovery;
+use crate::discovery::DiscoveryError;
 
 use iceoryx2::config::Config as IceoryxConfig;
 use iceoryx2::node::Node as IceoryxNode;
@@ -75,6 +75,7 @@ impl<ServiceType: iceoryx2::service::Service> IceoryxDiscovery<ServiceType> {
     }
 }
 
+// TODO(cleanliness): This function needs cleanup ...
 impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
     for IceoryxDiscovery<ServiceType>
 {
@@ -92,10 +93,8 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
                                 iox_sample.payload()
                             {
                                 match iox_service_details.messaging_pattern() {
-                                    MessagingPattern::PublishSubscribe(_) => {
-                                        on_discovered(iox_service_details);
-                                    }
-                                    MessagingPattern::Event(_) => {
+                                    MessagingPattern::PublishSubscribe(_)
+                                    | MessagingPattern::Event(_) => {
                                         on_discovered(iox_service_details);
                                     }
                                     _ => { /* Not supported. Nothing to do. */ }
@@ -121,10 +120,7 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
                     let iox_service_details = &iox_service_details.static_details;
 
                     match iox_service_details.messaging_pattern() {
-                        MessagingPattern::PublishSubscribe(_) => {
-                            on_discovered(iox_service_details);
-                        }
-                        MessagingPattern::Event(_) => {
+                        MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_) => {
                             on_discovered(iox_service_details);
                         }
                         _ => { /* Not supported. Nothing to do. */ }
