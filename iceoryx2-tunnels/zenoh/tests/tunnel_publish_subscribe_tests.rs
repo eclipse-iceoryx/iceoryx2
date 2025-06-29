@@ -62,7 +62,7 @@ mod zenoh_tunnel_publish_subscribe {
         };
 
         let mut tunnel = Tunnel::<S>::create(&tunnel_config, &iox_config, &z_config_a).unwrap();
-        assert_that!(tunnel.open_channels().len(), eq 0);
+        assert_that!(tunnel.active_channels().len(), eq 0);
 
         // Service
         let iox_node = NodeBuilder::new()
@@ -86,12 +86,12 @@ mod zenoh_tunnel_publish_subscribe {
         // [[ HOST A ]]
         // Respond to discovered services
         tunnel.discover(Scope::Iceoryx).unwrap();
-        assert_that!(tunnel.open_channels().len(), eq 2);
+        assert_that!(tunnel.active_channels().len(), eq 2);
         assert_that!(tunnel
-            .open_channels()
+            .active_channels()
             .contains(&ChannelInfo::Publisher(String::from(iox_service.service_id().as_str()))), eq true);
         assert_that!(tunnel
-            .open_channels()
+            .active_channels()
             .contains(&ChannelInfo::Subscriber(String::from(iox_service.service_id().as_str()))), eq true);
     }
 
@@ -108,7 +108,7 @@ mod zenoh_tunnel_publish_subscribe {
         let iox_config = generate_isolated_config();
         let tunnel_config = TunnelConfig::default();
         let mut tunnel = Tunnel::<S>::create(&tunnel_config, &iox_config, &z_config).unwrap();
-        assert_that!(tunnel.open_channels().len(), eq 0);
+        assert_that!(tunnel.active_channels().len(), eq 0);
 
         // Service
         let iox_node = NodeBuilder::new()
@@ -128,12 +128,12 @@ mod zenoh_tunnel_publish_subscribe {
         // [[ HOST A ]]
         // Discover
         tunnel.discover(Scope::Iceoryx).unwrap();
-        assert_that!(tunnel.open_channels().len(), eq 2);
+        assert_that!(tunnel.active_channels().len(), eq 2);
         assert_that!(tunnel
-            .open_channels()
+            .active_channels()
             .contains(&ChannelInfo::Publisher(String::from(iox_service.service_id().as_str()))), eq true);
         assert_that!(tunnel
-            .open_channels()
+            .active_channels()
             .contains(&ChannelInfo::Subscriber(String::from(iox_service.service_id().as_str()))), eq true);
     }
 
@@ -169,12 +169,12 @@ mod zenoh_tunnel_publish_subscribe {
 
         // Discover
         tunnel.discover(Scope::Iceoryx).unwrap();
-        assert_that!(tunnel.open_channels().len(), eq 2);
+        assert_that!(tunnel.active_channels().len(), eq 2);
         assert_that!(tunnel
-            .open_channels()
+            .active_channels()
             .contains(&ChannelInfo::Publisher(String::from(iox_service.service_id().as_str()))), eq true);
         assert_that!(tunnel
-            .open_channels()
+            .active_channels()
             .contains(&ChannelInfo::Subscriber(String::from(iox_service.service_id().as_str()))), eq true);
 
         // Query Zenoh for Services
@@ -217,7 +217,7 @@ mod zenoh_tunnel_publish_subscribe {
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a =
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
-        assert_that!(tunnel_a.open_channels().len(), eq 0);
+        assert_that!(tunnel_a.active_channels().len(), eq 0);
 
         // [[ HOST B ]]
         // Tunnel
@@ -226,7 +226,7 @@ mod zenoh_tunnel_publish_subscribe {
         let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b =
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
-        assert_that!(tunnel_b.open_channels().len(), eq 0);
+        assert_that!(tunnel_b.active_channels().len(), eq 0);
 
         // Service
         let iox_node_b = NodeBuilder::new()
@@ -246,17 +246,17 @@ mod zenoh_tunnel_publish_subscribe {
         // [[ HOST A ]]
         // Discover - nothing should be discovered
         tunnel_a.discover(Scope::Zenoh).unwrap();
-        assert_that!(tunnel_a.open_channels().len(), eq 0);
+        assert_that!(tunnel_a.active_channels().len(), eq 0);
 
         // [[ HOST B ]]
         // Discover - service should be announced
         tunnel_b.discover(Scope::Iceoryx).unwrap();
-        assert_that!(tunnel_b.open_channels().len(), eq 2);
+        assert_that!(tunnel_b.active_channels().len(), eq 2);
         assert_that!(tunnel_b
-            .open_channels()
+            .active_channels()
             .contains(&ChannelInfo::Publisher(String::from(iox_service_b.service_id().as_str()))), eq true);
         assert_that!(tunnel_b
-            .open_channels()
+            .active_channels()
             .contains(&ChannelInfo::Subscriber(String::from(iox_service_b.service_id().as_str()))), eq true);
 
         // [[ HOST A ]]
@@ -265,7 +265,7 @@ mod zenoh_tunnel_publish_subscribe {
             || {
                 tunnel_a.discover(Scope::Zenoh).unwrap();
 
-                let tunneled_ports = tunnel_a.open_channels();
+                let tunneled_ports = tunnel_a.active_channels();
                 let tunneled_publisher = tunneled_ports.contains(&ChannelInfo::Publisher(
                     String::from(iox_service_b.service_id().as_str()),
                 ));
@@ -307,7 +307,7 @@ mod zenoh_tunnel_publish_subscribe {
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a =
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
-        assert_that!(tunnel_a.open_channels().len(), eq 0);
+        assert_that!(tunnel_a.active_channels().len(), eq 0);
 
         // Publisher
         let iox_node_a = NodeBuilder::new()
@@ -323,7 +323,7 @@ mod zenoh_tunnel_publish_subscribe {
 
         // Discover
         tunnel_a.discover(Scope::Iceoryx).unwrap();
-        let tunneled_ports_a = tunnel_a.open_channels();
+        let tunneled_ports_a = tunnel_a.active_channels();
         assert_that!(tunneled_ports_a.len(), eq 2);
         assert_that!(tunneled_ports_a
             .contains(&ChannelInfo::Publisher(String::from(iox_service_a.service_id().as_str()))), eq true);
@@ -337,14 +337,14 @@ mod zenoh_tunnel_publish_subscribe {
         let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b =
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
-        assert_that!(tunnel_b.open_channels().len(), eq 0);
+        assert_that!(tunnel_b.active_channels().len(), eq 0);
 
         // Discover
         retry(
             || {
                 tunnel_b.discover(Scope::Zenoh).unwrap();
 
-                let tunneled_ports = tunnel_b.open_channels();
+                let tunneled_ports = tunnel_b.active_channels();
                 let tunneled_publisher = tunneled_ports.contains(&ChannelInfo::Publisher(
                     String::from(iox_service_a.service_id().as_str()),
                 ));
@@ -457,7 +457,7 @@ mod zenoh_tunnel_publish_subscribe {
         let tunnel_config_a = TunnelConfig::default();
         let mut tunnel_a =
             Tunnel::<S>::create(&tunnel_config_a, &iox_config_a, &z_config_a).unwrap();
-        assert_that!(tunnel_a.open_channels().len(), eq 0);
+        assert_that!(tunnel_a.active_channels().len(), eq 0);
 
         // Publisher
         let iox_node_a = NodeBuilder::new()
@@ -477,7 +477,7 @@ mod zenoh_tunnel_publish_subscribe {
 
         // Discover
         tunnel_a.discover(Scope::Iceoryx).unwrap();
-        let tunneled_services_a = tunnel_a.open_channels();
+        let tunneled_services_a = tunnel_a.active_channels();
         assert_that!(tunneled_services_a.len(), eq 2);
         assert_that!(tunneled_services_a
             .contains(&ChannelInfo::Publisher(String::from(iox_service_a.service_id().as_str()))), eq true);
@@ -491,14 +491,14 @@ mod zenoh_tunnel_publish_subscribe {
         let tunnel_config_b = TunnelConfig::default();
         let mut tunnel_b =
             Tunnel::<S>::create(&tunnel_config_b, &iox_config_b, &z_config_b).unwrap();
-        assert_that!(tunnel_b.open_channels().len(), eq 0);
+        assert_that!(tunnel_b.active_channels().len(), eq 0);
 
         // Discover
         retry(
             || {
                 tunnel_b.discover(Scope::Zenoh).unwrap();
 
-                let tunneled_ports = tunnel_b.open_channels();
+                let tunneled_ports = tunnel_b.active_channels();
                 let tunneled_publisher = tunneled_ports.contains(&ChannelInfo::Publisher(
                     String::from(iox_service_a.service_id().as_str()),
                 ));
@@ -635,7 +635,7 @@ mod zenoh_tunnel_publish_subscribe {
 
         // Discover
         tunnel_a.discover(Scope::Iceoryx).unwrap();
-        let tunneled_ports_a = tunnel_a.open_channels();
+        let tunneled_ports_a = tunnel_a.active_channels();
         assert_that!(tunneled_ports_a.len(), eq 2);
         assert_that!(tunneled_ports_a
             .contains(&ChannelInfo::Publisher(String::from(iox_service_a.service_id().as_str()))), eq true);
