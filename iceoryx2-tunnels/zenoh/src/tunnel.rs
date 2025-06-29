@@ -10,16 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use crate::channel::Channel;
+use crate::channel::ListenerChannel;
+use crate::channel::NotifierChannel;
+use crate::channel::PropagationError;
+use crate::channel::PublisherChannel;
+use crate::channel::SubscriberChannel;
 use crate::discovery::Discovery;
 use crate::discovery::DiscoveryError;
 use crate::discovery::IceoryxDiscovery;
 use crate::discovery::ZenohDiscovery;
 use crate::middleware;
-use crate::Channel;
-use crate::ListenerChannel;
-use crate::NotifierChannel;
-use crate::PublisherChannel;
-use crate::SubscriberChannel;
 
 use iceoryx2::config::Config as IceoryxConfig;
 use iceoryx2::node::Node as IceoryxNode;
@@ -63,7 +64,7 @@ pub enum Scope {
 }
 
 /// Represents information about an active communication channel in the tunnel.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ChannelInfo {
     Publisher(String),
     Subscriber(String),
@@ -171,31 +172,54 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     }
 
     /// Propagates payloads between all connected hosts.
-    pub fn propagate(&self) {
-        // TODO(correctioness): consolidate and forward errors
+    pub fn propagate(&self) -> Result<(), PropagationError> {
+        // Attempted to propagate all channels. Continue to next channel if error encountered.
+        let mut success = true;
         for (id, channel) in &self.subscriber_channels {
             if let Err(e) = channel.propagate() {
-                error!("Failed to propagate ({:?}): {}", id, e);
+                error!(
+                    "Failed to propagate data through subscriber channel with id {:?}: {}",
+                    id, e
+                );
+                success = false;
             }
         }
         for (id, channel) in &self.publisher_channels {
             if let Err(e) = channel.propagate() {
-                error!("Failed to propagate ({:?}): {}", id, e);
+                error!(
+                    "Failed to propagate data through publisher channel with id {:?}: {}",
+                    id, e
+                );
+                success = false;
             }
         }
         for (id, channel) in &self.notifier_channels {
             if let Err(e) = channel.propagate() {
-                error!("Failed to propagate ({:?}): {}", id, e);
+                error!(
+                    "Failed to propagate data through notifier channel with id {:?}: {}",
+                    id, e
+                );
+                success = false;
             }
         }
         for (id, channel) in &self.listener_channels {
             if let Err(e) = channel.propagate() {
-                error!("Failed to propagate ({:?}): {}", id, e);
+                error!(
+                    "Failed to propagate data through listener channel with id {:?}: {}",
+                    id, e
+                );
+                success = false;
             }
         }
+
+        if !success {
+            return Err(PropagationError::Incomplete);
+        }
+
+        Ok(())
     }
 
-    /// Returns all currently open channels in the tunnel.
+    /// Returns all currently active channels in the tunnel.
     pub fn active_channels(&self) -> Vec<ChannelInfo> {
         let mut ports = Vec::new();
 
@@ -216,7 +240,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     }
 }
 
-// TODO(correctness): Proper error handling and clean-up in error cases
+// TODO(correctness): Proper clean-up in error cases
 
 /// Handles the discovery of a service and creates appropriate channels for it.
 ///

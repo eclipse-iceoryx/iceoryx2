@@ -395,8 +395,8 @@ mod zenoh_tunnel_publish_subscribe {
             iox_sample_sent_a.send().unwrap();
 
             // Propagate over tunnels
-            tunnel_a.propagate();
-            tunnel_b.propagate();
+            tunnel_a.propagate().unwrap();
+            tunnel_b.propagate().unwrap();
 
             // Receive
             retry(
@@ -413,8 +413,8 @@ mod zenoh_tunnel_publish_subscribe {
                             }
                         }
                         None => {
-                            tunnel_a.propagate();
-                            tunnel_b.propagate();
+                            tunnel_a.propagate().unwrap();
+                            tunnel_b.propagate().unwrap();
                             return Err("failed to receive expected sample");
                         }
                     }
@@ -552,8 +552,8 @@ mod zenoh_tunnel_publish_subscribe {
             iox_sample_sent_a.send().unwrap();
 
             // Propagate
-            tunnel_a.propagate();
-            tunnel_b.propagate();
+            tunnel_a.propagate().unwrap();
+            tunnel_b.propagate().unwrap();
 
             // Receive
             retry(
@@ -570,8 +570,8 @@ mod zenoh_tunnel_publish_subscribe {
                             }
                         }
                         None => {
-                            tunnel_a.propagate();
-                            tunnel_b.propagate();
+                            tunnel_a.propagate().unwrap();
+                            tunnel_b.propagate().unwrap();
                             return Err("failed to receive expected sample");
                         }
                     }
@@ -656,7 +656,7 @@ mod zenoh_tunnel_publish_subscribe {
         while let Ok(Some(_)) = iox_subscriber_a.receive() {}
 
         // Propagate
-        tunnel_a.propagate();
+        tunnel_a.propagate().unwrap();
 
         // Receive - Sample should not loop back and be received again
         if iox_subscriber_a.receive().unwrap().is_some() {

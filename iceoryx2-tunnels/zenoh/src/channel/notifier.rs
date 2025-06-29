@@ -71,7 +71,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for NotifierChannel<'_, Se
                         self.z_notifier
                             .put(event_id.as_value().to_ne_bytes())
                             .wait()
-                            .map_err(|_| PropagationError::Error)?;
+                            .map_err(|_| PropagationError::OtherPort)?;
                         info!(
                             "PROPAGATED(iceoryx->zenoh): Event({}) {} [{}]",
                             event_id.as_value(),
