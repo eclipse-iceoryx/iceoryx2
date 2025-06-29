@@ -10,15 +10,27 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod event;
-mod publish_subscribe;
+mod publisher;
+pub use publisher::*;
 
-pub use event::*;
-pub use publish_subscribe::*;
+mod subscriber;
+pub use subscriber::*;
 
+mod listener;
+pub use listener::*;
+
+mod notifier;
+pub use notifier::*;
+
+/// Represents errors that can occur during the propagation process in a channel.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PropagationError {
-    Error,
+    /// Indicates a failure occurred in the iceoryx port during propagation.
+    IceoryxPort,
+    /// Indicates a failure occurred in a port other than the iceoryx port during propagation.
+    OtherPort,
+    /// Indicates that propagation was only partially successful, with at least one channel failing.
+    Incomplete,
 }
 
 impl core::fmt::Display for PropagationError {
@@ -29,6 +41,6 @@ impl core::fmt::Display for PropagationError {
 
 impl core::error::Error for PropagationError {}
 
-pub trait Connection {
+pub trait Channel {
     fn propagate(&self) -> Result<(), PropagationError>;
 }

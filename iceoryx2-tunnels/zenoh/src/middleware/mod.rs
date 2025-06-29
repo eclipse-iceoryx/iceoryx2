@@ -10,14 +10,5 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub(crate) mod channel;
-pub(crate) use channel::*;
-
-pub(crate) mod discovery;
-
-pub mod keys;
-
-pub(crate) mod middleware;
-
-mod tunnel;
-pub use tunnel::*;
+pub(crate) mod iceoryx;
+pub(crate) mod zenoh;
