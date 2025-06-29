@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         // when the cyclic trigger guard gets notified we send out a new message
         if attachment_id.has_event_from(&cyclic_trigger_guard) {
-            println!("send message: {}", counter);
+            println!("send message: {counter}");
             publisher.send(counter).unwrap();
             counter += 1;
             // when something else happens on the publisher we handle the events

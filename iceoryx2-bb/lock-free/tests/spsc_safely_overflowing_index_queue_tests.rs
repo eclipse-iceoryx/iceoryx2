@@ -157,21 +157,17 @@ fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently() {
 
             barrier.wait();
             loop {
-                match sut_consumer.pop() {
-                    Some(v) => {
-                        guard.push(v);
-                        if v == LIMIT {
-                            return;
-                        }
+                if let Some(v) = sut_consumer.pop() {
+                    guard.push(v);
+                    if v == LIMIT {
+                        return;
                     }
-                    None => (),
                 }
             }
         });
     });
 
-    let mut element_counter = vec![];
-    element_counter.resize(LIMIT as usize + 1, 0);
+    let mut element_counter = vec![0; LIMIT as usize + 1];
 
     let guard = producer_storage.lock().unwrap();
     for i in &*guard {
@@ -230,21 +226,17 @@ fn spsc_safely_overflowing_index_queue_push_pop_works_concurrently_with_full_que
 
             barrier.wait();
             loop {
-                match sut_consumer.pop() {
-                    Some(v) => {
-                        guard.push(v);
-                        if v == LIMIT {
-                            return;
-                        }
+                if let Some(v) = sut_consumer.pop() {
+                    guard.push(v);
+                    if v == LIMIT {
+                        return;
                     }
-                    None => (),
                 }
             }
         });
     });
 
-    let mut element_counter = vec![];
-    element_counter.resize(LIMIT as usize + 1, 0);
+    let mut element_counter = vec![0; LIMIT as usize + 1];
 
     let guard = producer_storage.lock().unwrap();
     for i in &*guard {

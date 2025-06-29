@@ -45,11 +45,11 @@ impl Listener {
         match &self.0 {
             ListenerType::Ipc(v) => Ok(v
                 .try_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
             ListenerType::Local(v) => Ok(v
                 .try_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
         }
     }
@@ -61,11 +61,11 @@ impl Listener {
         match &self.0 {
             ListenerType::Ipc(v) => Ok(v
                 .timed_wait_one(timeout.0)
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
             ListenerType::Local(v) => Ok(v
                 .timed_wait_one(timeout.0)
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
         }
     }
@@ -77,11 +77,11 @@ impl Listener {
         match &self.0 {
             ListenerType::Ipc(v) => Ok(v
                 .blocking_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
             ListenerType::Local(v) => Ok(v
                 .blocking_wait_one()
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
         }
     }
@@ -94,10 +94,10 @@ impl Listener {
         match &self.0 {
             ListenerType::Ipc(v) => v
                 .try_wait_all(|e| event_ids.push(EventId(e)))
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?,
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
             ListenerType::Local(v) => v
                 .try_wait_all(|e| event_ids.push(EventId(e)))
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?,
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
         }
 
         Ok(event_ids)
@@ -112,10 +112,10 @@ impl Listener {
         match &self.0 {
             ListenerType::Ipc(v) => v
                 .timed_wait_all(|e| event_ids.push(EventId(e)), timeout.0)
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?,
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
             ListenerType::Local(v) => v
                 .timed_wait_all(|e| event_ids.push(EventId(e)), timeout.0)
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?,
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
         }
 
         Ok(event_ids)
@@ -130,10 +130,10 @@ impl Listener {
         match &self.0 {
             ListenerType::Ipc(v) => v
                 .blocking_wait_all(|e| event_ids.push(EventId(e)))
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?,
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
             ListenerType::Local(v) => v
                 .blocking_wait_all(|e| event_ids.push(EventId(e)))
-                .map_err(|e| ListenerWaitError::new_err(format!("{:?}", e)))?,
+                .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
         }
 
         Ok(event_ids)

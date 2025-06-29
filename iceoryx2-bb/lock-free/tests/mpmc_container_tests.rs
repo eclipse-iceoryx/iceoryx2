@@ -182,7 +182,7 @@ mod mpmc_container {
 
             unsafe {
                 sut.remove(
-                    stored_handles[stored_handles.len() - 2].clone(),
+                    stored_handles[stored_handles.len() - 2],
                     ReleaseMode::Default,
                 )
             };

@@ -28,7 +28,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     while node.wait(Duration::ZERO).is_ok() {
         if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
-            println!("event was triggered with id: {:?}", event_id);
+            println!("event was triggered with id: {event_id:?}");
         }
     }
 

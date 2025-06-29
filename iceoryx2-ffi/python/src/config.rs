@@ -1052,7 +1052,7 @@ pub fn global_config() -> Config {
 pub fn setup_global_config_from_file(config_file: &FilePath) -> PyResult<Config> {
     Ok(Config(Parc::new(
         iceoryx2::config::Config::setup_global_config_from_file(&config_file.0.clone())
-            .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
+            .map_err(|e| ConfigCreationError::new_err(format!("{e:?}")))?
             .clone(),
     )))
 }
@@ -1063,7 +1063,7 @@ pub fn setup_global_config_from_file(config_file: &FilePath) -> PyResult<Config>
 pub fn from_file(config_file: &FilePath) -> PyResult<Config> {
     Ok(Config(Parc::new(
         iceoryx2::config::Config::from_file(&config_file.0.clone())
-            .map_err(|e| ConfigCreationError::new_err(format!("{:?}", e)))?
+            .map_err(|e| ConfigCreationError::new_err(format!("{e:?}")))?
             .clone(),
     )))
 }

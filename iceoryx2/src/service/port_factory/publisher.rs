@@ -168,7 +168,7 @@ impl<
 
     /// Creates a new [`Publisher`] or returns a [`PublisherCreateError`] on failure.
     pub fn create(self) -> Result<Publisher<Service, Payload, UserHeader>, PublisherCreateError> {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         Ok(
             fail!(from origin, when Publisher::new(&self.factory.service, self.factory.service.__internal_state().static_config.publish_subscribe(), self.config),
                 "Failed to create new Publisher port."),

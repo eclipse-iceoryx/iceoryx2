@@ -27,7 +27,7 @@ pub enum UnableToDeliverStrategy {
 #[pymethods]
 impl UnableToDeliverStrategy {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 }
 

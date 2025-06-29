@@ -308,7 +308,7 @@ impl<T: Send + Sync + Debug> Builder<'_, T> {
             supplementary_len,
         );
 
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         if !self
             .initializer
             .call(unsafe { &mut (*value).data }, &mut allocator)

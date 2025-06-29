@@ -45,7 +45,7 @@ mod node {
 
     #[test]
     fn basic_node_name_test<S: Service + ServiceTypeMapping>(
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<(), Box<dyn core::error::Error>> {
         unsafe {
             let node_handle = create_node::<S>("hypnotoad");
 

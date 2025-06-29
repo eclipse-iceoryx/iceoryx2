@@ -27,7 +27,7 @@ pub enum SignalHandlingMode {
 #[pymethods]
 impl SignalHandlingMode {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 }
 

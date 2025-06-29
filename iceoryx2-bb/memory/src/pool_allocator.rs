@@ -74,9 +74,7 @@ impl PoolAllocator {
     fn verify_init(&self, source: &str) {
         debug_assert!(
             self.is_memory_initialized.load(Ordering::Relaxed),
-            "From: {:?}, Undefined behavior when calling \"{}\" and the object is not initialized.",
-            self,
-            source
+            "From: {self:?}, Undefined behavior when calling \"{source}\" and the object is not initialized."
         );
     }
 
@@ -175,8 +173,7 @@ impl PoolAllocator {
             !(position < self.start
                 || position > self.start + self.size
                 || (position - self.start) % self.bucket_size != 0),
-            "The pointer {:?} is not managed by this allocator.",
-            ptr
+            "The pointer {ptr:?} is not managed by this allocator."
         );
     }
 

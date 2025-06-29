@@ -159,7 +159,7 @@ pub enum PublisherCreateError {
 
 impl core::fmt::Display for PublisherCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "PublisherCreateError::{:?}", self)
+        std::write!(f, "PublisherCreateError::{self:?}")
     }
 }
 

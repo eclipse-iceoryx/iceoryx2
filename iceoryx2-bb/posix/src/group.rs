@@ -204,7 +204,7 @@ impl Group {
         let mut group_ptr: *mut posix::group = &mut group;
         let mut buffer: [posix::c_char; GROUP_BUFFER_SIZE] = [0; GROUP_BUFFER_SIZE];
 
-        let origin = format!("Group::from_gid({})", gid);
+        let origin = format!("Group::from_gid({gid})");
         let msg = "Unable to acquire group entry";
         let errno_value = unsafe {
             posix::getgrgid_r(
@@ -243,7 +243,7 @@ impl Group {
         let mut group_ptr: *mut posix::group = &mut group;
         let mut buffer: [posix::c_char; GROUP_BUFFER_SIZE] = [0; GROUP_BUFFER_SIZE];
 
-        let origin = format!("Group::from_name({})", group_name);
+        let origin = format!("Group::from_name({group_name})");
         let msg = "Unable to acquire group entry";
 
         let errno_value = unsafe {

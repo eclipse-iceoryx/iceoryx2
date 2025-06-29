@@ -62,7 +62,7 @@ mod shm_allocator_pool_allocator {
         let test_context = TestContext::new(Layout::from_size_align(2, 1).unwrap());
 
         assert_that!(test_context.sut.number_of_buckets() as usize, eq PAYLOAD_SIZE / 2);
-        assert_that!(test_context.sut.relative_start_address() as usize, eq 0);
+        assert_that!({ test_context.sut.relative_start_address() }, eq 0);
 
         let test_context = TestContext::new(BUCKET_CONFIG);
 

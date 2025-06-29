@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         sample.send()?;
 
-        println!("Send sample {} ...", counter);
+        println!("Send sample {counter} ...");
     }
 
     println!("exit");

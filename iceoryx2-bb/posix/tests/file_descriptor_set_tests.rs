@@ -212,7 +212,7 @@ fn file_descriptor_guard_has_access_to_underlying_fd() {
 #[test]
 fn file_descriptor_debug_works() {
     let sut = FileDescriptorSet::new();
-    assert_that!(format!("{:?}", sut).starts_with("FileDescriptorSet"), eq true);
+    assert_that!(format!("{sut:?}").starts_with("FileDescriptorSet"), eq true);
 }
 
 #[test]

@@ -84,7 +84,7 @@ pub enum SubscriberCreateError {
 
 impl core::fmt::Display for SubscriberCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "SubscriberCreateError::{:?}", self)
+        std::write!(f, "SubscriberCreateError::{self:?}")
     }
 }
 

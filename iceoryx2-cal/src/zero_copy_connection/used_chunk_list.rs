@@ -124,8 +124,7 @@ pub mod details {
         fn verify_init(&self, source: &str) {
             debug_assert!(
                 self.is_memory_initialized.load(Ordering::Relaxed),
-                "Undefined behavior when calling \"{}\" and the object is not initialized.",
-                source
+                "Undefined behavior when calling \"{source}\" and the object is not initialized."
             );
         }
 
@@ -133,8 +132,7 @@ pub mod details {
             self.verify_init("set");
             debug_assert!(
                 idx < self.capacity,
-                "This should never happen. Out of bounds access with index {}.",
-                idx
+                "This should never happen. Out of bounds access with index {idx}."
             );
 
             unsafe { (*self.data_ptr.as_ptr().add(idx)).swap(value, Ordering::Relaxed) }

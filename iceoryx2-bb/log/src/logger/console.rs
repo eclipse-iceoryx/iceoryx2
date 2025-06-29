@@ -105,10 +105,10 @@ impl Logger {
 
     fn print(separator: &str, color: &str, output: &str) {
         if std::io::stdout().is_terminal() {
-            std::print!("{}", color);
+            std::print!("{color}");
         }
 
-        std::print!("{}{}", separator, output);
+        std::print!("{separator}{output}");
 
         if std::io::stdout().is_terminal() {
             std::println!("\x1b[0m");

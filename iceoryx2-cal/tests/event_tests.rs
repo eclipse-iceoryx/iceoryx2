@@ -588,7 +588,7 @@ mod event {
             let mut vec_of_ids = vec![];
             wait_call(&mut vec_of_ids, &sut_listener);
 
-            assert_that!(vec_of_ids, len i as usize);
+            assert_that!(vec_of_ids, len { i });
             for n in 0..i {
                 assert_that!(vec_of_ids, contains TriggerId::new(n));
             }

@@ -44,12 +44,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         let request = request.write_from_fn(|byte_idx| ((byte_idx + counter) % 255) as u8);
         let pending_response = request.send()?;
 
-        println!(
-            "send request {} with {} bytes ...",
-            counter, required_memory_size
-        );
+        println!("send request {counter} with {required_memory_size} bytes ...");
 
-        if !node.wait(CYCLE_TIME).is_ok() {
+        if node.wait(CYCLE_TIME).is_err() {
             break;
         }
 

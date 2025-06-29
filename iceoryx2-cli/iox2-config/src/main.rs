@@ -51,12 +51,12 @@ fn main() -> Result<()> {
             Action::Show { subcommand } => match subcommand {
                 Some(ShowSubcommand::System) => {
                     if let Err(e) = commands::show_system_config() {
-                        eprintln!("Failed to show options: {}", e);
+                        eprintln!("Failed to show options: {e}");
                     }
                 }
                 Some(ShowSubcommand::Current) => {
                     if let Err(e) = commands::show_current_config() {
-                        eprintln!("Failed to show options: {}", e);
+                        eprintln!("Failed to show options: {e}");
                     }
                 }
                 None => {
@@ -68,12 +68,12 @@ fn main() -> Result<()> {
             Action::Generate { subcommand } => match subcommand {
                 Some(GenerateSubcommand::Local) => {
                     if let Err(e) = commands::generate_local() {
-                        eprintln!("Failed to generate configuration file: {}", e);
+                        eprintln!("Failed to generate configuration file: {e}");
                     }
                 }
                 Some(GenerateSubcommand::Global) => {
                     if let Err(e) = commands::generate_global() {
-                        eprintln!("Failed to generate configuration file: {}", e);
+                        eprintln!("Failed to generate configuration file: {e}");
                     }
                 }
                 None => {

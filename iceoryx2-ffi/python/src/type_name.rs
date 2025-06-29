@@ -31,7 +31,7 @@ impl TypeName {
             iceoryx2::service::static_config::message_type_details::TypeNameString::from_bytes(
                 name.as_bytes(),
             )
-            .map_err(|e| SemanticStringError::new_err(format!("{:?}", e)))?,
+            .map_err(|e| SemanticStringError::new_err(format!("{e:?}")))?,
         ))
     }
 

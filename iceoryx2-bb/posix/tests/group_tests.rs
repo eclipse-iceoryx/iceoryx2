@@ -54,7 +54,11 @@ fn group_as_works() {
         .to_string()
         .as_group()
         .unwrap();
-    let root_3 = (&root_1.details().unwrap().name().to_string())
+    let root_3 = root_1
+        .details()
+        .unwrap()
+        .name()
+        .to_string()
         .as_group()
         .unwrap();
 

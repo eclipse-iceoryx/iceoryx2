@@ -74,8 +74,7 @@ impl OneChunkAllocator {
     fn verify_ptr_is_managed_by_allocator(&self, ptr: NonNull<u8>) {
         debug_assert!(
             ptr.as_ptr() as usize == self.allocated_chunk_start.load(Ordering::Relaxed),
-            "Tried to access memory ({:?}) that does not belong to this allocator.",
-            ptr
+            "Tried to access memory ({ptr:?}) that does not belong to this allocator."
         );
     }
 
