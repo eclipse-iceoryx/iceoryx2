@@ -39,7 +39,7 @@ pub(crate) struct ZenohDiscovery<'a, ServiceType: iceoryx2::service::Service> {
 impl<ServiceType: iceoryx2::service::Service> ZenohDiscovery<'_, ServiceType> {
     pub fn create(z_session: &ZenohSession) -> Result<Self, CreationError> {
         let querier = z_session
-            .declare_querier(keys::discovery())
+            .declare_querier(keys::service_discovery())
             .allowed_destination(Locality::Remote)
             .wait()
             .map_err(|_e| CreationError::Error)?;
