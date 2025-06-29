@@ -10,9 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use super::DiscoveryError;
-
 use crate::discovery::Discovery;
+use crate::discovery::DiscoveryError;
 use crate::keys;
 
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;

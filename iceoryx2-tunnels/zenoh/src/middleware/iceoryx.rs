@@ -1,0 +1,141 @@
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use iceoryx2::node::Node;
+use iceoryx2::port::listener::Listener;
+use iceoryx2::port::listener::ListenerCreateError;
+use iceoryx2::port::notifier::Notifier;
+use iceoryx2::port::notifier::NotifierCreateError;
+use iceoryx2::port::publisher::Publisher;
+use iceoryx2::port::publisher::PublisherCreateError;
+use iceoryx2::port::subscriber::Subscriber;
+use iceoryx2::port::subscriber::SubscriberCreateError;
+use iceoryx2::prelude::AllocationStrategy;
+use iceoryx2::service::builder::event::EventOpenOrCreateError;
+use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
+use iceoryx2::service::builder::CustomHeaderMarker;
+use iceoryx2::service::builder::CustomPayloadMarker;
+use iceoryx2::service::port_factory::event::PortFactory as EventService;
+use iceoryx2::service::port_factory::publish_subscribe::PortFactory as PublishSubscribeService;
+use iceoryx2::service::static_config::StaticConfig as ServiceConfig;
+use iceoryx2_bb_log::info;
+
+/// Creates an iceoryx2 publish-subscribe service matching the provided service configuration.
+pub(crate) fn create_publish_subscribe_service<ServiceType: iceoryx2::service::Service>(
+    node: &Node<ServiceType>,
+    service_config: &ServiceConfig,
+) -> Result<
+    PublishSubscribeService<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
+    PublishSubscribeOpenOrCreateError,
+> {
+    let port_config = service_config.publish_subscribe();
+    let service = unsafe {
+        node.service_builder(service_config.name())
+            .publish_subscribe::<[CustomPayloadMarker]>()
+            .user_header::<CustomHeaderMarker>()
+            .__internal_set_user_header_type_details(
+                &port_config.message_type_details().user_header,
+            )
+            .__internal_set_payload_type_details(&port_config.message_type_details().payload)
+            .enable_safe_overflow(port_config.has_safe_overflow())
+            .history_size(port_config.history_size())
+            .max_publishers(port_config.max_publishers())
+            .max_subscribers(port_config.max_subscribers())
+            .subscriber_max_buffer_size(port_config.subscriber_max_buffer_size())
+            .subscriber_max_buffer_size(port_config.subscriber_max_borrowed_samples())
+            .open_or_create()?
+    };
+
+    Ok(service)
+}
+
+/// Creates an iceoryx event service matching the provided service configuration.
+pub(crate) fn create_event_service<ServiceType: iceoryx2::service::Service>(
+    node: &Node<ServiceType>,
+    service_config: &ServiceConfig,
+) -> Result<EventService<ServiceType>, EventOpenOrCreateError> {
+    let service = node
+        .service_builder(service_config.name())
+        .event()
+        .open_or_create()?;
+
+    Ok(service)
+}
+
+/// Creates an iceoryx publisher to the provided service.
+pub(crate) fn create_publisher<ServiceType: iceoryx2::service::Service>(
+    service: &PublishSubscribeService<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
+    service_config: &ServiceConfig,
+) -> Result<Publisher<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>, PublisherCreateError>
+{
+    let publisher = service
+        .publisher_builder()
+        .allocation_strategy(AllocationStrategy::PowerOfTwo)
+        .create()?;
+
+    info!(
+        "PUBLISHER(iceoryx) {} [{}]",
+        service_config.service_id().as_str(),
+        service_config.name()
+    );
+
+    Ok(publisher)
+}
+
+/// Creates an iceoryx subscriber to the provided service.
+pub(crate) fn create_subscriber<ServiceType: iceoryx2::service::Service>(
+    service: &PublishSubscribeService<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
+    service_config: &ServiceConfig,
+) -> Result<Subscriber<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>, SubscriberCreateError>
+{
+    let subscriber = service.subscriber_builder().create()?;
+
+    info!(
+        "SUBSCRIBER Subscriber {} [{}]",
+        service_config.service_id().as_str(),
+        service_config.name()
+    );
+
+    Ok(subscriber)
+}
+
+/// Creates an iceoryx notifier to the provided service.
+pub(crate) fn create_notifier<ServiceType: iceoryx2::service::Service>(
+    service: &EventService<ServiceType>,
+    service_config: &ServiceConfig,
+) -> Result<Notifier<ServiceType>, NotifierCreateError> {
+    let notifier = service.notifier_builder().create()?;
+
+    info!(
+        "NOTIFIER(iceoryx) {} [{}]",
+        service_config.service_id().as_str(),
+        service_config.name()
+    );
+
+    Ok(notifier)
+}
+
+/// Creates an iceoryx listener for the provided service.
+pub(crate) fn create_listener<ServiceType: iceoryx2::service::Service>(
+    service: &EventService<ServiceType>,
+    service_config: &ServiceConfig,
+) -> Result<Listener<ServiceType>, ListenerCreateError> {
+    let listener = service.listener_builder().create()?;
+
+    info!(
+        "LISTENER(iceoryx) {} [{}]",
+        service_config.service_id().as_str(),
+        service_config.name()
+    );
+
+    Ok(listener)
+}

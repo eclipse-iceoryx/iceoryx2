@@ -10,11 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod event;
-mod publish_subscribe;
+mod publisher;
+pub use publisher::*;
 
-pub use event::*;
-pub use publish_subscribe::*;
+mod subscriber;
+pub use subscriber::*;
+
+mod listener;
+pub use listener::*;
+
+mod notifier;
+pub use notifier::*;
 
 // TODO: More granularity in errors
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -30,6 +36,6 @@ impl core::fmt::Display for PropagationError {
 
 impl core::error::Error for PropagationError {}
 
-pub trait Connection {
+pub trait Channel {
     fn propagate(&self) -> Result<(), PropagationError>;
 }
