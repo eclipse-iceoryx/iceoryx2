@@ -81,7 +81,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             .push(FixedSizeByteString::from_bytes(b"buh")?);
 
         sample.send()?;
-        println!("{} :: send", counter);
+        println!("{counter} :: send");
 
         // receive sample and print it
         while let Some(sample) = subscriber.receive()? {

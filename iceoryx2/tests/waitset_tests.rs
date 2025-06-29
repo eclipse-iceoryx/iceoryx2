@@ -49,7 +49,7 @@ mod waitset {
         Directory::create(&path, Permission::OWNER_ALL).unwrap();
         let _ = path.add_path_entry(
             &Path::new(
-                &format!("waitset_tests_{}", UniqueSystemId::new().unwrap().value()).as_bytes(),
+                format!("waitset_tests_{}", UniqueSystemId::new().unwrap().value()).as_bytes(),
             )
             .unwrap(),
         );

@@ -679,7 +679,7 @@ impl UdpSocket {
             return Ok(number_of_bytes_sent as usize);
         }
 
-        let msg = format!("Unable to send message to {}:{}", address, port);
+        let msg = format!("Unable to send message to {address}:{port}");
         handle_errno!(UdpSendError, from self,
             Errno::ECONNRESET => (ConnectionReset, "{} since the connection was reset.", msg),
             Errno::EINTR => (Interrupt, "{} due to an interrupt signal.", msg),

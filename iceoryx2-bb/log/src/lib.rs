@@ -199,10 +199,9 @@ impl LogLevel {
             _ => {
                 println!(
                     "Invalid value for 'IOX2_LOG_LEVEL' environment variable!\
-                \nFound: {:?}\
+                \nFound: {log_level_string:?}\
                 \nAllowed is one of: fatal, error, warn, info, debug, trace\
-                \nSetting log level as : {:?}",
-                    log_level_string, log_level_fallback
+                \nSetting log level as : {log_level_fallback:?}"
                 );
                 log_level_fallback
             }

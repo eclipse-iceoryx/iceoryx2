@@ -45,10 +45,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         sample.send()?;
 
-        println!(
-            "Send sample {} with {} bytes...",
-            counter, required_memory_size
-        );
+        println!("Send sample {counter} with {required_memory_size} bytes...");
 
         counter += 1;
     }

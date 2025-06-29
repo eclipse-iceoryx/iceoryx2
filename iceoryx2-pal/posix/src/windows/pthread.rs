@@ -311,7 +311,7 @@ pub unsafe fn pthread_create(
     )};
 
     win32call! { SetThreadPriority(handle, to_win_priority((*attributes).priority)) };
-    win32call! { SetThreadAffinityMask(handle, core::mem::transmute::<[u8; CPU_SETSIZE/ 8], usize>((*attributes).affinity.__bits) )};
+    win32call! { SetThreadAffinityMask(handle, usize::from_ne_bytes((*attributes).affinity.__bits) )};
 
     let thread_id = GetThreadId(handle);
     (*thread).handle = handle;
@@ -406,7 +406,8 @@ pub unsafe fn pthread_setaffinity_np(
         return Errno::EINVAL as int;
     }
 
-    let (has_set_affinity, _) = win32call! { SetThreadAffinityMask(thread.handle, core::mem::transmute::<[u8; CPU_SETSIZE/ 8], usize>((*cpuset).__bits) )};
+    let (has_set_affinity, _) =
+        win32call! { SetThreadAffinityMask(thread.handle, usize::from_ne_bytes((*cpuset).__bits) )};
     if has_set_affinity == 0 {
         return Errno::EINVAL as int;
     }

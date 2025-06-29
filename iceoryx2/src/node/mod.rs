@@ -234,7 +234,7 @@ pub enum NodeCreationFailure {
 
 impl core::fmt::Display for NodeCreationFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NodeCreationFailure::{:?}", self)
+        std::write!(f, "NodeCreationFailure::{self:?}")
     }
 }
 
@@ -251,7 +251,7 @@ pub enum NodeWaitFailure {
 
 impl core::fmt::Display for NodeWaitFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NodeWaitFailure::{:?}", self)
+        std::write!(f, "NodeWaitFailure::{self:?}")
     }
 }
 
@@ -270,7 +270,7 @@ pub enum NodeListFailure {
 
 impl core::fmt::Display for NodeListFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NodeListFailure::{:?}", self)
+        std::write!(f, "NodeListFailure::{self:?}")
     }
 }
 
@@ -292,7 +292,7 @@ pub enum NodeCleanupFailure {
 
 impl core::fmt::Display for NodeCleanupFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NodeCleanupFailure::{:?}", self)
+        std::write!(f, "NodeCleanupFailure::{self:?}")
     }
 }
 
@@ -701,7 +701,7 @@ fn remove_node_details_directory<Service: service::Service>(
     config: &Config,
     node_id: &NodeId,
 ) -> Result<(), NodeCleanupFailure> {
-    let origin = format!("remove_node_details_directory({:?}, {:?})", config, node_id);
+    let origin = format!("remove_node_details_directory({config:?}, {node_id:?})");
     let msg = "Unable to remove node details directory";
     let path = node_details_path(config, node_id);
     match <Service::StaticStorage as NamedConceptMgmt>::remove_path_hint(&path) {
@@ -1015,7 +1015,7 @@ impl<Service: service::Service> Node<Service> {
         }
 
         let msg = "Unable to list all nodes";
-        let origin = format!("Node::list_all_nodes({:?})", config);
+        let origin = format!("Node::list_all_nodes({config:?})");
         match result.err().unwrap() {
             NamedConceptListError::InsufficientPermissions => {
                 fail!(from origin, with NodeListFailure::InsufficientPermissions,
@@ -1038,7 +1038,7 @@ impl<Service: service::Service> Node<Service> {
         }
 
         let msg = "Unable to acquire node state from monitor";
-        let origin = format!("Node::state_from_monitor({:?})", monitor);
+        let origin = format!("Node::state_from_monitor({monitor:?})");
 
         match result.err().unwrap() {
             MonitoringStateError::Interrupt => {
@@ -1070,7 +1070,7 @@ impl<Service: service::Service> Node<Service> {
         }
 
         let msg = "Unable to acquire node monitor";
-        let origin = format!("Node::get_node_state({:?}, {:?})", config, node_id);
+        let origin = format!("Node::get_node_state({config:?}, {node_id:?})");
         match result.err().unwrap() {
             MonitoringCreateMonitorError::InsufficientPermissions => {
                 fail!(from origin, with NodeListFailure::InsufficientPermissions,
@@ -1104,7 +1104,7 @@ impl<Service: service::Service> Node<Service> {
         }
 
         let msg = "Unable to open node config storage";
-        let origin = format!("open_node_storage({:?}, {:?})", config, node_id);
+        let origin = format!("open_node_storage({config:?}, {node_id:?})");
 
         match result.err().unwrap() {
             StaticStorageOpenError::DoesNotExist => Ok(None),
@@ -1136,7 +1136,7 @@ impl<Service: service::Service> Node<Service> {
         let mut read_content =
             String::from_utf8(vec![b' '; node_storage.len() as usize]).expect("");
 
-        let origin = format!("get_node_details({:?}, {:?})", config, node_id);
+        let origin = format!("get_node_details({config:?}, {node_id:?})");
         let msg = "Unable to read node details";
 
         if node_storage
@@ -1161,10 +1161,7 @@ impl<Service: service::Service> Node<Service> {
         mut callback: F,
     ) -> Result<(), NodeReadServiceTagsFailure> {
         let origin = "Node::service_tags()";
-        let msg = format!(
-            "Unable to acquire all service tags of the node {:?}",
-            node_id
-        );
+        let msg = format!("Unable to acquire all service tags of the node {node_id:?}");
         match <Service::StaticStorage as NamedConceptMgmt>::list_cfg(
             &service_tag_config::<Service>(config, node_id),
         ) {

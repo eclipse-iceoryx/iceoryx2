@@ -78,7 +78,7 @@ pub enum EventOpenError {
 
 impl core::fmt::Display for EventOpenError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "EventOpenError::{:?}", self)
+        std::write!(f, "EventOpenError::{self:?}")
     }
 }
 
@@ -117,7 +117,7 @@ pub enum EventCreateError {
 
 impl core::fmt::Display for EventCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "EventCreateError::{:?}", self)
+        std::write!(f, "EventCreateError::{self:?}")
     }
 }
 
@@ -161,7 +161,7 @@ impl From<EventCreateError> for EventOpenOrCreateError {
 
 impl core::fmt::Display for EventOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "EventOpenOrCreateError::{:?}", self)
+        std::write!(f, "EventOpenOrCreateError::{self:?}")
     }
 }
 
@@ -563,7 +563,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
     }
 
     fn adjust_attributes_to_meaningful_values(&mut self) {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         let settings = self.base.service_config.event_mut();
 
         if settings.max_notifiers == 0 {

@@ -159,7 +159,7 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
         if service_name == service.static_details.name().to_string() && filter.matches(&service) {
             match format.as_string(&ServiceDescription::from(&service)) {
                 Ok(output) => {
-                    print!("{}", output);
+                    print!("{output}");
                     CallbackProgression::Continue
                 }
                 Err(e) => {
@@ -199,7 +199,7 @@ pub fn discovery(
         DiscoveryService::<ipc::Service>::create(&discovery_config, Config::global_config())
             .map_err(|e| anyhow::anyhow!("failed to create service: {:?}", e))?;
 
-    println!("=== Service Started (rate: {}ms) ===", rate);
+    println!("=== Service Started (rate: {rate}ms) ===");
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
     let guard = waitset
@@ -226,7 +226,7 @@ pub fn discovery(
                 )
             };
             if let Err(e) = service.spin(on_added, on_removed) {
-                eprintln!("error while spinning service: {:?}", e);
+                eprintln!("error while spinning service: {e:?}");
             }
         }
 

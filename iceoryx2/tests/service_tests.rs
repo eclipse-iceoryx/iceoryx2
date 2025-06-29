@@ -509,7 +509,7 @@ mod service {
                 let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                 for service_name in service_names {
                     let sut = test
-                        .create(&node, &service_name, &AttributeSpecifier::new())
+                        .create(&node, service_name, &AttributeSpecifier::new())
                         .unwrap();
 
                     barrier_enter.wait();
@@ -523,7 +523,7 @@ mod service {
                     let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
                     for service_name in service_names {
                         barrier_enter.wait();
-                        let sut = test.open(&node, &service_name, &AttributeVerifier::new());
+                        let sut = test.open(&node, service_name, &AttributeVerifier::new());
 
                         match sut {
                             Ok(_) => (),
@@ -1091,15 +1091,15 @@ mod service {
         let mut nodes = vec![];
         let mut node_ids = vec![];
         let mut services = vec![];
-        node_ids.push(main_node.id().clone());
+        node_ids.push(*main_node.id());
 
         let get_registered_node_ids = |service: &Factory::Factory| {
             let mut registered_node_ids = vec![];
             service
                 .nodes(|node_state| {
                     match node_state {
-                        NodeState::Alive(view) => registered_node_ids.push(view.id().clone()),
-                        NodeState::Dead(view) => registered_node_ids.push(view.id().clone()),
+                        NodeState::Alive(view) => registered_node_ids.push(*view.id()),
+                        NodeState::Dead(view) => registered_node_ids.push(*view.id()),
                         NodeState::Inaccessible(_) | NodeState::Undefined(_) => {
                             assert_that!(true, eq false)
                         }
@@ -1116,7 +1116,7 @@ mod service {
 
             let registered_node_ids = get_registered_node_ids(&service);
 
-            node_ids.push(node.id().clone());
+            node_ids.push(*node.id());
             nodes.push(node);
             services.push(service);
 

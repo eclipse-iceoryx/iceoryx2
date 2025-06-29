@@ -34,7 +34,7 @@ pub fn print_system_configuration() {
     all::<SystemInfo>().for_each(|i| {
         println!(
             "  {:<50} {}",
-            format!("{:?}", i).white(),
+            format!("{i:?}").white(),
             format!("{}", i.value()).bright_blue(),
         );
     });
@@ -48,11 +48,7 @@ pub fn print_system_configuration() {
         } else {
             limit.to_string()
         };
-        println!(
-            "  {:<50} {}",
-            format!("{:?}", i).white(),
-            limit.bright_blue(),
-        );
+        println!("  {:<50} {}", format!("{i:?}").white(), limit.bright_blue(),);
     }
 
     println!();
@@ -61,7 +57,7 @@ pub fn print_system_configuration() {
         if i.is_available() {
             println!(
                 "  {:<50} {}",
-                format!("{:?}", i).white(),
+                format!("{i:?}").white(),
                 format!("{}", i.is_available()).bright_blue()
             );
         } else {
@@ -75,7 +71,7 @@ pub fn print_system_configuration() {
         if i.is_available() {
             println!(
                 "  {:<50} {}",
-                format!("{:?}", i).white(),
+                format!("{i:?}").white(),
                 format!("{}", i.is_available()).bright_blue(),
             );
         } else {
@@ -93,16 +89,16 @@ pub fn print_system_configuration() {
             (Ok(soft), Ok(hard)) => {
                 println!(
                     "  {:<43} soft:  {:<24} hard:  {}",
-                    format!("{:?}", i).white(),
-                    format!("{}", soft).bright_blue(),
-                    format!("{}", hard).bright_blue()
+                    format!("{i:?}").white(),
+                    format!("{soft}").bright_blue(),
+                    format!("{hard}").bright_blue()
                 );
             }
             (Err(e), _) | (_, Err(e)) => {
                 println!(
                     "  {:<43} Error: {}",
-                    format!("{:?}", i).white(),
-                    format!("Unable to acquire limit due to: {:?}", e).red()
+                    format!("{i:?}").white(),
+                    format!("Unable to acquire limit due to: {e:?}").red()
                 );
             }
         }
@@ -118,7 +114,7 @@ pub fn show_system_config() -> Result<()> {
 pub fn show_current_config() -> Result<()> {
     let config = Config::global_config();
     let toml_config = toml::to_string_pretty(&config)?;
-    println!("{}", toml_config);
+    println!("{toml_config}");
 
     Ok(())
 }
@@ -196,7 +192,7 @@ fn generate(config_dir: Path, filepath: FilePath) -> Result<()> {
     file.write(toml_string.as_bytes())
         .expect("Failed to write to file");
 
-    println!("Default configuration is generated at {}", filepath);
+    println!("Default configuration is generated at {filepath}");
 
     Ok(())
 }

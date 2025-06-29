@@ -99,7 +99,7 @@ pub enum ListenerCreateError {
 
 impl core::fmt::Display for ListenerCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ListenerCreateError::{:?}", self)
+        std::write!(f, "ListenerCreateError::{self:?}")
     }
 }
 

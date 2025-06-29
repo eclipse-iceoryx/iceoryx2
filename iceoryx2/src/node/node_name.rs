@@ -99,7 +99,7 @@ impl Visitor<'_> for NodeNameVisitor {
     {
         match NodeName::new(v) {
             Ok(v) => Ok(v),
-            Err(v) => Err(E::custom(format!("invalid node name provided {:?}.", v))),
+            Err(v) => Err(E::custom(format!("invalid node name provided {v:?}."))),
         }
     }
 }

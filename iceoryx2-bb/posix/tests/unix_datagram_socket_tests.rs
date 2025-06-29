@@ -107,8 +107,7 @@ fn unix_datagram_socket_send_receive_works() {
     let send_data: Vec<u8> = vec![1u8, 3u8, 3u8, 7u8, 13u8, 37u8];
     sut_sender.blocking_send(send_data.as_slice()).unwrap();
 
-    let mut receive_data: Vec<u8> = vec![];
-    receive_data.resize(6, 0);
+    let mut receive_data: Vec<u8> = vec![0; 6];
     sut_receiver
         .blocking_receive(receive_data.as_mut_slice())
         .unwrap();

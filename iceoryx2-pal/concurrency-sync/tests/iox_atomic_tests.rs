@@ -68,7 +68,7 @@ mod ice_atomic {
 
         fn generate_value() -> Self {
             (0x0000abcdabcdabcd + COUNTER.fetch_add(1, Ordering::Relaxed) as i64)
-                * (-1 as i64).pow(COUNTER.load(Ordering::Relaxed))
+                * (-1_i64).pow(COUNTER.load(Ordering::Relaxed))
         }
 
         fn generate_compatibility_value() -> Self {
@@ -83,7 +83,7 @@ mod ice_atomic {
 
         fn generate_value() -> Self {
             (0x0000abcdabcdabcddeadbeef + COUNTER.fetch_add(1, Ordering::Relaxed) as i128)
-                * (-1 as i128).pow(COUNTER.load(Ordering::Relaxed))
+                * (-1_i128).pow(COUNTER.load(Ordering::Relaxed))
         }
 
         fn generate_compatibility_value() -> Self {

@@ -47,12 +47,12 @@ fn main() -> Result<()> {
         match action {
             Action::List(options) => {
                 if let Err(e) = commands::list(options.filter, cli.format) {
-                    eprintln!("Failed to list nodes: {}", e);
+                    eprintln!("Failed to list nodes: {e}");
                 }
             }
             Action::Details(options) => {
                 if let Err(e) = commands::details(options.node, options.filter, cli.format) {
-                    eprintln!("Failed to retrieve node details: {}", e);
+                    eprintln!("Failed to retrieve node details: {e}");
                 }
             }
         }

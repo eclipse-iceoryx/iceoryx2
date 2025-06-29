@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     // the callback that is called when a listener has received an event
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if let Some((service_name, listener)) = listener_attachments.get(&attachment_id) {
-            print!("Received trigger from \"{}\" ::", service_name);
+            print!("Received trigger from \"{service_name}\" ::");
 
             // IMPORTANT:
             // We need to collect all notifications since the WaitSet will wake us up as long as
@@ -64,11 +64,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // busy loop.
             listener
                 .try_wait_all(|event_id| {
-                    print!(" {:?}", event_id);
+                    print!(" {event_id:?}");
                 })
                 .unwrap();
 
-            println!("");
+            println!();
         }
 
         CallbackProgression::Continue

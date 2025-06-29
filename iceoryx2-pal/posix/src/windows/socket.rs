@@ -99,7 +99,7 @@ pub unsafe fn socketpair(
     };
 
     let counter = COUNTER.fetch_add(1, Ordering::Relaxed);
-    let socket_path = CString::new(format!("uds_stream_socket_{}_{}", pid, counter)).unwrap();
+    let socket_path = CString::new(format!("uds_stream_socket_{pid}_{counter}")).unwrap();
     core::ptr::copy_nonoverlapping(
         socket_path.as_ptr(),
         address.sun_path.as_mut_ptr().cast(),

@@ -28,7 +28,7 @@ impl Serialize for UnableToDeliverStrategy {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&std::format!("{:?}", self))
+        serializer.serialize_str(&std::format!("{self:?}"))
     }
 }
 
@@ -49,8 +49,7 @@ impl Visitor<'_> for UnableToDeliverStrategyVisitor {
             "Block" => Ok(UnableToDeliverStrategy::Block),
             "DiscardSample" => Ok(UnableToDeliverStrategy::DiscardSample),
             v => Err(E::custom(format!(
-                "Invalid UnableToDeliverStrategy provided: \"{:?}\".",
-                v
+                "Invalid UnableToDeliverStrategy provided: \"{v:?}\"."
             ))),
         }
     }

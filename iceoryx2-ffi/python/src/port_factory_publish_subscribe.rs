@@ -112,7 +112,7 @@ impl PortFactoryPublishSubscribe {
                     }
                     CallbackProgression::Continue
                 })
-                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?;
+                .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?;
                 Ok(ret_val)
             }
             PortFactoryPublishSubscribeType::Local(v) => {
@@ -133,7 +133,7 @@ impl PortFactoryPublishSubscribe {
                     }
                     CallbackProgression::Continue
                 })
-                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?;
+                .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?;
                 Ok(ret_val)
             }
         }

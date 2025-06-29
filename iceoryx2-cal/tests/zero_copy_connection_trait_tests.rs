@@ -1564,8 +1564,7 @@ mod zero_copy_connection {
             .create_receiver()
             .unwrap();
 
-        let offset =
-            PointerOffset::from_offset_and_segment_id(SAMPLE_SIZE, SegmentId::new(1 as u8));
+        let offset = PointerOffset::from_offset_and_segment_id(SAMPLE_SIZE, SegmentId::new(1_u8));
 
         assert_that!(sut_sender.try_send(offset, SAMPLE_SIZE, id), is_ok);
 
@@ -1601,14 +1600,14 @@ mod zero_copy_connection {
             .unwrap();
 
         let overflow_sample =
-            PointerOffset::from_offset_and_segment_id(11 * SAMPLE_SIZE, SegmentId::new(73 as u8));
+            PointerOffset::from_offset_and_segment_id(11 * SAMPLE_SIZE, SegmentId::new(73_u8));
         sut_sender
             .try_send(overflow_sample, SAMPLE_SIZE, id)
             .unwrap();
 
         let returned_sample = sut_sender
             .try_send(
-                PointerOffset::from_offset_and_segment_id(SAMPLE_SIZE, SegmentId::new(1 as u8)),
+                PointerOffset::from_offset_and_segment_id(SAMPLE_SIZE, SegmentId::new(1_u8)),
                 SAMPLE_SIZE,
                 id,
             )

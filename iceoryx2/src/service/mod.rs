@@ -294,7 +294,7 @@ pub enum ServiceDetailsError {
 
 impl core::fmt::Display for ServiceDetailsError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ServiceDetailsError::{:?}", self)
+        std::write!(f, "ServiceDetailsError::{self:?}")
     }
 }
 
@@ -311,7 +311,7 @@ pub enum ServiceListError {
 
 impl core::fmt::Display for ServiceListError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ServiceListError::{:?}", self)
+        std::write!(f, "ServiceListError::{self:?}")
     }
 }
 
@@ -535,10 +535,7 @@ pub(crate) mod internal {
             service_id: &ServiceId,
             config: &config::Config,
         ) -> Result<(), ServiceRemoveNodeError> {
-            let origin = format!(
-                "Service::remove_node_from_service({:?}, {:?})",
-                node_id, service_id
-            );
+            let origin = format!("Service::remove_node_from_service({node_id:?}, {service_id:?})");
             let msg = "Unable to remove node from service";
 
             let dynamic_config = match open_dynamic_config::<S>(config, service_id) {

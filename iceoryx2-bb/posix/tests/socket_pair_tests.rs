@@ -27,10 +27,8 @@ fn try_receive_never_blocks() {
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
-    let mut zeros = vec![];
-    zeros.resize(10, 0);
-    let mut received_data = vec![];
-    received_data.resize(zeros.len(), 0);
+    let zeros = vec![0; 10];
+    let mut received_data = vec![0; zeros.len()];
     let result = sut_lhs.try_receive(&mut received_data).unwrap();
     assert_that!(result, eq 0);
     assert_that!(received_data, eq zeros);
@@ -52,8 +50,7 @@ fn send_receive_works() {
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
 
-    let mut received_data = vec![];
-    received_data.resize(send_data.len(), 0);
+    let mut received_data = vec![0; send_data.len()];
     let result = sut_rhs.try_receive(&mut received_data);
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
@@ -73,8 +70,7 @@ fn bidirectional_send_receive_works() {
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
 
-    let mut received_data = vec![];
-    received_data.resize(send_data.len(), 0);
+    let mut received_data = vec![0; send_data.len()];
     let result = sut_rhs.try_receive(&mut received_data);
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
@@ -86,8 +82,7 @@ fn bidirectional_send_receive_works() {
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
 
-    let mut received_data = vec![];
-    received_data.resize(send_data.len(), 0);
+    let mut received_data = vec![0; send_data.len()];
     let result = sut_lhs.try_receive(&mut received_data);
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
@@ -106,16 +101,14 @@ fn cannot_receive_my_own_data() {
     sut_lhs.try_send(&send_data_lhs).unwrap();
     sut_rhs.try_send(&send_data_rhs).unwrap();
 
-    let mut received_data = vec![];
-    received_data.resize(send_data_rhs.len(), 0);
+    let mut received_data = vec![0; send_data_rhs.len()];
     let result = sut_lhs.try_receive(&mut received_data).unwrap();
     assert_that!(result, eq send_data_rhs.len());
     assert_that!(send_data_rhs, eq received_data);
     let result = sut_lhs.try_receive(&mut received_data).unwrap();
     assert_that!(result, eq 0);
 
-    let mut received_data = vec![];
-    received_data.resize(send_data_lhs.len(), 0);
+    let mut received_data = vec![0; send_data_lhs.len()];
     let result = sut_rhs.try_receive(&mut received_data).unwrap();
     assert_that!(result, eq send_data_lhs.len());
     assert_that!(send_data_lhs, eq received_data);
@@ -129,8 +122,7 @@ fn timed_receive_blocks_for_at_least_timeout() {
 
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
 
-    let mut received_data = vec![];
-    received_data.resize(10, 0);
+    let mut received_data = vec![0; 10];
 
     let start = Instant::now();
     let result = sut_lhs.timed_receive(&mut received_data, TIMEOUT).unwrap();
@@ -153,8 +145,7 @@ fn timed_receive_blocks_until_message_arrives() {
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
     std::thread::scope(|s| {
         s.spawn(|| {
-            let mut buffer = vec![];
-            buffer.resize(send_message.len(), 0);
+            let mut buffer = vec![0; send_message.len()];
             barrier.wait();
             let result = sut_rhs.timed_receive(&mut buffer, TIMEOUT * 1000).unwrap();
             counter.store(1, Ordering::Relaxed);
@@ -180,8 +171,7 @@ fn blocking_receive_blocks_until_message_arrives() {
     let (sut_lhs, sut_rhs) = StreamingSocket::create_pair().unwrap();
     std::thread::scope(|s| {
         s.spawn(|| {
-            let mut buffer = vec![];
-            buffer.resize(send_message.len(), 0);
+            let mut buffer = vec![0; send_message.len()];
             barrier.wait();
             let result = sut_rhs.blocking_receive(&mut buffer).unwrap();
             counter.store(1, Ordering::Relaxed);
@@ -246,8 +236,7 @@ fn timed_send_blocks_until_message_buffer_is_free_again() {
             assert_that!(result, eq send_data.len());
         });
 
-        let mut receive_buffer = vec![];
-        receive_buffer.resize(number_of_data_sent, 0);
+        let mut receive_buffer = vec![0; number_of_data_sent];
 
         barrier.wait();
         std::thread::sleep(TIMEOUT);
@@ -287,8 +276,7 @@ fn blocking_send_blocks_until_message_buffer_is_free_again() {
             assert_that!(result, eq send_data.len());
         });
 
-        let mut receive_buffer = vec![];
-        receive_buffer.resize(number_of_data_sent, 0);
+        let mut receive_buffer = vec![0; number_of_data_sent];
 
         barrier.wait();
         std::thread::sleep(TIMEOUT);
@@ -315,16 +303,14 @@ fn peeking_message_does_not_remove_message() {
     assert_that!(result.unwrap(), eq send_data.len());
 
     for _ in 0..5 {
-        let mut received_data = vec![];
-        received_data.resize(send_data.len(), 0);
+        let mut received_data = vec![0; send_data.len()];
         let result = sut_rhs.peek(&mut received_data);
         assert_that!(result, is_ok);
         assert_that!(result.unwrap(), eq send_data.len());
         assert_that!(send_data, eq received_data);
     }
 
-    let mut received_data = vec![];
-    received_data.resize(send_data.len(), 0);
+    let mut received_data = vec![0; send_data.len()];
     let result = sut_rhs.try_receive(&mut received_data);
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
@@ -344,8 +330,7 @@ fn send_from_duplicated_socket_works() {
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
 
-    let mut received_data = vec![];
-    received_data.resize(send_data.len(), 0);
+    let mut received_data = vec![0; send_data.len()];
     let result = sut_rhs.try_receive(&mut received_data);
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
@@ -365,8 +350,7 @@ fn receive_from_duplicated_socket_works() {
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
 
-    let mut received_data = vec![];
-    received_data.resize(send_data.len(), 0);
+    let mut received_data = vec![0; send_data.len()];
     let result = sut_rhs_dup.try_receive(&mut received_data);
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data.len());
@@ -397,8 +381,7 @@ fn multiple_duplicated_sockets_can_send() {
     assert_that!(result, is_ok);
     assert_that!(result.unwrap(), eq send_data_3.len());
 
-    let mut received_data = vec![];
-    received_data.resize(send_data_1.len(), 0);
+    let mut received_data = vec![0; send_data_1.len()];
 
     let result = sut_rhs.try_receive(&mut received_data);
     assert_that!(result, is_ok);

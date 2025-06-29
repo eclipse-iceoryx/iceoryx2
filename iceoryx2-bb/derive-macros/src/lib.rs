@@ -270,7 +270,7 @@ pub fn zero_copy_send_derive(input: TokenStream) -> TokenStream {
                             let field_names = (0..fields.unnamed.len())
                                 .map(|i| {
                                     syn::Ident::new(
-                                        &format!("field_{}", i),
+                                        &format!("field_{i}"),
                                         proc_macro2::Span::call_site(),
                                     )
                                 })

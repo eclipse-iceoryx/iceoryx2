@@ -43,7 +43,7 @@ mod sample_mut {
 
     impl<Sut: Service> TestContext<Sut> {
         fn new(config: &Config) -> Self {
-            let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+            let node = NodeBuilder::new().config(config).create::<Sut>().unwrap();
             let service_name = generate_name();
             let service = node
                 .service_builder(&service_name)

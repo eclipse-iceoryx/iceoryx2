@@ -28,8 +28,7 @@ impl Alignment {
         match iceoryx2::prelude::Alignment::new(value) {
             Some(v) => Ok(Alignment(v)),
             None => Err(InvalidAlignmentValue::new_err(format!(
-                "This: ({}) is not a valid alignment",
-                value
+                "This: ({value}) is not a valid alignment"
             ))),
         }
     }

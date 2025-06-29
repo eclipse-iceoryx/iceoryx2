@@ -98,7 +98,7 @@ impl PortFactoryEvent {
                     }
                     CallbackProgression::Continue
                 })
-                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?;
+                .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?;
                 Ok(ret_val)
             }
             PortFactoryEventType::Local(v) => {
@@ -119,7 +119,7 @@ impl PortFactoryEvent {
                     }
                     CallbackProgression::Continue
                 })
-                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?;
+                .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?;
                 Ok(ret_val)
             }
         }

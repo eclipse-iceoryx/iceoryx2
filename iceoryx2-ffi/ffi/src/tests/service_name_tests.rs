@@ -15,7 +15,7 @@ use crate::tests::*;
 use core::{slice, str};
 
 #[test]
-fn basic_service_name_test() -> Result<(), Box<dyn std::error::Error>> {
+fn basic_service_name_test() -> Result<(), Box<dyn core::error::Error>> {
     unsafe {
         let expected_service_name = ServiceName::new("all/glory/to/hypnotaod")?;
 

@@ -73,7 +73,7 @@ impl PackageVersion {
     pub fn get_str() -> &'static str {
         // Build a string from the version using the Display implementation
         let version = PackageVersion::get();
-        let version_str = format!("{}", version);
+        let version_str = format!("{version}");
         Box::leak(version_str.into_boxed_str())
     }
 }
