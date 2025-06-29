@@ -83,7 +83,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for ListenerChannel<Servic
         for id in received_ids {
             self.iox_notifier
                 .__internal_notify(EventId::new(id), true)
-                .map_err(|_| PropagationError::Error)?;
+                .map_err(|_| PropagationError::IceoryxPort)?;
             info!(
                 "PROPAGATED(iceoryx<-zenoh): Event({}) {} [{}]",
                 id,

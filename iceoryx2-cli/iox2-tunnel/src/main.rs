@@ -23,6 +23,7 @@ mod supported_platform {
 
     #[cfg(not(debug_assertions))]
     use human_panic::setup_panic;
+    use iceoryx2_bb_log::warn;
     #[cfg(debug_assertions)]
     extern crate better_panic;
 
@@ -96,9 +97,14 @@ mod supported_platform {
                         let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
                             if id == tick {
                                 if let Err(e) = tunnel.discover(Scope::Both) {
-                                    error!("Failure in discovery: {}", e);
+                                    warn!("Error encountered whilst discoverying services: {}", e);
                                 };
-                                tunnel.propagate();
+                                if let Err(e) = tunnel.propagate() {
+                                    warn!(
+                                        "Error encountered whilst propagating between hosts: {}",
+                                        e
+                                    );
+                                }
                             }
                             CallbackProgression::Continue
                         };

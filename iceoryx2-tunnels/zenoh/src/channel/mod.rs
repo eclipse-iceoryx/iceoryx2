@@ -22,10 +22,15 @@ pub use listener::*;
 mod notifier;
 pub use notifier::*;
 
-// TODO: More granularity in errors
+/// Represents errors that can occur during the propagation process in a channel.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum PropagationError {
-    Error,
+    /// Indicates a failure occurred in the iceoryx port during propagation.
+    IceoryxPort,
+    /// Indicates a failure occurred in a port other than the iceoryx port during propagation.
+    OtherPort,
+    /// Indicates that propagation was only partially successful, with at least one channel failing.
+    Incomplete,
 }
 
 impl core::fmt::Display for PropagationError {

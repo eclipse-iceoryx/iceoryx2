@@ -106,7 +106,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for SubscriberChannel<Serv
                                 self.iox_service_config.name(),
                                 e
                             );
-                            return Err(PropagationError::Error);
+                            return Err(PropagationError::IceoryxPort);
                         }
                         info!(
                             "PROPAGATED(iceoryx<-zenoh): PublishSubscribe {} [{}]",
@@ -120,7 +120,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for SubscriberChannel<Serv
                             self.iox_service_config.name(),
                             e
                         );
-                        return Err(PropagationError::Error);
+                        return Err(PropagationError::IceoryxPort);
                     }
                 }
             }

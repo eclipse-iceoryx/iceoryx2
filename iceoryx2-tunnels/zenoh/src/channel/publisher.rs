@@ -98,7 +98,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for PublisherChannel<'_, S
                     let z_payload = ZBytes::from(bytes);
                     if let Err(e) = self.z_publisher.put(z_payload).wait() {
                         error!("Failed to propagate payload to zenoh: {}", e);
-                        return Err(PropagationError::Error);
+                        return Err(PropagationError::OtherPort);
                     }
 
                     info!(
@@ -110,7 +110,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for PublisherChannel<'_, S
                 Ok(None) => break, // No more samples available
                 Err(e) => {
                     error!("Failed to receive custom payload from iceoryx: {}", e);
-                    return Err(PropagationError::Error);
+                    return Err(PropagationError::IceoryxPort);
                 }
             }
         }

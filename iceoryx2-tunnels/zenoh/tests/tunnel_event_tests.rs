@@ -368,16 +368,16 @@ mod zenoh_tunnel_events {
         iox_notifier_a.notify().unwrap();
 
         // Propagate over tunnels
-        tunnel_a.propagate();
-        tunnel_b.propagate();
+        tunnel_a.propagate().unwrap();
+        tunnel_b.propagate().unwrap();
 
         // Receive with retry
         retry(
             || match iox_listener_b.try_wait_one().unwrap() {
                 Some(_event_id) => return Ok(()),
                 None => {
-                    tunnel_a.propagate();
-                    tunnel_b.propagate();
+                    tunnel_a.propagate().unwrap();
+                    tunnel_b.propagate().unwrap();
                     return Err("failed to receive expected event");
                 }
             },
@@ -487,16 +487,16 @@ mod zenoh_tunnel_events {
         iox_listener_a.try_wait_all(|_| {}).unwrap();
 
         // Propagate over tunnels
-        tunnel_a.propagate();
-        tunnel_b.propagate();
+        tunnel_a.propagate().unwrap();
+        tunnel_b.propagate().unwrap();
 
         // Receive at listener b with retry
         retry(
             || match iox_listener_b.try_wait_one().unwrap() {
                 Some(_event_id) => return Ok(()),
                 None => {
-                    tunnel_a.propagate();
-                    tunnel_b.propagate();
+                    tunnel_a.propagate().unwrap();
+                    tunnel_b.propagate().unwrap();
                     return Err("failed to receive expected event");
                 }
             },
@@ -506,8 +506,8 @@ mod zenoh_tunnel_events {
 
         // Propagate a few times to see if there is a loop-back
         for _ in 0..5 {
-            tunnel_a.propagate();
-            tunnel_b.propagate();
+            tunnel_a.propagate().unwrap();
+            tunnel_b.propagate().unwrap();
             std::thread::sleep(Duration::from_millis(100));
         }
 
@@ -620,8 +620,8 @@ mod zenoh_tunnel_events {
         }
 
         // Propagate over tunnels
-        tunnel_a.propagate();
-        tunnel_b.propagate();
+        tunnel_a.propagate().unwrap();
+        tunnel_b.propagate().unwrap();
 
         // Receive with retry
         let mut num_notifications_a = 0;
@@ -645,8 +645,8 @@ mod zenoh_tunnel_events {
                     .unwrap();
                 if num_notifications_a == 0 || num_notifications_b == 0 || num_notifications_c == 0
                 {
-                    tunnel_a.propagate();
-                    tunnel_b.propagate();
+                    tunnel_a.propagate().unwrap();
+                    tunnel_b.propagate().unwrap();
                     return Err("expected notifications did not arrive");
                 }
                 return Ok(());
