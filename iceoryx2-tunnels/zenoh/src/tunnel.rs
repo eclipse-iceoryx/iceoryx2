@@ -263,94 +263,127 @@ fn on_discovery<'a, ServiceType: iceoryx2::service::Service>(
     notifier_channels: &mut HashMap<IceoryxServiceId, NotifierChannel<'a, ServiceType>>,
     listener_channels: &mut HashMap<IceoryxServiceId, ListenerChannel<ServiceType>>,
 ) {
-    let iox_service_id = iox_service_config.service_id();
     match iox_service_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
-            let needs_publisher = !publisher_channels.contains_key(iox_service_id);
-            let needs_subscriber = !subscriber_channels.contains_key(iox_service_id);
-
-            if needs_publisher || needs_subscriber {
-                let iox_service = middleware::iceoryx::create_publish_subscribe_service::<
-                    ServiceType,
-                >(iox_node, iox_service_config)
-                .map_err(|_e| CreationError::Error)
-                .unwrap();
-
-                if needs_publisher {
-                    let publisher_tunnel = PublisherChannel::create(
-                        iox_node.id(),
-                        iox_service_config,
-                        &iox_service,
-                        z_session,
-                    )
-                    .unwrap();
-                    publisher_channels.insert(iox_service_id.clone(), publisher_tunnel);
-
-                    info!(
-                        "CHANNEL: Publisher {} [{}]",
-                        iox_service_id.as_str(),
-                        iox_service_config.name()
-                    );
-                }
-                if needs_subscriber {
-                    let subscriber_tunnel =
-                        SubscriberChannel::create(iox_service_config, &iox_service, z_session)
-                            .unwrap();
-                    subscriber_channels.insert(iox_service_id.clone(), subscriber_tunnel);
-
-                    info!(
-                        "CHANNEL: Subscriber {} [{}]",
-                        iox_service_id.as_str(),
-                        iox_service_config.name()
-                    );
-                }
-
-                middleware::zenoh::announce_service(z_session, iox_service_config)
-                    .map_err(|_e| CreationError::Error)
-                    .unwrap();
-            }
+            on_publish_subscribe_service(
+                iox_node,
+                iox_service_config,
+                z_session,
+                publisher_channels,
+                subscriber_channels,
+            );
         }
         MessagingPattern::Event(_) => {
-            let needs_notifier = !notifier_channels.contains_key(iox_service_id);
-            let needs_listener = !listener_channels.contains_key(iox_service_id);
-
-            if needs_notifier || needs_listener {
-                let iox_service = middleware::iceoryx::create_event_service::<ServiceType>(
-                    iox_node,
-                    iox_service_config,
-                )
-                .unwrap();
-
-                if needs_notifier {
-                    let notifier_tunnel =
-                        NotifierChannel::create(iox_service_config, &iox_service, z_session)
-                            .unwrap();
-                    notifier_channels.insert(iox_service_id.clone(), notifier_tunnel);
-
-                    info!(
-                        "CHANNEL: Notifier {} [{}]",
-                        iox_service_id.as_str(),
-                        iox_service_config.name()
-                    );
-                }
-                if needs_listener {
-                    let listener_tunnel =
-                        ListenerChannel::create(iox_service_config, &iox_service, z_session)
-                            .unwrap();
-                    listener_channels.insert(iox_service_id.clone(), listener_tunnel);
-
-                    info!(
-                        "CHANNEL: Listener {} [{}]",
-                        iox_service_id.as_str(),
-                        iox_service_config.name()
-                    );
-                }
-
-                middleware::zenoh::announce_service(z_session, iox_service_config)
-                    .map_err(|_e| CreationError::Error)
-                    .unwrap();
-            }
+            on_event_service(
+                iox_node,
+                iox_service_config,
+                z_session,
+                notifier_channels,
+                listener_channels,
+            );
         }
         _ => { /* Not supported. Nothing to do. */ }
+    }
+}
+
+/// Handles the publish-subscribe messaging pattern during service discovery.
+fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
+    iox_node: &IceoryxNode<ServiceType>,
+    iox_service_config: &IceoryxServiceConfig,
+    z_session: &ZenohSession,
+    publisher_channels: &mut HashMap<IceoryxServiceId, PublisherChannel<'a, ServiceType>>,
+    subscriber_channels: &mut HashMap<IceoryxServiceId, SubscriberChannel<ServiceType>>,
+) {
+    let iox_service_id = iox_service_config.service_id();
+    let needs_publisher = !publisher_channels.contains_key(iox_service_id);
+    let needs_subscriber = !subscriber_channels.contains_key(iox_service_id);
+
+    if needs_publisher || needs_subscriber {
+        let iox_service = middleware::iceoryx::create_publish_subscribe_service::<ServiceType>(
+            iox_node,
+            iox_service_config,
+        )
+        .map_err(|_e| CreationError::Error)
+        .unwrap();
+
+        if needs_publisher {
+            let publisher_tunnel = PublisherChannel::create(
+                iox_node.id(),
+                iox_service_config,
+                &iox_service,
+                z_session,
+            )
+            .unwrap();
+            publisher_channels.insert(iox_service_id.clone(), publisher_tunnel);
+
+            info!(
+                "CHANNEL: Publisher {} [{}]",
+                iox_service_id.as_str(),
+                iox_service_config.name()
+            );
+        }
+
+        if needs_subscriber {
+            let subscriber_tunnel =
+                SubscriberChannel::create(iox_service_config, &iox_service, z_session).unwrap();
+            subscriber_channels.insert(iox_service_id.clone(), subscriber_tunnel);
+
+            info!(
+                "CHANNEL: Subscriber {} [{}]",
+                iox_service_id.as_str(),
+                iox_service_config.name()
+            );
+        }
+
+        middleware::zenoh::announce_service(z_session, iox_service_config)
+            .map_err(|_e| CreationError::Error)
+            .unwrap();
+    }
+}
+
+/// Handles the event messaging pattern during service discovery.
+fn on_event_service<'a, ServiceType: iceoryx2::service::Service>(
+    iox_node: &IceoryxNode<ServiceType>,
+    iox_service_config: &IceoryxServiceConfig,
+    z_session: &ZenohSession,
+    notifier_channels: &mut HashMap<IceoryxServiceId, NotifierChannel<'a, ServiceType>>,
+    listener_channels: &mut HashMap<IceoryxServiceId, ListenerChannel<ServiceType>>,
+) {
+    let iox_service_id = iox_service_config.service_id();
+    let needs_notifier = !notifier_channels.contains_key(iox_service_id);
+    let needs_listener = !listener_channels.contains_key(iox_service_id);
+
+    if needs_notifier || needs_listener {
+        let iox_service =
+            middleware::iceoryx::create_event_service::<ServiceType>(iox_node, iox_service_config)
+                .unwrap();
+
+        if needs_notifier {
+            let notifier_tunnel =
+                NotifierChannel::create(iox_service_config, &iox_service, z_session).unwrap();
+            notifier_channels.insert(iox_service_id.clone(), notifier_tunnel);
+
+            info!(
+                "CHANNEL: Notifier {} [{}]",
+                iox_service_id.as_str(),
+                iox_service_config.name()
+            );
+        }
+
+        if needs_listener {
+            let listener_tunnel =
+                ListenerChannel::create(iox_service_config, &iox_service, z_session).unwrap();
+            listener_channels.insert(iox_service_id.clone(), listener_tunnel);
+
+            info!(
+                "CHANNEL: Listener {} [{}]",
+                iox_service_id.as_str(),
+                iox_service_config.name()
+            );
+        }
+
+        middleware::zenoh::announce_service(z_session, iox_service_config)
+            .map_err(|_e| CreationError::Error)
+            .unwrap();
     }
 }
