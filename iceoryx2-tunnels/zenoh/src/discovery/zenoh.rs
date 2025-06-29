@@ -58,7 +58,7 @@ impl<ServiceType: iceoryx2::service::Service> ZenohDiscovery<'_, ServiceType> {
 impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
     for ZenohDiscovery<'_, ServiceType>
 {
-    fn discover<OnDiscovered: FnMut(&ServiceConfig)>(
+    fn discover<OnDiscovered: FnMut(&ServiceConfig) -> Result<(), DiscoveryError>>(
         &mut self,
         on_discovered: &mut OnDiscovered,
     ) -> Result<(), DiscoveryError> {
@@ -68,7 +68,7 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
                 Ok(sample) => {
                     match serde_json::from_slice::<ServiceConfig>(&sample.payload().to_bytes()) {
                         Ok(service_details) => {
-                            on_discovered(&service_details);
+                            on_discovered(&service_details)?;
                         }
                         Err(e) => {
                             warn!(
@@ -92,7 +92,7 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
             .querier
             .get()
             .wait()
-            .map_err(|_e| DiscoveryError::Error)?;
+            .map_err(|_e| DiscoveryError::UpdateFromPort)?;
 
         Ok(())
     }

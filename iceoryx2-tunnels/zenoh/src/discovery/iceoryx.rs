@@ -79,10 +79,12 @@ impl<ServiceType: iceoryx2::service::Service> IceoryxDiscovery<ServiceType> {
 impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
     for IceoryxDiscovery<ServiceType>
 {
-    fn discover<OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig)>(
+    fn discover<
+        OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), DiscoveryError>,
+    >(
         &mut self,
         on_discovered: &mut OnDiscovered,
-    ) -> Result<(), super::DiscoveryError> {
+    ) -> Result<(), DiscoveryError> {
         match (&self.discovery_subscriber, &mut self.discovery_tracker) {
             (Some(subscriber), _) => discover_via_subscriber(subscriber, on_discovered),
             (_, Some(tracker)) => discover_via_tracker(&self.config, tracker, on_discovered),
@@ -93,7 +95,7 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
 
 fn discover_via_subscriber<
     ServiceType: Service,
-    OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig),
+    OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), DiscoveryError>,
 >(
     subscriber: &Subscriber<ServiceType, DiscoveryUpdate, ()>,
     on_discovered: &mut OnDiscovered,
@@ -104,7 +106,7 @@ fn discover_via_subscriber<
                 if let DiscoveryUpdate::Added(service_details) = sample.payload() {
                     match service_details.messaging_pattern() {
                         MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_) => {
-                            on_discovered(service_details);
+                            on_discovered(service_details)?;
                         }
                         _ => {
                             // Not supported. Nothing to do.
@@ -113,7 +115,7 @@ fn discover_via_subscriber<
                 }
             }
             Ok(None) => break,
-            Err(_) => return Err(DiscoveryError::Error),
+            Err(_) => return Err(DiscoveryError::UpdateFromPort),
         }
     }
 
@@ -122,19 +124,21 @@ fn discover_via_subscriber<
 
 fn discover_via_tracker<
     ServiceType: Service,
-    OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig),
+    OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), DiscoveryError>,
 >(
     config: &Config,
     tracker: &mut Tracker<ServiceType>,
     on_discovered: &mut OnDiscovered,
 ) -> Result<(), DiscoveryError> {
-    let (added, _removed) = tracker.sync(config).map_err(|_| DiscoveryError::Error)?;
+    let (added, _removed) = tracker
+        .sync(config)
+        .map_err(|_| DiscoveryError::UpdateFromTracker)?;
     for service_id in added {
         if let Some(service_details) = tracker.get(&service_id) {
             let service_config = &service_details.static_details;
             match service_config.messaging_pattern() {
                 MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_) => {
-                    on_discovered(service_config);
+                    on_discovered(service_config)?;
                 }
                 _ => {
                     // Not supported. Nothing to do.

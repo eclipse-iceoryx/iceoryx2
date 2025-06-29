@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::discovery::Discovery;
+use crate::discovery::DiscoveryError;
 use crate::discovery::IceoryxDiscovery;
 use crate::discovery::ZenohDiscovery;
 use crate::middleware;
@@ -23,9 +24,9 @@ use crate::SubscriberChannel;
 use iceoryx2::config::Config as IceoryxConfig;
 use iceoryx2::node::Node as IceoryxNode;
 use iceoryx2::node::NodeBuilder;
-use iceoryx2::service::service_id::ServiceId as IceoryxServiceId;
+use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
-use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
+use iceoryx2::service::static_config::StaticConfig as ServiceConfig;
 use iceoryx2_bb_log::error;
 use iceoryx2_bb_log::info;
 
@@ -53,26 +54,7 @@ impl core::fmt::Display for CreationError {
 
 impl core::error::Error for CreationError {}
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum DiscoveryError {
-    Error,
-}
-
-impl core::fmt::Display for DiscoveryError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::write!(f, "DiscoveryError::{self:?}")
-    }
-}
-
-impl core::error::Error for DiscoveryError {}
-
-// TODO: Use this for propagation too
 /// Defines the operational scope for tunnel services.
-///
-/// This enum specifies which environment to use for tunnel operations:
-/// - `Iceoryx`: Only operate within the local Iceoryx environment
-/// - `Zenoh`: Only operate through the Zenoh network
-/// - `Both`: Operate in both Iceoryx and Zenoh environments
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Scope {
     Iceoryx,
@@ -80,6 +62,7 @@ pub enum Scope {
     Both,
 }
 
+/// Represents information about an active communication channel in the tunnel.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum ChannelInfo {
     Publisher(String),
@@ -94,10 +77,10 @@ pub struct Tunnel<'a, ServiceType: iceoryx2::service::Service> {
     z_discovery: ZenohDiscovery<'a, ServiceType>,
     iox_node: IceoryxNode<ServiceType>,
     iox_discovery: IceoryxDiscovery<ServiceType>,
-    publisher_channels: HashMap<IceoryxServiceId, PublisherChannel<'a, ServiceType>>,
-    subscriber_channels: HashMap<IceoryxServiceId, SubscriberChannel<ServiceType>>,
-    notifier_channels: HashMap<IceoryxServiceId, NotifierChannel<'a, ServiceType>>,
-    listener_channels: HashMap<IceoryxServiceId, ListenerChannel<ServiceType>>,
+    publisher_channels: HashMap<ServiceId, PublisherChannel<'a, ServiceType>>,
+    subscriber_channels: HashMap<ServiceId, SubscriberChannel<ServiceType>>,
+    notifier_channels: HashMap<ServiceId, NotifierChannel<'a, ServiceType>>,
+    listener_channels: HashMap<ServiceId, ListenerChannel<ServiceType>>,
 }
 
 impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
@@ -157,35 +140,31 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     /// * `Err(DiscoveryError)` - If discovery failed
     pub fn discover(&mut self, scope: Scope) -> Result<(), DiscoveryError> {
         if scope == Scope::Iceoryx || scope == Scope::Both {
-            self.iox_discovery
-                .discover(&mut |iox_service_config| {
-                    on_discovery(
-                        iox_service_config,
-                        &self.iox_node,
-                        &self.z_session,
-                        &mut self.publisher_channels,
-                        &mut self.subscriber_channels,
-                        &mut self.notifier_channels,
-                        &mut self.listener_channels,
-                    )
-                })
-                .map_err(|_e| DiscoveryError::Error)?;
+            self.iox_discovery.discover(&mut |iox_service_config| {
+                on_discovery(
+                    iox_service_config,
+                    &self.iox_node,
+                    &self.z_session,
+                    &mut self.publisher_channels,
+                    &mut self.subscriber_channels,
+                    &mut self.notifier_channels,
+                    &mut self.listener_channels,
+                )
+            })?
         }
 
         if scope == Scope::Zenoh || scope == Scope::Both {
-            self.z_discovery
-                .discover(&mut |iox_service_config| {
-                    on_discovery(
-                        iox_service_config,
-                        &self.iox_node,
-                        &self.z_session,
-                        &mut self.publisher_channels,
-                        &mut self.subscriber_channels,
-                        &mut self.notifier_channels,
-                        &mut self.listener_channels,
-                    )
-                })
-                .map_err(|_e| DiscoveryError::Error)?;
+            self.z_discovery.discover(&mut |iox_service_config| {
+                on_discovery(
+                    iox_service_config,
+                    &self.iox_node,
+                    &self.z_session,
+                    &mut self.publisher_channels,
+                    &mut self.subscriber_channels,
+                    &mut self.notifier_channels,
+                    &mut self.listener_channels,
+                )
+            })?
         }
 
         Ok(())
@@ -255,45 +234,43 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
 /// * `notifier_channels` - Map of existing notifier channels, updated if a new one is created
 /// * `listener_channels` - Map of existing listener channels, updated if a new one is created
 fn on_discovery<'a, ServiceType: iceoryx2::service::Service>(
-    iox_service_config: &IceoryxServiceConfig,
+    iox_service_config: &ServiceConfig,
     iox_node: &IceoryxNode<ServiceType>,
     z_session: &ZenohSession,
-    publisher_channels: &mut HashMap<IceoryxServiceId, PublisherChannel<'a, ServiceType>>,
-    subscriber_channels: &mut HashMap<IceoryxServiceId, SubscriberChannel<ServiceType>>,
-    notifier_channels: &mut HashMap<IceoryxServiceId, NotifierChannel<'a, ServiceType>>,
-    listener_channels: &mut HashMap<IceoryxServiceId, ListenerChannel<ServiceType>>,
-) {
+    publisher_channels: &mut HashMap<ServiceId, PublisherChannel<'a, ServiceType>>,
+    subscriber_channels: &mut HashMap<ServiceId, SubscriberChannel<ServiceType>>,
+    notifier_channels: &mut HashMap<ServiceId, NotifierChannel<'a, ServiceType>>,
+    listener_channels: &mut HashMap<ServiceId, ListenerChannel<ServiceType>>,
+) -> Result<(), DiscoveryError> {
     match iox_service_config.messaging_pattern() {
-        MessagingPattern::PublishSubscribe(_) => {
-            on_publish_subscribe_service(
-                iox_node,
-                iox_service_config,
-                z_session,
-                publisher_channels,
-                subscriber_channels,
-            );
-        }
-        MessagingPattern::Event(_) => {
-            on_event_service(
-                iox_node,
-                iox_service_config,
-                z_session,
-                notifier_channels,
-                listener_channels,
-            );
-        }
+        MessagingPattern::PublishSubscribe(_) => on_publish_subscribe_service(
+            iox_node,
+            iox_service_config,
+            z_session,
+            publisher_channels,
+            subscriber_channels,
+        )?,
+        MessagingPattern::Event(_) => on_event_service(
+            iox_node,
+            iox_service_config,
+            z_session,
+            notifier_channels,
+            listener_channels,
+        )?,
         _ => { /* Not supported. Nothing to do. */ }
     }
+
+    Ok(())
 }
 
 /// Handles the publish-subscribe messaging pattern during service discovery.
 fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
     iox_node: &IceoryxNode<ServiceType>,
-    iox_service_config: &IceoryxServiceConfig,
+    iox_service_config: &ServiceConfig,
     z_session: &ZenohSession,
-    publisher_channels: &mut HashMap<IceoryxServiceId, PublisherChannel<'a, ServiceType>>,
-    subscriber_channels: &mut HashMap<IceoryxServiceId, SubscriberChannel<ServiceType>>,
-) {
+    publisher_channels: &mut HashMap<ServiceId, PublisherChannel<'a, ServiceType>>,
+    subscriber_channels: &mut HashMap<ServiceId, SubscriberChannel<ServiceType>>,
+) -> Result<(), DiscoveryError> {
     let iox_service_id = iox_service_config.service_id();
     let needs_publisher = !publisher_channels.contains_key(iox_service_id);
     let needs_subscriber = !subscriber_channels.contains_key(iox_service_id);
@@ -303,8 +280,7 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
             iox_node,
             iox_service_config,
         )
-        .map_err(|_e| CreationError::Error)
-        .unwrap();
+        .map_err(|_e| DiscoveryError::ServiceCreation)?;
 
         if needs_publisher {
             let publisher_tunnel = PublisherChannel::create(
@@ -313,7 +289,8 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
                 &iox_service,
                 z_session,
             )
-            .unwrap();
+            .map_err(|_e| DiscoveryError::PortCreation)?;
+
             publisher_channels.insert(iox_service_id.clone(), publisher_tunnel);
 
             info!(
@@ -325,7 +302,8 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
 
         if needs_subscriber {
             let subscriber_tunnel =
-                SubscriberChannel::create(iox_service_config, &iox_service, z_session).unwrap();
+                SubscriberChannel::create(iox_service_config, &iox_service, z_session)
+                    .map_err(|_e| DiscoveryError::PortCreation)?;
             subscriber_channels.insert(iox_service_id.clone(), subscriber_tunnel);
 
             info!(
@@ -336,19 +314,20 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
         }
 
         middleware::zenoh::announce_service(z_session, iox_service_config)
-            .map_err(|_e| CreationError::Error)
-            .unwrap();
+            .map_err(|_e| DiscoveryError::ServiceAnnouncement)?;
     }
+
+    Ok(())
 }
 
 /// Handles the event messaging pattern during service discovery.
 fn on_event_service<'a, ServiceType: iceoryx2::service::Service>(
     iox_node: &IceoryxNode<ServiceType>,
-    iox_service_config: &IceoryxServiceConfig,
+    iox_service_config: &ServiceConfig,
     z_session: &ZenohSession,
-    notifier_channels: &mut HashMap<IceoryxServiceId, NotifierChannel<'a, ServiceType>>,
-    listener_channels: &mut HashMap<IceoryxServiceId, ListenerChannel<ServiceType>>,
-) {
+    notifier_channels: &mut HashMap<ServiceId, NotifierChannel<'a, ServiceType>>,
+    listener_channels: &mut HashMap<ServiceId, ListenerChannel<ServiceType>>,
+) -> Result<(), DiscoveryError> {
     let iox_service_id = iox_service_config.service_id();
     let needs_notifier = !notifier_channels.contains_key(iox_service_id);
     let needs_listener = !listener_channels.contains_key(iox_service_id);
@@ -356,11 +335,12 @@ fn on_event_service<'a, ServiceType: iceoryx2::service::Service>(
     if needs_notifier || needs_listener {
         let iox_service =
             middleware::iceoryx::create_event_service::<ServiceType>(iox_node, iox_service_config)
-                .unwrap();
+                .map_err(|_e| DiscoveryError::ServiceCreation)?;
 
         if needs_notifier {
             let notifier_tunnel =
-                NotifierChannel::create(iox_service_config, &iox_service, z_session).unwrap();
+                NotifierChannel::create(iox_service_config, &iox_service, z_session)
+                    .map_err(|_e| DiscoveryError::PortCreation)?;
             notifier_channels.insert(iox_service_id.clone(), notifier_tunnel);
 
             info!(
@@ -372,7 +352,8 @@ fn on_event_service<'a, ServiceType: iceoryx2::service::Service>(
 
         if needs_listener {
             let listener_tunnel =
-                ListenerChannel::create(iox_service_config, &iox_service, z_session).unwrap();
+                ListenerChannel::create(iox_service_config, &iox_service, z_session)
+                    .map_err(|_e| DiscoveryError::PortCreation)?;
             listener_channels.insert(iox_service_id.clone(), listener_tunnel);
 
             info!(
@@ -383,7 +364,8 @@ fn on_event_service<'a, ServiceType: iceoryx2::service::Service>(
         }
 
         middleware::zenoh::announce_service(z_session, iox_service_config)
-            .map_err(|_e| CreationError::Error)
-            .unwrap();
+            .map_err(|_e| DiscoveryError::ServiceAnnouncement)?;
     }
+
+    Ok(())
 }
