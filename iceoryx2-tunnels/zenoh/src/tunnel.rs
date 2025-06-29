@@ -217,7 +217,7 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     }
 
     /// Returns all currently open channels in the tunnel.
-    pub fn open_channels(&self) -> Vec<ChannelInfo> {
+    pub fn active_channels(&self) -> Vec<ChannelInfo> {
         let mut ports = Vec::new();
 
         for id in self.publisher_channels.keys() {
