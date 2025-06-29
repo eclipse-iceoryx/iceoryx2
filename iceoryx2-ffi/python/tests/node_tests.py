@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import iceoryx2_ffi_python as iox2
+import iceoryx2 as iox2
 import pytest
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]

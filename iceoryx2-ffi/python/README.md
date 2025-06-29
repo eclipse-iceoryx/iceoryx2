@@ -28,6 +28,7 @@ pip install isort
 cd iceoryx2-ffi/python
 maturin develop
 
+export PYTHONPATH="$GIT_ROOT/iceoryx2/iceoryx2-ffi/python/"
 # test python bindings
 pytest tests/*
 
@@ -43,3 +44,6 @@ isort $GIT_ROOT/iceoryx2-ffi/python/tests
 black $GIT_ROOT/examples/python
 black $GIT_ROOT/iceoryx2-ffi/python/tests
 ```
+
+
+

@@ -27,6 +27,7 @@ python -m venv .env
 
 echo -e "${COLOR_CYAN}enter python dev environment${COLOR_RESET}"
 source .env/bin/activate
+PYTHONPATH=$GIT_ROOT/iceoryx2-ffi/python/
 
 echo -e "${COLOR_CYAN}install dependencies${COLOR_RESET}"
 pip install pytest
