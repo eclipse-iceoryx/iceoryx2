@@ -211,6 +211,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         py.get_type::<crate::error::RequestResponseOpenOrCreateError>(),
     )?;
     m.add(
+        "WaitSetAttachmentError",
+        py.get_type::<crate::error::WaitSetAttachmentError>(),
+    )?;
+    m.add(
         "WaitSetCreateError",
         py.get_type::<crate::error::WaitSetCreateError>(),
     )?;

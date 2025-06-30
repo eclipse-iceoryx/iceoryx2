@@ -155,6 +155,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    WaitSetAttachmentError,
+    PyException,
+    "Errors caused when attaching something to the waitset."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     WaitSetCreateError,
     PyException,
     "Errors caused by creating a new waitset."
