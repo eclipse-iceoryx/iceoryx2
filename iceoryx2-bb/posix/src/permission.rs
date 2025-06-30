@@ -205,8 +205,7 @@ impl Display for Permission {
 
         write!(
             f,
-            "Permission {{ Owner: {}, Group: {}, Others: {}, Bits: {} }}",
-            owner, group, others, bits
+            "Permission {{ Owner: {owner}, Group: {group}, Others: {others}, Bits: {bits} }}"
         )
     }
 }

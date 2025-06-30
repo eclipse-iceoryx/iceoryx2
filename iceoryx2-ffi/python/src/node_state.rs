@@ -116,11 +116,11 @@ impl DeadNodeView {
             DeadNodeViewType::Ipc(n) => n
                 .clone()
                 .remove_stale_resources()
-                .map_err(|e| NodeCleanupFailure::new_err(format!("{:?}", e)))?,
+                .map_err(|e| NodeCleanupFailure::new_err(format!("{e:?}")))?,
             DeadNodeViewType::Local(n) => n
                 .clone()
                 .remove_stale_resources()
-                .map_err(|e| NodeCleanupFailure::new_err(format!("{:?}", e)))?,
+                .map_err(|e| NodeCleanupFailure::new_err(format!("{e:?}")))?,
         };
 
         Ok(result)

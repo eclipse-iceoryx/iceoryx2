@@ -140,14 +140,11 @@ fn spsc_queue_push_pop_works_concurrently() {
         s.spawn(|| {
             let mut guard = storage_pop.lock().unwrap();
             loop {
-                match sut_consumer.pop() {
-                    Some(v) => {
-                        guard.push(v);
-                        if v == LIMIT {
-                            return;
-                        }
+                if let Some(v) = sut_consumer.pop() {
+                    guard.push(v);
+                    if v == LIMIT {
+                        return;
                     }
-                    None => (),
                 }
             }
         });

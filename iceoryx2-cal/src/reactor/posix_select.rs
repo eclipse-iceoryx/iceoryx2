@@ -113,7 +113,7 @@ impl crate::reactor::Reactor for Reactor {
         &'reactor self,
         value: &'attachment F,
     ) -> Result<Self::Guard<'reactor, 'attachment>, super::ReactorAttachError> {
-        let msg = format!("Unable to attach {:?} to the reactor", value);
+        let msg = format!("Unable to attach {value:?} to the reactor");
         match self.set.add(value) {
             Ok(guard) => Ok(guard),
             Err(FileDescriptorSetAddError::CapacityExceeded) => {

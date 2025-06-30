@@ -43,8 +43,8 @@ pub struct Node(pub(crate) Parc<NodeType>);
 impl Node {
     pub fn __str__(&self) -> String {
         match &*self.0.lock() {
-            NodeType::Ipc(node) => format!("{:?}", node),
-            NodeType::Local(node) => format!("{:?}", node),
+            NodeType::Ipc(node) => format!("{node:?}"),
+            NodeType::Local(node) => format!("{node:?}"),
         }
     }
 
@@ -101,7 +101,7 @@ impl Node {
 
                     iceoryx2::prelude::CallbackProgression::Continue
                 })
-                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?
+                .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?
             }
             ServiceType::Local => {
                 iceoryx2::prelude::Node::<crate::LocalService>::list(&config.0.lock(), |state| {
@@ -121,7 +121,7 @@ impl Node {
 
                     iceoryx2::prelude::CallbackProgression::Continue
                 })
-                .map_err(|e| NodeListFailure::new_err(format!("{:?}", e)))?
+                .map_err(|e| NodeListFailure::new_err(format!("{e:?}")))?
             }
         };
 
@@ -146,10 +146,10 @@ impl Node {
         match &*self.0.lock() {
             NodeType::Ipc(node) => node
                 .wait(cycle_time.0)
-                .map_err(|e| NodeWaitFailure::new_err(format!("{:?}", e)))?,
+                .map_err(|e| NodeWaitFailure::new_err(format!("{e:?}")))?,
             NodeType::Local(node) => node
                 .wait(cycle_time.0)
-                .map_err(|e| NodeWaitFailure::new_err(format!("{:?}", e)))?,
+                .map_err(|e| NodeWaitFailure::new_err(format!("{e:?}")))?,
         };
 
         Ok(())

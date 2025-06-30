@@ -49,7 +49,7 @@ pub fn details(identifier: NodeIdentifier, filter: OutputFilter, format: Format)
         if identifier.matches(&node) && filter.matches(&node) {
             match format.as_string(&NodeDescription::from(&node)) {
                 Ok(output) => {
-                    print!("{}", output);
+                    print!("{output}");
                 }
                 Err(e) => {
                     error = Some(e);

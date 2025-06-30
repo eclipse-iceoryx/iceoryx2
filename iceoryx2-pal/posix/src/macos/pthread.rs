@@ -85,7 +85,7 @@ impl ThreadStates {
         self.unlock();
 
         if index == usize::MAX {
-            panic!("With this thread the maximum number of supported thread ({}) of the system is exceeded.", MAX_NUMBER_OF_THREADS);
+            panic!("With this thread the maximum number of supported thread ({MAX_NUMBER_OF_THREADS}) of the system is exceeded.");
         }
         index
     }

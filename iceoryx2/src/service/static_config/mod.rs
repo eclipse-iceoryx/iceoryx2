@@ -155,7 +155,7 @@ impl StaticConfig {
     }
 
     pub(crate) fn request_response_mut(&mut self) -> &mut request_response::StaticConfig {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         match &mut self.messaging_pattern {
             MessagingPattern::RequestResponse(ref mut v) => v,
             m => {
@@ -175,7 +175,7 @@ impl StaticConfig {
     }
 
     pub(crate) fn event_mut(&mut self) -> &mut event::StaticConfig {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         match &mut self.messaging_pattern {
             MessagingPattern::Event(ref mut v) => v,
             m => {
@@ -195,7 +195,7 @@ impl StaticConfig {
     }
 
     pub(crate) fn publish_subscribe_mut(&mut self) -> &mut publish_subscribe::StaticConfig {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         match &mut self.messaging_pattern {
             MessagingPattern::PublishSubscribe(ref mut v) => v,
             m => {
@@ -215,7 +215,7 @@ impl StaticConfig {
     }
 
     pub(crate) fn blackboard_mut(&mut self) -> &mut blackboard::StaticConfig {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         match &mut self.messaging_pattern {
             MessagingPattern::Blackboard(ref mut v) => v,
             m => {

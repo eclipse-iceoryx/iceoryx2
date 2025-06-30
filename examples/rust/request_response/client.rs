@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let mut counter: u64 = 0;
 
     // sending first request by using slower, inefficient copy API
-    println!("send request {} ...", counter);
+    println!("send request {counter} ...");
     let mut pending_response = client.send_copy(counter)?;
 
     while node.wait(CYCLE_TIME).is_ok() {
@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
         pending_response = request.send()?;
 
-        println!("send request {} ...", counter);
+        println!("send request {counter} ...");
     }
 
     println!("exit");

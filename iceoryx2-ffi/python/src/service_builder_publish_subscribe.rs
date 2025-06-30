@@ -231,7 +231,7 @@ impl ServiceBuilderPublishSubscribe {
                 let this = v.clone();
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Ipc(this.open_or_create().map_err(|e| {
-                        PublishSubscribeOpenOrCreateError::new_err(format!("{:?}", e))
+                        PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
                 ))
             }
@@ -239,7 +239,7 @@ impl ServiceBuilderPublishSubscribe {
                 let this = v.clone();
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Local(this.open_or_create().map_err(|e| {
-                        PublishSubscribeOpenOrCreateError::new_err(format!("{:?}", e))
+                        PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
                 ))
             }
@@ -262,7 +262,7 @@ impl ServiceBuilderPublishSubscribe {
                     PortFactoryPublishSubscribeType::Ipc(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
-                                PublishSubscribeOpenOrCreateError::new_err(format!("{:?}", e))
+                                PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
                 ))
@@ -273,7 +273,7 @@ impl ServiceBuilderPublishSubscribe {
                     PortFactoryPublishSubscribeType::Local(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
-                                PublishSubscribeOpenOrCreateError::new_err(format!("{:?}", e))
+                                PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
                 ))
@@ -290,7 +290,7 @@ impl ServiceBuilderPublishSubscribe {
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.open()
-                            .map_err(|e| PublishSubscribeOpenError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -299,7 +299,7 @@ impl ServiceBuilderPublishSubscribe {
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Local(
                         this.open()
-                            .map_err(|e| PublishSubscribeOpenError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -319,7 +319,7 @@ impl ServiceBuilderPublishSubscribe {
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.open_with_attributes(&verifier.0)
-                            .map_err(|e| PublishSubscribeOpenError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -328,7 +328,7 @@ impl ServiceBuilderPublishSubscribe {
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Local(
                         this.open_with_attributes(&verifier.0)
-                            .map_err(|e| PublishSubscribeOpenError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -343,9 +343,8 @@ impl ServiceBuilderPublishSubscribe {
                 let this = v.clone();
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Ipc(
-                        this.create().map_err(|e| {
-                            PublishSubscribeCreateError::new_err(format!("{:?}", e))
-                        })?,
+                        this.create()
+                            .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -353,9 +352,8 @@ impl ServiceBuilderPublishSubscribe {
                 let this = v.clone();
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Local(
-                        this.create().map_err(|e| {
-                            PublishSubscribeCreateError::new_err(format!("{:?}", e))
-                        })?,
+                        this.create()
+                            .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -373,9 +371,8 @@ impl ServiceBuilderPublishSubscribe {
                 let this = v.clone();
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Ipc(
-                        this.create_with_attributes(&attributes.0).map_err(|e| {
-                            PublishSubscribeCreateError::new_err(format!("{:?}", e))
-                        })?,
+                        this.create_with_attributes(&attributes.0)
+                            .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -383,9 +380,8 @@ impl ServiceBuilderPublishSubscribe {
                 let this = v.clone();
                 Ok(PortFactoryPublishSubscribe(
                     PortFactoryPublishSubscribeType::Local(
-                        this.create_with_attributes(&attributes.0).map_err(|e| {
-                            PublishSubscribeCreateError::new_err(format!("{:?}", e))
-                        })?,
+                        this.create_with_attributes(&attributes.0)
+                            .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }

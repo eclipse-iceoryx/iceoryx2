@@ -221,7 +221,7 @@ impl Directory {
     pub fn new(path: &Path) -> Result<Self, DirectoryOpenError> {
         let directory_stream = unsafe { posix::opendir(path.as_c_str()) };
 
-        let msg = format!("Unable to open directory \"{}\"", path);
+        let msg = format!("Unable to open directory \"{path}\"");
         if directory_stream.is_null() {
             handle_errno!(DirectoryOpenError, from "Directory::new",
                 Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
@@ -252,7 +252,7 @@ impl Directory {
         path: &Path,
         permission: Permission,
     ) -> Result<(), DirectoryCreateError> {
-        let msg = format!("Unable to create directory \"{}\"", path);
+        let msg = format!("Unable to create directory \"{path}\"");
 
         if unsafe { posix::mkdir(path.as_c_str(), permission.as_mode()) } == -1 {
             handle_errno!(DirectoryCreateError, from "Directory::create",
@@ -274,7 +274,7 @@ impl Directory {
     /// Creates a new directory at the provided path.
     pub fn create(path: &Path, permission: Permission) -> Result<Self, DirectoryCreateError> {
         let origin = "Directory::create()";
-        let msg = format!("Unable to create directory \"{}\"", path);
+        let msg = format!("Unable to create directory \"{path}\"");
         let entries = path.entries();
 
         let mut inc_path = if path.is_absolute() {
@@ -333,7 +333,7 @@ impl Directory {
     /// Removes an empty directory. If the directory is not empty it returns an error.
     pub fn remove_empty(path: &Path) -> Result<(), DirectoryRemoveError> {
         if unsafe { posix::rmdir(path.as_c_str()) } == -1 {
-            let msg = format!("Unable to remove empty directory \"{}\"", path);
+            let msg = format!("Unable to remove empty directory \"{path}\"");
             handle_errno!(DirectoryRemoveError, from "Directory::remove",
                 Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
                 Errno::EPERM => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
@@ -356,7 +356,7 @@ impl Directory {
 
     /// Removes and existing directory with all of its contents.
     pub fn remove(path: &Path) -> Result<(), DirectoryRemoveError> {
-        let msg = format!("Unable to remove directory \"{}\"", path);
+        let msg = format!("Unable to remove directory \"{path}\"");
         let origin = "Directory::remove()";
 
         let dir = fail!(from origin, when Directory::new(path),
@@ -438,8 +438,7 @@ impl Directory {
             match unsafe { FileName::from_c_str(raw_name) } {
                 Ok(name) => {
                     let msg = format!(
-                        "Failed to acquire stats \"{}\" while reading directory content",
-                        name
+                        "Failed to acquire stats \"{name}\" while reading directory content"
                     );
                     match Self::acquire_metadata(self, &name, &msg) {
                         Ok(metadata) => contents.push(DirectoryEntry { name, metadata }),
@@ -463,7 +462,7 @@ impl Directory {
     /// Returns true if a directory already exists, otherwise false
     pub fn does_exist(path: &Path) -> Result<bool, DirectoryAccessError> {
         let mut buffer = posix::stat_t::new_zeroed();
-        let msg = format!("Unable to determine if \"{}\" does exist", path);
+        let msg = format!("Unable to determine if \"{path}\" does exist");
 
         if unsafe { posix::stat(path.as_c_str(), &mut buffer) } == -1 {
             handle_errno!(DirectoryAccessError, from "Directory::does_exist",

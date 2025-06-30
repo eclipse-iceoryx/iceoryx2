@@ -266,7 +266,7 @@ mod zenoh_tunnel {
                 if success {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -339,7 +339,7 @@ mod zenoh_tunnel {
                 if success {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -391,15 +391,15 @@ mod zenoh_tunnel {
 
                             // Check if we received the expected sample for this iteration
                             if *iox_payload_received_b == payload_data {
-                                return Ok(());
+                                Ok(())
                             } else {
-                                return Err("received unexpected sample");
+                                Err("received unexpected sample")
                             }
                         }
                         None => {
                             tunnel_a.propagate();
                             tunnel_b.propagate();
-                            return Err("failed to receive expected sample");
+                            Err("failed to receive expected sample")
                         }
                     }
                 },
@@ -487,7 +487,7 @@ mod zenoh_tunnel {
                 if success {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -542,15 +542,15 @@ mod zenoh_tunnel {
 
                             // Check if we received the expected sample for this iteration
                             if *iox_payload_received_b == *payload_data.as_bytes() {
-                                return Ok(());
+                                Ok(())
                             } else {
-                                return Err("received unexpected sample");
+                                Err("received unexpected sample")
                             }
                         }
                         None => {
                             tunnel_a.propagate();
                             tunnel_b.propagate();
-                            return Err("failed to receive expected sample");
+                            Err("failed to receive expected sample")
                         }
                     }
                 },
@@ -758,7 +758,7 @@ mod zenoh_tunnel {
                 if success {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -794,11 +794,11 @@ mod zenoh_tunnel {
         // Receive with retry
         retry(
             || match iox_listener_b.try_wait_one().unwrap() {
-                Some(_event_id) => return Ok(()),
+                Some(_event_id) => Ok(()),
                 None => {
                     tunnel_a.propagate();
                     tunnel_b.propagate();
-                    return Err("failed to receive expected event");
+                    Err("failed to receive expected event")
                 }
             },
             TIME_BETWEEN_RETRIES,
@@ -866,7 +866,7 @@ mod zenoh_tunnel {
                 if success {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -906,11 +906,11 @@ mod zenoh_tunnel {
         // Receive at listener b with retry
         retry(
             || match iox_listener_b.try_wait_one().unwrap() {
-                Some(_event_id) => return Ok(()),
+                Some(_event_id) => Ok(()),
                 None => {
                     tunnel_a.propagate();
                     tunnel_b.propagate();
-                    return Err("failed to receive expected event");
+                    Err("failed to receive expected event")
                 }
             },
             TIME_BETWEEN_RETRIES,
@@ -988,7 +988,7 @@ mod zenoh_tunnel {
                 if success {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -1056,7 +1056,7 @@ mod zenoh_tunnel {
                     tunnel_b.propagate();
                     return Err("expected notifications did not arrive");
                 }
-                return Ok(());
+                Ok(())
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),

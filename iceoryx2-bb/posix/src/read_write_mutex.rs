@@ -137,7 +137,7 @@ impl ReadWriteMutexBuilder {
         mtx: *mut posix::pthread_rwlock_t,
     ) -> Result<Capability, ReadWriteMutexCreationError> {
         let msg = "Failed to create mutex";
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
 
         let mut attributes = ScopeGuardBuilder::new(posix::pthread_rwlockattr_t::new_zeroed()).on_init(|attr| {
             handle_errno!(ReadWriteMutexCreationError, from self,

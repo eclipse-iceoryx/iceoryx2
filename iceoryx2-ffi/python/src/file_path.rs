@@ -30,7 +30,7 @@ impl FilePath {
     pub fn new(name: &str) -> PyResult<Self> {
         Ok(Self(
             iceoryx2::prelude::FilePath::new(name.as_bytes())
-                .map_err(|e| SemanticStringError::new_err(format!("{:?}", e)))?,
+                .map_err(|e| SemanticStringError::new_err(format!("{e:?}")))?,
         ))
     }
 

@@ -208,7 +208,7 @@ impl User {
     /// returned.
     pub fn from_uid(uid: Uid) -> Result<User, UserError> {
         let msg = "Unable to acquire user entry";
-        let origin = format!("User::from_uid({})", uid);
+        let origin = format!("User::from_uid({uid})");
 
         let mut passwd = posix::passwd::new_zeroed();
         let mut passwd_ptr: *mut posix::passwd = &mut passwd;
@@ -245,7 +245,7 @@ impl User {
     /// be returned
     pub fn from_name(user_name: &UserName) -> Result<User, UserError> {
         let msg = "Unable to acquire user entry";
-        let origin = format!("User::from_name({})", user_name);
+        let origin = format!("User::from_name({user_name})");
 
         let mut passwd = posix::passwd::new_zeroed();
         let mut passwd_ptr: *mut posix::passwd = &mut passwd;

@@ -70,7 +70,7 @@ pub enum FixedSizeByteStringModificationError {
 
 impl core::fmt::Display for FixedSizeByteStringModificationError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "FixedSizeByteStringModificationError::{:?}", self)
+        std::write!(f, "FixedSizeByteStringModificationError::{self:?}")
     }
 }
 
@@ -120,7 +120,7 @@ impl<const CAPACITY: usize> Visitor<'_> for FixedSizeByteStringVisitor<CAPACITY>
     type Value = FixedSizeByteString<CAPACITY>;
 
     fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-        formatter.write_str(&format!("a string with a length of at most {}", CAPACITY))
+        formatter.write_str(&format!("a string with a length of at most {CAPACITY}"))
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
@@ -130,8 +130,7 @@ impl<const CAPACITY: usize> Visitor<'_> for FixedSizeByteStringVisitor<CAPACITY>
         match FixedSizeByteString::from_bytes(v.as_bytes()) {
             Ok(v) => Ok(v),
             Err(_) => Err(E::custom(format!(
-                "the string exceeds the maximum length of {}",
-                CAPACITY
+                "the string exceeds the maximum length of {CAPACITY}"
             ))),
         }
     }

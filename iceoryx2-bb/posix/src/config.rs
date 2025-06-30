@@ -118,9 +118,9 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
     let mut is_compliant: bool = true;
 
     if mode == ComplianceCheckMode::Verbose {
-        println!("{}system requirements check{}", HEADER_COLOR, COLOR_RESET);
+        println!("{HEADER_COLOR}system requirements check{COLOR_RESET}");
         println!();
-        println!(" {}minimum system{}", HEADER_COLOR, COLOR_RESET);
+        println!(" {HEADER_COLOR}minimum system{COLOR_RESET}");
     }
     for i in MIN_REQUIRED_SYSTEM.iter() {
         let supported_value = i.0.value();
@@ -151,7 +151,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
 
     if mode == ComplianceCheckMode::Verbose {
         println!();
-        println!(" {}maximum system{}", HEADER_COLOR, COLOR_RESET);
+        println!(" {HEADER_COLOR}maximum system{COLOR_RESET}");
     }
     for i in MAX_REQUIRED_SYSTEM.iter() {
         let supported_value = i.0.value();
@@ -182,7 +182,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
 
     if mode == ComplianceCheckMode::Verbose {
         println!();
-        println!(" {}minimum limits{}", HEADER_COLOR, COLOR_RESET);
+        println!(" {HEADER_COLOR}minimum limits{COLOR_RESET}");
     }
     for i in MIN_REQUIRED_LIMITS.iter() {
         let supported_value = i.0.value();
@@ -220,7 +220,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
 
     if mode == ComplianceCheckMode::Verbose {
         println!();
-        println!(" {}maximum limits{}", HEADER_COLOR, COLOR_RESET);
+        println!(" {HEADER_COLOR}maximum limits{COLOR_RESET}");
     }
     for i in MAX_REQUIRED_LIMITS.iter() {
         let supported_value = i.0.value();
@@ -258,7 +258,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
 
     if mode == ComplianceCheckMode::Verbose {
         println!();
-        println!(" {}features{}", HEADER_COLOR, COLOR_RESET);
+        println!(" {HEADER_COLOR}features{COLOR_RESET}");
     }
     for i in REQUIRED_FEATURES.iter() {
         let is_supported = i.is_available();
@@ -289,7 +289,7 @@ pub fn does_system_satisfy_posix_requirements(mode: ComplianceCheckMode) -> bool
     if mode == ComplianceCheckMode::Verbose {
         println!();
         match !is_compliant {
-            true => println!("  {}[ system non-compliant ]{}", FAILED_COLOR, COLOR_RESET),
+            true => println!("  {FAILED_COLOR}[ system non-compliant ]{COLOR_RESET}"),
             false => println!("  [ system compliant ]"),
         }
     }

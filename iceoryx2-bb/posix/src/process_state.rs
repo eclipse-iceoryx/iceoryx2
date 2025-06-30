@@ -277,10 +277,7 @@ impl ProcessGuard {
     /// ```
     pub fn new(path: &FilePath) -> Result<Self, ProcessGuardCreateError> {
         let origin = "ProcessGuard::new()";
-        let msg = format!(
-            "Unable to create new ProcessGuard with the file \"{}\"",
-            path
-        );
+        let msg = format!("Unable to create new ProcessGuard with the file \"{path}\"");
 
         let owner_lock_path = match generate_owner_lock_path(path) {
             Ok(f) => f,
@@ -398,7 +395,7 @@ impl ProcessGuard {
         permission: Permission,
     ) -> Result<File, ProcessGuardCreateError> {
         let origin = "ProcessGuard::file()";
-        let msg = format!("Unable to create new ProcessGuard state file \"{}\"", path);
+        let msg = format!("Unable to create new ProcessGuard state file \"{path}\"");
 
         match FileBuilder::new(path)
             .has_ownership(true)
@@ -435,7 +432,7 @@ impl ProcessGuard {
     }
 
     fn lock_state_file(file: &File) -> Result<(), ProcessGuardLockError> {
-        let msg = format!("Unable to lock process state file {:?}", file);
+        let msg = format!("Unable to lock process state file {file:?}");
         let mut new_lock_state = posix::flock::new_zeroed();
         new_lock_state.l_type = LockType::Write as _;
         new_lock_state.l_whence = posix::SEEK_SET as _;
@@ -553,7 +550,7 @@ impl ProcessMonitor {
     /// let mut monitor = ProcessMonitor::new(&process_state_path).expect("");
     /// ```
     pub fn new(path: &FilePath) -> Result<Self, ProcessMonitorCreateError> {
-        let msg = format!("Unable to open process monitor \"{}\"", path);
+        let msg = format!("Unable to open process monitor \"{path}\"");
         let origin = "ProcessMonitor::new()";
         let owner_lock_path = match generate_owner_lock_path(path) {
             Ok(f) => f,
@@ -629,7 +626,7 @@ impl ProcessMonitor {
     }
 
     fn get_lock_state(file: &File) -> Result<i64, ProcessMonitorStateError> {
-        let msg = format!("Unable to acquire lock on file {:?}", file);
+        let msg = format!("Unable to acquire lock on file {file:?}");
         let mut current_state = posix::flock::new_zeroed();
         current_state.l_type = LockType::Write as _;
 
@@ -656,7 +653,7 @@ impl ProcessMonitor {
             None => return Ok(ProcessState::Starting),
         };
 
-        let msg = format!("Unable to read state from file {:?}", file);
+        let msg = format!("Unable to read state from file {file:?}");
         let lock_state = fail!(from self, when Self::get_lock_state(file),
                             "{} since the lock state of the state file could not be acquired.", msg);
 
@@ -709,7 +706,7 @@ impl ProcessMonitor {
 
     fn open_file(path: &FilePath) -> Result<Option<File>, ProcessMonitorCreateError> {
         let origin = "ProcessMonitor::new()";
-        let msg = format!("Unable to open ProcessMonitor state file \"{}\"", path);
+        let msg = format!("Unable to open ProcessMonitor state file \"{path}\"");
 
         match FileBuilder::new(path).open_existing(AccessMode::Write) {
             Ok(f) => Ok(Some(f)),
@@ -761,7 +758,7 @@ impl ProcessCleaner {
     /// with the [`ProcessGuard`] died an no other process has acquired the resources for cleanup
     /// with [`ProcessCleaner::new()`].
     pub fn new(path: &FilePath) -> Result<Self, ProcessCleanerCreateError> {
-        let msg = format!("Unable to instantiate ProcessCleaner \"{}\"", path);
+        let msg = format!("Unable to instantiate ProcessCleaner \"{path}\"");
         let origin = "ProcessCleaner::new()";
         let owner_lock_path = match generate_owner_lock_path(path) {
             Ok(f) => f,

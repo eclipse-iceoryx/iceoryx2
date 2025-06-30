@@ -50,7 +50,7 @@ pub enum ServiceNameError {
 
 impl core::fmt::Display for ServiceNameError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ServiceNameError::{:?}", self)
+        std::write!(f, "ServiceNameError::{self:?}")
     }
 }
 
@@ -170,7 +170,7 @@ impl Visitor<'_> for ServiceNameVisitor {
     {
         match ServiceName::__internal_new(v) {
             Ok(v) => Ok(v),
-            Err(v) => Err(E::custom(format!("invalid service name provided {:?}.", v))),
+            Err(v) => Err(E::custom(format!("invalid service name provided {v:?}."))),
         }
     }
 }

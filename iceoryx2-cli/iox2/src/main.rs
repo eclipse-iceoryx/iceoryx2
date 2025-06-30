@@ -44,11 +44,11 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     if cli.list {
         if let Err(e) = commands::list() {
-            eprintln!("Failed to list commands: {}", e);
+            eprintln!("Failed to list commands: {e}");
         }
     } else if cli.paths {
         if let Err(e) = commands::paths() {
-            eprintln!("Failed to list search paths: {}", e);
+            eprintln!("Failed to list search paths: {e}");
         }
     } else if !cli.external_command.is_empty() {
         let command_name = &cli.external_command[0];
@@ -58,7 +58,7 @@ fn main() -> Result<()> {
             None
         };
         if let Err(e) = commands::execute(command_name, command_args) {
-            eprintln!("Failed to execute command: {}", e);
+            eprintln!("Failed to execute command: {e}");
         }
     } else {
         Cli::command().print_help().expect("Failed to print help");

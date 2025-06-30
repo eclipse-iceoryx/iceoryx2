@@ -23,7 +23,7 @@ pub enum PropagationError {
 
 impl core::fmt::Display for PropagationError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::write!(f, "PropagationError::{:?}", self)
+        core::write!(f, "PropagationError::{self:?}")
     }
 }
 

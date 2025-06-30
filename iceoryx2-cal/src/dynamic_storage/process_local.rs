@@ -409,7 +409,7 @@ impl<T: Send + Sync + Debug + 'static> Builder<'_, T> {
             self.supplementary_size,
         );
 
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         if !self
             .initializer
             .call(unsafe { &mut *value }, &mut allocator)

@@ -25,7 +25,7 @@ pub enum DiscoveryError {
 
 impl core::fmt::Display for DiscoveryError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::write!(f, "DiscoveryError::{:?}", self)
+        core::write!(f, "DiscoveryError::{self:?}")
     }
 }
 

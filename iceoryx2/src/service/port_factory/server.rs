@@ -68,7 +68,7 @@ pub enum ServerCreateError {
 
 impl core::fmt::Display for ServerCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ServerCreateError::{:?}", self)
+        std::write!(f, "ServerCreateError::{self:?}")
     }
 }
 
@@ -230,7 +230,7 @@ impl<
         Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         ServerCreateError,
     > {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         Ok(fail!(from origin,
               when Server::new(self),
               "Failed to create new Server port."))

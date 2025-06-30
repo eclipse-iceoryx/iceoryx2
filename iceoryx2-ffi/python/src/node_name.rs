@@ -26,7 +26,7 @@ impl NodeName {
     /// `SemanticStringError`, otherwise the `NodeName`.
     pub fn new(name: &str) -> PyResult<Self> {
         Ok(Self(iceoryx2::prelude::NodeName::new(name).map_err(
-            |e| SemanticStringError::new_err(format!("{:?}", e)),
+            |e| SemanticStringError::new_err(format!("{e:?}")),
         )?))
     }
 

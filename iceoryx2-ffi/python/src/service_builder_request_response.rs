@@ -343,7 +343,7 @@ impl ServiceBuilderRequestResponse {
                 let this = v.clone();
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Ipc(this.open_or_create().map_err(|e| {
-                        RequestResponseOpenOrCreateError::new_err(format!("{:?}", e))
+                        RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
                 ))
             }
@@ -351,7 +351,7 @@ impl ServiceBuilderRequestResponse {
                 let this = v.clone();
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Local(this.open_or_create().map_err(|e| {
-                        RequestResponseOpenOrCreateError::new_err(format!("{:?}", e))
+                        RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
                 ))
             }
@@ -376,7 +376,7 @@ impl ServiceBuilderRequestResponse {
                     PortFactoryRequestResponseType::Ipc(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
-                                RequestResponseOpenOrCreateError::new_err(format!("{:?}", e))
+                                RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
                 ))
@@ -387,7 +387,7 @@ impl ServiceBuilderRequestResponse {
                     PortFactoryRequestResponseType::Local(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
-                                RequestResponseOpenOrCreateError::new_err(format!("{:?}", e))
+                                RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
                 ))
@@ -404,7 +404,7 @@ impl ServiceBuilderRequestResponse {
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Ipc(
                         this.open()
-                            .map_err(|e| RequestResponseOpenError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -413,7 +413,7 @@ impl ServiceBuilderRequestResponse {
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Local(
                         this.open()
-                            .map_err(|e| RequestResponseOpenError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -433,7 +433,7 @@ impl ServiceBuilderRequestResponse {
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Ipc(
                         this.open_with_attributes(&verifier.0)
-                            .map_err(|e| RequestResponseOpenError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -442,7 +442,7 @@ impl ServiceBuilderRequestResponse {
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Local(
                         this.open_with_attributes(&verifier.0)
-                            .map_err(|e| RequestResponseOpenError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -458,7 +458,7 @@ impl ServiceBuilderRequestResponse {
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Ipc(
                         this.create()
-                            .map_err(|e| RequestResponseCreateError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -467,7 +467,7 @@ impl ServiceBuilderRequestResponse {
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Local(
                         this.create()
-                            .map_err(|e| RequestResponseCreateError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -486,7 +486,7 @@ impl ServiceBuilderRequestResponse {
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Ipc(
                         this.create_with_attributes(&attributes.0)
-                            .map_err(|e| RequestResponseCreateError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }
@@ -495,7 +495,7 @@ impl ServiceBuilderRequestResponse {
                 Ok(PortFactoryRequestResponse(
                     PortFactoryRequestResponseType::Local(
                         this.create_with_attributes(&attributes.0)
-                            .map_err(|e| RequestResponseCreateError::new_err(format!("{:?}", e)))?,
+                            .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
                     ),
                 ))
             }

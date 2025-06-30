@@ -59,7 +59,7 @@ pub enum ClientCreateError {
 
 impl core::fmt::Display for ClientCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ClientCreateError::{:?}", self)
+        std::write!(f, "ClientCreateError::{self:?}")
     }
 }
 
@@ -212,7 +212,7 @@ impl<
         Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>,
         ClientCreateError,
     > {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         Ok(fail!(from origin,
               when Client::new(self),
               "Failed to create new Client port."))

@@ -42,6 +42,7 @@ pub(crate) mod internal {
     #![allow(unused)]
     #![allow(improper_ctypes)]
     #![allow(unknown_lints)]
+    #![allow(unnecessary_transmutes)]
     #![allow(clippy::all)]
     include!(concat!(
         env!("OUT_DIR"),

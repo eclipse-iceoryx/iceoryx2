@@ -42,8 +42,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // passed, we print out a warning.
         } else if attachment_id.has_missed_deadline(&subscriber_guard) {
             println!(
-                "Contract violation! The subscriber did not receive a message for {:?}.",
-                DEADLINE
+                "Contract violation! The subscriber did not receive a message for {DEADLINE:?}."
             );
         }
 
