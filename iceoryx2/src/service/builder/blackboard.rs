@@ -189,9 +189,10 @@ impl From<BlackboardCreateError> for BlackboardOpenOrCreateError {
 
 struct BuilderInternals<KeyType> {
     key: KeyType,
-    type_details: TypeDetail,
+    value_type_details: TypeDetail,
     value_writer: Box<dyn FnMut(*mut u8)>,
-    value_size: usize,
+    internal_value_size: usize,
+    internal_value_alignment: usize,
 }
 
 impl<KeyType> Debug for BuilderInternals<KeyType> {
@@ -333,7 +334,7 @@ impl<
         // differentiate between creator and opener builder and remove open_or_create?
         self.internals.push(BuilderInternals {
             key,
-            type_details: TypeDetail::__internal_new::<ValueType>(
+            value_type_details: TypeDetail::__internal_new::<ValueType>(
                 message_type_details::TypeVariant::FixedSize,
             ),
             value_writer: Box::new(move |mem: *mut u8| {
@@ -341,7 +342,8 @@ impl<
                     mem as *mut UnrestrictedAtomic<ValueType>;
                 unsafe { mem.write(UnrestrictedAtomic::<ValueType>::new(value)) };
             }),
-            value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
+            internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
+            internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
         });
         self
     }
@@ -684,7 +686,7 @@ impl<
                     trace!(from "BlackboardBuilder::create()", "Creating blackboard service without keys: no data can be written or read.");
                 } else {
                     for i in &self.internals {
-                        payload_size += i.value_size + i.type_details.alignment - 1;
+                        payload_size += i.internal_value_size + i.internal_value_alignment - 1;
                     }
                 }
                 let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
@@ -716,16 +718,18 @@ impl<
                         .has_ownership(false)
                         .initializer(|entry: &mut Mgmt<KeyType>, _allocator: &mut BumpAllocator| {
                             for i in 0..self.internals.len() {
-                                // - write value to payload shm
-                                // TODO: error handling layout + allocate
-                                // alignment of UnrestrictedAtomic<ValueType>?
-                                // at least page size aligned?
-                                println!("size: {}, alignment: {}", self.internals[i].value_size, self.internals[i].type_details.alignment);
-                                let mem = payload_shm.allocate(Layout::from_size_align(self.internals[i].value_size, self.internals[i].type_details.alignment).unwrap()).unwrap();
+                                // - write value passed to add() to payload_shm
+                                println!("size: {}, alignment: {}", self.internals[i].internal_value_size, self.internals[i].value_type_details.alignment);
+                                println!("size: {}, alignment: {}", self.internals[i].internal_value_size, self.internals[i].internal_value_alignment);
+                                let mem = payload_shm.allocate(unsafe { Layout::from_size_align_unchecked(self.internals[i].internal_value_size, self.internals[i].internal_value_alignment) });
+                                if mem.is_err() {
+                                    return false
+                                }
+                                let mem = mem.unwrap();
                                 (*self.internals[i].value_writer)(mem.data_ptr);
                                 // - write offset to entries (relative ptr)
                                 // TODO: offset must be a relative ptr
-                                let res = entry.entries.push(Entry{type_details: self.internals[i].type_details.clone(), offset: AtomicU64::new(mem.offset.as_value())});
+                                let res = entry.entries.push(Entry{type_details: self.internals[i].value_type_details.clone(), offset: AtomicU64::new(mem.offset.as_value())});
                                 if !res {
                                     return false
                                 }
