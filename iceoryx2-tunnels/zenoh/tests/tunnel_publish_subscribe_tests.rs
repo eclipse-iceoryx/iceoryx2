@@ -276,7 +276,7 @@ mod zenoh_tunnel_publish_subscribe {
                 if tunneled_publisher && tunneled_subscriber {
                     return Ok(());
                 }
-                return Err("failed to discover remote services");
+                Err("failed to discover remote services")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -355,7 +355,7 @@ mod zenoh_tunnel_publish_subscribe {
                 if tunneled_publisher && tunneled_subscriber {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -407,15 +407,15 @@ mod zenoh_tunnel_publish_subscribe {
 
                             // Check if we received the expected sample for this iteration
                             if *iox_payload_received_b == payload_data {
-                                return Ok(());
+                                Ok(())
                             } else {
-                                return Err("received unexpected sample");
+                                Err("received unexpected sample")
                             }
                         }
                         None => {
                             tunnel_a.propagate().unwrap();
                             tunnel_b.propagate().unwrap();
-                            return Err("failed to receive expected sample");
+                            Err("failed to receive expected sample")
                         }
                     }
                 },
@@ -509,7 +509,7 @@ mod zenoh_tunnel_publish_subscribe {
                 if tunneled_publisher && tunneled_subscriber {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -564,15 +564,15 @@ mod zenoh_tunnel_publish_subscribe {
 
                             // Check if we received the expected sample for this iteration
                             if *iox_payload_received_b == *payload_data.as_bytes() {
-                                return Ok(());
+                                Ok(())
                             } else {
-                                return Err("received unexpected sample");
+                                Err("received unexpected sample")
                             }
                         }
                         None => {
                             tunnel_a.propagate().unwrap();
                             tunnel_b.propagate().unwrap();
-                            return Err("failed to receive expected sample");
+                            Err("failed to receive expected sample")
                         }
                     }
                 },

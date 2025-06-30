@@ -268,7 +268,7 @@ mod zenoh_tunnel_events {
                 if tunneled_notifier && tunneled_listener {
                     return Ok(());
                 }
-                return Err("failed to discover remote services");
+                Err("failed to discover remote services")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -338,7 +338,7 @@ mod zenoh_tunnel_events {
                 if tunneled_notifier && tunneled_listener {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -374,11 +374,11 @@ mod zenoh_tunnel_events {
         // Receive with retry
         retry(
             || match iox_listener_b.try_wait_one().unwrap() {
-                Some(_event_id) => return Ok(()),
+                Some(_event_id) => Ok(()),
                 None => {
                     tunnel_a.propagate().unwrap();
                     tunnel_b.propagate().unwrap();
-                    return Err("failed to receive expected event");
+                    Err("failed to receive expected event")
                 }
             },
             TIME_BETWEEN_RETRIES,
@@ -453,7 +453,7 @@ mod zenoh_tunnel_events {
                     return Ok(());
                 }
 
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -493,11 +493,11 @@ mod zenoh_tunnel_events {
         // Receive at listener b with retry
         retry(
             || match iox_listener_b.try_wait_one().unwrap() {
-                Some(_event_id) => return Ok(()),
+                Some(_event_id) => Ok(()),
                 None => {
                     tunnel_a.propagate().unwrap();
                     tunnel_b.propagate().unwrap();
-                    return Err("failed to receive expected event");
+                    Err("failed to receive expected event")
                 }
             },
             TIME_BETWEEN_RETRIES,
@@ -581,7 +581,7 @@ mod zenoh_tunnel_events {
                 if tunneled_notifier && tunneled_listener {
                     return Ok(());
                 }
-                return Err("failed to discover remote service");
+                Err("failed to discover remote service")
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),
@@ -649,7 +649,7 @@ mod zenoh_tunnel_events {
                     tunnel_b.propagate().unwrap();
                     return Err("expected notifications did not arrive");
                 }
-                return Ok(());
+                Ok(())
             },
             TIME_BETWEEN_RETRIES,
             Some(MAX_RETRIES),

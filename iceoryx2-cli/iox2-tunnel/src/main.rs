@@ -35,7 +35,7 @@ mod supported_platform {
     use cli::Transport;
 
     use iceoryx2::prelude::*;
-    use iceoryx2_bb_log::error;
+
     use iceoryx2_bb_log::info;
     use iceoryx2_bb_log::set_log_level_from_env_or;
     use iceoryx2_bb_log::LogLevel;
