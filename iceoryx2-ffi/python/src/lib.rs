@@ -22,6 +22,7 @@ pub mod config;
 pub mod duration;
 pub mod error;
 pub mod event_id;
+pub mod file_descriptor;
 pub mod file_name;
 pub mod file_path;
 pub mod listener;
@@ -59,6 +60,9 @@ pub mod type_variant;
 pub mod unable_to_deliver_strategy;
 pub mod unique_listener_id;
 pub mod unique_notifier_id;
+pub mod waitset;
+pub mod waitset_builder;
+pub mod waitset_guard;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
@@ -123,6 +127,8 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
     m.add_class::<crate::unique_listener_id::UniqueListenerId>()?;
     m.add_class::<crate::unique_notifier_id::UniqueNotifierId>()?;
+    m.add_class::<crate::waitset::WaitSet>()?;
+    m.add_class::<crate::waitset_builder::WaitSetBuilder>()?;
 
     m.add(
         "InvalidAlignmentValue",
@@ -203,6 +209,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "RequestResponseOpenOrCreateError",
         py.get_type::<crate::error::RequestResponseOpenOrCreateError>(),
+    )?;
+    m.add(
+        "WaitSetCreateError",
+        py.get_type::<crate::error::WaitSetCreateError>(),
     )?;
 
     Ok(())

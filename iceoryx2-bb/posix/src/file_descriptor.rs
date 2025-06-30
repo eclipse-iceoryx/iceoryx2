@@ -143,7 +143,8 @@ impl FileDescriptor {
         })
     }
 
-    /// Creates a new FileDescriptor. If the value is smaller than zero it returns [`None`].
+    /// Creates a new FileDescriptor. If the value is smaller than zero or it does not contain a
+    /// valid file descriptor value it returns [`None`].
     pub fn new(value: i32) -> Option<FileDescriptor> {
         if value < 0 {
             return None;

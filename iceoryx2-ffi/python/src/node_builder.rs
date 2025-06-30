@@ -28,7 +28,7 @@ pub struct NodeBuilder(iceoryx2::prelude::NodeBuilder);
 
 impl Default for NodeBuilder {
     fn default() -> Self {
-        Self(iceoryx2::prelude::NodeBuilder::new())
+        Self(iceoryx2::prelude::NodeBuilder::default())
     }
 }
 

@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::sync::Arc;
+
 use pyo3::prelude::*;
 
 use crate::{
@@ -77,15 +79,17 @@ impl PortFactoryListener {
         match &self.value {
             PortFactoryListenerType::Ipc(v) => {
                 let this = v.clone();
-                Ok(Listener(ListenerType::Ipc(this.create().map_err(|e| {
-                    ListenerCreateError::new_err(format!("{e:?}"))
-                })?)))
+                Ok(Listener(ListenerType::Ipc(Arc::new(
+                    this.create()
+                        .map_err(|e| ListenerCreateError::new_err(format!("{e:?}")))?,
+                ))))
             }
             PortFactoryListenerType::Local(v) => {
                 let this = v.clone();
-                Ok(Listener(ListenerType::Local(this.create().map_err(
-                    |e| ListenerCreateError::new_err(format!("{e:?}")),
-                )?)))
+                Ok(Listener(ListenerType::Local(Arc::new(
+                    this.create()
+                        .map_err(|e| ListenerCreateError::new_err(format!("{e:?}")))?,
+                ))))
             }
         }
     }
