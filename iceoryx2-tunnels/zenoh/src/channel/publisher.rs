@@ -63,10 +63,14 @@ impl<ServiceType: iceoryx2::service::Service> PublisherChannel<'_, ServiceType> 
         >,
         z_session: &ZenohSession,
     ) -> Result<Self, CreationError> {
-        let iox_subscriber =
-            middleware::iceoryx::create_subscriber::<ServiceType>(iox_service, iox_service_config)
-                .map_err(|_e| CreationError::Error)?;
+        info!(
+            "CREATE PublisherChannel  {} [{}]",
+            iox_service_config.service_id().as_str(),
+            iox_service_config.name()
+        );
 
+        let iox_subscriber = middleware::iceoryx::create_subscriber::<ServiceType>(iox_service)
+            .map_err(|_e| CreationError::Error)?;
         let z_publisher = middleware::zenoh::create_publisher(z_session, iox_service_config)
             .map_err(|_e| CreationError::Error)?;
 
@@ -102,7 +106,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for PublisherChannel<'_, S
                     }
 
                     info!(
-                        "PROPAGATED(iceoryx->zenoh): PublishSubscribe {} [{}]",
+                        "PROPAGATE PublisherChannel {} [{}]",
                         self.iox_service_config.service_id().as_str(),
                         self.iox_service_config.name()
                     );

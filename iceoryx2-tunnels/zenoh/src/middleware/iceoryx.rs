@@ -27,7 +27,6 @@ use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::event::PortFactory as EventService;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory as PublishSubscribeService;
 use iceoryx2::service::static_config::StaticConfig as ServiceConfig;
-use iceoryx2_bb_log::info;
 
 /// Creates an iceoryx2 publish-subscribe service matching the provided service configuration.
 pub(crate) fn create_publish_subscribe_service<ServiceType: iceoryx2::service::Service>(
@@ -74,68 +73,36 @@ pub(crate) fn create_event_service<ServiceType: iceoryx2::service::Service>(
 /// Creates an iceoryx publisher to the provided service.
 pub(crate) fn create_publisher<ServiceType: iceoryx2::service::Service>(
     service: &PublishSubscribeService<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
-    service_config: &ServiceConfig,
 ) -> Result<Publisher<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>, PublisherCreateError>
 {
     let publisher = service
         .publisher_builder()
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
-
-    info!(
-        "PUBLISHER(iceoryx) {} [{}]",
-        service_config.service_id().as_str(),
-        service_config.name()
-    );
-
     Ok(publisher)
 }
 
 /// Creates an iceoryx subscriber to the provided service.
 pub(crate) fn create_subscriber<ServiceType: iceoryx2::service::Service>(
     service: &PublishSubscribeService<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
-    service_config: &ServiceConfig,
 ) -> Result<Subscriber<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>, SubscriberCreateError>
 {
     let subscriber = service.subscriber_builder().create()?;
-
-    info!(
-        "SUBSCRIBER Subscriber {} [{}]",
-        service_config.service_id().as_str(),
-        service_config.name()
-    );
-
     Ok(subscriber)
 }
 
 /// Creates an iceoryx notifier to the provided service.
 pub(crate) fn create_notifier<ServiceType: iceoryx2::service::Service>(
     service: &EventService<ServiceType>,
-    service_config: &ServiceConfig,
 ) -> Result<Notifier<ServiceType>, NotifierCreateError> {
     let notifier = service.notifier_builder().create()?;
-
-    info!(
-        "NOTIFIER(iceoryx) {} [{}]",
-        service_config.service_id().as_str(),
-        service_config.name()
-    );
-
     Ok(notifier)
 }
 
 /// Creates an iceoryx listener for the provided service.
 pub(crate) fn create_listener<ServiceType: iceoryx2::service::Service>(
     service: &EventService<ServiceType>,
-    service_config: &ServiceConfig,
 ) -> Result<Listener<ServiceType>, ListenerCreateError> {
     let listener = service.listener_builder().create()?;
-
-    info!(
-        "LISTENER(iceoryx) {} [{}]",
-        service_config.service_id().as_str(),
-        service_config.name()
-    );
-
     Ok(listener)
 }

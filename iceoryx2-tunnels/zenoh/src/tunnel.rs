@@ -29,7 +29,6 @@ use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig as ServiceConfig;
 use iceoryx2_bb_log::error;
-use iceoryx2_bb_log::info;
 
 use zenoh::Config as ZenohConfig;
 use zenoh::Session as ZenohSession;
@@ -102,8 +101,6 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
         iox_config: &IceoryxConfig,
         z_config: &ZenohConfig,
     ) -> Result<Self, CreationError> {
-        info!("STARTING Zenoh Tunnel");
-
         let z_session = zenoh::open(z_config.clone())
             .wait()
             .map_err(|_e| CreationError::Error)?;
@@ -307,7 +304,7 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
         .map_err(|_e| DiscoveryError::ServiceCreation)?;
 
         if needs_publisher {
-            let publisher_tunnel = PublisherChannel::create(
+            let publisher_channel = PublisherChannel::create(
                 iox_node.id(),
                 iox_service_config,
                 &iox_service,
@@ -315,26 +312,14 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
             )
             .map_err(|_e| DiscoveryError::PortCreation)?;
 
-            publisher_channels.insert(iox_service_id.clone(), publisher_tunnel);
-
-            info!(
-                "CHANNEL: Publisher {} [{}]",
-                iox_service_id.as_str(),
-                iox_service_config.name()
-            );
+            publisher_channels.insert(iox_service_id.clone(), publisher_channel);
         }
 
         if needs_subscriber {
-            let subscriber_tunnel =
+            let subscriber_channel =
                 SubscriberChannel::create(iox_service_config, &iox_service, z_session)
                     .map_err(|_e| DiscoveryError::PortCreation)?;
-            subscriber_channels.insert(iox_service_id.clone(), subscriber_tunnel);
-
-            info!(
-                "CHANNEL: Subscriber {} [{}]",
-                iox_service_id.as_str(),
-                iox_service_config.name()
-            );
+            subscriber_channels.insert(iox_service_id.clone(), subscriber_channel);
         }
 
         middleware::zenoh::announce_service(z_session, iox_service_config)
@@ -362,29 +347,17 @@ fn on_event_service<'a, ServiceType: iceoryx2::service::Service>(
                 .map_err(|_e| DiscoveryError::ServiceCreation)?;
 
         if needs_notifier {
-            let notifier_tunnel =
+            let notifier_channel =
                 NotifierChannel::create(iox_service_config, &iox_service, z_session)
                     .map_err(|_e| DiscoveryError::PortCreation)?;
-            notifier_channels.insert(iox_service_id.clone(), notifier_tunnel);
-
-            info!(
-                "CHANNEL: Notifier {} [{}]",
-                iox_service_id.as_str(),
-                iox_service_config.name()
-            );
+            notifier_channels.insert(iox_service_id.clone(), notifier_channel);
         }
 
         if needs_listener {
-            let listener_tunnel =
+            let listener_channel =
                 ListenerChannel::create(iox_service_config, &iox_service, z_session)
                     .map_err(|_e| DiscoveryError::PortCreation)?;
-            listener_channels.insert(iox_service_id.clone(), listener_tunnel);
-
-            info!(
-                "CHANNEL: Listener {} [{}]",
-                iox_service_id.as_str(),
-                iox_service_config.name()
-            );
+            listener_channels.insert(iox_service_id.clone(), listener_channel);
         }
 
         middleware::zenoh::announce_service(z_session, iox_service_config)

@@ -59,11 +59,11 @@ impl<ServiceType: iceoryx2::service::Service> IceoryxDiscovery<ServiceType> {
                     .create()
                     .map_err(|_e| CreationError::Error)?;
 
-                info!("CONFIGURED Discovery updates from service {}", service_name);
+                info!("CONFIGURE DiscoveryService {}", service_name);
                 (Some(discovery_subscriber), None)
             }
             None => {
-                info!("CONFIGURED Internal discovery tracking");
+                info!("CONFIGURE DiscoveryTracker");
                 (None, Some(Tracker::<ServiceType>::new()))
             }
         };

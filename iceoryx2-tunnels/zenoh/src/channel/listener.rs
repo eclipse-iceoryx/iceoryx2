@@ -49,9 +49,14 @@ impl<ServiceType: iceoryx2::service::Service> ListenerChannel<ServiceType> {
         iox_event_service: &IceoryxEventService<ServiceType>,
         z_session: &ZenohSession,
     ) -> Result<Self, CreationError> {
-        let iox_notifier =
-            middleware::iceoryx::create_notifier(iox_event_service, iox_service_config)
-                .map_err(|_e| CreationError::Error)?;
+        info!(
+            "CREATE ListenerChannel {} [{}]",
+            iox_service_config.service_id().as_str(),
+            iox_service_config.name()
+        );
+
+        let iox_notifier = middleware::iceoryx::create_notifier(iox_event_service)
+            .map_err(|_e| CreationError::Error)?;
         let z_listener = middleware::zenoh::create_listener(z_session, iox_service_config)
             .map_err(|_e| CreationError::Error)?;
 
@@ -80,13 +85,14 @@ impl<ServiceType: iceoryx2::service::Service> Channel for ListenerChannel<Servic
         }
 
         // Propagate notifications received - once per event id
-        for id in received_ids {
+        for event_id in received_ids {
             self.iox_notifier
-                .__internal_notify(EventId::new(id), true)
+                .__internal_notify(EventId::new(event_id), true)
                 .map_err(|_| PropagationError::IceoryxPort)?;
+
             info!(
-                "PROPAGATED(iceoryx<-zenoh): Event({}) {} [{}]",
-                id,
+                "PROPAGATE ListenerChannel(EventId={}) {} [{}]",
+                event_id,
                 self.iox_service_config.service_id().as_str(),
                 self.iox_service_config.name()
             );

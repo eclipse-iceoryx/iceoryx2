@@ -46,8 +46,14 @@ impl<ServiceType: iceoryx2::service::Service> NotifierChannel<'_, ServiceType> {
         iox_service: &IceoryxEventService<ServiceType>,
         z_session: &ZenohSession,
     ) -> Result<Self, CreationError> {
-        let iox_listener = middleware::iceoryx::create_listener(iox_service, iox_service_config)
-            .map_err(|_e| CreationError::Error)?;
+        info!(
+            "CREATE NotifierChannel {} [{}]",
+            iox_service_config.service_id().as_str(),
+            iox_service_config.name()
+        );
+
+        let iox_listener =
+            middleware::iceoryx::create_listener(iox_service).map_err(|_e| CreationError::Error)?;
         let z_notifier = middleware::zenoh::create_notifier(z_session, iox_service_config)
             .map_err(|_e| CreationError::Error)?;
 
@@ -73,7 +79,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for NotifierChannel<'_, Se
                             .wait()
                             .map_err(|_| PropagationError::OtherPort)?;
                         info!(
-                            "PROPAGATED(iceoryx->zenoh): Event({}) {} [{}]",
+                            "PROPAGATE NotifierChannel(EventId={}) {} [{}]",
                             event_id.as_value(),
                             self.iox_service_config.service_id().as_str(),
                             self.iox_service_config.name()
