@@ -25,6 +25,9 @@ use iceoryx2_cal::dynamic_storage::DynamicStorageBuilder;
 use iceoryx2_cal::event::{NamedConcept, NamedConceptBuilder};
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 
+/// Factory to create a new [`Writer`] port/endpoint for
+/// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
+/// based communication.
 #[derive(Debug)]
 pub struct PortFactoryWriter<
     'factory,
@@ -44,6 +47,7 @@ impl<
         Self { factory }
     }
 
+    /// Creates a new [`Writer`] or returns a [`WriterCreateError`] on failure.
     pub fn create(self) -> Result<Writer<Service, T>, WriterCreateError> {
         let origin = format!("{:?}", self);
 

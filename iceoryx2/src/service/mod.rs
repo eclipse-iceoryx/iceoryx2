@@ -166,8 +166,6 @@
 //! # }
 //! ```
 
-use core::sync::atomic::AtomicU32;
-
 pub(crate) mod stale_resource_cleanup;
 
 /// The builder to create or open [`Service`]s
@@ -655,7 +653,11 @@ pub(crate) mod internal {
     }
 }
 
+/// Represents additional resources a service could use and have to be cleaned up when no owners
+/// are left
 pub trait ServiceResource {
+    /// Acquires the ownership of the additional resources. When the objects go out of scope the
+    /// underlying resources will be removed.
     fn acquire_ownership(&self);
 }
 
@@ -710,8 +712,11 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// the [`Service`]s ports and payload cannot be shared ([`Sync`]) between threads or moved
     /// ([`Send`]) into other threads.
     type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
+
+    /// Defines the construct used to store the management data of the blackboard service.
     type BlackboardMgmt<T: Send + Sync + Debug + 'static>: DynamicStorage<T>;
 
+    /// Defines the construct used to store the payload data of the blackboard service.
     type BlackboardPayload: SharedMemory<BumpAllocator>;
 
     /// Checks if a service under a given [`config::Config`] does exist

@@ -20,7 +20,6 @@ use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config, ServiceState};
 use core::fmt::Debug;
-use core::marker::PhantomData;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
@@ -48,7 +47,6 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     type DynamicConfig = dynamic_config::blackboard::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        //println!("service has ownership: {}", self.mgmt.has_ownership());
         self.service.static_config.name()
     }
 
@@ -89,10 +87,12 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         }
     }
 
+    /// Returns a [`PortFactoryWriter`] to create a new [`crate::port::writer::Writer`] port.
     pub fn writer_builder(&self) -> PortFactoryWriter<Service, T> {
         PortFactoryWriter::new(self)
     }
 
+    /// Returns a [`PortFactoryReader`] to create a new [`crate::port::reader::Reader`] port.
     pub fn reader_builder(&self) -> PortFactoryReader<Service, T> {
         PortFactoryReader::new(self)
     }

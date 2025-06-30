@@ -143,8 +143,9 @@ pub struct Service {
     pub connection_suffix: FileName,
     /// The suffix of a one-to-one connection
     pub event_connection_suffix: FileName,
-
+    /// The suffix of the blackboard management data segment
     pub blackboard_mgmt_suffix: FileName,
+    /// The suffix of the blackboard payload data segment
     pub blackboard_data_suffix: FileName,
 }
 

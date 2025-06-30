@@ -12,12 +12,17 @@
 
 use crate::service;
 use crate::service::builder::blackboard::Mgmt;
-use core::{fmt::Debug, marker::PhantomData, sync::atomic::AtomicU32};
+use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+/// Defines a failure that can occur when a [`Writer`] is created with
+/// [`crate::service::port_factory::writer::PortFactoryWriter`].
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum WriterCreateError {
+    /// The maximum amount of [`Writer`]s that can connect to a
+    /// [`Service`](crate::service::Service) is
+    /// defined in [`crate::config::Config`]. When this is exceeded no more [`Writer`]s
+    /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedWriters,
 }
 
@@ -29,6 +34,7 @@ impl core::fmt::Display for WriterCreateError {
 
 impl core::error::Error for WriterCreateError {}
 
+/// Producing endpoint of a blackboard based communication.
 #[derive(Debug)]
 pub struct Writer<
     Service: service::Service,
@@ -44,12 +50,5 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     pub(crate) fn new(mgmt: Service::BlackboardMgmt<Mgmt<T>>) -> Result<Self, WriterCreateError> {
         let new_self = Self { map: mgmt };
         Ok(new_self)
-    }
-
-    pub fn write(&self, value: u64) {
-        //let entry = self.map.get();
-        //entry.entries[0]
-        //.offset
-        //.store(value, core::sync::atomic::Ordering::Relaxed);
     }
 }

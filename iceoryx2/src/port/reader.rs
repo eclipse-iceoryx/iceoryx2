@@ -12,12 +12,18 @@
 
 use crate::service;
 use crate::service::builder::blackboard::Mgmt;
-use core::{fmt::Debug, marker::PhantomData, sync::atomic::AtomicU32};
+use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+/// Defines a failure that can occur when a [`Reader`] is created with
+/// [`crate::service::port_factory::reader::PortFactoryReader`].
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ReaderCreateError {
+    /// The maximum amount of [`Reader`]s that can connect to a
+    /// [`Service`](crate::service::Service) is
+    /// defined in [`crate::config::Config`]. When this is exceeded no more [`Reader`]s
+    /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedReaders,
 }
 
@@ -29,6 +35,7 @@ impl core::fmt::Display for ReaderCreateError {
 
 impl core::error::Error for ReaderCreateError {}
 
+/// Reading endpoint of a blackboard based communication.
 #[derive(Debug)]
 pub struct Reader<
     Service: service::Service,
