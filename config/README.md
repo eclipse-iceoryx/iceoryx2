@@ -171,3 +171,7 @@ Adjusting `global` settings ensures a non-interfering setup.
   Expired connection buffer size of the server. Connections to clients
   are expired when the client disconnected from the service and the
   connection contains unconsumed active requests.
+
+### Blackboard Pattern
+* `defaults.blackboard.max-readers` - [int]: The maximum amount of supported Readers.
+* `default.backboard.max-nodes` - [int]: The maximum amount of supported Nodes. Defines indirectly how many processes can open the service at the same time.
