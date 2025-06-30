@@ -21,6 +21,7 @@ apt-get install -y \
      clang \
      cmake \
      curl \
+     expect \
      flex \
      gcc \
      gcc-multilib \
