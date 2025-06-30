@@ -102,23 +102,23 @@ impl<const N: usize> ToB64 for [u8; N] {
             if 16 < N - i {
                 let mut data = [0u8; 16];
                 data.copy_from_slice(&self[i..i + 16]);
-                result.push_str(&u128::from_ne_bytes(data).to_b64());
+                result.push_str(&u128::from_le_bytes(data).to_b64());
                 i += 16;
             } else if 8 < N - i {
                 let mut data = [0u8; 8];
                 data.copy_from_slice(&self[i..i + 8]);
-                result.push_str(&u64::from_ne_bytes(data).to_b64());
+                result.push_str(&u64::from_le_bytes(data).to_b64());
                 i += 8;
             } else if 4 < N - i {
                 let mut data = [0u8; 4];
                 data.copy_from_slice(&self[i..i + 4]);
                 i += 8;
-                result.push_str(&u32::from_ne_bytes(data).to_b64());
+                result.push_str(&u32::from_le_bytes(data).to_b64());
                 i += 4;
             } else if 2 < N - i {
                 let mut data = [0u8; 2];
                 data.copy_from_slice(&self[i..i + 2]);
-                result.push_str(&u16::from_ne_bytes(data).to_b64());
+                result.push_str(&u16::from_le_bytes(data).to_b64());
                 i += 2;
             } else {
                 result.push_str(&self[i].to_b64());
