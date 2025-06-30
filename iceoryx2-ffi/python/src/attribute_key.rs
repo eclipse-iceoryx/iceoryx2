@@ -28,7 +28,7 @@ impl AttributeKey {
     pub fn new(value: &str) -> PyResult<Self> {
         Ok(Self(
             iceoryx2::service::attribute::AttributeKey::new(value.as_bytes())
-                .map_err(|e| SemanticStringError::new_err(format!("{:?}", e)))?,
+                .map_err(|e| SemanticStringError::new_err(format!("{e:?}")))?,
         ))
     }
 

@@ -284,7 +284,7 @@ impl crate::event::Listener for Listener {
         timeout: core::time::Duration,
     ) -> Result<Option<TriggerId>, ListenerWaitError> {
         self.wait(
-           &format!("Unable to wait for signal with timeout {:?} on event::unix_datagram_socket::Listener", timeout),
+           &format!("Unable to wait for signal with timeout {timeout:?} on event::unix_datagram_socket::Listener"),
             |this, buffer| this.receiver.timed_receive(buffer, timeout),
         )
     }

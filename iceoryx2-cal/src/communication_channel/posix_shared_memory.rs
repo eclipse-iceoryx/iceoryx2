@@ -235,7 +235,7 @@ impl CommunicationChannelConnector<u64, Channel> for Connector {
 
     fn open_sender(self) -> Result<Sender, CommunicationChannelOpenError> {
         let msg = "Unable to open communication channel";
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         match self.try_open_sender() {
             Ok(s) => Ok(s),
             Err(CommunicationChannelOpenError::DoesNotExist) => {

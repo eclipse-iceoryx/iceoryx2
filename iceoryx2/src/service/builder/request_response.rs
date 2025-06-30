@@ -85,7 +85,7 @@ pub enum RequestResponseOpenError {
 
 impl core::fmt::Display for RequestResponseOpenError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "RequestResponseOpenError::{:?}", self)
+        std::write!(f, "RequestResponseOpenError::{self:?}")
     }
 }
 
@@ -136,7 +136,7 @@ pub enum RequestResponseCreateError {
 
 impl core::fmt::Display for RequestResponseCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "RequestResponseCreateError::{:?}", self)
+        std::write!(f, "RequestResponseCreateError::{self:?}")
     }
 }
 
@@ -196,7 +196,7 @@ impl From<RequestResponseCreateError> for RequestResponseOpenOrCreateError {
 
 impl core::fmt::Display for RequestResponseOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "RequestResponseOpenOrCreateError::{:?}", self)
+        std::write!(f, "RequestResponseOpenOrCreateError::{self:?}")
     }
 }
 
@@ -468,7 +468,7 @@ impl<
     }
 
     fn adjust_configuration_to_meaningful_values(&mut self) {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         let settings = self.base.service_config.request_response_mut();
 
         if settings.max_response_buffer_size == 0 {

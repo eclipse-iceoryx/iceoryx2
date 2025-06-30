@@ -86,7 +86,7 @@ impl From<FixedSizeByteStringModificationError> for SemanticStringError {
 
 impl core::fmt::Display for SemanticStringError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "SemanticStringError::{:?}", self)
+        std::write!(f, "SemanticStringError::{self:?}")
     }
 }
 

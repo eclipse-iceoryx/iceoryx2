@@ -183,7 +183,7 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
         storage_name: &FileName,
         config: &Self::Configuration,
     ) -> Result<bool, NamedConceptRemoveError> {
-        let msg = format!("Unable to release static storage \"{}\"", storage_name);
+        let msg = format!("Unable to release static storage \"{storage_name}\"");
         let origin = "static_storage::file::Storage::remove_cfg()";
 
         let file_path = config.path_for(storage_name);
@@ -253,7 +253,7 @@ impl crate::named_concept::NamedConceptMgmt for Storage {
         storage_name: &FileName,
         config: &Configuration,
     ) -> Result<bool, NamedConceptDoesExistError> {
-        let msg = format!("Unable to check if storage \"{}\" exists", storage_name);
+        let msg = format!("Unable to check if storage \"{storage_name}\" exists");
         let origin = "static_storage::file::Storage::does_exist_cfg()";
 
         let adjusted_path = config.path_for(storage_name);

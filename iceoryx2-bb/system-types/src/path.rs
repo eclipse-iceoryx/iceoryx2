@@ -105,8 +105,7 @@ impl Path {
     /// Adds a new file or directory entry to the path. It adds it in a fashion that a slash is
     /// added when the path does not end with a slash - except when it is empty.
     pub fn add_path_entry(&mut self, entry: &Path) -> Result<(), SemanticStringError> {
-        let msg = format!("Unable to add entry \"{}\" to path since it would exceed the maximum supported path length of {}.",
-            entry, PATH_LENGTH);
+        let msg = format!("Unable to add entry \"{entry}\" to path since it would exceed the maximum supported path length of {PATH_LENGTH}.");
         if !self.is_empty()
             && self.as_bytes()[self.len() - 1] != iceoryx2_pal_configuration::PATH_SEPARATOR
         {

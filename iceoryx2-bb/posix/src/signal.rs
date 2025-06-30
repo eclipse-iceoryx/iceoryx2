@@ -295,8 +295,7 @@ impl Display for SignalHandler {
         }
         write!(
             f,
-            "SignalHandler {{ registered_signals: {:?} }}",
-            registered_signals
+            "SignalHandler {{ registered_signals: {registered_signals:?} }}"
         )
     }
 }

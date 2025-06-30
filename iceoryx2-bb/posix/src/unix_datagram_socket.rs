@@ -486,7 +486,7 @@ impl UnixDatagramSocket {
 
         let raw_fd = unsafe { posix::socket(posix::PF_UNIX as posix::int, posix::SOCK_DGRAM, 0) };
 
-        let msg = format!("Unable to create UnixDatagramSocket named \"{}\"", name);
+        let msg = format!("Unable to create UnixDatagramSocket named \"{name}\"");
         if raw_fd < 0 {
             handle_errno!(UnixDatagramCreationError, from "UnixDatagramSocket::new",
                 Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),

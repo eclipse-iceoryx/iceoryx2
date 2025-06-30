@@ -306,8 +306,7 @@ impl UniqueIndexSet {
     fn verify_init(&self, source: &str) {
         debug_assert!(
             self.is_memory_initialized.load(Ordering::Relaxed),
-            "Undefined behavior when calling UniqueIndexSet::{} and the object is not initialized.",
-            source
+            "Undefined behavior when calling UniqueIndexSet::{source} and the object is not initialized."
         );
     }
 

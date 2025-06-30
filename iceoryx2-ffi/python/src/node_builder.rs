@@ -72,11 +72,11 @@ impl NodeBuilder {
         match service_type {
             ServiceType::Ipc => Ok(Node(Parc::new(NodeType::Ipc(
                 this.create::<crate::IpcService>()
-                    .map_err(|e| NodeCreationFailure::new_err(format!("{:?}", e)))?,
+                    .map_err(|e| NodeCreationFailure::new_err(format!("{e:?}")))?,
             )))),
             ServiceType::Local => Ok(Node(Parc::new(NodeType::Local(
                 this.create::<crate::LocalService>()
-                    .map_err(|e| NodeCreationFailure::new_err(format!("{:?}", e)))?,
+                    .map_err(|e| NodeCreationFailure::new_err(format!("{e:?}")))?,
             )))),
         }
     }

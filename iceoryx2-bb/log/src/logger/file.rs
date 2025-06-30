@@ -93,12 +93,12 @@ impl Logger {
         let write_buffer_to_file = move || loop {
             match receiver.recv() {
                 Ok(Message::Entry(entry)) => file
-                    .write_all(format!("{:?}\n", entry).as_bytes())
+                    .write_all(format!("{entry:?}\n").as_bytes())
                     .expect("Writing log message into log file."),
                 Ok(Message::Stop) => break,
                 Err(e) => file
                     .write_all(
-                        format!("[This should never happen!] File Logger got error: {:?}", e)
+                        format!("[This should never happen!] File Logger got error: {e:?}")
                             .as_bytes(),
                     )
                     .expect("Write log message into log file."),

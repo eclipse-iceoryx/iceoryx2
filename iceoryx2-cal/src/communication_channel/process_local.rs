@@ -195,7 +195,7 @@ impl NamedConceptBuilder<Channel> for Connector {
 impl CommunicationChannelConnector<u64, Channel> for Connector {
     fn open_sender(self) -> Result<Duplex, CommunicationChannelOpenError> {
         let msg = "Failed to open sender";
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         let name = self.name.clone();
         match self.try_open_sender() {
             Err(CommunicationChannelOpenError::DoesNotExist) => {

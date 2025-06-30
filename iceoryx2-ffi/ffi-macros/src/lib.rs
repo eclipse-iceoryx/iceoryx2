@@ -184,14 +184,14 @@ fn parse_attribute_args(args: TokenStream) -> Args {
 
     let attribute_format = "Format must be '#[iceoryx2_ffi(Type)]'";
     if args.len() != 1 {
-        panic!("Invalid attribute definition! {}", attribute_format);
+        panic!("Invalid attribute definition! {attribute_format}");
     }
 
     let rust_type = match &args[0] {
         TokenTree::Ident(my_type) => LitStr::new(&my_type.to_string(), my_type.span())
             .parse::<syn::Type>()
             .expect("Valid type"),
-        _ => panic!("Invalid type argument! {}", attribute_format),
+        _ => panic!("Invalid type argument! {attribute_format}"),
     };
 
     // NOTE: this code is kept for reference if more arguments are added to the attribute

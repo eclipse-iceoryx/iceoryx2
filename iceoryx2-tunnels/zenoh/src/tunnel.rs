@@ -44,7 +44,7 @@ pub enum CreationError {
 
 impl core::fmt::Display for CreationError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::write!(f, "CreationError::{:?}", self)
+        core::write!(f, "CreationError::{self:?}")
     }
 }
 
@@ -57,7 +57,7 @@ pub enum DiscoveryError {
 
 impl core::fmt::Display for DiscoveryError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::write!(f, "DiscoveryError::{:?}", self)
+        core::write!(f, "DiscoveryError::{self:?}")
     }
 }
 

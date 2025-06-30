@@ -47,10 +47,7 @@ impl NamedConceptMgmt for FileLockMonitoring {
     ) -> Result<Vec<FileName>, crate::named_concept::NamedConceptListError> {
         let path = cfg.get_path_hint();
         let origin = "FileLockMonitoring::list_cfg()";
-        let msg = format!(
-            "Unable to list all FileLockMonitoring instances in \"{}\"",
-            path
-        );
+        let msg = format!("Unable to list all FileLockMonitoring instances in \"{path}\"");
         let directory = match Directory::new(path) {
             Ok(directory) => directory,
             Err(DirectoryOpenError::InsufficientPermissions) => {
@@ -87,10 +84,8 @@ impl NamedConceptMgmt for FileLockMonitoring {
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::named_concept::NamedConceptDoesExistError> {
         let process_state_path = cfg.path_for(name);
-        let msg = format!(
-            "Unable to check if the FileLockMonitoring \"{}\" exists",
-            process_state_path
-        );
+        let msg =
+            format!("Unable to check if the FileLockMonitoring \"{process_state_path}\" exists");
         let origin = "FileLockMonitoring::does_exist_cfg()";
 
         match File::does_exist(&process_state_path) {
@@ -107,10 +102,7 @@ impl NamedConceptMgmt for FileLockMonitoring {
         cfg: &Self::Configuration,
     ) -> Result<bool, crate::named_concept::NamedConceptRemoveError> {
         let process_state_path = cfg.path_for(name);
-        let msg = format!(
-            "Unable to remove FileLockMonitoring \"{}\"",
-            process_state_path
-        );
+        let msg = format!("Unable to remove FileLockMonitoring \"{process_state_path}\"");
         let origin = "FileLockMonitoring::remove_cfg()";
         match File::remove(&process_state_path) {
             Ok(v) => Ok(v),

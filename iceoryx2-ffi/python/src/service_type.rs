@@ -29,6 +29,6 @@ pub(crate) type LocalService = iceoryx2::prelude::local_threadsafe::Service;
 #[pymethods]
 impl ServiceType {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 }

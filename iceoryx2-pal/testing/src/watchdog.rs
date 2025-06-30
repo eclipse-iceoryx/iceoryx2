@@ -50,7 +50,7 @@ impl Watchdog {
                     std::thread::yield_now();
 
                     if now.elapsed() > timeout {
-                        eprintln!("Killing test since timeout of {:?} was hit.", timeout);
+                        eprintln!("Killing test since timeout of {timeout:?} was hit.");
                         std::process::exit(1);
                     }
                 }

@@ -155,7 +155,7 @@ where
     }
 
     fn open(self) -> Result<DynamicView<Allocator, Shm>, SharedMemoryOpenError> {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         let msg = "Unable to open ResizableSharedMemoryView";
 
         let adjusted_name =
@@ -245,7 +245,7 @@ where
 
     fn create(mut self) -> Result<DynamicMemory<Allocator, Shm>, SharedMemoryCreateError> {
         let msg = "Unable to create ResizableSharedMemory";
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
 
         let hint = Allocator::initial_setup_hint(Layout::new::<u8>(), 1);
         let adjusted_name =
@@ -417,7 +417,7 @@ where
         config: &Shm::Configuration,
     ) -> Result<bool, NamedConceptRemoveError> {
         let origin = "resizable_shared_memory::Dynamic::remove_cfg()";
-        let msg = format!("Unable to remove ResizableSharedMemory {:?}", name);
+        let msg = format!("Unable to remove ResizableSharedMemory {name:?}");
 
         let mgmt_name = Self::managment_segment_name(name);
         let mut shm_removed = fail!(from origin, when Shm::remove_cfg(&mgmt_name, config),
@@ -453,10 +453,7 @@ where
         config: &Shm::Configuration,
     ) -> Result<bool, NamedConceptDoesExistError> {
         let origin = "resizable_shared_memory::Dynamic::does_exist_cfg()";
-        let msg = format!(
-            "Unable to determine if ResizableSharedMemory {:?} exists",
-            name
-        );
+        let msg = format!("Unable to determine if ResizableSharedMemory {name:?} exists");
 
         let mgmt_name = Self::managment_segment_name(name);
         Ok(

@@ -81,7 +81,7 @@ pub enum PublishSubscribeOpenError {
 
 impl core::fmt::Display for PublishSubscribeOpenError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "PublishSubscribeOpenError::{:?}", self)
+        std::write!(f, "PublishSubscribeOpenError::{self:?}")
     }
 }
 
@@ -133,7 +133,7 @@ pub enum PublishSubscribeCreateError {
 
 impl core::fmt::Display for PublishSubscribeCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "PublishSubscribeCreateError::{:?}", self)
+        std::write!(f, "PublishSubscribeCreateError::{self:?}")
     }
 }
 
@@ -198,7 +198,7 @@ impl From<PublishSubscribeCreateError> for PublishSubscribeOpenOrCreateError {
 
 impl core::fmt::Display for PublishSubscribeOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "PublishSubscribeOpenOrCreateError::{:?}", self)
+        std::write!(f, "PublishSubscribeOpenOrCreateError::{self:?}")
     }
 }
 
@@ -405,7 +405,7 @@ impl<
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
     fn adjust_configuration_to_meaningful_values(&mut self) {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         let settings = self.base.service_config.publish_subscribe_mut();
 
         if settings.subscriber_max_borrowed_samples == 0 {

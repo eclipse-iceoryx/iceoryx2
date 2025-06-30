@@ -68,7 +68,7 @@ pub enum BlackboardOpenError {
 
 impl core::fmt::Display for BlackboardOpenError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "BlackboardOpenError::{:?}", self)
+        std::write!(f, "BlackboardOpenError::{self:?}")
     }
 }
 
@@ -114,7 +114,7 @@ pub enum BlackboardCreateError {
 
 impl core::fmt::Display for BlackboardCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "BlackboardCreateError::{:?}", self)
+        std::write!(f, "BlackboardCreateError::{self:?}")
     }
 }
 
@@ -155,7 +155,7 @@ pub enum BlackboardOpenOrCreateError {
 
 impl core::fmt::Display for BlackboardOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "BlackboardOpenOrCreateError::{:?}", self)
+        std::write!(f, "BlackboardOpenOrCreateError::{self:?}")
     }
 }
 
@@ -316,7 +316,7 @@ impl<KeyType: ZeroCopySend + Debug, ServiceType: service::Service> Builder<KeyTy
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
     fn adjust_configuration_to_meaningful_values(&mut self) {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         let settings = self.base.service_config.blackboard_mut();
 
         if settings.max_readers == 0 {

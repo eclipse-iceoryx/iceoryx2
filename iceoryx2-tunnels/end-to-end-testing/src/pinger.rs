@@ -101,10 +101,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                     }
                 },
                 Err(e) => {
-                    fail_test(&format!(
-                        "FAILED Error receiving from Pong Subscriber: {}",
-                        e
-                    ));
+                    fail_test(&format!("FAILED Error receiving from Pong Subscriber: {e}"));
                 }
             }
         }

@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
                 y: 6 * counter,
                 funky: 7.77,
             };
-            println!("  send response: {:?}", response);
+            println!("  send response: {response:?}");
             // send first response by using the slower, non-zero-copy API
             active_request.send_copy(response)?;
 
@@ -45,8 +45,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             for n in 0..*active_request % 2 {
                 let response = active_request.loan_uninit()?;
                 let response = response.write_payload(TransmissionData {
-                    x: counter as i32 * (n as i32 + 1),
-                    y: counter as i32 + n as i32,
+                    x: counter * (n as i32 + 1),
+                    y: counter + n as i32,
                     funky: counter as f64 * 0.1234,
                 });
                 println!("  send response: {:?}", *response);
