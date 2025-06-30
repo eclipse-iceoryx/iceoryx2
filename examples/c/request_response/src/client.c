@@ -122,7 +122,7 @@ int main(void) { // NOLINT
 
             iox2_response_payload(&response, (const void**) &response_data, NULL);
             printf("  received response %d: x=%d, y=%d, funky=%f\n",
-                   response_counter,
+                   (int32_t) response_counter,
                    response_data->x,
                    response_data->y,
                    response_data->funky);
