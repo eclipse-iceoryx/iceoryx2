@@ -39,7 +39,7 @@ pub fn get_sections() -> Vec<CliSection> {
                 CliEntry {
                     key: "global.prefix",
                     value_type: "[string]",
-                    description: "Prefix prepended to all internal IPC resource names.",
+                    description: "Prefix that is used for every file iceoryx2 creates.",
                 },
             ],
         },
@@ -294,12 +294,12 @@ pub fn get_sections() -> Vec<CliSection> {
                 CliEntry {
                     key: "defaults.blackboard.max-readers",
                     value_type: "[int]",
-                    description: "Maximum number of readers on the blackboard.",
+                    description: "The maximum amount of supported Readers.",
                 },
                 CliEntry {
                     key: "defaults.blackboard.max-nodes",
                     value_type: "[int]",
-                    description: "Maximum number of nodes that can access the blackboard.",
+                    description: "The maximum amount of supported Nodes. Defines indirectly how many processes can open the service at the same time.",
                 },
             ],
         },
