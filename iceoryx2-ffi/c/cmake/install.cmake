@@ -11,6 +11,17 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 # NOTE the file is included in '../CMakeLists.txt' and therefore all paths based on 'CMAKE_CURRENT_SOURCE_DIR' must be relative to '../'
+
+#
+########## find_package in source tree ##########
+#
+
+set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
+    CACHE FILEPATH
+    "${PROJECT_NAME}Config.cmake to make find_package(${PROJECT_NAME}) work in source tree!"
+    FORCE
+)
+
 if(ICEORYX_WITH_FETCH_CONTENT)
     return()
 endif()
@@ -93,14 +104,4 @@ install(
     EXPORT ${TARGETS_EXPORT_NAME}
     NAMESPACE ${PROJECT_NAMESPACE}::
     DESTINATION ${DESTINATION_CONFIGDIR}
-)
-
-#
-########## find_package in source tree ##########
-#
-
-set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
-    CACHE FILEPATH
-    "${PROJECT_NAME}Config.cmake to make find_package(${PROJECT_NAME}) work in source tree!"
-    FORCE
 )

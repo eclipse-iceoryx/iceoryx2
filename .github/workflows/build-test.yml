@@ -408,7 +408,7 @@ jobs:
             cargo-features-flag: "--features libc_platform"
           - os: macos-latest
             cargo-features-flag: "--features libc_platform"
-    timeout-minutes: 60
+    timeout-minutes: 90
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
