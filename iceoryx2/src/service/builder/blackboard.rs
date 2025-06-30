@@ -218,10 +218,12 @@ pub struct Mgmt<KeyType: ZeroCopySend + Debug + Eq + Clone> {
 #[derive(Debug)]
 pub(crate) struct BlackboardResources<ServiceType: service::Service, KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone> {
     pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt<KeyType>>,
+    pub(crate) data: ServiceType::BlackboardPayload,
 }
 
 impl<ServiceType: service::Service, KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone> ServiceResource for BlackboardResources<ServiceType, KeyType> {
     fn acquire_ownership(&self) {
+        self.data.acquire_ownership();
         self.mgmt.acquire_ownership();
     }
 }
@@ -320,7 +322,8 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
         // differentiate between creator and opener builder and remove open_or_create?
         self.items.push(BuilderItems { key, 
                                        type_details: TypeDetail::__internal_new::<ValueType>(message_type_details::TypeVariant::FixedSize), 
-                                       value_writer: Box::new(move |mem: *mut u8| { let mem: *mut ValueType = mem as *mut ValueType; unsafe { mem.write(value.clone()) };}), 
+                                       value_writer: Box::new(move |mem: *mut u8| { let mem: *mut UnrestrictedAtomic<ValueType> = mem as *mut UnrestrictedAtomic<ValueType>; 
+                                                                                    unsafe { mem.write(UnrestrictedAtomic::<ValueType>::new(value)) };}), 
                                        value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(), });
         self
     }
@@ -521,14 +524,11 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                         when <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as iceoryx2_cal::dynamic_storage::DynamicStorage<Mgmt<KeyType>>>::Builder::new(&storage_name).config(&storage_config).has_ownership(false).open(), with BlackboardOpenError::ServiceInCorruptedState,
                         "{} blub", msg);
 
-                    ////// test
-                    /// config/name scheme seems wrong; orient on publisher data segment
                     let shm_config = blackboard_data_config::<ServiceType, Mgmt<KeyType>>(
                         self.base.shared_node.config(),
                     );
                     let payload_shm = <<ServiceType::BlackboardPayload as iceoryx2_cal::shared_memory::SharedMemory<iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator>>::Builder as NamedConceptBuilder<
-                        ServiceType::BlackboardPayload>>::new(&FileName::new(&storage_name).unwrap()).config(&shm_config).has_ownership(true).open().unwrap();
-                    //////
+                        ServiceType::BlackboardPayload>>::new(&storage_name).config(&shm_config).open().unwrap();
 
                     if let Some(mut service_tag) = service_tag {
                         service_tag.release_ownership();
@@ -540,7 +540,7 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                             self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
-                            BlackboardResources { mgmt: mgmt_storage, },
+                            BlackboardResources { mgmt: mgmt_storage, data: payload_shm},
                         ),
                     ));
                 }
@@ -636,6 +636,7 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                 let name = blackboard_name(
                     self.base.service_config.service_id().as_str(),
                 );
+                println!("name = {}", name);
                 let shm_config = blackboard_data_config::<ServiceType, Mgmt<KeyType>>(
                     self.base.shared_node.config(),
                 );
@@ -644,7 +645,8 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                     payload_size += i.value_size + i.type_details.alignment - 1;
                 }
                 let payload_shm = <<ServiceType::BlackboardPayload as iceoryx2_cal::shared_memory::SharedMemory<iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator>>::Builder as NamedConceptBuilder<
-                    ServiceType::BlackboardPayload>>::new(&FileName::new(&name).unwrap()).config(&shm_config).has_ownership(true).size(payload_size).create(&iceoryx2_cal::shared_memory::bump_allocator::Config::default()).unwrap();
+                    ServiceType::BlackboardPayload>>::new(&name).config(&shm_config).has_ownership(false).size(payload_size).create(&iceoryx2_cal::shared_memory::bump_allocator::Config::default()).unwrap();
+                println!("name = {}", name);
 
                 // create the management segment
                 let storage_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
@@ -699,7 +701,7 @@ impl<KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone, Service
                         self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
-                        BlackboardResources { mgmt: mgmt_storage }
+                        BlackboardResources { mgmt: mgmt_storage, data: payload_shm }
                     ),
                 ))
             }

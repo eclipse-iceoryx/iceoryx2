@@ -16,13 +16,14 @@ use super::blackboard::PortFactory;
 use crate::port::writer::{Writer, WriterCreateError};
 use crate::service;
 use crate::service::builder::blackboard::Mgmt;
-use crate::service::config_scheme::blackboard_mgmt_config;
+use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use core::fmt::Debug;
-use core::sync::atomic::AtomicU32;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorageBuilder;
 use iceoryx2_cal::event::{NamedConcept, NamedConceptBuilder};
+use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
 
 #[derive(Debug)]
 pub struct PortFactoryWriter<
@@ -46,12 +47,28 @@ impl<
     pub fn create(self) -> Result<Writer<Service, T>, WriterCreateError> {
         let origin = format!("{:?}", self);
 
-        let mgmt_name = self.factory.service.additional_resource.mgmt.name();
+        let name = self.factory.service.additional_resource.mgmt.name();
+
+        //// test to open payload data segment
+        let shm_config =
+            blackboard_data_config::<Service, Mgmt<T>>(self.factory.service.shared_node.config());
+        let payload_shm =
+            <<Service::BlackboardPayload as iceoryx2_cal::shared_memory::SharedMemory<
+                iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+            >>::Builder as NamedConceptBuilder<Service::BlackboardPayload>>::new(&name)
+            .config(&shm_config)
+            .open()
+            .unwrap();
+        let atomic = (payload_shm.payload_start_address()) as *mut UnrestrictedAtomic<u64>;
+        let value = unsafe { &(*atomic) }.load();
+        println!("PortFactoryWriter: value = {}", value);
+        ////
+
         let mgmt_config =
             blackboard_mgmt_config::<Service, Mgmt<T>>(self.factory.service.shared_node.config());
         // TODO: error type and message
         let storage = fail!(from origin,
-            when <Service::BlackboardMgmt<Mgmt<T>> as iceoryx2_cal::dynamic_storage::DynamicStorage<Mgmt<T>>>::Builder::new(mgmt_name)
+            when <Service::BlackboardMgmt<Mgmt<T>> as iceoryx2_cal::dynamic_storage::DynamicStorage<Mgmt<T>>>::Builder::new(name)
                 .config(&mgmt_config)
                 .has_ownership(false)
                 .open(),
