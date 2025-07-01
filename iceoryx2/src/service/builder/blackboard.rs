@@ -205,6 +205,9 @@ impl<KeyType> Debug for BuilderInternals<KeyType> {
 #[derive(Debug)]
 pub(crate) struct Entry {
     pub(crate) type_details: TypeDetail,
+    // offset is sufficient for static single-writer case (no insert after creation, no remove)
+    // dynamic single-writer case (additional inserts after service creation and remove): offset (32 bit) + aba counter (32 bit)
+    // dynamic multi-writer case: offset (32 bit) + writer segment id (8 bit) + aba counter (24 bit)
     pub(crate) offset: AtomicU64,
 }
 
@@ -718,7 +721,7 @@ impl<
                         .has_ownership(false)
                         .initializer(|entry: &mut Mgmt<KeyType>, _allocator: &mut BumpAllocator| {
                             for i in 0..self.internals.len() {
-                                // - write value passed to add() to payload_shm
+                                // write value passed to add() to payload_shm
                                 println!("size: {}, alignment: {}", self.internals[i].internal_value_size, self.internals[i].value_type_details.alignment);
                                 println!("size: {}, alignment: {}", self.internals[i].internal_value_size, self.internals[i].internal_value_alignment);
                                 let mem = payload_shm.allocate(unsafe { Layout::from_size_align_unchecked(self.internals[i].internal_value_size, self.internals[i].internal_value_alignment) });
@@ -727,16 +730,14 @@ impl<
                                 }
                                 let mem = mem.unwrap();
                                 (*self.internals[i].value_writer)(mem.data_ptr);
-                                // - write offset to entries (relative ptr)
-                                // TODO: offset must be a relative ptr
-                                let res = entry.entries.push(Entry{type_details: self.internals[i].value_type_details.clone(), offset: AtomicU64::new(mem.offset.as_value())});
+                                // write offset to value in payload_shm to entries vector
+                                let res = entry.entries.push(Entry{type_details: self.internals[i].value_type_details.clone(), offset: AtomicU64::new(mem.offset.offset() as u64)});
                                 if !res {
                                     return false
                                 }
-                                // - write index of entries to map
+                                // write offset index to map
                                 let res = entry.map.insert(self.internals[i].key.clone(), entry.entries.len() - 1);
                                 if res.is_err() {
-                                    let _removed = entry.entries.pop();
                                     return false
                                 }
                             }

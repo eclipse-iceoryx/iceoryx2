@@ -14,7 +14,9 @@ use crate::service;
 use crate::service::builder::blackboard::Mgmt;
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_cal::shared_memory::SharedMemory;
 
 /// Defines a failure that can occur when a [`Reader`] is created with
 /// [`crate::service::port_factory::reader::PortFactoryReader`].
@@ -41,26 +43,33 @@ pub struct Reader<
     Service: service::Service,
     T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
-    //service: Service, or ServiceState with BlackboardResources
-    map: Service::BlackboardMgmt<Mgmt<T>>,
+    mgmt: Service::BlackboardMgmt<Mgmt<T>>,
+    payload: Service::BlackboardPayload,
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
     Reader<Service, T>
 {
-    pub(crate) fn new(mgmt: Service::BlackboardMgmt<Mgmt<T>>) -> Result<Self, ReaderCreateError> {
-        let new_self = Self { map: mgmt };
+    pub(crate) fn new(
+        mgmt: Service::BlackboardMgmt<Mgmt<T>>,
+        payload: Service::BlackboardPayload,
+    ) -> Result<Self, ReaderCreateError> {
+        // TODO: error handling
+        let new_self = Self { mgmt, payload };
         Ok(new_self)
     }
 
-    pub fn read<ValueType>(&self, key: &T) -> Option<u64> {
-        let entries_index = self.map.get().map.get(key);
-        if entries_index.is_none() {
+    pub fn read<ValueType: Copy>(&self, key: &T) -> Option<ValueType> {
+        let index = self.mgmt.get().map.get(key);
+        if index.is_none() {
             return None;
         }
-        let offset = self.map.get().entries[entries_index.unwrap()]
+        let offset = self.mgmt.get().entries[index.unwrap()]
             .offset
             .load(core::sync::atomic::Ordering::Relaxed);
-        Some(offset)
+        let atomic = (self.payload.payload_start_address() as u64 + offset)
+            as *mut UnrestrictedAtomic<ValueType>;
+        let value = unsafe { (*atomic).load() };
+        Some(value)
     }
 }

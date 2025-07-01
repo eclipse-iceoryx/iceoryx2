@@ -19,11 +19,11 @@ use crate::service::builder::blackboard::Mgmt;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
 use iceoryx2_bb_log::fail;
-use iceoryx2_cal::dynamic_storage::DynamicStorageBuilder;
+use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
 use iceoryx2_cal::event::{NamedConcept, NamedConceptBuilder};
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
+use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 
 /// Factory to create a new [`Reader`] port/endpoint for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
@@ -53,31 +53,29 @@ impl<
 
         let name = self.factory.service.additional_resource.mgmt.name();
 
-        //// test to open payload data segment
+        // open payload data segment
         let shm_config =
             blackboard_data_config::<Service, Mgmt<T>>(self.factory.service.shared_node.config());
         let payload_shm =
-            <<Service::BlackboardPayload as iceoryx2_cal::shared_memory::SharedMemory<
-                iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator,
+            <<Service::BlackboardPayload as SharedMemory<BumpAllocator,
             >>::Builder as NamedConceptBuilder<Service::BlackboardPayload>>::new(&name)
             .config(&shm_config)
             .open()
             .unwrap();
-        let atomic = (payload_shm.payload_start_address()) as *mut UnrestrictedAtomic<u64>;
-        let value = unsafe { &(*atomic) }.load();
-        println!("PortFactoryReader: value = {}", value);
-        ////
 
+        // open management segment
         let mgmt_config =
             blackboard_mgmt_config::<Service, Mgmt<T>>(self.factory.service.shared_node.config());
         // TODO: error type and message
-        let storage = fail!(from origin,
-            when <Service::BlackboardMgmt<Mgmt<T>> as iceoryx2_cal::dynamic_storage::DynamicStorage<Mgmt<T>>>::Builder::new(name)
+        let mgmt_storage = fail!(from origin,
+            when <Service::BlackboardMgmt<Mgmt<T>> as DynamicStorage<Mgmt<T>>>::Builder::new(name)
                 .config(&mgmt_config)
                 .has_ownership(false)
                 .open(),
             with ReaderCreateError::ExceedsMaxSupportedReaders,
             "blub");
-        Ok(fail!(from origin, when Reader::new(storage),"Failed to create new Reader port."))
+        Ok(
+            fail!(from origin, when Reader::new(mgmt_storage, payload_shm),"Failed to create new Reader port."),
+        )
     }
 }
