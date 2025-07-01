@@ -13,7 +13,7 @@
 use crate::keys;
 
 use iceoryx2::service::static_config::StaticConfig as ServiceConfig;
-use iceoryx2_bb_log::error;
+use iceoryx2_bb_log::{error, fail};
 
 use zenoh::handlers::FifoChannel;
 use zenoh::handlers::FifoChannelHandler;
@@ -32,11 +32,15 @@ pub(crate) fn create_publisher<'a>(
 ) -> Result<Publisher<'a>, zenoh::Error> {
     let key = keys::publish_subscribe(service_config.service_id());
 
-    let z_publisher = session
-        .declare_publisher(key)
-        .allowed_destination(Locality::Remote)
-        .reliability(Reliability::Reliable)
-        .wait()?;
+    let z_publisher = fail!(
+        from "create_publisher()",
+        when session
+            .declare_publisher(key)
+            .allowed_destination(Locality::Remote)
+            .reliability(Reliability::Reliable)
+            .wait(),
+        "failed to create zenoh publisher for payloads"
+    );
 
     Ok(z_publisher)
 }
@@ -49,11 +53,15 @@ pub(crate) fn create_subscriber(
     let key = keys::publish_subscribe(service_config.service_id());
 
     // TODO(correctness): Make handler type and properties configurable
-    let subscriber = session
-        .declare_subscriber(key)
-        .with(FifoChannel::new(10))
-        .allowed_origin(Locality::Remote)
-        .wait()?;
+    let subscriber = fail!(
+        from "create_subscriber()",
+        when session
+            .declare_subscriber(key)
+            .with(FifoChannel::new(10))
+            .allowed_origin(Locality::Remote)
+            .wait(),
+        "failed to create zenoh subscriber for payloads"
+    );
 
     Ok(subscriber)
 }
@@ -66,11 +74,15 @@ pub(crate) fn create_notifier<'a>(
 ) -> Result<Publisher<'a>, zenoh::Error> {
     let key = keys::event(service_config.service_id());
 
-    let notifier = session
-        .declare_publisher(key.clone())
-        .allowed_destination(Locality::Remote)
-        .reliability(Reliability::Reliable)
-        .wait()?;
+    let notifier = fail!(
+        from "create_notifier()",
+        when session
+            .declare_publisher(key.clone())
+            .allowed_destination(Locality::Remote)
+            .reliability(Reliability::Reliable)
+            .wait(),
+        "failed to create zenoh publisher for notifications"
+    );
 
     Ok(notifier)
 }
@@ -84,11 +96,15 @@ pub(crate) fn create_listener(
     let key = keys::event(service_config.service_id());
 
     // TODO(correctness): Make handler type and properties configurable
-    let listener = session
-        .declare_subscriber(key.clone())
-        .with(FifoChannel::new(10))
-        .allowed_origin(Locality::Remote)
-        .wait()?;
+    let listener = fail!(
+        from "create_listener()",
+        when session
+            .declare_subscriber(key.clone())
+            .with(FifoChannel::new(10))
+            .allowed_origin(Locality::Remote)
+            .wait(),
+        "failed to create zenoh subscriber for notifications"
+    );
 
     Ok(listener)
 }
@@ -99,28 +115,40 @@ pub(crate) fn announce_service(
     service_config: &ServiceConfig,
 ) -> Result<(), zenoh::Error> {
     let key = keys::service_details(service_config.service_id());
-    let service_config_serialized = serde_json::to_string(&service_config)?;
+    let service_config_serialized = fail!(
+        from "announce_service()",
+        when serde_json::to_string(&service_config),
+        "failed to serialize service config"
+    );
 
     // Notify all current hosts.
-    session
-        .put(key.clone(), service_config_serialized.clone())
-        .allowed_destination(Locality::Remote)
-        .wait()?;
+    fail!(
+        from "announce_service()",
+        when session
+            .put(key.clone(), service_config_serialized.clone())
+            .allowed_destination(Locality::Remote)
+            .wait(),
+        "failed to share service details with remote hosts"
+    );
 
     // Set up a queryable to respond to future hosts.
-    session
-        .declare_queryable(key.clone())
-        .callback(move |query| {
-            let _ = query
-                .reply(key.clone(), service_config_serialized.clone())
-                .wait()
-                .inspect_err(|e| {
-                    error!("Failed to announce service {}: {}", key, e);
-                });
-        })
-        .allowed_origin(Locality::Remote)
-        .background()
-        .wait()?;
+    fail!(
+        from "announce_service()",
+        when session
+            .declare_queryable(key.clone())
+            .callback(move |query| {
+                let _ = query
+                    .reply(key.clone(), service_config_serialized.clone())
+                    .wait()
+                    .inspect_err(|e| {
+                        error!("Failed to announce service {}: {}", key, e);
+                    });
+            })
+            .allowed_origin(Locality::Remote)
+            .background()
+            .wait(),
+        "failed to set up queryable to share service details with remote hosts"
+    );
 
     Ok(())
 }

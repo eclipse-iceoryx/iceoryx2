@@ -21,6 +21,7 @@ use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory as IceoryxPublishSubscribeService;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
+use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::info;
 
 use zenoh::bytes::ZBytes;
@@ -43,6 +44,7 @@ impl core::fmt::Display for CreationError {
 impl core::error::Error for CreationError {}
 
 /// A channel for propagating `iceoryx2` publish-subscribe payloads to remote hosts.
+#[derive(Debug)]
 pub(crate) struct PublisherChannel<'a, ServiceType: iceoryx2::service::Service> {
     iox_node_id: IceoryxNodeId,
     iox_service_config: IceoryxServiceConfig,
@@ -69,10 +71,18 @@ impl<ServiceType: iceoryx2::service::Service> PublisherChannel<'_, ServiceType> 
             iox_service_config.name()
         );
 
-        let iox_subscriber = middleware::iceoryx::create_subscriber::<ServiceType>(iox_service)
-            .map_err(|_e| CreationError::Error)?;
-        let z_publisher = middleware::zenoh::create_publisher(z_session, iox_service_config)
-            .map_err(|_e| CreationError::Error)?;
+        let iox_subscriber = fail!(
+            from "PublisherChannel::create()",
+            when middleware::iceoryx::create_subscriber::<ServiceType>(iox_service),
+            with CreationError::Error,
+            "failed to create iceoryx subscriber to propagate local payloads"
+        );
+        let z_publisher = fail!(
+            from "PublisherChannel::create()",
+            when middleware::zenoh::create_publisher(z_session, iox_service_config),
+            with CreationError::Error,
+            "failed to create zenoh publisher for local payloads"
+        );
 
         Ok(Self {
             iox_node_id: *iox_node_id,
@@ -100,10 +110,12 @@ impl<ServiceType: iceoryx2::service::Service> Channel for PublisherChannel<'_, S
 
                     // TODO(optimization): Is it possible to create the ZBytes struct without copy?
                     let z_payload = ZBytes::from(bytes);
-                    self.z_publisher.put(z_payload).wait().map_err(|e| {
-                        error!("Failed to propagate payload to zenoh: {e}");
-                        PropagationError::OtherPort
-                    })?;
+                    fail!(
+                        from &self,
+                        when self.z_publisher.put(z_payload).wait(),
+                        with PropagationError::OtherPort,
+                        "failed to propagate local payload to remote hosts"
+                    );
 
                     info!(
                         "PROPAGATE PublisherChannel {} [{}]",

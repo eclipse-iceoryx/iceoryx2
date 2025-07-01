@@ -16,6 +16,7 @@ use crate::keys;
 
 use iceoryx2::service::static_config::StaticConfig as ServiceConfig;
 
+use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::warn;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::query::Querier as ZenohQuerier;
@@ -30,6 +31,7 @@ pub enum CreationError {
 }
 
 /// Discovers remote `iceoryx2` services via Zenoh.
+#[derive(Debug)]
 pub(crate) struct ZenohDiscovery<'a, ServiceType: iceoryx2::service::Service> {
     querier: ZenohQuerier<'a>,
     replies: FifoChannelHandler<Reply>,
@@ -38,14 +40,23 @@ pub(crate) struct ZenohDiscovery<'a, ServiceType: iceoryx2::service::Service> {
 
 impl<ServiceType: iceoryx2::service::Service> ZenohDiscovery<'_, ServiceType> {
     pub fn create(z_session: &ZenohSession) -> Result<Self, CreationError> {
-        let querier = z_session
-            .declare_querier(keys::service_discovery())
-            .allowed_destination(Locality::Remote)
-            .wait()
-            .map_err(|_e| CreationError::Error)?;
+        let querier = fail!(
+            from "ZenohDiscovery::create()",
+            when z_session
+                    .declare_querier(keys::service_discovery())
+                    .allowed_destination(Locality::Remote)
+                    .wait(),
+            with CreationError::Error,
+            "failed to create Zenoh querier for service details on remote hosts"
+        );
 
         // Make query immediately - replies processed in first `discover()` call
-        let replies = querier.get().wait().map_err(|_e| CreationError::Error)?;
+        let replies = fail!(
+            from "ZenohDiscovery::create()",
+            when querier.get().wait(),
+            with CreationError::Error,
+            "failed to query Zenoh for service details on remote hosts"
+        );
 
         Ok(Self {
             querier,
@@ -68,7 +79,11 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
                 Ok(sample) => {
                     match serde_json::from_slice::<ServiceConfig>(&sample.payload().to_bytes()) {
                         Ok(service_details) => {
-                            on_discovered(&service_details)?;
+                            fail!(
+                                from &self,
+                                when on_discovered(&service_details),
+                                "failed to process remote service discovered via Zenoh"
+                            )
                         }
                         Err(e) => {
                             warn!(
@@ -88,11 +103,12 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
         // NOTE: This results in all service details being resent - not optimal
         // TODO(optimization): A solution to request all quereyables once whilst still retrieving
         //                     querying new quereyables that appear
-        self.replies = self
-            .querier
-            .get()
-            .wait()
-            .map_err(|_e| DiscoveryError::UpdateFromPort)?;
+        self.replies = fail!(
+            from &self,
+            when self.querier.get().wait(),
+            with DiscoveryError::UpdateFromPort,
+            "failed to query Zenoh for service details on remote hosts"
+        );
 
         Ok(())
     }

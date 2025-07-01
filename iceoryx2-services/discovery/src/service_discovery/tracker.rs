@@ -52,6 +52,7 @@ impl From<ServiceListError> for SyncError {
 /// # Type Parameters
 ///
 /// * `S` - The type of service to track, which must implement the `Service` trait
+#[derive(Debug)]
 pub struct Tracker<S: Service> {
     services: HashMap<ServiceId, ServiceDetails<S>>,
 }

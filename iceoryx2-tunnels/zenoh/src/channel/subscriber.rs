@@ -20,6 +20,7 @@ use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory as IceoryxPublishSubscribeService;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
 use iceoryx2_bb_log::error;
+use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::info;
 
 use zenoh::handlers::FifoChannelHandler;
@@ -42,6 +43,7 @@ impl core::fmt::Display for CreationError {
 impl core::error::Error for CreationError {}
 
 /// A channel for propagating remote `iceoryx2` publish-subscribe payloads to local subscribers.
+#[derive(Debug)]
 pub(crate) struct SubscriberChannel<ServiceType: iceoryx2::service::Service> {
     iox_service_config: IceoryxServiceConfig,
     iox_publisher: IceoryxPublisher<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
@@ -66,11 +68,19 @@ impl<ServiceType: iceoryx2::service::Service> SubscriberChannel<ServiceType> {
             iox_service_config.name()
         );
 
-        let iox_publisher =
-            middleware::iceoryx::create_publisher::<ServiceType>(iox_publish_subscribe_service)
-                .map_err(|_e| CreationError::Error)?;
-        let z_subscriber = middleware::zenoh::create_subscriber(z_session, iox_service_config)
-            .map_err(|_e| CreationError::Error)?;
+        let iox_publisher = fail!(
+            from "SubscriberChannel::create()",
+            when middleware::iceoryx::create_publisher::<ServiceType>(iox_publish_subscribe_service),
+            with CreationError::Error,
+            "failed to create iceoryx publisher to propagate remote payloads to local subscribers"
+        );
+
+        let z_subscriber = fail!(
+            from "SubscriberChannel::create()",
+            when middleware::zenoh::create_subscriber(z_session, iox_service_config),
+            with CreationError::Error,
+            "failed to create Zenoh subscriber to receive remote payloads"
+        );
 
         Ok(Self {
             iox_service_config: iox_service_config.clone(),
@@ -104,14 +114,13 @@ impl<ServiceType: iceoryx2::service::Service> Channel for SubscriberChannel<Serv
                             z_payload.len(),
                         );
                         let iox_sample = iox_sample.assume_init();
-                        iox_sample.send().map_err(|e| {
-                            error!(
-                                "Failed to publish sample ({}): {}",
-                                self.iox_service_config.name(),
-                                e
-                            );
-                            PropagationError::IceoryxPort
-                        })?;
+                        fail!(
+                            from &self,
+                            when iox_sample.send(),
+                            with PropagationError::IceoryxPort,
+                            "failed to publish remote payload to local subscribers"
+                        );
+
                         info!(
                             "PROPAGATE SubscriberChannel {} [{}]",
                             self.iox_service_config.service_id().as_str(),

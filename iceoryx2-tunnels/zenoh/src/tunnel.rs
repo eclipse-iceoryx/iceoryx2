@@ -29,6 +29,7 @@ use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig as ServiceConfig;
 use iceoryx2_bb_log::error;
+use iceoryx2_bb_log::fail;
 
 use zenoh::Config as ZenohConfig;
 use zenoh::Session as ZenohSession;
@@ -72,6 +73,7 @@ pub enum ChannelInfo {
 }
 
 /// A tunnel for propagating iceoryx2 payloads across hosts via the Zenoh network middleware.
+#[derive(Debug)]
 pub struct Tunnel<'a, ServiceType: iceoryx2::service::Service> {
     z_session: ZenohSession,
     z_discovery: ZenohDiscovery<'a, ServiceType>,
@@ -101,18 +103,37 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
         iox_config: &IceoryxConfig,
         z_config: &ZenohConfig,
     ) -> Result<Self, CreationError> {
-        let z_session = zenoh::open(z_config.clone())
-            .wait()
-            .map_err(|_e| CreationError::Error)?;
-        let z_discovery = ZenohDiscovery::create(&z_session).map_err(|_e| CreationError::Error)?;
+        let z_session = zenoh::open(z_config.clone()).wait();
+        let z_session = fail!(
+            from "Tunnel::create()",
+            when z_session,
+            with CreationError::Error,
+            "failed to open zenoh session"
+        );
+        let z_discovery = ZenohDiscovery::create(&z_session);
+        let z_discovery = fail!(
+            from "Tunnel::create()",
+            when z_discovery,
+            with CreationError::Error,
+            "failed to create zenoh discovery"
+        );
 
-        let iox_node = NodeBuilder::new()
-            .config(iox_config)
-            .create::<Service>()
-            .map_err(|_e| CreationError::Error)?;
+        let iox_node = NodeBuilder::new().config(iox_config).create::<Service>();
+        let iox_node = fail!(
+            from "Tunnel::create()",
+            when iox_node,
+            with CreationError::Error,
+            "failed to create node"
+        );
+
         let iox_discovery =
-            IceoryxDiscovery::create(iox_config, &iox_node, &tunnel_config.discovery_service)
-                .map_err(|_e| CreationError::Error)?;
+            IceoryxDiscovery::create(iox_config, &iox_node, &tunnel_config.discovery_service);
+        let iox_discovery = fail!(
+            from "Tunnel::create()",
+            when iox_discovery,
+            with CreationError::Error,
+            "failed to create iceoryx discovery"
+        );
 
         Ok(Self {
             z_session,
@@ -138,31 +159,39 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     /// * `Err(DiscoveryError)` - If discovery failed
     pub fn discover(&mut self, scope: Scope) -> Result<(), DiscoveryError> {
         if scope == Scope::Iceoryx || scope == Scope::Both {
-            self.iox_discovery.discover(&mut |iox_service_config| {
-                on_discovery(
-                    iox_service_config,
-                    &self.iox_node,
-                    &self.z_session,
-                    &mut self.publisher_channels,
-                    &mut self.subscriber_channels,
-                    &mut self.notifier_channels,
-                    &mut self.listener_channels,
-                )
-            })?
+            fail!(
+                from &self,
+                when self.iox_discovery.discover(&mut |iox_service_config| {
+                    on_discovery(
+                        iox_service_config,
+                        &self.iox_node,
+                        &self.z_session,
+                        &mut self.publisher_channels,
+                        &mut self.subscriber_channels,
+                        &mut self.notifier_channels,
+                        &mut self.listener_channels,
+                    )
+                }),
+                "failed to discover services via iceoryx"
+            );
         }
 
         if scope == Scope::Zenoh || scope == Scope::Both {
-            self.z_discovery.discover(&mut |iox_service_config| {
-                on_discovery(
-                    iox_service_config,
-                    &self.iox_node,
-                    &self.z_session,
-                    &mut self.publisher_channels,
-                    &mut self.subscriber_channels,
-                    &mut self.notifier_channels,
-                    &mut self.listener_channels,
-                )
-            })?
+            fail!(
+                from &self,
+                when self.z_discovery.discover(&mut |iox_service_config| {
+                    on_discovery(
+                        iox_service_config,
+                        &self.iox_node,
+                        &self.z_session,
+                        &mut self.publisher_channels,
+                        &mut self.subscriber_channels,
+                        &mut self.notifier_channels,
+                        &mut self.listener_channels,
+                    )
+                }),
+                "failed to discover services via zenoh"
+            );
         }
 
         Ok(())
@@ -171,46 +200,36 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
     /// Propagates payloads between all connected hosts.
     pub fn propagate(&self) -> Result<(), PropagationError> {
         // Attempted to propagate all channels. Continue to next channel if error encountered.
-        let mut success = true;
+        let mut propagation_failure = false;
         for (id, channel) in &self.subscriber_channels {
             let _ = channel.propagate().inspect_err(|e| {
-                error!(
-                    "Failed to propagate data through subscriber channel with id {:?}: {}",
-                    id, e
-                );
-                success = false;
+                error!("Failed to propagate data through subscriber channel with id {id:?}: {e}");
+                propagation_failure = true;
             });
         }
         for (id, channel) in &self.publisher_channels {
             let _ = channel.propagate().inspect_err(|e| {
-                error!(
-                    "Failed to propagate data through publisher channel with id {:?}: {}",
-                    id, e
-                );
-                success = false;
+                error!("Failed to propagate data through publisher channel with id {id:?}: {e}");
+                propagation_failure = true;
             });
         }
         for (id, channel) in &self.notifier_channels {
             let _ = channel.propagate().inspect_err(|e| {
-                error!(
-                    "Failed to propagate data through notifier channel with id {:?}: {}",
-                    id, e
-                );
-                success = false;
+                error!("Failed to propagate data through notifier channel with id {id:?}: {e}");
+                propagation_failure = true;
             });
         }
         for (id, channel) in &self.listener_channels {
             let _ = channel.propagate().inspect_err(|e| {
-                error!(
-                    "Failed to propagate data through listener channel with id {:?}: {}",
-                    id, e
-                );
-                success = false;
+                error!("Failed to propagate data through listener channel with id {id:?}: {e}");
+                propagation_failure = true;
             });
         }
 
-        if !success {
-            return Err(PropagationError::Incomplete);
+        if propagation_failure {
+            fail!(from self,
+                with PropagationError::Incomplete,
+                "failure to propagate over all channels");
         }
 
         Ok(())
@@ -264,20 +283,32 @@ fn on_discovery<'a, ServiceType: iceoryx2::service::Service>(
     listener_channels: &mut HashMap<ServiceId, ListenerChannel<ServiceType>>,
 ) -> Result<(), DiscoveryError> {
     match iox_service_config.messaging_pattern() {
-        MessagingPattern::PublishSubscribe(_) => on_publish_subscribe_service(
-            iox_node,
-            iox_service_config,
-            z_session,
-            publisher_channels,
-            subscriber_channels,
-        )?,
-        MessagingPattern::Event(_) => on_event_service(
-            iox_node,
-            iox_service_config,
-            z_session,
-            notifier_channels,
-            listener_channels,
-        )?,
+        MessagingPattern::PublishSubscribe(_) => {
+            fail!(
+                from "on_discovery()",
+                when on_publish_subscribe_service(
+                    iox_node,
+                    iox_service_config,
+                    z_session,
+                    publisher_channels,
+                    subscriber_channels,
+                ),
+                "failed to process discovered publish-subscribe service"
+            );
+        }
+        MessagingPattern::Event(_) => {
+            fail!(
+                from "on_discovery()",
+                when on_event_service(
+                    iox_node,
+                    iox_service_config,
+                    z_session,
+                    notifier_channels,
+                    listener_channels,
+                ),
+                "failed to process discovered event service"
+            );
+        }
         _ => { /* Not supported. Nothing to do. */ }
     }
 
@@ -300,8 +331,13 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
         let iox_service = middleware::iceoryx::create_publish_subscribe_service::<ServiceType>(
             iox_node,
             iox_service_config,
-        )
-        .map_err(|_e| DiscoveryError::ServiceCreation)?;
+        );
+        let iox_service = fail!(
+            from "on_publish_subscribe_service()",
+            when iox_service,
+            with DiscoveryError::ServiceCreation,
+            "failed to open or create discovered publish-subscribe service"
+        );
 
         if needs_publisher {
             let publisher_channel = PublisherChannel::create(
@@ -309,21 +345,35 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
                 iox_service_config,
                 &iox_service,
                 z_session,
-            )
-            .map_err(|_e| DiscoveryError::PortCreation)?;
+            );
+            let publisher_channel = fail!(
+                from "on_publish_subscribe_service()",
+                when publisher_channel,
+                with DiscoveryError::PortCreation,
+                "failed to create publisher channel for discovered service"
+            );
 
             publisher_channels.insert(iox_service_id.clone(), publisher_channel);
         }
-
         if needs_subscriber {
             let subscriber_channel =
-                SubscriberChannel::create(iox_service_config, &iox_service, z_session)
-                    .map_err(|_e| DiscoveryError::PortCreation)?;
+                SubscriberChannel::create(iox_service_config, &iox_service, z_session);
+            let subscriber_channel = fail!(
+                from "on_publish_subscribe_service()",
+                when subscriber_channel,
+                with DiscoveryError::PortCreation,
+                "failed to create subscriber channel for discovered service"
+            );
+
             subscriber_channels.insert(iox_service_id.clone(), subscriber_channel);
         }
 
-        middleware::zenoh::announce_service(z_session, iox_service_config)
-            .map_err(|_e| DiscoveryError::ServiceAnnouncement)?;
+        fail!(
+            from "on_publish_subscribe_service()",
+            when middleware::zenoh::announce_service(z_session, iox_service_config),
+            with DiscoveryError::ServiceAnnouncement,
+            "failed to announce discovered publish-subscribe service to zenoh network"
+        );
     }
 
     Ok(())
@@ -343,25 +393,44 @@ fn on_event_service<'a, ServiceType: iceoryx2::service::Service>(
 
     if needs_notifier || needs_listener {
         let iox_service =
-            middleware::iceoryx::create_event_service::<ServiceType>(iox_node, iox_service_config)
-                .map_err(|_e| DiscoveryError::ServiceCreation)?;
+            middleware::iceoryx::create_event_service::<ServiceType>(iox_node, iox_service_config);
+        let iox_service = fail!(
+            from "on_event_service()",
+            when iox_service,
+            with DiscoveryError::ServiceCreation,
+            "failed to open or create discovered event service"
+        );
 
         if needs_notifier {
             let notifier_channel =
-                NotifierChannel::create(iox_service_config, &iox_service, z_session)
-                    .map_err(|_e| DiscoveryError::PortCreation)?;
+                NotifierChannel::create(iox_service_config, &iox_service, z_session);
+            let notifier_channel = fail!(
+                from "on_event_service()",
+                when notifier_channel,
+                with DiscoveryError::PortCreation,
+                "failed to create notifier channel for discovered service"
+            );
             notifier_channels.insert(iox_service_id.clone(), notifier_channel);
         }
 
         if needs_listener {
             let listener_channel =
-                ListenerChannel::create(iox_service_config, &iox_service, z_session)
-                    .map_err(|_e| DiscoveryError::PortCreation)?;
+                ListenerChannel::create(iox_service_config, &iox_service, z_session);
+            let listener_channel = fail!(
+                from "on_event_service()",
+                when listener_channel,
+                with DiscoveryError::PortCreation,
+                "failed to create listener channel for discovered service"
+            );
             listener_channels.insert(iox_service_id.clone(), listener_channel);
         }
 
-        middleware::zenoh::announce_service(z_session, iox_service_config)
-            .map_err(|_e| DiscoveryError::ServiceAnnouncement)?;
+        fail!(
+            from "on_event_service()",
+            when middleware::zenoh::announce_service(z_session, iox_service_config),
+            with DiscoveryError::ServiceAnnouncement,
+            "failed to announce discovered event service to zenoh network"
+        );
     }
 
     Ok(())

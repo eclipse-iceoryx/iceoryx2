@@ -17,6 +17,7 @@ use crate::PropagationError;
 use iceoryx2::port::listener::Listener as IceoryxListener;
 use iceoryx2::service::port_factory::event::PortFactory as IceoryxEventService;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
+use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::info;
 
 use zenoh::pubsub::Publisher as ZenohPublisher;
@@ -32,6 +33,7 @@ pub enum CreationError {
 }
 
 /// A channel for propagating local `iceoryx2` notifications to remote hosts.
+#[derive(Debug)]
 pub(crate) struct NotifierChannel<'a, ServiceType: iceoryx2::service::Service> {
     iox_service_config: IceoryxServiceConfig,
     iox_listener: IceoryxListener<ServiceType>,
@@ -52,10 +54,18 @@ impl<ServiceType: iceoryx2::service::Service> NotifierChannel<'_, ServiceType> {
             iox_service_config.name()
         );
 
-        let iox_listener =
-            middleware::iceoryx::create_listener(iox_service).map_err(|_e| CreationError::Error)?;
-        let z_notifier = middleware::zenoh::create_notifier(z_session, iox_service_config)
-            .map_err(|_e| CreationError::Error)?;
+        let iox_listener = fail!(
+            from "NotifierChannel::create()",
+            when middleware::iceoryx::create_listener(iox_service),
+            with CreationError::Error,
+            "failed to create iceoryx listener for local notifications"
+        );
+        let z_notifier = fail!(
+            from "NotifierChannel::create()",
+            when middleware::zenoh::create_notifier(z_session, iox_service_config),
+            with CreationError::Error,
+            "failed to create zenoh notifier to propgate local notificaitons to remote hosts"
+        );
 
         Ok(Self {
             iox_service_config: iox_service_config.clone(),
@@ -74,10 +84,12 @@ impl<ServiceType: iceoryx2::service::Service> Channel for NotifierChannel<'_, Se
             match sample {
                 Some(event_id) => {
                     if !notified_ids.contains(&event_id.as_value()) {
-                        self.z_notifier
-                            .put(event_id.as_value().to_ne_bytes())
-                            .wait()
-                            .map_err(|_| PropagationError::OtherPort)?;
+                        fail!(
+                            from &self,
+                            when self.z_notifier.put(event_id.as_value().to_ne_bytes()).wait(),
+                            with PropagationError::OtherPort,
+                            "failed to propagate local notification to remote hosts"
+                        );
                         info!(
                             "PROPAGATE NotifierChannel(EventId={}) {} [{}]",
                             event_id.as_value(),

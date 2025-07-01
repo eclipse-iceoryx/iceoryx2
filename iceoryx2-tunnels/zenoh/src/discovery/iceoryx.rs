@@ -16,9 +16,9 @@ use crate::discovery::DiscoveryError;
 use iceoryx2::config::Config;
 use iceoryx2::node::Node;
 use iceoryx2::port::subscriber::Subscriber;
-use iceoryx2::prelude::ServiceName;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::Service;
+use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::info;
 use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryUpdate;
 use iceoryx2_services_discovery::service_discovery::Tracker;
@@ -29,6 +29,7 @@ pub enum CreationError {
     Error,
 }
 
+#[derive(Debug)]
 pub(crate) struct IceoryxDiscovery<ServiceType: iceoryx2::service::Service> {
     config: Config,
     discovery_subscriber: Option<Subscriber<ServiceType, DiscoveryUpdate, ()>>,
@@ -43,21 +44,27 @@ impl<ServiceType: iceoryx2::service::Service> IceoryxDiscovery<ServiceType> {
     ) -> Result<Self, CreationError> {
         let (discovery_service, discovery_tracker) = match service_name {
             Some(service_name) => {
-                let service_name: ServiceName = service_name
-                    .as_str()
-                    .try_into()
-                    .map_err(|_e| CreationError::Error)?;
+                let service_name = fail!(
+                    from "IceoryxDiscovery::create()",
+                    when service_name.as_str().try_into(),
+                    with CreationError::Error,
+                    "failed to create service name for discovery service"
+                );
 
-                let service = node
-                    .service_builder(&service_name)
-                    .publish_subscribe::<DiscoveryUpdate>()
-                    .open_or_create()
-                    .map_err(|_e| CreationError::Error)?;
-
-                let discovery_subscriber = service
-                    .subscriber_builder()
-                    .create()
-                    .map_err(|_e| CreationError::Error)?;
+                let service = fail!(
+                    from "IceoryxDiscovery::create()",
+                    when node.service_builder(&service_name)
+                            .publish_subscribe::<DiscoveryUpdate>()
+                            .open_or_create(),
+                    with CreationError::Error,
+                    "failed to open or create iceoryx discovery service"
+                );
+                let discovery_subscriber = fail!(
+                    from "IceoryxDiscovery::create()",
+                    when service.subscriber_builder().create(),
+                    with CreationError::Error,
+                    "failed to create subscriber to iceoryx discovery service"
+                );
 
                 info!("CONFIGURE DiscoveryService {}", service_name);
                 (Some(discovery_subscriber), None)
@@ -103,10 +110,14 @@ fn discover_via_subscriber<
     loop {
         match subscriber.receive() {
             Ok(Some(sample)) => {
-                if let DiscoveryUpdate::Added(service_details) = sample.payload() {
-                    match service_details.messaging_pattern() {
+                if let DiscoveryUpdate::Added(service_config) = sample.payload() {
+                    match service_config.messaging_pattern() {
                         MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_) => {
-                            on_discovered(service_details)?;
+                            fail!(
+                                from "discovery_via_subscriber()",
+                                when on_discovered(service_config),
+                                "failed to process service discovered via subscriber to discovery service"
+                            );
                         }
                         _ => {
                             // Not supported. Nothing to do.
@@ -130,15 +141,23 @@ fn discover_via_tracker<
     tracker: &mut Tracker<ServiceType>,
     on_discovered: &mut OnDiscovered,
 ) -> Result<(), DiscoveryError> {
-    let (added, _removed) = tracker
-        .sync(config)
-        .map_err(|_| DiscoveryError::UpdateFromTracker)?;
+    let (added, _removed) = fail!(
+        from "discovery_via_tracker()",
+        when tracker.sync(config),
+        with DiscoveryError::UpdateFromTracker,
+        "failed to synchronize with service tracker"
+    );
+
     for service_id in added {
         if let Some(service_details) = tracker.get(&service_id) {
             let service_config = &service_details.static_details;
             match service_config.messaging_pattern() {
                 MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_) => {
-                    on_discovered(service_config)?;
+                    fail!(
+                        from "discovery_via_tracker()",
+                        when on_discovered(service_config),
+                        "failed to process service discovered via tracker"
+                    );
                 }
                 _ => {
                     // Not supported. Nothing to do.

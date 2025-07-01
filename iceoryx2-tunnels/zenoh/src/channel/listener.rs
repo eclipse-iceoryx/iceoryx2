@@ -18,6 +18,7 @@ use iceoryx2::port::notifier::Notifier as IceoryxNotifier;
 use iceoryx2::prelude::EventId;
 use iceoryx2::service::port_factory::event::PortFactory as IceoryxEventService;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
+use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::info;
 
 use zenoh::handlers::FifoChannelHandler;
@@ -35,6 +36,7 @@ pub enum CreationError {
 
 /// A channel for propagating remote `iceoryx2` notifications from remote hosts
 /// to local listeners.
+#[derive(Debug)]
 pub(crate) struct ListenerChannel<ServiceType: iceoryx2::service::Service> {
     iox_service_config: IceoryxServiceConfig,
     iox_notifier: IceoryxNotifier<ServiceType>,
@@ -46,7 +48,7 @@ impl<ServiceType: iceoryx2::service::Service> ListenerChannel<ServiceType> {
     // particular service.
     pub fn create(
         iox_service_config: &IceoryxServiceConfig,
-        iox_event_service: &IceoryxEventService<ServiceType>,
+        iox_service: &IceoryxEventService<ServiceType>,
         z_session: &ZenohSession,
     ) -> Result<Self, CreationError> {
         info!(
@@ -55,10 +57,19 @@ impl<ServiceType: iceoryx2::service::Service> ListenerChannel<ServiceType> {
             iox_service_config.name()
         );
 
-        let iox_notifier = middleware::iceoryx::create_notifier(iox_event_service)
-            .map_err(|_e| CreationError::Error)?;
-        let z_listener = middleware::zenoh::create_listener(z_session, iox_service_config)
-            .map_err(|_e| CreationError::Error)?;
+        let iox_notifier = fail!(
+            from "ListenerChannel::create()",
+            when middleware::iceoryx::create_notifier(iox_service),
+            with CreationError::Error,
+            "failed to create iceoryx notifier to propagate remote notifications to local listeners"
+        );
+
+        let z_listener = fail!(
+            from "ListenerChannel::create()",
+            when middleware::zenoh::create_listener(z_session, iox_service_config),
+            with CreationError::Error,
+            "failed to create Zenoh listener to receive remote notifications"
+        );
 
         Ok(Self {
             iox_service_config: iox_service_config.clone(),
@@ -86,9 +97,12 @@ impl<ServiceType: iceoryx2::service::Service> Channel for ListenerChannel<Servic
 
         // Propagate notifications received - once per event id
         for event_id in received_ids {
-            self.iox_notifier
-                .__internal_notify(EventId::new(event_id), true)
-                .map_err(|_| PropagationError::IceoryxPort)?;
+            fail!(
+                from &self,
+                when self.iox_notifier.__internal_notify(EventId::new(event_id), true),
+                with PropagationError::IceoryxPort,
+                "failed to propagate remote notification to local listeners"
+            );
 
             info!(
                 "PROPAGATE ListenerChannel(EventId={}) {} [{}]",
