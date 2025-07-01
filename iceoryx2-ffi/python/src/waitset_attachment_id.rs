@@ -14,14 +14,14 @@ use pyo3::prelude::*;
 
 use crate::waitset_guard::{WaitSetGuard, WaitSetGuardType};
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Hash)]
 pub(crate) enum WaitSetAttachmentIdType {
     Ipc(iceoryx2::prelude::WaitSetAttachmentId<crate::IpcService>),
     Local(iceoryx2::prelude::WaitSetAttachmentId<crate::LocalService>),
 }
 
-#[derive(PartialEq, Eq)]
-#[pyclass(eq)]
+#[derive(PartialEq, Eq, Hash)]
+#[pyclass(eq, hash, frozen)]
 /// Represents an attachment to the `WaitSet`
 pub struct WaitSetAttachmentId(pub(crate) WaitSetAttachmentIdType);
 
