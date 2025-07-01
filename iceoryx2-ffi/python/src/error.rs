@@ -166,3 +166,10 @@ create_exception!(
     PyException,
     "Errors caused by creating a new waitset."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    WaitSetRunError,
+    PyException,
+    "Errors caused by calling WaitSet::wait_and_process()."
+);

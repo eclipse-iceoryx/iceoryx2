@@ -16,11 +16,14 @@ use pyo3::prelude::*;
 
 use crate::{
     duration::Duration,
-    error::WaitSetAttachmentError,
+    error::{WaitSetAttachmentError, WaitSetRunError},
     file_descriptor::FileDescriptor,
     listener::{Listener, ListenerType},
     parc::Parc,
+    signal_handling_mode::SignalHandlingMode,
+    waitset_attachment_id::{WaitSetAttachmentId, WaitSetAttachmentIdType},
     waitset_guard::{StorageType, WaitSetGuard, WaitSetGuardType},
+    waitset_run_result::WaitSetRunResult,
 };
 
 pub(crate) enum WaitSetType {
@@ -37,6 +40,7 @@ pub(crate) enum WaitSetType {
 /// Can be created via the `WaitSetBuilder`.
 pub struct WaitSet(pub(crate) Parc<WaitSetType>);
 
+#[pymethods]
 impl WaitSet {
     /// Attaches a `Listener` as notification to the `WaitSet`. Whenever an event is received on the
     /// object the `WaitSet` informs the user in `WaitSet::wait_and_process()` to handle the event.
@@ -55,7 +59,7 @@ impl WaitSet {
                         // as long as the guard
                         guard: Some(unsafe { core::mem::transmute(guard) }),
                         waitset: self.0.clone(),
-                        _attachment: attachment.clone(),
+                        _attachment: Some(attachment.clone()),
                     })))
                 } else {
                     Err(WaitSetAttachmentError::new_err(
@@ -74,7 +78,7 @@ impl WaitSet {
                         // as long as the guard
                         guard: Some(unsafe { core::mem::transmute(guard) }),
                         waitset: self.0.clone(),
-                        _attachment: attachment.clone(),
+                        _attachment: Some(attachment.clone()),
                     })))
                 } else {
                     Err(WaitSetAttachmentError::new_err(
@@ -101,7 +105,7 @@ impl WaitSet {
                     // as long as the guard
                     guard: Some(unsafe { core::mem::transmute(guard) }),
                     waitset: self.0.clone(),
-                    _attachment: attachment.0.clone(),
+                    _attachment: Some(attachment.0.clone()),
                 })))
             }
             WaitSetType::Local(v) => {
@@ -114,7 +118,7 @@ impl WaitSet {
                     // as long as the guard
                     guard: Some(unsafe { core::mem::transmute(guard) }),
                     waitset: self.0.clone(),
-                    _attachment: attachment.0.clone(),
+                    _attachment: Some(attachment.0.clone()),
                 })))
             }
         }
@@ -142,7 +146,7 @@ impl WaitSet {
                         // as long as the guard
                         guard: Some(unsafe { core::mem::transmute(guard) }),
                         waitset: self.0.clone(),
-                        _attachment: attachment.clone(),
+                        _attachment: Some(attachment.clone()),
                     })))
                 } else {
                     Err(WaitSetAttachmentError::new_err(
@@ -161,7 +165,7 @@ impl WaitSet {
                         // as long as the guard
                         guard: Some(unsafe { core::mem::transmute(guard) }),
                         waitset: self.0.clone(),
-                        _attachment: attachment.clone(),
+                        _attachment: Some(attachment.clone()),
                     })))
                 } else {
                     Err(WaitSetAttachmentError::new_err(
@@ -193,7 +197,7 @@ impl WaitSet {
                     // as long as the guard
                     guard: Some(unsafe { core::mem::transmute(guard) }),
                     waitset: self.0.clone(),
-                    _attachment: attachment.0.clone(),
+                    _attachment: Some(attachment.0.clone()),
                 })))
             }
             WaitSetType::Local(v) => {
@@ -206,9 +210,147 @@ impl WaitSet {
                     // as long as the guard
                     guard: Some(unsafe { core::mem::transmute(guard) }),
                     waitset: self.0.clone(),
-                    _attachment: attachment.0.clone(),
+                    _attachment: Some(attachment.0.clone()),
                 })))
             }
+        }
+    }
+
+    /// Attaches a tick event to the `WaitSet`. Whenever the timeout is reached the `WaitSet`
+    /// informs the user in `WaitSet::wait_and_process()`.
+    pub fn attach_interval(&self, interval: &Duration) -> PyResult<WaitSetGuard> {
+        match &*self.0.lock() {
+            WaitSetType::Ipc(v) => {
+                let guard = v
+                    .attach_interval(interval.0)
+                    .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
+                Ok(WaitSetGuard(WaitSetGuardType::Ipc(StorageType {
+                    // safe since the waitset arc becomes a member of the guard and therefore the
+                    // waitset lives at least as long as the guard
+                    guard: Some(unsafe { core::mem::transmute(guard) }),
+                    waitset: self.0.clone(),
+                    _attachment: None,
+                })))
+            }
+            WaitSetType::Local(v) => {
+                let guard = v
+                    .attach_interval(interval.0)
+                    .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
+                Ok(WaitSetGuard(WaitSetGuardType::Local(StorageType {
+                    // safe since the waitset arc becomes a member of the guard and therefore the
+                    // waitset lives at least as long as the guard
+                    guard: Some(unsafe { core::mem::transmute(guard) }),
+                    waitset: self.0.clone(),
+                    _attachment: None,
+                })))
+            }
+        }
+    }
+
+    /// Waits until an event arrives on the `WaitSet`, then collects the events corresponding
+    /// `WaitSetAttachmentId` in a vector and returns it.
+    ///
+    /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
+    /// [`WaitSetRunResult::TerminationRequest`].
+    pub fn wait_and_process(&self) -> PyResult<(Vec<WaitSetAttachmentId>, WaitSetRunResult)> {
+        let mut ret_val = vec![];
+        let result;
+        match &*self.0.lock() {
+            WaitSetType::Ipc(v) => {
+                result = v
+                    .wait_and_process_once(|v| {
+                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
+                        iceoryx2::prelude::CallbackProgression::Continue
+                    })
+                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?;
+            }
+            WaitSetType::Local(v) => {
+                result = v
+                    .wait_and_process_once(|v| {
+                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
+                        iceoryx2::prelude::CallbackProgression::Continue
+                    })
+                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?;
+            }
+        }
+
+        Ok((ret_val, result.into()))
+    }
+
+    /// Waits until an event arrives on the `WaitSet` or the provided timeout has passed, then
+    /// collects the events corresponding `WaitSetAttachmentId` in a vector and returns it.
+    ///
+    /// If an interrupt- (`SIGINT`) or a termination-signal (`SIGTERM`) was received, it will exit
+    /// the loop and inform the user with [`WaitSetRunResult::Interrupt`] or
+    /// [`WaitSetRunResult::TerminationRequest`].
+    pub fn wait_and_process_with_timeout(
+        &self,
+        timeout: &Duration,
+    ) -> PyResult<(Vec<WaitSetAttachmentId>, WaitSetRunResult)> {
+        let mut ret_val = vec![];
+        let result;
+        match &*self.0.lock() {
+            WaitSetType::Ipc(v) => {
+                result = v
+                    .wait_and_process_once_with_timeout(
+                        |v| {
+                            ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
+                            iceoryx2::prelude::CallbackProgression::Continue
+                        },
+                        timeout.0,
+                    )
+                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?;
+            }
+            WaitSetType::Local(v) => {
+                result = v
+                    .wait_and_process_once_with_timeout(
+                        |v| {
+                            ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
+                            iceoryx2::prelude::CallbackProgression::Continue
+                        },
+                        timeout.0,
+                    )
+                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?;
+            }
+        }
+
+        Ok((ret_val, result.into()))
+    }
+
+    #[getter]
+    /// Returns the capacity of the `WaitSet`
+    pub fn capacity(&self) -> usize {
+        match &*self.0.lock() {
+            WaitSetType::Ipc(v) => v.capacity(),
+            WaitSetType::Local(v) => v.capacity(),
+        }
+    }
+
+    #[getter]
+    /// Returns the number of attachments.
+    pub fn len(&self) -> usize {
+        match &*self.0.lock() {
+            WaitSetType::Ipc(v) => v.len(),
+            WaitSetType::Local(v) => v.len(),
+        }
+    }
+
+    #[getter]
+    /// Returns true if the `WaitSet` has no attachments, otherwise false.
+    pub fn is_empty(&self) -> bool {
+        match &*self.0.lock() {
+            WaitSetType::Ipc(v) => v.is_empty(),
+            WaitSetType::Local(v) => v.is_empty(),
+        }
+    }
+
+    #[getter]
+    /// Returns the `SignalHandlingMode` with which the `WaitSet` was created.
+    pub fn signal_handling_mode(&self) -> SignalHandlingMode {
+        match &*self.0.lock() {
+            WaitSetType::Ipc(v) => v.signal_handling_mode().into(),
+            WaitSetType::Local(v) => v.signal_handling_mode().into(),
         }
     }
 }

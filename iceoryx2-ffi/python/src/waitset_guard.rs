@@ -20,7 +20,7 @@ use crate::{parc::Parc, waitset::WaitSetType};
 pub(crate) struct StorageType<S: iceoryx2::prelude::Service + 'static> {
     pub(crate) guard: Option<iceoryx2::prelude::WaitSetGuard<'static, 'static, S>>,
     pub(crate) waitset: Parc<WaitSetType>,
-    pub(crate) _attachment: Arc<dyn Any>,
+    pub(crate) _attachment: Option<Arc<dyn Any>>,
 }
 
 unsafe impl<S: iceoryx2::prelude::Service + 'static> Send for StorageType<S> {}

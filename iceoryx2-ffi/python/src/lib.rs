@@ -61,8 +61,10 @@ pub mod unable_to_deliver_strategy;
 pub mod unique_listener_id;
 pub mod unique_notifier_id;
 pub mod waitset;
+pub mod waitset_attachment_id;
 pub mod waitset_builder;
 pub mod waitset_guard;
+pub mod waitset_run_result;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
@@ -128,7 +130,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::unique_listener_id::UniqueListenerId>()?;
     m.add_class::<crate::unique_notifier_id::UniqueNotifierId>()?;
     m.add_class::<crate::waitset::WaitSet>()?;
+    m.add_class::<crate::waitset_attachment_id::WaitSetAttachmentId>()?;
     m.add_class::<crate::waitset_builder::WaitSetBuilder>()?;
+    m.add_class::<crate::waitset_guard::WaitSetGuard>()?;
+    m.add_class::<crate::waitset_run_result::WaitSetRunResult>()?;
 
     m.add(
         "InvalidAlignmentValue",
@@ -217,6 +222,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "WaitSetCreateError",
         py.get_type::<crate::error::WaitSetCreateError>(),
+    )?;
+    m.add(
+        "WaitSetRunError",
+        py.get_type::<crate::error::WaitSetRunError>(),
     )?;
 
     Ok(())
