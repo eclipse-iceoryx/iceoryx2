@@ -43,6 +43,7 @@ use super::message_type_details::TypeDetail;
 #[repr(C)]
 pub struct StaticConfig {
     pub(crate) max_readers: usize,
+    pub(crate) max_writers: usize,
     pub(crate) max_nodes: usize,
     pub(crate) type_details: TypeDetail,
 }
@@ -51,6 +52,7 @@ impl StaticConfig {
     pub(crate) fn new(config: &config::Config) -> Self {
         Self {
             max_readers: config.defaults.blackboard.max_readers,
+            max_writers: 1,
             max_nodes: config.defaults.blackboard.max_nodes,
             type_details: TypeDetail::default(),
         }

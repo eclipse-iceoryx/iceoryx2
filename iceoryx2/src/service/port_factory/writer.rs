@@ -15,15 +15,9 @@
 use super::blackboard::PortFactory;
 use crate::port::writer::{Writer, WriterCreateError};
 use crate::service;
-use crate::service::builder::blackboard::Mgmt;
-use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
-use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
-use iceoryx2_cal::event::{NamedConcept, NamedConceptBuilder};
-use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
-use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 
 /// Factory to create a new [`Writer`] port/endpoint for
 /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard)
@@ -50,36 +44,8 @@ impl<
     /// Creates a new [`Writer`] or returns a [`WriterCreateError`] on failure.
     pub fn create(self) -> Result<Writer<Service, T>, WriterCreateError> {
         let origin = format!("{:?}", self);
-
-        let name = self.factory.service.additional_resource.mgmt.name();
-
-        // open payload data segment
-        let shm_config =
-            blackboard_data_config::<Service, Mgmt<T>>(self.factory.service.shared_node.config());
-        let payload_shm =
-            <<Service::BlackboardPayload as SharedMemory<BumpAllocator,
-            >>::Builder as NamedConceptBuilder<Service::BlackboardPayload>>::new(&name)
-            .config(&shm_config)
-            .open()
-            .unwrap();
-        //let atomic = (payload_shm.payload_start_address()) as *mut UnrestrictedAtomic<u64>;
-        //let value = unsafe { &(*atomic) }.load();
-        //println!("PortFactoryWriter: value = {}", value);
-        ////
-
-        // open management segment
-        let mgmt_config =
-            blackboard_mgmt_config::<Service, Mgmt<T>>(self.factory.service.shared_node.config());
-        // TODO: error type and message
-        let mgmt_storage = fail!(from origin,
-            when <Service::BlackboardMgmt<Mgmt<T>> as DynamicStorage<Mgmt<T>>>::Builder::new(name)
-                .config(&mgmt_config)
-                .has_ownership(false)
-                .open(),
-            with WriterCreateError::ExceedsMaxSupportedWriters,
-            "blub");
         Ok(
-            fail!(from origin, when Writer::new(mgmt_storage, payload_shm),"Failed to create new Writer port."),
+            fail!(from origin, when Writer::new(self.factory.service.clone()),"Failed to create new Writer port."),
         )
     }
 }
