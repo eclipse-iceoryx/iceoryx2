@@ -111,12 +111,12 @@ pub(crate) fn announce_service(
     session
         .declare_queryable(key.clone())
         .callback(move |query| {
-            if let Err(e) = query
+            let _ = query
                 .reply(key.clone(), service_config_serialized.clone())
                 .wait()
-            {
-                error!("Failed to reply to query {}: {}", key, e);
-            }
+                .inspect_err(|e| {
+                    error!("Failed to announce service {}: {}", key, e);
+                });
         })
         .allowed_origin(Locality::Remote)
         .background()

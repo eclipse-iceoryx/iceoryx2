@@ -104,14 +104,14 @@ impl<ServiceType: iceoryx2::service::Service> Channel for SubscriberChannel<Serv
                             z_payload.len(),
                         );
                         let iox_sample = iox_sample.assume_init();
-                        if let Err(e) = iox_sample.send() {
+                        iox_sample.send().map_err(|e| {
                             error!(
                                 "Failed to publish sample ({}): {}",
                                 self.iox_service_config.name(),
                                 e
                             );
-                            return Err(PropagationError::IceoryxPort);
-                        }
+                            PropagationError::IceoryxPort
+                        })?;
                         info!(
                             "PROPAGATE SubscriberChannel {} [{}]",
                             self.iox_service_config.service_id().as_str(),

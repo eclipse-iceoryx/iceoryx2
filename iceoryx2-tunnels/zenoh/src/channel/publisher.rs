@@ -100,10 +100,10 @@ impl<ServiceType: iceoryx2::service::Service> Channel for PublisherChannel<'_, S
 
                     // TODO(optimization): Is it possible to create the ZBytes struct without copy?
                     let z_payload = ZBytes::from(bytes);
-                    if let Err(e) = self.z_publisher.put(z_payload).wait() {
-                        error!("Failed to propagate payload to zenoh: {}", e);
-                        return Err(PropagationError::OtherPort);
-                    }
+                    self.z_publisher.put(z_payload).wait().map_err(|e| {
+                        error!("Failed to propagate payload to zenoh: {e}");
+                        PropagationError::OtherPort
+                    })?;
 
                     info!(
                         "PROPAGATE PublisherChannel {} [{}]",

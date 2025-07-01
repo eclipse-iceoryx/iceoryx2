@@ -173,40 +173,40 @@ impl<Service: iceoryx2::service::Service> Tunnel<'_, Service> {
         // Attempted to propagate all channels. Continue to next channel if error encountered.
         let mut success = true;
         for (id, channel) in &self.subscriber_channels {
-            if let Err(e) = channel.propagate() {
+            let _ = channel.propagate().inspect_err(|e| {
                 error!(
                     "Failed to propagate data through subscriber channel with id {:?}: {}",
                     id, e
                 );
                 success = false;
-            }
+            });
         }
         for (id, channel) in &self.publisher_channels {
-            if let Err(e) = channel.propagate() {
+            let _ = channel.propagate().inspect_err(|e| {
                 error!(
                     "Failed to propagate data through publisher channel with id {:?}: {}",
                     id, e
                 );
                 success = false;
-            }
+            });
         }
         for (id, channel) in &self.notifier_channels {
-            if let Err(e) = channel.propagate() {
+            let _ = channel.propagate().inspect_err(|e| {
                 error!(
                     "Failed to propagate data through notifier channel with id {:?}: {}",
                     id, e
                 );
                 success = false;
-            }
+            });
         }
         for (id, channel) in &self.listener_channels {
-            if let Err(e) = channel.propagate() {
+            let _ = channel.propagate().inspect_err(|e| {
                 error!(
                     "Failed to propagate data through listener channel with id {:?}: {}",
                     id, e
                 );
                 success = false;
-            }
+            });
         }
 
         if !success {

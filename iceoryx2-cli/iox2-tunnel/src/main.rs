@@ -96,15 +96,14 @@ mod supported_platform {
 
                         let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
                             if id == tick {
-                                if let Err(e) = tunnel.discover(Scope::Both) {
+                                let _ = tunnel.discover(Scope::Both).inspect_err(|e| {
                                     warn!("Error encountered whilst discoverying services: {}", e);
-                                };
-                                if let Err(e) = tunnel.propagate() {
+                                });
+                                let _ = tunnel.propagate().inspect_err(|e| {
                                     warn!(
-                                        "Error encountered whilst propagating between hosts: {}",
-                                        e
+                                        "Error encountered whilst propagating between hosts: {e}"
                                     );
-                                }
+                                });
                             }
                             CallbackProgression::Continue
                         };
