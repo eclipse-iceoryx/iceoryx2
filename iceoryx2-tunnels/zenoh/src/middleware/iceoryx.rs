@@ -36,21 +36,26 @@ pub(crate) fn create_publish_subscribe_service<ServiceType: iceoryx2::service::S
     PublishSubscribeService<ServiceType, [CustomPayloadMarker], CustomHeaderMarker>,
     PublishSubscribeOpenOrCreateError,
 > {
-    let port_config = service_config.publish_subscribe();
+    let publish_subscribe_config = service_config.publish_subscribe();
     let service = unsafe {
         node.service_builder(service_config.name())
             .publish_subscribe::<[CustomPayloadMarker]>()
             .user_header::<CustomHeaderMarker>()
             .__internal_set_user_header_type_details(
-                &port_config.message_type_details().user_header,
+                &publish_subscribe_config.message_type_details().user_header,
             )
-            .__internal_set_payload_type_details(&port_config.message_type_details().payload)
-            .enable_safe_overflow(port_config.has_safe_overflow())
-            .history_size(port_config.history_size())
-            .max_publishers(port_config.max_publishers())
-            .max_subscribers(port_config.max_subscribers())
-            .subscriber_max_buffer_size(port_config.subscriber_max_buffer_size())
-            .subscriber_max_buffer_size(port_config.subscriber_max_borrowed_samples())
+            .__internal_set_payload_type_details(
+                &publish_subscribe_config.message_type_details().payload,
+            )
+            .enable_safe_overflow(publish_subscribe_config.has_safe_overflow())
+            .history_size(publish_subscribe_config.history_size())
+            .max_nodes(publish_subscribe_config.max_nodes())
+            .max_publishers(publish_subscribe_config.max_publishers())
+            .max_subscribers(publish_subscribe_config.max_subscribers())
+            .subscriber_max_buffer_size(publish_subscribe_config.subscriber_max_buffer_size())
+            .subscriber_max_borrowed_samples(
+                publish_subscribe_config.subscriber_max_borrowed_samples(),
+            )
             .open_or_create()?
     };
 
@@ -62,9 +67,14 @@ pub(crate) fn create_event_service<ServiceType: iceoryx2::service::Service>(
     node: &Node<ServiceType>,
     service_config: &ServiceConfig,
 ) -> Result<EventService<ServiceType>, EventOpenOrCreateError> {
+    let event_config = service_config.event();
     let service = node
         .service_builder(service_config.name())
         .event()
+        .max_nodes(event_config.max_nodes())
+        .max_listeners(event_config.max_listeners())
+        .max_notifiers(event_config.max_notifiers())
+        .event_id_max_value(event_config.event_id_max_value())
         .open_or_create()?;
 
     Ok(service)
