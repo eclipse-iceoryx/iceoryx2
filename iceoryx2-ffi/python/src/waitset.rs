@@ -57,7 +57,16 @@ impl WaitSet {
                         // safe since the waitset arc and the attachment arc become a member of the
                         // guard and therefore the waitset and the attachment always lives at least
                         // as long as the guard
-                        guard: Some(unsafe { core::mem::transmute(guard) }),
+                        guard: Some(unsafe {
+                            core::mem::transmute::<
+                                iceoryx2::waitset::WaitSetGuard<'_, '_, crate::IpcService>,
+                                iceoryx2::waitset::WaitSetGuard<
+                                    'static,
+                                    'static,
+                                    crate::IpcService,
+                                >,
+                            >(guard)
+                        }),
                         waitset: self.0.clone(),
                         _attachment: Some(attachment.clone()),
                     })))
@@ -76,7 +85,16 @@ impl WaitSet {
                         // safe since the waitset arc and the attachment arc become a member of the
                         // guard and therefore the waitset and the attachment always lives at least
                         // as long as the guard
-                        guard: Some(unsafe { core::mem::transmute(guard) }),
+                        guard: Some(unsafe {
+                            core::mem::transmute::<
+                                iceoryx2::waitset::WaitSetGuard<'_, '_, crate::LocalService>,
+                                iceoryx2::waitset::WaitSetGuard<
+                                    'static,
+                                    'static,
+                                    crate::LocalService,
+                                >,
+                            >(guard)
+                        }),
                         waitset: self.0.clone(),
                         _attachment: Some(attachment.clone()),
                     })))
@@ -103,7 +121,12 @@ impl WaitSet {
                     // safe since the waitset arc and the attachment arc become a member of the
                     // guard and therefore the waitset and the attachment always lives at least
                     // as long as the guard
-                    guard: Some(unsafe { core::mem::transmute(guard) }),
+                    guard: Some(unsafe {
+                        core::mem::transmute::<
+                            iceoryx2::waitset::WaitSetGuard<'_, '_, crate::IpcService>,
+                            iceoryx2::waitset::WaitSetGuard<'static, 'static, crate::IpcService>,
+                        >(guard)
+                    }),
                     waitset: self.0.clone(),
                     _attachment: Some(attachment.0.clone()),
                 })))
@@ -116,7 +139,12 @@ impl WaitSet {
                     // safe since the waitset arc and the attachment arc become a member of the
                     // guard and therefore the waitset and the attachment always lives at least
                     // as long as the guard
-                    guard: Some(unsafe { core::mem::transmute(guard) }),
+                    guard: Some(unsafe {
+                        core::mem::transmute::<
+                            iceoryx2::waitset::WaitSetGuard<'_, '_, crate::LocalService>,
+                            iceoryx2::waitset::WaitSetGuard<'static, 'static, crate::LocalService>,
+                        >(guard)
+                    }),
                     waitset: self.0.clone(),
                     _attachment: Some(attachment.0.clone()),
                 })))
@@ -144,7 +172,16 @@ impl WaitSet {
                         // safe since the waitset arc and the attachment arc become a member of the
                         // guard and therefore the waitset and the attachment always lives at least
                         // as long as the guard
-                        guard: Some(unsafe { core::mem::transmute(guard) }),
+                        guard: Some(unsafe {
+                            core::mem::transmute::<
+                                iceoryx2::waitset::WaitSetGuard<'_, '_, crate::IpcService>,
+                                iceoryx2::waitset::WaitSetGuard<
+                                    'static,
+                                    'static,
+                                    crate::IpcService,
+                                >,
+                            >(guard)
+                        }),
                         waitset: self.0.clone(),
                         _attachment: Some(attachment.clone()),
                     })))
@@ -163,7 +200,16 @@ impl WaitSet {
                         // safe since the waitset arc and the attachment arc become a member of the
                         // guard and therefore the waitset and the attachment always lives at least
                         // as long as the guard
-                        guard: Some(unsafe { core::mem::transmute(guard) }),
+                        guard: Some(unsafe {
+                            core::mem::transmute::<
+                                iceoryx2::waitset::WaitSetGuard<'_, '_, crate::LocalService>,
+                                iceoryx2::waitset::WaitSetGuard<
+                                    'static,
+                                    'static,
+                                    crate::LocalService,
+                                >,
+                            >(guard)
+                        }),
                         waitset: self.0.clone(),
                         _attachment: Some(attachment.clone()),
                     })))
@@ -195,7 +241,12 @@ impl WaitSet {
                     // safe since the waitset arc and the attachment arc become a member of the
                     // guard and therefore the waitset and the attachment always lives at least
                     // as long as the guard
-                    guard: Some(unsafe { core::mem::transmute(guard) }),
+                    guard: Some(unsafe {
+                        core::mem::transmute::<
+                            iceoryx2::waitset::WaitSetGuard<'_, '_, crate::IpcService>,
+                            iceoryx2::waitset::WaitSetGuard<'static, 'static, crate::IpcService>,
+                        >(guard)
+                    }),
                     waitset: self.0.clone(),
                     _attachment: Some(attachment.0.clone()),
                 })))
@@ -208,7 +259,12 @@ impl WaitSet {
                     // safe since the waitset arc and the attachment arc become a member of the
                     // guard and therefore the waitset and the attachment always lives at least
                     // as long as the guard
-                    guard: Some(unsafe { core::mem::transmute(guard) }),
+                    guard: Some(unsafe {
+                        core::mem::transmute::<
+                            iceoryx2::waitset::WaitSetGuard<'_, '_, crate::LocalService>,
+                            iceoryx2::waitset::WaitSetGuard<'static, 'static, crate::LocalService>,
+                        >(guard)
+                    }),
                     waitset: self.0.clone(),
                     _attachment: Some(attachment.0.clone()),
                 })))
@@ -227,7 +283,12 @@ impl WaitSet {
                 Ok(WaitSetGuard(WaitSetGuardType::Ipc(StorageType {
                     // safe since the waitset arc becomes a member of the guard and therefore the
                     // waitset lives at least as long as the guard
-                    guard: Some(unsafe { core::mem::transmute(guard) }),
+                    guard: Some(unsafe {
+                        core::mem::transmute::<
+                            iceoryx2::waitset::WaitSetGuard<'_, '_, crate::IpcService>,
+                            iceoryx2::waitset::WaitSetGuard<'static, 'static, crate::IpcService>,
+                        >(guard)
+                    }),
                     waitset: self.0.clone(),
                     _attachment: None,
                 })))
@@ -239,7 +300,12 @@ impl WaitSet {
                 Ok(WaitSetGuard(WaitSetGuardType::Local(StorageType {
                     // safe since the waitset arc becomes a member of the guard and therefore the
                     // waitset lives at least as long as the guard
-                    guard: Some(unsafe { core::mem::transmute(guard) }),
+                    guard: Some(unsafe {
+                        core::mem::transmute::<
+                            iceoryx2::waitset::WaitSetGuard<'_, '_, crate::LocalService>,
+                            iceoryx2::waitset::WaitSetGuard<'static, 'static, crate::LocalService>,
+                        >(guard)
+                    }),
                     waitset: self.0.clone(),
                     _attachment: None,
                 })))
@@ -255,25 +321,20 @@ impl WaitSet {
     /// [`WaitSetRunResult::TerminationRequest`].
     pub fn wait_and_process(&self) -> PyResult<(Vec<WaitSetAttachmentId>, WaitSetRunResult)> {
         let mut ret_val = vec![];
-        let result;
-        match &*self.0.lock() {
-            WaitSetType::Ipc(v) => {
-                result = v
-                    .wait_and_process_once(|v| {
-                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
-                        iceoryx2::prelude::CallbackProgression::Continue
-                    })
-                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?;
-            }
-            WaitSetType::Local(v) => {
-                result = v
-                    .wait_and_process_once(|v| {
-                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
-                        iceoryx2::prelude::CallbackProgression::Continue
-                    })
-                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?;
-            }
-        }
+        let result = match &*self.0.lock() {
+            WaitSetType::Ipc(v) => v
+                .wait_and_process_once(|v| {
+                    ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
+                    iceoryx2::prelude::CallbackProgression::Continue
+                })
+                .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+            WaitSetType::Local(v) => v
+                .wait_and_process_once(|v| {
+                    ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
+                    iceoryx2::prelude::CallbackProgression::Continue
+                })
+                .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+        };
 
         Ok((ret_val, result.into()))
     }
@@ -289,31 +350,26 @@ impl WaitSet {
         timeout: &Duration,
     ) -> PyResult<(Vec<WaitSetAttachmentId>, WaitSetRunResult)> {
         let mut ret_val = vec![];
-        let result;
-        match &*self.0.lock() {
-            WaitSetType::Ipc(v) => {
-                result = v
-                    .wait_and_process_once_with_timeout(
-                        |v| {
-                            ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
-                            iceoryx2::prelude::CallbackProgression::Continue
-                        },
-                        timeout.0,
-                    )
-                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?;
-            }
-            WaitSetType::Local(v) => {
-                result = v
-                    .wait_and_process_once_with_timeout(
-                        |v| {
-                            ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
-                            iceoryx2::prelude::CallbackProgression::Continue
-                        },
-                        timeout.0,
-                    )
-                    .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?;
-            }
-        }
+        let result = match &*self.0.lock() {
+            WaitSetType::Ipc(v) => v
+                .wait_and_process_once_with_timeout(
+                    |v| {
+                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
+                        iceoryx2::prelude::CallbackProgression::Continue
+                    },
+                    timeout.0,
+                )
+                .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+            WaitSetType::Local(v) => v
+                .wait_and_process_once_with_timeout(
+                    |v| {
+                        ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
+                        iceoryx2::prelude::CallbackProgression::Continue
+                    },
+                    timeout.0,
+                )
+                .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+        };
 
         Ok((ret_val, result.into()))
     }

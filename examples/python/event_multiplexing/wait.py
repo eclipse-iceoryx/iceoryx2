@@ -12,8 +12,9 @@
 
 """Event Multiplexing listener example."""
 
-import iceoryx2 as iox2
 import sys
+
+import iceoryx2 as iox2
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
@@ -33,10 +34,13 @@ waitset = iox2.WaitSetBuilder.new().create(iox2.ServiceType.Ipc)
 listener_attachments = {}
 guards = []
 
-for (service, listener) in listeners:
+for service, listener in listeners:
     guard = waitset.attach_notification(listener)
     print("attachment: ", iox2.WaitSetAttachmentId.from_guard(guard))
-    listener_attachments[iox2.WaitSetAttachmentId.from_guard(guard)] = (service, listener)
+    listener_attachments[iox2.WaitSetAttachmentId.from_guard(guard)] = (
+        service,
+        listener,
+    )
     guards.append(guard)
 
 print("Waiting on the following services: ", sys.argv[1:None])
@@ -44,12 +48,15 @@ print("Waiting on the following services: ", sys.argv[1:None])
 try:
     while True:
         (notifications, result) = waitset.wait_and_process()
-        if result in (iox2.WaitSetRunResult.TerminationRequest, result == iox2.WaitSetRunResult.Interrupt):
+        if result in (
+            iox2.WaitSetRunResult.TerminationRequest,
+            result == iox2.WaitSetRunResult.Interrupt,
+        ):
             break
 
         for attachment in notifications:
             (service_name, listener) = listener_attachments[attachment]
-            print("Received trigger from \"", service_name ,"\"")
+            print('Received trigger from "', service_name, '"')
 
             event_ids = listener.try_wait_all()
             for event_id in event_ids:

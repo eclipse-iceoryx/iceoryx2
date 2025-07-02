@@ -37,7 +37,7 @@ pub struct WaitSetGuard(pub(crate) WaitSetGuardType);
 #[pymethods]
 impl WaitSetGuard {
     /// Drops the `WaitSetGuard`. After this call the `WaitSetGuard` is no longer usable.
-    pub fn drop(&mut self) {
+    pub fn delete(&mut self) {
         match self.0 {
             WaitSetGuardType::Ipc(ref mut v) => {
                 // the waitset needs to be locked otherwise we encounter a race condition since the

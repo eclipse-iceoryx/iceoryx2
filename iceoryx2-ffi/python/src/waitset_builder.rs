@@ -20,15 +20,10 @@ use crate::{
     waitset::{WaitSet, WaitSetType},
 };
 
+#[derive(Default)]
 #[pyclass(str = "{0:?}")]
 /// Creates a new `WaitSet`.
 pub struct WaitSetBuilder(iceoryx2::prelude::WaitSetBuilder);
-
-impl Default for WaitSetBuilder {
-    fn default() -> Self {
-        Self(iceoryx2::prelude::WaitSetBuilder::default())
-    }
-}
 
 #[pymethods]
 impl WaitSetBuilder {
@@ -53,11 +48,11 @@ impl WaitSetBuilder {
         match service_type {
             ServiceType::Ipc => Ok(WaitSet(Parc::new(WaitSetType::Ipc(
                 this.create::<crate::IpcService>()
-                    .map_err(|e| WaitSetCreateError::new_err(format!("{:?}", e)))?,
+                    .map_err(|e| WaitSetCreateError::new_err(format!("{e:?}")))?,
             )))),
             ServiceType::Local => Ok(WaitSet(Parc::new(WaitSetType::Local(
                 this.create::<crate::LocalService>()
-                    .map_err(|e| WaitSetCreateError::new_err(format!("{:?}", e)))?,
+                    .map_err(|e| WaitSetCreateError::new_err(format!("{e:?}")))?,
             )))),
         }
     }

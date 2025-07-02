@@ -29,7 +29,7 @@ pub enum WaitSetRunResult {
 #[pymethods]
 impl WaitSetRunResult {
     pub fn __str__(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 }
 

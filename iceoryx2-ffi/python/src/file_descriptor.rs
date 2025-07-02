@@ -23,7 +23,7 @@ pub struct FileDescriptor(pub(crate) Arc<iceoryx2::prelude::FileDescriptor>);
 
 impl iceoryx2::prelude::FileDescriptorBased for FileDescriptor {
     fn file_descriptor(&self) -> &iceoryx2::prelude::FileDescriptor {
-        &self.0.file_descriptor()
+        self.0.file_descriptor()
     }
 }
 

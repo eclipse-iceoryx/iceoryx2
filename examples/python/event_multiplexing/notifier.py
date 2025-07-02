@@ -12,8 +12,9 @@
 
 """Event Multiplexing notifier example."""
 
-import iceoryx2 as iox2
 import sys
+
+import iceoryx2 as iox2
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
@@ -36,10 +37,8 @@ try:
     while True:
         node.wait(cycle_time)
         COUNTER += 1
-        notifier.notify_with_custom_event_id(
-            iox2.EventId.new(int(event_id))
-        )
+        notifier.notify_with_custom_event_id(iox2.EventId.new(int(event_id)))
 
-        print("[service: \"", service_name, "\"] Trigger event ...")
+        print('[service: "', service_name, '"] Trigger event ...')
 except iox2.NodeWaitFailure:
     print("exit")

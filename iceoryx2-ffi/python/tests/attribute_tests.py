@@ -10,8 +10,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import iceoryx2 as iox2
 import pytest
+
+import iceoryx2 as iox2
 
 
 def test_attribute_verifier_require_works() -> None:

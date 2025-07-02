@@ -1,5 +1,12 @@
 # iceoryx2-ffi-python
 
+## Running Examples
+
+```sh
+export PYTHONPATH="$(git rev-parse --show-toplevel)/iceoryx2-ffi/python"
+python examples/python/event/listener.py
+```
+
 ## Setup Development Environment
 
 ```sh
@@ -44,6 +51,4 @@ isort $GIT_ROOT/iceoryx2-ffi/python/tests
 black $GIT_ROOT/examples/python
 black $GIT_ROOT/iceoryx2-ffi/python/tests
 ```
-
-
 

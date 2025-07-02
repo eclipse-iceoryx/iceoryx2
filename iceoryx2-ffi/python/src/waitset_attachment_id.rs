@@ -53,7 +53,7 @@ impl WaitSetAttachmentId {
             WaitSetAttachmentIdType::Ipc(v) => {
                 if let WaitSetGuardType::Ipc(guard) = &other.0 {
                     if let Some(guard) = &guard.guard {
-                        return v.has_event_from(&guard);
+                        return v.has_event_from(guard);
                     }
                 }
                 false
@@ -61,7 +61,7 @@ impl WaitSetAttachmentId {
             WaitSetAttachmentIdType::Local(v) => {
                 if let WaitSetGuardType::Local(guard) = &other.0 {
                     if let Some(guard) = &guard.guard {
-                        return v.has_event_from(&guard);
+                        return v.has_event_from(guard);
                     }
                 }
                 false
@@ -75,7 +75,7 @@ impl WaitSetAttachmentId {
             WaitSetAttachmentIdType::Ipc(v) => {
                 if let WaitSetGuardType::Ipc(guard) = &other.0 {
                     if let Some(guard) = &guard.guard {
-                        return v.has_missed_deadline(&guard);
+                        return v.has_missed_deadline(guard);
                     }
                 }
                 false
@@ -83,7 +83,7 @@ impl WaitSetAttachmentId {
             WaitSetAttachmentIdType::Local(v) => {
                 if let WaitSetGuardType::Local(guard) = &other.0 {
                     if let Some(guard) = &guard.guard {
-                        return v.has_missed_deadline(&guard);
+                        return v.has_missed_deadline(guard);
                     }
                 }
                 false

@@ -10,8 +10,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import iceoryx2 as iox2
 import pytest
+
+import iceoryx2 as iox2
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
@@ -29,10 +30,21 @@ def test_newly_created_waitset_is_empty(
 def test_waitset_builder_set_signal_handling_mode_correctly(
     service_type: iox2.ServiceType,
 ) -> None:
-    sut_1 = iox2.WaitSetBuilder.new().signal_handling_mode(iox2.SignalHandlingMode.Disabled).create(service_type)
-    sut_2 = iox2.WaitSetBuilder.new().signal_handling_mode(iox2.SignalHandlingMode.HandleTerminationRequests).create(service_type)
+    sut_1 = (
+        iox2.WaitSetBuilder.new()
+        .signal_handling_mode(iox2.SignalHandlingMode.Disabled)
+        .create(service_type)
+    )
+    sut_2 = (
+        iox2.WaitSetBuilder.new()
+        .signal_handling_mode(iox2.SignalHandlingMode.HandleTerminationRequests)
+        .create(service_type)
+    )
     assert sut_1.signal_handling_mode == iox2.SignalHandlingMode.Disabled
-    assert sut_2.signal_handling_mode == iox2.SignalHandlingMode.HandleTerminationRequests
+    assert (
+        sut_2.signal_handling_mode
+        == iox2.SignalHandlingMode.HandleTerminationRequests
+    )
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -43,7 +55,12 @@ def test_attaching_notifications_works(
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
-    service = node.service_builder(service_name).event().max_listeners(number_of_attachments).create()
+    service = (
+        node.service_builder(service_name)
+        .event()
+        .max_listeners(number_of_attachments)
+        .create()
+    )
     listeners = []
     for i in range(0, number_of_attachments):
         listener = service.listener_builder().create()
@@ -67,7 +84,12 @@ def test_attaching_deadlines_works(
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
-    service = node.service_builder(service_name).event().max_listeners(number_of_attachments).create()
+    service = (
+        node.service_builder(service_name)
+        .event()
+        .max_listeners(number_of_attachments)
+        .create()
+    )
     listeners = []
     for i in range(0, number_of_attachments):
         listener = service.listener_builder().create()
@@ -103,14 +125,16 @@ def test_wait_and_process_returns_when_timeout_has_passed(
 ) -> None:
     sut = iox2.WaitSetBuilder.new().create(service_type)
     guard = sut.attach_interval(iox2.Duration.from_secs(123))
-    (triggers, result) = sut.wait_and_process_with_timeout(iox2.Duration.from_millis(1))
+    (triggers, result) = sut.wait_and_process_with_timeout(
+        iox2.Duration.from_millis(1)
+    )
     assert len(triggers) == 0
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_wait_and_process_returns_triggered_listeners(
-service_type: iox2.ServiceType,
+    service_type: iox2.ServiceType,
 ) -> None:
     number_of_attachments = 15
     config = iox2.testing.generate_isolated_config()
@@ -120,7 +144,12 @@ service_type: iox2.ServiceType,
     notifiers = []
     for i in range(0, number_of_attachments):
         service_name = iox2.testing.generate_service_name()
-        service = node.service_builder(service_name).event().max_listeners(number_of_attachments).create()
+        service = (
+            node.service_builder(service_name)
+            .event()
+            .max_listeners(number_of_attachments)
+            .create()
+        )
         listener = service.listener_builder().create()
         notifier = service.notifier_builder().create()
         listeners.append(listener)
@@ -143,7 +172,9 @@ service_type: iox2.ServiceType,
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
     for i in range(0, 1):
-        assert triggers[i].has_event_from(waitset_guards[0]) or triggers[i].has_event_from(waitset_guards[1])
+        assert triggers[i].has_event_from(waitset_guards[0]) or triggers[
+            i
+        ].has_event_from(waitset_guards[1])
 
     for k in range(2, number_of_attachments):
         for i in range(0, 1):
@@ -189,4 +220,3 @@ def test_create_attachment_id_from_guard(
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
     assert triggers[0] == attachment_id
-
