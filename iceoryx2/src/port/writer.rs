@@ -13,12 +13,13 @@
 use crate::service::builder::blackboard::{BlackboardResources, Mgmt};
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::blackboard::WriterDetails;
+use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
 use core::fmt::Debug;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{Producer, UnrestrictedAtomic};
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
 use iceoryx2_cal::event::{NamedConcept, NamedConceptBuilder};
@@ -93,6 +94,7 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
             when <<Service::BlackboardPayload as SharedMemory<BumpAllocator>
                 >::Builder as NamedConceptBuilder<Service::BlackboardPayload>>::new(&name)
                 .config(&shm_config)
+                .has_ownership(false)
                 .open(),
             with WriterCreateError::UnableToOpenDataSegment,
             "{} since the payload data segment could not be opened.", msg);
@@ -137,18 +139,71 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         Ok(new_self)
     }
 
-    pub fn update_with_copy<ValueType: Copy>(&self, key: &T, value: ValueType) {
+    /// Creates a [`WriterHandle`] for direct writing access to the value. There can be only one
+    /// [`WriterHandle`] per value.
+    pub fn entry<ValueType: Copy + ZeroCopySend>(
+        &self,
+        key: &T,
+    ) -> Result<WriterHandle<ValueType>, WriterHandleError> {
+        let msg = "Unable to create writer handle";
+
+        // check if key exists
         let index = self.mgmt.get().map.get(key);
-        if index.is_some() {
-            let offset = self.mgmt.get().entries[index.unwrap()]
-                .offset
-                .load(core::sync::atomic::Ordering::Relaxed);
-            let atomic = (self.payload.payload_start_address() as u64 + offset)
-                as *mut UnrestrictedAtomic<ValueType>;
-            // TODO: error handling (see UnrestrictedAtomic example)
-            unsafe {
-                (*atomic).acquire_producer().unwrap().store(value);
-            };
+        if index.is_none() {
+            fail!(from self, with WriterHandleError::EntryDoesNotExist,
+                "{} since no entry with the given key exists.", msg);
         }
+
+        let entry = &self.mgmt.get().entries[index.unwrap()];
+
+        // check if ValueType matches
+        if TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
+            fail!(from self, with WriterHandleError::EntryDoesNotExist,
+                "{} since no entry with the given key and value type exists.", msg);
+        }
+
+        let offset = entry.offset.load(core::sync::atomic::Ordering::Relaxed);
+        let atomic = (self.payload.payload_start_address() as u64 + offset)
+            as *mut UnrestrictedAtomic<ValueType>;
+        match unsafe { (*atomic).acquire_producer() } {
+            None => {
+                fail!(from self, with WriterHandleError::HandleAlreadyExists,
+                    "{} since a handle for the passed key and value type already exists.", msg);
+            }
+            Some(producer) => Ok(WriterHandle::new(producer)),
+        }
+    }
+}
+
+/// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`].
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum WriterHandleError {
+    /// The entry with the given key and value type does not exist.
+    EntryDoesNotExist,
+    /// The [`WriterHandle`] already exists.
+    HandleAlreadyExists,
+}
+
+impl core::fmt::Display for WriterHandleError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "WriterHandleError::{:?}", self)
+    }
+}
+
+impl core::error::Error for WriterHandleError {}
+
+/// A handle for direct writing access to a specific blackboard value.
+pub struct WriterHandle<'handle, ValueType: Copy> {
+    producer: Producer<'handle, ValueType>,
+}
+
+impl<'handle, ValueType: Copy> WriterHandle<'handle, ValueType> {
+    fn new(producer: Producer<'handle, ValueType>) -> Self {
+        Self { producer }
+    }
+
+    /// Updates the value by copying the passed value into it.
+    pub fn update_with_copy(&self, value: ValueType) {
+        self.producer.store(value);
     }
 }
