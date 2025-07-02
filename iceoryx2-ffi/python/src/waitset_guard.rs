@@ -32,6 +32,8 @@ pub(crate) enum WaitSetGuardType {
 }
 
 #[pyclass]
+/// Is returned when something is attached to the `WaitSet`. As soon as it goes out
+/// of scope, the attachment is detached.
 pub struct WaitSetGuard(pub(crate) WaitSetGuardType);
 
 #[pymethods]
