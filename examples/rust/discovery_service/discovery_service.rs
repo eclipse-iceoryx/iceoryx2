@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .service_builder(service_discovery::service_name())
         .publish_subscribe::<service_discovery::Payload>()
         .open()
-        .inspect_err(|error| {
+        .inspect_err(|_| {
             eprintln!("Unable to open service discovery service. Was it started?");
         })?;
 
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .service_builder(service_discovery::service_name())
         .event()
         .open()
-        .inspect_err(|error| {
+        .inspect_err(|_| {
             eprintln!("unable to open service discovery service. Was it started?");
         })?;
     let listener = event.listener_builder().create()?;

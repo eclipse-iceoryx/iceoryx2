@@ -13,7 +13,7 @@
 
 set -e
 
-pacman -Syu --noconfirm clang cmake gcc git rustup python
+pacman -Syu --noconfirm clang cmake expect gcc git rustup python
 pacman -Scc --noconfirm
 rustup toolchain add beta nightly stable 1.81.0
 rustup component add clippy llvm-tools rustfmt

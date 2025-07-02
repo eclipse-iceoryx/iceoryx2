@@ -27,26 +27,28 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let client = service.client_builder().create()?;
 
-    let mut counter: u64 = 0;
+    let mut request_counter: u64 = 0;
+    let mut response_counter: u64 = 0;
 
     // sending first request by using slower, inefficient copy API
-    println!("send request {counter} ...");
-    let mut pending_response = client.send_copy(counter)?;
+    println!("send request {request_counter} ...");
+    let mut pending_response = client.send_copy(request_counter)?;
 
     while node.wait(CYCLE_TIME).is_ok() {
         // acquire all responses to our request from our buffer that were sent by the servers
         while let Some(response) = pending_response.receive()? {
-            println!("  received response: {:?}", *response);
+            println!("  received response {response_counter}: {:?}", *response);
+            response_counter += 1;
         }
 
-        counter += 1;
+        request_counter += 1;
         // send all other requests by using zero copy API
         let request = client.loan_uninit()?;
-        let request = request.write_payload(counter);
+        let request = request.write_payload(request_counter);
 
         pending_response = request.send()?;
 
-        println!("send request {counter} ...");
+        println!("send request {request_counter} ...");
     }
 
     println!("exit");

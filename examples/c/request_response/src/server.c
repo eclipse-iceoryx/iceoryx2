@@ -53,7 +53,7 @@ int main(void) { // NOLINT
 
     // Set request and response type details
     const char* request_type_name = "u64";
-    const char* response_type_name = "16TransmissionData";
+    const char* response_type_name = "TransmissionData";
 
     if (iox2_service_builder_request_response_set_request_payload_type_details(&service_builder_request_response,
                                                                                iox2_type_variant_e_FIXED_SIZE,

@@ -77,6 +77,11 @@
 * Make default max event ID smaller
   [#828](https://github.com/eclipse-iceoryx/iceoryx2/issues/828)
 
+### Testing
+
+* Create Cross-Language E2E Tests
+  [#730](https://github.com/eclipse-iceoryx/iceoryx2/issues/730)
+  
 ### Workflow
 
 <!--
