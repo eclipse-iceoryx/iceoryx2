@@ -27,8 +27,9 @@ use crate::service::*;
 use builder::RETRY_LIMIT;
 use core::alloc::Layout;
 use core::sync::atomic::AtomicU64;
-use iceoryx2_bb_container::flatmap::FixedSizeFlatMap;
-use iceoryx2_bb_container::vec::FixedSizeVec;
+use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
+use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_container::vec::RelocatableVec;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
 use iceoryx2_bb_log::fatal_panic;
@@ -213,8 +214,8 @@ pub(crate) struct Entry {
 
 #[derive(Debug)]
 pub(crate) struct Mgmt<KeyType: ZeroCopySend + Debug + Eq + Clone> {
-    pub(crate) map: FixedSizeFlatMap<KeyType, usize, 10>,
-    pub(crate) entries: FixedSizeVec<Entry, 10>,
+    pub(crate) map: RelocatableFlatMap<KeyType, usize>,
+    pub(crate) entries: RelocatableVec<Entry>,
 }
 
 #[derive(Debug)]
@@ -712,6 +713,7 @@ impl<
                 };
 
                 // create the management segment
+                let capacity = self.internals.len();
                 let mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                     self.base.shared_node.config(),
                 );
@@ -720,11 +722,13 @@ impl<
                     >>::Builder::new(&name)
                         .config(&mgmt_config)
                         .has_ownership(false)
-                        .initializer(|entry: &mut Mgmt<KeyType>, _allocator: &mut BumpAllocator| {
-                            for i in 0..self.internals.len() {
+                        .supplementary_size(RelocatableFlatMap::<KeyType, usize>::const_memory_size(capacity)+RelocatableVec::<Entry>::const_memory_size(capacity))
+                        .initializer(|entry: &mut Mgmt<KeyType>, allocator: &mut BumpAllocator| {
+                            if unsafe {entry.map.init(allocator)}.is_err() || unsafe {entry.entries.init(allocator).is_err()} {
+                                return false
+                            }
+                            for i in 0..capacity {
                                 // write value passed to add() to payload_shm
-                                println!("size: {}, alignment: {}", self.internals[i].internal_value_size, self.internals[i].value_type_details.alignment);
-                                println!("size: {}, alignment: {}", self.internals[i].internal_value_size, self.internals[i].internal_value_alignment);
                                 let mem = payload_shm.allocate(unsafe { Layout::from_size_align_unchecked(self.internals[i].internal_value_size, self.internals[i].internal_value_alignment) });
                                 if mem.is_err() {
                                     return false
@@ -732,18 +736,18 @@ impl<
                                 let mem = mem.unwrap();
                                 (*self.internals[i].value_writer)(mem.data_ptr);
                                 // write offset to value in payload_shm to entries vector
-                                let res = entry.entries.push(Entry{type_details: self.internals[i].value_type_details.clone(), offset: AtomicU64::new(mem.offset.offset() as u64)});
+                                let res = unsafe {entry.entries.push(Entry{type_details: self.internals[i].value_type_details.clone(), offset: AtomicU64::new(mem.offset.offset() as u64)})};
                                 if !res {
                                     return false
                                 }
                                 // write offset index to map
-                                let res = entry.map.insert(self.internals[i].key.clone(), entry.entries.len() - 1);
+                                let res = unsafe {entry.map.insert(self.internals[i].key.clone(), entry.entries.len() - 1)};
                                 if res.is_err() {
                                     return false
                                 }
                             }
                             true})
-                        .create(Mgmt{ map: FixedSizeFlatMap::<KeyType, usize, 10>::new(), entries: FixedSizeVec::<Entry, 10>::new()}),
+                        .create(Mgmt{ map: unsafe { RelocatableFlatMap::<KeyType, usize>::new_uninit(capacity) }, entries: unsafe {RelocatableVec::<Entry>::new_uninit(capacity)}}),
                             with BlackboardCreateError::ServiceInCorruptedState, "{} since the blackboard management segment could not be created. This could indicate a corrupted system.",
                             msg);
 

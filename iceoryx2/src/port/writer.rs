@@ -148,7 +148,7 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         let msg = "Unable to create writer handle";
 
         // check if key exists
-        let index = self.mgmt.get().map.get(key);
+        let index = unsafe { self.mgmt.get().map.get(key) };
         if index.is_none() {
             fail!(from self, with WriterHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key exists.", msg);
@@ -208,4 +208,6 @@ impl<'handle, ValueType: Copy> WriterHandle<'handle, ValueType> {
     }
 }
 
-// TODO: allow slow write without handle?
+// TODO:
+// 1) allow slow write without handle?
+// 2) loan API?

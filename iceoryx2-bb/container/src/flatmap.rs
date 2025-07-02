@@ -251,6 +251,13 @@ unsafe impl<K: Eq + Clone + ZeroCopySend, V: Clone + ZeroCopySend> ZeroCopySend
 {
 }
 
+impl<K: Eq + Clone + Debug, V: Clone + Debug> Debug for RelocatableFlatMap<K, V> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // TODO: improve Debug output; use slotmap?
+        write!(f, "")
+    }
+}
+
 impl<K: Eq + Clone, V: Clone> RelocatableFlatMap<K, V> {
     /// Returns how much memory the [`RelocatableFlatMap`] will allocate from the allocator
     /// in [`RelocatableFlatMap::init()`].
@@ -373,7 +380,6 @@ impl<K: Eq + Clone, V: Clone, const CAPACITY: usize> Default for FixedSizeFlatMa
     }
 }
 
-// impl whem K+V is Debug
 impl<K: Eq + Clone + Debug, V: Clone + Debug, const CAPACITY: usize> Debug
     for FixedSizeFlatMap<K, V, CAPACITY>
 {

@@ -146,7 +146,7 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         let msg = "Unable to create reader handle";
 
         // check if key exists
-        let index = self.mgmt.get().map.get(key);
+        let index = unsafe { self.mgmt.get().map.get(key) };
         if index.is_none() {
             fail!(from self, with ReaderHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key exists.", msg);
@@ -185,7 +185,7 @@ impl core::error::Error for ReaderHandleError {}
 
 /// A handle for direct read access to a specific blackboard value.
 pub struct ReaderHandle<
-    'reader,
+    'reader, // because we dereference atomic
     Service: service::Service,
     KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
     ValueType: Copy,
