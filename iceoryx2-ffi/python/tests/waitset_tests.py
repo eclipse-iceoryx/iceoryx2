@@ -220,3 +220,36 @@ def test_create_attachment_id_from_guard(
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
     assert triggers[0] == attachment_id
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_deleting_guard_explicitly_removes_attachment(
+    service_type: iox2.ServiceType,
+) -> None:
+    number_of_attachments = 15
+    config = iox2.testing.generate_isolated_config()
+    service_name = iox2.testing.generate_service_name()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service = (
+        node.service_builder(service_name)
+        .event()
+        .max_listeners(number_of_attachments)
+        .create()
+    )
+    listeners = []
+    for i in range(0, number_of_attachments):
+        listener = service.listener_builder().create()
+        listeners.append(listener)
+
+    sut = iox2.WaitSetBuilder.new().create(service_type)
+    waitset_guards = []
+    for i in range(0, number_of_attachments):
+        guard = sut.attach_notification(listeners[i])
+        waitset_guards.append(guard)
+
+    for i in range(0, number_of_attachments):
+        assert sut.len == number_of_attachments - i
+        waitset_guards[i].delete()
+
+    assert sut.len == 0
+    assert sut.is_empty
