@@ -141,7 +141,8 @@ mod service {
                 any_of([
                     PublishSubscribeCreateError::AlreadyExists,
                     PublishSubscribeCreateError::IsBeingCreatedByAnotherInstance,
-                    PublishSubscribeCreateError::HangsInCreation
+                    PublishSubscribeCreateError::HangsInCreation,
+                    PublishSubscribeCreateError::ServiceInCorruptedState,
                 ])
             );
         }
@@ -207,6 +208,7 @@ mod service {
                     EventCreateError::AlreadyExists,
                     EventCreateError::IsBeingCreatedByAnotherInstance,
                     EventCreateError::HangsInCreation,
+                    EventCreateError::ServiceInCorruptedState,
                 ])
             );
         }
