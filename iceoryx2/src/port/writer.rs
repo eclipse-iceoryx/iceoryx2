@@ -139,7 +139,7 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         Ok(new_self)
     }
 
-    /// Creates a [`WriterHandle`] for direct writing access to the value. There can be only one
+    /// Creates a [`WriterHandle`] for direct write access to the value. There can be only one
     /// [`WriterHandle`] per value.
     pub fn entry<ValueType: Copy + ZeroCopySend>(
         &self,
@@ -192,7 +192,7 @@ impl core::fmt::Display for WriterHandleError {
 
 impl core::error::Error for WriterHandleError {}
 
-/// A handle for direct writing access to a specific blackboard value.
+/// A handle for direct write access to a specific blackboard value.
 pub struct WriterHandle<'handle, ValueType: Copy> {
     producer: Producer<'handle, ValueType>,
 }
@@ -207,3 +207,5 @@ impl<'handle, ValueType: Copy> WriterHandle<'handle, ValueType> {
         self.producer.store(value);
     }
 }
+
+// TODO: allow slow write without handle?

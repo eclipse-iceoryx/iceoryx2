@@ -13,6 +13,7 @@
 use crate::service::builder::blackboard::{BlackboardResources, Mgmt};
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::blackboard::ReaderDetails;
+use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
 use core::fmt::Debug;
 use core::sync::atomic::Ordering;
@@ -137,17 +138,85 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         Ok(new_self)
     }
 
-    pub fn read<ValueType: Copy>(&self, key: &T) -> Option<ValueType> {
+    /// Creates a [`ReaderHandle`] for direct read access to the value.
+    pub fn entry<ValueType: Copy + ZeroCopySend>(
+        &self,
+        key: &T,
+    ) -> Result<ReaderHandle<Service, T, ValueType>, ReaderHandleError> {
+        let msg = "Unable to create reader handle";
+
+        // check if key exists
         let index = self.mgmt.get().map.get(key);
         if index.is_none() {
-            return None;
+            fail!(from self, with ReaderHandleError::EntryDoesNotExist,
+                "{} since no entry with the given key exists.", msg);
         }
-        let offset = self.mgmt.get().entries[index.unwrap()]
-            .offset
-            .load(core::sync::atomic::Ordering::Relaxed);
+
+        let entry = &self.mgmt.get().entries[index.unwrap()];
+
+        // check if ValueType matches
+        if TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
+            fail!(from self, with ReaderHandleError::EntryDoesNotExist,
+                "{} since no entry with the given key and value type exists.", msg);
+        }
+
+        let offset = entry.offset.load(core::sync::atomic::Ordering::Relaxed);
         let atomic = (self.payload.payload_start_address() as u64 + offset)
             as *mut UnrestrictedAtomic<ValueType>;
-        let value = unsafe { (*atomic).load() };
-        Some(value)
+
+        Ok(ReaderHandle::new(atomic, self))
     }
 }
+
+/// Defines a failure that can occur when a [`ReaderHandle`] is created with [`Reader::entry()`].
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum ReaderHandleError {
+    /// The entry with the given key and value type does not exist.
+    EntryDoesNotExist,
+}
+
+impl core::fmt::Display for ReaderHandleError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        std::write!(f, "ReaderHandleError::{:?}", self)
+    }
+}
+
+impl core::error::Error for ReaderHandleError {}
+
+/// A handle for direct read access to a specific blackboard value.
+pub struct ReaderHandle<
+    'reader,
+    Service: service::Service,
+    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    ValueType: Copy,
+> {
+    atomic: *mut UnrestrictedAtomic<ValueType>,
+    _reader: &'reader Reader<Service, KeyType>,
+}
+
+impl<
+        'reader,
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+        ValueType: Copy,
+    > ReaderHandle<'reader, Service, KeyType, ValueType>
+{
+    fn new(
+        atomic: *mut UnrestrictedAtomic<ValueType>,
+        reader: &'reader Reader<Service, KeyType>,
+    ) -> Self {
+        Self {
+            atomic,
+            _reader: reader,
+        }
+    }
+
+    /// Returns a copy of the value.
+    pub fn get(&self) -> ValueType {
+        unsafe { (*self.atomic).load() }
+    }
+}
+
+// TODO:
+// 1) allow several handles to the same key-value?
+// 2) enable slow read without handle?
