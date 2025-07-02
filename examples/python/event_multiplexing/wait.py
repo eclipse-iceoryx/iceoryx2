@@ -50,7 +50,7 @@ try:
         (notifications, result) = waitset.wait_and_process()
         if result in (
             iox2.WaitSetRunResult.TerminationRequest,
-            result == iox2.WaitSetRunResult.Interrupt,
+            iox2.WaitSetRunResult.Interrupt,
         ):
             break
 

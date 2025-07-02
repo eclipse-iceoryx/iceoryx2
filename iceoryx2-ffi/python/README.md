@@ -51,4 +51,3 @@ isort $GIT_ROOT/iceoryx2-ffi/python/tests
 black $GIT_ROOT/examples/python
 black $GIT_ROOT/iceoryx2-ffi/python/tests
 ```
-
