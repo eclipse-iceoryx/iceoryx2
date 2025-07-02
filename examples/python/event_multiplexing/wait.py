@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Listener example."""
+"""Event Multiplexing listener example."""
 
 import iceoryx2 as iox2
 import sys
@@ -43,9 +43,11 @@ print("Waiting on the following services: ", sys.argv[1:None])
 
 try:
     while True:
-        notifications = waitset.wait_and_process()
+        (notifications, result) = waitset.wait_and_process()
+        if result in (iox2.WaitSetRunResult.TerminationRequest, result == iox2.WaitSetRunResult.Interrupt):
+            break
+
         for attachment in notifications:
-            print("asd: ", attachment)
             (service_name, listener) = listener_attachments[attachment]
             print("Received trigger from \"", service_name ,"\"")
 
@@ -54,4 +56,6 @@ try:
                 print(event_id, " ")
 
 except iox2.WaitSetRunError:
-    print("exit")
+    print("exception raised")
+
+print("exit")
