@@ -22,15 +22,10 @@ use crate::{
     signal_handling_mode::SignalHandlingMode,
 };
 
+#[derive(Default)]
 #[pyclass(str = "{0:?}")]
 /// Creates a new `Node`.
 pub struct NodeBuilder(iceoryx2::prelude::NodeBuilder);
-
-impl Default for NodeBuilder {
-    fn default() -> Self {
-        Self(iceoryx2::prelude::NodeBuilder::new())
-    }
-}
 
 #[pymethods]
 impl NodeBuilder {

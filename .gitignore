@@ -13,3 +13,4 @@ Cargo.lock
 **/Doxyfile*
 **/compile_commands.json
 **/*.pyc
+**/*.so

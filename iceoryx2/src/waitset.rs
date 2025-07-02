@@ -467,7 +467,7 @@ impl<Service: crate::service::Service> Drop for WaitSetGuard<'_, '_, Service> {
 }
 
 /// The builder for the [`WaitSet`].
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct WaitSetBuilder {
     signal_handling_mode: SignalHandlingMode,
 }

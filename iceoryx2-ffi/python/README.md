@@ -1,5 +1,12 @@
 # iceoryx2-ffi-python
 
+## Running Examples
+
+```sh
+export PYTHONPATH="$(git rev-parse --show-toplevel)/iceoryx2-ffi/python"
+python examples/python/event/listener.py
+```
+
 ## Setup Development Environment
 
 ```sh
@@ -28,6 +35,7 @@ pip install isort
 cd iceoryx2-ffi/python
 maturin develop
 
+export PYTHONPATH="$GIT_ROOT/iceoryx2/iceoryx2-ffi/python/"
 # test python bindings
 pytest tests/*
 

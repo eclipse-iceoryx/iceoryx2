@@ -22,6 +22,7 @@ pub mod config;
 pub mod duration;
 pub mod error;
 pub mod event_id;
+pub mod file_descriptor;
 pub mod file_name;
 pub mod file_path;
 pub mod listener;
@@ -59,6 +60,11 @@ pub mod type_variant;
 pub mod unable_to_deliver_strategy;
 pub mod unique_listener_id;
 pub mod unique_notifier_id;
+pub mod waitset;
+pub mod waitset_attachment_id;
+pub mod waitset_builder;
+pub mod waitset_guard;
+pub mod waitset_run_result;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pymodule;
@@ -68,7 +74,7 @@ pub(crate) use service_type::LocalService;
 
 /// iceoryx2 Python language bindings
 #[pymodule]
-fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_wrapped(wrap_pymodule!(crate::config::config))?;
     m.add_wrapped(wrap_pymodule!(crate::testing::testing))?;
     m.add_wrapped(wrap_pyfunction!(crate::log::set_log_level))?;
@@ -123,6 +129,11 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add_class::<crate::unable_to_deliver_strategy::UnableToDeliverStrategy>()?;
     m.add_class::<crate::unique_listener_id::UniqueListenerId>()?;
     m.add_class::<crate::unique_notifier_id::UniqueNotifierId>()?;
+    m.add_class::<crate::waitset::WaitSet>()?;
+    m.add_class::<crate::waitset_attachment_id::WaitSetAttachmentId>()?;
+    m.add_class::<crate::waitset_builder::WaitSetBuilder>()?;
+    m.add_class::<crate::waitset_guard::WaitSetGuard>()?;
+    m.add_class::<crate::waitset_run_result::WaitSetRunResult>()?;
 
     m.add(
         "InvalidAlignmentValue",
@@ -203,6 +214,18 @@ fn iceoryx2_ffi_python(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> 
     m.add(
         "RequestResponseOpenOrCreateError",
         py.get_type::<crate::error::RequestResponseOpenOrCreateError>(),
+    )?;
+    m.add(
+        "WaitSetAttachmentError",
+        py.get_type::<crate::error::WaitSetAttachmentError>(),
+    )?;
+    m.add(
+        "WaitSetCreateError",
+        py.get_type::<crate::error::WaitSetCreateError>(),
+    )?;
+    m.add(
+        "WaitSetRunError",
+        py.get_type::<crate::error::WaitSetRunError>(),
     )?;
 
     Ok(())

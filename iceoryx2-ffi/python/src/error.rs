@@ -152,3 +152,24 @@ create_exception!(
     PyException,
     "Errors caused when open or creating a request-response service."
 );
+
+create_exception!(
+    iceoryx2_ffi_python,
+    WaitSetAttachmentError,
+    PyException,
+    "Errors caused when attaching something to the waitset."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    WaitSetCreateError,
+    PyException,
+    "Errors caused by creating a new waitset."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    WaitSetRunError,
+    PyException,
+    "Errors caused by calling WaitSet::wait_and_process()."
+);

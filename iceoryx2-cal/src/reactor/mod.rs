@@ -42,7 +42,7 @@ pub trait ReactorGuard<'reactor, 'attachment> {
     fn file_descriptor(&self) -> &FileDescriptor;
 }
 
-pub trait Reactor: Sized + Debug {
+pub trait Reactor: Sized + Debug + Send {
     type Guard<'reactor, 'attachment>: ReactorGuard<'reactor, 'attachment>
     where
         Self: 'reactor;

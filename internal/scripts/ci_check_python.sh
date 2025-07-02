@@ -13,7 +13,8 @@
 
 COLOR_RESET='\033[0m'
 COLOR_GREEN='\033[1;32m'
-COLOR_CYAN='\033[1;34m'
+COLOR_YELLOW='\033[1;33m'
+COLOR_BLUE='\033[1;34m'
 FONT_BOLD='\033[1m'
 COLOR_RED='\033[1;31m'
 SUCCESS_CODE=0
@@ -21,98 +22,129 @@ GIT_ROOT=$(git rev-parse --show-toplevel)
 
 cd $GIT_ROOT
 
-echo -e "${COLOR_CYAN}create python dev environment${COLOR_RESET}"
-rm -rf .env
-python -m venv .env
+configure_python_env() {
+    if [[ -z "$VIRTUAL_ENV" ]]; then
+        echo -e "${COLOR_BLUE}create python dev environment${COLOR_RESET}"
+        rm -rf .env
+        python -m venv .env
 
-echo -e "${COLOR_CYAN}enter python dev environment${COLOR_RESET}"
-source .env/bin/activate
+        echo -e "${COLOR_BLUE}enter python dev environment${COLOR_RESET}"
+        source .env/bin/activate
 
-echo -e "${COLOR_CYAN}install dependencies${COLOR_RESET}"
-pip install pytest
-pip install prospector[with_mypy]
-pip install black
-pip install isort
+        echo -e "${COLOR_BLUE}install dependencies${COLOR_RESET}"
+        pip install pytest
+        pip install prospector[with_mypy]
+        pip install black
+        pip install isort
+    else
+        echo -e "${COLOR_YELLOW}use existing python dev environment${COLOR_RESET}"
+    fi
 
-echo -e "${COLOR_CYAN}compile python bindings${COLOR_RESET}"
-cd iceoryx2-ffi/python
-maturin develop
+    if [[ -z "$PYTHONPATH" ]]; then
+        echo -e "${COLOR_BLUE}define PYTHONPATH${COLOR_RESET}"
+        export PYTHONPATH=$GIT_ROOT/iceoryx2-ffi/python/
+    else
+        echo -e "${COLOR_YELLOW}use predefined PYTHONPATH=\"${PYTHONPATH}\"${COLOR_RESET}"
+    fi
+}
 
-cd $GIT_ROOT
-echo -e "${COLOR_CYAN}lint python bindings: examples${COLOR_RESET}"
-prospector -m -D -T -s veryhigh -F examples/python/
-if [[ $? != "0" ]]; then
-    echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}"
-    SUCCESS_CODE=1;
-else 
-    echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}"
-fi
-mypy examples/python/
-if [[ $? != "0" ]]; then
-    echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}"
-    SUCCESS_CODE=1;
-else 
-    echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}"
-fi
+compile() {
+    echo -e "${COLOR_BLUE}compile python bindings${COLOR_RESET}"
+    cd iceoryx2-ffi/python
+    rm iceoryx2/*.so
+    maturin develop
+    cd $GIT_ROOT
+    PYTHON_VERSION=$(ls .env/lib/ | grep -E "^python[0-9].[0-9][0-9]\$")
+    cp .env/lib/${PYTHON_VERSION}/site-packages/_iceoryx2/_iceoryx2.abi3.so iceoryx2-ffi/python/iceoryx2/
+    echo -e "${COLOR_GREEN}deployed _iceoryx2.abi3.so from ${PYTHON_VERSION}${COLOR_RESET}\n"
+}
 
-
-echo -e "${COLOR_CYAN}lint python bindings: tests${COLOR_RESET}"
-prospector -m -D -T -s veryhigh -F iceoryx2-ffi/python/tests/
-if [[ $? != "0" ]]; then
-    echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: tests - failed${COLOR_RESET}"
-    SUCCESS_CODE=1;
-else
-    echo -e "${COLOR_GREEN}lint python bindings: tests - success${COLOR_RESET}"
-fi
-mypy iceoryx2-ffi/python/tests/
-if [[ $? != "0" ]]; then
-    echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: tests - failed${COLOR_RESET}"
-    SUCCESS_CODE=1;
-else 
-    echo -e "${COLOR_GREEN}lint python bindings: tests - success${COLOR_RESET}"
-fi
-
-
-echo -e "${COLOR_CYAN}code formatting python bindings: examples${COLOR_RESET}"
-black --line-length=80 --check examples/python/
-if [[ $? != "0" ]]; then
-    echo -e "${COLOR_RED}${FONT_BOLD}code formatting python bindings: examples - failed${COLOR_RESET}"
-    SUCCESS_CODE=1;
-else
-    echo -e "${COLOR_GREEN}code formatting python bindings: examples - success${COLOR_RESET}"
-fi
+lint() {
+    cd $GIT_ROOT
+    echo -e "${COLOR_BLUE}[prospector] lint python bindings: examples${COLOR_RESET}"
+    prospector -m -D -T -s veryhigh -F examples/python/
+    if [[ $? != "0" ]]; then
+        echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}\n"
+        SUCCESS_CODE=1;
+    else 
+        echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}\n"
+    fi
+    echo -e "${COLOR_BLUE}[mypy] lint python bindings: examples${COLOR_RESET}"
+    mypy examples/python/
+    if [[ $? != "0" ]]; then
+        echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}\n"
+        SUCCESS_CODE=1;
+    else 
+        echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}\n"
+    fi
 
 
-echo -e "${COLOR_CYAN}code formatting python bindings: tests${COLOR_RESET}"
-black --line-length=80 --check iceoryx2-ffi/python/tests/
-if [[ $? != "0" ]]; then
-    echo -e "${COLOR_RED}${FONT_BOLD}code formatting python bindings: tests - failed${COLOR_RESET}"
-    SUCCESS_CODE=1;
-else
-    echo -e "${COLOR_GREEN}code formatting python bindings: tests - success${COLOR_RESET}"
-fi
+    echo -e "${COLOR_BLUE}[prospector] lint python bindings: tests${COLOR_RESET}"
+    prospector -m -D -T -s veryhigh -F iceoryx2-ffi/python/tests/
+    if [[ $? != "0" ]]; then
+        echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: tests - failed${COLOR_RESET}\n"
+        SUCCESS_CODE=1;
+    else
+        echo -e "${COLOR_GREEN}lint python bindings: tests - success${COLOR_RESET}\n"
+    fi
+    echo -e "${COLOR_BLUE}[mypy] lint python bindings: tests${COLOR_RESET}"
+    mypy iceoryx2-ffi/python/tests/
+    if [[ $? != "0" ]]; then
+        echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: tests - failed${COLOR_RESET}\n"
+        SUCCESS_CODE=1;
+    else 
+        echo -e "${COLOR_GREEN}lint python bindings: tests - success${COLOR_RESET}\n"
+    fi
 
 
-echo -e "${COLOR_CYAN}import ordering python bindings: examples${COLOR_RESET}"
-isort --check-only examples/python/
-if [[ $? != "0" ]]; then
-    echo -e "${COLOR_RED}${FONT_BOLD}import ordering python bindings: examples - failed${COLOR_RESET}"
-    SUCCESS_CODE=1;
-else
-    echo -e "${COLOR_GREEN}import ordering python bindings: examples - success${COLOR_RESET}"
-fi
+    echo -e "${COLOR_BLUE}[black] code formatting python bindings: examples${COLOR_RESET}"
+    black --line-length=80 --check examples/python/
+    if [[ $? != "0" ]]; then
+        echo -e "${COLOR_RED}${FONT_BOLD}code formatting python bindings: examples - failed${COLOR_RESET}\n"
+        SUCCESS_CODE=1;
+    else
+        echo -e "${COLOR_GREEN}code formatting python bindings: examples - success${COLOR_RESET}\n"
+    fi
 
 
-echo -e "${COLOR_CYAN}import ordering python bindings: tests${COLOR_RESET}"
-isort --check-only iceoryx2-ffi/python/tests/
-if [[ $? != "0" ]]; then
-    echo -e "${COLOR_RED}${FONT_BOLD}import ordering python bindings: tests - failed${COLOR_RESET}"
-    SUCCESS_CODE=1;
-else
-    echo -e "${COLOR_GREEN}import ordering python bindings: tests - success${COLOR_RESET}"
-fi
+    echo -e "${COLOR_BLUE}[black] code formatting python bindings: tests${COLOR_RESET}"
+    black --line-length=80 --check iceoryx2-ffi/python/tests/
+    if [[ $? != "0" ]]; then
+        echo -e "${COLOR_RED}${FONT_BOLD}code formatting python bindings: tests - failed${COLOR_RESET}\n"
+        SUCCESS_CODE=1;
+    else
+        echo -e "${COLOR_GREEN}code formatting python bindings: tests - success${COLOR_RESET}\n"
+    fi
 
-echo -e "${COLOR_CYAN}python binding tests${COLOR_RESET}"
-pytest iceoryx2-ffi/python/tests/*
+
+    echo -e "${COLOR_BLUE}[isort] import ordering python bindings: examples${COLOR_RESET}"
+    isort --check-only examples/python/
+    if [[ $? != "0" ]]; then
+        echo -e "${COLOR_RED}${FONT_BOLD}import ordering python bindings: examples - failed${COLOR_RESET}\n"
+        SUCCESS_CODE=1;
+    else
+        echo -e "${COLOR_GREEN}import ordering python bindings: examples - success${COLOR_RESET}\n"
+    fi
+
+
+    echo -e "${COLOR_BLUE}[isort] import ordering python bindings: tests${COLOR_RESET}"
+    isort --check-only iceoryx2-ffi/python/tests/
+    if [[ $? != "0" ]]; then
+        echo -e "${COLOR_RED}${FONT_BOLD}import ordering python bindings: tests - failed${COLOR_RESET}\n"
+        SUCCESS_CODE=1;
+    else
+        echo -e "${COLOR_GREEN}import ordering python bindings: tests - success${COLOR_RESET}\n"
+    fi
+}
+
+execute_tests() {
+    echo -e "${COLOR_BLUE}python binding tests${COLOR_RESET}"
+    pytest iceoryx2-ffi/python/tests/*
+}
+
+configure_python_env
+compile
+lint
+execute_tests
 
 exit $SUCCESS_CODE

@@ -10,15 +10,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Notifier example."""
+"""Event Multiplexing notifier example."""
+
+import sys
 
 import iceoryx2 as iox2
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
+service_name = sys.argv[1]
+event_id = sys.argv[2]
+
 event = (
-    node.service_builder(iox2.ServiceName.new("MyEventName"))
+    node.service_builder(iox2.ServiceName.new(service_name))
     .event()
     .open_or_create()
 )
@@ -32,10 +37,8 @@ try:
     while True:
         node.wait(cycle_time)
         COUNTER += 1
-        notifier.notify_with_custom_event_id(
-            iox2.EventId.new(COUNTER % max_event_id)
-        )
+        notifier.notify_with_custom_event_id(iox2.EventId.new(int(event_id)))
 
-        print("Trigger event with id ", COUNTER, " ...")
+        print('[service: "', service_name, '"] Trigger event ...')
 except iox2.NodeWaitFailure:
     print("exit")
