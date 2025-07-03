@@ -64,7 +64,7 @@ impl<ServiceType: iceoryx2::service::Service> NotifierChannel<'_, ServiceType> {
             from "NotifierChannel::create()",
             when middleware::zenoh::create_notifier(z_session, iox_service_config),
             with CreationError::Error,
-            "failed to create zenoh notifier to propgate local notificaitons to remote hosts"
+            "failed to create zenoh notifier to propagate local notificaitons to remote hosts"
         );
 
         Ok(Self {

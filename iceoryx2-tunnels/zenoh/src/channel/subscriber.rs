@@ -19,8 +19,8 @@ use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory as IceoryxPublishSubscribeService;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
-use iceoryx2_bb_log::error;
 use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_log::info;
 
 use zenoh::handlers::FifoChannelHandler;
@@ -128,12 +128,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for SubscriberChannel<Serv
                         );
                     }
                     Err(e) => {
-                        error!(
-                            "Failed to loan sample ({}): {}",
-                            self.iox_service_config.name(),
-                            e
-                        );
-                        return Err(PropagationError::IceoryxPort);
+                        fatal_panic!("failed to loan custom payload: {e}");
                     }
                 }
             }

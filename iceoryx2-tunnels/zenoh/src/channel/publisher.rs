@@ -20,8 +20,8 @@ use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
 use iceoryx2::service::port_factory::publish_subscribe::PortFactory as IceoryxPublishSubscribeService;
 use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
-use iceoryx2_bb_log::error;
 use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_log::info;
 
 use zenoh::bytes::ZBytes;
@@ -125,8 +125,7 @@ impl<ServiceType: iceoryx2::service::Service> Channel for PublisherChannel<'_, S
                 }
                 Ok(None) => break, // No more samples available
                 Err(e) => {
-                    error!("Failed to receive custom payload from iceoryx: {}", e);
-                    return Err(PropagationError::IceoryxPort);
+                    fatal_panic!("failed to receive custom payload: {e}");
                 }
             }
         }
