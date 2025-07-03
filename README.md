@@ -39,6 +39,7 @@
             * [listener.rs (grabbing all events at once)](#listenerrs-grabbing-all-events-at-once)
         * [Custom Configuration](#custom-configuration)
     * [Supported Platforms](#supported-platforms)
+    * [Quality Levels](#quality-levels)
     * [Language Bindings](#language-bindings)
     * [Commercial Support](#commercial-support)
     * [Thanks To All Contributors](#thanks-to-all-contributors)
@@ -413,6 +414,27 @@ The support levels can be adjusted when required.
 * **tier 1** - All safety and security features are working.
 * **tier 2** - Works with a restricted security and safety feature set.
 * **tier 3** - Work in progress. Might compile and run or not.
+
+## Quality Levels
+
+The repository contains multiple crates, tools, examples, and benchmarks. The
+quality of these components depends on their intended use in a production
+environment and on the target platform. Below is an overview of the current
+quality levels, as well as the target quality levels for tier 1 and tier 2
+platforms.
+
+[Quality level](./QUALITY_LEVELS.md) are 5 to 1+, where 1+ is the highest level.
+
+| Component             | Current Level | Target Level for Tier 1 Platforms | Target Level for Tier 2 Platforms |
+|-----------------------|:-------------:|:---------------------------------:|:---------------------------------:|
+| iceoryx2              | 2             | 1+                                | 1                                 |
+| iceoryx2-bb           | 2             | 1+                                | 1                                 |
+| iceoryx2-cal          | 2             | 1+                                | 1                                 |
+| iceoryx2-cli          | 5             | 4                                 | 4                                 |
+| iceoryx2-ffi          | 2             | 1+                                | 1                                 |
+| iceoryx2-pal          | 2             | 1+                                | 1                                 |
+| benchmarks            | 5             | 5                                 | 5                                 |
+| examples              | 5             | 5                                 | 5                                 |
 
 ## Language Bindings
 
