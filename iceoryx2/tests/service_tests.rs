@@ -312,7 +312,7 @@ mod service {
             attributes: &AttributeVerifier,
         ) -> Result<Self::Factory, Self::OpenError> {
             node.service_builder(service_name)
-                .blackboard::<u64>()
+                .blackboard_opener::<u64>()
                 .open_with_attributes(attributes)
         }
 
@@ -324,8 +324,9 @@ mod service {
         ) -> Result<Self::Factory, Self::CreateError> {
             let number_of_nodes = (SystemInfo::NumberOfCpuCores.value()).clamp(128, 1024);
             node.service_builder(service_name)
-                .blackboard::<u64>()
+                .blackboard_creator::<u64>()
                 .max_nodes(number_of_nodes)
+                .add::<u32>(0, 0)
                 .create_with_attributes(attributes)
         }
 

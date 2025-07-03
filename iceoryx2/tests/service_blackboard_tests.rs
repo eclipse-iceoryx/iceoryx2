@@ -15,6 +15,7 @@ mod service_blackboard {
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::blackboard::{BlackboardCreateError, BlackboardOpenError};
     use iceoryx2::service::static_config::message_type_details::TypeVariant;
+    use iceoryx2::service::Service;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -28,85 +29,23 @@ mod service_blackboard {
     }
 
     #[test]
-    fn open_or_create_with_attributes_succeeds_when_service_does_exist<Sut: Service>() {
+    fn open_with_attributes_fails_when_service_key_types_differ<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let defined_attr = AttributeSpecifier::new();
         let attr = AttributeVerifier::new();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<i64>()
-            .open_or_create_with_attributes(&attr);
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
+            .create_with_attributes(&defined_attr);
         assert_that!(sut, is_ok);
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<i64>()
-            .open_or_create_with_attributes(&attr);
-
-        assert_that!(sut2, is_ok);
-    }
-
-    #[test]
-    fn open_or_create_with_attributes_succeeds_when_attribute_is_satisfied<Sut: Service>() {
-        let service_name = generate_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let attr = AttributeVerifier::new()
-            .require(&"hello".try_into().unwrap(), &"world".try_into().unwrap());
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard::<i64>()
-            .open_or_create_with_attributes(&attr);
-        assert_that!(sut, is_ok);
-
-        let attr1 = AttributeVerifier::new().require_key(&"hello".try_into().unwrap());
-        let sut2 = node
-            .service_builder(&service_name)
-            .blackboard::<i64>()
-            .open_or_create_with_attributes(&attr1);
-
-        assert_that!(sut2, is_ok);
-    }
-
-    #[test]
-    fn open_or_create_with_attributes_fails_when_service_key_types_differ<Sut: Service>() {
-        let service_name = generate_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let attr = AttributeVerifier::new();
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard::<u64>()
-            .open_or_create_with_attributes(&attr);
-        assert_that!(sut, is_ok);
-
-        let sut2 = node
-            .service_builder(&service_name)
-            .blackboard::<i64>()
-            .open_or_create_with_attributes(&attr);
-
-        assert_that!(sut2, is_err);
-    }
-
-    #[test]
-    fn open_or_create_with_attributes_failed_when_attribute_isnt_satisfied<Sut: Service>() {
-        let service_name = generate_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let attr = AttributeVerifier::new()
-            .require(&"hello".try_into().unwrap(), &"world".try_into().unwrap());
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard::<i64>()
-            .open_or_create_with_attributes(&attr);
-        assert_that!(sut, is_ok);
-
-        let attr1 = AttributeVerifier::new().require_key(&"non-exist".try_into().unwrap());
-        let sut2 = node
-            .service_builder(&service_name)
-            .blackboard::<i64>()
-            .open_or_create_with_attributes(&attr1);
+            .blackboard_opener::<i64>()
+            .open_with_attributes(&attr);
 
         assert_that!(sut2, is_err);
     }
@@ -118,7 +57,8 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create();
 
         assert_that!(sut, is_ok);
@@ -133,16 +73,31 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(1, 0)
             .create();
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq BlackboardCreateError::AlreadyExists);
+    }
+
+    #[test]
+    fn create_fails_when_no_key_value_pairs_are_provided<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .create();
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq BlackboardCreateError::NoEntriesProvided);
     }
 
     #[test]
@@ -152,7 +107,8 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create();
         assert_that!(sut, is_ok);
 
@@ -160,7 +116,8 @@ mod service_blackboard {
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create();
         assert_that!(sut2, is_ok);
     }
@@ -172,7 +129,7 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open();
         assert_that!(sut, is_err);
         assert_that!(sut.err().unwrap(), eq BlackboardOpenError::DoesNotExist);
@@ -185,13 +142,14 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open();
         assert_that!(sut2, is_ok);
     }
@@ -203,13 +161,14 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<i64>()
+            .blackboard_opener::<i64>()
             .open();
         assert_that!(sut2, is_err);
         assert_that!(sut2.err().unwrap(), eq BlackboardOpenError::IncompatibleKeys);
@@ -222,14 +181,15 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .max_nodes(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .max_nodes(3)
             .open();
 
@@ -238,7 +198,7 @@ mod service_blackboard {
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .max_nodes(1)
             .open();
 
@@ -252,24 +212,25 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .max_readers(2)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .max_readers(3)
             .open();
 
         assert_that!(sut2, is_err);
         assert_that!(
-        sut2.err().unwrap(), eq BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders);
+    sut2.err().unwrap(), eq BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders);
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .max_readers(1)
             .open();
 
@@ -283,13 +244,14 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open();
         assert_that!(sut2, is_ok);
 
@@ -297,7 +259,7 @@ mod service_blackboard {
 
         let sut3 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open();
         assert_that!(sut3, is_ok);
     }
@@ -309,13 +271,14 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create();
         assert_that!(sut, is_ok);
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open();
         assert_that!(sut2, is_ok);
 
@@ -324,42 +287,10 @@ mod service_blackboard {
 
         let sut3 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open();
         assert_that!(sut3, is_err);
         assert_that!(sut3.err().unwrap(), eq BlackboardOpenError::DoesNotExist);
-    }
-
-    #[test]
-    fn open_or_create_creates_service_if_it_does_not_exist<Sut: Service>() {
-        let service_name = generate_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard::<u64>()
-            .open_or_create();
-
-        assert_that!(sut, is_ok);
-    }
-
-    #[test]
-    fn open_or_create_opens_service_if_it_does_exist<Sut: Service>() {
-        let service_name = generate_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let _sut = node
-            .service_builder(&service_name)
-            .blackboard::<u64>()
-            .create()
-            .unwrap();
-
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard::<u64>()
-            .open_or_create();
-
-        assert_that!(sut, is_ok);
     }
 
     #[test]
@@ -368,7 +299,8 @@ mod service_blackboard {
         let node = NodeBuilder::new().create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create()
             .unwrap();
 
@@ -384,7 +316,8 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .max_nodes(89)
             .max_readers(4)
             .create()
@@ -395,7 +328,7 @@ mod service_blackboard {
 
         let sut2 = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open()
             .unwrap();
 
@@ -418,7 +351,8 @@ mod service_blackboard {
 
         let sut = node_1
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create()
             .unwrap();
 
@@ -427,7 +361,7 @@ mod service_blackboard {
 
         let sut2 = node_2
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open()
             .unwrap();
 
@@ -447,7 +381,8 @@ mod service_blackboard {
 
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<KeyType>()
+            .blackboard_creator::<KeyType>()
+            .add::<u8>(0, 0)
             .create()
             .unwrap();
 
@@ -467,7 +402,8 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .max_nodes(MAX_NODES)
             .create();
         assert_that!(sut, is_ok);
@@ -482,7 +418,7 @@ mod service_blackboard {
             let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
             let sut = node
                 .service_builder(&service_name)
-                .blackboard::<u64>()
+                .blackboard_opener::<u64>()
                 .open();
             assert_that!(sut, is_ok);
 
@@ -493,7 +429,7 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open();
 
         assert_that!(sut, is_err);
@@ -505,7 +441,7 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_opener::<u64>()
             .open();
 
         assert_that!(sut, is_ok);
@@ -518,7 +454,8 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .max_nodes(0)
             .create()
             .unwrap();
@@ -533,7 +470,8 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .max_readers(0)
             .create()
             .unwrap();
@@ -550,7 +488,8 @@ mod service_blackboard {
 
         let _sut = node
             .service_builder(&service_name)
-            .blackboard::<u64>()
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
             .create()
             .unwrap();
 
@@ -577,7 +516,8 @@ mod service_blackboard {
 
             services.push(
                 node.service_builder(&service_name)
-                    .blackboard::<u64>()
+                    .blackboard_creator::<u64>()
+                    .add::<u8>(0, 0)
                     .create()
                     .unwrap(),
             );
@@ -637,7 +577,8 @@ mod service_blackboard {
 
             services.push(
                 node.service_builder(&service_name)
-                    .blackboard::<u64>()
+                    .blackboard_creator::<u64>()
+                    .add::<u8>(0, 0)
                     .create()
                     .unwrap(),
             );
@@ -711,6 +652,8 @@ mod service_blackboard {
     "BlackboardCreateError::InternalFailure");
         assert_that!(format!("{}", BlackboardCreateError::IsBeingCreatedByAnotherInstance), eq
     "BlackboardCreateError::IsBeingCreatedByAnotherInstance");
+        assert_that!(format!("{}", BlackboardCreateError::NoEntriesProvided), eq
+    "BlackboardCreateError::NoEntriesProvided");
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
