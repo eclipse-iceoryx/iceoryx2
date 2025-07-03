@@ -10,13 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use super::DiscoveryError;
-
 use crate::discovery::Discovery;
+use crate::discovery::DiscoveryError;
 use crate::keys;
 
-use iceoryx2::service::static_config::StaticConfig as IceoryxServiceConfig;
+use iceoryx2::service::static_config::StaticConfig as ServiceConfig;
 
+use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::warn;
 use zenoh::handlers::FifoChannelHandler;
 use zenoh::query::Querier as ZenohQuerier;
 use zenoh::query::Reply;
@@ -24,33 +25,42 @@ use zenoh::sample::Locality;
 use zenoh::Session as ZenohSession;
 use zenoh::Wait;
 
+// TODO: More granularity in errors
 pub enum CreationError {
     Error,
 }
 
 /// Discovers remote `iceoryx2` services via Zenoh.
-///
-/// TODO: Explain in detail
+#[derive(Debug)]
 pub(crate) struct ZenohDiscovery<'a, ServiceType: iceoryx2::service::Service> {
-    z_querier: ZenohQuerier<'a>,
-    z_query: FifoChannelHandler<Reply>,
+    querier: ZenohQuerier<'a>,
+    replies: FifoChannelHandler<Reply>,
     _phantom: core::marker::PhantomData<ServiceType>,
 }
 
 impl<ServiceType: iceoryx2::service::Service> ZenohDiscovery<'_, ServiceType> {
     pub fn create(z_session: &ZenohSession) -> Result<Self, CreationError> {
-        let z_querier = z_session
-            .declare_querier(keys::discovery())
-            .allowed_destination(Locality::Remote)
-            .wait()
-            .map_err(|_e| CreationError::Error)?;
+        let querier = fail!(
+            from "ZenohDiscovery::create()",
+            when z_session
+                    .declare_querier(keys::service_discovery())
+                    .allowed_destination(Locality::Remote)
+                    .wait(),
+            with CreationError::Error,
+            "failed to create Zenoh querier for service details on remote hosts"
+        );
 
         // Make query immediately - replies processed in first `discover()` call
-        let z_query = z_querier.get().wait().map_err(|_e| CreationError::Error)?;
+        let replies = fail!(
+            from "ZenohDiscovery::create()",
+            when querier.get().wait(),
+            with CreationError::Error,
+            "failed to query Zenoh for service details on remote hosts"
+        );
 
         Ok(Self {
-            z_querier,
-            z_query,
+            querier,
+            replies,
             _phantom: core::marker::PhantomData,
         })
     }
@@ -59,24 +69,36 @@ impl<ServiceType: iceoryx2::service::Service> ZenohDiscovery<'_, ServiceType> {
 impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
     for ZenohDiscovery<'_, ServiceType>
 {
-    fn discover<OnDiscovered: FnMut(&IceoryxServiceConfig)>(
+    fn discover<OnDiscovered: FnMut(&ServiceConfig) -> Result<(), DiscoveryError>>(
         &mut self,
         on_discovered: &mut OnDiscovered,
     ) -> Result<(), DiscoveryError> {
         // Drain all replies from previous query
-        for z_reply in self.z_query.drain() {
-            match z_reply.result() {
-                Ok(z_sample) => {
-                    match serde_json::from_slice::<IceoryxServiceConfig>(
-                        &z_sample.payload().to_bytes(),
-                    ) {
-                        Ok(iox_service_details) => {
-                            on_discovered(&iox_service_details);
+        for reply in self.replies.drain() {
+            match reply.result() {
+                Ok(sample) => {
+                    match serde_json::from_slice::<ServiceConfig>(&sample.payload().to_bytes()) {
+                        Ok(service_details) => {
+                            fail!(
+                                from &self,
+                                when on_discovered(&service_details),
+                                "failed to process remote service discovered via Zenoh"
+                            )
                         }
-                        Err(_e) => todo!(),
+                        Err(e) => {
+                            warn!(
+                                "skipping discovered service config, unable to deserialize: {}",
+                                e
+                            );
+                        }
                     }
                 }
-                Err(_e) => { /* Ignore and process other requests */ }
+                Err(e) => fail!(
+                    from "discovery_via_subscriber()",
+                    when Err(e),
+                    with DiscoveryError::UpdateFromRemotePort,
+                    "errorneous reply received from zenoh discovery query"
+                ),
             }
         }
 
@@ -84,11 +106,12 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
         // NOTE: This results in all service details being resent - not optimal
         // TODO(optimization): A solution to request all quereyables once whilst still retrieving
         //                     querying new quereyables that appear
-        self.z_query = self
-            .z_querier
-            .get()
-            .wait()
-            .map_err(|_e| DiscoveryError::Error)?;
+        self.replies = fail!(
+            from &self,
+            when self.querier.get().wait(),
+            with DiscoveryError::UpdateFromRemotePort,
+            "failed to query Zenoh for service details on remote hosts"
+        );
 
         Ok(())
     }

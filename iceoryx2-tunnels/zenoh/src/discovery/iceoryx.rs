@@ -10,66 +10,75 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use super::Discovery;
-use super::DiscoveryError;
+use crate::discovery::Discovery;
+use crate::discovery::DiscoveryError;
 
-use iceoryx2::config::Config as IceoryxConfig;
-use iceoryx2::node::Node as IceoryxNode;
-use iceoryx2::port::subscriber::Subscriber as IceoryxSubscriber;
-use iceoryx2::prelude::ServiceName;
+use iceoryx2::config::Config;
+use iceoryx2::node::Node;
+use iceoryx2::port::subscriber::Subscriber;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
+use iceoryx2::service::Service;
+use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::info;
 use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryUpdate;
-use iceoryx2_services_discovery::service_discovery::Tracker as IceoryxServiceTracker;
+use iceoryx2_services_discovery::service_discovery::Tracker;
 
+// TODO: More granularity in errors
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     Error,
 }
 
+#[derive(Debug)]
 pub(crate) struct IceoryxDiscovery<ServiceType: iceoryx2::service::Service> {
-    iox_config: IceoryxConfig,
-    iox_discovery_subscriber: Option<IceoryxSubscriber<ServiceType, DiscoveryUpdate, ()>>,
-    iox_discovery_tracker: Option<IceoryxServiceTracker<ServiceType>>,
+    config: Config,
+    discovery_subscriber: Option<Subscriber<ServiceType, DiscoveryUpdate, ()>>,
+    discovery_tracker: Option<Tracker<ServiceType>>,
 }
 
 impl<ServiceType: iceoryx2::service::Service> IceoryxDiscovery<ServiceType> {
     pub fn create(
-        iox_config: &IceoryxConfig,
-        iox_node: &IceoryxNode<ServiceType>,
-        iox_service_name: &Option<String>,
+        config: &Config,
+        node: &Node<ServiceType>,
+        service_name: &Option<String>,
     ) -> Result<Self, CreationError> {
-        let (iox_discovery_subscriber, iox_discovery_tracker) = match iox_service_name {
-            Some(value) => {
-                let iox_service_name: ServiceName = value
-                    .as_str()
-                    .try_into()
-                    .map_err(|_e| CreationError::Error)?;
+        let (discovery_service, discovery_tracker) = match service_name {
+            Some(service_name) => {
+                let service_name = fail!(
+                    from "IceoryxDiscovery::create()",
+                    when service_name.as_str().try_into(),
+                    with CreationError::Error,
+                    "failed to create service name for discovery service"
+                );
 
-                info!("CONFIGURED Discovery updates from service {}", value);
-                let iox_service = iox_node
-                    .service_builder(&iox_service_name)
-                    .publish_subscribe::<DiscoveryUpdate>()
-                    .open_or_create()
-                    .map_err(|_e| CreationError::Error)?;
+                let service = fail!(
+                    from "IceoryxDiscovery::create()",
+                    when node.service_builder(&service_name)
+                            .publish_subscribe::<DiscoveryUpdate>()
+                            .open_or_create(),
+                    with CreationError::Error,
+                    "failed to open or create iceoryx discovery service"
+                );
+                let discovery_subscriber = fail!(
+                    from "IceoryxDiscovery::create()",
+                    when service.subscriber_builder().create(),
+                    with CreationError::Error,
+                    "failed to create subscriber to iceoryx discovery service"
+                );
 
-                let iox_subscriber = iox_service
-                    .subscriber_builder()
-                    .create()
-                    .map_err(|_e| CreationError::Error)?;
-
-                (Some(iox_subscriber), None)
+                info!("CONFIGURE DiscoveryService {}", service_name);
+                (Some(discovery_subscriber), None)
             }
             None => {
-                info!("CONFIGURED Internal discovery tracking");
-                (None, Some(IceoryxServiceTracker::<ServiceType>::new()))
+                info!("CONFIGURE DiscoveryTracker");
+                (None, Some(Tracker::<ServiceType>::new()))
             }
         };
 
         Ok(Self {
-            iox_config: iox_config.clone(),
-            iox_discovery_subscriber,
-            iox_discovery_tracker,
+            config: config.clone(),
+            discovery_subscriber: discovery_service,
+            discovery_tracker,
         })
     }
 }
@@ -77,65 +86,90 @@ impl<ServiceType: iceoryx2::service::Service> IceoryxDiscovery<ServiceType> {
 impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
     for IceoryxDiscovery<ServiceType>
 {
-    fn discover<OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig)>(
+    fn discover<
+        OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), DiscoveryError>,
+    >(
         &mut self,
         on_discovered: &mut OnDiscovered,
-    ) -> Result<(), super::DiscoveryError> {
-        // EITHER Discover via external discovery service
-        if let Some(iox_discovery_subscriber) = &self.iox_discovery_subscriber {
-            loop {
-                match iox_discovery_subscriber.receive() {
-                    Ok(result) => match result {
-                        Some(iox_sample) => {
-                            if let DiscoveryUpdate::Added(iox_service_details) =
-                                iox_sample.payload()
-                            {
-                                match iox_service_details.messaging_pattern() {
-                                    MessagingPattern::PublishSubscribe(_) => {
-                                        on_discovered(iox_service_details);
-                                    }
-                                    MessagingPattern::Event(_) => {
-                                        on_discovered(iox_service_details);
-                                    }
-                                    _ => { /* Not supported. Nothing to do. */ }
-                                }
-                            }
-                        }
-                        None => break,
-                    },
-                    Err(_e) => {
-                        return Err(DiscoveryError::Error);
-                    }
-                }
-            }
+    ) -> Result<(), DiscoveryError> {
+        match (&self.discovery_subscriber, &mut self.discovery_tracker) {
+            (Some(subscriber), _) => discover_via_subscriber(subscriber, on_discovered),
+            (_, Some(tracker)) => discover_via_tracker(&self.config, tracker, on_discovered),
+            (None, None) => panic!("Unable to discover iceoryx services as neither the service discovery service nor a service tracker are set up"),
         }
-        // OR Discover via internal service tracker
-        else if let Some(iox_discovery_tracker) = &mut self.iox_discovery_tracker {
-            let (added, _removed) = iox_discovery_tracker
-                .sync(&self.iox_config)
-                .map_err(|_e| DiscoveryError::Error)?;
-
-            for iox_service_id in added {
-                if let Some(iox_service_details) = iox_discovery_tracker.get(&iox_service_id) {
-                    let iox_service_details = &iox_service_details.static_details;
-
-                    match iox_service_details.messaging_pattern() {
-                        MessagingPattern::PublishSubscribe(_) => {
-                            on_discovered(iox_service_details);
-                        }
-                        MessagingPattern::Event(_) => {
-                            on_discovered(iox_service_details);
-                        }
-                        _ => { /* Not supported. Nothing to do. */ }
-                    }
-                }
-            }
-        }
-        // SHOULD NOT HAPPEN: Neither were configured
-        else {
-            panic!("Unable to discover iceoryx services as neither the service discovery service nor a service tracker are set up");
-        }
-
-        Ok(())
     }
+}
+
+fn discover_via_subscriber<
+    ServiceType: Service,
+    OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), DiscoveryError>,
+>(
+    subscriber: &Subscriber<ServiceType, DiscoveryUpdate, ()>,
+    on_discovered: &mut OnDiscovered,
+) -> Result<(), DiscoveryError> {
+    loop {
+        match subscriber.receive() {
+            Ok(Some(sample)) => {
+                if let DiscoveryUpdate::Added(service_config) = sample.payload() {
+                    match service_config.messaging_pattern() {
+                        MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_) => {
+                            fail!(
+                                from "discovery_via_subscriber()",
+                                when on_discovered(service_config),
+                                "failed to process service discovered via subscriber to discovery service"
+                            );
+                        }
+                        _ => {
+                            // Not supported. Nothing to do.
+                        }
+                    }
+                }
+            }
+            Ok(None) => break,
+            Err(e) => fail!(
+                from "discovery_via_subscriber()",
+                when Err(e),
+                with DiscoveryError::UpdateFromLocalPort,
+                "failed to receive from discovery subscriber"
+            ),
+        }
+    }
+
+    Ok(())
+}
+
+fn discover_via_tracker<
+    ServiceType: Service,
+    OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), DiscoveryError>,
+>(
+    config: &Config,
+    tracker: &mut Tracker<ServiceType>,
+    on_discovered: &mut OnDiscovered,
+) -> Result<(), DiscoveryError> {
+    let (added, _removed) = fail!(
+        from "discovery_via_tracker()",
+        when tracker.sync(config),
+        with DiscoveryError::UpdateFromTracker,
+        "failed to synchronize with service tracker"
+    );
+
+    for service_id in added {
+        if let Some(service_details) = tracker.get(&service_id) {
+            let service_config = &service_details.static_details;
+            match service_config.messaging_pattern() {
+                MessagingPattern::PublishSubscribe(_) | MessagingPattern::Event(_) => {
+                    fail!(
+                        from "discovery_via_tracker()",
+                        when on_discovered(service_config),
+                        "failed to process service discovered via tracker"
+                    );
+                }
+                _ => {
+                    // Not supported. Nothing to do.
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
