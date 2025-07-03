@@ -62,6 +62,7 @@ pub struct Writer<
     mgmt: Service::BlackboardMgmt<Mgmt<T>>,
     payload: Service::BlackboardPayload,
     dynamic_writer_handle: Option<ContainerHandle>,
+    writer_id: UniqueWriterId,
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Drop
@@ -86,6 +87,8 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     ) -> Result<Self, WriterCreateError> {
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
+
+        let writer_id = UniqueWriterId::new();
 
         // open payload data segment
         let name = service.additional_resource.mgmt.name();
@@ -114,6 +117,7 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
             mgmt: mgmt_storage,
             payload: payload_shm,
             dynamic_writer_handle: None,
+            writer_id,
         };
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
@@ -122,7 +126,7 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         // creation of all required resources
         let dynamic_writer_handle = match service.dynamic_storage.get().blackboard().add_writer_id(
             WriterDetails {
-                writer_id: UniqueWriterId::new(),
+                writer_id,
                 node_id: *service.shared_node.id(),
             },
         ) {
@@ -137,6 +141,11 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         new_self.dynamic_writer_handle = Some(dynamic_writer_handle);
 
         Ok(new_self)
+    }
+
+    /// Returns the [`UniqueWriterId`] of the [`Writer`]
+    pub fn id(&self) -> UniqueWriterId {
+        self.writer_id
     }
 
     /// Creates a [`WriterHandle`] for direct write access to the value. There can be only one

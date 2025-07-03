@@ -62,6 +62,7 @@ pub struct Reader<
     mgmt: Service::BlackboardMgmt<Mgmt<T>>,
     payload: Service::BlackboardPayload,
     dynamic_reader_handle: Option<ContainerHandle>,
+    reader_id: UniqueReaderId,
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Drop
@@ -86,6 +87,8 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     ) -> Result<Self, ReaderCreateError> {
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
+
+        let reader_id = UniqueReaderId::new();
 
         // open payload data segment
         let name = service.additional_resource.mgmt.name();
@@ -113,6 +116,7 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
             mgmt: mgmt_storage,
             payload: payload_shm,
             dynamic_reader_handle: None,
+            reader_id,
         };
 
         core::sync::atomic::compiler_fence(Ordering::SeqCst);
@@ -121,7 +125,7 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         // creation of all required resources
         let dynamic_reader_handle = match service.dynamic_storage.get().blackboard().add_reader_id(
             ReaderDetails {
-                reader_id: UniqueReaderId::new(),
+                reader_id,
                 node_id: *service.shared_node.id(),
             },
         ) {
@@ -136,6 +140,11 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         new_self.dynamic_reader_handle = Some(dynamic_reader_handle);
 
         Ok(new_self)
+    }
+
+    /// Returns the [`UniqueReaderId`] of the [`Reader`]
+    pub fn id(&self) -> UniqueReaderId {
+        self.reader_id
     }
 
     /// Creates a [`ReaderHandle`] for direct read access to the value.

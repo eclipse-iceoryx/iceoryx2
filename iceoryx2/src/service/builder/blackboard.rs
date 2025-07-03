@@ -32,7 +32,7 @@ use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::vec::RelocatableVec;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
-use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_log::{error, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
@@ -539,6 +539,7 @@ impl<
                                 // write value passed to add() to payload_shm
                                 let mem = payload_shm.allocate(unsafe { Layout::from_size_align_unchecked(self.builder.internals[i].internal_value_size, self.builder.internals[i].internal_value_alignment) });
                                 if mem.is_err() {
+                                    error!("Writing the value to the blackboard data segment failed.");
                                     return false
                                 }
                                 let mem = mem.unwrap();
@@ -546,11 +547,13 @@ impl<
                                 // write offset to value in payload_shm to entries vector
                                 let res = unsafe {entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: AtomicU64::new(mem.offset.offset() as u64)})};
                                 if !res {
+                                    error!("Writing the value offset to the blackboard management segment failed.");
                                     return false
                                 }
                                 // write offset index to map
                                 let res = unsafe {entry.map.insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1)};
                                 if res.is_err() {
+                                    error!("Inserting the key-value pair into the blackboard management segment failed.");
                                     return false
                                 }
                             }
