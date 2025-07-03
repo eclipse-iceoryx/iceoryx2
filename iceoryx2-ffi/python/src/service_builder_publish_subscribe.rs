@@ -19,6 +19,7 @@ use crate::attribute_verifier::AttributeVerifier;
 use crate::error::{
     PublishSubscribeCreateError, PublishSubscribeOpenError, PublishSubscribeOpenOrCreateError,
 };
+use crate::parc::Parc;
 use crate::port_factory_publish_subscribe::{
     PortFactoryPublishSubscribe, PortFactoryPublishSubscribeType,
 };
@@ -229,19 +230,19 @@ impl ServiceBuilderPublishSubscribe {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Ipc(this.open_or_create().map_err(|e| {
                         PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
-                ))
+                )))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Local(this.open_or_create().map_err(|e| {
                         PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
-                ))
+                )))
             }
         }
     }
@@ -258,25 +259,25 @@ impl ServiceBuilderPublishSubscribe {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
                                 PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
                                 PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
-                ))
+                )))
             }
         }
     }
@@ -287,21 +288,21 @@ impl ServiceBuilderPublishSubscribe {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.open()
                             .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.open()
                             .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
         }
     }
@@ -316,21 +317,21 @@ impl ServiceBuilderPublishSubscribe {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
         }
     }
@@ -341,21 +342,21 @@ impl ServiceBuilderPublishSubscribe {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.create()
                             .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.create()
                             .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
         }
     }
@@ -369,21 +370,21 @@ impl ServiceBuilderPublishSubscribe {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(
+                Ok(PortFactoryPublishSubscribe(Parc::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
         }
     }
