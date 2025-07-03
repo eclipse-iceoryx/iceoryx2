@@ -13,7 +13,10 @@
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
-use crate::{parc::Parc, port_factory_publish_subscribe::PortFactoryPublishSubscribeType};
+use crate::{
+    parc::Parc, port_factory_publish_subscribe::PortFactoryPublishSubscribeType,
+    unable_to_deliver_strategy::UnableToDeliverStrategy,
+};
 
 pub(crate) enum PortFactoryPublisherType {
     Ipc(
@@ -59,5 +62,60 @@ impl PortFactoryPublisher {
                 }
             },
         }
+    }
+}
+
+#[pymethods]
+impl PortFactoryPublisher {
+    /// Defines how many `SampleMut` the `Publisher` can loan with `Publisher::loan()` or
+    /// `Publisher::loan_uninit()` in parallel.
+    pub fn max_loaned_samples(&self, value: usize) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryPublisherType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.max_loaned_samples(value);
+                Self {
+                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
+                    factory: self.factory.clone(),
+                }
+            }
+            PortFactoryPublisherType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.max_loaned_samples(value);
+                Self {
+                    value: PortFactoryPublisherType::Local(Parc::new(this)),
+                    factory: self.factory.clone(),
+                }
+            }
+        }
+    }
+
+    /// Sets the `UnableToDeliverStrategy`.
+    pub fn unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryPublisherType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.unable_to_deliver_strategy(value.clone().into());
+                Self {
+                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
+                    factory: self.factory.clone(),
+                }
+            }
+            PortFactoryPublisherType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.unable_to_deliver_strategy(value.clone().into());
+                Self {
+                    value: PortFactoryPublisherType::Local(Parc::new(this)),
+                    factory: self.factory.clone(),
+                }
+            }
+        }
+    }
+
+    /// Creates a new `Publisher` or emits a `PublisherCreateError` on failure.
+    pub fn create(&self) {
+        todo!()
     }
 }

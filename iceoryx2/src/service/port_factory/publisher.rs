@@ -102,6 +102,30 @@ unsafe impl<
 }
 
 impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > PortFactoryPublisher<'_, Service, Payload, UserHeader>
+{
+    #[doc(hidden)]
+    /// # Safety
+    ///
+    ///   * does not clone the degradation callback
+    pub unsafe fn __internal_partial_clone(&self) -> Self {
+        Self {
+            config: LocalPublisherConfig {
+                max_loaned_samples: self.config.max_loaned_samples,
+                unable_to_deliver_strategy: self.config.unable_to_deliver_strategy,
+                degradation_callback: None,
+                initial_max_slice_len: self.config.initial_max_slice_len,
+                allocation_strategy: self.config.allocation_strategy,
+            },
+            factory: self.factory,
+        }
+    }
+}
+
+impl<
         'factory,
         Service: service::Service,
         Payload: Debug + ZeroCopySend + ?Sized,
