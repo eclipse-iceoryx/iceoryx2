@@ -93,9 +93,12 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
                         }
                     }
                 }
-                Err(e) => {
-                    warn!("skipping errorneous reply to zenoh discovery query: {}", e)
-                }
+                Err(e) => fail!(
+                    from "discovery_via_subscriber()",
+                    when Err(e),
+                    with DiscoveryError::UpdateFromRemotePort,
+                    "errorneous reply received from zenoh discovery query"
+                ),
             }
         }
 
@@ -106,7 +109,7 @@ impl<ServiceType: iceoryx2::service::Service> Discovery<ServiceType>
         self.replies = fail!(
             from &self,
             when self.querier.get().wait(),
-            with DiscoveryError::UpdateFromPort,
+            with DiscoveryError::UpdateFromRemotePort,
             "failed to query Zenoh for service details on remote hosts"
         );
 

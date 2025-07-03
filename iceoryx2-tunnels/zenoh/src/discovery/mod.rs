@@ -27,8 +27,10 @@ pub enum DiscoveryError {
     ServiceAnnouncement,
     /// Failed to create a port required for discovery communication.
     PortCreation,
-    /// Failed to receive update information from a port.
-    UpdateFromPort,
+    /// Failed to receive update information from a local port.
+    UpdateFromLocalPort,
+    /// Failed to receive update information from a remote port.
+    UpdateFromRemotePort,
     /// Failed to receive update information from a discovery tracker.
     UpdateFromTracker,
 }

@@ -126,7 +126,12 @@ fn discover_via_subscriber<
                 }
             }
             Ok(None) => break,
-            Err(_) => return Err(DiscoveryError::UpdateFromPort),
+            Err(e) => fail!(
+                from "discovery_via_subscriber()",
+                when Err(e),
+                with DiscoveryError::UpdateFromLocalPort,
+                "failed to receive from discovery subscriber"
+            ),
         }
     }
 

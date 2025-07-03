@@ -328,27 +328,25 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
     let needs_subscriber = !subscriber_channels.contains_key(iox_service_id);
 
     if needs_publisher || needs_subscriber {
-        let iox_service = middleware::iceoryx::create_publish_subscribe_service::<ServiceType>(
-            iox_node,
-            iox_service_config,
-        );
         let iox_service = fail!(
             from "on_publish_subscribe_service()",
-            when iox_service,
+            when middleware::iceoryx::create_publish_subscribe_service::<ServiceType>(
+                    iox_node,
+                    iox_service_config,
+                ),
             with DiscoveryError::ServiceCreation,
             "failed to open or create discovered publish-subscribe service"
         );
 
         if needs_publisher {
-            let publisher_channel = PublisherChannel::create(
-                iox_node.id(),
-                iox_service_config,
-                &iox_service,
-                z_session,
-            );
             let publisher_channel = fail!(
                 from "on_publish_subscribe_service()",
-                when publisher_channel,
+                when PublisherChannel::create(
+                    iox_node.id(),
+                    iox_service_config,
+                    &iox_service,
+                    z_session,
+                ),
                 with DiscoveryError::PortCreation,
                 "failed to create publisher channel for discovered service"
             );
@@ -356,11 +354,11 @@ fn on_publish_subscribe_service<'a, ServiceType: iceoryx2::service::Service>(
             publisher_channels.insert(iox_service_id.clone(), publisher_channel);
         }
         if needs_subscriber {
-            let subscriber_channel =
-                SubscriberChannel::create(iox_service_config, &iox_service, z_session);
             let subscriber_channel = fail!(
                 from "on_publish_subscribe_service()",
-                when subscriber_channel,
+                when SubscriberChannel::create(
+                    iox_service_config, &iox_service, z_session
+                ),
                 with DiscoveryError::PortCreation,
                 "failed to create subscriber channel for discovered service"
             );
@@ -392,39 +390,30 @@ fn on_event_service<'a, ServiceType: iceoryx2::service::Service>(
     let needs_listener = !listener_channels.contains_key(iox_service_id);
 
     if needs_notifier || needs_listener {
-        let iox_service =
-            middleware::iceoryx::create_event_service::<ServiceType>(iox_node, iox_service_config);
         let iox_service = fail!(
             from "on_event_service()",
-            when iox_service,
+            when middleware::iceoryx::create_event_service::<ServiceType>(iox_node, iox_service_config),
             with DiscoveryError::ServiceCreation,
             "failed to open or create discovered event service"
         );
-
         if needs_notifier {
-            let notifier_channel =
-                NotifierChannel::create(iox_service_config, &iox_service, z_session);
             let notifier_channel = fail!(
                 from "on_event_service()",
-                when notifier_channel,
+                when NotifierChannel::create(iox_service_config, &iox_service, z_session),
                 with DiscoveryError::PortCreation,
                 "failed to create notifier channel for discovered service"
             );
             notifier_channels.insert(iox_service_id.clone(), notifier_channel);
         }
-
         if needs_listener {
-            let listener_channel =
-                ListenerChannel::create(iox_service_config, &iox_service, z_session);
             let listener_channel = fail!(
                 from "on_event_service()",
-                when listener_channel,
+                when ListenerChannel::create(iox_service_config, &iox_service, z_session),
                 with DiscoveryError::PortCreation,
                 "failed to create listener channel for discovered service"
             );
             listener_channels.insert(iox_service_id.clone(), listener_channel);
         }
-
         fail!(
             from "on_event_service()",
             when middleware::zenoh::announce_service(z_session, iox_service_config),
