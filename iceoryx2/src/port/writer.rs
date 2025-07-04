@@ -10,8 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::service::builder::blackboard::{BlackboardResources, Mgmt};
-use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
+use crate::service::builder::blackboard::BlackboardResources;
 use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
@@ -21,15 +20,44 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{Producer, UnrestrictedAtomic};
 use iceoryx2_bb_log::fail;
-use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
-use iceoryx2_cal::event::{NamedConcept, NamedConceptBuilder};
-use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
-use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_cal::shared_memory::SharedMemory;
 
 extern crate alloc;
 use alloc::sync::Arc;
 
 use super::port_identifiers::UniqueWriterId;
+
+struct WriterSharedState<
+    Service: service::Service,
+    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+> {
+    dynamic_writer_handle: Option<ContainerHandle>,
+    service_state: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
+}
+
+impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Debug
+    for WriterSharedState<Service, T>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // TODO: improve Debug output
+        write!(f, "")
+    }
+}
+
+impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Drop
+    for WriterSharedState<Service, T>
+{
+    fn drop(&mut self) {
+        if let Some(handle) = self.dynamic_writer_handle {
+            self.service_state
+                .dynamic_storage
+                .get()
+                .blackboard()
+                .release_writer_handle(handle)
+        }
+    }
+}
 
 /// Defines a failure that can occur when a [`Writer`] is created with
 /// [`crate::service::port_factory::writer::PortFactoryWriter`].
@@ -42,6 +70,8 @@ pub enum WriterCreateError {
     ExceedsMaxSupportedWriters,
     /// The data segment could not be opened.
     UnableToOpenDataSegment,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    InternalFailure,
 }
 
 impl core::fmt::Display for WriterCreateError {
@@ -58,25 +88,8 @@ pub struct Writer<
     Service: service::Service,
     T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
-    service_state: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
-    mgmt: Service::BlackboardMgmt<Mgmt<T>>,
-    payload: Service::BlackboardPayload,
-    dynamic_writer_handle: Option<ContainerHandle>,
+    shared_state: Arc<WriterSharedState<Service, T>>,
     writer_id: UniqueWriterId,
-}
-
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Drop
-    for Writer<Service, T>
-{
-    fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_writer_handle {
-            self.service_state
-                .dynamic_storage
-                .get()
-                .blackboard()
-                .release_writer_handle(handle)
-        }
-    }
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
@@ -89,34 +102,11 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         let msg = "Unable to create Writer port";
 
         let writer_id = UniqueWriterId::new();
-
-        // open payload data segment
-        let name = service.additional_resource.mgmt.name();
-        let shm_config = blackboard_data_config::<Service, Mgmt<T>>(service.shared_node.config());
-        let payload_shm = fail!(from origin,
-            when <<Service::BlackboardPayload as SharedMemory<BumpAllocator>
-                >::Builder as NamedConceptBuilder<Service::BlackboardPayload>>::new(&name)
-                .config(&shm_config)
-                .has_ownership(false)
-                .open(),
-            with WriterCreateError::UnableToOpenDataSegment,
-            "{} since the payload data segment could not be opened.", msg);
-
-        // open management segment
-        let mgmt_config = blackboard_mgmt_config::<Service, Mgmt<T>>(service.shared_node.config());
-        let mgmt_storage = fail!(from origin,
-            when <Service::BlackboardMgmt<Mgmt<T>> as DynamicStorage<Mgmt<T>>>::Builder::new(&name)
-                .config(&mgmt_config)
-                .has_ownership(false)
-                .open(),
-            with WriterCreateError::UnableToOpenDataSegment,
-            "{} since the management data segment could not be opened.", msg);
-
         let mut new_self = Self {
-            service_state: service.clone(),
-            mgmt: mgmt_storage,
-            payload: payload_shm,
-            dynamic_writer_handle: None,
+            shared_state: Arc::new(WriterSharedState {
+                service_state: service.clone(),
+                dynamic_writer_handle: None,
+            }),
             writer_id,
         };
 
@@ -138,8 +128,13 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
             }
         };
 
-        new_self.dynamic_writer_handle = Some(dynamic_writer_handle);
-
+        match Arc::get_mut(&mut new_self.shared_state) {
+            None => {
+                fail!(from origin, with WriterCreateError::InternalFailure,
+                    "{} due to an internal failure.", msg);
+            }
+            Some(writer_state) => writer_state.dynamic_writer_handle = Some(dynamic_writer_handle),
+        }
         Ok(new_self)
     }
 
@@ -153,17 +148,31 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     pub fn entry<ValueType: Copy + ZeroCopySend>(
         &self,
         key: &T,
-    ) -> Result<WriterHandle<ValueType>, WriterHandleError> {
+    ) -> Result<WriterHandle<Service, T, ValueType>, WriterHandleError> {
         let msg = "Unable to create writer handle";
 
         // check if key exists
-        let index = unsafe { self.mgmt.get().map.get(key) };
+        let index = unsafe {
+            self.shared_state
+                .service_state
+                .additional_resource
+                .mgmt
+                .get()
+                .map
+                .get(key)
+        };
         if index.is_none() {
             fail!(from self, with WriterHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key exists.", msg);
         }
 
-        let entry = &self.mgmt.get().entries[index.unwrap()];
+        let entry = &self
+            .shared_state
+            .service_state
+            .additional_resource
+            .mgmt
+            .get()
+            .entries[index.unwrap()];
 
         // check if ValueType matches
         if TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
@@ -172,14 +181,12 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         }
 
         let offset = entry.offset.load(core::sync::atomic::Ordering::Relaxed);
-        let atomic = (self.payload.payload_start_address() as u64 + offset)
-            as *mut UnrestrictedAtomic<ValueType>;
-        match unsafe { (*atomic).acquire_producer() } {
-            None => {
-                fail!(from self, with WriterHandleError::HandleAlreadyExists,
+        match WriterHandle::new(self.shared_state.clone(), offset) {
+            Ok(handle) => Ok(handle),
+            Err(e) => {
+                fail!(from self, with e,
                     "{} since a handle for the passed key and value type already exists.", msg);
             }
-            Some(producer) => Ok(WriterHandle::new(producer)),
         }
     }
 }
@@ -202,13 +209,45 @@ impl core::fmt::Display for WriterHandleError {
 impl core::error::Error for WriterHandleError {}
 
 /// A handle for direct write access to a specific blackboard value.
-pub struct WriterHandle<'handle, ValueType: Copy> {
-    producer: Producer<'handle, ValueType>,
+pub struct WriterHandle<
+    Service: service::Service,
+    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    ValueType: Copy + 'static,
+> {
+    shared_state: Arc<WriterSharedState<Service, T>>,
+    producer: Producer<'static, ValueType>,
+    offset: u64,
 }
 
-impl<'handle, ValueType: Copy> WriterHandle<'handle, ValueType> {
-    fn new(producer: Producer<'handle, ValueType>) -> Self {
-        Self { producer }
+impl<
+        Service: service::Service,
+        T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+        ValueType: Copy + 'static,
+    > WriterHandle<Service, T, ValueType>
+{
+    fn new(
+        writer_state: Arc<WriterSharedState<Service, T>>,
+        offset: u64,
+    ) -> Result<Self, WriterHandleError> {
+        let atomic = (writer_state
+            .service_state
+            .additional_resource
+            .data
+            .payload_start_address() as u64
+            + offset) as *mut UnrestrictedAtomic<ValueType>;
+        match unsafe { (*atomic).acquire_producer() } {
+            None => Err(WriterHandleError::HandleAlreadyExists),
+            Some(producer) => {
+                // change to static lifetime is safe since shared_state owns the service state and
+                // the dynamic writer handle
+                let p: Producer<'static, ValueType> = unsafe { core::mem::transmute(producer) };
+                Ok(Self {
+                    producer: p,
+                    shared_state: writer_state.clone(),
+                    offset,
+                })
+            }
+        }
     }
 
     /// Updates the value by copying the passed value into it.
