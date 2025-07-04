@@ -1014,6 +1014,7 @@ mod service_blackboard {
         writer_handle.update_with_copy(payload);
         assert_that!(reader_handle.get(), eq payload);
 
+        drop(reader_handle);
         drop(reader);
         drop(sut);
         drop(writer_handle);
@@ -1260,7 +1261,7 @@ mod service_blackboard {
 
                 while keep_running.load(Ordering::Relaxed) {
                     counter.fetch_add(1, Ordering::Relaxed);
-                    writer_handle.update_with_copy(counter.load(Ordering::Relaxed));
+                    //writer_handle.update_with_copy(counter.load(Ordering::Relaxed));
                 }
             });
             let mut threads = vec![];

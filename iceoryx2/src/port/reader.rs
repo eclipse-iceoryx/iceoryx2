@@ -10,8 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::service::builder::blackboard::{BlackboardResources, Mgmt};
-use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
+use crate::service::builder::blackboard::BlackboardResources;
 use crate::service::dynamic_config::blackboard::ReaderDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
@@ -21,15 +20,44 @@ use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
 use iceoryx2_bb_log::fail;
-use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
-use iceoryx2_cal::event::{NamedConcept, NamedConceptBuilder};
-use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
-use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
+use iceoryx2_cal::dynamic_storage::DynamicStorage;
+use iceoryx2_cal::shared_memory::SharedMemory;
 
 extern crate alloc;
 use alloc::sync::Arc;
 
 use super::port_identifiers::UniqueReaderId;
+
+struct ReaderSharedState<
+    Service: service::Service,
+    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+> {
+    dynamic_reader_handle: Option<ContainerHandle>,
+    service_state: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
+}
+
+impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Debug
+    for ReaderSharedState<Service, T>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // TODO: improve Debug output
+        write!(f, "")
+    }
+}
+
+impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Drop
+    for ReaderSharedState<Service, T>
+{
+    fn drop(&mut self) {
+        if let Some(handle) = self.dynamic_reader_handle {
+            self.service_state
+                .dynamic_storage
+                .get()
+                .blackboard()
+                .release_reader_handle(handle)
+        }
+    }
+}
 
 /// Defines a failure that can occur when a [`Reader`] is created with
 /// [`crate::service::port_factory::reader::PortFactoryReader`].
@@ -42,6 +70,8 @@ pub enum ReaderCreateError {
     ExceedsMaxSupportedReaders,
     /// The data segment could not be opened.
     UnableToOpenDataSegment,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
+    InternalFailure,
 }
 
 impl core::fmt::Display for ReaderCreateError {
@@ -58,25 +88,8 @@ pub struct Reader<
     Service: service::Service,
     T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
-    service_state: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
-    mgmt: Service::BlackboardMgmt<Mgmt<T>>,
-    payload: Service::BlackboardPayload,
-    dynamic_reader_handle: Option<ContainerHandle>,
+    shared_state: Arc<ReaderSharedState<Service, T>>,
     reader_id: UniqueReaderId,
-}
-
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Drop
-    for Reader<Service, T>
-{
-    fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_reader_handle {
-            self.service_state
-                .dynamic_storage
-                .get()
-                .blackboard()
-                .release_reader_handle(handle)
-        }
-    }
 }
 
 impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
@@ -89,33 +102,11 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         let msg = "Unable to create Reader port";
 
         let reader_id = UniqueReaderId::new();
-
-        // open payload data segment
-        let name = service.additional_resource.mgmt.name();
-        let shm_config = blackboard_data_config::<Service, Mgmt<T>>(service.shared_node.config());
-        let payload_shm = fail!(from origin,
-            when <<Service::BlackboardPayload as SharedMemory<BumpAllocator>
-                >::Builder as NamedConceptBuilder<Service::BlackboardPayload>>::new(&name)
-                .config(&shm_config)
-                .open(),
-            with ReaderCreateError::UnableToOpenDataSegment,
-            "{} since the payload data segment could not be opened.", msg);
-
-        // open management segment
-        let mgmt_config = blackboard_mgmt_config::<Service, Mgmt<T>>(service.shared_node.config());
-        let mgmt_storage = fail!(from origin,
-            when <Service::BlackboardMgmt<Mgmt<T>> as DynamicStorage<Mgmt<T>>>::Builder::new(&name)
-                .config(&mgmt_config)
-                .has_ownership(false)
-                .open(),
-            with ReaderCreateError::UnableToOpenDataSegment,
-            "{} since the management data segment could not be opened.", msg);
-
         let mut new_self = Self {
-            service_state: service.clone(),
-            mgmt: mgmt_storage,
-            payload: payload_shm,
-            dynamic_reader_handle: None,
+            shared_state: Arc::new(ReaderSharedState {
+                dynamic_reader_handle: None,
+                service_state: service.clone(),
+            }),
             reader_id,
         };
 
@@ -137,8 +128,13 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
             }
         };
 
-        new_self.dynamic_reader_handle = Some(dynamic_reader_handle);
-
+        match Arc::get_mut(&mut new_self.shared_state) {
+            None => {
+                fail!(from origin, with ReaderCreateError::InternalFailure,
+                    "{} due to an internal failure.", msg);
+            }
+            Some(reader_state) => reader_state.dynamic_reader_handle = Some(dynamic_reader_handle),
+        }
         Ok(new_self)
     }
 
@@ -155,13 +151,27 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         let msg = "Unable to create reader handle";
 
         // check if key exists
-        let index = unsafe { self.mgmt.get().map.get(key) };
+        let index = unsafe {
+            self.shared_state
+                .service_state
+                .additional_resource
+                .mgmt
+                .get()
+                .map
+                .get(key)
+        };
         if index.is_none() {
             fail!(from self, with ReaderHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key exists.", msg);
         }
 
-        let entry = &self.mgmt.get().entries[index.unwrap()];
+        let entry = &self
+            .shared_state
+            .service_state
+            .additional_resource
+            .mgmt
+            .get()
+            .entries[index.unwrap()];
 
         // check if ValueType matches
         if TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
@@ -170,10 +180,15 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
         }
 
         let offset = entry.offset.load(core::sync::atomic::Ordering::Relaxed);
-        let atomic = (self.payload.payload_start_address() as u64 + offset)
-            as *mut UnrestrictedAtomic<ValueType>;
+        let atomic = (self
+            .shared_state
+            .service_state
+            .additional_resource
+            .data
+            .payload_start_address() as u64
+            + offset) as *const UnrestrictedAtomic<ValueType>;
 
-        Ok(ReaderHandle::new(atomic, self))
+        Ok(ReaderHandle::new(self.shared_state.clone(), atomic, offset))
     }
 }
 
@@ -194,29 +209,30 @@ impl core::error::Error for ReaderHandleError {}
 
 /// A handle for direct read access to a specific blackboard value.
 pub struct ReaderHandle<
-    'reader, // because we dereference atomic
     Service: service::Service,
     KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
     ValueType: Copy,
 > {
-    atomic: *mut UnrestrictedAtomic<ValueType>,
-    _reader: &'reader Reader<Service, KeyType>,
+    shared_state: Arc<ReaderSharedState<Service, KeyType>>,
+    atomic: *const UnrestrictedAtomic<ValueType>,
+    offset: u64,
 }
 
 impl<
-        'reader,
         Service: service::Service,
         KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
         ValueType: Copy,
-    > ReaderHandle<'reader, Service, KeyType, ValueType>
+    > ReaderHandle<Service, KeyType, ValueType>
 {
     fn new(
-        atomic: *mut UnrestrictedAtomic<ValueType>,
-        reader: &'reader Reader<Service, KeyType>,
+        reader_state: Arc<ReaderSharedState<Service, KeyType>>,
+        atomic: *const UnrestrictedAtomic<ValueType>,
+        offset: u64,
     ) -> Self {
         Self {
+            shared_state: reader_state.clone(),
             atomic,
-            _reader: reader,
+            offset,
         }
     }
 
