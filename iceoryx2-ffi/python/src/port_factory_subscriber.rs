@@ -61,3 +61,33 @@ impl PortFactorySubscriber {
         }
     }
 }
+
+#[pymethods]
+impl PortFactorySubscriber {
+    pub fn buffer_size(&self, value: usize) -> Self {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactorySubscriberType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.buffer_size(value);
+                Self {
+                    value: PortFactorySubscriberType::Ipc(Parc::new(this)),
+                    factory: self.factory.clone(),
+                }
+            }
+            PortFactorySubscriberType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                let this = this.buffer_size(value);
+                Self {
+                    value: PortFactorySubscriberType::Local(Parc::new(this)),
+                    factory: self.factory.clone(),
+                }
+            }
+        }
+    }
+
+    /// Creates a new `Subscriber` or emits a `SubscriberCreateError` on failure.
+    pub fn create(&self) {
+        todo!()
+    }
+}
