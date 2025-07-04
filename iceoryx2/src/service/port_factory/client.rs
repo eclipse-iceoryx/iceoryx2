@@ -131,6 +131,19 @@ impl<
         ResponseHeader,
     >
 {
+    #[doc(hidden)]
+    /// # Safety
+    ///
+    ///   * does not clone the degradation callback
+    pub unsafe fn __internal_partial_clone(&self) -> Self {
+        Self {
+            config: self.config.clone(),
+            request_degradation_callback: None,
+            response_degradation_callback: None,
+            factory: self.factory,
+        }
+    }
+
     pub(crate) fn new(
         factory: &'factory PortFactory<
             Service,

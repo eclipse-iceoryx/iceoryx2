@@ -15,16 +15,18 @@ use pyo3::prelude::*;
 
 use crate::{
     allocation_strategy::AllocationStrategy, parc::Parc,
-    port_factory_publish_subscribe::PortFactoryPublishSubscribeType,
+    port_factory_request_response::PortFactoryRequestResponseType,
     unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
 
-pub(crate) enum PortFactoryPublisherType {
+pub(crate) enum PortFactoryClientType {
     Ipc(
         Parc<
-            iceoryx2::service::port_factory::publisher::PortFactoryPublisher<
+            iceoryx2::service::port_factory::client::PortFactoryClient<
                 'static,
                 crate::IpcService,
+                [CustomPayloadMarker],
+                CustomHeaderMarker,
                 [CustomPayloadMarker],
                 CustomHeaderMarker,
             >,
@@ -32,9 +34,11 @@ pub(crate) enum PortFactoryPublisherType {
     ),
     Local(
         Parc<
-            iceoryx2::service::port_factory::publisher::PortFactoryPublisher<
+            iceoryx2::service::port_factory::client::PortFactoryClient<
                 'static,
                 crate::LocalService,
+                [CustomPayloadMarker],
+                CustomHeaderMarker,
                 [CustomPayloadMarker],
                 CustomHeaderMarker,
             >,
@@ -43,72 +47,47 @@ pub(crate) enum PortFactoryPublisherType {
 }
 
 #[pyclass]
-pub struct PortFactoryPublisher {
-    factory: Parc<PortFactoryPublishSubscribeType>,
-    value: PortFactoryPublisherType,
+pub struct PortFactoryClient {
+    factory: Parc<PortFactoryRequestResponseType>,
+    value: PortFactoryClientType,
 }
 
-impl PortFactoryPublisher {
-    pub(crate) fn new(factory: Parc<PortFactoryPublishSubscribeType>) -> Self {
+impl PortFactoryClient {
+    pub(crate) fn new(factory: Parc<PortFactoryRequestResponseType>) -> Self {
         Self {
             factory: factory.clone(),
             value: match &*factory.lock() {
-                PortFactoryPublishSubscribeType::Ipc(v) => PortFactoryPublisherType::Ipc(unsafe {
-                    Parc::new(core::mem::transmute(v.publisher_builder()))
+                PortFactoryRequestResponseType::Ipc(v) => PortFactoryClientType::Ipc(unsafe {
+                    Parc::new(core::mem::transmute(v.client_builder()))
                 }),
-                PortFactoryPublishSubscribeType::Local(v) => {
-                    PortFactoryPublisherType::Local(unsafe {
-                        Parc::new(core::mem::transmute(v.publisher_builder()))
-                    })
-                }
+                PortFactoryRequestResponseType::Local(v) => PortFactoryClientType::Local(unsafe {
+                    Parc::new(core::mem::transmute(v.client_builder()))
+                }),
             },
         }
     }
 }
 
 #[pymethods]
-impl PortFactoryPublisher {
-    /// Defines how many `SampleMut` the `Publisher` can loan with `Publisher::loan()` or
-    /// `Publisher::loan_uninit()` in parallel.
-    pub fn max_loaned_samples(&self, value: usize) -> Self {
-        let _guard = self.factory.lock();
-        match &self.value {
-            PortFactoryPublisherType::Ipc(v) => {
-                let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.max_loaned_samples(value);
-                Self {
-                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
-            }
-            PortFactoryPublisherType::Local(v) => {
-                let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                let this = this.max_loaned_samples(value);
-                Self {
-                    value: PortFactoryPublisherType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
-            }
-        }
-    }
-
-    /// Sets the `UnableToDeliverStrategy`.
+impl PortFactoryClient {
+    /// Sets the `UnableToDeliverStrategy` which defines how the `Client` shall behave
+    /// when a `Server` cannot receive a `RequestMut` since its internal buffer is full.
     pub fn unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
-            PortFactoryPublisherType::Ipc(v) => {
+            PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.unable_to_deliver_strategy(value.clone().into());
                 Self {
-                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
+                    value: PortFactoryClientType::Ipc(Parc::new(this)),
                     factory: self.factory.clone(),
                 }
             }
-            PortFactoryPublisherType::Local(v) => {
+            PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.unable_to_deliver_strategy(value.clone().into());
                 Self {
-                    value: PortFactoryPublisherType::Local(Parc::new(this)),
+                    value: PortFactoryClientType::Local(Parc::new(this)),
                     factory: self.factory.clone(),
                 }
             }
@@ -116,23 +95,23 @@ impl PortFactoryPublisher {
     }
 
     /// Sets the maximum slice length that a user can allocate with
-    /// `ActiveRequest::loan_slice()` or `ActiveRequest::loan_slice_uninit()`.
+    /// `Client::loan_slice()` or `Client::loan_slice_uninit()`.
     pub fn initial_max_slice_len(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
-            PortFactoryPublisherType::Ipc(v) => {
+            PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.initial_max_slice_len(value);
                 Self {
-                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
+                    value: PortFactoryClientType::Ipc(Parc::new(this)),
                     factory: self.factory.clone(),
                 }
             }
-            PortFactoryPublisherType::Local(v) => {
+            PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.initial_max_slice_len(value);
                 Self {
-                    value: PortFactoryPublisherType::Local(Parc::new(this)),
+                    value: PortFactoryClientType::Local(Parc::new(this)),
                     factory: self.factory.clone(),
                 }
             }
@@ -140,32 +119,31 @@ impl PortFactoryPublisher {
     }
 
     /// Defines the allocation strategy that is used when the provided
-    /// `PortFactoryServer::initial_max_slice_len()` is exhausted. This happens when the user
-    /// acquires more than max slice len in `ActiveRequest::loan_slice()` or
-    /// `ActiveRequest::loan_slice_uninit()`.
+    /// `PortFactoryClient::initial_max_slice_len()` is exhausted. This happens when the user
+    /// acquires more than max slice len in `Client::loan_slice()` or `Client::loan_slice_uninit()`.
     pub fn allocation_strategy(&self, value: &AllocationStrategy) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
-            PortFactoryPublisherType::Ipc(v) => {
+            PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.allocation_strategy(value.clone().into());
                 Self {
-                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
+                    value: PortFactoryClientType::Ipc(Parc::new(this)),
                     factory: self.factory.clone(),
                 }
             }
-            PortFactoryPublisherType::Local(v) => {
+            PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.allocation_strategy(value.clone().into());
                 Self {
-                    value: PortFactoryPublisherType::Local(Parc::new(this)),
+                    value: PortFactoryClientType::Local(Parc::new(this)),
                     factory: self.factory.clone(),
                 }
             }
         }
     }
 
-    /// Creates a new `Publisher` or emits a `PublisherCreateError` on failure.
+    /// Creates a new `Client` or emits a `ClientCreateError` on failure.
     pub fn create(&self) {
         todo!()
     }
