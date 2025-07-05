@@ -10,11 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::sync::Arc;
+
+use crate::error::ClientCreateError;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
 use crate::{
-    allocation_strategy::AllocationStrategy, parc::Parc,
+    allocation_strategy::AllocationStrategy,
+    client::{Client, ClientType},
+    parc::Parc,
     port_factory_request_response::PortFactoryRequestResponseType,
     unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
@@ -144,7 +149,21 @@ impl PortFactoryClient {
     }
 
     /// Creates a new `Client` or emits a `ClientCreateError` on failure.
-    pub fn create(&self) {
-        todo!()
+    pub fn create(&self) -> PyResult<Client> {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryClientType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                Ok(Client(ClientType::Ipc(Arc::new(this.create().map_err(
+                    |e| ClientCreateError::new_err(format!("{e:?}")),
+                )?))))
+            }
+            PortFactoryClientType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                Ok(Client(ClientType::Local(Arc::new(this.create().map_err(
+                    |e| ClientCreateError::new_err(format!("{e:?}")),
+                )?))))
+            }
+        }
     }
 }

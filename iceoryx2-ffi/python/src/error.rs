@@ -15,23 +15,16 @@ use pyo3::exceptions::PyException;
 
 create_exception!(
     iceoryx2_ffi_python,
-    InvalidAlignmentValue,
-    PyException,
-    "Errors caused when the value of the alignment is not a power of two or exceeds the maximum supported value."
-);
-
-create_exception!(
-    iceoryx2_ffi_python,
-    SemanticStringError,
-    PyException,
-    "Errors caused by creating a semantic string."
-);
-
-create_exception!(
-    iceoryx2_ffi_python,
     ConfigCreationError,
     PyException,
     "Errors caused by creating a new config."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ClientCreateError,
+    PyException,
+    "Errors caused when creating a new client port."
 );
 
 create_exception!(
@@ -106,6 +99,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    InvalidAlignmentValue,
+    PyException,
+    "Errors caused when the value of the alignment is not a power of two or exceeds the maximum supported value."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     ListenerWaitError,
     PyException,
     "Errors caused when waiting on a Listener port in an event service."
@@ -151,6 +151,13 @@ create_exception!(
     RequestResponseOpenOrCreateError,
     PyException,
     "Errors caused when open or creating a request-response service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    SemanticStringError,
+    PyException,
+    "Errors caused by creating a semantic string."
 );
 
 create_exception!(

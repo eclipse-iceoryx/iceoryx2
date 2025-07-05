@@ -162,8 +162,8 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::waitset_run_result::WaitSetRunResult>()?;
 
     m.add(
-        "InvalidAlignmentValue",
-        py.get_type::<crate::error::InvalidAlignmentValue>(),
+        "ClientCreateError",
+        py.get_type::<crate::error::ClientCreateError>(),
     )?;
     m.add(
         "ConfigCreationError",
@@ -180,6 +180,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "EventOpenOrCreateError",
         py.get_type::<crate::error::EventOpenOrCreateError>(),
+    )?;
+    m.add(
+        "InvalidAlignmentValue",
+        py.get_type::<crate::error::InvalidAlignmentValue>(),
     )?;
     m.add(
         "ListenerCreateError",
