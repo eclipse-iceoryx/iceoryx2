@@ -49,6 +49,8 @@ pub mod port_factory_request_response;
 pub mod port_factory_server;
 pub mod port_factory_subscriber;
 pub mod publisher;
+pub mod sample_mut;
+pub mod sample_mut_uninit;
 pub mod server;
 pub mod service_builder;
 pub mod service_builder_event;
@@ -132,6 +134,8 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::port_factory_server::PortFactoryServer>()?;
     m.add_class::<crate::port_factory_subscriber::PortFactorySubscriber>()?;
     m.add_class::<crate::publisher::Publisher>()?;
+    m.add_class::<crate::sample_mut::SampleMut>()?;
+    m.add_class::<crate::sample_mut_uninit::SampleMutUninit>()?;
     m.add_class::<crate::server::Server>()?;
     m.add_class::<crate::service_builder::ServiceBuilder>()?;
     m.add_class::<crate::service_builder_event::ServiceBuilderEvent>()?;
@@ -185,6 +189,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         "InvalidAlignmentValue",
         py.get_type::<crate::error::InvalidAlignmentValue>(),
     )?;
+    m.add("LoanError", py.get_type::<crate::error::LoanError>())?;
     m.add(
         "ListenerCreateError",
         py.get_type::<crate::error::ListenerCreateError>(),

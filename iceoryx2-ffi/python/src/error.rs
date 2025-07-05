@@ -29,6 +29,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    LoanError,
+    PyException,
+    "Errors caused when loaning memory from a ports datasegment."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     ListenerCreateError,
     PyException,
     "Errors caused when creating a new Listener port."
