@@ -100,11 +100,16 @@ def test_published_header_is_the_same_as_received_header(
     sample_uninit = publisher.loan_slice_uninit(1)
     sample = sample_uninit.assume_init()
     send_header = sample.header
+    assert send_header.node_id == node.id
+    assert send_header.publisher_id == publisher.id
+    assert send_header.number_of_elements == 1
+
     sample.send()
 
     received_sample = subscriber.receive()
     assert received_sample is not None
     assert received_sample.header == send_header
+
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_custom_user_header_can_be_used(
@@ -131,5 +136,3 @@ def test_custom_user_header_can_be_used(
     received_user_header_payload = Payload(data = 0)
     ctypes.memmove(ctypes.byref(received_user_header_payload), received_sample.user_header_ptr, 1)
     assert received_user_header_payload.data == send_user_header_payload.data
-
-

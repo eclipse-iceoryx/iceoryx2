@@ -12,7 +12,8 @@
 
 use pyo3::prelude::*;
 
-#[pyclass]
+#[pyclass(eq)]
+#[derive(PartialEq, Eq)]
 /// The system-wide unique id of a `Server`.
 pub struct UniqueServerId(pub(crate) iceoryx2::port::port_identifiers::UniqueServerId);
 
