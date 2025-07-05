@@ -11,26 +11,107 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
-use crate::parc::Parc;
+use crate::{error::SendError, header_publish_subscribe::HeaderPublishSubscribe, parc::Parc};
 
 pub(crate) enum SampleMutType {
     Ipc(
-        iceoryx2::sample_mut::SampleMut<
-            crate::IpcService,
-            [CustomPayloadMarker],
-            CustomHeaderMarker,
+        Option<
+            iceoryx2::sample_mut::SampleMut<
+                crate::IpcService,
+                [CustomPayloadMarker],
+                CustomHeaderMarker,
+            >,
         >,
     ),
     Local(
-        iceoryx2::sample_mut::SampleMut<
-            crate::LocalService,
-            [CustomPayloadMarker],
-            CustomHeaderMarker,
+        Option<
+            iceoryx2::sample_mut::SampleMut<
+                crate::LocalService,
+                [CustomPayloadMarker],
+                CustomHeaderMarker,
+            >,
         >,
     ),
 }
 
 #[pyclass]
 pub struct SampleMut(pub(crate) Parc<SampleMutType>);
+
+#[pymethods]
+impl SampleMut {
+    #[getter]
+    /// Returns the `HeaderPublishSubscribe` of the `Sample`.
+    pub fn header(&self) -> HeaderPublishSubscribe {
+        match &*self.0.lock() {
+            SampleMutType::Ipc(Some(v)) => HeaderPublishSubscribe(*v.header()),
+            SampleMutType::Local(Some(v)) => HeaderPublishSubscribe(*v.header()),
+            _ => fatal_panic!(from "SampleMutUninit::header()",
+                "Access of a released sample."),
+        }
+    }
+
+    #[getter]
+    /// Returns a pointer to the user header.
+    pub fn user_header_ptr(&self) -> usize {
+        match &mut *self.0.lock() {
+            SampleMutType::Ipc(Some(v)) => {
+                (v.user_header_mut() as *mut CustomHeaderMarker) as usize
+            }
+            SampleMutType::Local(Some(v)) => {
+                (v.user_header_mut() as *mut CustomHeaderMarker) as usize
+            }
+            _ => fatal_panic!(from "SampleMutUninit::user_header_ptr()",
+                "Access of a released sample."),
+        }
+    }
+
+    #[getter]
+    /// Returns a pointer to the payload.
+    pub fn payload_ptr(&self) -> usize {
+        match &mut *self.0.lock() {
+            SampleMutType::Ipc(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
+            SampleMutType::Local(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
+            _ => fatal_panic!(from "SampleMutUninit::user_header_ptr()",
+                "Access of a released sample."),
+        }
+    }
+
+    /// Releases the `SampleMutUninit`.
+    ///
+    /// After this call the `SampleMutUninit` is no longer usable!
+    pub fn delete(&mut self) {
+        match &mut *self.0.lock() {
+            SampleMutType::Ipc(ref mut v) => {
+                v.take();
+            }
+            SampleMutType::Local(ref mut v) => {
+                v.take();
+            }
+        }
+    }
+
+    /// Send a previously loaned `Publisher::loan_uninit()` `SampleMut` to all connected
+    /// `Subscriber`s of the service.
+    ///
+    /// On success the number of `Subscriber`s that received
+    /// the data is returned, otherwise a `SendError` is emitted describing the failure.
+    pub fn send(&self) -> PyResult<usize> {
+        match &mut *self.0.lock() {
+            SampleMutType::Ipc(ref mut v) => {
+                let sample = v.take().unwrap();
+                Ok(sample
+                    .send()
+                    .map_err(|e| SendError::new_err(format!("{e:?}")))?)
+            }
+            SampleMutType::Local(ref mut v) => {
+                let sample = v.take().unwrap();
+                Ok(sample
+                    .send()
+                    .map_err(|e| SendError::new_err(format!("{e:?}")))?)
+            }
+        }
+    }
+}

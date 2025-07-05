@@ -224,6 +224,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         "NotifierNotifyError",
         py.get_type::<crate::error::NotifierNotifyError>(),
     )?;
+    m.add("SendError", py.get_type::<crate::error::SendError>())?;
     m.add(
         "SemanticStringError",
         py.get_type::<crate::error::SemanticStringError>(),

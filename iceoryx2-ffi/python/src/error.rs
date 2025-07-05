@@ -176,6 +176,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    SendError,
+    PyException,
+    "Errors caused when sending data."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     ServerCreateError,
     PyException,
     "Errors caused when creating a server port."
