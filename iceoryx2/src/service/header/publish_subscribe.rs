@@ -38,7 +38,7 @@ use crate::{node::NodeId, port::port_identifiers::UniquePublisherId};
 
 /// Sample header used by
 /// [`MessagingPattern::PublishSubscribe`](crate::service::messaging_pattern::MessagingPattern::PublishSubscribe)
-#[derive(Debug, Copy, Clone, ZeroCopySend)]
+#[derive(Debug, Copy, Clone, ZeroCopySend, PartialEq, Eq)]
 #[repr(C)]
 pub struct Header {
     node_id: NodeId,

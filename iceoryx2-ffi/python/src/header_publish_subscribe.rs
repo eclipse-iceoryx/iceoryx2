@@ -14,7 +14,8 @@ use pyo3::prelude::*;
 
 use crate::{node_id::NodeId, unique_publisher_id::UniquePublisherId};
 
-#[pyclass]
+#[pyclass(eq)]
+#[derive(PartialEq, Eq)]
 /// Sample header used b/ `MessagingPattern::PublishSubscribe`
 pub struct HeaderPublishSubscribe(pub(crate) iceoryx2::service::header::publish_subscribe::Header);
 

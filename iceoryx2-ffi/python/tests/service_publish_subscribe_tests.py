@@ -83,3 +83,53 @@ def test_send_large_payload_works(
     ctypes.memmove(ctypes.byref(received_payload), received_sample.payload_ptr, 8)
     assert received_payload.data == send_payload.data
 
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_published_header_is_the_same_as_received_header(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = node.service_builder(service_name).publish_subscribe().create()
+
+    publisher = service.publisher_builder().create()
+    subscriber = service.subscriber_builder().create()
+
+    sample_uninit = publisher.loan_slice_uninit(1)
+    sample = sample_uninit.assume_init()
+    send_header = sample.header
+    sample.send()
+
+    received_sample = subscriber.receive()
+    assert received_sample is not None
+    assert received_sample.header == send_header
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_custom_user_header_can_be_used(
+    service_type: iox2.ServiceType,
+) -> None:
+    user_header_type = iox2.TypeDetail.new().type_name(iox2.TypeName.new("whatever")).size(1)
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = node.service_builder(service_name).publish_subscribe().user_header_type_details(user_header_type).create()
+
+    publisher = service.publisher_builder().create()
+    subscriber = service.subscriber_builder().create()
+
+    sample_uninit = publisher.loan_slice_uninit(1)
+    send_user_header_payload = Payload(data = 37)
+    ctypes.memmove(sample_uninit.user_header_ptr, ctypes.byref(send_user_header_payload), 1)
+    sample = sample_uninit.assume_init()
+    sample.send()
+
+    received_sample = subscriber.receive()
+    assert received_sample is not None
+    received_user_header_payload = Payload(data = 0)
+    ctypes.memmove(ctypes.byref(received_user_header_payload), received_sample.user_header_ptr, 1)
+    assert received_user_header_payload.data == send_user_header_payload.data
+
+
