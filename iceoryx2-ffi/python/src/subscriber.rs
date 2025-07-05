@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Arc;
-
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
@@ -24,21 +22,17 @@ use crate::{
 
 pub(crate) enum SubscriberType {
     Ipc(
-        Arc<
-            iceoryx2::port::subscriber::Subscriber<
-                crate::IpcService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
+        iceoryx2::port::subscriber::Subscriber<
+            crate::IpcService,
+            [CustomPayloadMarker],
+            CustomHeaderMarker,
         >,
     ),
     Local(
-        Arc<
-            iceoryx2::port::subscriber::Subscriber<
-                crate::LocalService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
+        iceoryx2::port::subscriber::Subscriber<
+            crate::LocalService,
+            [CustomPayloadMarker],
+            CustomHeaderMarker,
         >,
     ),
 }

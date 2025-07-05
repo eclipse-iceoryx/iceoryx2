@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Arc;
-
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
@@ -99,17 +97,15 @@ impl PortFactorySubscriber {
         match &self.value {
             PortFactorySubscriberType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Subscriber(SubscriberType::Ipc(Arc::new(
-                    this.create()
-                        .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
-                ))))
+                Ok(Subscriber(SubscriberType::Ipc(this.create().map_err(
+                    |e| SubscriberCreateError::new_err(format!("{e:?}")),
+                )?)))
             }
             PortFactorySubscriberType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Subscriber(SubscriberType::Local(Arc::new(
-                    this.create()
-                        .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
-                ))))
+                Ok(Subscriber(SubscriberType::Local(this.create().map_err(
+                    |e| SubscriberCreateError::new_err(format!("{e:?}")),
+                )?)))
             }
         }
     }
