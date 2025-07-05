@@ -29,6 +29,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    ConnectionFailure,
+    PyException,
+    "Errors caused a connection to an endpoint could not be established."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     LoanError,
     PyException,
     "Errors caused when loaning memory from a ports datasegment."
@@ -144,6 +151,13 @@ create_exception!(
     PublishSubscribeOpenOrCreateError,
     PyException,
     "Errors caused when open or creating a publish-subscribe service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ReceiveError,
+    PyException,
+    "Errors caused when receiving data."
 );
 
 create_exception!(

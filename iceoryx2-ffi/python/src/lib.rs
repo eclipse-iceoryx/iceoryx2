@@ -50,6 +50,7 @@ pub mod port_factory_request_response;
 pub mod port_factory_server;
 pub mod port_factory_subscriber;
 pub mod publisher;
+pub mod sample;
 pub mod sample_mut;
 pub mod sample_mut_uninit;
 pub mod server;
@@ -176,6 +177,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         py.get_type::<crate::error::ConfigCreationError>(),
     )?;
     m.add(
+        "ConnectionFailure",
+        py.get_type::<crate::error::ConnectionFailure>(),
+    )?;
+    m.add(
         "EventOpenError",
         py.get_type::<crate::error::EventOpenError>(),
     )?;
@@ -245,6 +250,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         "PublishSubscribeOpenOrCreateError",
         py.get_type::<crate::error::PublishSubscribeOpenOrCreateError>(),
     )?;
+    m.add("ReceiveError", py.get_type::<crate::error::ReceiveError>())?;
     m.add(
         "RequestResponseOpenError",
         py.get_type::<crate::error::RequestResponseOpenError>(),

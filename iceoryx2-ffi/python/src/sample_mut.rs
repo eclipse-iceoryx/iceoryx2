@@ -38,6 +38,13 @@ pub(crate) enum SampleMutType {
 }
 
 #[pyclass]
+/// Acquired by a `Publisher` via
+///  * `Publisher::loan()`,
+///  * `Publisher::loan_slice()`
+///
+/// It stores the payload that will be sent
+/// to all connected `Subscriber`s. If the `SampleMut` is not sent
+/// it will release the loaned memory when going out of scope.
 pub struct SampleMut(pub(crate) Parc<SampleMutType>);
 
 #[pymethods]
