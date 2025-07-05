@@ -113,6 +113,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    PublisherCreateError,
+    PyException,
+    "Errors caused when creating a publisher port."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     PublishSubscribeOpenError,
     PyException,
     "Errors caused when opening a publish-subscribe service."
@@ -158,6 +165,20 @@ create_exception!(
     SemanticStringError,
     PyException,
     "Errors caused by creating a semantic string."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ServerCreateError,
+    PyException,
+    "Errors caused when creating a server port."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    SubscriberCreateError,
+    PyException,
+    "Errors caused when creating a subscriber port."
 );
 
 create_exception!(

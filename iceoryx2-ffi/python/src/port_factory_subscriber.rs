@@ -10,10 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::sync::Arc;
+
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
-use crate::{parc::Parc, port_factory_publish_subscribe::PortFactoryPublishSubscribeType};
+use crate::{
+    error::SubscriberCreateError,
+    parc::Parc,
+    port_factory_publish_subscribe::PortFactoryPublishSubscribeType,
+    subscriber::{Subscriber, SubscriberType},
+};
 
 pub(crate) enum PortFactorySubscriberType {
     Ipc(
@@ -87,7 +94,23 @@ impl PortFactorySubscriber {
     }
 
     /// Creates a new `Subscriber` or emits a `SubscriberCreateError` on failure.
-    pub fn create(&self) {
-        todo!()
+    pub fn create(&self) -> PyResult<Subscriber> {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactorySubscriberType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                Ok(Subscriber(SubscriberType::Ipc(Arc::new(
+                    this.create()
+                        .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
+                ))))
+            }
+            PortFactorySubscriberType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                Ok(Subscriber(SubscriberType::Local(Arc::new(
+                    this.create()
+                        .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
+                ))))
+            }
+        }
     }
 }

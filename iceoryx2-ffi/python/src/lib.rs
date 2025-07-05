@@ -222,6 +222,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         py.get_type::<crate::error::SemanticStringError>(),
     )?;
     m.add(
+        "PublisherCreateError",
+        py.get_type::<crate::error::PublisherCreateError>(),
+    )?;
+    m.add(
         "PublishSubscribeOpenError",
         py.get_type::<crate::error::PublishSubscribeOpenError>(),
     )?;
@@ -244,6 +248,14 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "RequestResponseOpenOrCreateError",
         py.get_type::<crate::error::RequestResponseOpenOrCreateError>(),
+    )?;
+    m.add(
+        "ServerCreateError",
+        py.get_type::<crate::error::ServerCreateError>(),
+    )?;
+    m.add(
+        "SubscriberCreateError",
+        py.get_type::<crate::error::SubscriberCreateError>(),
     )?;
     m.add(
         "WaitSetAttachmentError",

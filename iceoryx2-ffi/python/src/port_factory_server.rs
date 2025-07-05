@@ -10,12 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::sync::Arc;
+
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
 use crate::{
-    allocation_strategy::AllocationStrategy, parc::Parc,
+    allocation_strategy::AllocationStrategy,
+    error::ServerCreateError,
+    parc::Parc,
     port_factory_request_response::PortFactoryRequestResponseType,
+    server::{Server, ServerType},
     unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
 
@@ -170,7 +175,21 @@ impl PortFactoryServer {
     }
 
     /// Creates a new `Server` or emits a `ServerCreateError` on failure.
-    pub fn create(&self) {
-        todo!()
+    pub fn create(&self) -> PyResult<Server> {
+        let _guard = self.factory.lock();
+        match &self.value {
+            PortFactoryServerType::Ipc(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                Ok(Server(ServerType::Ipc(Arc::new(this.create().map_err(
+                    |e| ServerCreateError::new_err(format!("{e:?}")),
+                )?))))
+            }
+            PortFactoryServerType::Local(v) => {
+                let this = unsafe { (*v.lock()).__internal_partial_clone() };
+                Ok(Server(ServerType::Local(Arc::new(this.create().map_err(
+                    |e| ServerCreateError::new_err(format!("{e:?}")),
+                )?))))
+            }
+        }
     }
 }
