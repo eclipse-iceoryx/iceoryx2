@@ -87,7 +87,9 @@ impl Publisher {
                     v.loan_custom_payload(number_of_elements)
                         .map_err(|e| LoanError::new_err(format!("{e:?}")))?
                 };
-                Ok(SampleMutUninit(Parc::new(SampleMutUninitType::Ipc(sample))))
+                Ok(SampleMutUninit(Parc::new(SampleMutUninitType::Ipc(Some(
+                    sample,
+                )))))
             }
             PublisherType::Local(v) => {
                 let sample = unsafe {
@@ -95,7 +97,7 @@ impl Publisher {
                         .map_err(|e| LoanError::new_err(format!("{e:?}")))?
                 };
                 Ok(SampleMutUninit(Parc::new(SampleMutUninitType::Local(
-                    sample,
+                    Some(sample),
                 ))))
             }
         }

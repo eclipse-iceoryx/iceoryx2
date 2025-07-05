@@ -27,6 +27,7 @@ pub mod event_id;
 pub mod file_descriptor;
 pub mod file_name;
 pub mod file_path;
+pub mod header_publish_subscribe;
 pub mod listener;
 pub mod log;
 pub mod log_level;
@@ -111,6 +112,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::event_id::EventId>()?;
     m.add_class::<crate::file_name::FileName>()?;
     m.add_class::<crate::file_path::FilePath>()?;
+    m.add_class::<crate::header_publish_subscribe::HeaderPublishSubscribe>()?;
     m.add_class::<crate::listener::Listener>()?;
     m.add_class::<crate::log_level::LogLevel>()?;
     m.add_class::<crate::message_type_details::MessageTypeDetails>()?;

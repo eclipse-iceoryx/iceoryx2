@@ -25,7 +25,7 @@ pub(crate) enum SampleMutType {
     ),
     Local(
         iceoryx2::sample_mut::SampleMut<
-            crate::IpcService,
+            crate::LocalService,
             [CustomPayloadMarker],
             CustomHeaderMarker,
         >,

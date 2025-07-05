@@ -59,17 +59,19 @@ impl Header {
         }
     }
 
-    /// Returns the [`NodeId`] of the source node that published the sample.
+    /// Returns the [`NodeId`] of the source node that published the
+    /// [`Sample`](crate::sample::Sample).
     pub fn node_id(&self) -> NodeId {
         self.node_id
     }
 
-    /// Returns the [`UniquePublisherId`] of the source [`crate::port::publisher::Publisher`].
+    /// Returns the [`UniquePublisherId`] of the source
+    /// [`Publisher`](crate::port::publisher::Publisher).
     pub fn publisher_id(&self) -> UniquePublisherId {
         self.publisher_port_id
     }
 
-    /// Returns how many elements are stored inside the sample's payload.
+    /// Returns how many elements are stored inside the [`Sample`](crate::sample::Sample)'s payload.
     ///
     /// # Details when using
     /// [`CustomPayloadMarker`](crate::service::builder::CustomPayloadMarker)
