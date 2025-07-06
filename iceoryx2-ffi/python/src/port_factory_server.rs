@@ -24,31 +24,26 @@ use crate::{
     unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
 
+type IpcPortFactoryServer<'a> = iceoryx2::service::port_factory::server::PortFactoryServer<
+    'a,
+    crate::IpcService,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+>;
+type LocalPortFactoryServer<'a> = iceoryx2::service::port_factory::server::PortFactoryServer<
+    'a,
+    crate::LocalService,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+>;
+
 pub(crate) enum PortFactoryServerType {
-    Ipc(
-        Parc<
-            iceoryx2::service::port_factory::server::PortFactoryServer<
-                'static,
-                crate::IpcService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
-    Local(
-        Parc<
-            iceoryx2::service::port_factory::server::PortFactoryServer<
-                'static,
-                crate::LocalService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
+    Ipc(Parc<IpcPortFactoryServer<'static>>),
+    Local(Parc<LocalPortFactoryServer<'static>>),
 }
 
 #[pyclass]
@@ -63,10 +58,16 @@ impl PortFactoryServer {
             factory: factory.clone(),
             value: match &*factory.lock() {
                 PortFactoryRequestResponseType::Ipc(v) => PortFactoryServerType::Ipc(unsafe {
-                    Parc::new(core::mem::transmute(v.server_builder()))
+                    Parc::new(core::mem::transmute::<
+                        IpcPortFactoryServer<'_>,
+                        IpcPortFactoryServer<'static>,
+                    >(v.server_builder()))
                 }),
                 PortFactoryRequestResponseType::Local(v) => PortFactoryServerType::Local(unsafe {
-                    Parc::new(core::mem::transmute(v.server_builder()))
+                    Parc::new(core::mem::transmute::<
+                        LocalPortFactoryServer<'_>,
+                        LocalPortFactoryServer<'static>,
+                    >(v.server_builder()))
                 }),
             },
         }

@@ -20,27 +20,24 @@ use crate::{
     subscriber::{Subscriber, SubscriberType},
 };
 
+type IpcPortFactorySubscriber<'a> =
+    iceoryx2::service::port_factory::subscriber::PortFactorySubscriber<
+        'a,
+        crate::IpcService,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >;
+type LocalPortFactorySubscriber<'a> =
+    iceoryx2::service::port_factory::subscriber::PortFactorySubscriber<
+        'a,
+        crate::LocalService,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >;
+
 pub(crate) enum PortFactorySubscriberType {
-    Ipc(
-        Parc<
-            iceoryx2::service::port_factory::subscriber::PortFactorySubscriber<
-                'static,
-                crate::IpcService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
-    Local(
-        Parc<
-            iceoryx2::service::port_factory::subscriber::PortFactorySubscriber<
-                'static,
-                crate::LocalService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
+    Ipc(Parc<IpcPortFactorySubscriber<'static>>),
+    Local(Parc<LocalPortFactorySubscriber<'static>>),
 }
 
 #[pyclass]
@@ -57,11 +54,17 @@ impl PortFactorySubscriber {
             factory: factory.clone(),
             value: match &*factory.lock() {
                 PortFactoryPublishSubscribeType::Ipc(v) => PortFactorySubscriberType::Ipc(unsafe {
-                    Parc::new(core::mem::transmute(v.subscriber_builder()))
+                    Parc::new(core::mem::transmute::<
+                        IpcPortFactorySubscriber<'_>,
+                        IpcPortFactorySubscriber<'static>,
+                    >(v.subscriber_builder()))
                 }),
                 PortFactoryPublishSubscribeType::Local(v) => {
                     PortFactorySubscriberType::Local(unsafe {
-                        Parc::new(core::mem::transmute(v.subscriber_builder()))
+                        Parc::new(core::mem::transmute::<
+                            LocalPortFactorySubscriber<'_>,
+                            LocalPortFactorySubscriber<'static>,
+                        >(v.subscriber_builder()))
                     })
                 }
             },

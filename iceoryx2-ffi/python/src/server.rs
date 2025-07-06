@@ -17,29 +17,28 @@ use pyo3::prelude::*;
 
 use crate::unique_server_id::UniqueServerId;
 
+type IpcServer = Arc<
+    iceoryx2::port::server::Server<
+        crate::IpcService,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >,
+>;
+type LocalServer = Arc<
+    iceoryx2::port::server::Server<
+        crate::LocalService,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >,
+>;
+
 pub(crate) enum ServerType {
-    Ipc(
-        Arc<
-            iceoryx2::port::server::Server<
-                crate::IpcService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
-    Local(
-        Arc<
-            iceoryx2::port::server::Server<
-                crate::LocalService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
+    Ipc(IpcServer),
+    Local(LocalServer),
 }
 
 #[pyclass]

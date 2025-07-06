@@ -24,31 +24,26 @@ use crate::{
     unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
 
+type IpcPortFactoryClient<'a> = iceoryx2::service::port_factory::client::PortFactoryClient<
+    'a,
+    crate::IpcService,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+>;
+type LocalPortFactoryClient<'a> = iceoryx2::service::port_factory::client::PortFactoryClient<
+    'a,
+    crate::LocalService,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+>;
+
 pub(crate) enum PortFactoryClientType {
-    Ipc(
-        Parc<
-            iceoryx2::service::port_factory::client::PortFactoryClient<
-                'static,
-                crate::IpcService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
-    Local(
-        Parc<
-            iceoryx2::service::port_factory::client::PortFactoryClient<
-                'static,
-                crate::LocalService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
+    Ipc(Parc<IpcPortFactoryClient<'static>>),
+    Local(Parc<LocalPortFactoryClient<'static>>),
 }
 
 #[pyclass]
@@ -63,10 +58,16 @@ impl PortFactoryClient {
             factory: factory.clone(),
             value: match &*factory.lock() {
                 PortFactoryRequestResponseType::Ipc(v) => PortFactoryClientType::Ipc(unsafe {
-                    Parc::new(core::mem::transmute(v.client_builder()))
+                    Parc::new(core::mem::transmute::<
+                        IpcPortFactoryClient<'_>,
+                        IpcPortFactoryClient<'static>,
+                    >(v.client_builder()))
                 }),
                 PortFactoryRequestResponseType::Local(v) => PortFactoryClientType::Local(unsafe {
-                    Parc::new(core::mem::transmute(v.client_builder()))
+                    Parc::new(core::mem::transmute::<
+                        LocalPortFactoryClient<'_>,
+                        LocalPortFactoryClient<'static>,
+                    >(v.client_builder()))
                 }),
             },
         }

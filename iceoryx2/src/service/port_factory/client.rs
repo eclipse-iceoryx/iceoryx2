@@ -137,7 +137,7 @@ impl<
     ///   * does not clone the degradation callback
     pub unsafe fn __internal_partial_clone(&self) -> Self {
         Self {
-            config: self.config.clone(),
+            config: self.config,
             request_degradation_callback: None,
             response_degradation_callback: None,
             factory: self.factory,

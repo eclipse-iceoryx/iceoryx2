@@ -109,15 +109,19 @@ impl SampleMutUninit {
     /// initialized `SampleMut`
     ///
     /// After this call the `SampleMutUninit` is no longer usable!
-    pub unsafe fn assume_init(&self) -> SampleMut {
+    pub fn assume_init(&self) -> SampleMut {
         match &mut *self.0.lock() {
             SampleMutUninitType::Ipc(ref mut v) => {
                 let sample = v.take().unwrap();
-                SampleMut(Parc::new(SampleMutType::Ipc(Some(sample.assume_init()))))
+                SampleMut(Parc::new(SampleMutType::Ipc(Some(unsafe {
+                    sample.assume_init()
+                }))))
             }
             SampleMutUninitType::Local(ref mut v) => {
                 let sample = v.take().unwrap();
-                SampleMut(Parc::new(SampleMutType::Local(Some(sample.assume_init()))))
+                SampleMut(Parc::new(SampleMutType::Local(Some(unsafe {
+                    sample.assume_init()
+                }))))
             }
         }
     }

@@ -22,27 +22,23 @@ use crate::{
     unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
 
+type IpcPortFactoryPublisher<'a> = iceoryx2::service::port_factory::publisher::PortFactoryPublisher<
+    'a,
+    crate::IpcService,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+>;
+type LocalPortFactoryPublisher<'a> =
+    iceoryx2::service::port_factory::publisher::PortFactoryPublisher<
+        'a,
+        crate::LocalService,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >;
+
 pub(crate) enum PortFactoryPublisherType {
-    Ipc(
-        Parc<
-            iceoryx2::service::port_factory::publisher::PortFactoryPublisher<
-                'static,
-                crate::IpcService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
-    Local(
-        Parc<
-            iceoryx2::service::port_factory::publisher::PortFactoryPublisher<
-                'static,
-                crate::LocalService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
+    Ipc(Parc<IpcPortFactoryPublisher<'static>>),
+    Local(Parc<LocalPortFactoryPublisher<'static>>),
 }
 
 #[pyclass]
@@ -57,11 +53,17 @@ impl PortFactoryPublisher {
             factory: factory.clone(),
             value: match &*factory.lock() {
                 PortFactoryPublishSubscribeType::Ipc(v) => PortFactoryPublisherType::Ipc(unsafe {
-                    Parc::new(core::mem::transmute(v.publisher_builder()))
+                    Parc::new(core::mem::transmute::<
+                        IpcPortFactoryPublisher<'_>,
+                        IpcPortFactoryPublisher<'static>,
+                    >(v.publisher_builder()))
                 }),
                 PortFactoryPublishSubscribeType::Local(v) => {
                     PortFactoryPublisherType::Local(unsafe {
-                        Parc::new(core::mem::transmute(v.publisher_builder()))
+                        Parc::new(core::mem::transmute::<
+                            LocalPortFactoryPublisher<'_>,
+                            LocalPortFactoryPublisher<'static>,
+                        >(v.publisher_builder()))
                     })
                 }
             },

@@ -17,29 +17,28 @@ use pyo3::prelude::*;
 
 use crate::unique_client_id::UniqueClientId;
 
+type IpcClient = Arc<
+    iceoryx2::port::client::Client<
+        crate::IpcService,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >,
+>;
+type LocalClient = Arc<
+    iceoryx2::port::client::Client<
+        crate::LocalService,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >,
+>;
+
 pub(crate) enum ClientType {
-    Ipc(
-        Arc<
-            iceoryx2::port::client::Client<
-                crate::IpcService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
-    Local(
-        Arc<
-            iceoryx2::port::client::Client<
-                crate::LocalService,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-                [CustomPayloadMarker],
-                CustomHeaderMarker,
-            >,
-        >,
-    ),
+    Ipc(IpcClient),
+    Local(LocalClient),
 }
 
 #[pyclass]
