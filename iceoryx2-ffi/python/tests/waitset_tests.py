@@ -72,7 +72,7 @@ def test_attaching_notifications_works(
         guard = sut.attach_notification(listeners[i])
         waitset_guards.append(guard)
         assert sut.len == i + 1
-        assert sut.is_empty == False
+        assert not sut.is_empty
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -101,7 +101,7 @@ def test_attaching_deadlines_works(
         guard = sut.attach_deadline(listeners[i], deadline)
         waitset_guards.append(guard)
         assert sut.len == i + 1
-        assert sut.is_empty == False
+        assert not sut.is_empty
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -116,7 +116,7 @@ def test_attaching_interval_works(
         guard = sut.attach_interval(iox2.Duration.from_millis(i + 1))
         waitset_guards.append(guard)
         assert sut.len == i + 1
-        assert sut.is_empty == False
+        assert not sut.is_empty
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -124,7 +124,7 @@ def test_wait_and_process_returns_when_timeout_has_passed(
     service_type: iox2.ServiceType,
 ) -> None:
     sut = iox2.WaitSetBuilder.new().create(service_type)
-    guard = sut.attach_interval(iox2.Duration.from_secs(123))
+    _guard = sut.attach_interval(iox2.Duration.from_secs(123))
     (triggers, result) = sut.wait_and_process_with_timeout(
         iox2.Duration.from_millis(1)
     )
@@ -162,7 +162,7 @@ def test_wait_and_process_returns_triggered_listeners(
         guard = sut.attach_notification(listeners[i])
         waitset_guards.append(guard)
         assert sut.len == i + 1
-        assert sut.is_empty == False
+        assert not sut.is_empty
 
     notifiers[0].notify()
     notifiers[1].notify()

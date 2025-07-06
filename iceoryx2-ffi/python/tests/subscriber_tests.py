@@ -16,6 +16,7 @@ import iceoryx2 as iox2
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
+
 @pytest.mark.parametrize("service_type", service_types)
 def test_can_be_configured(
     service_type: iox2.ServiceType,
@@ -23,7 +24,12 @@ def test_can_be_configured(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe().subscriber_max_buffer_size(47112).create()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe()
+        .subscriber_max_buffer_size(47112)
+        .create()
+    )
 
     sut = service.subscriber_builder().buffer_size(47112).create()
 
@@ -37,7 +43,12 @@ def test_deleting_subscriber_removes_if_from_the_service(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe().max_subscribers(1).create()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe()
+        .max_subscribers(1)
+        .create()
+    )
 
     sut = service.subscriber_builder().create()
 
@@ -59,7 +70,13 @@ def test_deleting_sample_releases_it(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe().subscriber_max_buffer_size(2).subscriber_max_borrowed_samples(1).create()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe()
+        .subscriber_max_buffer_size(2)
+        .subscriber_max_borrowed_samples(1)
+        .create()
+    )
 
     sut = service.subscriber_builder().create()
     publisher = service.publisher_builder().create()

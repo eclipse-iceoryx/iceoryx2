@@ -1,0 +1,18 @@
+output-format: text
+
+strictness: veryhigh
+test-warnings: true
+doc-warnings: true
+member-warnings: true
+inherits:
+  - default
+
+bandit:
+  run: true
+
+pydocstyle:
+  disable:
+    - D203
+
+mypy:
+  run: true

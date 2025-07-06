@@ -40,4 +40,4 @@ def test_attribute_verifier_require_key_works() -> None:
     assert len(keys) == 1
     assert keys[0] == key
 
-    assert sut.verify_requirements(specifier.attributes) == None
+    assert sut.verify_requirements(specifier.attributes) is None

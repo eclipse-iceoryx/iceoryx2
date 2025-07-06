@@ -28,7 +28,7 @@ def test_non_existing_service_can_be_created(
         sut = node.service_builder(service_name).publish_subscribe().create()
         assert sut.name == service_name
     except iox2.PublishSubscribeCreateError:
-        raise pytest.fail("DID RAISE EXCEPTION")
+        assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -39,12 +39,12 @@ def test_existing_service_cannot_be_created(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    existing_service = (
+    _existing_service = (
         node.service_builder(service_name).publish_subscribe().create()
     )
 
     with pytest.raises(iox2.PublishSubscribeCreateError):
-        sut = node.service_builder(service_name).publish_subscribe().create()
+        node.service_builder(service_name).publish_subscribe().create()
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -53,14 +53,14 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    existing_service = (
+    _existing_service = (
         node.service_builder(service_name).publish_subscribe().create()
     )
     try:
         sut = node.service_builder(service_name).publish_subscribe().open()
         assert sut.name == service_name
     except iox2.PublishSubscribeOpenError:
-        raise pytest.fail("DID RAISE EXCEPTION")
+        assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -91,7 +91,7 @@ def test_non_existing_service_is_created_with_open_or_create(
         )
         assert sut.name == service_name
     except iox2.PublishSubscribeOpenOrCreateError:
-        raise pytest.fail("DID RAISE EXCEPTION")
+        assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -102,7 +102,7 @@ def test_existing_service_is_opened_with_open_or_create(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    existing_service = (
+    _existing_service = (
         node.service_builder(service_name).publish_subscribe().create()
     )
 
@@ -114,7 +114,7 @@ def test_existing_service_is_opened_with_open_or_create(
         )
         assert sut.name == service_name
     except iox2.PublishSubscribeOpenOrCreateError:
-        raise pytest.fail("DID RAISE EXCEPTION")
+        assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)

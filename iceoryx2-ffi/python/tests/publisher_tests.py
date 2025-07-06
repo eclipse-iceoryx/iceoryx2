@@ -16,6 +16,7 @@ import iceoryx2 as iox2
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
+
 @pytest.mark.parametrize("service_type", service_types)
 def test_can_be_configured(
     service_type: iox2.ServiceType,
@@ -23,13 +24,36 @@ def test_can_be_configured(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe().enable_safe_overflow(False).max_publishers(2).create()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe()
+        .enable_safe_overflow(False)
+        .max_publishers(2)
+        .create()
+    )
 
-    sut_1 = service.publisher_builder().unable_to_deliver_strategy(iox2.UnableToDeliverStrategy.Block).initial_max_slice_len(2).allocation_strategy(iox2.AllocationStrategy.Static).create()
-    sut_2 = service.publisher_builder().unable_to_deliver_strategy(iox2.UnableToDeliverStrategy.DiscardSample).initial_max_slice_len(20).allocation_strategy(iox2.AllocationStrategy.PowerOfTwo).create()
+    sut_1 = (
+        service.publisher_builder()
+        .unable_to_deliver_strategy(iox2.UnableToDeliverStrategy.Block)
+        .initial_max_slice_len(2)
+        .allocation_strategy(iox2.AllocationStrategy.Static)
+        .create()
+    )
+    sut_2 = (
+        service.publisher_builder()
+        .unable_to_deliver_strategy(iox2.UnableToDeliverStrategy.DiscardSample)
+        .initial_max_slice_len(20)
+        .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+        .create()
+    )
 
-    assert sut_1.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.Block
-    assert sut_2.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.DiscardSample
+    assert (
+        sut_1.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.Block
+    )
+    assert (
+        sut_2.unable_to_deliver_strategy
+        == iox2.UnableToDeliverStrategy.DiscardSample
+    )
 
     assert sut_1.initial_max_slice_len == 2
     assert sut_2.initial_max_slice_len == 20
@@ -45,10 +69,15 @@ def test_max_loans_can_be_set_up(
     service = node.service_builder(service_name).publish_subscribe().create()
     max_loans = 8
 
-    sut = service.publisher_builder().max_loaned_samples(max_loans).allocation_strategy(iox2.AllocationStrategy.Static).create()
+    sut = (
+        service.publisher_builder()
+        .max_loaned_samples(max_loans)
+        .allocation_strategy(iox2.AllocationStrategy.Static)
+        .create()
+    )
 
     samples = []
-    for i in range(0, 8):
+    for _ in range(0, 8):
         sample = sut.loan_slice_uninit(1)
         samples.append(sample)
 
@@ -63,7 +92,12 @@ def test_deleting_publisher_removes_it_from_the_service(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe().max_publishers(1).create()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe()
+        .max_publishers(1)
+        .create()
+    )
 
     sut = service.publisher_builder().create()
 
@@ -85,7 +119,12 @@ def test_deleting_sample_mut_uninit_releases_it(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe().max_publishers(1).create()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe()
+        .max_publishers(1)
+        .create()
+    )
 
     sut = service.publisher_builder().max_loaned_samples(1).create()
     sample_uninit = sut.loan_slice_uninit(1)
@@ -108,7 +147,12 @@ def test_deleting_sample_mut_releases_it(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe().max_publishers(1).create()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe()
+        .max_publishers(1)
+        .create()
+    )
 
     sut = service.publisher_builder().max_loaned_samples(1).create()
     sample_uninit = sut.loan_slice_uninit(1)

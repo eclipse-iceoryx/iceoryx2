@@ -36,6 +36,7 @@ configure_python_env() {
         pip install prospector[with_mypy]
         pip install black
         pip install isort
+        pip install bandit
     else
         echo -e "${COLOR_YELLOW}use existing python dev environment${COLOR_RESET}"
     fi
@@ -58,7 +59,7 @@ compile() {
 lint() {
     cd $GIT_ROOT
     echo -e "${COLOR_BLUE}[prospector] lint python bindings: examples${COLOR_RESET}"
-    prospector -m -D -T -s veryhigh -F examples/python/
+    prospector -m -D -T -s veryhigh -F --profile .prospector.yaml examples/python/
     if [[ $? != "0" ]]; then
         echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}\n"
         SUCCESS_CODE=1;
@@ -76,7 +77,7 @@ lint() {
 
 
     echo -e "${COLOR_BLUE}[prospector] lint python bindings: tests${COLOR_RESET}"
-    prospector -m -D -T -s veryhigh -F iceoryx2-ffi/python/tests/
+    prospector -m -D -T -s veryhigh -F --profile .prospector-tests.yaml iceoryx2-ffi/python/tests/
     if [[ $? != "0" ]]; then
         echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: tests - failed${COLOR_RESET}\n"
         SUCCESS_CODE=1;

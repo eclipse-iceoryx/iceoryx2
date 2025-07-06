@@ -26,6 +26,7 @@ pip install pytest
 pip install prospector[with_mypy]
 pip install black
 pip install isort
+pip install bandit
 ```
 
 ## Development
