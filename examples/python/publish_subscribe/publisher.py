@@ -49,12 +49,19 @@ try:
         COUNTER += 1
         node.wait(cycle_time)
         sample_uninit = publisher.loan_slice_uninit(1)
-        data = TransmissionData(
-            x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12
-        )
-        ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(data), 16)
+        data = sample_uninit.payload(TransmissionData)
+        data.contents.x = COUNTER
+        data.contents.y = COUNTER * 3
+        data.contents.funky = COUNTER * 812.12
         sample = sample_uninit.assume_init()
         sample.send()
+
+        publisher.send_copy(
+            TransmissionData(
+                x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12
+            )
+        )
+
         print("send sample")
 except iox2.NodeWaitFailure:
     print("exit")

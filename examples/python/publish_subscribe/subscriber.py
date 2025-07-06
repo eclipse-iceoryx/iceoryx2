@@ -49,9 +49,7 @@ try:
         while True:
             sample = subscriber.receive()
             if sample is not None:
-                data = ctypes.cast(
-                    sample.payload_ptr, ctypes.POINTER(TransmissionData)
-                )
+                data = sample.payload(TransmissionData)
                 print("received data", data.contents.x, " ", data.contents.y)
             else:
                 break

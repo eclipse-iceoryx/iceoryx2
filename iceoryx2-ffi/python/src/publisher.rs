@@ -87,6 +87,15 @@ impl Publisher {
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns `LoanError` describing the failure.
+    pub fn loan_uninit(&self) -> PyResult<SampleMutUninit> {
+        self.loan_slice_uninit(1)
+    }
+
+    /// Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`.
+    /// The user has to initialize the payload before it can be sent.
+    /// Fails when it is called for data types which are not a slice.
+    ///
+    /// On failure it returns `LoanError` describing the failure.
     pub fn loan_slice_uninit(&self, number_of_elements: usize) -> PyResult<SampleMutUninit> {
         match &*self.0.lock() {
             PublisherType::Ipc(Some(v)) => {

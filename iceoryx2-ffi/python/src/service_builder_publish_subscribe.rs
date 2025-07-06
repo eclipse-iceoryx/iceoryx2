@@ -51,7 +51,7 @@ pub struct ServiceBuilderPublishSubscribe(pub(crate) ServiceBuilderPublishSubscr
 impl ServiceBuilderPublishSubscribe {
     /// Defines the payload type. To be able to connect to a `Service` the `TypeDetail` must be
     /// identical in all participants since the communication is always strongly typed.
-    pub fn payload_type_details(&self, value: &TypeDetail) -> Self {
+    pub fn __payload_type_details(&self, value: &TypeDetail) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
@@ -68,7 +68,7 @@ impl ServiceBuilderPublishSubscribe {
 
     /// Defines the user header type. To be able to connect to a `Service` the `TypeDetail` must be
     /// identical in all participants since the communication is always strongly typed.
-    pub fn user_header_type_details(&self, value: &TypeDetail) -> Self {
+    pub fn __user_header_type_details(&self, value: &TypeDetail) -> Self {
         match &self.0 {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();

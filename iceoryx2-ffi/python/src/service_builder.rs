@@ -48,7 +48,7 @@ impl ServiceBuilder {
     }
 
     /// Create a new builder to create a `MessagingPattern::PublishSubscribe` `Service`.
-    pub fn publish_subscribe(&self) -> ServiceBuilderPublishSubscribe {
+    pub fn __publish_subscribe(&self) -> ServiceBuilderPublishSubscribe {
         match &self.0 {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();

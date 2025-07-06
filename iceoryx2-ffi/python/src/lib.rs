@@ -137,6 +137,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::port_factory_server::PortFactoryServer>()?;
     m.add_class::<crate::port_factory_subscriber::PortFactorySubscriber>()?;
     m.add_class::<crate::publisher::Publisher>()?;
+    m.add_class::<crate::sample::Sample>()?;
     m.add_class::<crate::sample_mut::SampleMut>()?;
     m.add_class::<crate::sample_mut_uninit::SampleMutUninit>()?;
     m.add_class::<crate::server::Server>()?;
