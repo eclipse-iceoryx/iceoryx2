@@ -46,8 +46,8 @@ impl Sample {
         match &*self.0.lock() {
             SampleType::Ipc(Some(v)) => HeaderPublishSubscribe(*v.header()),
             SampleType::Local(Some(v)) => HeaderPublishSubscribe(*v.header()),
-            _ => fatal_panic!(from "SampleMutUninit::header()",
-                "Access of a released sample."),
+            _ => fatal_panic!(from "Sample::header()",
+                "Accessing a released sample."),
         }
     }
 
@@ -57,8 +57,8 @@ impl Sample {
         match &mut *self.0.lock() {
             SampleType::Ipc(Some(v)) => (v.user_header() as *const CustomHeaderMarker) as usize,
             SampleType::Local(Some(v)) => (v.user_header() as *const CustomHeaderMarker) as usize,
-            _ => fatal_panic!(from "SampleMutUninit::user_header_ptr()",
-                "Access of a released sample."),
+            _ => fatal_panic!(from "Sample::user_header_ptr()",
+                "Accessing a released sample."),
         }
     }
 
@@ -68,14 +68,14 @@ impl Sample {
         match &mut *self.0.lock() {
             SampleType::Ipc(Some(v)) => (v.payload().as_ptr()) as usize,
             SampleType::Local(Some(v)) => (v.payload().as_ptr()) as usize,
-            _ => fatal_panic!(from "SampleMutUninit::user_header_ptr()",
-                "Access of a released sample."),
+            _ => fatal_panic!(from "Sample::user_header_ptr()",
+                "Accessing a released sample."),
         }
     }
 
-    /// Releases the `SampleMutUninit`.
+    /// Releases the `Sample`.
     ///
-    /// After this call the `SampleMutUninit` is no longer usable!
+    /// After this call the `Sample` is no longer usable!
     pub fn delete(&mut self) {
         match &mut *self.0.lock() {
             SampleType::Ipc(ref mut v) => {

@@ -61,7 +61,7 @@ impl SampleMutUninit {
             SampleMutUninitType::Ipc(Some(v)) => HeaderPublishSubscribe(*v.header()),
             SampleMutUninitType::Local(Some(v)) => HeaderPublishSubscribe(*v.header()),
             _ => fatal_panic!(from "SampleMutUninit::header()",
-                "Access of a released sample."),
+                "Accessing a released sample."),
         }
     }
 
@@ -76,7 +76,7 @@ impl SampleMutUninit {
                 (v.user_header_mut() as *mut CustomHeaderMarker) as usize
             }
             _ => fatal_panic!(from "SampleMutUninit::user_header_ptr()",
-                "Access of a released sample."),
+                "Accessing a released sample."),
         }
     }
 
@@ -87,7 +87,7 @@ impl SampleMutUninit {
             SampleMutUninitType::Ipc(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
             SampleMutUninitType::Local(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
             _ => fatal_panic!(from "SampleMutUninit::user_header_ptr()",
-                "Access of a released sample."),
+                "Accessing a released sample."),
         }
     }
 

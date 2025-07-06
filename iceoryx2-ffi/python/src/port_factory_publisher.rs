@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Arc;
-
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
@@ -176,17 +174,17 @@ impl PortFactoryPublisher {
         match &self.value {
             PortFactoryPublisherType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Publisher(PublisherType::Ipc(Arc::new(
+                Ok(Publisher(Parc::new(PublisherType::Ipc(Some(
                     this.create()
                         .map_err(|e| PublisherCreateError::new_err(format!("{e:?}")))?,
-                ))))
+                )))))
             }
             PortFactoryPublisherType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Publisher(PublisherType::Local(Arc::new(
+                Ok(Publisher(Parc::new(PublisherType::Local(Some(
                     this.create()
                         .map_err(|e| PublisherCreateError::new_err(format!("{e:?}")))?,
-                ))))
+                )))))
             }
         }
     }
