@@ -42,7 +42,7 @@ configure_python_env() {
 
     if [[ -z "$PYTHONPATH" ]]; then
         echo -e "${COLOR_BLUE}define PYTHONPATH${COLOR_RESET}"
-        export PYTHONPATH=$GIT_ROOT/iceoryx2-ffi/python/
+        export PYTHONPATH=$GIT_ROOT/iceoryx2-ffi/python/python-src
     else
         echo -e "${COLOR_YELLOW}use predefined PYTHONPATH=\"${PYTHONPATH}\"${COLOR_RESET}"
     fi
@@ -50,13 +50,9 @@ configure_python_env() {
 
 compile() {
     echo -e "${COLOR_BLUE}compile python bindings${COLOR_RESET}"
-    cd iceoryx2-ffi/python
-    rm iceoryx2/*.so
+    cd iceoryx2-ffi/python/python-src
+    rm python-src/iceoryx2/*.so
     maturin develop
-    cd $GIT_ROOT
-    PYTHON_VERSION=$(ls .env/lib/ | grep -E "^python[0-9].[0-9][0-9]\$")
-    cp .env/lib/${PYTHON_VERSION}/site-packages/_iceoryx2/_iceoryx2.abi3.so iceoryx2-ffi/python/iceoryx2/
-    echo -e "${COLOR_GREEN}deployed _iceoryx2.abi3.so from ${PYTHON_VERSION}${COLOR_RESET}\n"
 }
 
 lint() {

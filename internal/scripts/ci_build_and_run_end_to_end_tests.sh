@@ -53,13 +53,10 @@ cmake --build target/ffi/build -j$NUM_JOBS
 rm -rf .env
 python -m venv .env
 source .env/bin/activate
-export PYTHONPATH=${WORKSPACE}/iceoryx2-ffi/python/
+export PYTHONPATH=${WORKSPACE}/iceoryx2-ffi/python/python-src
 cd "${WORKSPACE}/iceoryx2-ffi/python"
-rm -f iceoryx2/*.so
+rm -f python-src/iceoryx2/*.so
 maturin develop
-cd ${WORKSPACE}
-PYTHON_VERSION=$(ls .env/lib/ | grep -E "^python[0-9].[0-9][0-9]\$")
-cp .env/lib/${PYTHON_VERSION}/site-packages/_iceoryx2/_iceoryx2.abi3.so iceoryx2-ffi/python/iceoryx2/
 
 # Search for all end-to-end test files
 cd "${WORKSPACE}"

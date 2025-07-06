@@ -45,6 +45,6 @@ changelog = "https://github.com/eclipse-iceoryx/iceoryx2/blob/main/CHANGELOG.md"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
-python-source = "iceoryx2"
+python-source = "python-src"
 bindings = "pyo3"
-module-name = "_iceoryx2"
+module-name = "iceoryx2._iceoryx2"
