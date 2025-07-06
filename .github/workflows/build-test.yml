@@ -234,7 +234,7 @@ jobs:
        run: internal/scripts/ci_check_python.sh
 
   end-to-end-tests:
-    needs: [preflight-check, static-code-analysis]
+    needs: [preflight-check, static-code-analysis, maturin]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -245,6 +245,12 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Download artifact maturin
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: maturin
+          artifact-upload-name: ${{ runner.os }}-maturin
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
