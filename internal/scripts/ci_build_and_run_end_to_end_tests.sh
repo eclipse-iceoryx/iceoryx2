@@ -34,8 +34,11 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     NUM_JOBS=$(sysctl -n hw.ncpu)
 fi
 
+# Clean build for iceoryx_hoofs
 rm -rf ${WORKSPACE}/target/iceoryx
 ${WORKSPACE}/internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+
+# Build the C and C++ bindings
 cargo build --package iceoryx2-ffi
 cmake -S . -B target/ffi/build \
     -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
@@ -46,6 +49,20 @@ cmake -S . -B target/ffi/build \
     -DBUILD_TESTING=OFF
 cmake --build target/ffi/build -j$NUM_JOBS
 
+# Build the Python bindings
+rm -rf .env
+python -m venv .env
+source .env/bin/activate
+export PYTHONPATH=${WORKSPACE}/iceoryx2-ffi/python/
+cd "${WORKSPACE}/iceoryx2-ffi/python"
+rm -f iceoryx2/*.so
+maturin develop
+cd ${WORKSPACE}
+PYTHON_VERSION=$(ls .env/lib/ | grep -E "^python[0-9].[0-9][0-9]\$")
+cp .env/lib/${PYTHON_VERSION}/site-packages/_iceoryx2/_iceoryx2.abi3.so iceoryx2-ffi/python/iceoryx2/
+
+# Search for all end-to-end test files
+cd "${WORKSPACE}"
 FILES=$(find ${WORKSPACE} -type f | grep -E "test_e2e_.*\.exp" | sort)
 FILES_ARRAY=(${FILES})
 NUMBER_OF_FILES=${#FILES_ARRAY[@]}
