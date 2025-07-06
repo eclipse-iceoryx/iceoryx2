@@ -75,7 +75,7 @@ def test_deleting_publisher_removes_it_from_the_service(
     try:
         sut = service.publisher_builder().create()
     except iox2.PublisherCreateError:
-        assert false
+        assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -98,7 +98,7 @@ def test_deleting_sample_mut_uninit_releases_it(
     try:
         sample_uninit = sut.loan_slice_uninit(1)
     except iox2.LoanError:
-        assert false
+        assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -122,4 +122,4 @@ def test_deleting_sample_mut_releases_it(
     try:
         sample_uninit = sut.loan_slice_uninit(1)
     except iox2.LoanError:
-        assert false
+        assert False

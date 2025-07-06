@@ -44,6 +44,8 @@ pub(crate) enum PortFactorySubscriberType {
 }
 
 #[pyclass]
+/// Factory to create a new `Subscriber` port/endpoint for
+/// `MessagingPattern::PublishSubscribe` based communication.
 pub struct PortFactorySubscriber {
     factory: Parc<PortFactoryPublishSubscribeType>,
     value: PortFactorySubscriberType,
@@ -69,6 +71,7 @@ impl PortFactorySubscriber {
 
 #[pymethods]
 impl PortFactorySubscriber {
+    /// Defines the buffer size of the `Subscriber`. Smallest possible value is `1`.
     pub fn buffer_size(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
@@ -97,15 +100,17 @@ impl PortFactorySubscriber {
         match &self.value {
             PortFactorySubscriberType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Subscriber(SubscriberType::Ipc(this.create().map_err(
-                    |e| SubscriberCreateError::new_err(format!("{e:?}")),
-                )?)))
+                Ok(Subscriber(Parc::new(SubscriberType::Ipc(Some(
+                    this.create()
+                        .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
+                )))))
             }
             PortFactorySubscriberType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Subscriber(SubscriberType::Local(this.create().map_err(
-                    |e| SubscriberCreateError::new_err(format!("{e:?}")),
-                )?)))
+                Ok(Subscriber(Parc::new(SubscriberType::Local(Some(
+                    this.create()
+                        .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
+                )))))
             }
         }
     }
