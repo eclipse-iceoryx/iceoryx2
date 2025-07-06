@@ -134,8 +134,7 @@ impl<
         UserHeader: ZeroCopySend,
     > SampleMutUninit<Service, Payload, UserHeader>
 {
-    /// Returns a reference to the [`Header`](crate::service::header::publish_subscribe::Header) of
-    /// the [`SampleMutUninit`].
+    /// Returns a reference to the [`Header`] of the [`SampleMutUninit`].
     ///
     /// # Example
     ///
