@@ -47,6 +47,8 @@ pub(crate) enum PortFactoryClientType {
 }
 
 #[pyclass]
+/// Factory to create a new `Client` port/endpoint for `MessagingPattern::RequestResponse`
+/// based communication.
 pub struct PortFactoryClient {
     factory: Parc<PortFactoryRequestResponseType>,
     value: PortFactoryClientType,

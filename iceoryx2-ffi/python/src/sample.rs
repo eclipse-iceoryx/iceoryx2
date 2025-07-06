@@ -68,7 +68,7 @@ impl Sample {
         match &mut *self.0.lock() {
             SampleType::Ipc(Some(v)) => (v.payload().as_ptr()) as usize,
             SampleType::Local(Some(v)) => (v.payload().as_ptr()) as usize,
-            _ => fatal_panic!(from "Sample::user_header_ptr()",
+            _ => fatal_panic!(from "Sample::payload_ptr()",
                 "Accessing a released sample."),
         }
     }

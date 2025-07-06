@@ -60,9 +60,10 @@ try:
         while True:
             sample = subscriber.receive()
             if sample is not None:
-                data = TransmissionData()
-                ctypes.memmove(ctypes.byref(data), sample.payload_ptr, 16)
-                print("received data", data.x, " ", data.y)
+                data = ctypes.cast(
+                    sample.payload_ptr, ctypes.POINTER(TransmissionData)
+                )
+                print("received data", data.contents.x, " ", data.contents.y)
             else:
                 break
 

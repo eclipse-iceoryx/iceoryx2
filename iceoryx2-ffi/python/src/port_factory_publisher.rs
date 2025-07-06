@@ -42,6 +42,8 @@ pub(crate) enum PortFactoryPublisherType {
 }
 
 #[pyclass]
+/// Factory to create a new `Publisher` port/endpoint for `MessagingPattern::PublishSubscribe`
+/// based communication.
 pub struct PortFactoryPublisher {
     factory: Parc<PortFactoryPublishSubscribeType>,
     value: PortFactoryPublisherType,
