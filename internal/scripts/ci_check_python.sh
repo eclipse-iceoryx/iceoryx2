@@ -51,9 +51,8 @@ configure_python_env() {
 
 compile() {
     echo -e "${COLOR_BLUE}compile python bindings${COLOR_RESET}"
-    cd iceoryx2-ffi/python/python-src
-    rm python-src/iceoryx2/*.so
-    maturin develop
+    rm iceoryx2-ffi/python/python-src/iceoryx2/*.so
+    maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml
 }
 
 lint() {
@@ -63,7 +62,7 @@ lint() {
     if [[ $? != "0" ]]; then
         echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}\n"
         SUCCESS_CODE=1;
-    else 
+    else
         echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}\n"
     fi
     echo -e "${COLOR_BLUE}[mypy] lint python bindings: examples${COLOR_RESET}"
@@ -71,7 +70,7 @@ lint() {
     if [[ $? != "0" ]]; then
         echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: examples - failed${COLOR_RESET}\n"
         SUCCESS_CODE=1;
-    else 
+    else
         echo -e "${COLOR_GREEN}lint python bindings: examples - success${COLOR_RESET}\n"
     fi
 
@@ -89,7 +88,7 @@ lint() {
     if [[ $? != "0" ]]; then
         echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: tests - failed${COLOR_RESET}\n"
         SUCCESS_CODE=1;
-    else 
+    else
         echo -e "${COLOR_GREEN}lint python bindings: tests - success${COLOR_RESET}\n"
     fi
 

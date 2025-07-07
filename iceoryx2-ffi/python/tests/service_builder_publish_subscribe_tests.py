@@ -10,19 +10,21 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+import ctypes
+
 import pytest
 
 import iceoryx2 as iox2
-import ctypes
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
+
 
 class Payload(ctypes.Structure):
     _fields_ = [("data", ctypes.c_ubyte)]
 
+
 class HeaderPayload(ctypes.Structure):
-    _fields_ = [("data", ctypes.c_ubyte),
-                ("fuu", ctypes.c_int)]
+    _fields_ = [("data", ctypes.c_ubyte), ("fuu", ctypes.c_int)]
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -33,7 +35,11 @@ def test_non_existing_service_can_be_created(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     try:
         service_name = iox2.testing.generate_service_name()
-        sut = node.service_builder(service_name).publish_subscribe(Payload).create()
+        sut = (
+            node.service_builder(service_name)
+            .publish_subscribe(Payload)
+            .create()
+        )
         assert sut.name == service_name
     except iox2.PublishSubscribeCreateError:
         assert False
@@ -65,7 +71,9 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
         node.service_builder(service_name).publish_subscribe(Payload).create()
     )
     try:
-        sut = node.service_builder(service_name).publish_subscribe(Payload).open()
+        sut = (
+            node.service_builder(service_name).publish_subscribe(Payload).open()
+        )
         assert sut.name == service_name
     except iox2.PublishSubscribeOpenError:
         assert False
@@ -142,7 +150,9 @@ def test_create_service_with_attributes_work(
         .create_with_attributes(attribute_spec)
     )
 
-    sut_open = node.service_builder(service_name).publish_subscribe(Payload).open()
+    sut_open = (
+        node.service_builder(service_name).publish_subscribe(Payload).open()
+    )
 
     assert sut_create.attributes == attribute_spec.attributes
     assert sut_create.attributes == sut_open.attributes
@@ -169,7 +179,9 @@ def test_open_or_create_service_with_attributes_work(
         .open_or_create_with_attributes(attribute_verifier)
     )
 
-    sut_open = node.service_builder(service_name).publish_subscribe(Payload).open()
+    sut_open = (
+        node.service_builder(service_name).publish_subscribe(Payload).open()
+    )
 
     assert sut_create.attributes == attribute_spec.attributes
     assert sut_create.attributes == sut_open.attributes
@@ -324,10 +336,6 @@ def test_custom_payload_works(service_type: iox2.ServiceType) -> None:
         .size(ctypes.sizeof(Payload))
         .alignment(ctypes.alignment(Payload))
     )
-    sut = (
-        node.service_builder(service_name)
-        .publish_subscribe(Payload)
-        .create()
-    )
+    sut = node.service_builder(service_name).publish_subscribe(Payload).create()
 
     assert sut.static_config.message_type_details.payload == payload

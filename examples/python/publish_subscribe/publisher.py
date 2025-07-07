@@ -12,11 +12,9 @@
 
 """Publisher example."""
 
-import ctypes
-
 from transmission_data import TransmissionData
-import iceoryx2 as iox2
 
+import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
 
@@ -37,7 +35,9 @@ try:
         COUNTER += 1
         node.wait(cycle_time)
         sample = publisher.loan_uninit()
-        sample = sample.write_payload(TransmissionData (x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12))
+        sample = sample.write_payload(
+            TransmissionData(x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12)
+        )
         sample.send()
         print("send sample", COUNTER, "...")
 

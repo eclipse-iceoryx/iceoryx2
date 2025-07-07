@@ -12,11 +12,9 @@
 
 """Subscriber example."""
 
-import ctypes
-
 from transmission_data import TransmissionData
-import iceoryx2 as iox2
 
+import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
 

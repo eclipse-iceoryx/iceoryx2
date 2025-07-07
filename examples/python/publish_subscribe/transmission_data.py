@@ -22,9 +22,11 @@ class TransmissionData(ctypes.Structure):
         ("funky", ctypes.c_double),
     ]
 
-    def __str__(self):
-        return f'TransmissionData {{ x: {self.x}, y: {self.y}, funky: {self.funky} }}'
+    def __str__(self) -> str:
+        """Returns human-readable string of the contents."""
+        return f"TransmissionData {{ x: {self.x}, y: {self.y}, funky: {self.funky} }}"
 
     @staticmethod
-    def type_name():
+    def type_name() -> str:
+        """Returns the system-wide unique type name required for communication."""
         return "TransmissionData"

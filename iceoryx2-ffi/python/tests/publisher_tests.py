@@ -10,12 +10,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+import ctypes
+
 import pytest
 
 import iceoryx2 as iox2
-import ctypes
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
+
 
 class Payload(ctypes.Structure):
     _fields_ = [("data", ctypes.c_ubyte)]
@@ -63,14 +65,12 @@ def test_max_loans_can_be_set_up(
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe(Payload).create()
+    service = (
+        node.service_builder(service_name).publish_subscribe(Payload).create()
+    )
     max_loans = 8
 
-    sut = (
-        service.publisher_builder()
-        .max_loaned_samples(max_loans)
-        .create()
-    )
+    sut = service.publisher_builder().max_loaned_samples(max_loans).create()
 
     samples = []
     for _ in range(0, 8):
