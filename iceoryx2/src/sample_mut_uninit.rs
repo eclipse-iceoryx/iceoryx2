@@ -109,13 +109,6 @@ use crate::{
 /// It stores the payload that will be sent
 /// to all connected [`crate::port::subscriber::Subscriber`]s. If the [`SampleMut`] is not sent
 /// it will release the loaned memory when going out of scope.
-///
-/// # Notes
-///
-/// Does not implement [`Send`] since it releases unsent samples in the [`crate::port::publisher::Publisher`] and the
-/// [`crate::port::publisher::Publisher`] is not thread-safe!
-///
-/// The generic parameter `Payload` is actually [`core::mem::MaybeUninit<Payload>`].
 #[repr(transparent)]
 pub struct SampleMutUninit<
     Service: crate::service::Service,
@@ -141,7 +134,7 @@ impl<
         UserHeader: ZeroCopySend,
     > SampleMutUninit<Service, Payload, UserHeader>
 {
-    /// Returns a reference to the header of the sample.
+    /// Returns a reference to the [`Header`] of the [`SampleMutUninit`].
     ///
     /// # Example
     ///

@@ -19,6 +19,7 @@ use crate::attribute_verifier::AttributeVerifier;
 use crate::error::{
     RequestResponseCreateError, RequestResponseOpenError, RequestResponseOpenOrCreateError,
 };
+use crate::parc::Parc;
 use crate::port_factory_request_response::{
     PortFactoryRequestResponse, PortFactoryRequestResponseType,
 };
@@ -341,19 +342,19 @@ impl ServiceBuilderRequestResponse {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Ipc(this.open_or_create().map_err(|e| {
                         RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
-                ))
+                )))
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Local(this.open_or_create().map_err(|e| {
                         RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
-                ))
+                )))
             }
         }
     }
@@ -372,25 +373,25 @@ impl ServiceBuilderRequestResponse {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Ipc(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
                                 RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Local(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
                                 RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
-                ))
+                )))
             }
         }
     }
@@ -401,21 +402,21 @@ impl ServiceBuilderRequestResponse {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Ipc(
                         this.open()
                             .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Local(
                         this.open()
                             .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
         }
     }
@@ -430,21 +431,21 @@ impl ServiceBuilderRequestResponse {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Ipc(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Local(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
         }
     }
@@ -455,21 +456,21 @@ impl ServiceBuilderRequestResponse {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Ipc(
                         this.create()
                             .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Local(
                         this.create()
                             .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
         }
     }
@@ -483,21 +484,21 @@ impl ServiceBuilderRequestResponse {
         match &self.0 {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Ipc(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(
+                Ok(PortFactoryRequestResponse(Parc::new(
                     PortFactoryRequestResponseType::Local(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
                     ),
-                ))
+                )))
             }
         }
     }

@@ -15,23 +15,30 @@ use pyo3::exceptions::PyException;
 
 create_exception!(
     iceoryx2_ffi_python,
-    InvalidAlignmentValue,
-    PyException,
-    "Errors caused when the value of the alignment is not a power of two or exceeds the maximum supported value."
-);
-
-create_exception!(
-    iceoryx2_ffi_python,
-    SemanticStringError,
-    PyException,
-    "Errors caused by creating a semantic string."
-);
-
-create_exception!(
-    iceoryx2_ffi_python,
     ConfigCreationError,
     PyException,
     "Errors caused by creating a new config."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ClientCreateError,
+    PyException,
+    "Errors caused when creating a new client port."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ConnectionFailure,
+    PyException,
+    "Errors caused a connection to an endpoint could not be established."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    LoanError,
+    PyException,
+    "Errors caused when loaning memory from a ports datasegment."
 );
 
 create_exception!(
@@ -106,9 +113,23 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    InvalidAlignmentValue,
+    PyException,
+    "Errors caused when the value of the alignment is not a power of two or exceeds the maximum supported value."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     ListenerWaitError,
     PyException,
     "Errors caused when waiting on a Listener port in an event service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    PublisherCreateError,
+    PyException,
+    "Errors caused when creating a publisher port."
 );
 
 create_exception!(
@@ -134,6 +155,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    ReceiveError,
+    PyException,
+    "Errors caused when receiving data."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     RequestResponseOpenError,
     PyException,
     "Errors caused when opening a request-response service."
@@ -151,6 +179,34 @@ create_exception!(
     RequestResponseOpenOrCreateError,
     PyException,
     "Errors caused when open or creating a request-response service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    SemanticStringError,
+    PyException,
+    "Errors caused by creating a semantic string."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    SendError,
+    PyException,
+    "Errors caused when sending data."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    ServerCreateError,
+    PyException,
+    "Errors caused when creating a server port."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
+    SubscriberCreateError,
+    PyException,
+    "Errors caused when creating a subscriber port."
 );
 
 create_exception!(

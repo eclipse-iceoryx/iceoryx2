@@ -1521,6 +1521,7 @@ name = "iceoryx2-ffi-python"
 version = "0.6.1"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-log",
  "pyo3",
 ]
 

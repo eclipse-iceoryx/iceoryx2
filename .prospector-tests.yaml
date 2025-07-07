@@ -1,0 +1,33 @@
+output-format: text
+
+strictness: veryhigh
+test-warnings: true
+doc-warnings: true
+member-warnings: true
+inherits:
+  - default
+
+bandit:
+  run: true
+  disable:
+    - B101
+
+pylint:
+  disable:
+    - missing-function-docstring
+    - missing-module-docstring
+    - missing-class-docstring
+    - unused-import
+    - too-many-locals
+
+pyflakes:
+  disable:
+    - F401
+    - F841
+
+mypy:
+  run: true
+  disable:
+    - misc
+
+

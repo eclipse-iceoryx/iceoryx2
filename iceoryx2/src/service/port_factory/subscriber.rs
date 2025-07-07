@@ -78,6 +78,20 @@ impl<
         UserHeader: Debug + ZeroCopySend,
     > PortFactorySubscriber<'factory, Service, PayloadType, UserHeader>
 {
+    #[doc(hidden)]
+    /// # Safety
+    ///
+    ///   * does not clone the degradation callback
+    pub unsafe fn __internal_partial_clone(&self) -> Self {
+        Self {
+            config: SubscriberConfig {
+                buffer_size: self.config.buffer_size,
+                degradation_callback: None,
+            },
+            factory: self.factory,
+        }
+    }
+
     pub(crate) fn new(factory: &'factory PortFactory<Service, PayloadType, UserHeader>) -> Self {
         Self {
             config: SubscriberConfig {

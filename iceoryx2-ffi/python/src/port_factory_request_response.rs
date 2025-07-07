@@ -20,10 +20,14 @@ use crate::node_id::NodeId;
 use crate::node_state::{
     AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState,
 };
+use crate::parc::Parc;
+use crate::port_factory_client::PortFactoryClient;
+use crate::port_factory_server::PortFactoryServer;
 use crate::service_id::ServiceId;
 use crate::service_name::ServiceName;
 use crate::static_config_request_response::StaticConfigRequestResponse;
 
+#[derive(Clone)]
 pub(crate) enum PortFactoryRequestResponseType {
     Ipc(
         iceoryx2::service::port_factory::request_response::PortFactory<
@@ -48,14 +52,14 @@ pub(crate) enum PortFactoryRequestResponseType {
 #[pyclass]
 /// The factory for `MessagingPattern::RequestResponse`. It can acquire dynamic and static service
 /// informations and create `Client` or `Server` ports.
-pub struct PortFactoryRequestResponse(pub(crate) PortFactoryRequestResponseType);
+pub struct PortFactoryRequestResponse(pub(crate) Parc<PortFactoryRequestResponseType>);
 
 #[pymethods]
 impl PortFactoryRequestResponse {
     #[getter]
     /// Returns the `ServiceName` of the service
     pub fn name(&self) -> ServiceName {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryRequestResponseType::Ipc(v) => ServiceName(v.name().clone()),
             PortFactoryRequestResponseType::Local(v) => ServiceName(v.name().clone()),
         }
@@ -64,7 +68,7 @@ impl PortFactoryRequestResponse {
     #[getter]
     /// Returns the `ServiceId` of the `Service`
     pub fn service_id(&self) -> ServiceId {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryRequestResponseType::Ipc(v) => ServiceId(v.service_id().clone()),
             PortFactoryRequestResponseType::Local(v) => ServiceId(v.service_id().clone()),
         }
@@ -73,7 +77,7 @@ impl PortFactoryRequestResponse {
     #[getter]
     /// Returns the `AttributeSet` defined in the `Service`
     pub fn attributes(&self) -> AttributeSet {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryRequestResponseType::Ipc(v) => AttributeSet(v.attributes().clone()),
             PortFactoryRequestResponseType::Local(v) => AttributeSet(v.attributes().clone()),
         }
@@ -83,7 +87,7 @@ impl PortFactoryRequestResponse {
     /// Returns the StaticConfig of the `Service`.
     /// Contains all settings that never change during the lifetime of the service.
     pub fn static_config(&self) -> StaticConfigRequestResponse {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryRequestResponseType::Ipc(v) => {
                 StaticConfigRequestResponse(v.static_config().clone())
             }
@@ -96,7 +100,7 @@ impl PortFactoryRequestResponse {
     #[getter]
     /// Returns a list of all `NodeState` of all the `Node`s which have opened the `Service`.
     pub fn nodes(&self) -> PyResult<Vec<NodeState>> {
-        match &self.0 {
+        match &*self.0.lock() {
             PortFactoryRequestResponseType::Ipc(v) => {
                 let mut ret_val = vec![];
                 v.nodes(|state| {
@@ -141,5 +145,15 @@ impl PortFactoryRequestResponse {
                 Ok(ret_val)
             }
         }
+    }
+
+    /// Returns a `PortFactoryServer` to create a new `Server` port
+    pub fn server_builder(&self) -> PortFactoryServer {
+        PortFactoryServer::new(self.0.clone())
+    }
+
+    /// Returns a `PortFactoryClient` to create a new `Client` port
+    pub fn client_builder(&self) -> PortFactoryClient {
+        PortFactoryClient::new(self.0.clone())
     }
 }

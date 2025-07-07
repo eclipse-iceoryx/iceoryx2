@@ -84,6 +84,7 @@ unsafe impl<
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
 }
+
 unsafe impl<
         Service: service::Service,
         RequestPayload: Debug + ZeroCopySend + ?Sized,
@@ -93,6 +94,26 @@ unsafe impl<
     > Sync
     for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Clone
+    for PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn clone(&self) -> Self {
+        Self {
+            service: self.service.clone(),
+            _request_payload: PhantomData,
+            _request_header: PhantomData,
+            _response_payload: PhantomData,
+            _response_header: PhantomData,
+        }
+    }
 }
 
 impl<

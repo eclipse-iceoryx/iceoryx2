@@ -14,11 +14,11 @@ use pyo3::prelude::*;
 
 #[pyclass(eq)]
 #[derive(PartialEq, Eq)]
-/// The system-wide unique id of a `Notifier`.
-pub struct UniqueNotifierId(pub(crate) iceoryx2::port::port_identifiers::UniqueNotifierId);
+/// The system-wide unique id of a `Server`.
+pub struct UniqueServerId(pub(crate) iceoryx2::port::port_identifiers::UniqueServerId);
 
 #[pymethods]
-impl UniqueNotifierId {
+impl UniqueServerId {
     #[getter]
     /// Returns the underlying raw value of the ID
     pub fn value(&self) -> u128 {

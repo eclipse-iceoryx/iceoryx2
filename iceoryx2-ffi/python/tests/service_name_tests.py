@@ -23,4 +23,4 @@ def test_service_name_can_be_constructed() -> None:
 def test_service_name_construction_fails_when_max_len_is_exceeded() -> None:
     sut_value = "x" * (iox2.ServiceName.max_len() + 1)
     with pytest.raises(iox2.SemanticStringError):
-        sut = iox2.ServiceName.new(sut_value)
+        iox2.ServiceName.new(sut_value)

@@ -135,6 +135,24 @@ impl<
         ResponseHeader,
     >
 {
+    #[doc(hidden)]
+    /// # Safety
+    ///
+    ///   * does not clone the degradation callback
+    pub unsafe fn __internal_partial_clone(&self) -> Self {
+        Self {
+            factory: self.factory,
+            config: LocalServerConfig {
+                unable_to_deliver_strategy: self.config.unable_to_deliver_strategy,
+                initial_max_slice_len: self.config.initial_max_slice_len,
+                allocation_strategy: self.config.allocation_strategy,
+            },
+            max_loaned_responses_per_request: self.max_loaned_responses_per_request,
+            request_degradation_callback: None,
+            response_degradation_callback: None,
+        }
+    }
+
     pub(crate) fn new(
         factory: &'factory PortFactory<
             Service,

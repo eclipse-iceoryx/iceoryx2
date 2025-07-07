@@ -23,4 +23,4 @@ def test_path_can_be_constructed() -> None:
 def test_path_with_invalid_content_cannot_be_constructed() -> None:
     invalid_content = "/wildcards/***/are/*/forbidden"
     with pytest.raises(iox2.SemanticStringError):
-        sut = iox2.Path.new(invalid_content)
+        iox2.Path.new(invalid_content)
