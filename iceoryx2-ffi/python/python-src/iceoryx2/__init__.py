@@ -10,11 +10,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-from typing import Generic, TypeVar
-from . import _iceoryx2
-
-T = TypeVar("T")
-
-class PublisherFoo(Generic[T]):
-    def __init__(self):
-        print("init")
+from ._iceoryx2 import *
