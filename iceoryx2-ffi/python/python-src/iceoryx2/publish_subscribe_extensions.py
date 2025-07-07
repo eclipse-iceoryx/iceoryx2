@@ -23,9 +23,12 @@ T = TypeVar("T", bound=ctypes.Structure)
 
 def payload(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the payload."""
-    return ctypes.cast(
-        self.payload_ptr, ctypes.POINTER(self.__payload_type_details)
-    )
+    if get_origin(self.__payload_type_details) is Slice:
+        return Slice(self.payload_ptr, 10)
+    else:
+        return ctypes.cast(
+            self.payload_ptr, ctypes.POINTER(self.__payload_type_details)
+        )
 
 
 def user_header(self: Any) -> Any:

@@ -16,10 +16,9 @@ from typing import Generic, Type, TypeVar
 T = TypeVar("T", bound=ctypes.Structure)
 
 class Slice(Generic[T]):
-    @staticmethod
-    def element_size() -> int:
-        return ctypes.sizeof(T)
+    def __init__(self, data_ptr, number_of_elements) -> None:
+        self.data_ptr = data_ptr
+        self.number_of_elements = number_of_elements
 
-    @staticmethod
-    def element_alignment() -> int:
-        return ctypes.alignment(T)
+    def __str__(self) -> str:
+        return f"Slice {{ data_ptr: {self.data_ptr}, number_of_elements: {self.number_of_elements} }}"
