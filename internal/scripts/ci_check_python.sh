@@ -100,6 +100,7 @@ perform_lint() {
 lint() {
     cd $GIT_ROOT
     perform_lint "examples" "examples/python" ".prospector.yaml"
+    perform_lint "iceoryx2" "iceoryx2-ffi/python/python-src/iceoryx2" ".prospector-iceoryx2.yaml"
     perform_lint "tests" "iceoryx2-ffi/python/tests" ".prospector-tests.yaml"
 }
 

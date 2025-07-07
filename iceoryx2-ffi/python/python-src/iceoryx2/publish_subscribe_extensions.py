@@ -10,74 +10,89 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-from typing import Type, TypeVar
 import ctypes
-import iceoryx2 as iox2
+from typing import Any, Type, TypeVar
 
-T = TypeVar('T', bound=ctypes.Structure)
+from ._iceoryx2 import *
 
-def payload(self):
-    return ctypes.cast(self.payload_ptr, ctypes.POINTER(self.__payload_type_details))
+T = TypeVar("T", bound=ctypes.Structure)
 
-def user_header(self):
-    return ctypes.cast(self.user_header_ptr, ctypes.POINTER(self.__user_header_type_details))
 
-def publish_subscribe(self, t: Type[T]) -> iox2.ServiceBuilderPublishSubscribe:
+def payload(self: Any) -> Any:
+    return ctypes.cast(
+        self.payload_ptr, ctypes.POINTER(self.__payload_type_details)
+    )
+
+
+def user_header(self: Any) -> Any:
+    return ctypes.cast(
+        self.user_header_ptr, ctypes.POINTER(self.__user_header_type_details)
+    )
+
+
+def publish_subscribe(
+    self: ServiceBuilder, t: Type[T]
+) -> ServiceBuilderPublishSubscribe:
     type_name = t.__name__
     if hasattr(t, "type_name"):
-        type_name = t.type_name()
+        type_name = t.type_name()  # type: ignore[operator]
     result = self.__publish_subscribe()
     result.__set_payload_type(t)
     return result.__payload_type_details(
-        iox2.TypeDetail.new()
-        .type_variant(iox2.TypeVariant.FixedSize)
-        .type_name(iox2.TypeName.new(type_name))
+        TypeDetail.new()
+        .type_variant(TypeVariant.FixedSize)
+        .type_name(TypeName.new(type_name))
         .size(ctypes.sizeof(t))
         .alignment(ctypes.alignment(t))
     ).__user_header_type_details(
-        iox2.TypeDetail.new()
-        .type_variant(iox2.TypeVariant.FixedSize)
-        .type_name(iox2.TypeName.new("()"))
+        TypeDetail.new()
+        .type_variant(TypeVariant.FixedSize)
+        .type_name(TypeName.new("()"))
         .size(0)
         .alignment(1)
     )
 
-def set_user_header(self, t: Type[T]) -> iox2.ServiceBuilderPublishSubscribe:
+
+def set_user_header(
+    self: ServiceBuilderPublishSubscribe, t: Type[T]
+) -> ServiceBuilderPublishSubscribe:
     type_name = t.__name__
     if hasattr(t, "type_name"):
-        type_name = t.type_name()
+        type_name = t.type_name()  # type: ignore[operator]
     result = self.__user_header_type_details(
-        iox2.TypeDetail.new()
-        .type_variant(iox2.TypeVariant.FixedSize)
-        .type_name(iox2.TypeName.new(type_name))
+        TypeDetail.new()
+        .type_variant(TypeVariant.FixedSize)
+        .type_name(TypeName.new(type_name))
         .size(ctypes.sizeof(t))
         .alignment(ctypes.alignment(t))
     )
     result.__set_user_header_type(t)
     return result
 
-def send_copy(self, t: Type[T]) -> int:
+
+def send_copy(self: Publisher, t: Type[T]) -> Any:
     sample_uninit = self.loan_uninit()
-    ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
+    ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))  # type: ignore[arg-type]
     sample = sample_uninit.assume_init()
     return sample.send()
 
-def write_payload(self, t: Type[T]) -> iox2.SampleMut:
-    ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
+
+def write_payload(self: SampleMutUninit, t: Type[T]) -> SampleMut:
+    ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))  # type: ignore[arg-type]
     return self.assume_init()
 
 
-iox2.Publisher.send_copy = send_copy
+Publisher.send_copy = send_copy
 
-iox2.Sample.payload = payload
-iox2.Sample.user_header = user_header
+Sample.payload = payload
+Sample.user_header = user_header
 
-iox2.SampleMut.payload = payload
-iox2.SampleMut.user_header = user_header
+SampleMut.payload = payload
+SampleMut.user_header = user_header
 
-iox2.SampleMutUninit.write_payload = write_payload
-iox2.SampleMutUninit.payload = payload
-iox2.SampleMutUninit.user_header = user_header
+SampleMutUninit.write_payload = write_payload
+SampleMutUninit.payload = payload
+SampleMutUninit.user_header = user_header
 
-iox2.ServiceBuilder.publish_subscribe = publish_subscribe
-iox2.ServiceBuilderPublishSubscribe.user_header = set_user_header
+ServiceBuilder.publish_subscribe = publish_subscribe
+ServiceBuilderPublishSubscribe.user_header = set_user_header
