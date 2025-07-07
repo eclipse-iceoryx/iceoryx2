@@ -14,21 +14,11 @@
 
 import ctypes
 
+from transmission_data import TransmissionData
 import iceoryx2 as iox2
 
 
-class TransmissionData(ctypes.Structure):
-    """The strongly typed payload type."""
-
-    _fields_ = [
-        ("x", ctypes.c_int),
-        ("y", ctypes.c_int),
-        ("funky", ctypes.c_double),
-    ]
-
-    @staticmethod
-    def type_name():
-        return "TransmissionData"
+cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
@@ -41,27 +31,15 @@ service = (
 
 publisher = service.publisher_builder().create()
 
-cycle_time = iox2.Duration.from_secs(1)
 COUNTER = 0
-
 try:
     while True:
         COUNTER += 1
         node.wait(cycle_time)
-        sample_uninit = publisher.loan_slice_uninit(1)
-        data = sample_uninit.payload(TransmissionData)
-        data.contents.x = COUNTER
-        data.contents.y = COUNTER * 3
-        data.contents.funky = COUNTER * 812.12
-        sample = sample_uninit.assume_init()
+        sample = publisher.loan_slice_uninit(1)
+        sample = sample.write_payload(TransmissionData (x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12))
         sample.send()
+        print("send sample", COUNTER, "...")
 
-        publisher.send_copy(
-            TransmissionData(
-                x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12
-            )
-        )
-
-        print("send sample")
 except iox2.NodeWaitFailure:
     print("exit")

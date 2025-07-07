@@ -14,21 +14,10 @@
 
 import ctypes
 
+from transmission_data import TransmissionData
 import iceoryx2 as iox2
 
-
-class TransmissionData(ctypes.Structure):
-    """The strongly typed payload type."""
-
-    _fields_ = [
-        ("x", ctypes.c_int),
-        ("y", ctypes.c_int),
-        ("funky", ctypes.c_double),
-    ]
-
-    @staticmethod
-    def type_name():
-        return "TransmissionData"
+cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
@@ -41,7 +30,6 @@ service = (
 
 subscriber = service.subscriber_builder().create()
 
-cycle_time = iox2.Duration.from_secs(1)
 
 try:
     while True:
@@ -50,7 +38,7 @@ try:
             sample = subscriber.receive()
             if sample is not None:
                 data = sample.payload(TransmissionData)
-                print("received data", data.contents.x, " ", data.contents.y)
+                print("received:", data.contents)
             else:
                 break
 

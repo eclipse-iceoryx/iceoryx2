@@ -59,6 +59,11 @@ def send_copy(self, t: Type[T]) -> int:
     sample = sample_uninit.assume_init()
     return sample.send()
 
+def write_payload(self, t: Type[T]) -> iox2.SampleMut:
+    ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
+    return self.assume_init()
+
+
 iox2.Publisher.send_copy = send_copy
 
 iox2.Sample.payload = payload
@@ -67,6 +72,7 @@ iox2.Sample.user_header = user_header
 iox2.SampleMut.payload = payload
 iox2.SampleMut.user_header = user_header
 
+iox2.SampleMutUninit.write_payload = write_payload
 iox2.SampleMutUninit.payload = payload
 iox2.SampleMutUninit.user_header = user_header
 
