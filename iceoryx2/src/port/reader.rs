@@ -30,14 +30,16 @@ use super::port_identifiers::UniqueReaderId;
 
 struct ReaderSharedState<
     Service: service::Service,
-    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
     dynamic_reader_handle: Option<ContainerHandle>,
-    service_state: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
+    service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Debug
-    for ReaderSharedState<Service, T>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > Debug for ReaderSharedState<Service, KeyType>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         // TODO: improve Debug output
@@ -45,8 +47,10 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     }
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Drop
-    for ReaderSharedState<Service, T>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > Drop for ReaderSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_reader_handle {
@@ -68,8 +72,6 @@ pub enum ReaderCreateError {
     /// defined in [`crate::config::Config`]. When this is exceeded no more [`Reader`]s
     /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedReaders,
-    /// The data segment could not be opened.
-    UnableToOpenDataSegment,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
 }
@@ -86,17 +88,19 @@ impl core::error::Error for ReaderCreateError {}
 #[derive(Debug)]
 pub struct Reader<
     Service: service::Service,
-    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
-    shared_state: Arc<ReaderSharedState<Service, T>>,
+    shared_state: Arc<ReaderSharedState<Service, KeyType>>,
     reader_id: UniqueReaderId,
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
-    Reader<Service, T>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > Reader<Service, KeyType>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
+        service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
     ) -> Result<Self, ReaderCreateError> {
         let origin = "Reader::new()";
         let msg = "Unable to create Reader port";
@@ -146,8 +150,8 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     /// Creates a [`ReaderHandle`] for direct read access to the value.
     pub fn entry<ValueType: Copy + ZeroCopySend>(
         &self,
-        key: &T,
-    ) -> Result<ReaderHandle<Service, T, ValueType>, ReaderHandleError> {
+        key: &KeyType,
+    ) -> Result<ReaderHandle<Service, KeyType, ValueType>, ReaderHandleError> {
         let msg = "Unable to create reader handle";
 
         // check if key exists
@@ -216,6 +220,15 @@ pub struct ReaderHandle<
     shared_state: Arc<ReaderSharedState<Service, KeyType>>,
     atomic: *const UnrestrictedAtomic<ValueType>,
     offset: u64,
+}
+
+// TODO: document why it's safe
+unsafe impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+        ValueType: Copy + 'static,
+    > Send for ReaderHandle<Service, KeyType, ValueType>
+{
 }
 
 impl<

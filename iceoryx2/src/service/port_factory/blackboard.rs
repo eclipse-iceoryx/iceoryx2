@@ -34,13 +34,15 @@ use alloc::sync::Arc;
 #[derive(Debug)]
 pub struct PortFactory<
     Service: service::Service,
-    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
-    pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
+    pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
-    crate::service::port_factory::PortFactory for PortFactory<Service, T>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > crate::service::port_factory::PortFactory for PortFactory<Service, KeyType>
 {
     type Service = Service;
     type StaticConfig = static_config::blackboard::StaticConfig;
@@ -78,22 +80,26 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     }
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
-    PortFactory<Service, T>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > PortFactory<Service, KeyType>
 {
-    pub(crate) fn new(service: ServiceState<Service, BlackboardResources<Service, T>>) -> Self {
+    pub(crate) fn new(
+        service: ServiceState<Service, BlackboardResources<Service, KeyType>>,
+    ) -> Self {
         Self {
             service: Arc::new(service),
         }
     }
 
     /// Returns a [`PortFactoryWriter`] to create a new [`crate::port::writer::Writer`] port.
-    pub fn writer_builder(&self) -> PortFactoryWriter<Service, T> {
+    pub fn writer_builder(&self) -> PortFactoryWriter<Service, KeyType> {
         PortFactoryWriter::new(self)
     }
 
     /// Returns a [`PortFactoryReader`] to create a new [`crate::port::reader::Reader`] port.
-    pub fn reader_builder(&self) -> PortFactoryReader<Service, T> {
+    pub fn reader_builder(&self) -> PortFactoryReader<Service, KeyType> {
         PortFactoryReader::new(self)
     }
 }

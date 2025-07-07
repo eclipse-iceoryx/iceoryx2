@@ -151,45 +151,6 @@ impl From<ServiceAvailabilityState> for BlackboardCreateError {
     }
 }
 
-/// Errors that can occur when a [`MessagingPattern::Blackboard`] [`Service`] shall be
-/// created or opened.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum BlackboardOpenOrCreateError {
-    /// Failures that can occur when an existing [`Service`] could not be opened.
-    BlackboardOpenError(BlackboardOpenError),
-    /// Failures that can occur when a [`Service`] could not be created.
-    BlackboardCreateError(BlackboardCreateError),
-    /// Can occur when another process creates and removes the same [`Service`] repeatedly with a
-    /// high frequency.
-    SystemInFlux,
-}
-
-impl core::fmt::Display for BlackboardOpenOrCreateError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "BlackboardOpenOrCreateError::{self:?}")
-    }
-}
-
-impl core::error::Error for BlackboardOpenOrCreateError {}
-
-impl From<ServiceAvailabilityState> for BlackboardOpenOrCreateError {
-    fn from(value: ServiceAvailabilityState) -> Self {
-        Self::BlackboardOpenError(value.into())
-    }
-}
-
-impl From<BlackboardOpenError> for BlackboardOpenOrCreateError {
-    fn from(value: BlackboardOpenError) -> Self {
-        Self::BlackboardOpenError(value)
-    }
-}
-
-impl From<BlackboardCreateError> for BlackboardOpenOrCreateError {
-    fn from(value: BlackboardCreateError) -> Self {
-        Self::BlackboardCreateError(value)
-    }
-}
-
 struct BuilderInternals<KeyType> {
     key: KeyType,
     value_type_details: TypeDetail,

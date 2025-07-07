@@ -26,23 +26,23 @@ use iceoryx2_bb_log::fail;
 pub struct PortFactoryWriter<
     'factory,
     Service: service::Service,
-    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
-    pub(crate) factory: &'factory PortFactory<Service, T>,
+    pub(crate) factory: &'factory PortFactory<Service, KeyType>,
 }
 
 impl<
         'factory,
         Service: service::Service,
-        T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > PortFactoryWriter<'factory, Service, T>
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > PortFactoryWriter<'factory, Service, KeyType>
 {
-    pub(crate) fn new(factory: &'factory PortFactory<Service, T>) -> Self {
+    pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {
         Self { factory }
     }
 
     /// Creates a new [`Writer`] or returns a [`WriterCreateError`] on failure.
-    pub fn create(self) -> Result<Writer<Service, T>, WriterCreateError> {
+    pub fn create(self) -> Result<Writer<Service, KeyType>, WriterCreateError> {
         let origin = format!("{:?}", self);
         Ok(
             fail!(from origin, when Writer::new(self.factory.service.clone()),"Failed to create new Writer port."),

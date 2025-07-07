@@ -39,8 +39,6 @@ use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::*;
 
-use super::ServiceState;
-
 /// Defines a zero copy inter-process communication setup based on posix mechanisms.
 #[derive(Debug, Clone)]
 pub struct Service {}

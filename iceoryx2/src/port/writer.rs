@@ -30,14 +30,16 @@ use super::port_identifiers::UniqueWriterId;
 
 struct WriterSharedState<
     Service: service::Service,
-    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
     dynamic_writer_handle: Option<ContainerHandle>,
-    service_state: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
+    service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Debug
-    for WriterSharedState<Service, T>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > Debug for WriterSharedState<Service, KeyType>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         // TODO: improve Debug output
@@ -45,8 +47,10 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     }
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone> Drop
-    for WriterSharedState<Service, T>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > Drop for WriterSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_writer_handle {
@@ -68,8 +72,6 @@ pub enum WriterCreateError {
     /// defined in [`crate::config::Config`]. When this is exceeded no more [`Writer`]s
     /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedWriters,
-    /// The data segment could not be opened.
-    UnableToOpenDataSegment,
     /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalFailure,
 }
@@ -86,17 +88,19 @@ impl core::error::Error for WriterCreateError {}
 #[derive(Debug)]
 pub struct Writer<
     Service: service::Service,
-    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
-    shared_state: Arc<WriterSharedState<Service, T>>,
+    shared_state: Arc<WriterSharedState<Service, KeyType>>,
     writer_id: UniqueWriterId,
 }
 
-impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone>
-    Writer<Service, T>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > Writer<Service, KeyType>
 {
     pub(crate) fn new(
-        service: Arc<ServiceState<Service, BlackboardResources<Service, T>>>,
+        service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
     ) -> Result<Self, WriterCreateError> {
         let origin = "Writer::new()";
         let msg = "Unable to create Writer port";
@@ -147,8 +151,8 @@ impl<Service: service::Service, T: Send + Sync + Debug + 'static + Eq + ZeroCopy
     /// [`WriterHandle`] per value.
     pub fn entry<ValueType: Copy + ZeroCopySend>(
         &self,
-        key: &T,
-    ) -> Result<WriterHandle<Service, T, ValueType>, WriterHandleError> {
+        key: &KeyType,
+    ) -> Result<WriterHandle<Service, KeyType, ValueType>, WriterHandleError> {
         let msg = "Unable to create writer handle";
 
         // check if key exists
@@ -211,22 +215,31 @@ impl core::error::Error for WriterHandleError {}
 /// A handle for direct write access to a specific blackboard value.
 pub struct WriterHandle<
     Service: service::Service,
-    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
     ValueType: Copy + 'static,
 > {
-    shared_state: Arc<WriterSharedState<Service, T>>,
+    shared_state: Arc<WriterSharedState<Service, KeyType>>,
     producer: Producer<'static, ValueType>,
     offset: u64,
 }
 
+// TODO: document why it's safe
+unsafe impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+        ValueType: Copy + 'static,
+    > Send for WriterHandle<Service, KeyType, ValueType>
+{
+}
+
 impl<
         Service: service::Service,
-        T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
         ValueType: Copy + 'static,
-    > WriterHandle<Service, T, ValueType>
+    > WriterHandle<Service, KeyType, ValueType>
 {
     fn new(
-        writer_state: Arc<WriterSharedState<Service, T>>,
+        writer_state: Arc<WriterSharedState<Service, KeyType>>,
         offset: u64,
     ) -> Result<Self, WriterHandleError> {
         let atomic = (writer_state

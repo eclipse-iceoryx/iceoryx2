@@ -20,6 +20,7 @@ mod service_blackboard {
     use iceoryx2::service::static_config::message_type_details::TypeVariant;
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_container::byte_string::FixedSizeByteString;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -602,6 +603,51 @@ mod service_blackboard {
     }
 
     #[test]
+    fn communication_with_max_reader_and_writer_handles<Sut: Service>() {
+        const MAX_HANDLES: usize = 6;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .add::<u64>(1, 1)
+            .add::<u64>(2, 2)
+            .add::<u64>(3, 3)
+            .add::<u64>(4, 4)
+            .add::<u64>(5, 5)
+            .add::<u64>(6, 6)
+            .max_readers(MAX_HANDLES)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let mut writer_handles = vec![];
+        writer_handles.reserve(MAX_HANDLES);
+
+        let reader = sut.reader_builder().create().unwrap();
+        let mut reader_handles = vec![];
+        reader_handles.reserve(MAX_HANDLES);
+
+        for i in 0..MAX_HANDLES as u64 {
+            writer_handles.push(writer.entry::<u64>(&i).unwrap());
+            reader_handles.push(reader.entry::<u64>(&i).unwrap());
+        }
+
+        for i in 0..MAX_HANDLES {
+            writer_handles[i].update_with_copy(7);
+            for j in 0..(i + 1) {
+                assert_that!(reader_handles[j].get(), eq 7);
+            }
+            for j in (i + 1)..MAX_HANDLES {
+                assert_that!(reader_handles[j].get(), eq j as u64);
+            }
+        }
+    }
+
+    #[test]
     fn handle_cannot_be_acquired_for_non_existing_key<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -687,6 +733,63 @@ mod service_blackboard {
         drop(writer_handle1);
         let writer_handle2 = writer.entry::<u64>(&0);
         assert_that!(writer_handle2, is_ok);
+    }
+
+    #[test]
+    fn write_and_read_different_value_types_works<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        #[repr(C)]
+        #[derive(Copy, Clone, ZeroCopySend, Debug, Eq, PartialEq)]
+        struct Groovy {
+            a: bool,
+            b: u32,
+            c: isize,
+        }
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .add::<i8>(1, -5)
+            .add::<FixedSizeByteString<4>>(23, "Nala".try_into().unwrap())
+            .add::<bool>(100, false)
+            .add::<Groovy>(
+                13,
+                Groovy {
+                    a: true,
+                    b: 7127,
+                    c: 609,
+                },
+            )
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        writer
+            .entry::<Groovy>(&13)
+            .unwrap()
+            .update_with_copy(Groovy {
+                a: false,
+                b: 888,
+                c: 906,
+            });
+        writer.entry::<bool>(&100).unwrap().update_with_copy(true);
+        writer
+            .entry::<FixedSizeByteString<4>>(&23)
+            .unwrap()
+            .update_with_copy("Wolf".try_into().unwrap());
+        writer.entry::<i8>(&1).unwrap().update_with_copy(11);
+        writer.entry::<u64>(&0).unwrap().update_with_copy(2008);
+
+        let reader = sut.reader_builder().create().unwrap();
+        assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 2008);
+        assert_that!(reader.entry::<i8>(&1).unwrap().get(), eq 11);
+        assert_that!(reader.entry::<FixedSizeByteString<4>>(&23).unwrap().get(), eq "Wolf");
+        assert_that!(reader.entry::<bool>(&100).unwrap().get(), eq true);
+        assert_that!(reader.entry::<Groovy>(&13).unwrap().get(), eq Groovy{a: false, b: 888, c: 906});
     }
 
     #[test]
@@ -1164,6 +1267,109 @@ mod service_blackboard {
     }
 
     #[test]
+    fn reconnected_reader_sees_current_blackboard_status<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u8>(0, 0)
+            .add::<i32>(6, -9)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u8>(&0).unwrap();
+        writer_handle.update_with_copy(5);
+
+        let reader = sut.reader_builder().create().unwrap();
+        assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 5);
+        assert_that!(reader.entry::<i32>(&6).unwrap().get(), eq - 9);
+
+        drop(reader);
+
+        let writer_handle = writer.entry::<i32>(&6).unwrap();
+        writer_handle.update_with_copy(-567);
+
+        let reader = sut.reader_builder().create().unwrap();
+        assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 5);
+        assert_that!(reader.entry::<i32>(&6).unwrap().get(), eq - 567);
+    }
+
+    #[test]
+    fn writer_handle_can_still_writer_after_writer_was_dropped<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u8>(0, 0)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u8>(&0).unwrap();
+
+        drop(writer);
+        writer_handle.update_with_copy(1);
+
+        let reader = sut.reader_builder().create().unwrap();
+        assert_that!(reader.entry::<u8>(&0).unwrap().get(), eq 1);
+    }
+
+    #[test]
+    fn reader_handle_can_still_read_after_reader_was_dropped<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u8>(0, 0)
+            .create()
+            .unwrap();
+
+        let reader = sut.reader_builder().create().unwrap();
+        let reader_handle = reader.entry::<u8>(&0).unwrap();
+
+        drop(reader);
+        assert_that!(reader_handle.get(), eq 0);
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u8>(&0).unwrap();
+        writer_handle.update_with_copy(1);
+        assert_that!(reader_handle.get(), eq 1);
+    }
+
+    #[test]
+    fn writer_handle_prevents_another_writer<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u8>(0, 0)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let _writer_handle = writer.entry::<u8>(&0).unwrap();
+
+        drop(writer);
+
+        let res = sut.writer_builder().create();
+        assert_that!(res, is_err);
+        assert_that!(res.err().unwrap(), eq WriterCreateError::ExceedsMaxSupportedWriters);
+    }
+
+    #[test]
     fn listing_all_readers_works<S: Service>() {
         const NUMBER_OF_READERS: usize = 18;
         let service_name = generate_name();
@@ -1226,7 +1432,6 @@ mod service_blackboard {
         assert_that!(counter, eq 1);
     }
 
-    // TODO: make test work
     #[test]
     fn concurrent_write_and_read_of_the_same_value_works<S: Service>() {
         let _watch_dog = Watchdog::new();
@@ -1236,51 +1441,95 @@ mod service_blackboard {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-        let sut = node
+        let _sut = node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
             .add::<u64>(0, 0)
             .create()
             .unwrap();
 
-        let writer = sut.writer_builder().create().unwrap();
-        let writer_handle = writer.entry::<u64>(&0).unwrap();
-        let mut readers = vec![];
-        let reader = sut.reader_builder().create().unwrap();
-
-        for _ in 0..number_of_reader_handles {
-            readers.push(reader.entry::<u64>(&0).unwrap());
-        }
-
         let counter = AtomicU64::new(0);
         let keep_running = AtomicBool::new(true);
 
         std::thread::scope(|s| {
-            s.spawn(|| {
+            let t = s.spawn(|| {
+                let sut = node
+                    .service_builder(&service_name)
+                    .blackboard_opener::<u64>()
+                    .open()
+                    .unwrap();
+                let writer = sut.writer_builder().create().unwrap();
+                let writer_handle = writer.entry::<u64>(&0).unwrap();
+
                 barrier.wait();
 
                 while keep_running.load(Ordering::Relaxed) {
                     counter.fetch_add(1, Ordering::Relaxed);
-                    //writer_handle.update_with_copy(counter.load(Ordering::Relaxed));
+                    writer_handle.update_with_copy(counter.load(Ordering::Relaxed));
                 }
             });
             let mut threads = vec![];
-            for i in 0..number_of_reader_handles {
+            for _ in 0..number_of_reader_handles {
                 threads.push(s.spawn(|| {
+                    let sut = node
+                        .service_builder(&service_name)
+                        .blackboard_opener::<u64>()
+                        .open()
+                        .unwrap();
+                    let reader = sut.reader_builder().create().unwrap();
                     barrier.wait();
-                    //assert_that!(readers[i].get(), ge 0);
-                    //assert_that!(readers[i].get(), le counter.load(Ordering::Relaxed));
+                    let read_value = reader.entry::<u64>(&0).unwrap().get();
+                    assert_that!(read_value, ge 0);
+                    assert_that!(read_value, le counter.load(Ordering::Relaxed));
                 }));
             }
             for t in threads {
                 t.join().unwrap();
             }
             keep_running.store(false, Ordering::Relaxed);
+            t.join().unwrap();
         });
     }
 
     #[test]
-    fn concurrent_write_and_read_works<S: Service>() {}
+    fn concurrent_write_of_different_values_works<S: Service>() {
+        //let _watch_dog = Watchdog::new();
+        //let number_of_writer_handles = 8;
+
+        //let barrier = Barrier::new(number_of_writer_handles);
+        //let service_name = generate_name();
+        //let config = generate_isolated_config();
+        //let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        //let sut = node
+        //.service_builder(&service_name)
+        //.blackboard_creator::<u64>()
+        //.add::<u64>(0, 0)
+        //.add::<u64>(1, 0)
+        //.add::<u64>(2, 0)
+        //.add::<u64>(3, 0)
+        //.add::<u64>(4, 0)
+        //.add::<u64>(5, 0)
+        //.add::<u64>(6, 0)
+        //.add::<u64>(7, 0)
+        //.create()
+        //.unwrap();
+        //let writer = sut.writer_builder().create().unwrap();
+
+        //let mut writer_handles = vec![];
+        //for i in 0..number_of_writer_handles as u64 {
+        //writer_handles.push(writer.entry::<u64>(&i).unwrap());
+        //}
+
+        //let mut threads = vec![];
+        //std::thread::scope(|s| {
+        //for i in 0..number_of_writer_handles {
+        //threads.push(s.spawn(|| {
+        //barrier.wait();
+        //writer_handles[i].update_with_copy(0);
+        //}));
+        //}
+        //})
+    }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}

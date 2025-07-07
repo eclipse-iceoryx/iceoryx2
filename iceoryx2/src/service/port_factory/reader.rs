@@ -26,23 +26,23 @@ use iceoryx2_bb_log::fail;
 pub struct PortFactoryReader<
     'factory,
     Service: service::Service,
-    T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
 > {
-    pub(crate) factory: &'factory PortFactory<Service, T>,
+    pub(crate) factory: &'factory PortFactory<Service, KeyType>,
 }
 
 impl<
         'factory,
         Service: service::Service,
-        T: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > PortFactoryReader<'factory, Service, T>
+        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    > PortFactoryReader<'factory, Service, KeyType>
 {
-    pub(crate) fn new(factory: &'factory PortFactory<Service, T>) -> Self {
+    pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {
         Self { factory }
     }
 
     /// Creates a new [`Reader`] or returns a [`ReaderCreateError`] on failure.
-    pub fn create(self) -> Result<Reader<Service, T>, ReaderCreateError> {
+    pub fn create(self) -> Result<Reader<Service, KeyType>, ReaderCreateError> {
         let origin = format!("{:?}", self);
         Ok(
             fail!(from origin, when Reader::new(self.factory.service.clone()),"Failed to create new Reader port."),
