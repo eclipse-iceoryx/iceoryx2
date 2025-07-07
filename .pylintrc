@@ -1,5 +1,3 @@
 [MESSAGE CONTROL]
 disable=
-    no-member,
-    missing-function-docstring,
-    missing-module-docstring
+    no-member

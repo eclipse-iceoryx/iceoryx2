@@ -10,6 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+"""Publish-Subscribe example payload type."""
+
 import ctypes
 
 

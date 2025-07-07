@@ -17,13 +17,19 @@ pub struct TypeStorage {
     pub value: Option<PyObject>,
 }
 
+impl Default for TypeStorage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Clone for TypeStorage {
     fn clone(&self) -> Self {
         Self {
-            value: match &self.value {
-                Some(v) => Some(Python::with_gil(|py| v.clone_ref(py))),
-                None => None,
-            },
+            value: self
+                .value
+                .as_ref()
+                .map(|v| Python::with_gil(|py| v.clone_ref(py))),
         }
     }
 }
