@@ -17,6 +17,7 @@ from typing import Any, Type, TypeVar, get_origin, get_args
 
 from ._iceoryx2 import *
 from .slice import Slice
+from .type_name import get_type_name
 
 T = TypeVar("T", bound=ctypes.Structure)
 
@@ -51,15 +52,12 @@ def publish_subscribe(
 
     if get_origin(t) is Slice:
         (contained_type,) = get_args(t)
-        type_name = contained_type.__name__
-        if hasattr(contained_type, "type_name"):
-            type_name = contained_type.type_name()
+        type_name = get_type_name(contained_type)
         type_variant = TypeVariant.Dynamic
         type_size = ctypes.sizeof(contained_type)
         type_align = ctypes.alignment(contained_type)
     else:
-        if hasattr(t, "type_name"):
-            type_name = t.type_name()  # type: ignore[operator]
+        type_name = get_type_name(contained_type)
         type_size = ctypes.sizeof(t)
         type_align = ctypes.alignment(t)
         type_variant = TypeVariant.FixedSize
@@ -86,9 +84,7 @@ def set_user_header(
     self: ServiceBuilderPublishSubscribe, t: Type[T]
 ) -> ServiceBuilderPublishSubscribe:
     """Sets the user header type for the service."""
-    type_name = t.__name__
-    if hasattr(t, "type_name"):
-        type_name = t.type_name()  # type: ignore[operator]
+    type_name = get_type_name(t)
     result = self.__user_header_type_details(
         TypeDetail.new()
         .type_variant(TypeVariant.FixedSize)

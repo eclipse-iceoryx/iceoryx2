@@ -19,8 +19,8 @@ class TransmissionData(ctypes.Structure):
     """The strongly typed payload type."""
 
     _fields_ = [
-        ("x", ctypes.c_int),
-        ("y", ctypes.c_int),
+        ("x", ctypes.c_int32),
+        ("y", ctypes.c_int32),
         ("funky", ctypes.c_double),
     ]
 

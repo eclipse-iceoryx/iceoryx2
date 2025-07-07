@@ -22,7 +22,7 @@ node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 service = (
     node.service_builder(iox2.ServiceName.new("Service With Dynamic Data"))
-    .publish_subscribe(iox2.Slice[ctypes.c_byte])
+    .publish_subscribe(iox2.Slice[ctypes.c_uint8])
     .open_or_create()
 )
 
