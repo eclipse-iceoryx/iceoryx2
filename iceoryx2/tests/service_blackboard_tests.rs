@@ -25,6 +25,7 @@ mod service_blackboard {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use std::sync::Arc;
     use std::sync::Barrier;
 
     fn generate_name() -> ServiceName {
@@ -1493,42 +1494,47 @@ mod service_blackboard {
 
     #[test]
     fn concurrent_write_of_different_values_works<S: Service>() {
-        //let _watch_dog = Watchdog::new();
-        //let number_of_writer_handles = 8;
+        let _watch_dog = Watchdog::new();
+        let number_of_writer_handles: u64 = 8;
 
-        //let barrier = Barrier::new(number_of_writer_handles);
-        //let service_name = generate_name();
-        //let config = generate_isolated_config();
-        //let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
-        //let sut = node
-        //.service_builder(&service_name)
-        //.blackboard_creator::<u64>()
-        //.add::<u64>(0, 0)
-        //.add::<u64>(1, 0)
-        //.add::<u64>(2, 0)
-        //.add::<u64>(3, 0)
-        //.add::<u64>(4, 0)
-        //.add::<u64>(5, 0)
-        //.add::<u64>(6, 0)
-        //.add::<u64>(7, 0)
-        //.create()
-        //.unwrap();
-        //let writer = sut.writer_builder().create().unwrap();
+        let barrier = Arc::new(Barrier::new(number_of_writer_handles as usize));
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .add::<u64>(1, 0)
+            .add::<u64>(2, 0)
+            .add::<u64>(3, 0)
+            .add::<u64>(4, 0)
+            .add::<u64>(5, 0)
+            .add::<u64>(6, 0)
+            .add::<u64>(7, 0)
+            .create()
+            .unwrap();
+        let writer = sut.writer_builder().create().unwrap();
 
-        //let mut writer_handles = vec![];
-        //for i in 0..number_of_writer_handles as u64 {
-        //writer_handles.push(writer.entry::<u64>(&i).unwrap());
-        //}
+        std::thread::scope(|s| {
+            let mut threads = vec![];
+            for i in 0..number_of_writer_handles {
+                let writer_handle = writer.entry::<u64>(&i).unwrap();
+                let barrier_thread = barrier.clone();
+                threads.push(s.spawn(move || {
+                    barrier_thread.wait();
+                    writer_handle.update_with_copy(i);
+                }));
+            }
+            for t in threads {
+                t.join().unwrap();
+            }
+        });
 
-        //let mut threads = vec![];
-        //std::thread::scope(|s| {
-        //for i in 0..number_of_writer_handles {
-        //threads.push(s.spawn(|| {
-        //barrier.wait();
-        //writer_handles[i].update_with_copy(0);
-        //}));
-        //}
-        //})
+        let reader = sut.reader_builder().create().unwrap();
+        for i in 0..number_of_writer_handles {
+            assert_that!(reader.entry::<u64>(&i).unwrap().get(), eq i);
+        }
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

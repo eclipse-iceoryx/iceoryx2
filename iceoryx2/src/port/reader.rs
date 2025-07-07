@@ -217,9 +217,9 @@ pub struct ReaderHandle<
     KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
     ValueType: Copy,
 > {
-    shared_state: Arc<ReaderSharedState<Service, KeyType>>,
     atomic: *const UnrestrictedAtomic<ValueType>,
     offset: u64,
+    shared_state: Arc<ReaderSharedState<Service, KeyType>>,
 }
 
 // TODO: document why it's safe
@@ -243,9 +243,9 @@ impl<
         offset: u64,
     ) -> Self {
         Self {
-            shared_state: reader_state.clone(),
             atomic,
             offset,
+            shared_state: reader_state.clone(),
         }
     }
 

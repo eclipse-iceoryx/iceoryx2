@@ -708,7 +708,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// Defines the thread-safety policy of the service. If it is defined as
     /// [`MutexProtected`](iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected), the
     /// [`Service`]s ports are threadsafe and the payload can be moved into threads. If it is set
-    /// to to [`SingleThreaded`](iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded),
+    /// to [`SingleThreaded`](iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded),
     /// the [`Service`]s ports and payload cannot be shared ([`Sync`]) between threads or moved
     /// ([`Send`]) into other threads.
     type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;

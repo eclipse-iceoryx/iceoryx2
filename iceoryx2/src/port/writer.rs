@@ -218,9 +218,9 @@ pub struct WriterHandle<
     KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
     ValueType: Copy + 'static,
 > {
-    shared_state: Arc<WriterSharedState<Service, KeyType>>,
     producer: Producer<'static, ValueType>,
     offset: u64,
+    _shared_state: Arc<WriterSharedState<Service, KeyType>>,
 }
 
 // TODO: document why it's safe
@@ -252,11 +252,12 @@ impl<
             None => Err(WriterHandleError::HandleAlreadyExists),
             Some(producer) => {
                 // change to static lifetime is safe since shared_state owns the service state and
-                // the dynamic writer handle
+                // the dynamic writer handle + the struct fields are dropped in the same order as
+                // declared
                 let p: Producer<'static, ValueType> = unsafe { core::mem::transmute(producer) };
                 Ok(Self {
                     producer: p,
-                    shared_state: writer_state.clone(),
+                    _shared_state: writer_state.clone(),
                     offset,
                 })
             }
