@@ -19,49 +19,86 @@ use crate::attribute_verifier::AttributeVerifier;
 use crate::error::{
     PublishSubscribeCreateError, PublishSubscribeOpenError, PublishSubscribeOpenOrCreateError,
 };
-use crate::parc::Parc;
 use crate::port_factory_publish_subscribe::{
     PortFactoryPublishSubscribe, PortFactoryPublishSubscribeType,
 };
 use crate::type_detail::TypeDetail;
+use crate::type_storage::TypeStorage;
+
+type IpcBuilder = iceoryx2::service::builder::publish_subscribe::Builder<
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    crate::IpcService,
+>;
+type LocalBuilder = iceoryx2::service::builder::publish_subscribe::Builder<
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    crate::LocalService,
+>;
 
 #[derive(Clone)]
 pub(crate) enum ServiceBuilderPublishSubscribeType {
-    Ipc(
-        iceoryx2::service::builder::publish_subscribe::Builder<
-            [CustomPayloadMarker],
-            CustomHeaderMarker,
-            crate::IpcService,
-        >,
-    ),
-    Local(
-        iceoryx2::service::builder::publish_subscribe::Builder<
-            [CustomPayloadMarker],
-            CustomHeaderMarker,
-            crate::LocalService,
-        >,
-    ),
+    Ipc(IpcBuilder),
+    Local(LocalBuilder),
 }
 
 #[pyclass]
 /// Builder to create new `MessagingPattern::PublishSubscribe` based `Service`s
-pub struct ServiceBuilderPublishSubscribe(pub(crate) ServiceBuilderPublishSubscribeType);
+pub struct ServiceBuilderPublishSubscribe {
+    pub(crate) value: ServiceBuilderPublishSubscribeType,
+    pub payload_type_details: TypeStorage,
+    pub user_header_type_details: TypeStorage,
+}
+
+impl ServiceBuilderPublishSubscribe {
+    pub(crate) fn new(value: ServiceBuilderPublishSubscribeType) -> Self {
+        Self {
+            value,
+            payload_type_details: TypeStorage::new(),
+            user_header_type_details: TypeStorage::new(),
+        }
+    }
+
+    fn clone_ipc(&self, builder: IpcBuilder) -> Self {
+        Self {
+            value: ServiceBuilderPublishSubscribeType::Ipc(builder),
+            payload_type_details: self.payload_type_details.clone(),
+            user_header_type_details: self.user_header_type_details.clone(),
+        }
+    }
+
+    fn clone_local(&self, builder: LocalBuilder) -> Self {
+        Self {
+            value: ServiceBuilderPublishSubscribeType::Local(builder),
+            payload_type_details: self.payload_type_details.clone(),
+            user_header_type_details: self.user_header_type_details.clone(),
+        }
+    }
+}
 
 #[pymethods]
 impl ServiceBuilderPublishSubscribe {
+    pub fn __set_payload_type(&mut self, value: PyObject) {
+        self.payload_type_details.value = Some(value)
+    }
+
+    pub fn __set_user_header_type(&mut self, value: PyObject) {
+        self.user_header_type_details.value = Some(value)
+    }
+
     /// Defines the payload type. To be able to connect to a `Service` the `TypeDetail` must be
     /// identical in all participants since the communication is always strongly typed.
     pub fn __payload_type_details(&self, value: &TypeDetail) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_payload_type_details(&value.0) };
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_payload_type_details(&value.0) };
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -69,16 +106,16 @@ impl ServiceBuilderPublishSubscribe {
     /// Defines the user header type. To be able to connect to a `Service` the `TypeDetail` must be
     /// identical in all participants since the communication is always strongly typed.
     pub fn __user_header_type_details(&self, value: &TypeDetail) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_user_header_type_details(&value.0) };
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_user_header_type_details(&value.0) };
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -87,16 +124,16 @@ impl ServiceBuilderPublishSubscribe {
     /// SIMD operations. To be able to connect to a `Service` the payload alignment must be
     /// identical in all participants since the communication is always strongly typed.
     pub fn payload_alignment(&self, value: &Alignment) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.payload_alignment(value.0);
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.payload_alignment(value.0);
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -104,16 +141,16 @@ impl ServiceBuilderPublishSubscribe {
     /// If the `Service` is created, defines the overflow behavior of the service. If an existing
     /// `Service` is opened it requires the service to have the defined overflow behavior.
     pub fn enable_safe_overflow(&self, value: bool) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.enable_safe_overflow(value);
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.enable_safe_overflow(value);
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -122,16 +159,16 @@ impl ServiceBuilderPublishSubscribe {
     /// `Subscriber` can borrow at most in parallel. If an existing
     /// `Service` is opened it defines the minimum required.
     pub fn subscriber_max_borrowed_samples(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.subscriber_max_borrowed_samples(value);
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.subscriber_max_borrowed_samples(value);
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -139,16 +176,16 @@ impl ServiceBuilderPublishSubscribe {
     /// If the `Service` is created it defines the maximum history size a `Subscriber` can request
     /// on connection. If an existing `Service` is opened it defines the minimum required.
     pub fn history_size(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.history_size(value);
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.history_size(value);
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -156,16 +193,16 @@ impl ServiceBuilderPublishSubscribe {
     /// If the `Service` is created it defines how many `Sample` a `Subscriber` can store in its
     /// internal buffer. If an existing `Service` is opened it defines the minimum required.
     pub fn subscriber_max_buffer_size(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.subscriber_max_buffer_size(value);
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.subscriber_max_buffer_size(value);
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -174,16 +211,16 @@ impl ServiceBuilderPublishSubscribe {
     /// most. If an existing `Service` is opened it defines how many `Subscriber` must be at
     /// least supported.
     pub fn max_subscribers(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_subscribers(value);
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_subscribers(value);
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -192,16 +229,16 @@ impl ServiceBuilderPublishSubscribe {
     /// most. If an existing `Service` is opened it defines how many `Publisher` must be at
     /// least supported.
     pub fn max_publishers(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_publishers(value);
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_publishers(value);
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -210,16 +247,16 @@ impl ServiceBuilderPublishSubscribe {
     /// parallel. If an existing `Service` is opened it defines how many `Node`s must be at
     /// least supported.
     pub fn max_nodes(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_nodes(value);
-                Self(ServiceBuilderPublishSubscribeType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_nodes(value);
-                Self(ServiceBuilderPublishSubscribeType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -227,22 +264,26 @@ impl ServiceBuilderPublishSubscribe {
     /// If the `Service` exists, it will be opened otherwise a new `Service` will be created.
     /// On failure it emits `PublishSubscribeOpenOrCreateError`
     pub fn open_or_create(&self) -> PyResult<PortFactoryPublishSubscribe> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Ipc(this.open_or_create().map_err(|e| {
                         PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Local(this.open_or_create().map_err(|e| {
                         PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                     })?),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
         }
     }
@@ -256,28 +297,32 @@ impl ServiceBuilderPublishSubscribe {
         &self,
         verifier: &AttributeVerifier,
     ) -> PyResult<PortFactoryPublishSubscribe> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
                                 PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
                                 PublishSubscribeOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
         }
     }
@@ -285,24 +330,28 @@ impl ServiceBuilderPublishSubscribe {
     /// Opens an existing `Service`.
     /// On failure it emits `PublishSubscribeOpenError`.
     pub fn open(&self) -> PyResult<PortFactoryPublishSubscribe> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.open()
                             .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.open()
                             .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
         }
     }
@@ -314,24 +363,28 @@ impl ServiceBuilderPublishSubscribe {
         &self,
         verifier: &AttributeVerifier,
     ) -> PyResult<PortFactoryPublishSubscribe> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| PublishSubscribeOpenError::new_err(format!("{e:?}")))?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
         }
     }
@@ -339,24 +392,28 @@ impl ServiceBuilderPublishSubscribe {
     /// Creates a new `Service`.
     /// On failure it emits `PublishSubscribeCreateError`.
     pub fn create(&self) -> PyResult<PortFactoryPublishSubscribe> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.create()
                             .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.create()
                             .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
         }
     }
@@ -367,24 +424,28 @@ impl ServiceBuilderPublishSubscribe {
         &self,
         attributes: &AttributeSpecifier,
     ) -> PyResult<PortFactoryPublishSubscribe> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderPublishSubscribeType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Ipc(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
             ServiceBuilderPublishSubscribeType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryPublishSubscribe(Parc::new(
+                Ok(PortFactoryPublishSubscribe::new(
                     PortFactoryPublishSubscribeType::Local(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| PublishSubscribeCreateError::new_err(format!("{e:?}")))?,
                     ),
-                )))
+                    self.payload_type_details.clone(),
+                    self.user_header_type_details.clone(),
+                ))
             }
         }
     }

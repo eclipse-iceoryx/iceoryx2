@@ -30,14 +30,13 @@ service = (
 
 subscriber = service.subscriber_builder().create()
 
-
 try:
     while True:
         node.wait(cycle_time)
         while True:
             sample = subscriber.receive()
             if sample is not None:
-                data = sample.payload(TransmissionData)
+                data = sample.payload()
                 print("received:", data.contents)
             else:
                 break

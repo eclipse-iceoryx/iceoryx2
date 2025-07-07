@@ -16,8 +16,8 @@ import iceoryx2 as iox2
 
 T = TypeVar('T', bound=ctypes.Structure)
 
-def payload(self, t: Type[T]):
-    return ctypes.cast(self.payload_ptr, ctypes.POINTER(t))
+def payload(self):
+    return ctypes.cast(self.payload_ptr, ctypes.POINTER(self.__payload_type_details))
 
 def user_header(self, t: Type[T]):
     return ctypes.cast(self.user_header_ptr, ctypes.POINTER(t))
@@ -27,6 +27,7 @@ def publish_subscribe(self, t: Type[T]) -> iox2.ServiceBuilderPublishSubscribe:
     if hasattr(t, "type_name"):
         type_name = t.type_name()
     result = self.__publish_subscribe()
+    result.__set_payload_type(t)
     return result.__payload_type_details(
         iox2.TypeDetail.new()
         .type_variant(iox2.TypeVariant.FixedSize)
@@ -45,13 +46,15 @@ def set_user_header(self, t: Type[T]) -> iox2.ServiceBuilderPublishSubscribe:
     type_name = t.__name__
     if hasattr(t, "type_name"):
         type_name = t.type_name()
-    return self.__user_header_type_details(
+    result = self.__user_header_type_details(
         iox2.TypeDetail.new()
         .type_variant(iox2.TypeVariant.FixedSize)
         .type_name(iox2.TypeName.new(type_name))
         .size(ctypes.sizeof(t))
         .alignment(ctypes.alignment(t))
     )
+    result.__set_user_header_type(t)
+    return result
 
 def send_copy(self, t: Type[T]) -> int:
     sample_uninit = self.loan_uninit()

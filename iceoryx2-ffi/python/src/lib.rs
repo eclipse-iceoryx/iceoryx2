@@ -69,6 +69,7 @@ pub mod subscriber;
 pub mod testing;
 pub mod type_detail;
 pub mod type_name;
+pub mod type_storage;
 pub mod type_variant;
 pub mod unable_to_deliver_strategy;
 pub mod unique_client_id;
