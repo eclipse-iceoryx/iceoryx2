@@ -20,6 +20,10 @@ service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 class Payload(ctypes.Structure):
     _fields_ = [("data", ctypes.c_ubyte)]
 
+class HeaderPayload(ctypes.Structure):
+    _fields_ = [("data", ctypes.c_ubyte),
+                ("fuu", ctypes.c_int)]
+
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_non_existing_service_can_be_created(
@@ -293,14 +297,14 @@ def test_custom_user_header_works(service_type: iox2.ServiceType) -> None:
     user_header = (
         iox2.TypeDetail.new()
         .type_variant(iox2.TypeVariant.FixedSize)
-        .type_name(iox2.TypeName.new("Payload"))
-        .size(ctypes.sizeof(Payload))
-        .alignment(ctypes.alignment(Payload))
+        .type_name(iox2.TypeName.new("HeaderPayload"))
+        .size(ctypes.sizeof(HeaderPayload))
+        .alignment(ctypes.alignment(HeaderPayload))
     )
     sut = (
         node.service_builder(service_name)
         .publish_subscribe(Payload)
-        .user_header(Payload)
+        .user_header(HeaderPayload)
         .create()
     )
 
