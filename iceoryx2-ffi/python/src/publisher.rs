@@ -18,6 +18,7 @@ use crate::{
     error::LoanError,
     parc::Parc,
     sample_mut_uninit::{SampleMutUninit, SampleMutUninitType},
+    type_storage::TypeStorage,
     unable_to_deliver_strategy::UnableToDeliverStrategy,
     unique_publisher_id::UniquePublisherId,
 };
@@ -45,14 +46,18 @@ pub(crate) enum PublisherType {
 
 #[pyclass]
 /// Represents the receiving endpoint of an event based communication.
-pub struct Publisher(pub(crate) Parc<PublisherType>);
+pub struct Publisher {
+    pub(crate) value: Parc<PublisherType>,
+    pub(crate) payload_type_details: TypeStorage,
+    pub(crate) user_header_type_details: TypeStorage,
+}
 
 #[pymethods]
 impl Publisher {
     #[getter]
     /// Returns the `UniquePublisherId` of the `Publisher`
     pub fn id(&self) -> UniquePublisherId {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             PublisherType::Ipc(Some(v)) => UniquePublisherId(v.id()),
             PublisherType::Local(Some(v)) => UniquePublisherId(v.id()),
             _ => fatal_panic!(from "Publisher::id()",
@@ -64,7 +69,7 @@ impl Publisher {
     /// Returns the strategy the `Publisher` follows when a `SampleMut` cannot be delivered
     /// since the `Subscriber`s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             PublisherType::Ipc(Some(v)) => v.unable_to_deliver_strategy().into(),
             PublisherType::Local(Some(v)) => v.unable_to_deliver_strategy().into(),
             _ => fatal_panic!(from "Publisher::unable_to_deliver_strategy()",
@@ -75,7 +80,7 @@ impl Publisher {
     #[getter]
     /// Returns the maximum initial slice length configured for this `Publisher`.
     pub fn initial_max_slice_len(&self) -> usize {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             PublisherType::Ipc(Some(v)) => v.initial_max_slice_len(),
             PublisherType::Local(Some(v)) => v.initial_max_slice_len(),
             _ => fatal_panic!(from "Publisher::initial_max_slice_len()",
@@ -97,24 +102,28 @@ impl Publisher {
     ///
     /// On failure it returns `LoanError` describing the failure.
     pub fn loan_slice_uninit(&self, number_of_elements: usize) -> PyResult<SampleMutUninit> {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             PublisherType::Ipc(Some(v)) => {
                 let sample = unsafe {
                     v.loan_custom_payload(number_of_elements)
                         .map_err(|e| LoanError::new_err(format!("{e:?}")))?
                 };
-                Ok(SampleMutUninit(Parc::new(SampleMutUninitType::Ipc(Some(
-                    sample,
-                )))))
+                Ok(SampleMutUninit {
+                    value: Parc::new(SampleMutUninitType::Ipc(Some(sample))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })
             }
             PublisherType::Local(Some(v)) => {
                 let sample = unsafe {
                     v.loan_custom_payload(number_of_elements)
                         .map_err(|e| LoanError::new_err(format!("{e:?}")))?
                 };
-                Ok(SampleMutUninit(Parc::new(SampleMutUninitType::Local(
-                    Some(sample),
-                ))))
+                Ok(SampleMutUninit {
+                    value: Parc::new(SampleMutUninitType::Local(Some(sample))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })
             }
             _ => fatal_panic!(from "Publisher::id()",
                 "Accessing a deleted publisher."),
@@ -125,7 +134,7 @@ impl Publisher {
     ///
     /// After this call the `Publisher` is no longer usable!
     pub fn delete(&mut self) {
-        match &mut *self.0.lock() {
+        match &mut *self.value.lock() {
             PublisherType::Ipc(ref mut v) => {
                 v.take();
             }

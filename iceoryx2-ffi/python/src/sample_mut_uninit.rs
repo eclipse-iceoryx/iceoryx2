@@ -20,6 +20,7 @@ use crate::{
     header_publish_subscribe::HeaderPublishSubscribe,
     parc::Parc,
     sample_mut::{SampleMut, SampleMutType},
+    type_storage::TypeStorage,
 };
 
 pub(crate) enum SampleMutUninitType {
@@ -50,14 +51,28 @@ pub(crate) enum SampleMutUninitType {
 /// It stores the payload that will be sent
 /// to all connected `Subscriber`s. If the `SampleMut` is not sent
 /// it will release the loaned memory when going out of scope.
-pub struct SampleMutUninit(pub(crate) Parc<SampleMutUninitType>);
+pub struct SampleMutUninit {
+    pub(crate) value: Parc<SampleMutUninitType>,
+    pub(crate) payload_type_details: TypeStorage,
+    pub(crate) user_header_type_details: TypeStorage,
+}
 
 #[pymethods]
 impl SampleMutUninit {
     #[getter]
+    pub fn __payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.payload_type_details.clone().value
+    }
+
+    #[getter]
+    pub fn __user_header_type_details(&self) -> Option<Py<PyAny>> {
+        self.user_header_type_details.clone().value
+    }
+
+    #[getter]
     /// Returns the `HeaderPublishSubscribe` of the `Sample`.
     pub fn header(&self) -> HeaderPublishSubscribe {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             SampleMutUninitType::Ipc(Some(v)) => HeaderPublishSubscribe(*v.header()),
             SampleMutUninitType::Local(Some(v)) => HeaderPublishSubscribe(*v.header()),
             _ => fatal_panic!(from "SampleMutUninit::header()",
@@ -68,7 +83,7 @@ impl SampleMutUninit {
     #[getter]
     /// Returns a pointer to the user header.
     pub fn user_header_ptr(&self) -> usize {
-        match &mut *self.0.lock() {
+        match &mut *self.value.lock() {
             SampleMutUninitType::Ipc(Some(v)) => {
                 (v.user_header_mut() as *mut CustomHeaderMarker) as usize
             }
@@ -83,7 +98,7 @@ impl SampleMutUninit {
     #[getter]
     /// Returns a pointer to the payload.
     pub fn payload_ptr(&self) -> usize {
-        match &mut *self.0.lock() {
+        match &mut *self.value.lock() {
             SampleMutUninitType::Ipc(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
             SampleMutUninitType::Local(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
             _ => fatal_panic!(from "SampleMutUninit::user_header_ptr()",
@@ -95,7 +110,7 @@ impl SampleMutUninit {
     ///
     /// After this call the `SampleMutUninit` is no longer usable!
     pub fn delete(&mut self) {
-        match &mut *self.0.lock() {
+        match &mut *self.value.lock() {
             SampleMutUninitType::Ipc(ref mut v) => {
                 v.take();
             }
@@ -110,18 +125,22 @@ impl SampleMutUninit {
     ///
     /// After this call the `SampleMutUninit` is no longer usable!
     pub fn assume_init(&self) -> SampleMut {
-        match &mut *self.0.lock() {
+        match &mut *self.value.lock() {
             SampleMutUninitType::Ipc(ref mut v) => {
                 let sample = v.take().unwrap();
-                SampleMut(Parc::new(SampleMutType::Ipc(Some(unsafe {
-                    sample.assume_init()
-                }))))
+                SampleMut {
+                    value: Parc::new(SampleMutType::Ipc(Some(unsafe { sample.assume_init() }))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                }
             }
             SampleMutUninitType::Local(ref mut v) => {
                 let sample = v.take().unwrap();
-                SampleMut(Parc::new(SampleMutType::Local(Some(unsafe {
-                    sample.assume_init()
-                }))))
+                SampleMut {
+                    value: Parc::new(SampleMutType::Local(Some(unsafe { sample.assume_init() }))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                }
             }
         }
     }

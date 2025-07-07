@@ -163,7 +163,11 @@ impl PortFactoryPublishSubscribe {
 
     /// Returns a `PortFactoryPublisher` to create a new `Publisher` port
     pub fn publisher_builder(&self) -> PortFactoryPublisher {
-        PortFactoryPublisher::new(self.value.clone())
+        PortFactoryPublisher::new(
+            self.value.clone(),
+            self.payload_type_details.clone(),
+            self.user_header_type_details.clone(),
+        )
     }
 
     /// Returns a `PortFactorySubscriber` to create a new `Subscriber` port

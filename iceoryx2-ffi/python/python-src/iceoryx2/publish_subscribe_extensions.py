@@ -19,8 +19,8 @@ T = TypeVar('T', bound=ctypes.Structure)
 def payload(self):
     return ctypes.cast(self.payload_ptr, ctypes.POINTER(self.__payload_type_details))
 
-def user_header(self, t: Type[T]):
-    return ctypes.cast(self.user_header_ptr, ctypes.POINTER(t))
+def user_header(self):
+    return ctypes.cast(self.user_header_ptr, ctypes.POINTER(self.__user_header_type_details))
 
 def publish_subscribe(self, t: Type[T]) -> iox2.ServiceBuilderPublishSubscribe:
     type_name = t.__name__

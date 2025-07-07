@@ -36,7 +36,7 @@ try:
     while True:
         COUNTER += 1
         node.wait(cycle_time)
-        sample = publisher.loan_slice_uninit(1)
+        sample = publisher.loan_uninit()
         sample = sample.write_payload(TransmissionData (x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12))
         sample.send()
         print("send sample", COUNTER, "...")
