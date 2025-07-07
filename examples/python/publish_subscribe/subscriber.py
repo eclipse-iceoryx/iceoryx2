@@ -23,7 +23,7 @@ node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 service = (
     node.service_builder(iox2.ServiceName.new("My/Funk/ServiceName"))
-    .publish_subscribe(iox2.Slice[TransmissionData])
+    .publish_subscribe(TransmissionData)
     .open_or_create()
 )
 

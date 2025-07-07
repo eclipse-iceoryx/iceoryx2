@@ -40,47 +40,42 @@ def publish_subscribe(
 ) -> ServiceBuilderPublishSubscribe:
     """Returns the `ServiceBuilderPublishSusbcribe` to create a new publish-subscribe service. The payload ctype must be provided as argument."""
 
+    type_name = t.__name__
+    type_size = 0
+    type_align = 0
+    type_variant = TypeVariant.FixedSize
+
     if get_origin(t) is Slice:
-        type_name = t.__name__
-        if hasattr(t, "type_name"):
-            type_name = t.type_name()  # type: ignore[operator]
-
         (contained_type,) = get_args(t)
-        result = self.__publish_subscribe()
-        result.__set_payload_type(t)
-        return result.__payload_type_details(
-            TypeDetail.new()
-            .type_variant(TypeVariant.Dynamic)
-            .type_name(TypeName.new(type_name))
-            .size(ctypes.sizeof(contained_type))
-            .alignment(ctypes.alignment(contained_type))
-        ).__user_header_type_details(
-            TypeDetail.new()
-            .type_variant(TypeVariant.FixedSize)
-            .type_name(TypeName.new("()"))
-            .size(0)
-            .alignment(1)
-        )
+        type_name = contained_type.__name__
+        if hasattr(contained_type, "type_name"):
+            type_name = contained_type.type_name()
+        type_variant = TypeVariant.Dynamic
+        type_size = ctypes.sizeof(contained_type)
+        type_align = ctypes.alignment(contained_type)
     else:
-        type_name = t.__name__
         if hasattr(t, "type_name"):
             type_name = t.type_name()  # type: ignore[operator]
+        type_size = ctypes.sizeof(t)
+        type_align = ctypes.alignment(t)
+        type_variant = TypeVariant.FixedSize
 
-        result = self.__publish_subscribe()
-        result.__set_payload_type(t)
-        return result.__payload_type_details(
-            TypeDetail.new()
-            .type_variant(TypeVariant.FixedSize)
-            .type_name(TypeName.new(type_name))
-            .size(ctypes.sizeof(t))
-            .alignment(ctypes.alignment(t))
-        ).__user_header_type_details(
-            TypeDetail.new()
-            .type_variant(TypeVariant.FixedSize)
-            .type_name(TypeName.new("()"))
-            .size(0)
-            .alignment(1)
-        )
+    result = self.__publish_subscribe()
+    result.__set_payload_type(t)
+
+    return result.__payload_type_details(
+        TypeDetail.new()
+        .type_variant(type_variant)
+        .type_name(TypeName.new(type_name))
+        .size(type_size)
+        .alignment(type_align)
+    ).__user_header_type_details(
+        TypeDetail.new()
+        .type_variant(TypeVariant.FixedSize)
+        .type_name(TypeName.new("()"))
+        .size(0)
+        .alignment(1)
+    )
 
 
 def set_user_header(
