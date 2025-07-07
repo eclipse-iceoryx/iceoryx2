@@ -34,8 +34,10 @@ try:
         node.wait(cycle_time)
         required_memory_size = min(COUNTER * COUNTER, 1000000)
         sample = publisher.loan_slice_uninit(required_memory_size)
-        sample = sample.assume_init()
+        for byte_idx in range(0, required_memory_size):
+            sample.payload()[byte_idx] = (byte_idx + COUNTER) % 255
 
+        sample = sample.assume_init()
         sample.send()
 
         print("send sample", COUNTER, "with", required_memory_size, "bytes...")

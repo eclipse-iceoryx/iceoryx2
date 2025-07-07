@@ -35,7 +35,7 @@ try:
             sample = subscriber.receive()
             if sample is not None:
                 data = sample.payload()
-                print("received:", data)
+                print("received", sample.payload().len(), "bytes")
             else:
                 break
 

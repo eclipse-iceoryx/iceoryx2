@@ -70,6 +70,16 @@ impl SampleMutUninit {
     }
 
     #[getter]
+    pub fn __slice_len(&self) -> usize {
+        match &*self.value.lock() {
+            SampleMutUninitType::Ipc(Some(v)) => v.payload().len(),
+            SampleMutUninitType::Local(Some(v)) => v.payload().len(),
+            _ => fatal_panic!(from "Sample::header()",
+                "Accessing a released sample."),
+        }
+    }
+
+    #[getter]
     /// Returns the `HeaderPublishSubscribe` of the `Sample`.
     pub fn header(&self) -> HeaderPublishSubscribe {
         match &*self.value.lock() {

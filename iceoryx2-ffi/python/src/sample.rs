@@ -57,6 +57,16 @@ impl Sample {
     }
 
     #[getter]
+    pub fn __slice_len(&self) -> usize {
+        match &*self.value.lock() {
+            SampleType::Ipc(Some(v)) => v.payload().len(),
+            SampleType::Local(Some(v)) => v.payload().len(),
+            _ => fatal_panic!(from "Sample::header()",
+                "Accessing a released sample."),
+        }
+    }
+
+    #[getter]
     /// Returns the `HeaderPublishSubscribe` of the `Sample`.
     pub fn header(&self) -> HeaderPublishSubscribe {
         match &*self.value.lock() {
