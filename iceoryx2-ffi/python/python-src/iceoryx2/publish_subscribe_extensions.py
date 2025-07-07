@@ -13,9 +13,10 @@
 """Strong type safe extensions for the publish-subscribe messaging pattern."""
 
 import ctypes
-from typing import Any, Type, TypeVar
+from typing import Any, Type, TypeVar, get_origin, get_args
 
 from ._iceoryx2 import *
+from .slice import Slice
 
 T = TypeVar("T", bound=ctypes.Structure)
 
@@ -38,24 +39,48 @@ def publish_subscribe(
     self: ServiceBuilder, t: Type[T]
 ) -> ServiceBuilderPublishSubscribe:
     """Returns the `ServiceBuilderPublishSusbcribe` to create a new publish-subscribe service. The payload ctype must be provided as argument."""
-    type_name = t.__name__
-    if hasattr(t, "type_name"):
-        type_name = t.type_name()  # type: ignore[operator]
-    result = self.__publish_subscribe()
-    result.__set_payload_type(t)
-    return result.__payload_type_details(
-        TypeDetail.new()
-        .type_variant(TypeVariant.FixedSize)
-        .type_name(TypeName.new(type_name))
-        .size(ctypes.sizeof(t))
-        .alignment(ctypes.alignment(t))
-    ).__user_header_type_details(
-        TypeDetail.new()
-        .type_variant(TypeVariant.FixedSize)
-        .type_name(TypeName.new("()"))
-        .size(0)
-        .alignment(1)
-    )
+
+    if get_origin(t) is Slice:
+        type_name = t.__name__
+        if hasattr(t, "type_name"):
+            type_name = t.type_name()  # type: ignore[operator]
+
+        (contained_type,) = get_args(t)
+        result = self.__publish_subscribe()
+        result.__set_payload_type(t)
+        return result.__payload_type_details(
+            TypeDetail.new()
+            .type_variant(TypeVariant.Dynamic)
+            .type_name(TypeName.new(type_name))
+            .size(ctypes.sizeof(contained_type))
+            .alignment(ctypes.alignment(contained_type))
+        ).__user_header_type_details(
+            TypeDetail.new()
+            .type_variant(TypeVariant.FixedSize)
+            .type_name(TypeName.new("()"))
+            .size(0)
+            .alignment(1)
+        )
+    else:
+        type_name = t.__name__
+        if hasattr(t, "type_name"):
+            type_name = t.type_name()  # type: ignore[operator]
+
+        result = self.__publish_subscribe()
+        result.__set_payload_type(t)
+        return result.__payload_type_details(
+            TypeDetail.new()
+            .type_variant(TypeVariant.FixedSize)
+            .type_name(TypeName.new(type_name))
+            .size(ctypes.sizeof(t))
+            .alignment(ctypes.alignment(t))
+        ).__user_header_type_details(
+            TypeDetail.new()
+            .type_variant(TypeVariant.FixedSize)
+            .type_name(TypeName.new("()"))
+            .size(0)
+            .alignment(1)
+        )
 
 
 def set_user_header(

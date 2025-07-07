@@ -10,8 +10,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Python language bindings for iceoryx2."""
+import ctypes
+from typing import Generic, Type, TypeVar
 
-from ._iceoryx2 import *
-from .publish_subscribe_extensions import *
-from .slice import *
+T = TypeVar("T", bound=ctypes.Structure)
+
+class Slice(Generic[T]):
+    @staticmethod
+    def element_size() -> int:
+        return ctypes.sizeof(T)
+
+    @staticmethod
+    def element_alignment() -> int:
+        return ctypes.alignment(T)
