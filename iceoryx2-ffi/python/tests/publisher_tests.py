@@ -73,7 +73,7 @@ def test_max_loans_can_be_set_up(
     sut = service.publisher_builder().max_loaned_samples(max_loans).create()
 
     samples = []
-    for _ in range(0, 8):
+    for _ in range(0, max_loans):
         sample = sut.loan_uninit()
         samples.append(sample)
 
