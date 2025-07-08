@@ -1,0 +1,30 @@
+output-format: text
+
+strictness: veryhigh
+test-warnings: true
+doc-warnings: true
+member-warnings: true
+inherits:
+  - default
+
+bandit:
+  run: true
+  disable:
+    - B101
+
+pydocstyle:
+  disable:
+    - D203
+
+pyflakes:
+  disable:
+    - F401
+    - F405
+
+pylint:
+  disable:
+    - protected-access
+    - undefined-variable
+
+mypy:
+  run: true

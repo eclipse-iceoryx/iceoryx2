@@ -16,7 +16,7 @@ use crate::{node_id::NodeId, unique_publisher_id::UniquePublisherId};
 
 #[pyclass(eq)]
 #[derive(PartialEq, Eq)]
-/// Sample header used b/ `MessagingPattern::PublishSubscribe`
+/// Sample header used by `MessagingPattern::PublishSubscribe`
 pub struct HeaderPublishSubscribe(pub(crate) iceoryx2::service::header::publish_subscribe::Header);
 
 #[pymethods]

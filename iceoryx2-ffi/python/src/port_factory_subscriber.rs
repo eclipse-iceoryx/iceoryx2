@@ -18,6 +18,7 @@ use crate::{
     parc::Parc,
     port_factory_publish_subscribe::PortFactoryPublishSubscribeType,
     subscriber::{Subscriber, SubscriberType},
+    type_storage::TypeStorage,
 };
 
 type IpcPortFactorySubscriber<'a> =
@@ -46,10 +47,16 @@ pub(crate) enum PortFactorySubscriberType {
 pub struct PortFactorySubscriber {
     factory: Parc<PortFactoryPublishSubscribeType>,
     value: PortFactorySubscriberType,
+    payload_type_details: TypeStorage,
+    user_header_type_details: TypeStorage,
 }
 
 impl PortFactorySubscriber {
-    pub(crate) fn new(factory: Parc<PortFactoryPublishSubscribeType>) -> Self {
+    pub(crate) fn new(
+        factory: Parc<PortFactoryPublishSubscribeType>,
+        payload_type_details: TypeStorage,
+        user_header_type_details: TypeStorage,
+    ) -> Self {
         Self {
             factory: factory.clone(),
             value: match &*factory.lock() {
@@ -68,6 +75,28 @@ impl PortFactorySubscriber {
                     })
                 }
             },
+            payload_type_details,
+            user_header_type_details,
+        }
+    }
+}
+
+impl PortFactorySubscriber {
+    fn clone_ipc(&self, value: IpcPortFactorySubscriber<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactorySubscriberType::Ipc(Parc::new(value)),
+            payload_type_details: self.payload_type_details.clone(),
+            user_header_type_details: self.user_header_type_details.clone(),
+        }
+    }
+
+    fn clone_local(&self, value: LocalPortFactorySubscriber<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactorySubscriberType::Local(Parc::new(value)),
+            payload_type_details: self.payload_type_details.clone(),
+            user_header_type_details: self.user_header_type_details.clone(),
         }
     }
 }
@@ -81,18 +110,12 @@ impl PortFactorySubscriber {
             PortFactorySubscriberType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.buffer_size(value);
-                Self {
-                    value: PortFactorySubscriberType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactorySubscriberType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.buffer_size(value);
-                Self {
-                    value: PortFactorySubscriberType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -103,17 +126,25 @@ impl PortFactorySubscriber {
         match &self.value {
             PortFactorySubscriberType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Subscriber(Parc::new(SubscriberType::Ipc(Some(
-                    this.create()
-                        .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
-                )))))
+                Ok(Subscriber {
+                    value: Parc::new(SubscriberType::Ipc(Some(
+                        this.create()
+                            .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
+                    ))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })
             }
             PortFactorySubscriberType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Subscriber(Parc::new(SubscriberType::Local(Some(
-                    this.create()
-                        .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
-                )))))
+                Ok(Subscriber {
+                    value: Parc::new(SubscriberType::Local(Some(
+                        this.create()
+                            .map_err(|e| SubscriberCreateError::new_err(format!("{e:?}")))?,
+                    ))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })
             }
         }
     }

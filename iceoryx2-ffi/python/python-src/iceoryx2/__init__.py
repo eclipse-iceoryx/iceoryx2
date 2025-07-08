@@ -10,4 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+"""Python language bindings for iceoryx2."""
+
 from ._iceoryx2 import *
+from .publish_subscribe_extensions import *

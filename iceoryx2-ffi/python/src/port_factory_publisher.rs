@@ -19,6 +19,7 @@ use crate::{
     parc::Parc,
     port_factory_publish_subscribe::PortFactoryPublishSubscribeType,
     publisher::{Publisher, PublisherType},
+    type_storage::TypeStorage,
     unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
 
@@ -47,10 +48,16 @@ pub(crate) enum PortFactoryPublisherType {
 pub struct PortFactoryPublisher {
     factory: Parc<PortFactoryPublishSubscribeType>,
     value: PortFactoryPublisherType,
+    payload_type_details: TypeStorage,
+    user_header_type_details: TypeStorage,
 }
 
 impl PortFactoryPublisher {
-    pub(crate) fn new(factory: Parc<PortFactoryPublishSubscribeType>) -> Self {
+    pub(crate) fn new(
+        factory: Parc<PortFactoryPublishSubscribeType>,
+        payload_type_details: TypeStorage,
+        user_header_type_details: TypeStorage,
+    ) -> Self {
         Self {
             factory: factory.clone(),
             value: match &*factory.lock() {
@@ -69,6 +76,26 @@ impl PortFactoryPublisher {
                     })
                 }
             },
+            payload_type_details,
+            user_header_type_details,
+        }
+    }
+
+    fn clone_ipc(&self, value: IpcPortFactoryPublisher<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryPublisherType::Ipc(Parc::new(value)),
+            payload_type_details: self.payload_type_details.clone(),
+            user_header_type_details: self.user_header_type_details.clone(),
+        }
+    }
+
+    fn clone_local(&self, value: LocalPortFactoryPublisher<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryPublisherType::Local(Parc::new(value)),
+            payload_type_details: self.payload_type_details.clone(),
+            user_header_type_details: self.user_header_type_details.clone(),
         }
     }
 }
@@ -83,18 +110,12 @@ impl PortFactoryPublisher {
             PortFactoryPublisherType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.max_loaned_samples(value);
-                Self {
-                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryPublisherType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.max_loaned_samples(value);
-                Self {
-                    value: PortFactoryPublisherType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -106,18 +127,12 @@ impl PortFactoryPublisher {
             PortFactoryPublisherType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.unable_to_deliver_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryPublisherType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.unable_to_deliver_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryPublisherType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -130,18 +145,12 @@ impl PortFactoryPublisher {
             PortFactoryPublisherType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.initial_max_slice_len(value);
-                Self {
-                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryPublisherType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.initial_max_slice_len(value);
-                Self {
-                    value: PortFactoryPublisherType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -156,18 +165,12 @@ impl PortFactoryPublisher {
             PortFactoryPublisherType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.allocation_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryPublisherType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryPublisherType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.allocation_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryPublisherType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -178,17 +181,25 @@ impl PortFactoryPublisher {
         match &self.value {
             PortFactoryPublisherType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Publisher(Parc::new(PublisherType::Ipc(Some(
-                    this.create()
-                        .map_err(|e| PublisherCreateError::new_err(format!("{e:?}")))?,
-                )))))
+                Ok(Publisher {
+                    value: Parc::new(PublisherType::Ipc(Some(
+                        this.create()
+                            .map_err(|e| PublisherCreateError::new_err(format!("{e:?}")))?,
+                    ))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })
             }
             PortFactoryPublisherType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Publisher(Parc::new(PublisherType::Local(Some(
-                    this.create()
-                        .map_err(|e| PublisherCreateError::new_err(format!("{e:?}")))?,
-                )))))
+                Ok(Publisher {
+                    value: Parc::new(PublisherType::Local(Some(
+                        this.create()
+                            .map_err(|e| PublisherCreateError::new_err(format!("{e:?}")))?,
+                    ))),
+                    payload_type_details: self.payload_type_details.clone(),
+                    user_header_type_details: self.user_header_type_details.clone(),
+                })
             }
         }
     }

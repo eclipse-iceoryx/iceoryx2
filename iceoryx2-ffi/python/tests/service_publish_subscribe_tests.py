@@ -28,7 +28,7 @@ class LargePayload(ctypes.Structure):
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_send_and_receive_works(
+def test_send_and_receive_with_memmove_works(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -38,7 +38,7 @@ def test_send_and_receive_works(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .publish_subscribe()
+        .publish_subscribe(Payload)
         .subscriber_max_buffer_size(number_of_samples)
         .create()
     )
@@ -49,7 +49,7 @@ def test_send_and_receive_works(
 
     for i in range(0, number_of_samples):
         send_payload = Payload(data=82 + i)
-        sample_uninit = publisher.loan_slice_uninit(1)
+        sample_uninit = publisher.loan_uninit()
         ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(send_payload), 1)
         sample = sample_uninit.assume_init()
         sample.send()
@@ -69,6 +69,72 @@ def test_send_and_receive_works(
 
 
 @pytest.mark.parametrize("service_type", service_types)
+def test_send_copy_and_receive_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    number_of_samples = 6
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(Payload)
+        .subscriber_max_buffer_size(number_of_samples)
+        .create()
+    )
+
+    publisher = service.publisher_builder().create()
+    subscriber = service.subscriber_builder().create()
+    assert not subscriber.has_samples()
+
+    for i in range(0, number_of_samples):
+        publisher.send_copy(Payload(data=85 + i))
+
+    assert subscriber.has_samples()
+
+    for i in range(0, number_of_samples):
+        received_sample = subscriber.receive()
+        assert received_sample.payload().contents.data == 85 + i
+
+    assert not subscriber.has_samples()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_send_with_write_payload_and_receive_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    number_of_samples = 6
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(Payload)
+        .subscriber_max_buffer_size(number_of_samples)
+        .create()
+    )
+
+    publisher = service.publisher_builder().create()
+    subscriber = service.subscriber_builder().create()
+    assert not subscriber.has_samples()
+
+    for i in range(0, number_of_samples):
+        sample_uninit = publisher.loan_uninit()
+        sample = sample_uninit.write_payload(Payload(data=89 + i))
+        sample.send()
+
+    assert subscriber.has_samples()
+
+    for i in range(0, number_of_samples):
+        received_sample = subscriber.receive()
+        assert received_sample.payload().contents.data == 89 + i
+
+    assert not subscriber.has_samples()
+
+
+@pytest.mark.parametrize("service_type", service_types)
 def test_send_large_payload_works(
     service_type: iox2.ServiceType,
 ) -> None:
@@ -76,13 +142,17 @@ def test_send_large_payload_works(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe().create()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(LargePayload)
+        .create()
+    )
 
     publisher = service.publisher_builder().initial_max_slice_len(8).create()
     subscriber = service.subscriber_builder().create()
 
     send_payload = LargePayload(data=19203182930990147)
-    sample_uninit = publisher.loan_slice_uninit(8)
+    sample_uninit = publisher.loan_uninit()
     ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(send_payload), 8)
     sample = sample_uninit.assume_init()
     sample.send()
@@ -104,12 +174,14 @@ def test_published_header_is_the_same_as_received_header(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    service = node.service_builder(service_name).publish_subscribe().create()
+    service = (
+        node.service_builder(service_name).publish_subscribe(Payload).create()
+    )
 
     publisher = service.publisher_builder().create()
     subscriber = service.subscriber_builder().create()
 
-    sample_uninit = publisher.loan_slice_uninit(1)
+    sample_uninit = publisher.loan_uninit()
     sample = sample_uninit.assume_init()
     send_header = sample.header
     assert send_header.node_id == node.id
@@ -127,24 +199,21 @@ def test_published_header_is_the_same_as_received_header(
 def test_custom_user_header_can_be_used(
     service_type: iox2.ServiceType,
 ) -> None:
-    user_header_type = (
-        iox2.TypeDetail.new().type_name(iox2.TypeName.new("whatever")).size(1)
-    )
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .publish_subscribe()
-        .user_header_type_details(user_header_type)
+        .publish_subscribe(Payload)
+        .user_header(Payload)
         .create()
     )
 
     publisher = service.publisher_builder().create()
     subscriber = service.subscriber_builder().create()
 
-    sample_uninit = publisher.loan_slice_uninit(1)
+    sample_uninit = publisher.loan_uninit()
     send_user_header_payload = Payload(data=37)
     ctypes.memmove(
         sample_uninit.user_header_ptr, ctypes.byref(send_user_header_payload), 1
@@ -154,10 +223,7 @@ def test_custom_user_header_can_be_used(
 
     received_sample = subscriber.receive()
     assert received_sample is not None
-    received_user_header_payload = Payload(data=0)
-    ctypes.memmove(
-        ctypes.byref(received_user_header_payload),
-        received_sample.user_header_ptr,
-        1,
+    assert (
+        received_sample.user_header().contents.data
+        == send_user_header_payload.data
     )
-    assert received_user_header_payload.data == send_user_header_payload.data

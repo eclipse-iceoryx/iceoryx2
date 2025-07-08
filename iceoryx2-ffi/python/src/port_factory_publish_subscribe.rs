@@ -26,6 +26,7 @@ use crate::port_factory_subscriber::PortFactorySubscriber;
 use crate::service_id::ServiceId;
 use crate::service_name::ServiceName;
 use crate::static_config_publish_subscribe::StaticConfigPublishSubscribe;
+use crate::type_storage::TypeStorage;
 
 pub(crate) enum PortFactoryPublishSubscribeType {
     Ipc(
@@ -47,14 +48,32 @@ pub(crate) enum PortFactoryPublishSubscribeType {
 #[pyclass]
 /// The factory for `MessagingPattern::PublishSubscribe`. It can acquire dynamic and static service
 /// informations and create `Publisher` or `Subscriber` ports.
-pub struct PortFactoryPublishSubscribe(pub(crate) Parc<PortFactoryPublishSubscribeType>);
+pub struct PortFactoryPublishSubscribe {
+    pub(crate) value: Parc<PortFactoryPublishSubscribeType>,
+    payload_type_details: TypeStorage,
+    user_header_type_details: TypeStorage,
+}
+
+impl PortFactoryPublishSubscribe {
+    pub(crate) fn new(
+        value: PortFactoryPublishSubscribeType,
+        payload_type_details: TypeStorage,
+        user_header_type_details: TypeStorage,
+    ) -> Self {
+        Self {
+            value: Parc::new(value),
+            payload_type_details,
+            user_header_type_details,
+        }
+    }
+}
 
 #[pymethods]
 impl PortFactoryPublishSubscribe {
     #[getter]
     /// Returns the `ServiceName` of the service
     pub fn name(&self) -> ServiceName {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             PortFactoryPublishSubscribeType::Ipc(v) => ServiceName(v.name().clone()),
             PortFactoryPublishSubscribeType::Local(v) => ServiceName(v.name().clone()),
         }
@@ -63,7 +82,7 @@ impl PortFactoryPublishSubscribe {
     #[getter]
     /// Returns the `ServiceId` of the `Service`
     pub fn service_id(&self) -> ServiceId {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             PortFactoryPublishSubscribeType::Ipc(v) => ServiceId(v.service_id().clone()),
             PortFactoryPublishSubscribeType::Local(v) => ServiceId(v.service_id().clone()),
         }
@@ -72,7 +91,7 @@ impl PortFactoryPublishSubscribe {
     #[getter]
     /// Returns the `AttributeSet` defined in the `Service`
     pub fn attributes(&self) -> AttributeSet {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             PortFactoryPublishSubscribeType::Ipc(v) => AttributeSet(v.attributes().clone()),
             PortFactoryPublishSubscribeType::Local(v) => AttributeSet(v.attributes().clone()),
         }
@@ -82,7 +101,7 @@ impl PortFactoryPublishSubscribe {
     /// Returns the StaticConfig of the `Service`.
     /// Contains all settings that never change during the lifetime of the service.
     pub fn static_config(&self) -> StaticConfigPublishSubscribe {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             PortFactoryPublishSubscribeType::Ipc(v) => {
                 StaticConfigPublishSubscribe(v.static_config().clone())
             }
@@ -95,7 +114,7 @@ impl PortFactoryPublishSubscribe {
     #[getter]
     /// Returns a list of all `NodeState` of all the `Node`s which have opened the `Service`.
     pub fn nodes(&self) -> PyResult<Vec<NodeState>> {
-        match &*self.0.lock() {
+        match &*self.value.lock() {
             PortFactoryPublishSubscribeType::Ipc(v) => {
                 let mut ret_val = vec![];
                 v.nodes(|state| {
@@ -144,11 +163,19 @@ impl PortFactoryPublishSubscribe {
 
     /// Returns a `PortFactoryPublisher` to create a new `Publisher` port
     pub fn publisher_builder(&self) -> PortFactoryPublisher {
-        PortFactoryPublisher::new(self.0.clone())
+        PortFactoryPublisher::new(
+            self.value.clone(),
+            self.payload_type_details.clone(),
+            self.user_header_type_details.clone(),
+        )
     }
 
     /// Returns a `PortFactorySubscriber` to create a new `Subscriber` port
     pub fn subscriber_builder(&self) -> PortFactorySubscriber {
-        PortFactorySubscriber::new(self.0.clone())
+        PortFactorySubscriber::new(
+            self.value.clone(),
+            self.payload_type_details.clone(),
+            self.user_header_type_details.clone(),
+        )
     }
 }

@@ -10,11 +10,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+import ctypes
+
 import pytest
 
 import iceoryx2 as iox2
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
+
+
+class Payload(ctypes.Structure):
+    _fields_ = [
+        ("data", ctypes.c_int),
+    ]
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -26,7 +34,7 @@ def test_can_be_configured(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .publish_subscribe()
+        .publish_subscribe(Payload)
         .subscriber_max_buffer_size(47112)
         .create()
     )
@@ -45,7 +53,7 @@ def test_deleting_subscriber_removes_if_from_the_service(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .publish_subscribe()
+        .publish_subscribe(Payload)
         .max_subscribers(1)
         .create()
     )
@@ -72,7 +80,7 @@ def test_deleting_sample_releases_it(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .publish_subscribe()
+        .publish_subscribe(Payload)
         .subscriber_max_buffer_size(2)
         .subscriber_max_borrowed_samples(1)
         .create()

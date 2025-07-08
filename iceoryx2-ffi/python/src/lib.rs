@@ -69,6 +69,7 @@ pub mod subscriber;
 pub mod testing;
 pub mod type_detail;
 pub mod type_name;
+pub mod type_storage;
 pub mod type_variant;
 pub mod unable_to_deliver_strategy;
 pub mod unique_client_id;
@@ -137,6 +138,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::port_factory_server::PortFactoryServer>()?;
     m.add_class::<crate::port_factory_subscriber::PortFactorySubscriber>()?;
     m.add_class::<crate::publisher::Publisher>()?;
+    m.add_class::<crate::sample::Sample>()?;
     m.add_class::<crate::sample_mut::SampleMut>()?;
     m.add_class::<crate::sample_mut_uninit::SampleMutUninit>()?;
     m.add_class::<crate::server::Server>()?;
