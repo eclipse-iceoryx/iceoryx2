@@ -10,12 +10,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+"""Generates a human readable type name from a given type."""
+
 import ctypes
-from typing import Type, TypeVar
+from typing import Any, Type, TypeVar
 
 T = TypeVar("T")
 
-def get_type_name(t: Type[T]) -> str:
+
+def get_type_name(t: Type[T]) -> Any:
+    """Generates a human readable type name from a given type."""
     if hasattr(t, "type_name"):
         return t.type_name()
 

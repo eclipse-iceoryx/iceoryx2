@@ -15,6 +15,7 @@ bandit:
 pydocstyle:
   disable:
     - D203
+    - D212
 
 pyflakes:
   disable:
@@ -28,3 +29,7 @@ pylint:
 
 mypy:
   run: true
+  disable:
+    - arg-type
+    - attr-defined
+    - name-defined

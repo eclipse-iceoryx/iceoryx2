@@ -13,6 +13,7 @@
 """Subscriber example."""
 
 import ctypes
+
 import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)

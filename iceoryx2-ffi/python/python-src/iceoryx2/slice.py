@@ -13,9 +13,10 @@
 """Slice - A class representing a set of contiguous elements of type T."""
 
 import ctypes
-from typing import Generic, TypeVar, Type
+from typing import Any, Generic, Type, TypeVar
 
 T = TypeVar("T", bound=ctypes.Structure)
+
 
 class Slice(Generic[T]):
     """
@@ -27,7 +28,10 @@ class Slice(Generic[T]):
     T -  The type of elements in the slice. Can be const-qualified for read-only slices.
     """
 
-    def __init__(self, data_ptr: int, number_of_elements: int, t: Type[T]) -> None:
+    def __init__(
+        self, data_ptr: int, number_of_elements: int, t: Type[T]
+    ) -> None:
+        """Initializes a slice with a data_ptr, number_of_elements it contains and the type."""
         self.data_ptr = data_ptr
         self.number_of_elements = number_of_elements
         self.contained_type = t
@@ -36,21 +40,24 @@ class Slice(Generic[T]):
         """Returns human-readable string of the contents."""
         return f"Slice {{ data_ptr: {self.data_ptr}, number_of_elements: {self.number_of_elements} }}"
 
-    def __getitem__(self, index: int) -> T:
+    def __getitem__(self, index: int) -> Any:
         """Acuires a pointer T to the element at the specified index."""
         if not 0 <= index < self.number_of_elements:
             raise IndexError("Slice index out of range")
 
-        typed_ptr = ctypes.cast(self.data_ptr, ctypes.POINTER(self.contained_type))
+        typed_ptr = ctypes.cast(
+            self.data_ptr, ctypes.POINTER(self.contained_type)
+        )
         return typed_ptr[index]
-
 
     def __setitem__(self, index: int, value: T) -> None:
         """Sets the value at the specified index."""
         if not 0 <= index < self.number_of_elements:
             raise IndexError("Slice index out of range")
 
-        typed_ptr = ctypes.cast(self.data_ptr, ctypes.POINTER(self.contained_type))
+        typed_ptr = ctypes.cast(
+            self.data_ptr, ctypes.POINTER(self.contained_type)
+        )
         typed_ptr[index] = value
 
     def len(self) -> int:

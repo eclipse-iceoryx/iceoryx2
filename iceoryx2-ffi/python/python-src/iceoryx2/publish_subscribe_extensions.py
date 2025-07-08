@@ -13,7 +13,7 @@
 """Strong type safe extensions for the publish-subscribe messaging pattern."""
 
 import ctypes
-from typing import Any, Type, TypeVar, get_origin, get_args
+from typing import Any, Type, TypeVar, get_args, get_origin
 
 from ._iceoryx2 import *
 from .slice import Slice
@@ -26,11 +26,13 @@ def payload(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the payload."""
     if get_origin(self.__payload_type_details) is Slice:
         (contained_type,) = get_args(self.__payload_type_details)
-        return Slice[self.__payload_type_details](self.payload_ptr, self.__slice_len, contained_type)
-    else:
-        return ctypes.cast(
-            self.payload_ptr, ctypes.POINTER(self.__payload_type_details)
+        return Slice[self.__payload_type_details](
+            self.payload_ptr, self.__slice_len, contained_type
         )
+
+    return ctypes.cast(
+        self.payload_ptr, ctypes.POINTER(self.__payload_type_details)
+    )
 
 
 def user_header(self: Any) -> Any:
@@ -44,7 +46,6 @@ def publish_subscribe(
     self: ServiceBuilder, t: Type[T]
 ) -> ServiceBuilderPublishSubscribe:
     """Returns the `ServiceBuilderPublishSusbcribe` to create a new publish-subscribe service. The payload ctype must be provided as argument."""
-
     type_name = t.__name__
     type_size = 0
     type_align = 0
@@ -57,7 +58,7 @@ def publish_subscribe(
         type_size = ctypes.sizeof(contained_type)
         type_align = ctypes.alignment(contained_type)
     else:
-        type_name = get_type_name(contained_type)
+        type_name = get_type_name(t)
         type_size = ctypes.sizeof(t)
         type_align = ctypes.alignment(t)
         type_variant = TypeVariant.FixedSize
@@ -107,7 +108,7 @@ def send_copy(self: Publisher, t: Type[T]) -> Any:
         sample_uninit.__payload_type_details
     )
 
-    ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))  # type: ignore[arg-type]
+    ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
     sample = sample_uninit.assume_init()
     return sample.send()
 
@@ -117,7 +118,7 @@ def write_payload(self: SampleMutUninit, t: Type[T]) -> SampleMut:
     assert ctypes.sizeof(t) == ctypes.sizeof(self.__payload_type_details)
     assert ctypes.alignment(t) == ctypes.alignment(self.__payload_type_details)
 
-    ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))  # type: ignore[arg-type]
+    ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
     return self.assume_init()
 
 

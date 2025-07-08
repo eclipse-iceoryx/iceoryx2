@@ -10,9 +10,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Publisher example."""
+"""Subscriber example."""
 
 import ctypes
+
+from custom_header import CustomHeader
 
 import iceoryx2 as iox2
 
@@ -22,32 +24,29 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 service = (
-    node.service_builder(iox2.ServiceName.new("Service With Dynamic Data"))
-    .publish_subscribe(iox2.Slice[ctypes.c_uint8])
+    node.service_builder(iox2.ServiceName.new("My/Funk/ServiceName"))
+    .publish_subscribe(ctypes.c_uint64)
+    .user_header(CustomHeader)
     .open_or_create()
 )
 
-publisher = (
-    service.publisher_builder()
-    .initial_max_slice_len(16)
-    .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
-    .create()
-)
+subscriber = service.subscriber_builder().create()
 
-COUNTER = 1
 try:
     while True:
         node.wait(cycle_time)
-        required_memory_size = min(COUNTER * COUNTER, 1000000)
-        sample = publisher.loan_slice_uninit(required_memory_size)
-        for byte_idx in range(0, required_memory_size):
-            sample.payload()[byte_idx] = (byte_idx + COUNTER) % 255
-
-        sample = sample.assume_init()
-        sample.send()
-
-        print("send sample", COUNTER, "with", required_memory_size, "bytes...")
-        COUNTER += 1
+        while True:
+            sample = subscriber.receive()
+            if sample is not None:
+                data = sample.payload()
+                print(
+                    "received:",
+                    data.contents,
+                    ", user_header:",
+                    sample.user_header().contents,
+                )
+            else:
+                break
 
 except iox2.NodeWaitFailure:
     print("exit")
