@@ -29,10 +29,26 @@ proc handle_timeout { EXPECTED_OUTPUT } {
     exit 1
 }
 
+proc handle_end_of_file { EXPECTED_OUTPUT } {
+    global C_RED C_YELLOW C_OFF
+    puts "${C_RED}Test failed!${C_OFF}"
+    puts "${C_YELLOW}Received 'eof' instead of:${C_OFF} ${EXPECTED_OUTPUT}"
+    exit 1
+}
+
 proc expect_output { EXPECTED_OUTPUT } {
     expect {
         "${EXPECTED_OUTPUT}" { }
         timeout { handle_timeout ${EXPECTED_OUTPUT} }
+        eof { handle_end_of_file ${EXPECTED_OUTPUT} }
+    }
+}
+
+proc expect_output_from { SPAWN_ID EXPECTED_OUTPUT } {
+    expect {
+        -i ${SPAWN_ID} "${EXPECTED_OUTPUT}" { }
+        timeout { handle_timeout ${EXPECTED_OUTPUT} }
+        eof { handle_end_of_file ${EXPECTED_OUTPUT} }
     }
 }
 
