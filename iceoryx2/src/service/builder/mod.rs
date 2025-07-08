@@ -176,7 +176,7 @@ impl<S: Service> Builder<S> {
     /// Create a new builder to create a
     /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) [`Service`].
     pub fn blackboard_creator<
-        KeyType: ZeroCopySend + Debug + Send + Sync + Eq + 'static + Clone,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend,
     >(
         self,
     ) -> blackboard::Creator<KeyType, S> {
@@ -192,7 +192,7 @@ impl<S: Service> Builder<S> {
 
     /// Create a new builder to open a
     /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) [`Service`].
-    pub fn blackboard_opener<KeyType: ZeroCopySend + Debug + Send + Sync + Eq + 'static + Clone>(
+    pub fn blackboard_opener<KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend>(
         self,
     ) -> blackboard::Opener<KeyType, S> {
         BuilderWithServiceType::new(
@@ -242,13 +242,13 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         event::Builder::new(self)
     }
 
-    fn blackboard_creator<KeyType: ZeroCopySend + Debug + Send + Sync + Eq + 'static + Clone>(
+    fn blackboard_creator<KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend>(
         self,
     ) -> blackboard::Creator<KeyType, ServiceType> {
         blackboard::Creator::new(self)
     }
 
-    fn blackboard_opener<KeyType: ZeroCopySend + Debug + Send + Sync + Eq + 'static + Clone>(
+    fn blackboard_opener<KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend>(
         self,
     ) -> blackboard::Opener<KeyType, ServiceType> {
         blackboard::Opener::new(self)

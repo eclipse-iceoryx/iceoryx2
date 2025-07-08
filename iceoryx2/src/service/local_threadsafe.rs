@@ -56,7 +56,8 @@ impl crate::service::Service for Service {
     type Reactor = reactor::recommended::Local;
     type ArcThreadSafetyPolicy<T: Send + Debug> =
         arc_sync_policy::mutex_protected::MutexProtected<T>;
-    type BlackboardMgmt<T: Send + Sync + Debug + 'static> = dynamic_storage::recommended::Local<T>;
+    type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static> =
+        dynamic_storage::recommended::Local<KeyType>;
     type BlackboardPayload = shared_memory::recommended::Local<BumpAllocator>;
 }
 

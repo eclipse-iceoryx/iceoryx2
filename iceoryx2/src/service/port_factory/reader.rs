@@ -10,13 +10,28 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// TODO: example
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard_creator::<u64>()
+//!     .add::<i32>(0,0)
+//!     .create()?;
+//!
+//! let reader = blackboard.reader_builder().create()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
 use super::blackboard::PortFactory;
 use crate::port::reader::{Reader, ReaderCreateError};
 use crate::service;
 use core::fmt::Debug;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 
 /// Factory to create a new [`Reader`] port/endpoint for
@@ -26,16 +41,13 @@ use iceoryx2_bb_log::fail;
 pub struct PortFactoryReader<
     'factory,
     Service: service::Service,
-    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
 > {
     pub(crate) factory: &'factory PortFactory<Service, KeyType>,
 }
 
-impl<
-        'factory,
-        Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > PortFactoryReader<'factory, Service, KeyType>
+impl<'factory, Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
+    PortFactoryReader<'factory, Service, KeyType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {
         Self { factory }

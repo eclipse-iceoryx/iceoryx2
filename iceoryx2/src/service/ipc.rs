@@ -55,7 +55,8 @@ impl crate::service::Service for Service {
     type Reactor = reactor::recommended::Ipc;
     type ArcThreadSafetyPolicy<T: Send + Debug> =
         arc_sync_policy::single_threaded::SingleThreaded<T>;
-    type BlackboardMgmt<T: Send + Sync + Debug + 'static> = dynamic_storage::recommended::Ipc<T>;
+    type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static> =
+        dynamic_storage::recommended::Ipc<KeyType>;
     type BlackboardPayload = shared_memory::recommended::Ipc<BumpAllocator>;
 }
 

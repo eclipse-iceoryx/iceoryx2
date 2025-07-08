@@ -10,6 +10,32 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard_creator::<u64>()
+//!     .add::<i32>(0,0)
+//!     .create()?;
+//!
+//! println!("name:                             {:?}", blackboard.name());
+//! println!("service id:                       {:?}", blackboard.service_id());
+//! println!("type details:                     {:?}", blackboard.static_config().type_details());
+//! println!("max nodes:                        {:?}", blackboard.static_config().max_nodes());
+//! println!("max readers:                      {:?}", blackboard.static_config().max_readers());
+//! println!("number of active readers:         {:?}", blackboard.dynamic_config().number_of_readers());
+//!
+//! let writer = blackboard.writer_builder().create()?;
+//! let reader = blackboard.reader_builder().create()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use super::nodes;
 use super::reader::PortFactoryReader;
 use super::writer::PortFactoryWriter;
@@ -21,7 +47,6 @@ use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config, ServiceState};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary::CallbackProgression;
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
 extern crate alloc;
@@ -34,15 +59,13 @@ use alloc::sync::Arc;
 #[derive(Debug)]
 pub struct PortFactory<
     Service: service::Service,
-    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
 > {
     pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > crate::service::port_factory::PortFactory for PortFactory<Service, KeyType>
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
+    crate::service::port_factory::PortFactory for PortFactory<Service, KeyType>
 {
     type Service = Service;
     type StaticConfig = static_config::blackboard::StaticConfig;
@@ -80,10 +103,8 @@ impl<
     }
 }
 
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > PortFactory<Service, KeyType>
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
+    PortFactory<Service, KeyType>
 {
     pub(crate) fn new(
         service: ServiceState<Service, BlackboardResources<Service, KeyType>>,
@@ -94,11 +115,47 @@ impl<
     }
 
     /// Returns a [`PortFactoryWriter`] to create a new [`crate::port::writer::Writer`] port.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///     .blackboard_creator::<u64>()
+    ///     .add::<i32>(0,0)
+    ///     .create()?;
+    ///
+    /// let writer = blackboard.writer_builder().create()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn writer_builder(&self) -> PortFactoryWriter<Service, KeyType> {
         PortFactoryWriter::new(self)
     }
 
     /// Returns a [`PortFactoryReader`] to create a new [`crate::port::reader::Reader`] port.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use iceoryx2::prelude::*;
+    ///
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    ///     .blackboard_creator::<u64>()
+    ///     .add::<i32>(0,0)
+    ///     .create()?;
+    ///
+    /// let reader = blackboard.reader_builder().create()?;
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn reader_builder(&self) -> PortFactoryReader<Service, KeyType> {
         PortFactoryReader::new(self)
     }

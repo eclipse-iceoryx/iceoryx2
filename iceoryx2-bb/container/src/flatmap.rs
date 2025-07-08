@@ -77,6 +77,23 @@ pub struct MetaFlatMap<K: Eq + Clone, V: Clone, Ptr: GenericPointer> {
     is_initialized: IoxAtomicBool,
 }
 
+impl<K: Eq + Clone + Debug, V: Clone + Debug, Ptr: GenericPointer> Debug
+    for MetaFlatMap<K, V, Ptr>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "MetaFlatMap<{}, {}, {}> {{ len: {}, is_initialized: {} }}",
+            core::any::type_name::<K>(),
+            core::any::type_name::<V>(),
+            core::any::type_name::<Ptr>(),
+            self.len_impl(),
+            self.is_initialized
+                .load(core::sync::atomic::Ordering::Relaxed),
+        )
+    }
+}
+
 impl<K: Eq + Clone, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
@@ -251,13 +268,6 @@ unsafe impl<K: Eq + Clone + ZeroCopySend, V: Clone + ZeroCopySend> ZeroCopySend
 {
 }
 
-impl<K: Eq + Clone + Debug, V: Clone + Debug> Debug for RelocatableFlatMap<K, V> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // TODO: improve Debug output; use slotmap?
-        write!(f, "")
-    }
-}
-
 impl<K: Eq + Clone, V: Clone> RelocatableFlatMap<K, V> {
     /// Returns how much memory the [`RelocatableFlatMap`] will allocate from the allocator
     /// in [`RelocatableFlatMap::init()`].
@@ -384,8 +394,14 @@ impl<K: Eq + Clone + Debug, V: Clone + Debug, const CAPACITY: usize> Debug
     for FixedSizeFlatMap<K, V, CAPACITY>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // TODO: improve Debug output; use slotmap?
-        write!(f, "")
+        write!(
+            f,
+            "MetaFlatMap<{}, {}, {}> {{ {:?} }}",
+            core::any::type_name::<K>(),
+            core::any::type_name::<V>(),
+            CAPACITY,
+            self.map
+        )
     }
 }
 

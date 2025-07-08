@@ -10,6 +10,23 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Example
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard_creator::<u64>()
+//!     .add::<i32>(0,0)
+//!     .create()?;
+//!
+//! println!("number of active readers:      {:?}", blackboard.dynamic_config().number_of_readers());
+//! # Ok(())
+//! # }
+//! ```
+
 use crate::node::NodeId;
 use crate::port::port_identifiers::{UniquePortId, UniqueReaderId, UniqueWriterId};
 use iceoryx2_bb_container::queue::RelocatableContainer;

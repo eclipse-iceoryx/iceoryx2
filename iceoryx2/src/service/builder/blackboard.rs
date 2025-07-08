@@ -161,7 +161,6 @@ struct BuilderInternals<KeyType> {
 
 impl<KeyType> Debug for BuilderInternals<KeyType> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // TODO: improve Debug output
         write!(f, "")
     }
 }
@@ -176,7 +175,7 @@ pub(crate) struct Entry {
 }
 
 #[derive(Debug)]
-pub(crate) struct Mgmt<KeyType: ZeroCopySend + Debug + Eq + Clone> {
+pub(crate) struct Mgmt<KeyType: Eq + Clone + Debug> {
     pub(crate) map: RelocatableFlatMap<KeyType, usize>,
     pub(crate) entries: RelocatableVec<Entry>,
 }
@@ -184,16 +183,14 @@ pub(crate) struct Mgmt<KeyType: ZeroCopySend + Debug + Eq + Clone> {
 #[derive(Debug)]
 pub(crate) struct BlackboardResources<
     ServiceType: service::Service,
-    KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
 > {
     pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt<KeyType>>,
     pub(crate) data: ServiceType::BlackboardPayload,
 }
 
-impl<
-        ServiceType: service::Service,
-        KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone,
-    > ServiceResource for BlackboardResources<ServiceType, KeyType>
+impl<ServiceType: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
+    ServiceResource for BlackboardResources<ServiceType, KeyType>
 {
     fn acquire_ownership(&self) {
         self.data.acquire_ownership();
@@ -202,17 +199,18 @@ impl<
 }
 
 #[derive(Debug)]
-struct Builder<KeyType: ZeroCopySend + Debug + Eq + Clone, ServiceType: service::Service> {
+struct Builder<
+    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend,
+    ServiceType: service::Service,
+> {
     base: builder::BuilderWithServiceType<ServiceType>,
     verify_max_readers: bool,
     verify_max_nodes: bool,
     internals: Vec<BuilderInternals<KeyType>>,
 }
 
-impl<
-        KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone,
-        ServiceType: service::Service,
-    > Builder<KeyType, ServiceType>
+impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: service::Service>
+    Builder<KeyType, ServiceType>
 {
     fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
@@ -295,14 +293,15 @@ impl<
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Creator<KeyType: ZeroCopySend + Debug + Eq + Clone, ServiceType: service::Service> {
+pub struct Creator<
+    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend,
+    ServiceType: service::Service,
+> {
     builder: Builder<KeyType, ServiceType>,
 }
 
-impl<
-        KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone,
-        ServiceType: service::Service,
-    > Creator<KeyType, ServiceType>
+impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: service::Service>
+    Creator<KeyType, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         Self {
@@ -322,9 +321,8 @@ impl<
         self
     }
 
-    // TODO: ValueType has more restrictions than described in design document
     /// Adds key-value pairs to the blackboard.
-    pub fn add<ValueType: ZeroCopySend + Clone + 'static + Copy>(
+    pub fn add<ValueType: ZeroCopySend + Copy + 'static>(
         mut self,
         key: KeyType,
         value: ValueType,
@@ -556,14 +554,15 @@ impl<
 ///
 /// See [`crate::service`]
 #[derive(Debug)]
-pub struct Opener<KeyType: ZeroCopySend + Debug + Eq + Clone, ServiceType: service::Service> {
+pub struct Opener<
+    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend,
+    ServiceType: service::Service,
+> {
     builder: Builder<KeyType, ServiceType>,
 }
 
-impl<
-        KeyType: ZeroCopySend + Debug + Eq + Send + Sync + 'static + Clone,
-        ServiceType: service::Service,
-    > Opener<KeyType, ServiceType>
+impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: service::Service>
+    Opener<KeyType, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         Self {

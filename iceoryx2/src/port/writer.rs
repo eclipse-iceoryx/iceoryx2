@@ -28,29 +28,17 @@ use alloc::sync::Arc;
 
 use super::port_identifiers::UniqueWriterId;
 
+#[derive(Debug)]
 struct WriterSharedState<
     Service: service::Service,
-    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
 > {
     dynamic_writer_handle: Option<ContainerHandle>,
     service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > Debug for WriterSharedState<Service, KeyType>
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // TODO: improve Debug output
-        write!(f, "")
-    }
-}
-
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > Drop for WriterSharedState<Service, KeyType>
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static> Drop
+    for WriterSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_writer_handle {
@@ -86,18 +74,13 @@ impl core::error::Error for WriterCreateError {}
 
 /// Producing endpoint of a blackboard based communication.
 #[derive(Debug)]
-pub struct Writer<
-    Service: service::Service,
-    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-> {
+pub struct Writer<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static> {
     shared_state: Arc<WriterSharedState<Service, KeyType>>,
     writer_id: UniqueWriterId,
 }
 
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > Writer<Service, KeyType>
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
+    Writer<Service, KeyType>
 {
     pub(crate) fn new(
         service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
@@ -215,7 +198,7 @@ impl core::error::Error for WriterHandleError {}
 /// A handle for direct write access to a specific blackboard value.
 pub struct WriterHandle<
     Service: service::Service,
-    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
     ValueType: Copy + 'static,
 > {
     producer: Producer<'static, ValueType>,
@@ -223,10 +206,12 @@ pub struct WriterHandle<
     _shared_state: Arc<WriterSharedState<Service, KeyType>>,
 }
 
-// TODO: document why it's safe
+// Safe since the UnrestrictedAtomic the producer belongs to implements Send + Sync, and
+// shared_state ensures the lifetime of the UnrestrictedAtomic (struct fields are dropped in the
+// same order as declared)
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
         ValueType: Copy + 'static,
     > Send for WriterHandle<Service, KeyType, ValueType>
 {
@@ -234,7 +219,7 @@ unsafe impl<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
         ValueType: Copy + 'static,
     > WriterHandle<Service, KeyType, ValueType>
 {
@@ -269,7 +254,3 @@ impl<
         self.producer.store(value);
     }
 }
-
-// TODO:
-// 1) allow slow write without handle?
-// 2) loan API?

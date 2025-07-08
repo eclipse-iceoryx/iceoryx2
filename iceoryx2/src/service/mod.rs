@@ -165,6 +165,35 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! ## Blackboard
+//!
+//! For a detailed documentation see the
+//! [`blackboard::Builder`](crate::service::builder::blackboard::Builder)
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     // define the messaging pattern
+//!     .blackboard_creator::<u64>()
+//!     // QoS
+//!     .max_readers(4)
+//!     .max_nodes(5)
+//!     // add key-value pairs
+//!     .add::<i32>(0, -9)
+//!     .add::<bool>(5, true)
+//!     .add::<FixedSizeByteString<8>>(17, "Nalalala".try_into().unwrap())
+//!     // create the service
+//!     .create()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
 pub(crate) mod stale_resource_cleanup;
 
@@ -714,7 +743,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
 
     /// Defines the construct used to store the management data of the blackboard service.
-    type BlackboardMgmt<T: Send + Sync + Debug + 'static>: DynamicStorage<T>;
+    type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static>: DynamicStorage<KeyType>;
 
     /// Defines the construct used to store the payload data of the blackboard service.
     type BlackboardPayload: SharedMemory<BumpAllocator>;

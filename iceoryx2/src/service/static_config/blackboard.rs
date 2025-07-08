@@ -18,8 +18,9 @@
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-//!     .blackboard::<u64>()
-//!     .open_or_create()?;
+//!     .blackboard_creator::<u64>()
+//!     .add::<i32>(0,0)
+//!     .create()?;
 //!
 //! println!("type details: {:?}", blackboard.static_config().type_details());
 //! println!("max readers: {:?}", blackboard.static_config().max_readers());
@@ -28,11 +29,10 @@
 //! # }
 //! ```
 
+use crate::config;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use serde::{Deserialize, Serialize};
-
-use crate::config;
 
 use super::message_type_details::TypeDetail;
 

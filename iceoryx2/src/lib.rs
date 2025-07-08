@@ -370,6 +370,30 @@
 //! # }
 //! ```
 //!
+//! ## Blackboard
+//!
+//! For a detailed documentation see the
+//! [`blackboard::Builder`](crate::service::builder::blackboard::Builder)
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard_creator::<u64>()
+//!     // the maximum amount of readers of this service
+//!     .max_readers(4)
+//!     // the maximum amount of nodes that are able to open this service
+//!     .max_nodes(5)
+//!     .add::<u64>(0, 0)
+//!     .create()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! # Port Behavior
 //!
 //! Certain ports in iceoryx2 provide users with the flexibility to define custom behaviors in

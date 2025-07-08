@@ -28,29 +28,17 @@ use alloc::sync::Arc;
 
 use super::port_identifiers::UniqueReaderId;
 
+#[derive(Debug)]
 struct ReaderSharedState<
     Service: service::Service,
-    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
 > {
     dynamic_reader_handle: Option<ContainerHandle>,
     service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > Debug for ReaderSharedState<Service, KeyType>
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // TODO: improve Debug output
-        write!(f, "")
-    }
-}
-
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > Drop for ReaderSharedState<Service, KeyType>
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static> Drop
+    for ReaderSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_reader_handle {
@@ -86,18 +74,13 @@ impl core::error::Error for ReaderCreateError {}
 
 /// Reading endpoint of a blackboard based communication.
 #[derive(Debug)]
-pub struct Reader<
-    Service: service::Service,
-    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-> {
+pub struct Reader<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static> {
     shared_state: Arc<ReaderSharedState<Service, KeyType>>,
     reader_id: UniqueReaderId,
 }
 
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
-    > Reader<Service, KeyType>
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
+    Reader<Service, KeyType>
 {
     pub(crate) fn new(
         service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
@@ -214,18 +197,20 @@ impl core::error::Error for ReaderHandleError {}
 /// A handle for direct read access to a specific blackboard value.
 pub struct ReaderHandle<
     Service: service::Service,
-    KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
     ValueType: Copy,
 > {
     atomic: *const UnrestrictedAtomic<ValueType>,
     offset: u64,
-    shared_state: Arc<ReaderSharedState<Service, KeyType>>,
+    _shared_state: Arc<ReaderSharedState<Service, KeyType>>,
 }
 
-// TODO: document why it's safe
+// Safe since the pointer to the UnrestrictedAtomic doesn't change and the UnrestrictedAtomic
+// implements Send + Sync, and shared_state ensures the lifetime of the UnrestrictedAtomic (struct
+// fields are dropped in the same order as declared)
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
         ValueType: Copy + 'static,
     > Send for ReaderHandle<Service, KeyType, ValueType>
 {
@@ -233,7 +218,7 @@ unsafe impl<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Debug + 'static + Eq + ZeroCopySend + Clone,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
         ValueType: Copy,
     > ReaderHandle<Service, KeyType, ValueType>
 {
@@ -245,7 +230,7 @@ impl<
         Self {
             atomic,
             offset,
-            shared_state: reader_state.clone(),
+            _shared_state: reader_state.clone(),
         }
     }
 
@@ -254,7 +239,3 @@ impl<
         unsafe { (*self.atomic).load() }
     }
 }
-
-// TODO:
-// 1) allow several handles to the same key-value?
-// 2) enable slow read without handle?
