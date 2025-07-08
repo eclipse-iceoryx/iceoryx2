@@ -59,6 +59,14 @@ check_shell() {
     check_license_header
 }
 
+check_expect() {
+    START_POS=1 # first line is #!/bin/bash
+    FILE_SUFFIX="*.exp"
+    COMMENT_SYMBOL="#"
+    COMMENT_SYMBOL_GREP="#"
+    check_license_header
+}
+
 check_toml() {
     START_POS=0
     FILE_SUFFIX="*.toml"
@@ -116,6 +124,7 @@ check_bazel() {
 
 check_rust
 check_shell
+check_expect
 check_c_cpp
 check_cmake
 check_bazel
