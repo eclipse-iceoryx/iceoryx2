@@ -197,6 +197,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    ServiceDetailsError,
+    PyException,
+    "Errors caused when acquiring the details of a service."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     ServerCreateError,
     PyException,
     "Errors caused when creating a server port."

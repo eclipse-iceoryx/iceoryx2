@@ -32,6 +32,7 @@ pub mod listener;
 pub mod log;
 pub mod log_level;
 pub mod message_type_details;
+pub mod messaging_pattern;
 pub mod node;
 pub mod node_builder;
 pub mod node_id;
@@ -54,6 +55,7 @@ pub mod sample;
 pub mod sample_mut;
 pub mod sample_mut_uninit;
 pub mod server;
+pub mod service;
 pub mod service_builder;
 pub mod service_builder_event;
 pub mod service_builder_publish_subscribe;
@@ -117,6 +119,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::header_publish_subscribe::HeaderPublishSubscribe>()?;
     m.add_class::<crate::listener::Listener>()?;
     m.add_class::<crate::log_level::LogLevel>()?;
+    m.add_class::<crate::messaging_pattern::MessagingPattern>()?;
     m.add_class::<crate::message_type_details::MessageTypeDetails>()?;
     m.add_class::<crate::node::Node>()?;
     m.add_class::<crate::node_builder::NodeBuilder>()?;
@@ -142,6 +145,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::sample_mut::SampleMut>()?;
     m.add_class::<crate::sample_mut_uninit::SampleMutUninit>()?;
     m.add_class::<crate::server::Server>()?;
+    m.add_class::<crate::service::Service>()?;
     m.add_class::<crate::service_builder::ServiceBuilder>()?;
     m.add_class::<crate::service_builder_event::ServiceBuilderEvent>()?;
     m.add_class::<crate::service_builder_publish_subscribe::ServiceBuilderPublishSubscribe>()?;
@@ -268,6 +272,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "ServerCreateError",
         py.get_type::<crate::error::ServerCreateError>(),
+    )?;
+    m.add(
+        "ServiceDetailsError",
+        py.get_type::<crate::error::ServiceDetailsError>(),
     )?;
     m.add(
         "SubscriberCreateError",
