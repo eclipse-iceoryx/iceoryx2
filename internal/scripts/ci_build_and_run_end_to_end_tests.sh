@@ -53,10 +53,9 @@ cmake --build target/ffi/build -j$NUM_JOBS
 rm -rf .env
 python -m venv .env
 source .env/bin/activate
-export PYTHONPATH=${WORKSPACE}/iceoryx2-ffi/python/python-src
-cd "${WORKSPACE}/iceoryx2-ffi/python"
-rm -f python-src/iceoryx2/*.so
-maturin develop
+export PYTHONPATH="${WORKSPACE}/iceoryx2-ffi/python/python-src"
+rm -f iceoryx2-ffi/python/python-src/iceoryx2/*.so
+maturin develop  --manifest-path iceoryx2-ffi/python/Cargo.toml
 
 # Search for all end-to-end test files
 cd "${WORKSPACE}"
