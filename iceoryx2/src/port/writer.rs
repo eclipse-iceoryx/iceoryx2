@@ -39,6 +39,7 @@
 //! # }
 //! ```
 
+use crate::prelude::EventId;
 use crate::service::builder::blackboard::BlackboardResources;
 use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
@@ -256,7 +257,7 @@ pub struct WriterHandle<
     ValueType: Copy + 'static,
 > {
     handle_shared_state: Arc<WriterHandleSharedState<ValueType>>,
-    offset: u64,
+    value_id: EventId,
     _shared_state: Arc<WriterSharedState<Service, KeyType>>,
 }
 
@@ -318,7 +319,7 @@ impl<
                         loaned_entry: AtomicBool::new(false),
                     }),
                     _shared_state: writer_state.clone(),
-                    offset,
+                    value_id: EventId::new(offset as _),
                 })
             }
         }
@@ -378,6 +379,12 @@ impl<
                     "Entry cannot be loaned since the WriterHandle already loans an entry.");
             }
         }
+    }
+
+    /// Returns an ID corresponding to the value which can be used in an event based communication
+    /// setup.
+    pub fn value_id(&self) -> EventId {
+        self.value_id
     }
 }
 

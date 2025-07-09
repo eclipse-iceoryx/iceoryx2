@@ -34,6 +34,7 @@
 //! # }
 //! ```
 
+use crate::prelude::EventId;
 use crate::service::builder::blackboard::BlackboardResources;
 use crate::service::dynamic_config::blackboard::ReaderDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
@@ -242,7 +243,7 @@ pub struct ReaderHandle<
     ValueType: Copy,
 > {
     atomic: *const UnrestrictedAtomic<ValueType>,
-    offset: u64,
+    value_id: EventId,
     _shared_state: Arc<ReaderSharedState<Service, KeyType>>,
 }
 
@@ -270,7 +271,7 @@ impl<
     ) -> Self {
         Self {
             atomic,
-            offset,
+            value_id: EventId::new(offset as _),
             _shared_state: reader_state.clone(),
         }
     }
@@ -296,5 +297,11 @@ impl<
     /// ```
     pub fn get(&self) -> ValueType {
         unsafe { (*self.atomic).load() }
+    }
+
+    /// Returns an ID corresponding to the value which can be used in an event based communication
+    /// setup.
+    pub fn value_id(&self) -> EventId {
+        self.value_id
     }
 }
