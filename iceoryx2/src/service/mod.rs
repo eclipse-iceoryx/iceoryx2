@@ -169,7 +169,7 @@
 //! ## Blackboard
 //!
 //! For a detailed documentation see the
-//! [`blackboard::Builder`](crate::service::builder::blackboard::Builder)
+//! [`blackboard::Creator`](crate::service::builder::blackboard::Creator)
 //!
 //! ```
 //! use iceoryx2::prelude::*;

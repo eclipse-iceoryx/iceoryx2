@@ -51,6 +51,17 @@ impl<T: Copy> Producer<'_, T> {
     pub fn store(&self, new_value: T) {
         self.atomic.store(new_value);
     }
+
+    #[doc(hidden)]
+    pub unsafe fn get_ptr_to_write_cell(&self) -> *mut T {
+        let write_cell = self.atomic.write_cell.load(Ordering::Relaxed);
+        unsafe { (*self.atomic.data[write_cell as usize % NUMBER_OF_CELLS].get()).as_mut_ptr() }
+    }
+
+    #[doc(hidden)]
+    pub unsafe fn update_write_cell(&self) {
+        self.atomic.write_cell.fetch_add(1, Ordering::Relaxed);
+    }
 }
 
 impl<T: Copy> Drop for Producer<'_, T> {

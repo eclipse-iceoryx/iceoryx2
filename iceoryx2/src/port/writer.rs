@@ -15,7 +15,7 @@ use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
 use core::fmt::Debug;
-use core::sync::atomic::Ordering;
+use core::sync::atomic::{AtomicBool, Ordering};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{Producer, UnrestrictedAtomic};
@@ -178,6 +178,11 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
     }
 }
 
+struct WriterHandleSharedState<ValueType: Copy + 'static> {
+    producer: Producer<'static, ValueType>,
+    loaned_entry: AtomicBool,
+}
+
 /// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`].
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum WriterHandleError {
@@ -185,6 +190,8 @@ pub enum WriterHandleError {
     EntryDoesNotExist,
     /// The [`WriterHandle`] already exists.
     HandleAlreadyExists,
+    /// The [`WriterHandle`] already loans an entry.
+    HandleAlreadyLoansEntry,
 }
 
 impl core::fmt::Display for WriterHandleError {
@@ -201,9 +208,27 @@ pub struct WriterHandle<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static,
     ValueType: Copy + 'static,
 > {
-    producer: Producer<'static, ValueType>,
+    handle_shared_state: Arc<WriterHandleSharedState<ValueType>>,
     offset: u64,
     _shared_state: Arc<WriterSharedState<Service, KeyType>>,
+}
+
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        ValueType: Copy + 'static,
+    > Debug for WriterHandle<Service, KeyType, ValueType>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "WriterHandle: {{ value_type: {}, has_loaned_entry: {} }}",
+            core::any::type_name::<ValueType>(),
+            self.handle_shared_state
+                .loaned_entry
+                .load(Ordering::Relaxed)
+        )
+    }
 }
 
 // Safe since the UnrestrictedAtomic the producer belongs to implements Send + Sync, and
@@ -241,7 +266,10 @@ impl<
                 // declared
                 let p: Producer<'static, ValueType> = unsafe { core::mem::transmute(producer) };
                 Ok(Self {
-                    producer: p,
+                    handle_shared_state: Arc::new(WriterHandleSharedState {
+                        producer: p,
+                        loaned_entry: AtomicBool::new(false),
+                    }),
                     _shared_state: writer_state.clone(),
                     offset,
                 })
@@ -251,6 +279,65 @@ impl<
 
     /// Updates the value by copying the passed value into it.
     pub fn update_with_copy(&self, value: ValueType) {
-        self.producer.store(value);
+        self.handle_shared_state.producer.store(value);
+    }
+
+    /// Loans an entry that can be used to update the value without copy. Only one entry can be
+    /// loaned per [`WriterHandle`].
+    pub fn loan_uninit(&self) -> Result<Entry<ValueType>, WriterHandleError> {
+        match Entry::new(self.handle_shared_state.clone()) {
+            Ok(ptr) => Ok(ptr),
+            Err(_) => {
+                fail!(from self, with WriterHandleError::HandleAlreadyLoansEntry,
+                    "Entry cannot be loaned since the WriterHandle already loans an entry.");
+            }
+        }
+    }
+}
+
+/// Wrapper around a value entry that can be used a for zero-copy uodate.
+pub struct Entry<ValueType: Copy + 'static> {
+    ptr: *mut ValueType,
+    writer_handle_state: Arc<WriterHandleSharedState<ValueType>>,
+}
+
+impl<ValueType: Copy + 'static> Drop for Entry<ValueType> {
+    fn drop(&mut self) {
+        self.writer_handle_state
+            .loaned_entry
+            .store(false, Ordering::Relaxed);
+    }
+}
+
+impl<ValueType: Copy + 'static> Entry<ValueType> {
+    fn new(
+        writer_handle_state: Arc<WriterHandleSharedState<ValueType>>,
+    ) -> Result<Self, WriterHandleError> {
+        if writer_handle_state
+            .loaned_entry
+            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .is_err()
+        {
+            return Err(WriterHandleError::HandleAlreadyLoansEntry);
+        }
+        let ptr = unsafe { writer_handle_state.producer.get_ptr_to_write_cell() };
+        Ok(Self {
+            writer_handle_state: writer_handle_state.clone(),
+            ptr,
+        })
+    }
+
+    /// Writes value to the entry.
+    pub fn write(&self, value: ValueType) {
+        unsafe { self.ptr.write(value) };
+    }
+
+    /// Makes new value readable for [`Reader`](crate::port::reader::Reader)s and consumes the
+    /// entry, i.e. it cannot be used anymore.
+    pub fn update(self) {
+        unsafe { self.writer_handle_state.producer.update_write_cell() };
+        self.writer_handle_state
+            .loaned_entry
+            .store(false, Ordering::Relaxed);
     }
 }

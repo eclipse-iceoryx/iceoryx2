@@ -108,3 +108,19 @@ fn spmc_unrestricted_atomic_load_store_works_concurrently() {
         });
     });
 }
+
+#[test]
+fn spmc_unrestricted_atomic_get_ptr_write_and_update_works() {
+    let _test_lock = TEST_LOCK.lock().unwrap();
+    let sut = UnrestrictedAtomic::<u32>::new(0);
+
+    let p = sut.acquire_producer().unwrap();
+    let entry = unsafe { p.get_ptr_to_write_cell() };
+    assert_that!(sut.load(), eq 0);
+
+    unsafe { *entry = 1 };
+    assert_that!(sut.load(), eq 0);
+
+    unsafe { p.update_write_cell() };
+    assert_that!(sut.load(), eq 1);
+}

@@ -1371,6 +1371,82 @@ mod service_blackboard {
     }
 
     #[test]
+    fn loan_and_write_entry_works<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u32>(&0).unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+        let reader_handle = reader.entry::<u32>(&0).unwrap();
+
+        let entry = writer_handle.loan_uninit().unwrap();
+        entry.write(333);
+        entry.update();
+
+        assert_that!(reader_handle.get(), eq 333);
+    }
+
+    #[test]
+    fn writer_handle_cannot_loan_entry_twice<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u32>(&0).unwrap();
+
+        let entry = writer_handle.loan_uninit().unwrap();
+        let res = writer_handle.loan_uninit();
+        assert_that!(res, is_err);
+        assert_that!(res.err().unwrap(), eq WriterHandleError::HandleAlreadyLoansEntry);
+
+        drop(entry);
+        assert_that!(writer_handle.loan_uninit(), is_ok);
+    }
+
+    #[test]
+    fn entry_can_still_be_used_after_writer_handle_was_dropped<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+
+        let reader = sut.reader_builder().create().unwrap();
+        let reader_handle = reader.entry::<u32>(&0).unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u32>(&0).unwrap();
+        let entry = writer_handle.loan_uninit().unwrap();
+
+        drop(writer_handle);
+
+        entry.write(333);
+        entry.update();
+        assert_that!(reader_handle.get(), eq 333);
+    }
+
+    #[test]
     fn listing_all_readers_works<S: Service>() {
         const NUMBER_OF_READERS: usize = 18;
         let service_name = generate_name();
@@ -1535,6 +1611,52 @@ mod service_blackboard {
         for i in 0..number_of_writer_handles {
             assert_that!(reader.entry::<u64>(&i).unwrap().get(), eq i);
         }
+    }
+
+    #[test]
+    fn concurrent_writer_creation_succeeds_only_once<Sut: Service>() {
+        let _watch_dog = Watchdog::new();
+        let number_of_threads = (SystemInfo::NumberOfCpuCores.value()).clamp(2, 4);
+        let barrier_start = Barrier::new(number_of_threads);
+        let barrier_end = Barrier::new(number_of_threads);
+        let counter = AtomicU64::new(0);
+
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let _sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()
+            .unwrap();
+
+        std::thread::scope(|s| {
+            let mut threads = vec![];
+            for _ in 0..number_of_threads {
+                threads.push(s.spawn(|| {
+                    let sut = node
+                        .service_builder(&service_name)
+                        .blackboard_opener::<u64>()
+                        .open()
+                        .unwrap();
+                    barrier_start.wait();
+                    let writer = sut.writer_builder().create();
+                    match writer {
+                        Ok(_) => {
+                            let _ = counter.fetch_add(1, Ordering::Relaxed);
+                        }
+                        Err(e) => assert_that!(e, eq WriterCreateError::ExceedsMaxSupportedWriters),
+                    }
+                    barrier_end.wait();
+                }));
+            }
+            for t in threads {
+                t.join().unwrap();
+            }
+        });
+
+        assert_that!(counter.load(Ordering::Relaxed), eq 1);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
