@@ -10,6 +10,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Examples
+//!
+//! ```
+//! # use iceoryx2::prelude::*;
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard_creator::<u64>()
+//!     .add::<i32>(1, -1)
+//!     .add::<u32>(9, 17)
+//!     .create()?;
+//!
+//! let reader = service.reader_builder().create()?;
+//!
+//! // create a handle for direct read access to a value
+//! let reader_handle = reader.entry::<i32>(&1)?;
+//!
+//! // get a copy of the value
+//! let value = reader_handle.get();
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use crate::service::builder::blackboard::BlackboardResources;
 use crate::service::dynamic_config::blackboard::ReaderDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
@@ -131,6 +155,23 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
     }
 
     /// Creates a [`ReaderHandle`] for direct read access to the value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    /// #
+    /// # let reader = service.reader_builder().create()?;
+    /// let reader_handle = reader.entry::<i32>(&1)?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn entry<ValueType: Copy + ZeroCopySend>(
         &self,
         key: &KeyType,
@@ -235,6 +276,24 @@ impl<
     }
 
     /// Returns a copy of the value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    /// #
+    /// # let reader = service.reader_builder().create()?;
+    /// # let reader_handle = reader.entry::<i32>(&1)?;
+    /// let value = reader_handle.get();
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn get(&self) -> ValueType {
         unsafe { (*self.atomic).load() }
     }

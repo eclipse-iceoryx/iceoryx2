@@ -547,7 +547,7 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .create()?;
+    /// #                        .create()?;
     ///
     /// publisher.send_copy(1234)?;
     /// # Ok(())
@@ -578,7 +578,7 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .create()?;
+    /// #                        .create()?;
     ///
     /// let sample = publisher.loan_uninit()?;
     /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<Payload>`
@@ -682,8 +682,8 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .initial_max_slice_len(120)
-    ///                          .create()?;
+    /// #                        .initial_max_slice_len(120)
+    /// #                        .create()?;
     ///
     /// let slice_length = 5;
     /// let mut sample = publisher.loan_slice(slice_length)?;
@@ -734,8 +734,8 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .initial_max_slice_len(120)
-    ///                          .create()?;
+    /// #                        .initial_max_slice_len(120)
+    /// #                        .create()?;
     ///
     /// let slice_length = 5;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;

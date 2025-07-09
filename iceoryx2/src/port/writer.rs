@@ -10,6 +10,35 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # Examples
+//!
+//! ```
+//! # use iceoryx2::prelude::*;
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard_creator::<u64>()
+//!     .add::<i32>(1, -1)
+//!     .add::<u32>(9, 17)
+//!     .create()?;
+//!
+//! let writer = service.writer_builder().create()?;
+//!
+//! // create a handle for direct write access to a value
+//! let writer_handle = writer.entry::<i32>(&1)?;
+//!
+//! // update the value with a copy
+//! writer_handle.update_with_copy(8);
+//!
+//! // loan an uninitialized entry and write to it without copying
+//! let entry = writer_handle.loan_uninit()?;
+//! entry.write(-8);
+//! entry.update();
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use crate::service::builder::blackboard::BlackboardResources;
 use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
@@ -132,6 +161,23 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
 
     /// Creates a [`WriterHandle`] for direct write access to the value. There can be only one
     /// [`WriterHandle`] per value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    /// #
+    /// # let writer = service.writer_builder().create()?;
+    /// let writer_handle = writer.entry::<i32>(&1)?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn entry<ValueType: Copy + ZeroCopySend>(
         &self,
         key: &KeyType,
@@ -183,7 +229,8 @@ struct WriterHandleSharedState<ValueType: Copy + 'static> {
     loaned_entry: AtomicBool,
 }
 
-/// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`].
+/// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`] or
+/// an entry is loaned with [`WriterHandle::loan_uninit()`].
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum WriterHandleError {
     /// The entry with the given key and value type does not exist.
@@ -278,12 +325,51 @@ impl<
     }
 
     /// Updates the value by copying the passed value into it.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    ///
+    /// # let writer = service.writer_builder().create()?;
+    /// # let writer_handle = writer.entry::<i32>(&1)?;
+    /// writer_handle.update_with_copy(8);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn update_with_copy(&self, value: ValueType) {
         self.handle_shared_state.producer.store(value);
     }
 
     /// Loans an entry that can be used to update the value without copy. Only one entry can be
     /// loaned per [`WriterHandle`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    ///
+    /// # let writer = service.writer_builder().create()?;
+    /// # let writer_handle = writer.entry::<i32>(&1)?;
+    /// let entry = writer_handle.loan_uninit()?;
+    /// entry.write(-8);
+    /// entry.update();
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn loan_uninit(&self) -> Result<Entry<ValueType>, WriterHandleError> {
         match Entry::new(self.handle_shared_state.clone()) {
             Ok(ptr) => Ok(ptr),
@@ -328,12 +414,51 @@ impl<ValueType: Copy + 'static> Entry<ValueType> {
     }
 
     /// Writes value to the entry.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    ///
+    /// # let writer = service.writer_builder().create()?;
+    /// # let writer_handle = writer.entry::<i32>(&1)?;
+    /// let entry = writer_handle.loan_uninit()?;
+    /// entry.write(-8);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn write(&self, value: ValueType) {
         unsafe { self.ptr.write(value) };
     }
 
     /// Makes new value readable for [`Reader`](crate::port::reader::Reader)s and consumes the
     /// entry, i.e. it cannot be used anymore.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    ///
+    /// # let writer = service.writer_builder().create()?;
+    /// # let writer_handle = writer.entry::<i32>(&1)?;
+    /// let entry = writer_handle.loan_uninit()?;
+    /// entry.write(-8);
+    /// entry.update();
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn update(self) {
         unsafe { self.writer_handle_state.producer.update_write_cell() };
         self.writer_handle_state
