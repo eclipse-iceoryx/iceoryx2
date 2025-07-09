@@ -60,6 +60,7 @@ pub mod service_builder;
 pub mod service_builder_event;
 pub mod service_builder_publish_subscribe;
 pub mod service_builder_request_response;
+pub mod service_details;
 pub mod service_id;
 pub mod service_name;
 pub mod service_type;
@@ -150,6 +151,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::service_builder_event::ServiceBuilderEvent>()?;
     m.add_class::<crate::service_builder_publish_subscribe::ServiceBuilderPublishSubscribe>()?;
     m.add_class::<crate::service_builder_request_response::ServiceBuilderRequestResponse>()?;
+    m.add_class::<crate::service_details::ServiceDetails>()?;
     m.add_class::<crate::service_id::ServiceId>()?;
     m.add_class::<crate::service_name::ServiceName>()?;
     m.add_class::<crate::service_type::ServiceType>()?;
