@@ -55,7 +55,7 @@ impl<'factory, Service: service::Service, KeyType: Send + Sync + Eq + Clone + De
 
     /// Creates a new [`Reader`] or returns a [`ReaderCreateError`] on failure.
     pub fn create(self) -> Result<Reader<Service, KeyType>, ReaderCreateError> {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         Ok(
             fail!(from origin, when Reader::new(self.factory.service.clone()),"Failed to create new Reader port."),
         )

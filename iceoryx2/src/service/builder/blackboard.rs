@@ -26,7 +26,6 @@ use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use builder::RETRY_LIMIT;
 use core::alloc::Layout;
-use core::sync::atomic::AtomicU64;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::vec::RelocatableVec;
@@ -36,6 +35,7 @@ use iceoryx2_bb_log::{error, fatal_panic};
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryBuilder};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 enum ServiceAvailabilityState {
@@ -171,7 +171,7 @@ pub(crate) struct Entry {
     // offset is sufficient for static single-writer case (no insert after creation, no remove)
     // dynamic single-writer case (additional inserts after service creation and remove): offset (32 bit) + aba counter (32 bit)
     // dynamic multi-writer case: offset (32 bit) + writer segment id (8 bit) + aba counter (24 bit)
-    pub(crate) offset: AtomicU64,
+    pub(crate) offset: IoxAtomicU64,
 }
 
 #[derive(Debug)]
@@ -345,7 +345,7 @@ impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: serv
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
     fn adjust_configuration_to_meaningful_values(&mut self) {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         let settings = self.builder.base.service_config.blackboard_mut();
 
         if settings.max_readers == 0 {
@@ -450,9 +450,8 @@ impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: serv
 
                 // create the payload data segment for the writer
                 let name = blackboard_name(self.builder.base.service_config.service_id().as_str());
-                let shm_config = blackboard_data_config::<ServiceType, Mgmt<KeyType>>(
-                    self.builder.base.shared_node.config(),
-                );
+                let shm_config =
+                    blackboard_data_config::<ServiceType>(self.builder.base.shared_node.config());
                 let mut payload_size = 0;
                 if self.builder.internals.is_empty() {
                     fail!(from self,  with BlackboardCreateError::NoEntriesProvided,
@@ -504,7 +503,7 @@ impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: serv
                                 let mem = mem.unwrap();
                                 (*self.builder.internals[i].value_writer)(mem.data_ptr);
                                 // write offset to value in payload_shm to entries vector
-                                let res = unsafe {entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: AtomicU64::new(mem.offset.offset() as u64)})};
+                                let res = unsafe {entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: IoxAtomicU64::new(mem.offset.offset() as u64)})};
                                 if !res {
                                     error!("Writing the value offset to the blackboard management segment failed.");
                                     return false
@@ -522,12 +521,12 @@ impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: serv
                             msg);
 
                 // only unlock the static details when the service is successfully created
-                let mut unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
+                let unlocked_static_details = fail!(from self, when static_config.unlock(service_config.as_slice()),
                             with BlackboardCreateError::ServiceInCorruptedState,
                             "{} since the configuration could not be written to the static storage.", msg);
 
                 unlocked_static_details.release_ownership();
-                if let Some(mut service_tag) = service_tag {
+                if let Some(service_tag) = service_tag {
                     service_tag.release_ownership();
                 }
 
@@ -712,7 +711,7 @@ impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: serv
                         with BlackboardOpenError::ServiceInCorruptedState,
                         "{} since the blackboard management information could not be opened. This could indicate a corrupted system.", msg);
 
-                    let shm_config = blackboard_data_config::<ServiceType, Mgmt<KeyType>>(
+                    let shm_config = blackboard_data_config::<ServiceType>(
                         self.builder.base.shared_node.config(),
                     );
                     let payload_shm = match <<ServiceType::BlackboardPayload as SharedMemory<
@@ -731,7 +730,7 @@ impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: serv
                         }
                     };
 
-                    if let Some(mut service_tag) = service_tag {
+                    if let Some(service_tag) = service_tag {
                         service_tag.release_ownership();
                     }
 

@@ -55,7 +55,7 @@ impl<'factory, Service: service::Service, KeyType: Send + Sync + Eq + Clone + De
 
     /// Creates a new [`Writer`] or returns a [`WriterCreateError`] on failure.
     pub fn create(self) -> Result<Writer<Service, KeyType>, WriterCreateError> {
-        let origin = format!("{:?}", self);
+        let origin = format!("{self:?}");
         Ok(
             fail!(from origin, when Writer::new(self.factory.service.clone()),"Failed to create new Writer port."),
         )

@@ -45,13 +45,14 @@ use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
 use core::fmt::Debug;
-use core::sync::atomic::{AtomicBool, Ordering};
+use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{Producer, UnrestrictedAtomic};
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -96,7 +97,7 @@ pub enum WriterCreateError {
 
 impl core::fmt::Display for WriterCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "WriterCreateError::{:?}", self)
+        std::write!(f, "WriterCreateError::{self:?}")
     }
 }
 
@@ -227,7 +228,7 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
 
 struct WriterHandleSharedState<ValueType: Copy + 'static> {
     producer: Producer<'static, ValueType>,
-    loaned_entry: AtomicBool,
+    loaned_entry: IoxAtomicBool,
 }
 
 /// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`] or
@@ -244,7 +245,7 @@ pub enum WriterHandleError {
 
 impl core::fmt::Display for WriterHandleError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "WriterHandleError::{:?}", self)
+        std::write!(f, "WriterHandleError::{self:?}")
     }
 }
 
@@ -316,7 +317,7 @@ impl<
                 Ok(Self {
                     handle_shared_state: Arc::new(WriterHandleSharedState {
                         producer: p,
-                        loaned_entry: AtomicBool::new(false),
+                        loaned_entry: IoxAtomicBool::new(false),
                     }),
                     _shared_state: writer_state.clone(),
                     value_id: EventId::new(offset as _),

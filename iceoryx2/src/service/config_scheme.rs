@@ -125,17 +125,14 @@ pub(crate) fn blackboard_mgmt_config<
     <<Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.blackboard_mgmt_suffix)
-        .path_hint(&global_config.global.root_path())
+        .path_hint(global_config.global.root_path())
 }
 
-pub(crate) fn blackboard_data_config<
-    Service: crate::service::Service,
-    T: Send + Sync + Debug + 'static,
->(
+pub(crate) fn blackboard_data_config<Service: crate::service::Service>(
     global_config: &config::Config,
 ) -> <Service::BlackboardPayload as NamedConceptMgmt>::Configuration {
     <<Service::BlackboardPayload as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.blackboard_data_suffix)
-        .path_hint(&global_config.global.root_path())
+        .path_hint(global_config.global.root_path())
 }
