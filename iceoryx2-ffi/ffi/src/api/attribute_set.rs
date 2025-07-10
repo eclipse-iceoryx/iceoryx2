@@ -12,14 +12,12 @@
 
 #![allow(non_camel_case_types)]
 
-use core::ffi::c_char;
-use iceoryx2_bb_elementary::static_assert::*;
-
-extern crate alloc;
 use alloc::ffi::CString;
+use core::ffi::c_char;
 
 use iceoryx2::service::attribute::{Attribute, AttributeKey, AttributeSet};
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 

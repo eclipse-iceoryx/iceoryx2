@@ -32,11 +32,8 @@
 //!
 //! See [`Service`](crate::service) for more detailed examples.
 
-extern crate alloc;
-
-use core::fmt::Debug;
-
 use alloc::sync::Arc;
+use core::fmt::Debug;
 
 use crate::service::dynamic_config::DynamicConfig;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;

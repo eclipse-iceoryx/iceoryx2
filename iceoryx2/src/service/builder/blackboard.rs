@@ -68,7 +68,7 @@ pub enum BlackboardOpenError {
 
 impl core::fmt::Display for BlackboardOpenError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "BlackboardOpenError::{self:?}")
+        write!(f, "BlackboardOpenError::{self:?}")
     }
 }
 
@@ -114,7 +114,7 @@ pub enum BlackboardCreateError {
 
 impl core::fmt::Display for BlackboardCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "BlackboardCreateError::{self:?}")
+        write!(f, "BlackboardCreateError::{self:?}")
     }
 }
 
@@ -155,7 +155,7 @@ pub enum BlackboardOpenOrCreateError {
 
 impl core::fmt::Display for BlackboardOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "BlackboardOpenOrCreateError::{self:?}")
+        write!(f, "BlackboardOpenOrCreateError::{self:?}")
     }
 }
 

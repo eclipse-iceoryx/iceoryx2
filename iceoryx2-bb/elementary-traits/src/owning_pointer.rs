@@ -13,11 +13,9 @@
 //! Represents a normal non-null pointer. It was introduced to distinguish normal pointers from
 //! `iceoryx2_bb_elementary::relocatable_ptr::RelocatablePointer`. It implements the [`PointerTrait`].
 
+use alloc::alloc::{alloc, dealloc};
 use core::alloc::Layout;
 use core::fmt::Debug;
-
-extern crate alloc;
-use alloc::alloc::{alloc, dealloc};
 
 use crate::generic_pointer::GenericPointer;
 use crate::pointer_trait::PointerTrait;

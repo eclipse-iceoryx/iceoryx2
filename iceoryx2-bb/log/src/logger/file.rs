@@ -31,10 +31,8 @@
 // In the long-term the file logger may be required to be based on the same
 // iceoryx2_pal_posix platform. In this case, the logger needs to use the low-level calls directly
 // to avoid a circular dependency with iceoryx2_bb_posix.
-use core::{fmt::Debug, time::Duration};
-
-extern crate alloc;
 use alloc::sync::Arc;
+use core::{fmt::Debug, time::Duration};
 
 use std::{
     fs::OpenOptions,

@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate alloc;
-
 use alloc::sync::Arc;
 use core::{fmt::Debug, ops::Deref};
 

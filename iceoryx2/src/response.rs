@@ -38,8 +38,6 @@
 //! # }
 //! ```
 
-extern crate alloc;
-
 use core::fmt::Debug;
 use core::ops::Deref;
 

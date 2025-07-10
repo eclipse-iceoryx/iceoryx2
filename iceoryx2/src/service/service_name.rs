@@ -50,7 +50,7 @@ pub enum ServiceNameError {
 
 impl core::fmt::Display for ServiceNameError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ServiceNameError::{self:?}")
+        write!(f, "ServiceNameError::{self:?}")
     }
 }
 
@@ -123,7 +123,7 @@ impl ServiceName {
 
 impl core::fmt::Display for ServiceName {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}", self.value)
+        write!(f, "{}", self.value)
     }
 }
 

@@ -29,7 +29,7 @@ pub enum SyncError {
 
 impl core::fmt::Display for SyncError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::write!(f, "SyncError::{self:?}")
+        write!(f, "SyncError::{self:?}")
     }
 }
 

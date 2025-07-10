@@ -85,7 +85,7 @@ pub enum RequestResponseOpenError {
 
 impl core::fmt::Display for RequestResponseOpenError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "RequestResponseOpenError::{self:?}")
+        write!(f, "RequestResponseOpenError::{self:?}")
     }
 }
 
@@ -136,7 +136,7 @@ pub enum RequestResponseCreateError {
 
 impl core::fmt::Display for RequestResponseCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "RequestResponseCreateError::{self:?}")
+        write!(f, "RequestResponseCreateError::{self:?}")
     }
 }
 
@@ -196,7 +196,7 @@ impl From<RequestResponseCreateError> for RequestResponseOpenOrCreateError {
 
 impl core::fmt::Display for RequestResponseOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "RequestResponseOpenOrCreateError::{self:?}")
+        write!(f, "RequestResponseOpenOrCreateError::{self:?}")
     }
 }
 

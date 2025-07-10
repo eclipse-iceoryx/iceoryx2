@@ -14,7 +14,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! # let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let service = node
 //! #     .service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -39,22 +39,20 @@
 //! # }
 //! ```
 
-extern crate alloc;
-
 use alloc::sync::Arc;
 use core::{
     any::TypeId, fmt::Debug, marker::PhantomData, mem::MaybeUninit, ops::Deref,
     sync::atomic::Ordering,
 };
-use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy, shm_allocator::AllocationStrategy,
     zero_copy_connection::ChannelId,
 };
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 use crate::{
     port::{
@@ -270,7 +268,7 @@ impl<
     /// ```
     /// use iceoryx2::prelude::*;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let service = node
     /// #     .service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -348,7 +346,7 @@ impl<
     /// ```
     /// use iceoryx2::prelude::*;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let service = node
     /// #     .service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -391,7 +389,7 @@ impl<
     /// ```
     /// use iceoryx2::prelude::*;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let service = node
     /// #     .service_builder(&"My/Funk/ServiceName".try_into()?)

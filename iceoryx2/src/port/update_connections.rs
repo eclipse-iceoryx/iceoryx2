@@ -38,7 +38,7 @@ impl From<SharedMemoryOpenError> for ConnectionFailure {
 
 impl core::fmt::Display for ConnectionFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ConnectionFailure::{self:?}")
+        write!(f, "ConnectionFailure::{self:?}")
     }
 }
 

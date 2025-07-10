@@ -15,6 +15,8 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+extern crate alloc;
+
 mod api;
 pub use api::*;
 

@@ -70,7 +70,7 @@ pub enum FixedSizeByteStringModificationError {
 
 impl core::fmt::Display for FixedSizeByteStringModificationError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "FixedSizeByteStringModificationError::{self:?}")
+        write!(f, "FixedSizeByteStringModificationError::{self:?}")
     }
 }
 

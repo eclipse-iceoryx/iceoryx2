@@ -135,7 +135,7 @@ impl<const CAPACITY: usize> serde::de::Visitor<'_> for visitor_type::RestrictedF
         E: serde::de::Error,
     {
         RestrictedFileName::<CAPACITY>::new(v.as_bytes()).map_err(|e| {
-            E::custom(std::format!(
+            E::custom(alloc::format!(
                 "invalid RestrictedFileName<{CAPACITY}> provided {v:?} ({e:?})."
             ))
         })
@@ -192,7 +192,7 @@ impl<const CAPACITY: usize> RestrictedFileName<CAPACITY> {
 
 impl<const CAPACITY: usize> core::fmt::Display for RestrictedFileName<CAPACITY> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}", self.value)
+        write!(f, "{}", self.value)
     }
 }
 

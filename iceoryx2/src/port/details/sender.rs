@@ -10,12 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use alloc::sync::Arc;
 use core::alloc::Layout;
 use core::cell::UnsafeCell;
 use core::sync::atomic::Ordering;
-
-extern crate alloc;
-use alloc::sync::Arc;
 
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_log::{error, fail, fatal_panic, warn};
