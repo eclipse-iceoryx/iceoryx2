@@ -259,7 +259,7 @@ pub struct WriterHandle<
 > {
     handle_shared_state: Arc<WriterHandleSharedState<ValueType>>,
     value_id: EventId,
-    _shared_state: Arc<WriterSharedState<Service, KeyType>>,
+    shared_state: Arc<WriterSharedState<Service, KeyType>>,
 }
 
 impl<
@@ -280,9 +280,8 @@ impl<
     }
 }
 
-// Safe since the UnrestrictedAtomic the producer belongs to implements Send + Sync, and
-// shared_state ensures the lifetime of the UnrestrictedAtomic (struct fields are dropped in the
-// same order as declared)
+// Safe since the producer implements Send + Sync and shared_state ensures the lifetime of the
+// producer (struct fields are dropped in the same order as declared)
 unsafe impl<
         Service: service::Service,
         KeyType: Send + Sync + Eq + Clone + Debug + 'static,
@@ -319,7 +318,7 @@ impl<
                         producer: p,
                         loaned_entry: IoxAtomicBool::new(false),
                     }),
-                    _shared_state: writer_state.clone(),
+                    shared_state: writer_state.clone(),
                     value_id: EventId::new(offset as _),
                 })
             }
@@ -372,8 +371,8 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan_uninit(&self) -> Result<Entry<ValueType>, WriterHandleError> {
-        match Entry::new(self.handle_shared_state.clone()) {
+    pub fn loan_uninit(&self) -> Result<Entry<Service, KeyType, ValueType>, WriterHandleError> {
+        match Entry::new(self.handle_shared_state.clone(), self.shared_state.clone()) {
             Ok(ptr) => Ok(ptr),
             Err(_) => {
                 fail!(from self, with WriterHandleError::HandleAlreadyLoansEntry,
@@ -389,13 +388,23 @@ impl<
     }
 }
 
-/// Wrapper around a value entry that can be used a for zero-copy uodate.
-pub struct Entry<ValueType: Copy + 'static> {
+/// Wrapper around a value entry that can be used a for zero-copy update.
+pub struct Entry<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    ValueType: Copy + 'static,
+> {
     ptr: *mut ValueType,
     writer_handle_state: Arc<WriterHandleSharedState<ValueType>>,
+    _writer_state: Arc<WriterSharedState<Service, KeyType>>,
 }
 
-impl<ValueType: Copy + 'static> Drop for Entry<ValueType> {
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        ValueType: Copy + 'static,
+    > Drop for Entry<Service, KeyType, ValueType>
+{
     fn drop(&mut self) {
         self.writer_handle_state
             .loaned_entry
@@ -403,9 +412,15 @@ impl<ValueType: Copy + 'static> Drop for Entry<ValueType> {
     }
 }
 
-impl<ValueType: Copy + 'static> Entry<ValueType> {
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        ValueType: Copy + 'static,
+    > Entry<Service, KeyType, ValueType>
+{
     fn new(
         writer_handle_state: Arc<WriterHandleSharedState<ValueType>>,
+        writer_state: Arc<WriterSharedState<Service, KeyType>>,
     ) -> Result<Self, WriterHandleError> {
         if writer_handle_state
             .loaned_entry
@@ -416,6 +431,7 @@ impl<ValueType: Copy + 'static> Entry<ValueType> {
         }
         let ptr = unsafe { writer_handle_state.producer.get_ptr_to_write_cell() };
         Ok(Self {
+            _writer_state: writer_state.clone(),
             writer_handle_state: writer_handle_state.clone(),
             ptr,
         })

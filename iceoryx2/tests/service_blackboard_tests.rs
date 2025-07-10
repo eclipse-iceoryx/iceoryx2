@@ -1304,10 +1304,78 @@ mod service_blackboard {
         let entry = writer_handle.loan_uninit().unwrap();
 
         drop(writer_handle);
+        drop(writer);
 
         entry.write(333);
         entry.update();
         assert_that!(reader_handle.get(), eq 333);
+    }
+
+    #[test]
+    fn handle_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
+        Sut: Service,
+    >() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u32>(&0).unwrap();
+
+        drop(writer);
+        drop(sut);
+
+        writer_handle.update_with_copy(3);
+        drop(writer_handle);
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+
+        let reader = sut.reader_builder().create().unwrap();
+        let reader_handle = reader.entry::<u32>(&0).unwrap();
+
+        drop(reader);
+        drop(sut);
+
+        assert_that!(reader_handle.get(), eq 0);
+    }
+
+    #[test]
+    fn entry_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
+        Sut: Service,
+    >() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u32>(&0).unwrap();
+        let entry = writer_handle.loan_uninit().unwrap();
+
+        drop(writer_handle);
+        drop(writer);
+        drop(sut);
+
+        entry.write(333);
+        entry.update();
     }
 
     #[test]
