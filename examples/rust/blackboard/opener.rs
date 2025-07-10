@@ -16,7 +16,6 @@ use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
-// TODO: Bazel
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
     let node = NodeBuilder::new().create::<ipc::Service>()?;
