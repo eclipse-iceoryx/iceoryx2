@@ -18,6 +18,8 @@
 //! # Example, create a string that can contain a posix group name
 //!
 //! ```
+//! extern crate alloc;
+//!
 //! pub use iceoryx2_bb_container::semantic_string::SemanticString;
 //! use iceoryx2_bb_derive_macros::ZeroCopySend;
 //! use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -416,7 +418,7 @@ macro_rules! semantic_string {
             {
                 match $string_name::new(v.as_bytes()) {
                     Ok(v) => Ok(v),
-                    Err(v) => Err(E::custom(std::format!("invalid {} provided {:?}.", core::stringify!($string_name), v))),
+                    Err(v) => Err(E::custom(alloc::format!("invalid {} provided {:?}.", core::stringify!($string_name), v))),
                 }
             }
         }

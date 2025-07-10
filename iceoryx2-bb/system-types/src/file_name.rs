@@ -135,7 +135,7 @@ impl<const CAPACITY: usize> serde::de::Visitor<'_> for visitor_type::RestrictedF
         E: serde::de::Error,
     {
         RestrictedFileName::<CAPACITY>::new(v.as_bytes()).map_err(|e| {
-            E::custom(std::format!(
+            E::custom(alloc::format!(
                 "invalid RestrictedFileName<{CAPACITY}> provided {v:?} ({e:?})."
             ))
         })
