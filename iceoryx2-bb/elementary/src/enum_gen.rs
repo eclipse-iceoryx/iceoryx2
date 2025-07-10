@@ -355,7 +355,7 @@ macro_rules! enum_gen {
 
       impl Display for $name {
           fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-              core::write!(f, "{}::{:?}", std::stringify!($name), self )
+              core::write!(f, "{}::{:?}", core::stringify!($name), self )
           }
       }
     };

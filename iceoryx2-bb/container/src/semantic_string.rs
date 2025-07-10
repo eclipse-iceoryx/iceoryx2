@@ -416,7 +416,7 @@ macro_rules! semantic_string {
             {
                 match $string_name::new(v.as_bytes()) {
                     Ok(v) => Ok(v),
-                    Err(v) => Err(E::custom(std::format!("invalid {} provided {:?}.", std::stringify!($string_name), v))),
+                    Err(v) => Err(E::custom(std::format!("invalid {} provided {:?}.", core::stringify!($string_name), v))),
                 }
             }
         }
