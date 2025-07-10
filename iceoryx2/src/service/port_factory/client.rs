@@ -15,7 +15,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! let request_response = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     .request_response::<u64, u64>()

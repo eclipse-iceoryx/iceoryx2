@@ -14,7 +14,7 @@
 //! ```
 //! use iceoryx2::prelude::*;
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! # let node = NodeBuilder::new().create::<ipc::Service>()?;
 //! # let service = node
 //! #     .service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -268,7 +268,7 @@ impl<
     /// ```
     /// use iceoryx2::prelude::*;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let service = node
     /// #     .service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -346,7 +346,7 @@ impl<
     /// ```
     /// use iceoryx2::prelude::*;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let service = node
     /// #     .service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -389,7 +389,7 @@ impl<
     /// ```
     /// use iceoryx2::prelude::*;
     ///
-    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
     /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
     /// # let service = node
     /// #     .service_builder(&"My/Funk/ServiceName".try_into()?)

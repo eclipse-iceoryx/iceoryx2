@@ -177,7 +177,7 @@ The list is sorted by priority
 ### Quality Of Life Improvements
 
 * [ ] Evaluate and refactor basic error handling approach based on enums
-    * all error classes should implement `std::error::Error` for the non `no_std`
+    * all error classes should implement `core::error::Error` for the non `no_std`
     build (maybe use `thiserror`)
     * should be compatible with `anyhow` and `eyre`
     * explore error pyramid concept
