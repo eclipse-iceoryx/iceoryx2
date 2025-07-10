@@ -37,8 +37,6 @@ use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 
-extern crate alloc;
-
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;

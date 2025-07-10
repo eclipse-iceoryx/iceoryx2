@@ -73,11 +73,9 @@ use crate::service::dynamic_config::event::ListenerDetails;
 use crate::service::naming_scheme::event_concept_name;
 use crate::service::ServiceState;
 use crate::{port::port_identifiers::UniqueListenerId, service};
+use alloc::sync::Arc;
 use core::sync::atomic::Ordering;
 use core::time::Duration;
-
-extern crate alloc;
-use alloc::sync::Arc;
 
 use super::event_id::EventId;
 

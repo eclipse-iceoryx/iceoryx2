@@ -14,6 +14,8 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+extern crate alloc;
+
 pub mod allocator;
 mod as_cstr;
 pub use crate::as_cstr::*;

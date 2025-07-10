@@ -35,8 +35,6 @@
 //! # }
 //! ```
 
-extern crate alloc;
-
 use core::{fmt::Debug, marker::PhantomData};
 use core::{
     ops::{Deref, DerefMut},

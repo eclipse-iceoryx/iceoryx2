@@ -178,7 +178,6 @@ use iceoryx2_cal::{
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
-extern crate alloc;
 use alloc::sync::Arc;
 
 use std::collections::HashMap;

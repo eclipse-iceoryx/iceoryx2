@@ -71,7 +71,6 @@
 //! # Ok(())
 //! # }
 //! ```
-extern crate alloc;
 
 use core::{
     any::TypeId, cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit,

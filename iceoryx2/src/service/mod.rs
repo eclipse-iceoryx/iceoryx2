@@ -222,12 +222,9 @@ pub mod ipc_threadsafe;
 pub(crate) mod config_scheme;
 pub(crate) mod naming_scheme;
 
+use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::time::Duration;
-
-extern crate alloc;
-use alloc::sync::Arc;
-use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 
 use crate::config;
 use crate::node::{NodeId, NodeListFailure, NodeState, SharedNode};
@@ -238,6 +235,7 @@ use config_scheme::service_tag_config;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_log::{debug, fail, trace, warn};
+use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::{
     DynamicStorage, DynamicStorageBuilder, DynamicStorageOpenError,
 };

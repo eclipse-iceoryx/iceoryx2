@@ -37,12 +37,14 @@
 //! println!("New value: {}", reader.get().load(Ordering::Relaxed));
 //! ```
 
+use alloc::sync::Arc;
 use core::alloc::Layout;
 use core::any::Any;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::ptr::NonNull;
 use core::sync::atomic::Ordering;
+
 use iceoryx2_bb_elementary_traits::allocator::BaseAllocator;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
@@ -51,11 +53,9 @@ use iceoryx2_bb_system_types::file_name::FileName;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
-
-extern crate alloc;
-use alloc::sync::Arc;
 
 pub use crate::dynamic_storage::*;
 use crate::named_concept::{

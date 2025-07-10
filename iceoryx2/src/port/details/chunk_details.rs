@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-extern crate alloc;
-
 use iceoryx2_bb_container::slotmap::SlotMapKey;
 use iceoryx2_cal::shm_allocator::PointerOffset;
 

@@ -55,10 +55,8 @@ use iceoryx2_cal::{
 };
 use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 
-use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
-
-extern crate alloc;
 use alloc::sync::Arc;
+use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
 
 /// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].

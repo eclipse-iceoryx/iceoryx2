@@ -73,8 +73,6 @@
 //! # }
 //! ```
 
-extern crate alloc;
-
 use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};

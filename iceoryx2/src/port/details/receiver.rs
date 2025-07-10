@@ -12,7 +12,6 @@
 
 use core::cell::UnsafeCell;
 
-extern crate alloc;
 use super::channel_management::ChannelManagement;
 use super::channel_management::INVALID_CHANNEL_STATE;
 use super::chunk::Chunk;
