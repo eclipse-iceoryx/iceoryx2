@@ -259,7 +259,7 @@ pub enum WaitSetAttachmentError {
 
 impl core::fmt::Display for WaitSetAttachmentError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "WaitSetAttachmentError::{self:?}")
+        write!(f, "WaitSetAttachmentError::{self:?}")
     }
 }
 
@@ -278,7 +278,7 @@ pub enum WaitSetRunError {
 
 impl core::fmt::Display for WaitSetRunError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "WaitSetRunError::{self:?}")
+        write!(f, "WaitSetRunError::{self:?}")
     }
 }
 
@@ -293,7 +293,7 @@ pub enum WaitSetCreateError {
 
 impl core::fmt::Display for WaitSetCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "WaitSetCreateError::{self:?}")
+        write!(f, "WaitSetCreateError::{self:?}")
     }
 }
 

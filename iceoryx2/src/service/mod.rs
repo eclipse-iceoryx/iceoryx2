@@ -294,7 +294,7 @@ pub enum ServiceDetailsError {
 
 impl core::fmt::Display for ServiceDetailsError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ServiceDetailsError::{self:?}")
+        write!(f, "ServiceDetailsError::{self:?}")
     }
 }
 
@@ -311,7 +311,7 @@ pub enum ServiceListError {
 
 impl core::fmt::Display for ServiceListError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ServiceListError::{self:?}")
+        write!(f, "ServiceListError::{self:?}")
     }
 }
 

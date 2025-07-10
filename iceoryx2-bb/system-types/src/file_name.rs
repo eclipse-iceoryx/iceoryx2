@@ -192,7 +192,7 @@ impl<const CAPACITY: usize> RestrictedFileName<CAPACITY> {
 
 impl<const CAPACITY: usize> core::fmt::Display for RestrictedFileName<CAPACITY> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}", self.value)
+        write!(f, "{}", self.value)
     }
 }
 

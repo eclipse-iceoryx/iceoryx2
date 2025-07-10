@@ -86,7 +86,7 @@ impl From<FixedSizeByteStringModificationError> for SemanticStringError {
 
 impl core::fmt::Display for SemanticStringError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "SemanticStringError::{self:?}")
+        core::write!(f, "SemanticStringError::{self:?}")
     }
 }
 
@@ -469,7 +469,7 @@ macro_rules! semantic_string {
 
         impl core::fmt::Display for $string_name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                std::write!(f, "{}", self.value)
+                core::write!(f, "{}", self.value)
             }
         }
 

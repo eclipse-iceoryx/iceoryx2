@@ -81,7 +81,7 @@ pub enum PublishSubscribeOpenError {
 
 impl core::fmt::Display for PublishSubscribeOpenError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "PublishSubscribeOpenError::{self:?}")
+        write!(f, "PublishSubscribeOpenError::{self:?}")
     }
 }
 
@@ -133,7 +133,7 @@ pub enum PublishSubscribeCreateError {
 
 impl core::fmt::Display for PublishSubscribeCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "PublishSubscribeCreateError::{self:?}")
+        write!(f, "PublishSubscribeCreateError::{self:?}")
     }
 }
 
@@ -198,7 +198,7 @@ impl From<PublishSubscribeCreateError> for PublishSubscribeOpenOrCreateError {
 
 impl core::fmt::Display for PublishSubscribeOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "PublishSubscribeOpenOrCreateError::{self:?}")
+        write!(f, "PublishSubscribeOpenOrCreateError::{self:?}")
     }
 }
 

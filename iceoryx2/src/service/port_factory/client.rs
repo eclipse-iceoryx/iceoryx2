@@ -59,7 +59,7 @@ pub enum ClientCreateError {
 
 impl core::fmt::Display for ClientCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ClientCreateError::{self:?}")
+        write!(f, "ClientCreateError::{self:?}")
     }
 }
 

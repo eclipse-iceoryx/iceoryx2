@@ -36,7 +36,7 @@ pub enum NotifierNotifyError {
 
 impl core::fmt::Display for NotifierNotifyError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
 
@@ -54,7 +54,7 @@ pub enum NotifierCreateError {
 
 impl core::fmt::Display for NotifierCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
 
@@ -69,7 +69,7 @@ pub enum ListenerWaitError {
 
 impl core::fmt::Display for ListenerWaitError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
 
@@ -84,7 +84,7 @@ pub enum ListenerCreateError {
 
 impl core::fmt::Display for ListenerCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        write!(f, "{}::{:?}", std::stringify!(Self), self)
     }
 }
 
