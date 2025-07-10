@@ -55,6 +55,8 @@
     [#799](https://github.com/eclipse-iceoryx/iceoryx2/issues/799)
 * CMake no longer installs unusable binaries when FetchContent is used
     [#814](https://github.com/eclipse-iceoryx/iceoryx2/issues/814)
+* Fix linker error on linux
+    [#855](https://github.com/eclipse-iceoryx/iceoryx2/issues/855)
 
 ### Refactoring
 
