@@ -321,7 +321,7 @@ impl core::error::Error for ServiceListError {}
 /// when the [`Service`] is accessible by the current process.
 #[derive(Debug, Clone)]
 pub struct ServiceDynamicDetails<S: Service> {
-    /// A list of all [`Node`](crate::node::Node)s that a registered at the [`Service`]
+    /// A list of all [`Node`](crate::node::Node)s that are registered at the [`Service`]
     pub nodes: Vec<NodeState<S>>,
 }
 

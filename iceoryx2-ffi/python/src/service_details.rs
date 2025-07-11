@@ -10,11 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
-    attribute_set::AttributeSet, messaging_pattern::MessagingPattern, node_state::NodeState,
-    service_id::ServiceId, service_name::ServiceName,
+    attribute_set::AttributeSet,
+    messaging_pattern::MessagingPattern,
+    node_id::NodeId,
+    node_state::{AliveNodeView, AliveNodeViewType, DeadNodeView, DeadNodeViewType, NodeState},
+    service_id::ServiceId,
+    service_name::ServiceName,
 };
 
 pub(crate) enum ServiceDetailsType {
@@ -23,28 +28,115 @@ pub(crate) enum ServiceDetailsType {
 }
 
 #[pyclass]
-/// Builder to create or open `Service`s
+/// Represents all the `Service` information that one can acquire with `Service::list()`.
 pub struct ServiceDetails(pub(crate) ServiceDetailsType);
 
 #[pymethods]
 impl ServiceDetails {
+    /// A list of all `Node`s that are registered at the [`Service`]
     pub fn nodes(&self) -> Vec<NodeState> {
-        todo!()
+        let mut ret_val = vec![];
+        match &self.0 {
+            ServiceDetailsType::Ipc(v) => {
+                if let Some(details) = &v.dynamic_details {
+                    for node in &details.nodes {
+                        match node {
+                            iceoryx2::node::NodeState::Alive(v) => ret_val.push(NodeState::Alive(
+                                AliveNodeView(AliveNodeViewType::Ipc(v.clone())),
+                            )),
+                            iceoryx2::node::NodeState::Dead(v) => ret_val.push(NodeState::Dead(
+                                DeadNodeView(DeadNodeViewType::Ipc(v.clone())),
+                            )),
+                            iceoryx2::node::NodeState::Inaccessible(v) => {
+                                ret_val.push(NodeState::Inaccessible(NodeId(*v)))
+                            }
+                            iceoryx2::node::NodeState::Undefined(v) => {
+                                ret_val.push(NodeState::Undefined(NodeId(*v)))
+                            }
+                        }
+                    }
+                }
+            }
+            ServiceDetailsType::Local(v) => {
+                if let Some(details) = &v.dynamic_details {
+                    for node in &details.nodes {
+                        match node {
+                            iceoryx2::node::NodeState::Alive(v) => ret_val.push(NodeState::Alive(
+                                AliveNodeView(AliveNodeViewType::Local(v.clone())),
+                            )),
+                            iceoryx2::node::NodeState::Dead(v) => ret_val.push(NodeState::Dead(
+                                DeadNodeView(DeadNodeViewType::Local(v.clone())),
+                            )),
+                            iceoryx2::node::NodeState::Inaccessible(v) => {
+                                ret_val.push(NodeState::Inaccessible(NodeId(*v)))
+                            }
+                            iceoryx2::node::NodeState::Undefined(v) => {
+                                ret_val.push(NodeState::Undefined(NodeId(*v)))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        ret_val
     }
 
+    /// Returns the attributes of the `Service`
     pub fn attributes(&self) -> AttributeSet {
-        todo!()
+        match &self.0 {
+            ServiceDetailsType::Ipc(v) => AttributeSet(v.static_details.attributes().clone()),
+            ServiceDetailsType::Local(v) => AttributeSet(v.static_details.attributes().clone()),
+        }
     }
 
+    /// Returns the unique `ServiceId` of the `Service`
     pub fn service_id(&self) -> ServiceId {
-        todo!()
+        match &self.0 {
+            ServiceDetailsType::Ipc(v) => ServiceId(v.static_details.service_id().clone()),
+            ServiceDetailsType::Local(v) => ServiceId(v.static_details.service_id().clone()),
+        }
     }
 
+    /// Returns the `ServiceName`
     pub fn name(&self) -> ServiceName {
-        todo!()
+        match &self.0 {
+            ServiceDetailsType::Ipc(v) => ServiceName(v.static_details.name().clone()),
+            ServiceDetailsType::Local(v) => ServiceName(v.static_details.name().clone()),
+        }
     }
 
+    /// Returns the `Service`s underlying `MessagingPattern`.
     pub fn messaging_pattern(&self) -> MessagingPattern {
-        todo!()
+        match &self.0 {
+            ServiceDetailsType::Ipc(v) => {
+                static_config_messaging_pattern_to_python(v.static_details.messaging_pattern())
+            }
+            ServiceDetailsType::Local(v) => {
+                static_config_messaging_pattern_to_python(v.static_details.messaging_pattern())
+            }
+        }
+    }
+}
+
+fn static_config_messaging_pattern_to_python(
+    value: &iceoryx2::service::static_config::messaging_pattern::MessagingPattern,
+) -> MessagingPattern {
+    match value {
+        iceoryx2::service::static_config::messaging_pattern::MessagingPattern::RequestResponse(
+            _,
+        ) => MessagingPattern::RequestResponse,
+        iceoryx2::service::static_config::messaging_pattern::MessagingPattern::PublishSubscribe(
+            _,
+        ) => MessagingPattern::PublishSubscribe,
+        iceoryx2::service::static_config::messaging_pattern::MessagingPattern::Event(_) => {
+            MessagingPattern::Event
+        }
+        iceoryx2::service::static_config::messaging_pattern::MessagingPattern::Blackboard(_) => {
+            MessagingPattern::Blackboard
+        }
+        _ => {
+            fatal_panic!(from "ServiceDetails::messaging_pattern()", "Unknown messaging pattern in translation." )
+        }
     }
 }
