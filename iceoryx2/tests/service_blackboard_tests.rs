@@ -1260,7 +1260,7 @@ mod service_blackboard {
     }
 
     #[test]
-    fn loan_and_write_entry_works<Sut: Service>() {
+    fn loan_and_write_entry_value_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1277,15 +1277,15 @@ mod service_blackboard {
         let reader = sut.reader_builder().create().unwrap();
         let reader_handle = reader.entry::<u32>(&0).unwrap();
 
-        let entry = writer_handle.loan_uninit().unwrap();
-        entry.write(333);
-        entry.update();
+        let entry_value = writer_handle.loan_uninit().unwrap();
+        entry_value.write(333);
+        entry_value.update();
 
         assert_that!(reader_handle.get(), eq 333);
     }
 
     #[test]
-    fn entry_can_still_be_used_after_writer_handle_was_dropped<Sut: Service>() {
+    fn entry_value_can_still_be_used_after_writer_handle_was_dropped<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1301,13 +1301,13 @@ mod service_blackboard {
         let reader_handle = reader.entry::<u32>(&0).unwrap();
         let writer = sut.writer_builder().create().unwrap();
         let writer_handle = writer.entry::<u32>(&0).unwrap();
-        let entry = writer_handle.loan_uninit().unwrap();
+        let entry_value = writer_handle.loan_uninit().unwrap();
 
         drop(writer_handle);
         drop(writer);
 
-        entry.write(333);
-        entry.update();
+        entry_value.write(333);
+        entry_value.update();
         assert_that!(reader_handle.get(), eq 333);
     }
 
@@ -1352,7 +1352,7 @@ mod service_blackboard {
     }
 
     #[test]
-    fn entry_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
+    fn entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
         Sut: Service,
     >() {
         let service_name = generate_name();
@@ -1368,14 +1368,14 @@ mod service_blackboard {
 
         let writer = sut.writer_builder().create().unwrap();
         let writer_handle = writer.entry::<u32>(&0).unwrap();
-        let entry = writer_handle.loan_uninit().unwrap();
+        let entry_value = writer_handle.loan_uninit().unwrap();
 
         drop(writer_handle);
         drop(writer);
         drop(sut);
 
-        entry.write(333);
-        entry.update();
+        entry_value.write(333);
+        entry_value.update();
     }
 
     #[test]

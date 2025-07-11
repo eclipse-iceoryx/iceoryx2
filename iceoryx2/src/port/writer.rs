@@ -30,10 +30,10 @@
 //! // update the value with a copy
 //! writer_handle.update_with_copy(8);
 //!
-//! // loan an uninitialized entry and write to it without copying
-//! let entry = writer_handle.loan_uninit()?;
-//! entry.write(-8);
-//! entry.update();
+//! // loan an uninitialized entry value and write to it without copying
+//! let entry_value = writer_handle.loan_uninit()?;
+//! entry_value.write(-8);
+//! entry_value.update();
 //!
 //! # Ok(())
 //! # }
@@ -228,7 +228,7 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
 
 struct WriterHandleSharedState<ValueType: Copy + 'static> {
     producer: Producer<'static, ValueType>,
-    loaned_entry: IoxAtomicBool,
+    loaned_entry_value: IoxAtomicBool,
 }
 
 /// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`] or
@@ -258,7 +258,7 @@ pub struct WriterHandle<
     ValueType: Copy + 'static,
 > {
     handle_shared_state: Arc<WriterHandleSharedState<ValueType>>,
-    value_id: EventId,
+    entry_id: EventId,
     shared_state: Arc<WriterSharedState<Service, KeyType>>,
 }
 
@@ -271,10 +271,10 @@ impl<
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "WriterHandle: {{ value_type: {}, has_loaned_entry: {} }}",
+            "WriterHandle: {{ value_type: {}, has_loaned_entry_value: {} }}",
             core::any::type_name::<ValueType>(),
             self.handle_shared_state
-                .loaned_entry
+                .loaned_entry_value
                 .load(Ordering::Relaxed)
         )
     }
@@ -316,10 +316,10 @@ impl<
                 Ok(Self {
                     handle_shared_state: Arc::new(WriterHandleSharedState {
                         producer: p,
-                        loaned_entry: IoxAtomicBool::new(false),
+                        loaned_entry_value: IoxAtomicBool::new(false),
                     }),
                     shared_state: writer_state.clone(),
-                    value_id: EventId::new(offset as _),
+                    entry_id: EventId::new(offset as _),
                 })
             }
         }
@@ -364,15 +364,17 @@ impl<
     ///
     /// # let writer = service.writer_builder().create()?;
     /// # let writer_handle = writer.entry::<i32>(&1)?;
-    /// let entry = writer_handle.loan_uninit()?;
-    /// entry.write(-8);
-    /// entry.update();
+    /// let entry_value = writer_handle.loan_uninit()?;
+    /// entry_value.write(-8);
+    /// entry_value.update();
     ///
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan_uninit(&self) -> Result<Entry<Service, KeyType, ValueType>, WriterHandleError> {
-        match Entry::new(self.handle_shared_state.clone(), self.shared_state.clone()) {
+    pub fn loan_uninit(
+        &self,
+    ) -> Result<EntryValue<Service, KeyType, ValueType>, WriterHandleError> {
+        match EntryValue::new(self.handle_shared_state.clone(), self.shared_state.clone()) {
             Ok(ptr) => Ok(ptr),
             Err(_) => {
                 fail!(from self, with WriterHandleError::HandleAlreadyLoansEntry,
@@ -381,15 +383,15 @@ impl<
         }
     }
 
-    /// Returns an ID corresponding to the value which can be used in an event based communication
+    /// Returns an ID corresponding to the entry which can be used in an event based communication
     /// setup.
-    pub fn value_id(&self) -> EventId {
-        self.value_id
+    pub fn entry_id(&self) -> EventId {
+        self.entry_id
     }
 }
 
-/// Wrapper around a value entry that can be used a for zero-copy update.
-pub struct Entry<
+/// Wrapper around an entry value that can be used a for zero-copy update.
+pub struct EntryValue<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static,
     ValueType: Copy + 'static,
@@ -403,11 +405,11 @@ impl<
         Service: service::Service,
         KeyType: Send + Sync + Eq + Clone + Debug + 'static,
         ValueType: Copy + 'static,
-    > Drop for Entry<Service, KeyType, ValueType>
+    > Drop for EntryValue<Service, KeyType, ValueType>
 {
     fn drop(&mut self) {
         self.writer_handle_state
-            .loaned_entry
+            .loaned_entry_value
             .store(false, Ordering::Relaxed);
     }
 }
@@ -416,14 +418,14 @@ impl<
         Service: service::Service,
         KeyType: Send + Sync + Eq + Clone + Debug + 'static,
         ValueType: Copy + 'static,
-    > Entry<Service, KeyType, ValueType>
+    > EntryValue<Service, KeyType, ValueType>
 {
     fn new(
         writer_handle_state: Arc<WriterHandleSharedState<ValueType>>,
         writer_state: Arc<WriterSharedState<Service, KeyType>>,
     ) -> Result<Self, WriterHandleError> {
         if writer_handle_state
-            .loaned_entry
+            .loaned_entry_value
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
             .is_err()
         {
@@ -452,8 +454,9 @@ impl<
     ///
     /// # let writer = service.writer_builder().create()?;
     /// # let writer_handle = writer.entry::<i32>(&1)?;
-    /// let entry = writer_handle.loan_uninit()?;
-    /// entry.write(-8);
+    /// let entry_value = writer_handle.loan_uninit()?;
+    /// entry_value.write(-8);
+    /// # entry_value.update();
     /// # Ok(())
     /// # }
     /// ```
@@ -462,7 +465,7 @@ impl<
     }
 
     /// Makes new value readable for [`Reader`](crate::port::reader::Reader)s and consumes the
-    /// entry, i.e. it cannot be used anymore.
+    /// EntryValue, i.e. it cannot be used anymore.
     ///
     /// # Example
     ///
@@ -477,16 +480,16 @@ impl<
     ///
     /// # let writer = service.writer_builder().create()?;
     /// # let writer_handle = writer.entry::<i32>(&1)?;
-    /// let entry = writer_handle.loan_uninit()?;
-    /// entry.write(-8);
-    /// entry.update();
+    /// let entry_value = writer_handle.loan_uninit()?;
+    /// entry_value.write(-8);
+    /// entry_value.update();
     /// # Ok(())
     /// # }
     /// ```
     pub fn update(self) {
         unsafe { self.writer_handle_state.producer.update_write_cell() };
         self.writer_handle_state
-            .loaned_entry
+            .loaned_entry_value
             .store(false, Ordering::Relaxed);
     }
 }

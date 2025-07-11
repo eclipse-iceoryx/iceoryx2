@@ -145,7 +145,7 @@ mod writer {
     }
 
     #[test]
-    fn writer_handle_cannot_loan_entry_twice<Sut: Service>() {
+    fn writer_handle_cannot_loan_entry_value_twice<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -160,12 +160,12 @@ mod writer {
         let writer = sut.writer_builder().create().unwrap();
         let writer_handle = writer.entry::<u32>(&0).unwrap();
 
-        let entry = writer_handle.loan_uninit().unwrap();
+        let entry_value = writer_handle.loan_uninit().unwrap();
         let res = writer_handle.loan_uninit();
         assert_that!(res, is_err);
         assert_that!(res.err().unwrap(), eq WriterHandleError::HandleAlreadyLoansEntry);
 
-        drop(entry);
+        drop(entry_value);
         assert_that!(writer_handle.loan_uninit(), is_ok);
     }
 

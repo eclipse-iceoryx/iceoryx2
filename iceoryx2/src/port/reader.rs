@@ -243,7 +243,7 @@ pub struct ReaderHandle<
     ValueType: Copy,
 > {
     atomic: *const UnrestrictedAtomic<ValueType>,
-    value_id: EventId,
+    entry_id: EventId,
     _shared_state: Arc<ReaderSharedState<Service, KeyType>>,
 }
 
@@ -271,7 +271,7 @@ impl<
     ) -> Self {
         Self {
             atomic,
-            value_id: EventId::new(offset as _),
+            entry_id: EventId::new(offset as _),
             _shared_state: reader_state.clone(),
         }
     }
@@ -299,9 +299,9 @@ impl<
         unsafe { (*self.atomic).load() }
     }
 
-    /// Returns an ID corresponding to the value which can be used in an event based communication
+    /// Returns an ID corresponding to the entry which can be used in an event based communication
     /// setup.
-    pub fn value_id(&self) -> EventId {
-        self.value_id
+    pub fn entry_id(&self) -> EventId {
+        self.entry_id
     }
 }
