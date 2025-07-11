@@ -1277,15 +1277,42 @@ mod service_blackboard {
         let reader = sut.reader_builder().create().unwrap();
         let reader_handle = reader.entry::<u32>(&0).unwrap();
 
-        let entry_value = writer_handle.loan_uninit().unwrap();
-        entry_value.write(333);
-        entry_value.update();
+        let entry_value_uninit = writer_handle.loan_uninit();
+        let entry_value = entry_value_uninit.write(333);
+        let _writer_handle = entry_value.update();
 
         assert_that!(reader_handle.get(), eq 333);
     }
 
     #[test]
-    fn entry_value_can_still_be_used_after_writer_handle_was_dropped<Sut: Service>() {
+    fn writer_handle_can_be_reused_after_entry_value_was_updated<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u32>(&0).unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+        let reader_handle = reader.entry::<u32>(&0).unwrap();
+
+        let entry_value_uninit = writer_handle.loan_uninit();
+        let entry_value = entry_value_uninit.write(333);
+        let writer_handle = entry_value.update();
+        assert_that!(reader_handle.get(), eq 333);
+
+        writer_handle.update_with_copy(999);
+        assert_that!(reader_handle.get(), eq 999);
+    }
+
+    #[test]
+    fn entry_value_can_still_be_used_after_writer_was_dropped<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -1301,13 +1328,63 @@ mod service_blackboard {
         let reader_handle = reader.entry::<u32>(&0).unwrap();
         let writer = sut.writer_builder().create().unwrap();
         let writer_handle = writer.entry::<u32>(&0).unwrap();
-        let entry_value = writer_handle.loan_uninit().unwrap();
+        let entry_value_uninit = writer_handle.loan_uninit();
 
-        drop(writer_handle);
         drop(writer);
 
-        entry_value.write(333);
-        entry_value.update();
+        let entry_value = entry_value_uninit.write(333);
+        let _writer_handle = entry_value.update();
+        assert_that!(reader_handle.get(), eq 333);
+    }
+
+    #[test]
+    fn writer_handle_can_be_reused_after_entry_value_uninit_was_discarded<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u32>(&0).unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+        let reader_handle = reader.entry::<u32>(&0).unwrap();
+
+        let entry_value_uninit = writer_handle.loan_uninit();
+        let writer_handle = entry_value_uninit.discard();
+        writer_handle.update_with_copy(333);
+
+        assert_that!(reader_handle.get(), eq 333);
+    }
+
+    #[test]
+    fn writer_handle_can_be_reused_after_entry_value_was_discarded<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<usize>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+
+        let writer = sut.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u32>(&0).unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+        let reader_handle = reader.entry::<u32>(&0).unwrap();
+
+        let entry_value_uninit = writer_handle.loan_uninit();
+        let entry_value = entry_value_uninit.write(999);
+        let writer_handle = entry_value.discard();
+        writer_handle.update_with_copy(333);
+
         assert_that!(reader_handle.get(), eq 333);
     }
 
@@ -1349,33 +1426,6 @@ mod service_blackboard {
         drop(sut);
 
         assert_that!(reader_handle.get(), eq 0);
-    }
-
-    #[test]
-    fn entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped<
-        Sut: Service,
-    >() {
-        let service_name = generate_name();
-        let config = generate_isolated_config();
-        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-
-        let sut = node
-            .service_builder(&service_name)
-            .blackboard_creator::<usize>()
-            .add::<u32>(0, 0)
-            .create()
-            .unwrap();
-
-        let writer = sut.writer_builder().create().unwrap();
-        let writer_handle = writer.entry::<u32>(&0).unwrap();
-        let entry_value = writer_handle.loan_uninit().unwrap();
-
-        drop(writer_handle);
-        drop(writer);
-        drop(sut);
-
-        entry_value.write(333);
-        entry_value.update();
     }
 
     #[test]

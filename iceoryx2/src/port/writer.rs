@@ -31,9 +31,9 @@
 //! writer_handle.update_with_copy(8);
 //!
 //! // loan an uninitialized entry value and write to it without copying
-//! let entry_value = writer_handle.loan_uninit()?;
-//! entry_value.write(-8);
-//! entry_value.update();
+//! let entry_value_uninit = writer_handle.loan_uninit();
+//! let entry_value = entry_value_uninit.write(-8);
+//! let writer_handle = entry_value.update();
 //!
 //! # Ok(())
 //! # }
@@ -52,7 +52,6 @@ use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{Producer, UnrestrictedAto
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
 extern crate alloc;
 use alloc::sync::Arc;
@@ -226,21 +225,13 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
     }
 }
 
-struct WriterHandleSharedState<ValueType: Copy + 'static> {
-    producer: Producer<'static, ValueType>,
-    loaned_entry_value: IoxAtomicBool,
-}
-
-/// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`] or
-/// an entry is loaned with [`WriterHandle::loan_uninit()`].
+/// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`].
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum WriterHandleError {
     /// The entry with the given key and value type does not exist.
     EntryDoesNotExist,
     /// The [`WriterHandle`] already exists.
     HandleAlreadyExists,
-    /// The [`WriterHandle`] already loans an entry.
-    HandleAlreadyLoansEntry,
 }
 
 impl core::fmt::Display for WriterHandleError {
@@ -257,27 +248,9 @@ pub struct WriterHandle<
     KeyType: Send + Sync + Eq + Clone + Debug + 'static,
     ValueType: Copy + 'static,
 > {
-    handle_shared_state: Arc<WriterHandleSharedState<ValueType>>,
+    producer: Producer<'static, ValueType>,
     entry_id: EventId,
-    shared_state: Arc<WriterSharedState<Service, KeyType>>,
-}
-
-impl<
-        Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
-        ValueType: Copy + 'static,
-    > Debug for WriterHandle<Service, KeyType, ValueType>
-{
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "WriterHandle: {{ value_type: {}, has_loaned_entry_value: {} }}",
-            core::any::type_name::<ValueType>(),
-            self.handle_shared_state
-                .loaned_entry_value
-                .load(Ordering::Relaxed)
-        )
-    }
+    _shared_state: Arc<WriterSharedState<Service, KeyType>>,
 }
 
 // Safe since the producer implements Send + Sync and shared_state ensures the lifetime of the
@@ -314,11 +287,8 @@ impl<
                 // declared
                 let p: Producer<'static, ValueType> = unsafe { core::mem::transmute(producer) };
                 Ok(Self {
-                    handle_shared_state: Arc::new(WriterHandleSharedState {
-                        producer: p,
-                        loaned_entry_value: IoxAtomicBool::new(false),
-                    }),
-                    shared_state: writer_state.clone(),
+                    producer: p,
+                    _shared_state: writer_state.clone(),
                     entry_id: EventId::new(offset as _),
                 })
             }
@@ -345,11 +315,10 @@ impl<
     /// # }
     /// ```
     pub fn update_with_copy(&self, value: ValueType) {
-        self.handle_shared_state.producer.store(value);
+        self.producer.store(value);
     }
 
-    /// Loans an entry that can be used to update the value without copy. Only one entry can be
-    /// loaned per [`WriterHandle`].
+    /// Consumes the [`WriterHandle`] and loans an uninitialized entry value that can be used to update without copy.
     ///
     /// # Example
     ///
@@ -364,23 +333,15 @@ impl<
     ///
     /// # let writer = service.writer_builder().create()?;
     /// # let writer_handle = writer.entry::<i32>(&1)?;
-    /// let entry_value = writer_handle.loan_uninit()?;
-    /// entry_value.write(-8);
+    /// let entry_value_uninit = writer_handle.loan_uninit();
+    /// let entry_value = entry_value_uninit.write(-8);
     /// entry_value.update();
     ///
     /// # Ok(())
     /// # }
     /// ```
-    pub fn loan_uninit(
-        &self,
-    ) -> Result<EntryValue<Service, KeyType, ValueType>, WriterHandleError> {
-        match EntryValue::new(self.handle_shared_state.clone(), self.shared_state.clone()) {
-            Ok(ptr) => Ok(ptr),
-            Err(_) => {
-                fail!(from self, with WriterHandleError::HandleAlreadyLoansEntry,
-                    "Entry cannot be loaned since the WriterHandle already loans an entry.");
-            }
-        }
+    pub fn loan_uninit(self) -> EntryValueUninit<Service, KeyType, ValueType> {
+        EntryValueUninit::new(self)
     }
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
@@ -390,28 +351,86 @@ impl<
     }
 }
 
-/// Wrapper around an entry value that can be used a for zero-copy update.
-pub struct EntryValue<
+/// Wrapper around an uninitiaized entry value that can be used for a zero-copy update.
+pub struct EntryValueUninit<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static,
     ValueType: Copy + 'static,
 > {
     ptr: *mut ValueType,
-    writer_handle_state: Arc<WriterHandleSharedState<ValueType>>,
-    _writer_state: Arc<WriterSharedState<Service, KeyType>>,
+    writer_handle: WriterHandle<Service, KeyType, ValueType>,
 }
 
 impl<
         Service: service::Service,
         KeyType: Send + Sync + Eq + Clone + Debug + 'static,
         ValueType: Copy + 'static,
-    > Drop for EntryValue<Service, KeyType, ValueType>
+    > EntryValueUninit<Service, KeyType, ValueType>
 {
-    fn drop(&mut self) {
-        self.writer_handle_state
-            .loaned_entry_value
-            .store(false, Ordering::Relaxed);
+    fn new(writer_handle: WriterHandle<Service, KeyType, ValueType>) -> Self {
+        let ptr = unsafe { writer_handle.producer.get_ptr_to_write_cell() };
+        Self { ptr, writer_handle }
     }
+
+    /// Consumes the [`EntryValueUninit`], writes value to the entry value and returns the
+    /// initialized [`EntryValue`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    ///
+    /// # let writer = service.writer_builder().create()?;
+    /// # let writer_handle = writer.entry::<i32>(&1)?;
+    /// let entry_value_uninit = writer_handle.loan_uninit();
+    /// let entry_value = entry_value_uninit.write(-8);
+    /// # entry_value.update();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn write(self, value: ValueType) -> EntryValue<Service, KeyType, ValueType> {
+        unsafe { self.ptr.write(value) };
+        EntryValue::new(self)
+    }
+
+    /// Discard the [`EntryValueUninit`] and returns the original [`WriterHandle`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use iceoryx2::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn core::error::Error>> {
+    /// # let node = NodeBuilder::new().create::<ipc::Service>()?;
+    /// # let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+    /// #     .blackboard_creator::<u64>()
+    /// #     .add::<i32>(1, -1)
+    /// #     .create()?;
+    ///
+    /// # let writer = service.writer_builder().create()?;
+    /// # let writer_handle = writer.entry::<i32>(&1)?;
+    /// let entry_value_uninit = writer_handle.loan_uninit();
+    /// let writer_handle = entry_value_uninit.discard();
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn discard(self) -> WriterHandle<Service, KeyType, ValueType> {
+        self.writer_handle
+    }
+}
+
+/// Wrapper around an initialized entry value that can be used for a zero-copy update.
+pub struct EntryValue<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    ValueType: Copy + 'static,
+> {
+    writer_handle: WriterHandle<Service, KeyType, ValueType>,
 }
 
 impl<
@@ -420,26 +439,14 @@ impl<
         ValueType: Copy + 'static,
     > EntryValue<Service, KeyType, ValueType>
 {
-    fn new(
-        writer_handle_state: Arc<WriterHandleSharedState<ValueType>>,
-        writer_state: Arc<WriterSharedState<Service, KeyType>>,
-    ) -> Result<Self, WriterHandleError> {
-        if writer_handle_state
-            .loaned_entry_value
-            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
-            .is_err()
-        {
-            return Err(WriterHandleError::HandleAlreadyLoansEntry);
+    fn new(entry_value_uninit: EntryValueUninit<Service, KeyType, ValueType>) -> Self {
+        Self {
+            writer_handle: entry_value_uninit.writer_handle,
         }
-        let ptr = unsafe { writer_handle_state.producer.get_ptr_to_write_cell() };
-        Ok(Self {
-            _writer_state: writer_state.clone(),
-            writer_handle_state: writer_handle_state.clone(),
-            ptr,
-        })
     }
 
-    /// Writes value to the entry.
+    /// Makes new value readable for [`Reader`](crate::port::reader::Reader)s, consumes the
+    /// [`EntryValue`] and returns the original [`WriterHandle`].
     ///
     /// # Example
     ///
@@ -454,18 +461,18 @@ impl<
     ///
     /// # let writer = service.writer_builder().create()?;
     /// # let writer_handle = writer.entry::<i32>(&1)?;
-    /// let entry_value = writer_handle.loan_uninit()?;
-    /// entry_value.write(-8);
-    /// # entry_value.update();
+    /// let entry_value_uninitialized = writer_handle.loan_uninit();
+    /// let entry_value = entry_value_uninitialized.write(-8);
+    /// let writer_handle = entry_value.update();
     /// # Ok(())
     /// # }
     /// ```
-    pub fn write(&self, value: ValueType) {
-        unsafe { self.ptr.write(value) };
+    pub fn update(self) -> WriterHandle<Service, KeyType, ValueType> {
+        unsafe { self.writer_handle.producer.update_write_cell() };
+        self.writer_handle
     }
 
-    /// Makes new value readable for [`Reader`](crate::port::reader::Reader)s and consumes the
-    /// EntryValue, i.e. it cannot be used anymore.
+    /// Discard the [`EntryValue`] and returns the original [`WriterHandle`].
     ///
     /// # Example
     ///
@@ -480,16 +487,13 @@ impl<
     ///
     /// # let writer = service.writer_builder().create()?;
     /// # let writer_handle = writer.entry::<i32>(&1)?;
-    /// let entry_value = writer_handle.loan_uninit()?;
-    /// entry_value.write(-8);
-    /// entry_value.update();
+    /// let entry_value_uninit = writer_handle.loan_uninit();
+    /// let entry_value = entry_value_uninit.write(-8);
+    /// let writer_handle = entry_value.discard();
     /// # Ok(())
     /// # }
     /// ```
-    pub fn update(self) {
-        unsafe { self.writer_handle_state.producer.update_write_cell() };
-        self.writer_handle_state
-            .loaned_entry_value
-            .store(false, Ordering::Relaxed);
+    pub fn discard(self) -> WriterHandle<Service, KeyType, ValueType> {
+        self.writer_handle
     }
 }
