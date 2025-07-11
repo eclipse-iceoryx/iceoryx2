@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// TODO: Bazel
 use core::time::Duration;
 use iceoryx2::prelude::*;
 
