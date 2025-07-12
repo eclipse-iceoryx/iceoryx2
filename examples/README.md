@@ -1,5 +1,9 @@
 # Examples
 
+> [!TIP]
+> In the examples root folder of every language you can find detailed
+> installation instructions.
+
 > [!IMPORTANT]
 > The examples are not yet functional in all languages. Check the list below to see
 > what is already working!
