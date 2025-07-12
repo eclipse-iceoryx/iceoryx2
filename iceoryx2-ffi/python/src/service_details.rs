@@ -22,12 +22,13 @@ use crate::{
     service_name::ServiceName,
 };
 
+#[derive(Debug)]
 pub(crate) enum ServiceDetailsType {
     Ipc(iceoryx2::service::ServiceDetails<crate::IpcService>),
     Local(iceoryx2::service::ServiceDetails<crate::LocalService>),
 }
 
-#[pyclass]
+#[pyclass(str = "{0:#?}")]
 /// Represents all the `Service` information that one can acquire with `Service::list()`.
 pub struct ServiceDetails(pub(crate) ServiceDetailsType);
 

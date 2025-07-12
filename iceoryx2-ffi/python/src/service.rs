@@ -13,8 +13,12 @@
 use pyo3::prelude::*;
 
 use crate::{
-    config::Config, error::ServiceDetailsError, messaging_pattern::MessagingPattern,
-    service_name::ServiceName, service_type::ServiceType,
+    config::Config,
+    error::{ServiceDetailsError, ServiceListError},
+    messaging_pattern::MessagingPattern,
+    service_details::{ServiceDetails, ServiceDetailsType},
+    service_name::ServiceName,
+    service_type::ServiceType,
 };
 
 #[pyclass]
@@ -24,6 +28,7 @@ pub struct Service(());
 #[pymethods]
 impl Service {
     #[staticmethod]
+    /// Checks if a service under a given `Config` does exist
     pub fn does_exist(
         service_name: &ServiceName,
         config: &Config,
@@ -47,7 +52,51 @@ impl Service {
         }
     }
 
-    // TODO: details
-    // TODO: list
-    // TODO: ServiceDetails type
+    #[staticmethod]
+    /// Acquires the `ServiceDetails` of a `Service`.
+    pub fn details(
+        service_name: &ServiceName,
+        config: &Config,
+        messaging_pattern: MessagingPattern,
+        service_type: ServiceType,
+    ) -> PyResult<Option<ServiceDetails>> {
+        use iceoryx2::service::Service;
+        match service_type {
+            ServiceType::Ipc => Ok(crate::IpcService::details(
+                &service_name.0,
+                &*config.0.lock(),
+                messaging_pattern.into(),
+            )
+            .map_err(|e| ServiceDetailsError::new_err(format!("{e:?}")))?
+            .map(|details| ServiceDetails(ServiceDetailsType::Ipc(details)))),
+            ServiceType::Local => Ok(crate::LocalService::details(
+                &service_name.0,
+                &*config.0.lock(),
+                messaging_pattern.into(),
+            )
+            .map_err(|e| ServiceDetailsError::new_err(format!("{e:?}")))?
+            .map(|details| ServiceDetails(ServiceDetailsType::Local(details)))),
+        }
+    }
+
+    #[staticmethod]
+    /// Returns a list of all services created under a given `Config`.
+    pub fn list(config: &Config, service_type: ServiceType) -> PyResult<Vec<ServiceDetails>> {
+        use iceoryx2::service::Service;
+        let mut ret_val = vec![];
+        match service_type {
+            ServiceType::Ipc => crate::IpcService::list(&*config.0.lock(), |service| {
+                ret_val.push(ServiceDetails(ServiceDetailsType::Ipc(service)));
+                iceoryx2::prelude::CallbackProgression::Continue
+            })
+            .map_err(|e| ServiceListError::new_err(format!("{e:?}")))?,
+            ServiceType::Local => crate::LocalService::list(&*config.0.lock(), |service| {
+                ret_val.push(ServiceDetails(ServiceDetailsType::Local(service)));
+                iceoryx2::prelude::CallbackProgression::Continue
+            })
+            .map_err(|e| ServiceListError::new_err(format!("{e:?}")))?,
+        };
+
+        Ok(ret_val)
+    }
 }

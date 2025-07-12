@@ -204,6 +204,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    ServiceListError,
+    PyException,
+    "Errors caused when listing all existing services."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     ServerCreateError,
     PyException,
     "Errors caused when creating a server port."

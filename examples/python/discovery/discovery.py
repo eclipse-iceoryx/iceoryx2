@@ -15,4 +15,6 @@
 import iceoryx2 as iox2
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
-services = iox2.Service.list(iox2.Config.global_config())
+services = iox2.Service.list(iox2.config.global_config(), iox2.ServiceType.Ipc)
+for service in services:
+    print(service)
