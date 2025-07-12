@@ -85,7 +85,7 @@ memory layout, the Rust applications and applications written in other supported
 languages can communicate.
 
 > [!TIP]
-> You can also send dynamic data between Rust and C++ applications (see
+> You can also send dynamic data between Python, Rust and C++ applications (see
 > [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
 > you send `iox::Slice`s of `(u)int{8|16|32|64}_t`, `float`, `double` or
 > `bool`, the payload type name is automatically translated to the Rust
