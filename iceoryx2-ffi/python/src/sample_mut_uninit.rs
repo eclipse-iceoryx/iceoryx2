@@ -74,7 +74,7 @@ impl SampleMutUninit {
         match &*self.value.lock() {
             SampleMutUninitType::Ipc(Some(v)) => v.payload().len(),
             SampleMutUninitType::Local(Some(v)) => v.payload().len(),
-            _ => fatal_panic!(from "Sample::header()",
+            _ => fatal_panic!(from "Sample::__slice_len()",
                 "Accessing a released sample."),
         }
     }
