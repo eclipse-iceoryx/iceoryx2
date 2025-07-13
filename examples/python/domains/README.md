@@ -35,7 +35,7 @@ not receive any data.
 > * be self contained, no heap, no pointers to external sources
 > * have a uniform memory representation, ensuring that shared structs have the
 >     same data layout
->   * therefore, only `ctypes` and `ctypes.Structure` can be transferred
+>     * therefore, only `ctypes` and `ctypes.Structure` can be transferred
 > * not use pointers to manage their internal structure
 >
 > Any other python data type, except `ctypes` or `ctypes.Structure`s, like will
