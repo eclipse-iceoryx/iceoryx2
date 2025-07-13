@@ -10,9 +10,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+import ctypes
+
 import pytest
 
-import ctypes
 import iceoryx2 as iox2
 
 

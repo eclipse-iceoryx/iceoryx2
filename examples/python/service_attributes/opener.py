@@ -13,6 +13,7 @@
 """Open a service that needs to have some predefined attributes."""
 
 import ctypes
+
 import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
@@ -25,7 +26,10 @@ service = (
     .publish_subscribe(ctypes.c_uint64)
     .open_with_attributes(
         iox2.AttributeVerifier.new()
-        .require(iox2.AttributeKey.new("camera_resolution"), iox2.AttributeValue.new("1920x1080"))
+        .require(
+            iox2.AttributeKey.new("camera_resolution"),
+            iox2.AttributeValue.new("1920x1080"),
+        )
         .require_key(iox2.AttributeKey.new("dds_service_mapping"))
     )
 )

@@ -12,8 +12,9 @@
 
 """Subscriber example."""
 
-import sys
 import ctypes
+import sys
+
 import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
@@ -31,10 +32,9 @@ config.global_cfg.prefix = iox2.FileName.new(domain)
 
 node = (
     iox2.NodeBuilder.new()
-        # use the custom config when creating the custom node
-        # every service constructed by the node will use this config
-        .config(config)
-        .create(iox2.ServiceType.Ipc)
+    # use the custom config when creating the custom node
+    # every service constructed by the node will use this config
+    .config(config).create(iox2.ServiceType.Ipc)
 )
 
 # from here on it is the publish_subscribe publisher example

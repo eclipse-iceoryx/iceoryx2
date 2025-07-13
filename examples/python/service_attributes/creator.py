@@ -13,6 +13,7 @@
 """Example that creates a service with defined attributes."""
 
 import ctypes
+
 import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
@@ -25,10 +26,22 @@ service = (
     .publish_subscribe(ctypes.c_uint64)
     .create_with_attributes(
         iox2.AttributeSpecifier.new()
-        .define(iox2.AttributeKey.new("dds_service_mapping"), iox2.AttributeValue.new("my_funky_service_name"))
-        .define(iox2.AttributeKey.new("tcp_serialization_format"), iox2.AttributeValue.new("cdr"))
-        .define(iox2.AttributeKey.new("someip_service_mapping"), iox2.AttributeValue.new("1/2/3"))
-        .define(iox2.AttributeKey.new("camera_resolution"), iox2.AttributeValue.new("1920x1080"))
+        .define(
+            iox2.AttributeKey.new("dds_service_mapping"),
+            iox2.AttributeValue.new("my_funky_service_name"),
+        )
+        .define(
+            iox2.AttributeKey.new("tcp_serialization_format"),
+            iox2.AttributeValue.new("cdr"),
+        )
+        .define(
+            iox2.AttributeKey.new("someip_service_mapping"),
+            iox2.AttributeValue.new("1/2/3"),
+        )
+        .define(
+            iox2.AttributeKey.new("camera_resolution"),
+            iox2.AttributeValue.new("1920x1080"),
+        )
     )
 )
 

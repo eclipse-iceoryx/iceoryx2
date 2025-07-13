@@ -243,15 +243,20 @@ def test_slice_api_can_be_used(
         .create()
     )
 
-    publisher = service.publisher_builder().initial_max_slice_len(8).allocation_strategy(iox2.AllocationStrategy.Static).create()
+    publisher = (
+        service.publisher_builder()
+        .initial_max_slice_len(8)
+        .allocation_strategy(iox2.AllocationStrategy.Static)
+        .create()
+    )
 
     try:
-        sample_uninit = publisher.loan_slice_uninit(8)
+        publisher.loan_slice_uninit(8)
     except iox2.LoanError:
-        assert false
+        assert False
 
     with pytest.raises(iox2.LoanError):
-        sample_uninit = publisher.loan_slice_uninit(9)
+        publisher.loan_slice_uninit(9)
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -268,12 +273,17 @@ def test_slice_api_allocation_strategy_works(
         .create()
     )
 
-    publisher = service.publisher_builder().initial_max_slice_len(8).allocation_strategy(iox2.AllocationStrategy.PowerOfTwo).create()
+    publisher = (
+        service.publisher_builder()
+        .initial_max_slice_len(8)
+        .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+        .create()
+    )
 
     try:
-        sample_uninit = publisher.loan_slice_uninit(12)
+        publisher.loan_slice_uninit(12)
     except iox2.LoanError:
-        assert false
+        assert False
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -291,7 +301,7 @@ def test_slice_type_forbids_use_of_non_slice_api(
     )
 
     publisher = service.publisher_builder().create()
- 
+
     with pytest.raises(AssertionError):
         publisher.loan_uninit()
 
@@ -305,16 +315,20 @@ def test_non_slice_type_forbids_use_of_slice_api(
 
     service_name = iox2.testing.generate_service_name()
     service = (
-        node.service_builder(service_name)
-        .publish_subscribe(Payload)
-        .create()
+        node.service_builder(service_name).publish_subscribe(Payload).create()
     )
 
     with pytest.raises(AssertionError):
-        publisher = service.publisher_builder().initial_max_slice_len(8).create()
- 
+        publisher = (
+            service.publisher_builder().initial_max_slice_len(8).create()
+        )
+
     with pytest.raises(AssertionError):
-        publisher = service.publisher_builder().allocation_strategy(iox2.AllocationStrategy.PowerOfTwo).create()
+        publisher = (
+            service.publisher_builder()
+            .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+            .create()
+        )
 
     publisher = service.publisher_builder().create()
 

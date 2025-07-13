@@ -26,9 +26,7 @@ def payload(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the payload."""
     if get_origin(self.__payload_type_details) is Slice:
         (contained_type,) = get_args(self.__payload_type_details)
-        return Slice[contained_type](
-            self.payload_ptr, self.__slice_len, contained_type
-        )
+        return Slice(self.payload_ptr, self.__slice_len, contained_type)
 
     return ctypes.cast(
         self.payload_ptr, ctypes.POINTER(self.__payload_type_details)
@@ -125,21 +123,23 @@ def write_payload(self: SampleMutUninit, t: Type[T]) -> SampleMut:
 def loan_uninit(self: Publisher) -> SampleMutUninit:
     """
     Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`.
-    The user has to initialize the payload before it can be sent.
 
-    On failure it returns `LoanError` describing the failure.
+    The user has to initialize the payload before it can be sent. On failure it returns
+    `LoanError` describing the failure.
     """
     assert not get_origin(self.__payload_type_details) is Slice
 
     return self.__loan_uninit()
 
 
-def loan_slice_uninit(self: Publisher, number_of_elements: int) -> SampleMutUninit:
+def loan_slice_uninit(
+    self: Publisher, number_of_elements: int
+) -> SampleMutUninit:
     """
     Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`.
+
     The user has to initialize the payload before it can be sent.
     Fails when it is called for data types which are not a slice.
-
     On failure it returns `LoanError` describing the failure.
     """
     assert get_origin(self.__payload_type_details) is Slice
@@ -147,27 +147,27 @@ def loan_slice_uninit(self: Publisher, number_of_elements: int) -> SampleMutUnin
     return self.__loan_slice_uninit(number_of_elements)
 
 
-def initial_max_slice_len(self: PortFactoryPublisher, value: int) -> PortFactoryPublisher:
-    """
-    Sets the maximum slice length that a user can allocate with
-    `ActiveRequest::loan_slice()` or `ActiveRequest::loan_slice_uninit()`.
-    """
+def initial_max_slice_len(
+    self: PortFactoryPublisher, value: int
+) -> PortFactoryPublisher:
+    """Sets the maximum slice length that a user can allocate."""
     assert get_origin(self.__payload_type_details) is Slice
 
     return self.__initial_max_slice_len(value)
 
 
-def allocation_strategy(self: PortFactoryPublisher, value: AllocationStrategy) -> PortFactoryPublisher:
+def allocation_strategy(
+    self: PortFactoryPublisher, value: AllocationStrategy
+) -> PortFactoryPublisher:
     """
-    Defines the allocation strategy that is used when the provided
-    `PortFactoryServer::initial_max_slice_len()` is exhausted. This happens when the user
-    acquires more than max slice len in `ActiveRequest::loan_slice()` or
-    `ActiveRequest::loan_slice_uninit()`.
+    Defines the allocation strategy that is used when the memory is exhausted.
+
+    This happens when the user acquires more than max slice len in `ActiveRequest::loan_slice()`
+    or `ActiveRequest::loan_slice_uninit()`.
     """
     assert get_origin(self.__payload_type_details) is Slice
 
     return self.__allocation_strategy(value)
-
 
 
 PortFactoryPublisher.initial_max_slice_len = initial_max_slice_len

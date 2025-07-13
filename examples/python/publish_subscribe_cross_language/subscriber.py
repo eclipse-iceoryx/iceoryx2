@@ -12,8 +12,6 @@
 
 """Subscriber example."""
 
-import ctypes
-
 from custom_header import CustomHeader
 from transmission_data import TransmissionData
 

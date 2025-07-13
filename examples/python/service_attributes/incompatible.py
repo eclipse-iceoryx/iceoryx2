@@ -13,6 +13,7 @@
 """Open a service that needs to have some predefined attributes."""
 
 import ctypes
+
 import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
@@ -28,7 +29,10 @@ try:
             iox2.AttributeVerifier.new()
             # the opening of the service will fail since the
             # `camera_resolution` attribute is `1920x1080` and not `3840x2160`
-            .require(iox2.AttributeKey.new("camera_resolution"), iox2.AttributeValue.new("3840x2160"))
+            .require(
+                iox2.AttributeKey.new("camera_resolution"),
+                iox2.AttributeValue.new("3840x2160"),
+            )
         )
     )
 except iox2.PublishSubscribeOpenError as e:
@@ -47,5 +51,3 @@ try:
     )
 except iox2.PublishSubscribeOpenError as e:
     print(e)
-
-

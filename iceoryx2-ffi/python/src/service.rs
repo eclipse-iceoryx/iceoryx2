@@ -39,13 +39,13 @@ impl Service {
         match service_type {
             ServiceType::Ipc => Ok(crate::IpcService::does_exist(
                 &service_name.0,
-                &*config.0.lock(),
+                &config.0.lock(),
                 messaging_pattern.clone().into(),
             )
             .map_err(|e| ServiceDetailsError::new_err(format!("{e:?}")))?),
             ServiceType::Local => Ok(crate::LocalService::does_exist(
                 &service_name.0,
-                &*config.0.lock(),
+                &config.0.lock(),
                 messaging_pattern.clone().into(),
             )
             .map_err(|e| ServiceDetailsError::new_err(format!("{e:?}")))?),
@@ -64,14 +64,14 @@ impl Service {
         match service_type {
             ServiceType::Ipc => Ok(crate::IpcService::details(
                 &service_name.0,
-                &*config.0.lock(),
+                &config.0.lock(),
                 messaging_pattern.into(),
             )
             .map_err(|e| ServiceDetailsError::new_err(format!("{e:?}")))?
             .map(|details| ServiceDetails(ServiceDetailsType::Ipc(details)))),
             ServiceType::Local => Ok(crate::LocalService::details(
                 &service_name.0,
-                &*config.0.lock(),
+                &config.0.lock(),
                 messaging_pattern.into(),
             )
             .map_err(|e| ServiceDetailsError::new_err(format!("{e:?}")))?
@@ -85,12 +85,12 @@ impl Service {
         use iceoryx2::service::Service;
         let mut ret_val = vec![];
         match service_type {
-            ServiceType::Ipc => crate::IpcService::list(&*config.0.lock(), |service| {
+            ServiceType::Ipc => crate::IpcService::list(&config.0.lock(), |service| {
                 ret_val.push(ServiceDetails(ServiceDetailsType::Ipc(service)));
                 iceoryx2::prelude::CallbackProgression::Continue
             })
             .map_err(|e| ServiceListError::new_err(format!("{e:?}")))?,
-            ServiceType::Local => crate::LocalService::list(&*config.0.lock(), |service| {
+            ServiceType::Local => crate::LocalService::list(&config.0.lock(), |service| {
                 ret_val.push(ServiceDetails(ServiceDetailsType::Local(service)));
                 iceoryx2::prelude::CallbackProgression::Continue
             })

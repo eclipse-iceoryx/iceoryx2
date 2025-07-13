@@ -12,8 +12,6 @@
 
 """Publisher example."""
 
-import ctypes
-
 from custom_header import CustomHeader
 from transmission_data import TransmissionData
 
@@ -43,7 +41,9 @@ try:
         sample.user_header().contents.version = 123
         sample.user_header().contents.timestamp = 80337 + COUNTER
 
-        sample = sample.write_payload(TransmissionData(x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12))
+        sample = sample.write_payload(
+            TransmissionData(x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12)
+        )
 
         sample.send()
         print("send sample", COUNTER, "...")

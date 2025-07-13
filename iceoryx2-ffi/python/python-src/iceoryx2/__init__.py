@@ -14,4 +14,4 @@
 
 from ._iceoryx2 import *
 from .publish_subscribe_extensions import *
-from .slice import *
+from .slice import Slice
