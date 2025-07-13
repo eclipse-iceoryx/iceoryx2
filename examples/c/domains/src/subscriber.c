@@ -107,8 +107,10 @@ int main(int argc, char** argv) {
             struct TransmissionData* payload = NULL;
             iox2_sample_payload(&sample, (const void**) &payload, NULL);
 
-            printf(
-                "received: TransmissionData { .x: %d, .y: %d, .funky: %lf}\n", payload->x, payload->y, payload->funky);
+            printf("received: TransmissionData { .x: %d, .y: %d, .funky: %.2lf }\n",
+                   payload->x,
+                   payload->y,
+                   payload->funky);
             iox2_sample_drop(sample);
         }
     }

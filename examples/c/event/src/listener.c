@@ -52,6 +52,8 @@ int main(void) {
     }
     iox2_event_id_t event_id;
 
+    printf("Listener ready to receive events!\n");
+
     while (iox2_node_wait(&node_handle, 0, 0) == IOX2_OK) {
         bool has_received_one = false;
         if (iox2_listener_timed_wait_one(&listener, &event_id, &has_received_one, 1, 0) != IOX2_OK) {
