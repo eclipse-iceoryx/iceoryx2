@@ -32,6 +32,8 @@ auto main() -> int {
 
     auto listener = service.listener_builder().create().expect("successful listener creation");
 
+    std::cout << "Listener ready to receive events!" << std::endl;
+
     while (node.wait(iox::units::Duration::zero()).has_value()) {
         listener.timed_wait_one(CYCLE_TIME).and_then([](auto maybe_event_id) {
             maybe_event_id.and_then(
