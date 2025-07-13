@@ -119,7 +119,7 @@ pub fn get_sections() -> Vec<CliSection> {
                 CliEntry {
                     key: "global.service.creation-timeout.secs",
                     value_type: "[int]",
-                    description: "Maximum time for service setup in seconds.",
+                    description: "Maximum time for service setup in seconds. Uncreated services after this are marked as stalled.",
                 },
                 CliEntry {
                     key: "global.service.creation-timeout.nanos",
@@ -254,7 +254,7 @@ pub fn get_sections() -> Vec<CliSection> {
                 CliEntry {
                     key: "defaults.request-response.max-loaned-requests",
                     value_type: "[int]",
-                    description: "Maximum number of requests a client can loan.",
+                    description: "Maximum number of requests a client can loan in parallel.",
                 },
                 CliEntry {
                     key: "defaults.request-response.server-max-loaned-responses-per-request",
