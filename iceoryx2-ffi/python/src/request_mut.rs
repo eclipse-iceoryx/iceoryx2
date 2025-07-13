@@ -140,21 +140,31 @@ impl RequestMut {
         match &mut *self.value.lock() {
             RequestMutType::Ipc(ref mut v) => {
                 let request = v.take().unwrap();
-                Ok(PendingResponse(Parc::new(PendingResponseType::Ipc(Some(
-                    request
-                        .send()
-                        .map_err(|e| RequestSendError::new_err(format!("{e:?}")))?,
-                )))))
-            }
-            RequestMutType::Local(ref mut v) => {
-                let request = v.take().unwrap();
-                Ok(PendingResponse(Parc::new(PendingResponseType::Local(
-                    Some(
+                Ok(PendingResponse {
+                    value: Parc::new(PendingResponseType::Ipc(Some(
                         request
                             .send()
                             .map_err(|e| RequestSendError::new_err(format!("{e:?}")))?,
-                    ),
-                ))))
+                    ))),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
+            }
+            RequestMutType::Local(ref mut v) => {
+                let request = v.take().unwrap();
+                Ok(PendingResponse {
+                    value: Parc::new(PendingResponseType::Local(Some(
+                        request
+                            .send()
+                            .map_err(|e| RequestSendError::new_err(format!("{e:?}")))?,
+                    ))),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
             }
         }
     }
