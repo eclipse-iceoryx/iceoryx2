@@ -10,9 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Arc;
-
-use crate::error::ClientCreateError;
+use crate::{error::ClientCreateError, type_storage::TypeStorage};
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
@@ -52,10 +50,20 @@ pub(crate) enum PortFactoryClientType {
 pub struct PortFactoryClient {
     factory: Parc<PortFactoryRequestResponseType>,
     value: PortFactoryClientType,
+    request_payload_type_details: TypeStorage,
+    response_payload_type_details: TypeStorage,
+    request_header_type_details: TypeStorage,
+    response_header_type_details: TypeStorage,
 }
 
 impl PortFactoryClient {
-    pub(crate) fn new(factory: Parc<PortFactoryRequestResponseType>) -> Self {
+    pub(crate) fn new(
+        factory: Parc<PortFactoryRequestResponseType>,
+        request_payload_type_details: TypeStorage,
+        response_payload_type_details: TypeStorage,
+        request_header_type_details: TypeStorage,
+        response_header_type_details: TypeStorage,
+    ) -> Self {
         Self {
             factory: factory.clone(),
             value: match &*factory.lock() {
@@ -72,6 +80,32 @@ impl PortFactoryClient {
                     >(v.client_builder()))
                 }),
             },
+            request_header_type_details,
+            request_payload_type_details,
+            response_header_type_details,
+            response_payload_type_details,
+        }
+    }
+
+    fn clone_ipc(&self, value: IpcPortFactoryClient<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryClientType::Ipc(Parc::new(value)),
+            request_payload_type_details: self.request_payload_type_details.clone(),
+            response_payload_type_details: self.response_payload_type_details.clone(),
+            request_header_type_details: self.request_header_type_details.clone(),
+            response_header_type_details: self.response_header_type_details.clone(),
+        }
+    }
+
+    fn clone_local(&self, value: LocalPortFactoryClient<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryClientType::Local(Parc::new(value)),
+            request_payload_type_details: self.request_payload_type_details.clone(),
+            response_payload_type_details: self.response_payload_type_details.clone(),
+            request_header_type_details: self.request_header_type_details.clone(),
+            response_header_type_details: self.response_header_type_details.clone(),
         }
     }
 }
@@ -86,18 +120,12 @@ impl PortFactoryClient {
             PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.unable_to_deliver_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryClientType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.unable_to_deliver_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryClientType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -110,18 +138,12 @@ impl PortFactoryClient {
             PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.initial_max_slice_len(value);
-                Self {
-                    value: PortFactoryClientType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.initial_max_slice_len(value);
-                Self {
-                    value: PortFactoryClientType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -135,18 +157,12 @@ impl PortFactoryClient {
             PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.allocation_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryClientType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.allocation_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryClientType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -157,15 +173,29 @@ impl PortFactoryClient {
         match &self.value {
             PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Client(ClientType::Ipc(Arc::new(this.create().map_err(
-                    |e| ClientCreateError::new_err(format!("{e:?}")),
-                )?))))
+                Ok(Client {
+                    value: ClientType::Ipc(
+                        this.create()
+                            .map_err(|e| ClientCreateError::new_err(format!("{e:?}")))?,
+                    ),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
             }
             PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Client(ClientType::Local(Arc::new(this.create().map_err(
-                    |e| ClientCreateError::new_err(format!("{e:?}")),
-                )?))))
+                Ok(Client {
+                    value: ClientType::Local(
+                        this.create()
+                            .map_err(|e| ClientCreateError::new_err(format!("{e:?}")))?,
+                    ),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
             }
         }
     }

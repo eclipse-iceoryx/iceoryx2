@@ -10,30 +10,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Arc;
-
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
-use crate::unique_client_id::UniqueClientId;
+use crate::{
+    error::LoanError,
+    parc::Parc,
+    request_mut_uninit::{RequestMutUninit, RequestMutUninitType},
+    type_storage::TypeStorage,
+    unique_client_id::UniqueClientId,
+};
 
-type IpcClient = Arc<
-    iceoryx2::port::client::Client<
-        crate::IpcService,
-        [CustomPayloadMarker],
-        CustomHeaderMarker,
-        [CustomPayloadMarker],
-        CustomHeaderMarker,
-    >,
+type IpcClient = iceoryx2::port::client::Client<
+    crate::IpcService,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
 >;
-type LocalClient = Arc<
-    iceoryx2::port::client::Client<
-        crate::LocalService,
-        [CustomPayloadMarker],
-        CustomHeaderMarker,
-        [CustomPayloadMarker],
-        CustomHeaderMarker,
-    >,
+type LocalClient = iceoryx2::port::client::Client<
+    crate::LocalService,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
 >;
 
 pub(crate) enum ClientType {
@@ -43,16 +43,61 @@ pub(crate) enum ClientType {
 
 #[pyclass]
 /// Represents the receiving endpoint of an event based communication.
-pub struct Client(pub(crate) ClientType);
+pub struct Client {
+    pub(crate) value: ClientType,
+    pub(crate) request_payload_type_details: TypeStorage,
+    pub(crate) response_payload_type_details: TypeStorage,
+    pub(crate) request_header_type_details: TypeStorage,
+    pub(crate) response_header_type_details: TypeStorage,
+}
 
 #[pymethods]
 impl Client {
     #[getter]
     /// Returns the `UniqueClientId` of the `Client`
     pub fn id(&self) -> UniqueClientId {
-        match &self.0 {
+        match &self.value {
             ClientType::Ipc(v) => UniqueClientId(v.id()),
             ClientType::Local(v) => UniqueClientId(v.id()),
+        }
+    }
+
+    /// Acquires an `RequestMutUninit` to store payload. This API shall be used
+    /// by default to avoid unnecessary copies.
+    pub fn loan_uninit(&self) -> PyResult<RequestMutUninit> {
+        self.__loan_slice_uninit(1)
+    }
+
+    pub fn __loan_slice_uninit(&self, slice_len: usize) -> PyResult<RequestMutUninit> {
+        match &self.value {
+            ClientType::Ipc(v) => Ok(RequestMutUninit {
+                value: Parc::new(RequestMutUninitType::Ipc(Some(unsafe {
+                    v.loan_custom_payload(slice_len)
+                        .map_err(|e| LoanError::new_err(format!("{e:?}")))?
+                }))),
+                request_payload_type_details: self.request_payload_type_details.clone(),
+                response_payload_type_details: self.response_payload_type_details.clone(),
+                request_header_type_details: self.request_header_type_details.clone(),
+                response_header_type_details: self.response_header_type_details.clone(),
+            }),
+            ClientType::Local(v) => Ok(RequestMutUninit {
+                value: Parc::new(RequestMutUninitType::Local(Some(unsafe {
+                    v.loan_custom_payload(slice_len)
+                        .map_err(|e| LoanError::new_err(format!("{e:?}")))?
+                }))),
+                request_payload_type_details: self.request_payload_type_details.clone(),
+                response_payload_type_details: self.response_payload_type_details.clone(),
+                request_header_type_details: self.request_header_type_details.clone(),
+                response_header_type_details: self.response_header_type_details.clone(),
+            }),
+        }
+    }
+
+    /// Returns the maximum initial slice length configured for this `Client`.
+    pub fn initial_max_slice_len(&self) -> usize {
+        match &self.value {
+            ClientType::Ipc(v) => v.initial_max_slice_len(),
+            ClientType::Local(v) => v.initial_max_slice_len(),
         }
     }
 }
