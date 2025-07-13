@@ -183,6 +183,13 @@ create_exception!(
 
 create_exception!(
     iceoryx2_ffi_python,
+    RequestSendError,
+    PyException,
+    "Errors caused when sending a request."
+);
+
+create_exception!(
+    iceoryx2_ffi_python,
     SemanticStringError,
     PyException,
     "Errors caused by creating a semantic string."

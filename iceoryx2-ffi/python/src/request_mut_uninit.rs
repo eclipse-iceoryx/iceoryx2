@@ -83,7 +83,7 @@ impl RequestMutUninit {
             RequestMutUninitType::Ipc(Some(v)) => v.payload().len(),
             RequestMutUninitType::Local(Some(v)) => v.payload().len(),
             _ => fatal_panic!(from "RequestMutUninit::__slice_len()",
-                "Accessing a released sample."),
+                "Accessing a released request."),
         }
     }
 
@@ -94,7 +94,7 @@ impl RequestMutUninit {
             RequestMutUninitType::Ipc(Some(v)) => RequestHeader(*v.header()),
             RequestMutUninitType::Local(Some(v)) => RequestHeader(*v.header()),
             _ => fatal_panic!(from "RequestMutUninit::header()",
-                "Accessing a released sample."),
+                "Accessing a released request."),
         }
     }
 
@@ -109,7 +109,7 @@ impl RequestMutUninit {
                 (v.user_header_mut() as *mut CustomHeaderMarker) as usize
             }
             _ => fatal_panic!(from "RequestMutUninit::user_header_ptr()",
-                "Accessing a released sample."),
+                "Accessing a released request."),
         }
     }
 
@@ -120,7 +120,7 @@ impl RequestMutUninit {
             RequestMutUninitType::Ipc(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
             RequestMutUninitType::Local(Some(v)) => (v.payload_mut().as_mut_ptr()) as usize,
             _ => fatal_panic!(from "RequestMutUninit::payload_ptr()",
-                "Accessing a released sample."),
+                "Accessing a released request."),
         }
     }
 

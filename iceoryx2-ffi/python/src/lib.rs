@@ -41,6 +41,7 @@ pub mod node_state;
 pub mod notifier;
 pub mod parc;
 pub mod path;
+pub mod pending_response;
 pub mod port_factory_client;
 pub mod port_factory_event;
 pub mod port_factory_listener;
@@ -136,6 +137,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::node_state::NodeDetails>()?;
     m.add_class::<crate::notifier::Notifier>()?;
     m.add_class::<crate::path::Path>()?;
+    m.add_class::<crate::pending_response::PendingResponse>()?;
     m.add_class::<crate::port_factory_client::PortFactoryClient>()?;
     m.add_class::<crate::port_factory_event::PortFactoryEvent>()?;
     m.add_class::<crate::port_factory_listener::PortFactoryListener>()?;
@@ -278,6 +280,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "RequestResponseOpenOrCreateError",
         py.get_type::<crate::error::RequestResponseOpenOrCreateError>(),
+    )?;
+    m.add(
+        "RequestSendError",
+        py.get_type::<crate::error::RequestSendError>(),
     )?;
     m.add(
         "ServerCreateError",
