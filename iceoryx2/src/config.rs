@@ -171,8 +171,7 @@ pub struct Node {
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
 pub struct Global {
-    root_path_unix: Path,
-    root_path_windows: Path,
+    root_path: Path,
     /// Prefix used for all files created during runtime
     pub prefix: FileName,
     /// [`Service`](crate::service::Service) settings
@@ -198,26 +197,12 @@ impl Global {
 
     /// The path under which all other directories or files will be created
     pub fn root_path(&self) -> &Path {
-        #[cfg(target_os = "windows")]
-        {
-            &self.root_path_windows
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            &self.root_path_unix
-        }
+        &self.root_path
     }
 
     /// Defines the path under which all other directories or files will be created
     pub fn set_root_path(&mut self, value: &Path) {
-        #[cfg(target_os = "windows")]
-        {
-            self.root_path_windows = value.clone();
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            self.root_path_unix = value.clone();
-        }
+        self.root_path = value.clone();
     }
 }
 
@@ -407,8 +392,11 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             global: Global {
-                root_path_unix: Path::new(b"/tmp/iceoryx2/").unwrap(),
-                root_path_windows: Path::new(b"c:\\Temp\\iceoryx2\\").unwrap(),
+                root_path: if cfg!(windows) {
+                    Path::new(b"c:\\Temp\\iceoryx2\\").unwrap()
+                } else {
+                    Path::new(b"/tmp/iceoryx2/").unwrap()
+                },
                 prefix: FileName::new(b"iox2_").unwrap(),
                 service: Service {
                     directory: Path::new(b"services").unwrap(),
