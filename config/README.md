@@ -85,9 +85,11 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `global.service.event-connection-suffix` - [string]: Suffix for event channel.
 * `global.service.connection-suffix` - [string]: Suffix for one-to-one
   connections.
-* `global.service.creation-timeout.secs` &
-  `global.service.creation-timeout.nanos` - [int]: Maximum time for service
-  setup. Uncreated services after this are marked as stalled.
+* `global.service.creation-timeout.secs` - [int]: Maximum time for service setup
+  in seconds. Uncreated services after this are marked as stalled.
+* `global.service.creation-timeout.nanos` - [int]: Additional nanoseconds for
+  service setup timeout.Maximum time for service
+  setup.
 
 ## Defaults
 
@@ -98,12 +100,6 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.event.max-nodes` - [int]: Maximum number of nodes.
 * `defaults.event.event-id-max-value` - [int]: Greatest value an [`EventId`] can
   have.
-* `defaults.event.notifier-created-event` - [Option\<int\>]: If defined,
-    it defines the event id that is emitted when a new notifier is created.
-* `defaults.event.notifier-dropped-event` - [Option\<int\>]: If defined,
-    it defines the event id that is emitted when a notifier is destroyed.
-* `defaults.event.notifier-dead-event` - [Option\<int\>]: If defined,
-    it defines the event id that is emitted when a dead notifier is cleaned up.
 
 ### Service: Publish Subscribe Messaging Pattern
 
@@ -114,7 +110,7 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.publish-subscribe.max-nodes` - [int]: Maximum number of nodes.
 * `defaults.publish-subscribe.publisher-history-size` - [int]: Maximum history
   size a subscriber can request.
-* `defaults.publish-subscribe.subscriber-buffer-size` - [int]: Maximum buffer
+* `defaults.publish-subscribe.subscriber-max-buffer-size` - [int]: Maximum buffer
   size of a subscriber.
 * `defaults.publish-subscribe.subscriber-max-borrowed-samples` - [int]: Maximum
   samples a subscriber can hold.
@@ -160,8 +156,10 @@ Adjusting `global` settings ensures a non-interfering setup.
   processes can open the service at the same time.
 * `defaults.request-response.max-response-buffer-size` - [int]:
   The maximum buffer size for responses for an active request.
-* `defaults.request-response.max-request-buffer-size` - [int]:
-  The maximum buffer size for requests for a server.
+* `defaults.request-response.max-loaned-requests` - [int]:
+  Maximum number of requests a client can loan in parallel.
+* `defaults.request-response.server-max-loaned-responses-per-request` - [int]:
+  Maximum number of responses a server can loan per request.
 * `defaults.request-response.max-servers` - [int]:
   The maximum amount of supported servers.
 * `defaults.request-response.server-unable-to-deliver-strategy` -
@@ -173,5 +171,7 @@ Adjusting `global` settings ensures a non-interfering setup.
   connection contains unconsumed active requests.
 
 ### Blackboard Pattern
+
 * `defaults.blackboard.max-readers` - [int]: The maximum amount of supported Readers.
-* `default.backboard.max-nodes` - [int]: The maximum amount of supported Nodes. Defines indirectly how many processes can open the service at the same time.
+* `defaults.blackboard.max-nodes` - [int]: The maximum amount of supported Nodes.
+Defines indirectly how many processes can open the service at the same time.
