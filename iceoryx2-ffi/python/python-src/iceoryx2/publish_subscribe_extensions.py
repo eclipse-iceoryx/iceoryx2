@@ -122,7 +122,60 @@ def write_payload(self: SampleMutUninit, t: Type[T]) -> SampleMut:
     return self.assume_init()
 
 
+def loan_uninit(self: Publisher) -> SampleMutUninit:
+    """
+    Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`.
+    The user has to initialize the payload before it can be sent.
+
+    On failure it returns `LoanError` describing the failure.
+    """
+    assert not get_origin(self.__payload_type_details) is Slice
+
+    return self.__loan_uninit()
+
+
+def loan_slice_uninit(self: Publisher, number_of_elements: int) -> SampleMutUninit:
+    """
+    Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`.
+    The user has to initialize the payload before it can be sent.
+    Fails when it is called for data types which are not a slice.
+
+    On failure it returns `LoanError` describing the failure.
+    """
+    assert get_origin(self.__payload_type_details) is Slice
+
+    return self.__loan_slice_uninit(number_of_elements)
+
+
+def initial_max_slice_len(self: PortFactoryPublisher, value: int) -> PortFactoryPublisher:
+    """
+    Sets the maximum slice length that a user can allocate with
+    `ActiveRequest::loan_slice()` or `ActiveRequest::loan_slice_uninit()`.
+    """
+    assert get_origin(self.__payload_type_details) is Slice
+
+    return self.__initial_max_slice_len(value)
+
+
+def allocation_strategy(self: PortFactoryPublisher, value: AllocationStrategy) -> PortFactoryPublisher:
+    """
+    Defines the allocation strategy that is used when the provided
+    `PortFactoryServer::initial_max_slice_len()` is exhausted. This happens when the user
+    acquires more than max slice len in `ActiveRequest::loan_slice()` or
+    `ActiveRequest::loan_slice_uninit()`.
+    """
+    assert get_origin(self.__payload_type_details) is Slice
+
+    return self.__allocation_strategy(value)
+
+
+
+PortFactoryPublisher.initial_max_slice_len = initial_max_slice_len
+PortFactoryPublisher.allocation_strategy = allocation_strategy
+
 Publisher.send_copy = send_copy
+Publisher.loan_uninit = loan_uninit
+Publisher.loan_slice_uninit = loan_slice_uninit
 
 Sample.payload = payload
 Sample.user_header = user_header

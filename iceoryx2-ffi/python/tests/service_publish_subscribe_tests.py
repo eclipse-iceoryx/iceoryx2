@@ -148,7 +148,7 @@ def test_send_large_payload_works(
         .create()
     )
 
-    publisher = service.publisher_builder().initial_max_slice_len(8).create()
+    publisher = service.publisher_builder().create()
     subscriber = service.subscriber_builder().create()
 
     send_payload = LargePayload(data=19203182930990147)
