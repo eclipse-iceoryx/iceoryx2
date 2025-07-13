@@ -65,7 +65,8 @@ impl ResponseHeader {
         self.server_id
     }
 
-    /// Returns how many elements are stored inside the response's payload.
+    /// Returns how many elements are stored inside the [`Response`](crate::response::Response)s
+    /// payload.
     ///
     /// # Details when using
     /// [`CustomPayloadMarker`](crate::service::builder::CustomPayloadMarker)

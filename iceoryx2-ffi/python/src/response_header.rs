@@ -12,20 +12,20 @@
 
 use pyo3::prelude::*;
 
-use crate::unique_client_id::UniqueClientId;
+use crate::unique_server_id::UniqueServerId;
 
 #[pyclass]
-/// Request header used by `MessagingPattern::RequestResponse`
-pub struct RequestHeader(pub(crate) iceoryx2::service::header::request_response::RequestHeader);
+/// Response header used by `MessagingPattern::RequestResponse`
+pub struct ResponseHeader(pub(crate) iceoryx2::service::header::request_response::ResponseHeader);
 
 #[pymethods]
-impl RequestHeader {
-    /// Returns the `UniqueClientId` of the `Client` which sent the `RequestMut`
-    pub fn client_id(&self) -> UniqueClientId {
-        UniqueClientId(self.0.client_id())
+impl ResponseHeader {
+    /// Returns the `UniqueServerId` of the `Server` which sent the `Response`
+    pub fn server_id(&self) -> UniqueServerId {
+        UniqueServerId(self.0.server_id())
     }
 
-    /// Returns how many elements are stored inside the requests's payload.
+    /// Returns how many elements are stored inside the `Response`s payload.
     pub fn number_of_elements(&self) -> u64 {
         self.0.number_of_elements()
     }
