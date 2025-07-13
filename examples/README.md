@@ -4,11 +4,11 @@
 > In the examples root folder of every language you can find detailed
 > installation instructions.
 
+## Foundations of Communication in iceoryx2 Applications
+
 > [!IMPORTANT]
 > The examples are not yet functional in all languages. Check the list below to see
 > what is already working!
-
-## Foundations of Communication in iceoryx2 Applications
 
 In the world of iceoryx2, communication is at the core of everything. To
 facilitate seamless communication, we always begin by opening or creating a

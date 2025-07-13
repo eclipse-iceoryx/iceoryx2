@@ -41,7 +41,7 @@ class Slice(Generic[T]):
         return f"Slice {{ data_ptr: {self.data_ptr}, number_of_elements: {self.number_of_elements} }}"
 
     def __getitem__(self, index: int) -> Any:
-        """Acuires a pointer T to the element at the specified index."""
+        """Acquires a pointer T to the element at the specified index."""
         if not 0 <= index < self.number_of_elements:
             raise IndexError("Slice index out of range")
 

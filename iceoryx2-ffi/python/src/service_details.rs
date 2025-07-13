@@ -34,7 +34,7 @@ pub struct ServiceDetails(pub(crate) ServiceDetailsType);
 
 #[pymethods]
 impl ServiceDetails {
-    /// A list of all `Node`s that are registered at the [`Service`]
+    /// A list of all `Node`s that are registered at the `Service`
     pub fn nodes(&self) -> Vec<NodeState> {
         let mut ret_val = vec![];
         match &self.0 {
