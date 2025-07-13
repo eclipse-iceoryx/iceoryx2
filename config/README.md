@@ -100,6 +100,15 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.event.max-nodes` - [int]: Maximum number of nodes.
 * `defaults.event.event-id-max-value` - [int]: Greatest value an [`EventId`] can
   have.
+* `defaults.event.deadline` - [int]: Maximum allowed time between two
+  consecutive notifications. If not sent after this time, all listeners attached
+  to a WaitSet will be notified.
+* `defaults.event.notifier-created-event` - [Option\<int\>]: If defined,
+    it defines the event id that is emitted when a new notifier is created.
+* `defaults.event.notifier-dropped-event` - [Option\<int\>]: If defined,
+    it defines the event id that is emitted when a notifier is destroyed.
+* `defaults.event.notifier-dead-event` - [Option\<int\>]: If defined,
+    it defines the event id that is emitted when a dead notifier is cleaned up.
 
 ### Service: Publish Subscribe Messaging Pattern
 

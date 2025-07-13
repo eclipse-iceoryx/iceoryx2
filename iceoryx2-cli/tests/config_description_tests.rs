@@ -12,23 +12,32 @@
 
 mod config_descriptions_tests {
     use std::collections::HashSet;
-    use toml::Value;
+
+    use ron::de::from_str;
+    use ron::ser::to_string;
+    use ron::Value;
 
     use iceoryx2::config::Config;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_cli::config_descriptions::get_sections;
 
-    // Recursively walk through toml::Value to flatten all keys into a HashSet
-    fn collect_keys(value: &Value, prefix: String, keys: &mut HashSet<String>) {
+    // Recursively walk through ron::Value to flatten all keys into a HashSet
+    fn collect_keys_ron(value: &Value, prefix: String, keys: &mut HashSet<String>) {
         match value {
-            Value::Table(table) => {
-                for (k, v) in table {
-                    let new_prefix = if prefix.is_empty() {
-                        k.to_string()
-                    } else {
-                        format!("{}.{}", prefix, k)
+            Value::Map(map) => {
+                for (k, v) in map.iter() {
+                    let k_str = match k {
+                        Value::String(s) => s.clone(),
+                        _ => continue, // skip non-string keys
                     };
-                    collect_keys(v, new_prefix, keys);
+
+                    let new_prefix = if prefix.is_empty() {
+                        k_str
+                    } else {
+                        format!("{}.{}", prefix, k_str)
+                    };
+
+                    collect_keys_ron(v, new_prefix, keys);
                 }
             }
             _ => {
@@ -39,29 +48,25 @@ mod config_descriptions_tests {
 
     #[test]
     fn check_config_description_is_present_for_all_config_parameters() {
+        // Replace this with a version of Config that populates all Option<T> fields
         let config = Config::default();
-        let toml_string = toml::to_string(&config).expect("Failed to serialize config to TOML");
-        let sections = get_sections();
 
-        let parsed: Value = toml::from_str(&toml_string).expect("Invalid TOML");
-        let mut toml_keys = HashSet::new();
-        collect_keys(&parsed, "".to_string(), &mut toml_keys);
+        let ron_string = to_string(&config).expect("Failed to serialize config to RON");
+        let parsed: Value = from_str(&ron_string).expect("Invalid RON");
 
-        // let mut missing_keys = Vec::new();
+        let mut ron_keys = HashSet::new();
+        collect_keys_ron(&parsed, "".to_string(), &mut ron_keys);
 
-        let cli_keys: HashSet<String> = sections
+        let cli_keys: HashSet<String> = get_sections()
             .iter()
             .flat_map(|section| section.entries.iter())
             .map(|entry| entry.key.to_string())
             .collect();
 
-        // Find missing in TOML
-        let missing_in_toml: Vec<_> = cli_keys.difference(&toml_keys).collect();
-
-        // Find extra in TOML
-        let extra_in_toml: Vec<_> = toml_keys.difference(&cli_keys).collect();
-
-        assert_that!(missing_in_toml.len(), eq 0);
-        assert_that!(extra_in_toml.len(), eq 0);
+        let missing_in_config = cli_keys.difference(&ron_keys).collect::<Vec<_>>();
+        let extra_in_config = ron_keys.difference(&cli_keys).collect::<Vec<_>>();
+        println!("Missing in config: {:?}", extra_in_config);
+        assert_that!(missing_in_config.len(), eq 0);
+        assert_that!(extra_in_config.len(), eq 0);
     }
 }
