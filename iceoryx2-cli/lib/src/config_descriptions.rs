@@ -206,6 +206,26 @@ pub fn get_sections() -> Vec<CliSection> {
                     value_type: "[int]",
                     description: "Greatest value an [`EventId`] can have.",
                 },
+                CliEntry {
+                    key: "defaults.event.deadline",
+                    value_type: "[int]",
+                    description: "Maximum allowed time between two consecutive notifications. If not sent after this time, all listeners attached to a WaitSet will be notified.",
+                },
+                CliEntry {
+                    key: "defaults.event.notifier-created-event",
+                    value_type: "[Option<int>]",
+                    description: "Event id emitted after a new notifier is created.",
+                },
+                CliEntry {
+                    key: "defaults.event.notifier-dropped-event",
+                    value_type: "[Option<int>]",
+                    description: "Event id emitted before a notifier is dropped.",
+                },
+                CliEntry {
+                    key: "defaults.event.notifier-dead-event",
+                    value_type: "[Option<int>]",
+                    description: "Event id emitted if a notifier is identified as dead.",
+                },
             ],
         },
         CliSection {
