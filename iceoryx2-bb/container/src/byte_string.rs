@@ -77,32 +77,12 @@ impl core::fmt::Display for FixedSizeByteStringModificationError {
 impl core::error::Error for FixedSizeByteStringModificationError {}
 
 /// Relocatable string with compile time fixed size capacity.
-#[derive(PlacementDefault, ZeroCopySend, Copy)]
+#[derive(PlacementDefault, ZeroCopySend, Clone, Copy)]
 #[repr(C)]
 pub struct FixedSizeByteString<const CAPACITY: usize> {
     len: usize,
     data: [MaybeUninit<u8>; CAPACITY],
     terminator: u8,
-}
-
-impl<const CAPACITY: usize> Clone for FixedSizeByteString<CAPACITY> {
-    fn clone(&self) -> Self {
-        let mut new_self = Self {
-            len: self.len,
-            data: [const { MaybeUninit::uninit() }; CAPACITY],
-            terminator: 0,
-        };
-
-        unsafe {
-            core::ptr::copy_nonoverlapping(self.data.as_ptr(), new_self.data.as_mut_ptr(), self.len)
-        };
-
-        if self.len < CAPACITY {
-            new_self.data[self.len].write(0);
-        }
-
-        new_self
-    }
 }
 
 impl<const CAPACITY: usize> Serialize for FixedSizeByteString<CAPACITY> {
