@@ -125,6 +125,37 @@ mod service_blackboard {
     }
 
     #[test]
+    fn create_works_with_mixed_add_methods<Sut: Service>() {
+        set_log_level_from_env_or(LogLevel::Trace);
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
+            .add_with_default::<u8>(1)
+            .create();
+        assert_that!(sut, is_ok);
+    }
+
+    #[test]
+    fn create_fails_when_the_same_key_is_provided_twice_with_mixed_add_methods<Sut: Service>() {
+        set_log_level_from_env_or(LogLevel::Trace);
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
+            .add_with_default::<u8>(0)
+            .create();
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq BlackboardCreateError::ServiceInCorruptedState);
+    }
+
+    #[test]
     fn recreate_after_drop_works<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -513,6 +544,36 @@ mod service_blackboard {
             .open();
 
         assert_that!(sut, is_ok);
+    }
+
+    #[test]
+    fn add_with_default_stores_default_value<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        const DEFAULT: u16 = 27;
+        #[repr(C)]
+        #[derive(Copy, Clone, ZeroCopySend)]
+        struct TestDefault {
+            t: u16,
+        }
+        impl Default for TestDefault {
+            fn default() -> Self {
+                TestDefault { t: DEFAULT }
+            }
+        }
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<TestDefault>(0)
+            .create()
+            .unwrap();
+
+        let reader = sut.reader_builder().create().unwrap();
+        let reader_handle = reader.entry::<TestDefault>(&0).unwrap();
+        assert_that!(reader_handle.get().t, eq DEFAULT);
     }
 
     #[test]

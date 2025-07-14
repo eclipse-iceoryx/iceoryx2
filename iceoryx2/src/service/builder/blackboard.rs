@@ -343,13 +343,34 @@ impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: serv
         self
     }
 
+    /// Adds key-value pairs to the blackboard where value is a default value.
+    pub fn add_with_default<ValueType: ZeroCopySend + Copy + 'static + Default>(
+        mut self,
+        key: KeyType,
+    ) -> Self {
+        self.builder.internals.push(BuilderInternals {
+            key,
+            value_type_details: TypeDetail::__internal_new::<ValueType>(
+                message_type_details::TypeVariant::FixedSize,
+            ),
+            value_writer: Box::new(move |mem: *mut u8| {
+                let mem: *mut UnrestrictedAtomic<ValueType> =
+                    mem as *mut UnrestrictedAtomic<ValueType>;
+                unsafe { mem.write(UnrestrictedAtomic::<ValueType>::new(ValueType::default())) };
+            }),
+            internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
+            internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
+        });
+        self
+    }
+
     /// Validates configuration and overrides the invalid setting with meaningful values.
     fn adjust_configuration_to_meaningful_values(&mut self) {
         let origin = format!("{self:?}");
         let settings = self.builder.base.service_config.blackboard_mut();
 
         if settings.max_readers == 0 {
-            warn!(from origin, "Setting the maximum amount of readers to 0 is not supported, Adjust it to 1, the smallest supported value.");
+            warn!(from origin, "Setting the maximum amount of readers to 0 is not supported. Adjust it to 1, the smallest supported value.");
             settings.max_readers = 1;
         }
 
