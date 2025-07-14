@@ -665,23 +665,26 @@ pub(crate) mod internal {
                 }
             };
 
-            trace!(from origin, "Remove unused service? {remove_service}");
-            // TODO: write specific test for BlackboardResource cleanup?
             if remove_service {
                 match unsafe {
                     remove_static_service_config::<S>(config, &service_id.0.clone().into())
                 } {
                     Ok(_) => {
                         trace!(from origin, "Remove unused service.");
-                        //let name =
-                        //crate::service::naming_scheme::blackboard_name(service_id.as_str());
-                        //unsafe {
-                        //<Service::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
-                        //name, config,
-                        //)
-                        //};
+                        /////
+                        // TODO: write specific test for BlackboardResource cleanup?
+                        let name =
+                            crate::service::naming_scheme::blackboard_name(service_id.as_str());
+                        let shm_config =
+                            crate::service::config_scheme::blackboard_data_config::<S>(config);
+                        let _x = unsafe {
+                            <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
+                                &name,
+                                &shm_config,
+                            )
+                        };
+                        /////
                         dynamic_config.acquire_ownership()
-                        // go over additional resources and acquire ownership
                     }
                     Err(e) => {
                         warn!(from origin, "Unable to remove static config of unused service ({:?}).",
