@@ -1,0 +1,60 @@
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
+//
+// See the NOTICE file(s) distributed with this work for additional
+// information regarding copyright ownership.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Apache Software License 2.0 which is available at
+// https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+// which is available at https://opensource.org/licenses/MIT.
+//
+// SPDX-License-Identifier: Apache-2.0 OR MIT
+
+use core::time::Duration;
+use iceoryx2::prelude::*;
+use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+
+const CYCLE_TIME: Duration = Duration::from_secs(1);
+
+fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_log_level_from_env_or(LogLevel::Info);
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
+
+    let service = node
+        .service_builder(&"My/Funk/ServiceName".try_into()?)
+        .blackboard_creator::<u32>()
+        .add::<u64>(0, 0)
+        .add::<FixedSizeByteString<100>>(5, "Groovy".try_into()?)
+        .add::<f32>(9, 0.0)
+        .create()?;
+
+    let writer = service.writer_builder().create()?;
+
+    let writer_handle_0 = writer.entry::<u64>(&0)?;
+    let mut writer_handle_5 = writer.entry::<FixedSizeByteString<100>>(&5)?;
+    let writer_handle_9 = writer.entry::<f32>(&9)?;
+
+    let mut counter = 0;
+
+    while node.wait(CYCLE_TIME).is_ok() {
+        counter += 1;
+
+        writer_handle_0.update_with_copy(counter);
+        println!("Write new value for key 0: {counter}");
+
+        let entry_value_uninit = writer_handle_5.loan_uninit();
+        let value = format!("Funky {}", counter);
+        let entry_value =
+            entry_value_uninit.write(FixedSizeByteString::<100>::from_bytes(value.as_bytes())?);
+        writer_handle_5 = entry_value.update();
+        println!("Write new value for key 5: {}", value);
+
+        let value = counter as f32 * 7.7;
+        writer_handle_9.update_with_copy(value);
+        println!("Write new value for key 9: {value}");
+    }
+
+    println!("exit");
+
+    Ok(())
+}
