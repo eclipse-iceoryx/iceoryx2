@@ -44,6 +44,7 @@ iceoryx2 and the language bindings:
 
 ```sh
 # create python development environment
+# needs to be called only once
 python -m venv .env
 
 # enter environment
@@ -51,6 +52,9 @@ source .env/bin/activate # or source .env/bin/activate.fish
 
 # install maturin
 pip install maturin
+
+# compile language bindings
+maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml
 ```
 
 ## How to Run
