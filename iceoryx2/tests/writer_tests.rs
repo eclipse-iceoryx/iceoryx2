@@ -161,13 +161,13 @@ mod writer {
     //let writer = sut.writer_builder().create().unwrap();
     //let writer_handle = writer.entry::<u32>(&0).unwrap();
 
-    //let entry_value = writer_handle.loan_uninit().unwrap();
+    //let entry_value_uninit = writer_handle.loan_uninit();
     //let res = writer_handle.loan_uninit();
-    //assert_that!(res, is_err);
-    //assert_that!(res.err().unwrap(), eq WriterHandleError::HandleAlreadyLoansEntry);
+    ////assert_that!(res, is_err);
+    ////assert_that!(res.err().unwrap(), eq WriterHandleError::HandleAlreadyLoansEntry);
 
-    //drop(entry_value);
-    //assert_that!(writer_handle.loan_uninit(), is_ok);
+    ////drop(entry_value);
+    ////assert_that!(writer_handle.loan_uninit(), is_ok);
     //}
 
     #[test]

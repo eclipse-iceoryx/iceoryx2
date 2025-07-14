@@ -257,6 +257,13 @@ unsafe impl<
     > Send for ReaderHandle<Service, KeyType, ValueType>
 {
 }
+unsafe impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        ValueType: Copy + 'static,
+    > Sync for ReaderHandle<Service, KeyType, ValueType>
+{
+}
 
 impl<
         Service: service::Service,

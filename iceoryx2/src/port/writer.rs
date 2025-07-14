@@ -262,6 +262,13 @@ unsafe impl<
     > Send for WriterHandle<Service, KeyType, ValueType>
 {
 }
+unsafe impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        ValueType: Copy + 'static,
+    > Sync for WriterHandle<Service, KeyType, ValueType>
+{
+}
 
 impl<
         Service: service::Service,
@@ -361,6 +368,24 @@ pub struct EntryValueUninit<
     writer_handle: WriterHandle<Service, KeyType, ValueType>,
 }
 
+// Safe since the WriterHandle implements Send + Sync and the WriterHandle's shared_state ensures that
+// the memory address ptr is pointing to remains valid, and all methods of EntryValueUninit are
+// consuming.
+unsafe impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        ValueType: Copy + 'static,
+    > Send for EntryValueUninit<Service, KeyType, ValueType>
+{
+}
+unsafe impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        ValueType: Copy + 'static,
+    > Sync for EntryValueUninit<Service, KeyType, ValueType>
+{
+}
+
 impl<
         Service: service::Service,
         KeyType: Send + Sync + Eq + Clone + Debug + 'static,
@@ -431,6 +456,23 @@ pub struct EntryValue<
     ValueType: Copy + 'static,
 > {
     writer_handle: WriterHandle<Service, KeyType, ValueType>,
+}
+
+// Safe since the WriterHandle implements Send + Sync and all methods of EntryValueUninit are
+// consuming.
+unsafe impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        ValueType: Copy + 'static,
+    > Send for EntryValue<Service, KeyType, ValueType>
+{
+}
+unsafe impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        ValueType: Copy + 'static,
+    > Sync for EntryValue<Service, KeyType, ValueType>
+{
 }
 
 impl<
