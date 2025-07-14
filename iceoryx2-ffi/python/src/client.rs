@@ -84,7 +84,7 @@ impl Client {
 
     /// Acquires an `RequestMutUninit` to store payload. This API shall be used
     /// by default to avoid unnecessary copies.
-    pub fn loan_uninit(&self) -> PyResult<RequestMutUninit> {
+    pub fn __loan_uninit(&self) -> PyResult<RequestMutUninit> {
         self.__loan_slice_uninit(1)
     }
 

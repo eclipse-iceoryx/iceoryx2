@@ -58,6 +58,7 @@ pub mod request_mut;
 pub mod request_mut_uninit;
 pub mod response;
 pub mod response_header;
+pub mod response_mut_uninit;
 pub mod sample;
 pub mod sample_mut;
 pub mod sample_mut_uninit;
@@ -156,6 +157,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::request_mut_uninit::RequestMutUninit>()?;
     m.add_class::<crate::response::Response>()?;
     m.add_class::<crate::response_header::ResponseHeader>()?;
+    m.add_class::<crate::response_mut_uninit::ResponseMutUninit>()?;
     m.add_class::<crate::sample::Sample>()?;
     m.add_class::<crate::sample_mut::SampleMut>()?;
     m.add_class::<crate::sample_mut_uninit::SampleMutUninit>()?;
