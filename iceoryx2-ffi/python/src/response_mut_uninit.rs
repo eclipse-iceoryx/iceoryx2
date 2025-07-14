@@ -71,7 +71,7 @@ impl ResponseMutUninit {
         match &*self.value.lock() {
             ResponseMutUninitType::Ipc(Some(v)) => v.payload().len(),
             ResponseMutUninitType::Local(Some(v)) => v.payload().len(),
-            _ => fatal_panic!(from "RequestMutUninit::__slice_len()",
+            _ => fatal_panic!(from "ResponseMutUninit::__slice_len()",
                 "Accessing a released request."),
         }
     }
@@ -110,6 +110,20 @@ impl ResponseMutUninit {
             ResponseMutUninitType::Local(Some(v)) => v.payload_mut().as_mut_ptr() as usize,
             _ => fatal_panic!(from "ResponseMutUninit::payload_ptr()",
                     "Accessing a released response mut uninit."),
+        }
+    }
+
+    /// Releases the `ResponseMutUninit`.
+    ///
+    /// After this call the `ResponseMutUninit` is no longer usable!
+    pub fn delete(&mut self) {
+        match &mut *self.value.lock() {
+            ResponseMutUninitType::Ipc(ref mut v) => {
+                v.take();
+            }
+            ResponseMutUninitType::Local(ref mut v) => {
+                v.take();
+            }
         }
     }
 
