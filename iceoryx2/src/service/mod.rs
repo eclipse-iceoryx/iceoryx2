@@ -642,7 +642,10 @@ pub(crate) mod internal {
                         }
                     }
                     UniquePortId::Reader(ref _id) => {
-                        todo!()
+                        // TODO: write specific test for BlackboardResource cleanup?
+                    }
+                    UniquePortId::Writer(ref _id) => {
+                        // TODO: write specific test for BlackboardResource cleanup?
                     }
                 };
 
@@ -662,13 +665,23 @@ pub(crate) mod internal {
                 }
             };
 
+            trace!(from origin, "Remove unused service? {remove_service}");
+            // TODO: write specific test for BlackboardResource cleanup?
             if remove_service {
                 match unsafe {
                     remove_static_service_config::<S>(config, &service_id.0.clone().into())
                 } {
                     Ok(_) => {
                         trace!(from origin, "Remove unused service.");
+                        //let name =
+                        //crate::service::naming_scheme::blackboard_name(service_id.as_str());
+                        //unsafe {
+                        //<Service::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
+                        //name, config,
+                        //)
+                        //};
                         dynamic_config.acquire_ownership()
+                        // go over additional resources and acquire ownership
                     }
                     Err(e) => {
                         warn!(from origin, "Unable to remove static config of unused service ({:?}).",

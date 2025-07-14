@@ -134,10 +134,32 @@ impl DynamicConfig {
         PortCleanup: FnMut(UniquePortId) -> PortCleanupAction,
     >(
         &self,
-        _node_id: &NodeId,
-        mut _port_cleanup_callback: PortCleanup,
+        node_id: &NodeId,
+        mut port_cleanup_callback: PortCleanup,
     ) {
-        todo!();
+        self.readers
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_reader| {
+                if registered_reader.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Reader(registered_reader.reader_id))
+                        == PortCleanupAction::RemovePort
+                {
+                    self.release_reader_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
+
+        self.writers
+            .get_state()
+            .for_each(|handle: ContainerHandle, registered_writer| {
+                if registered_writer.node_id == *node_id
+                    && port_cleanup_callback(UniquePortId::Writer(registered_writer.writer_id))
+                        == PortCleanupAction::RemovePort
+                {
+                    self.release_writer_handle(handle);
+                }
+                CallbackProgression::Continue
+            });
     }
 
     pub(crate) fn add_reader_id(&self, id: ReaderDetails) -> Option<ContainerHandle> {
