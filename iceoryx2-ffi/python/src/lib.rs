@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod active_request;
 pub mod alignment;
 pub mod allocation_strategy;
 pub mod attribute;
@@ -110,6 +111,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::log::set_log_level_from_env_or_default
     ))?;
 
+    m.add_class::<crate::active_request::ActiveRequest>()?;
     m.add_class::<crate::alignment::Alignment>()?;
     m.add_class::<crate::allocation_strategy::AllocationStrategy>()?;
     m.add_class::<crate::attribute::Attribute>()?;

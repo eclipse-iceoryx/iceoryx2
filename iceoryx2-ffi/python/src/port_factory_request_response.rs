@@ -156,7 +156,13 @@ impl PortFactoryRequestResponse {
 
     /// Returns a `PortFactoryServer` to create a new `Server` port
     pub fn server_builder(&self) -> PortFactoryServer {
-        PortFactoryServer::new(self.value.clone())
+        PortFactoryServer::new(
+            self.value.clone(),
+            self.request_payload_type_details.clone(),
+            self.response_payload_type_details.clone(),
+            self.request_header_type_details.clone(),
+            self.response_header_type_details.clone(),
+        )
     }
 
     /// Returns a `PortFactoryClient` to create a new `Client` port

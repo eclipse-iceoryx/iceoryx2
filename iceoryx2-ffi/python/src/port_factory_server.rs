@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::sync::Arc;
-
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use pyo3::prelude::*;
 
@@ -21,6 +19,7 @@ use crate::{
     parc::Parc,
     port_factory_request_response::PortFactoryRequestResponseType,
     server::{Server, ServerType},
+    type_storage::TypeStorage,
     unable_to_deliver_strategy::UnableToDeliverStrategy,
 };
 
@@ -52,10 +51,20 @@ pub(crate) enum PortFactoryServerType {
 pub struct PortFactoryServer {
     factory: Parc<PortFactoryRequestResponseType>,
     value: PortFactoryServerType,
+    request_payload_type_details: TypeStorage,
+    response_payload_type_details: TypeStorage,
+    request_header_type_details: TypeStorage,
+    response_header_type_details: TypeStorage,
 }
 
 impl PortFactoryServer {
-    pub(crate) fn new(factory: Parc<PortFactoryRequestResponseType>) -> Self {
+    pub(crate) fn new(
+        factory: Parc<PortFactoryRequestResponseType>,
+        request_payload_type_details: TypeStorage,
+        response_payload_type_details: TypeStorage,
+        request_header_type_details: TypeStorage,
+        response_header_type_details: TypeStorage,
+    ) -> Self {
         Self {
             factory: factory.clone(),
             value: match &*factory.lock() {
@@ -72,6 +81,32 @@ impl PortFactoryServer {
                     >(v.server_builder()))
                 }),
             },
+            request_header_type_details,
+            request_payload_type_details,
+            response_header_type_details,
+            response_payload_type_details,
+        }
+    }
+
+    fn clone_ipc(&self, value: IpcPortFactoryServer<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryServerType::Ipc(Parc::new(value)),
+            request_payload_type_details: self.request_payload_type_details.clone(),
+            response_payload_type_details: self.response_payload_type_details.clone(),
+            request_header_type_details: self.request_header_type_details.clone(),
+            response_header_type_details: self.response_header_type_details.clone(),
+        }
+    }
+
+    fn clone_local(&self, value: LocalPortFactoryServer<'static>) -> Self {
+        Self {
+            factory: self.factory.clone(),
+            value: PortFactoryServerType::Local(Parc::new(value)),
+            request_payload_type_details: self.request_payload_type_details.clone(),
+            response_payload_type_details: self.response_payload_type_details.clone(),
+            request_header_type_details: self.request_header_type_details.clone(),
+            response_header_type_details: self.response_header_type_details.clone(),
         }
     }
 }
@@ -86,18 +121,12 @@ impl PortFactoryServer {
             PortFactoryServerType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.unable_to_deliver_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryServerType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryServerType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.unable_to_deliver_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryServerType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -111,18 +140,12 @@ impl PortFactoryServer {
             PortFactoryServerType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.max_loaned_responses_per_request(value);
-                Self {
-                    value: PortFactoryServerType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryServerType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.max_loaned_responses_per_request(value);
-                Self {
-                    value: PortFactoryServerType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -135,18 +158,12 @@ impl PortFactoryServer {
             PortFactoryServerType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.initial_max_slice_len(value);
-                Self {
-                    value: PortFactoryServerType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryServerType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.initial_max_slice_len(value);
-                Self {
-                    value: PortFactoryServerType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -161,18 +178,12 @@ impl PortFactoryServer {
             PortFactoryServerType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.allocation_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryServerType::Ipc(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_ipc(this)
             }
             PortFactoryServerType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 let this = this.allocation_strategy(value.clone().into());
-                Self {
-                    value: PortFactoryServerType::Local(Parc::new(this)),
-                    factory: self.factory.clone(),
-                }
+                self.clone_local(this)
             }
         }
     }
@@ -183,15 +194,29 @@ impl PortFactoryServer {
         match &self.value {
             PortFactoryServerType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Server(ServerType::Ipc(Arc::new(this.create().map_err(
-                    |e| ServerCreateError::new_err(format!("{e:?}")),
-                )?))))
+                Ok(Server {
+                    value: ServerType::Ipc(
+                        this.create()
+                            .map_err(|e| ServerCreateError::new_err(format!("{e:?}")))?,
+                    ),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
             }
             PortFactoryServerType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
-                Ok(Server(ServerType::Local(Arc::new(this.create().map_err(
-                    |e| ServerCreateError::new_err(format!("{e:?}")),
-                )?))))
+                Ok(Server {
+                    value: ServerType::Local(
+                        this.create()
+                            .map_err(|e| ServerCreateError::new_err(format!("{e:?}")))?,
+                    ),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                })
             }
         }
     }

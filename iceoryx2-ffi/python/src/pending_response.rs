@@ -164,22 +164,24 @@ impl PendingResponse {
     /// Receives a `Response` from one of the `Server`s that received the `RequestMut`.
     pub fn receive(&self) -> PyResult<Option<Response>> {
         match &*self.value.lock() {
-            PendingResponseType::Ipc(Some(v)) => Ok(v
-                .receive()
-                .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
-                .map(|response| Response {
-                    value: Parc::new(ResponseType::Ipc(Some(response))),
-                    response_header_type_details: self.response_header_type_details.clone(),
-                    response_payload_type_details: self.response_payload_type_details.clone(),
-                })),
-            PendingResponseType::Local(Some(v)) => Ok(v
-                .receive()
-                .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
-                .map(|response| Response {
-                    value: Parc::new(ResponseType::Local(Some(response))),
-                    response_header_type_details: self.response_header_type_details.clone(),
-                    response_payload_type_details: self.response_payload_type_details.clone(),
-                })),
+            PendingResponseType::Ipc(Some(v)) => Ok(unsafe {
+                v.receive_custom_payload()
+                    .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
+                    .map(|response| Response {
+                        value: Parc::new(ResponseType::Ipc(Some(response))),
+                        response_header_type_details: self.response_header_type_details.clone(),
+                        response_payload_type_details: self.response_payload_type_details.clone(),
+                    })
+            }),
+            PendingResponseType::Local(Some(v)) => Ok(unsafe {
+                v.receive_custom_payload()
+                    .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
+                    .map(|response| Response {
+                        value: Parc::new(ResponseType::Local(Some(response))),
+                        response_header_type_details: self.response_header_type_details.clone(),
+                        response_payload_type_details: self.response_payload_type_details.clone(),
+                    })
+            }),
             _ => fatal_panic!(from "PendingResponse::receive()",
                     "Accessing a released pending response."),
         }

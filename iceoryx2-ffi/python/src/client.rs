@@ -54,6 +54,26 @@ pub struct Client {
 #[pymethods]
 impl Client {
     #[getter]
+    pub fn __request_payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.request_payload_type_details.clone().value
+    }
+
+    #[getter]
+    pub fn __request_header_type_details(&self) -> Option<Py<PyAny>> {
+        self.request_header_type_details.clone().value
+    }
+
+    #[getter]
+    pub fn __response_payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.response_payload_type_details.clone().value
+    }
+
+    #[getter]
+    pub fn __response_header_type_details(&self) -> Option<Py<PyAny>> {
+        self.response_header_type_details.clone().value
+    }
+
+    #[getter]
     /// Returns the `UniqueClientId` of the `Client`
     pub fn id(&self) -> UniqueClientId {
         match &self.value {
