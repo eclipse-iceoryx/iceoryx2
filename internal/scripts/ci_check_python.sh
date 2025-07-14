@@ -69,14 +69,6 @@ perform_lint() {
     else
         echo -e "${COLOR_GREEN}lint python bindings: ${USER_HINT} - success${COLOR_RESET}\n"
     fi
-    echo -e "${COLOR_BLUE}[mypy] lint python bindings: ${USER_HINT}${COLOR_RESET}"
-    mypy ${LINT_PATH}
-    if [[ $? != "0" ]]; then
-        echo -e "${COLOR_RED}${FONT_BOLD}lint python bindings: ${USER_HINT} - failed${COLOR_RESET}\n"
-        SUCCESS_CODE=1;
-    else
-        echo -e "${COLOR_GREEN}lint python bindings: ${USER_HINT} - success${COLOR_RESET}\n"
-    fi
 
     echo -e "${COLOR_BLUE}[black] code formatting python bindings: ${USER_HINT}${COLOR_RESET}"
     black --line-length=80 --check ${LINT_PATH}

@@ -78,7 +78,7 @@ def test_max_loans_can_be_set_up(
         samples.append(sample)
 
     with pytest.raises(iox2.LoanError):
-        sut.loan_slice_uninit(1)
+        sut.loan_uninit()
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -123,15 +123,15 @@ def test_deleting_sample_mut_uninit_releases_it(
     )
 
     sut = service.publisher_builder().max_loaned_samples(1).create()
-    sample_uninit = sut.loan_slice_uninit(1)
+    sample_uninit = sut.loan_uninit()
 
     with pytest.raises(iox2.LoanError):
-        sample_uninit = sut.loan_slice_uninit(1)
+        sample_uninit = sut.loan_uninit()
 
     sample_uninit.delete()
 
     try:
-        sample_uninit = sut.loan_slice_uninit(1)
+        sample_uninit = sut.loan_uninit()
     except iox2.LoanError:
         assert False
 
@@ -151,15 +151,15 @@ def test_deleting_sample_mut_releases_it(
     )
 
     sut = service.publisher_builder().max_loaned_samples(1).create()
-    sample_uninit = sut.loan_slice_uninit(1)
+    sample_uninit = sut.loan_uninit()
     sample = sample_uninit.assume_init()
 
     with pytest.raises(iox2.LoanError):
-        sample_uninit = sut.loan_slice_uninit(1)
+        sample_uninit = sut.loan_uninit()
 
     sample.delete()
 
     try:
-        sample_uninit = sut.loan_slice_uninit(1)
+        sample_uninit = sut.loan_uninit()
     except iox2.LoanError:
         assert False

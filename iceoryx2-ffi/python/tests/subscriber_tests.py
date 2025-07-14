@@ -88,8 +88,8 @@ def test_deleting_sample_releases_it(
 
     sut = service.subscriber_builder().create()
     publisher = service.publisher_builder().create()
-    publisher.loan_slice_uninit(1).assume_init().send()
-    publisher.loan_slice_uninit(1).assume_init().send()
+    publisher.loan_uninit().assume_init().send()
+    publisher.loan_uninit().assume_init().send()
 
     sample = sut.receive()
     with pytest.raises(iox2.ReceiveError):

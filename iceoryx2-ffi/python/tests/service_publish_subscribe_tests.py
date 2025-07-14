@@ -148,7 +148,7 @@ def test_send_large_payload_works(
         .create()
     )
 
-    publisher = service.publisher_builder().initial_max_slice_len(8).create()
+    publisher = service.publisher_builder().create()
     subscriber = service.subscriber_builder().create()
 
     send_payload = LargePayload(data=19203182930990147)
@@ -227,3 +227,110 @@ def test_custom_user_header_can_be_used(
         received_sample.user_header().contents.data
         == send_user_header_payload.data
     )
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_slice_api_can_be_used(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    publisher = (
+        service.publisher_builder()
+        .initial_max_slice_len(8)
+        .allocation_strategy(iox2.AllocationStrategy.Static)
+        .create()
+    )
+
+    try:
+        publisher.loan_slice_uninit(8)
+    except iox2.LoanError:
+        assert False
+
+    with pytest.raises(iox2.LoanError):
+        publisher.loan_slice_uninit(9)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_slice_api_allocation_strategy_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    publisher = (
+        service.publisher_builder()
+        .initial_max_slice_len(8)
+        .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+        .create()
+    )
+
+    try:
+        publisher.loan_slice_uninit(12)
+    except iox2.LoanError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_slice_type_forbids_use_of_non_slice_api(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .publish_subscribe(iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    publisher = service.publisher_builder().create()
+
+    with pytest.raises(AssertionError):
+        publisher.loan_uninit()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_non_slice_type_forbids_use_of_slice_api(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name).publish_subscribe(Payload).create()
+    )
+
+    with pytest.raises(AssertionError):
+        publisher = (
+            service.publisher_builder().initial_max_slice_len(8).create()
+        )
+
+    with pytest.raises(AssertionError):
+        publisher = (
+            service.publisher_builder()
+            .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+            .create()
+        )
+
+    publisher = service.publisher_builder().create()
+
+    with pytest.raises(AssertionError):
+        publisher.loan_slice_uninit(1)

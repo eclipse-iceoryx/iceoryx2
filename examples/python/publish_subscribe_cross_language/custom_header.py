@@ -10,25 +10,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Publish-Subscribe example payload type."""
+"""Publish-Subscribe example custom user header type."""
 
 import ctypes
 
 
-class TransmissionData(ctypes.Structure):
+class CustomHeader(ctypes.Structure):
     """The strongly typed payload type."""
 
     _fields_ = [
-        ("x", ctypes.c_int32),
-        ("y", ctypes.c_int32),
-        ("funky", ctypes.c_double),
+        ("version", ctypes.c_int32),
+        ("timestamp", ctypes.c_uint64),
     ]
 
     def __str__(self) -> str:
         """Returns human-readable string of the contents."""
-        return f"TransmissionData {{ x: {self.x}, y: {self.y}, funky: {self.funky} }}"
+        return f"CustomHeader {{ version: {self.version}, timestamp: {self.timestamp} }}"
 
     @staticmethod
     def type_name() -> str:
         """Returns the system-wide unique type name required for communication."""
-        return "TransmissionData"
+        return "CustomHeader"

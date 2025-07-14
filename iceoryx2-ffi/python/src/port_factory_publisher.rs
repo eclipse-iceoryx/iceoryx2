@@ -102,6 +102,11 @@ impl PortFactoryPublisher {
 
 #[pymethods]
 impl PortFactoryPublisher {
+    #[getter]
+    pub fn __payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.payload_type_details.clone().value
+    }
+
     /// Defines how many `SampleMut` the `Publisher` can loan with `Publisher::loan()` or
     /// `Publisher::loan_uninit()` in parallel.
     pub fn max_loaned_samples(&self, value: usize) -> Self {
@@ -139,7 +144,7 @@ impl PortFactoryPublisher {
 
     /// Sets the maximum slice length that a user can allocate with
     /// `ActiveRequest::loan_slice()` or `ActiveRequest::loan_slice_uninit()`.
-    pub fn initial_max_slice_len(&self, value: usize) -> Self {
+    pub fn __initial_max_slice_len(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
             PortFactoryPublisherType::Ipc(v) => {
@@ -159,7 +164,7 @@ impl PortFactoryPublisher {
     /// `PortFactoryServer::initial_max_slice_len()` is exhausted. This happens when the user
     /// acquires more than max slice len in `ActiveRequest::loan_slice()` or
     /// `ActiveRequest::loan_slice_uninit()`.
-    pub fn allocation_strategy(&self, value: &AllocationStrategy) -> Self {
+    pub fn __allocation_strategy(&self, value: &AllocationStrategy) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
             PortFactoryPublisherType::Ipc(v) => {

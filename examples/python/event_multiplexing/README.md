@@ -13,19 +13,26 @@ events such as `sockets`.
 In this setup, the `wait` process monitors two services, which the
 user can specify via the command line option `-s` and `-t`.
 The `notifier` can define the service to which it will send event
-notifications using the `-s` option and specify the event ID with
-the `-e` option.
+notifications using the first command line argument and specify the event ID
+with the second argument.
 
 ## How to Build
 
 Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C++ Examples Readme](../README.md).
+the detailed instructions in the [Python Examples Readme](../README.md).
 
-First you have to build the C++ examples:
+First you have to create a python environment, install maturin and compile
+iceoryx2 and the language bindings:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build
+# create python development environment
+python -m venv .env
+
+# enter environment
+source .env/bin/activate # or source .env/bin/activate.fish
+
+# install maturin
+pip install maturin
 ```
 
 ## How to Run
@@ -37,19 +44,19 @@ notified with event ID `456`.
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/cxx/event_multiplexing/example_cxx_event_multiplexing_wait -s fuu -t bar
+python examples/python/event_multiplexing/wait.py fuu bar
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/cxx/event_multiplexing/example_cxx_event_multiplexing_notifier -s "fuu" -e 123
+python examples/python/event_multiplexing/notifier.py fuu 123
 ```
 
 ### Terminal 3
 
 ```sh
-./target/ffi/build/examples/cxx/event_multiplexing/example_cxx_event_multiplexing_notifier -s "bar" -e 456
+python examples/python/event_multiplexing/notifier.py bar 456
 ```
 
 Feel free to instantiate multiple notifiers for the same service with the same
@@ -65,6 +72,5 @@ This `Guard` automatically detaches the attachment when it goes out of scope.
 The `WaitSet::wait_and_process()` call requires a closure that is invoked for
 each triggered attachment and provides the `AttachmentId`. The user can either
 use `AttachmentId::has_event_from($ATTACHED_OBJECT$)` to identify the object
-associated with the `AttachmentId`, or set up a
-`std::map::<AttachmentId, Listener<ipc::Service>>` to quickly access the
-corresponding object.
+associated with the `AttachmentId`, or set up an associative array
+to quickly access the corresponding object.

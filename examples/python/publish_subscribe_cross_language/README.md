@@ -7,14 +7,13 @@
 > * be self contained, no heap, no pointers to external sources
 > * have a uniform memory representation, ensuring that shared structs have the
 >     same data layout
+>     * therefore, only `ctypes` and `ctypes.Structure` can be transferred
 > * not use pointers to manage their internal structure
-> * must be trivially destructible, see `std::is_trivially_destructible`
 >
-> Data types like `std::string` or `std::vector` will cause undefined behavior
-> and may result in segmentation faults. We provide alternative data types
-> that are compatible with shared memory. See the
-> [complex data type example](../complex_data_types) for guidance on how to
-> use them.
+> Any other python data type, except `ctypes` or `ctypes.Structure`s, like will
+> cause undefined behavior and may result in segmentation faults. Take a look
+> at the [publish subscribe example](../publish_subscribe) to see how `ctypes`
+> can be transferred.
 
 This example illustrates a robust cross-language publisher-subscriber
 communication pattern. You can find compatible applications in the
@@ -27,14 +26,20 @@ payload and the user header to the console whenever new data arrives.
 ## How to Build
 
 Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C++ Examples Readme](../README.md).
+the detailed instructions in the [Python Examples Readme](../README.md).
 
-When you want to run the C++ publisher and subscriber applications, you first
-have to build the C++ examples:
+First you have to create a python environment, install maturin and compile
+iceoryx2 and the language bindings:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build
+# create python development environment
+python -m venv .env
+
+# enter environment
+source .env/bin/activate # or source .env/bin/activate.fish
+
+# install maturin
+pip install maturin
 ```
 
 ## How to Run
@@ -47,7 +52,7 @@ execute the following commands:
 Run the C++ subscriber application:
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_cross_language/example_cxx_publish_subscribe_cross_language_subscriber
+python examples/python/publish_subscribe_cross_language/subscriber.py
 ```
 
 ### Terminal 2
@@ -55,7 +60,7 @@ Run the C++ subscriber application:
 Run the C++ publisher application:
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_cross_language/example_cxx_publish_subscribe_cross_language_publisher
+python examples/python/publish_subscribe_cross_language/publisher.py
 ```
 
 Feel free to also run the subscriber and publisher applications from other
@@ -78,36 +83,48 @@ name.
 
 To allow cross-language communication involving C++ applications, iceoryx2
 provides the possibility to customize the payload and the user header type name
-by setting `IOX2_TYPE_NAME` in the sent C++ data struct and user header, e.g.
+by defining the method `type_name()` in the sent data struct and user header,
+e.g.
 
-```cxx
-struct TransmissionData {
-    static constexpr const char* IOX2_TYPE_NAME = "TransmissionData";
-    std::int32_t x;
-    std::int32_t y;
-    double funky;
-};
+```python
+class TransmissionData(ctypes.Structure):
+    _fields_ = [
+        ("x", ctypes.c_int32),
+        ("y", ctypes.c_int32),
+        ("funky", ctypes.c_double),
+    ]
 
-struct CustomHeader {
-    static constexpr const char* IOX2_TYPE_NAME = "CustomHeader";
-    int32_t version;
-    uint64_t timestamp;
-};
+    @staticmethod
+    def type_name() -> str:
+        """Returns the system-wide unique type name."""
+        return "TransmissionData"
+
+
+class CustomHeader(ctypes.Structure):
+    _fields_ = [
+        ("version", ctypes.c_int32),
+        ("timestamp", ctypes.c_uint64),
+    ]
+
+    @staticmethod
+    def type_name() -> str:
+        """Returns the system-wide unique type name."""
+        return "CustomHeader"
 ```
 
 When the type names are set to the same value, and the structure has the same
-memory layout, the C++ applications and applications written in other supported
-languages can communicate.
+memory layout, the python applications and applications written in other
+supported languages can communicate.
 
 > [!NOTE]
 > For the communication with Rust applications, you don't need to provide
-> `IOX2_TYPE_NAME` for `(u)int{8|16|32|64}_t`, `float`, `double` and `bool`
+> `type_name()` for `ctypes.c_(u)int{8|16|32|64}`, `float`, `double` and `bool`
 > payloads.
 > These types are automatically translated into the Rust equivalents.
 
 You can also send dynamic data between Python, C++ and Rust applications (see
 [Publish-Subscribe With Dynamic Data](../publish_subscribe_dynamic_data)). If
-you send `iox::Slice`s of `(u)int{8|16|32|64}_t`, `float`, `double` or `bool`,
-the payload type name is automatically translated to the Rust equivalent. For
-other slice types, you have to set `IOX2_TYPE_NAME` for the inner type to the
-Rust equivalent to enable the communication.
+you send `iox2.Slice`s of `ctypes.c_(u)int{8|16|32|64}`, `float`, `double` or
+`bool`, the payload type name is automatically translated to the Rust
+equivalent. For other slice types, you have to set `IOX2_TYPE_NAME` for the
+inner type to the Rust equivalent to enable the communication.

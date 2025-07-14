@@ -55,6 +55,11 @@ pub struct Publisher {
 #[pymethods]
 impl Publisher {
     #[getter]
+    pub fn __payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.payload_type_details.clone().value
+    }
+
+    #[getter]
     /// Returns the `UniquePublisherId` of the `Publisher`
     pub fn id(&self) -> UniquePublisherId {
         match &*self.value.lock() {
@@ -92,8 +97,8 @@ impl Publisher {
     /// The user has to initialize the payload before it can be sent.
     ///
     /// On failure it returns `LoanError` describing the failure.
-    pub fn loan_uninit(&self) -> PyResult<SampleMutUninit> {
-        self.loan_slice_uninit(1)
+    pub fn __loan_uninit(&self) -> PyResult<SampleMutUninit> {
+        self.__loan_slice_uninit(1)
     }
 
     /// Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`.
@@ -101,7 +106,7 @@ impl Publisher {
     /// Fails when it is called for data types which are not a slice.
     ///
     /// On failure it returns `LoanError` describing the failure.
-    pub fn loan_slice_uninit(&self, number_of_elements: usize) -> PyResult<SampleMutUninit> {
+    pub fn __loan_slice_uninit(&self, number_of_elements: usize) -> PyResult<SampleMutUninit> {
         match &*self.value.lock() {
             PublisherType::Ipc(Some(v)) => {
                 let sample = unsafe {

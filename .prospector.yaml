@@ -16,3 +16,5 @@ pydocstyle:
 
 mypy:
   run: true
+  options:
+    explicit-package-bases: true
