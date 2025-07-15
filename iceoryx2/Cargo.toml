@@ -39,6 +39,7 @@ iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
+iceoryx2-pal-configuration = { workspace = true }
 
 serde = { workspace = true }
 toml = { workspace = true }
