@@ -78,7 +78,7 @@ pub enum EventOpenError {
 
 impl core::fmt::Display for EventOpenError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "EventOpenError::{self:?}")
+        write!(f, "EventOpenError::{self:?}")
     }
 }
 
@@ -117,7 +117,7 @@ pub enum EventCreateError {
 
 impl core::fmt::Display for EventCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "EventCreateError::{self:?}")
+        write!(f, "EventCreateError::{self:?}")
     }
 }
 
@@ -161,7 +161,7 @@ impl From<EventCreateError> for EventOpenOrCreateError {
 
 impl core::fmt::Display for EventOpenOrCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "EventOpenOrCreateError::{self:?}")
+        write!(f, "EventOpenOrCreateError::{self:?}")
     }
 }
 

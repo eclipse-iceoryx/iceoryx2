@@ -14,6 +14,8 @@
 #![warn(clippy::std_instead_of_alloc)]
 #![warn(clippy::std_instead_of_core)]
 
+extern crate alloc;
+
 #[macro_use]
 pub mod assert;
 pub mod memory;

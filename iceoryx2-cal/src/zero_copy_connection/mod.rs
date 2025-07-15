@@ -55,7 +55,7 @@ pub enum ZeroCopyCreationError {
 
 impl core::fmt::Display for ZeroCopyCreationError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        write!(f, "{}::{:?}", stringify!(Self), self)
     }
 }
 
@@ -70,7 +70,7 @@ pub enum ZeroCopySendError {
 
 impl core::fmt::Display for ZeroCopySendError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        write!(f, "{}::{:?}", stringify!(Self), self)
     }
 }
 
@@ -83,7 +83,7 @@ pub enum ZeroCopyReceiveError {
 
 impl core::fmt::Display for ZeroCopyReceiveError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        write!(f, "{}::{:?}", stringify!(Self), self)
     }
 }
 
@@ -96,7 +96,7 @@ pub enum ZeroCopyReclaimError {
 
 impl core::fmt::Display for ZeroCopyReclaimError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        write!(f, "{}::{:?}", stringify!(Self), self)
     }
 }
 
@@ -109,7 +109,7 @@ pub enum ZeroCopyReleaseError {
 
 impl core::fmt::Display for ZeroCopyReleaseError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}::{:?}", std::stringify!(Self), self)
+        write!(f, "{}::{:?}", stringify!(Self), self)
     }
 }
 

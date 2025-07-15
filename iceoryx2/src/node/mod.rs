@@ -178,7 +178,6 @@ use iceoryx2_cal::{
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
-extern crate alloc;
 use alloc::sync::Arc;
 
 use std::collections::HashMap;
@@ -234,7 +233,7 @@ pub enum NodeCreationFailure {
 
 impl core::fmt::Display for NodeCreationFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NodeCreationFailure::{self:?}")
+        write!(f, "NodeCreationFailure::{self:?}")
     }
 }
 
@@ -251,7 +250,7 @@ pub enum NodeWaitFailure {
 
 impl core::fmt::Display for NodeWaitFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NodeWaitFailure::{self:?}")
+        write!(f, "NodeWaitFailure::{self:?}")
     }
 }
 
@@ -270,7 +269,7 @@ pub enum NodeListFailure {
 
 impl core::fmt::Display for NodeListFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NodeListFailure::{self:?}")
+        write!(f, "NodeListFailure::{self:?}")
     }
 }
 
@@ -292,7 +291,7 @@ pub enum NodeCleanupFailure {
 
 impl core::fmt::Display for NodeCleanupFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NodeCleanupFailure::{self:?}")
+        write!(f, "NodeCleanupFailure::{self:?}")
     }
 }
 

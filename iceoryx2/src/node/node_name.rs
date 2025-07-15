@@ -52,7 +52,7 @@ impl NodeName {
 
 impl core::fmt::Display for NodeName {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "{}", self.value)
+        write!(f, "{}", self.value)
     }
 }
 

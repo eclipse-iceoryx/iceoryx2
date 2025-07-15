@@ -32,8 +32,6 @@
 
 use core::{fmt::Debug, ops::Deref};
 
-extern crate alloc;
-
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;

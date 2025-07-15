@@ -74,8 +74,6 @@ use iceoryx2_cal::shared_memory::*;
 use core::fmt::{Debug, Formatter};
 use core::ops::{Deref, DerefMut};
 
-extern crate alloc;
-
 /// Acquired by a [`crate::port::publisher::Publisher`] via
 ///  * [`crate::port::publisher::Publisher::loan()`],
 ///  * [`crate::port::publisher::Publisher::loan_slice()`]

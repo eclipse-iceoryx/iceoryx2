@@ -98,7 +98,7 @@ pub enum LoanError {
 
 impl core::fmt::Display for LoanError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "LoanError::{self:?}")
+        write!(f, "LoanError::{self:?}")
     }
 }
 
@@ -131,7 +131,7 @@ impl From<ConnectionFailure> for SendError {
 
 impl core::fmt::Display for SendError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "SendError::{self:?}")
+        write!(f, "SendError::{self:?}")
     }
 }
 
@@ -158,7 +158,7 @@ impl From<ConnectionFailure> for ReceiveError {
 
 impl core::fmt::Display for ReceiveError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ReceiveError::{self:?}")
+        write!(f, "ReceiveError::{self:?}")
     }
 }
 

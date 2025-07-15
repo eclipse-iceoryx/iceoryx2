@@ -31,6 +31,7 @@ use crate::service;
 use crate::service::dynamic_config::DynamicConfig;
 use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::static_config::*;
+use alloc::sync::Arc;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
@@ -47,9 +48,6 @@ use iceoryx2_cal::named_concept::NamedConceptDoesExistError;
 use iceoryx2_cal::named_concept::NamedConceptMgmt;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
-
-extern crate alloc;
-use alloc::sync::Arc;
 
 use super::config_scheme::dynamic_config_storage_config;
 use super::config_scheme::service_tag_config;
@@ -89,7 +87,7 @@ enum_gen! {
 
 impl core::fmt::Display for OpenDynamicStorageFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "OpenDynamicStorageFailure::{self:?}")
+        write!(f, "OpenDynamicStorageFailure::{self:?}")
     }
 }
 
@@ -105,7 +103,7 @@ enum_gen! {
 
 impl core::fmt::Display for ReadStaticStorageFailure {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ReadStaticStorageFailure::{self:?}")
+        write!(f, "ReadStaticStorageFailure::{self:?}")
     }
 }
 

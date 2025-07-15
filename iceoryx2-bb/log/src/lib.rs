@@ -142,6 +142,8 @@
 //! }
 //! ```
 
+extern crate alloc;
+
 #[macro_use]
 pub mod log;
 #[macro_use]

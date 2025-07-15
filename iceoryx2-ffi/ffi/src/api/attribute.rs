@@ -15,10 +15,8 @@
 use iceoryx2::service::attribute::Attribute;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 
-use core::ffi::c_char;
-
-extern crate alloc;
 use alloc::ffi::CString;
+use core::ffi::c_char;
 
 // BEGIN types definition
 pub struct iox2_attribute_h_t;

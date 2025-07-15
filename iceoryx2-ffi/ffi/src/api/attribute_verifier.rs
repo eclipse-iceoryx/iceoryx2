@@ -20,11 +20,9 @@ use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
+use alloc::ffi::CString;
 use core::ffi::c_int;
 use core::{ffi::c_char, mem::ManuallyDrop};
-
-extern crate alloc;
-use alloc::ffi::CString;
 
 use super::iox2_attribute_set_ptr;
 

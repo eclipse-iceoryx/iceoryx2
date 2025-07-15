@@ -83,7 +83,7 @@ pub enum CreationError {
 
 impl core::fmt::Display for CreationError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        core::write!(f, "CreationError::{self:?}")
+        write!(f, "CreationError::{self:?}")
     }
 }
 
@@ -157,7 +157,7 @@ pub enum SpinError {
 
 impl core::fmt::Display for SpinError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        core::write!(f, "SpinError::{self:?}")
+        write!(f, "SpinError::{self:?}")
     }
 }
 
@@ -211,7 +211,7 @@ pub enum ServerSpinError {
 
 impl core::fmt::Display for ServerSpinError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ServerSpinError::{self:?}")
+        write!(f, "ServerSpinError::{self:?}")
     }
 }
 

@@ -14,7 +14,6 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::posix::types::*;
-extern crate alloc;
 use alloc::ffi::CString;
 
 pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {

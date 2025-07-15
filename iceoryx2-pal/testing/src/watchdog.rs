@@ -10,10 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::time::Duration;
-
-extern crate alloc;
 use alloc::sync::Arc;
+use core::time::Duration;
 
 use std::{sync::Mutex, thread, time::Instant};
 

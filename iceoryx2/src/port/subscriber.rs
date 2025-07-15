@@ -37,8 +37,6 @@ use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 
-extern crate alloc;
-
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
@@ -84,7 +82,7 @@ pub enum SubscriberCreateError {
 
 impl core::fmt::Display for SubscriberCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "SubscriberCreateError::{self:?}")
+        write!(f, "SubscriberCreateError::{self:?}")
     }
 }
 

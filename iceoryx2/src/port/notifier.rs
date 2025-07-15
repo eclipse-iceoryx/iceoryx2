@@ -55,10 +55,8 @@ use iceoryx2_cal::{
 };
 use iceoryx2_cal::{event::Event, named_concept::NamedConceptBuilder};
 
-use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
-
-extern crate alloc;
 use alloc::sync::Arc;
+use core::{cell::UnsafeCell, sync::atomic::Ordering, time::Duration};
 
 /// Failures that can occur when a new [`Notifier`] is created with the
 /// [`crate::service::port_factory::notifier::PortFactoryNotifier`].
@@ -76,7 +74,7 @@ pub enum NotifierCreateError {
 
 impl core::fmt::Display for NotifierCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NotifierCreateError::{self:?}")
+        write!(f, "NotifierCreateError::{self:?}")
     }
 }
 
@@ -100,7 +98,7 @@ pub enum NotifierNotifyError {
 
 impl core::fmt::Display for NotifierNotifyError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "NotifierNotifyError::{self:?}")
+        write!(f, "NotifierNotifyError::{self:?}")
     }
 }
 
