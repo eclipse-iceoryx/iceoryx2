@@ -97,5 +97,66 @@ def test_send_and_receive_responses_with_memmove_works(
 
     for i in range(0, number_of_responses):
         assert pending_response.has_response()
-         # TODO continue
+        response = pending_response.receive()
+        payload = Payload(data=0)
+        ctypes.memmove(ctypes.byref(payload), response.payload_ptr, ctypes.sizeof(Payload))
+        assert payload.data == 3 + 2 * i
 
+    assert not pending_response.has_response()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_send_and_receive_request_with_sendcopy_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .create()
+    )
+
+    client = service.client_builder().create()
+    server = service.server_builder().create()
+
+    pending_response = client.send_copy(Payload(data=87))
+    active_request = server.receive()
+
+    assert active_request.payload().contents.data == 87
+    active_request.send_copy(Payload(data=33))
+
+    response = pending_response.receive()
+    assert response.payload().contents.data == 33
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_send_with_request_header_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .request_header(ctypes.c_uint64)
+        .create()
+    )
+
+    client = service.client_builder().create()
+    server = service.server_builder().create()
+
+    request_uninit = client.loan_uninit()
+    ctypes.memmove(
+        request_uninit.user_header_ptr, ctypes.byref(ctypes.c_uint64(89)), 8
+    )
+
+    request = request_uninit.assume_init()
+    pending_response = request.send()
+
+    active_request = server.receive()
+    assert active_request.user_header().contents.value == 89
