@@ -76,6 +76,9 @@
   [#822](https://github.com/eclipse-iceoryx/iceoryx2/issues/822)
 * Make default max event ID smaller
   [#828](https://github.com/eclipse-iceoryx/iceoryx2/issues/828)
+* Remove the `config/iceoryx2.toml` to reduce effort to keep the
+  built in `iceoryx.toml` and `config.rs` in sync
+  [#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
 
 ### Testing
 
@@ -107,7 +110,21 @@
 
 ### Config Breaking Changes
 
-1. The default max event ID was reduced to 255 in order to have make bitset
+1. As `iceoryx.toml` is now by default not available so now need to
+generate the `iceoryx.toml` by following command:
+[#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
+
+    ```cli
+    iox2 config generate local
+    ```
+    Automatically generates the `config.toml` file at `$HOME/.config/iceoryx2/iceoryx2.toml`.
+
+    ```cli
+    iox2 config generate global
+    ```
+    Automatically generates the `config.toml` file at `/etc/iceoryx2/iceoryx2.toml`.
+
+2. The default max event ID was reduced to 255 in order to have make bitset
    based event implementations work out of the box. If a larger event ID is
    required, it can either be changed in the `iceoryx2.toml` file or with the
    `event_id_max_value` in the event service builder.
