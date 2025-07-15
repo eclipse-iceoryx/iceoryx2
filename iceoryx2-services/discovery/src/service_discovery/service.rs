@@ -303,6 +303,7 @@ impl Default for Config {
 ///
 /// * `S` - The service type that this discovery service operates on.
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Service<S: ServiceType> {
     discovery_config: Config,
     iceoryx_config: IceoryxConfig,

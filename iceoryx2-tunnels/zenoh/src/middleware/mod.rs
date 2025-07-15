@@ -10,25 +10,5 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod event;
-mod publish_subscribe;
-
-pub use event::*;
-pub use publish_subscribe::*;
-
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum PropagationError {
-    Error,
-}
-
-impl core::fmt::Display for PropagationError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::write!(f, "PropagationError::{self:?}")
-    }
-}
-
-impl core::error::Error for PropagationError {}
-
-pub trait Connection {
-    fn propagate(&self) -> Result<(), PropagationError>;
-}
+pub(crate) mod iceoryx;
+pub(crate) mod zenoh;

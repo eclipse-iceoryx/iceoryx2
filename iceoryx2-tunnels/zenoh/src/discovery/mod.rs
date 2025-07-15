@@ -18,9 +18,21 @@ mod zenoh;
 pub(crate) use iceoryx::*;
 pub(crate) use zenoh::*;
 
+/// Errors that can occur during service discovery operations.
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    Error,
+    /// Failed to create a service for discovery purposes.
+    ServiceCreation,
+    /// Failed to announce a service to make it discoverable.
+    ServiceAnnouncement,
+    /// Failed to create a port required for discovery communication.
+    PortCreation,
+    /// Failed to receive update information from a local port.
+    UpdateFromLocalPort,
+    /// Failed to receive update information from a remote port.
+    UpdateFromRemotePort,
+    /// Failed to receive update information from a discovery tracker.
+    UpdateFromTracker,
 }
 
 impl core::fmt::Display for DiscoveryError {
@@ -32,7 +44,7 @@ impl core::fmt::Display for DiscoveryError {
 impl core::error::Error for DiscoveryError {}
 
 pub(crate) trait Discovery<ServiceType: iceoryx2::service::Service> {
-    fn discover<OnDiscovered: FnMut(&IceoryxServiceConfig)>(
+    fn discover<OnDiscovered: FnMut(&IceoryxServiceConfig) -> Result<(), DiscoveryError>>(
         &mut self,
         on_discovered: &mut OnDiscovered,
     ) -> Result<(), DiscoveryError>;

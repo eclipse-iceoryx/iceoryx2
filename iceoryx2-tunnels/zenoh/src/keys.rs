@@ -13,20 +13,21 @@
 use iceoryx2::service::service_id::ServiceId;
 
 /// The zenoh key for discovering available service details.
-pub fn discovery() -> String {
-    "iox2/services/*".into()
+pub fn service_discovery() -> String {
+    "iox2/service_details/*".into()
 }
+
 /// The zenoh key at which the service details for the given service id can be received.
 pub fn service_details(service_id: &ServiceId) -> String {
-    format!("iox2/services/{}", service_id.as_str())
+    format!("iox2/service_details/{}", service_id.as_str())
 }
 
-/// The zenoh key at which payloads for the given service id can be received.
+/// The zenoh key at which payloads for a given publish-subscribe service id can be received.
 pub fn publish_subscribe(service_id: &ServiceId) -> String {
-    format!("iox2/services/{}/publish_subscribe", service_id.as_str())
+    format!("iox2/publish_subscribe/{}", service_id.as_str())
 }
 
-/// The zenoh key at which events for the given service id can be received.
+/// The zenoh key at which notifications for a given event service can be received.
 pub fn event(service_id: &ServiceId) -> String {
-    format!("iox2/services/{}/event", service_id.as_str())
+    format!("iox2/event/{}", service_id.as_str())
 }
