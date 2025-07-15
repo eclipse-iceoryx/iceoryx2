@@ -85,3 +85,58 @@ def test_deleting_client_removes_it_from_the_service(
         assert False
 
 
+@pytest.mark.parametrize("service_type", service_types)
+def test_deleting_request_mut_uninit_removes_it_from_the_service(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .max_loaned_requests(1)
+        .create()
+    )
+
+    sut = service.client_builder().create()
+    request_uninit = sut.loan_uninit()
+
+    with pytest.raises(iox2.LoanError):
+        request_uninit = sut.loan_uninit()
+
+    request_uninit.delete()
+
+    try:
+        request_uninit = sut.loan_uninit()
+    except iox2.LoanError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_deleting_request_mut_removes_it_from_the_service(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .max_loaned_requests(1)
+        .create()
+    )
+
+    sut = service.client_builder().create()
+    request_uninit = sut.loan_uninit()
+    request = request_uninit.assume_init()
+
+    with pytest.raises(iox2.LoanError):
+        request_uninit = sut.loan_uninit()
+
+    request.delete()
+
+    try:
+        request_uninit = sut.loan_uninit()
+    except iox2.LoanError:
+        assert False
