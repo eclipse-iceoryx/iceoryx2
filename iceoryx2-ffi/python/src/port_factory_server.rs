@@ -113,6 +113,26 @@ impl PortFactoryServer {
 
 #[pymethods]
 impl PortFactoryServer {
+    #[getter]
+    pub fn __request_payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.request_payload_type_details.clone().value
+    }
+
+    #[getter]
+    pub fn __request_header_type_details(&self) -> Option<Py<PyAny>> {
+        self.request_header_type_details.clone().value
+    }
+
+    #[getter]
+    pub fn __response_payload_type_details(&self) -> Option<Py<PyAny>> {
+        self.response_payload_type_details.clone().value
+    }
+
+    #[getter]
+    pub fn __response_header_type_details(&self) -> Option<Py<PyAny>> {
+        self.response_header_type_details.clone().value
+    }
+
     /// Sets the `UnableToDeliverStrategy` which defines how the `Server` shall behave
     /// when a `Client` cannot receive a `Response` since its internal buffer is full.
     pub fn unable_to_deliver_strategy(&self, value: &UnableToDeliverStrategy) -> Self {
@@ -152,7 +172,7 @@ impl PortFactoryServer {
 
     /// Sets the maximum slice length that a user can allocate with
     /// `ActiveRequest::loan_slice()` or `ActiveRequest::loan_slice_uninit()`.
-    pub fn initial_max_slice_len(&self, value: usize) -> Self {
+    pub fn __initial_max_slice_len(&self, value: usize) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
             PortFactoryServerType::Ipc(v) => {
@@ -172,7 +192,7 @@ impl PortFactoryServer {
     /// `PortFactoryServer::initial_max_slice_len()` is exhausted. This happens when the user
     /// acquires more than max slice len in `ActiveRequest::loan_slice()` or
     /// `ActiveRequest::loan_slice_uninit()`.
-    pub fn allocation_strategy(&self, value: &AllocationStrategy) -> Self {
+    pub fn __allocation_strategy(&self, value: &AllocationStrategy) -> Self {
         let _guard = self.factory.lock();
         match &self.value {
             PortFactoryServerType::Ipc(v) => {
