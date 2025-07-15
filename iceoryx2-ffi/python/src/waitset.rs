@@ -49,7 +49,7 @@ impl WaitSet {
     pub fn attach_notification(&self, attachment: &Listener) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
             WaitSetType::Ipc(v) => {
-                if let ListenerType::Ipc(attachment) = &attachment.0 {
+                if let ListenerType::Ipc(Some(attachment)) = &attachment.0 {
                     let guard = v
                         .attach_notification(attachment.deref())
                         .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
@@ -77,7 +77,7 @@ impl WaitSet {
                 }
             }
             WaitSetType::Local(v) => {
-                if let ListenerType::Local(attachment) = &attachment.0 {
+                if let ListenerType::Local(Some(attachment)) = &attachment.0 {
                     let guard = v
                         .attach_notification(attachment.deref())
                         .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
@@ -164,7 +164,7 @@ impl WaitSet {
     ) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
             WaitSetType::Ipc(v) => {
-                if let ListenerType::Ipc(attachment) = &attachment.0 {
+                if let ListenerType::Ipc(Some(attachment)) = &attachment.0 {
                     let guard = v
                         .attach_deadline(attachment.deref(), deadline.0)
                         .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
@@ -192,7 +192,7 @@ impl WaitSet {
                 }
             }
             WaitSetType::Local(v) => {
-                if let ListenerType::Local(attachment) = &attachment.0 {
+                if let ListenerType::Local(Some(attachment)) = &attachment.0 {
                     let guard = v
                         .attach_deadline(attachment.deref(), deadline.0)
                         .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;

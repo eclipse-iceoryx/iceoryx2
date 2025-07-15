@@ -215,10 +215,10 @@ impl PortFactoryServer {
             PortFactoryServerType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 Ok(Server {
-                    value: ServerType::Ipc(
+                    value: ServerType::Ipc(Some(
                         this.create()
                             .map_err(|e| ServerCreateError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     request_header_type_details: self.request_header_type_details.clone(),
                     request_payload_type_details: self.request_payload_type_details.clone(),
                     response_header_type_details: self.response_header_type_details.clone(),
@@ -228,10 +228,10 @@ impl PortFactoryServer {
             PortFactoryServerType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 Ok(Server {
-                    value: ServerType::Local(
+                    value: ServerType::Local(Some(
                         this.create()
                             .map_err(|e| ServerCreateError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     request_header_type_details: self.request_header_type_details.clone(),
                     request_payload_type_details: self.request_payload_type_details.clone(),
                     response_header_type_details: self.response_header_type_details.clone(),

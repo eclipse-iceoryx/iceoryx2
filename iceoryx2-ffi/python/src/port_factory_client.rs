@@ -194,10 +194,10 @@ impl PortFactoryClient {
             PortFactoryClientType::Ipc(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 Ok(Client {
-                    value: ClientType::Ipc(
+                    value: ClientType::Ipc(Some(
                         this.create()
                             .map_err(|e| ClientCreateError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     request_header_type_details: self.request_header_type_details.clone(),
                     request_payload_type_details: self.request_payload_type_details.clone(),
                     response_header_type_details: self.response_header_type_details.clone(),
@@ -207,10 +207,10 @@ impl PortFactoryClient {
             PortFactoryClientType::Local(v) => {
                 let this = unsafe { (*v.lock()).__internal_partial_clone() };
                 Ok(Client {
-                    value: ClientType::Local(
+                    value: ClientType::Local(Some(
                         this.create()
                             .map_err(|e| ClientCreateError::new_err(format!("{e:?}")))?,
-                    ),
+                    )),
                     request_header_type_details: self.request_header_type_details.clone(),
                     request_payload_type_details: self.request_payload_type_details.clone(),
                     response_header_type_details: self.response_header_type_details.clone(),

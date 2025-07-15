@@ -79,17 +79,17 @@ impl PortFactoryListener {
         match &self.value {
             PortFactoryListenerType::Ipc(v) => {
                 let this = v.clone();
-                Ok(Listener(ListenerType::Ipc(Arc::new(
+                Ok(Listener(ListenerType::Ipc(Some(Arc::new(
                     this.create()
                         .map_err(|e| ListenerCreateError::new_err(format!("{e:?}")))?,
-                ))))
+                )))))
             }
             PortFactoryListenerType::Local(v) => {
                 let this = v.clone();
-                Ok(Listener(ListenerType::Local(Arc::new(
+                Ok(Listener(ListenerType::Local(Some(Arc::new(
                     this.create()
                         .map_err(|e| ListenerCreateError::new_err(format!("{e:?}")))?,
-                ))))
+                )))))
             }
         }
     }

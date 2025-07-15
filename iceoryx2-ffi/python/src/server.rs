@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
@@ -37,8 +38,8 @@ type LocalServer = iceoryx2::port::server::Server<
 >;
 
 pub(crate) enum ServerType {
-    Ipc(IpcServer),
-    Local(LocalServer),
+    Ipc(Option<IpcServer>),
+    Local(Option<LocalServer>),
 }
 
 #[pyclass]
@@ -77,8 +78,10 @@ impl Server {
     /// Returns the `UniqueServerId` of the `Server`
     pub fn id(&self) -> UniqueServerId {
         match &self.value {
-            ServerType::Ipc(v) => UniqueServerId(v.id()),
-            ServerType::Local(v) => UniqueServerId(v.id()),
+            ServerType::Ipc(Some(v)) => UniqueServerId(v.id()),
+            ServerType::Local(Some(v)) => UniqueServerId(v.id()),
+            _ => fatal_panic!(from "Server::id()",
+                "Accessing a released server."),
         }
     }
 
@@ -86,12 +89,14 @@ impl Server {
     /// Returns true if the `Server` has `RequestMut`s in its buffer.
     pub fn has_requests(&self) -> PyResult<bool> {
         match &self.value {
-            ServerType::Ipc(v) => Ok(v
+            ServerType::Ipc(Some(v)) => Ok(v
                 .has_requests()
                 .map_err(|e| ConnectionFailure::new_err(format!("{e:?}")))?),
-            ServerType::Local(v) => Ok(v
+            ServerType::Local(Some(v)) => Ok(v
                 .has_requests()
                 .map_err(|e| ConnectionFailure::new_err(format!("{e:?}")))?),
+            _ => fatal_panic!(from "Server::has_requests()",
+                "Accessing a released server."),
         }
     }
 
@@ -99,8 +104,10 @@ impl Server {
     /// Returns the maximum initial slice length configured for this `Server`.
     pub fn __initial_max_slice_len(&self) -> usize {
         match &self.value {
-            ServerType::Ipc(v) => v.initial_max_slice_len(),
-            ServerType::Local(v) => v.initial_max_slice_len(),
+            ServerType::Ipc(Some(v)) => v.initial_max_slice_len(),
+            ServerType::Local(Some(v)) => v.initial_max_slice_len(),
+            _ => fatal_panic!(from "Server::initial_max_slice_len()",
+                "Accessing a released server."),
         }
     }
 
@@ -108,7 +115,7 @@ impl Server {
     /// which can be used to respond. If no `RequestMut`s were received it returns `None`.
     pub fn receive(&self) -> PyResult<Option<ActiveRequest>> {
         match &self.value {
-            ServerType::Ipc(v) => Ok(unsafe {
+            ServerType::Ipc(Some(v)) => Ok(unsafe {
                 v.receive_custom_payload()
                     .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
                     .map(|v| ActiveRequest {
@@ -119,7 +126,7 @@ impl Server {
                         response_payload_type_details: self.response_payload_type_details.clone(),
                     })
             }),
-            ServerType::Local(v) => Ok(unsafe {
+            ServerType::Local(Some(v)) => Ok(unsafe {
                 v.receive_custom_payload()
                     .map_err(|e| ReceiveError::new_err(format!("{e:?}")))?
                     .map(|v| ActiveRequest {
@@ -130,6 +137,22 @@ impl Server {
                         response_payload_type_details: self.response_payload_type_details.clone(),
                     })
             }),
+            _ => fatal_panic!(from "Server::receive()",
+                "Accessing a released server."),
+        }
+    }
+
+    /// Releases the `Server`.
+    ///
+    /// After this call the `Server` is no longer usable!
+    pub fn delete(&mut self) {
+        match self.value {
+            ServerType::Ipc(ref mut v) => {
+                v.take();
+            }
+            ServerType::Local(ref mut v) => {
+                v.take();
+            }
         }
     }
 }
