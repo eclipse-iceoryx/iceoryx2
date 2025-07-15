@@ -112,7 +112,7 @@ def send_copy(self: Publisher, t: Type[T]) -> Any:
 
 
 def write_payload(self: SampleMutUninit, t: Type[T]) -> SampleMut:
-    """Sends a copy of the provided type."""
+    """Writes the provided payload into the sample."""
     assert ctypes.sizeof(t) == ctypes.sizeof(self.__payload_type_details)
     assert ctypes.alignment(t) == ctypes.alignment(self.__payload_type_details)
 
@@ -161,9 +161,6 @@ def allocation_strategy(
 ) -> PortFactoryPublisher:
     """
     Defines the allocation strategy that is used when the memory is exhausted.
-
-    This happens when the user acquires more than max slice len in `ActiveRequest::loan_slice()`
-    or `ActiveRequest::loan_slice_uninit()`.
     """
     assert get_origin(self.__payload_type_details) is Slice
 

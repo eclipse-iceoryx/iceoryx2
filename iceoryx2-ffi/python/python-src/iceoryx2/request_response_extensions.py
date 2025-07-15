@@ -123,6 +123,182 @@ def set_response_header(
     return result
 
 
+def request_payload(self: Any) -> Any:
+    """Returns a `ctypes.POINTER` to the requests payload."""
+    if get_origin(self.__request_payload_type_details) is Slice:
+        (contained_type,) = get_args(self.__request_payload_type_details)
+        return Slice(self.payload_ptr, self.__slice_len, contained_type)
+
+    return ctypes.cast(
+        self.payload_ptr, ctypes.POINTER(self.__request_payload_type_details)
+    )
+
+
+def response_payload(self: Any) -> Any:
+    """Returns a `ctypes.POINTER` to the responses payload."""
+    if get_origin(self.__response_payload_type_details) is Slice:
+        (contained_type,) = get_args(self.__response_payload_type_details)
+        return Slice(self.payload_ptr, self.__slice_len, contained_type)
+
+    return ctypes.cast(
+        self.payload_ptr, ctypes.POINTER(self.__response_payload_type_details)
+    )
+
+
+def request_header(self: Any) -> Any:
+    """Returns a `ctypes.POINTER` to the request header."""
+    return ctypes.cast(
+        self.user_header_ptr, ctypes.POINTER(self.__request_header_type_details)
+    )
+
+
+def response_header(self: Any) -> Any:
+    """Returns a `ctypes.POINTER` to the response header."""
+    return ctypes.cast(
+        self.user_header_ptr, ctypes.POINTER(self.__response_header_type_details)
+    )
+
+
+def write_request_payload(self: RequestMutUninit, t: Type[ReqT]) -> RequestMut:
+    """Writes the provided payload into the request."""
+    assert ctypes.sizeof(t) == ctypes.sizeof(self.__request_payload_type_details)
+    assert ctypes.alignment(t) == ctypes.alignment(self.__request_payload_type_details)
+
+    ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
+    return self.assume_init()
+
+
+def write_response_payload(self: ResponseMutUninit, t: Type[ReqT]) -> ResponseMut:
+    """Writes the provided payload into the response."""
+    assert ctypes.sizeof(t) == ctypes.sizeof(self.__response_payload_type_details)
+    assert ctypes.alignment(t) == ctypes.alignment(self.__response_payload_type_details)
+
+    ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
+    return self.assume_init()
+
+
+def loan_uninit_request(self: Client) -> RequestMutUninit:
+    """
+    Loans/allocates memory from the underlying data segment.
+
+    The user has to initialize the payload before it can be sent. On failure it returns
+    `LoanError` describing the failure.
+    """
+    assert not get_origin(self.__request_payload_type_details) is Slice
+
+    return self.__loan_uninit()
+
+
+def loan_uninit_response(self: ActiveRequest) -> ResponseMutUninit:
+    """
+    Loans/allocates memory from the underlying data segment.
+
+    The user has to initialize the payload before it can be sent. On failure it returns
+    `LoanError` describing the failure.
+    """
+    assert not get_origin(self.__response_payload_type_details) is Slice
+
+    return self.__loan_uninit()
+
+
+def loan_slice_uninit_request(
+    self: Client, number_of_elements: int
+) -> RequestMutUninit:
+    """
+    Loans/allocates memory from the underlying data segment.
+
+    The user has to initialize the payload before it can be sent.
+    Fails when it is called for data types which are not a slice.
+    On failure it returns `LoanError` describing the failure.
+    """
+    assert get_origin(self.__request_payload_type_details) is Slice
+
+    return self.__loan_slice_uninit(number_of_elements)
+
+
+def loan_slice_uninit_response(
+    self: ActiveRequest, number_of_elements: int
+) -> ResponseMutUninit:
+    """
+    Loans/allocates memory from the underlying data segment.
+
+    The user has to initialize the payload before it can be sent.
+    Fails when it is called for data types which are not a slice.
+    On failure it returns `LoanError` describing the failure.
+    """
+    assert get_origin(self.__response_payload_type_details) is Slice
+
+    return self.__loan_slice_uninit(number_of_elements)
+
+
+def initial_max_slice_len_request(
+    self: PortFactoryClient, value: int
+) -> PortFactoryClient:
+    """Sets the maximum slice length that a user can allocate."""
+    assert get_origin(self.__request_payload_type_details) is Slice
+
+    return self.__initial_max_slice_len(value)
+
+
+def initial_max_slice_len_response(
+    self: PortFactoryServer, value: int
+) -> PortFactoryServer:
+    """Sets the maximum slice length that a user can allocate."""
+    assert get_origin(self.__response_payload_type_details) is Slice
+
+    return self.__initial_max_slice_len(value)
+
+
+def allocation_strategy_request(
+    self: PortFactoryClient, value: AllocationStrategy
+) -> PortFactoryClient:
+    """
+    Defines the allocation strategy that is used when the memory is exhausted.
+    """
+    assert get_origin(self.__request_payload_type_details) is Slice
+
+    return self.__allocation_strategy(value)
+
+
+def allocation_strategy_response(
+    self: PortFactoryServer, value: AllocationStrategy
+) -> PortFactoryServer:
+    """
+    Defines the allocation strategy that is used when the memory is exhausted.
+    """
+    assert get_origin(self.__response_payload_type_details) is Slice
+
+    return self.__allocation_strategy(value)
+
+
 ServiceBuilder.request_response = request_response
 ServiceBuilderRequestResponse.request_header = set_request_header
 ServiceBuilderRequestResponse.response_header = set_response_header
+
+ActiveRequest.payload = request_payload
+ActiveRequest.user_header = request_header
+ActiveRequest.loan_uninit = loan_uninit_response
+ActiveRequest.loan_slice_uninit = loan_slice_uninit_response
+
+PortFactoryClient.initial_max_slice_len = initial_max_slice_len_request
+PortFactoryClient.allocation_strategy = allocation_strategy_request
+PortFactoryServer.initial_max_slice_len = initial_max_slice_len_response
+PortFactoryServer.allocation_strategy = allocation_strategy_response
+
+RequestMut.payload = request_payload
+RequestMut.user_header = request_header
+
+RequestMutUninit.payload = request_payload
+RequestMutUninit.user_header = request_header
+RequestMutUninit.write_payload = write_request_payload
+
+ResponseMut.payload = response_payload
+ResponseMut.user_header = response_header
+
+ResponseMutUninit.payload = response_payload
+ResponseMutUninit.user_header = response_header
+ResponseMutUninit.write_payload = write_response_payload
+
+Client.loan_uninit = loan_uninit_request
+Client.loan_slice_uninit = loan_slice_uninit_request
+
