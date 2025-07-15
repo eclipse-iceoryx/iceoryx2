@@ -55,12 +55,14 @@ def request_response(
         response_type_size = ctypes.sizeof(contained_type)
         response_type_align = ctypes.alignment(contained_type)
     else:
-        response_type_name = get_type_name(request)
-        response_type_size = ctypes.sizeof(request)
-        response_type_align = ctypes.alignment(request)
+        response_type_name = get_type_name(response)
+        response_type_size = ctypes.sizeof(response)
+        response_type_align = ctypes.alignment(response)
         response_type_variant = TypeVariant.FixedSize
 
-    result = self.__request_response().__set_request_payload_type(request).__set_response_payload_type(response)
+    result = self.__request_response()
+    result.__set_request_payload_type(request)
+    result.__set_response_payload_type(response)
 
     return result.__request_payload_type_details(
         TypeDetail.new()
@@ -89,4 +91,38 @@ def request_response(
     )
 
 
+def set_request_header(
+    self: ServiceBuilderPublishSubscribe, request: Type[ReqT]
+) -> ServiceBuilderPublishSubscribe:
+    """Sets the request header type for the service."""
+    type_name = get_type_name(request)
+    result = self.__request_header_type_details(
+        TypeDetail.new()
+        .type_variant(TypeVariant.FixedSize)
+        .type_name(TypeName.new(type_name))
+        .size(ctypes.sizeof(request))
+        .alignment(ctypes.alignment(request))
+    )
+    result.__set_request_header_type(request)
+    return result
+
+
+def set_response_header(
+    self: ServiceBuilderPublishSubscribe, response: Type[ResT]
+) -> ServiceBuilderPublishSubscribe:
+    """Sets the response header type for the service."""
+    type_name = get_type_name(response)
+    result = self.__response_header_type_details(
+        TypeDetail.new()
+        .type_variant(TypeVariant.FixedSize)
+        .type_name(TypeName.new(type_name))
+        .size(ctypes.sizeof(response))
+        .alignment(ctypes.alignment(response))
+    )
+    result.__set_response_header_type(response)
+    return result
+
+
 ServiceBuilder.request_response = request_response
+ServiceBuilderRequestResponse.request_header = set_request_header
+ServiceBuilderRequestResponse.response_header = set_response_header

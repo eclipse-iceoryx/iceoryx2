@@ -92,10 +92,26 @@ impl ServiceBuilderRequestResponse {
 
 #[pymethods]
 impl ServiceBuilderRequestResponse {
+    pub fn __set_request_payload_type(&mut self, value: PyObject) {
+        self.request_payload_type_details.value = Some(value)
+    }
+
+    pub fn __set_response_payload_type(&mut self, value: PyObject) {
+        self.response_payload_type_details.value = Some(value)
+    }
+
+    pub fn __set_request_header_type(&mut self, value: PyObject) {
+        self.request_header_type_details.value = Some(value)
+    }
+
+    pub fn __set_response_header_type(&mut self, value: PyObject) {
+        self.request_header_type_details.value = Some(value)
+    }
+
     /// Defines the payload type for requests. To be able to connect to a `Service` the
     /// `TypeDetail` must be identical in all participants since the communication is always
     /// strongly typed.
-    pub fn request_payload_type_details(&self, value: &TypeDetail) -> Self {
+    pub fn __request_payload_type_details(&self, value: &TypeDetail) -> Self {
         match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
@@ -112,7 +128,7 @@ impl ServiceBuilderRequestResponse {
 
     /// Defines the request header type. To be able to connect to a `Service` the `TypeDetail` must
     /// be identical in all participants since the communication is always strongly typed.
-    pub fn request_header_type_details(&self, value: &TypeDetail) -> Self {
+    pub fn __request_header_type_details(&self, value: &TypeDetail) -> Self {
         match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
@@ -130,7 +146,7 @@ impl ServiceBuilderRequestResponse {
     /// Defines the payload type for responses. To be able to connect to a `Service` the
     /// `TypeDetail` must be identical in all participants since the communication is always
     /// strongly typed.
-    pub fn response_payload_type_details(&self, value: &TypeDetail) -> Self {
+    pub fn __response_payload_type_details(&self, value: &TypeDetail) -> Self {
         match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
@@ -147,7 +163,7 @@ impl ServiceBuilderRequestResponse {
 
     /// Defines the response header type. To be able to connect to a `Service` the `TypeDetail`
     /// must be identical in all participants since the communication is always strongly typed.
-    pub fn response_header_type_details(&self, value: &TypeDetail) -> Self {
+    pub fn __response_header_type_details(&self, value: &TypeDetail) -> Self {
         match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
