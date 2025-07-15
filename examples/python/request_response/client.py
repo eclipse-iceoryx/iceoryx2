@@ -43,8 +43,8 @@ try:
         while True:
             response = pending_response.receive()
             if response is not None:
-                # data = response.payload()
-                # print("received response", RESPONSE_COUNTER, ":", data.contents)
+                data = response.payload()
+                print("received response", RESPONSE_COUNTER, ":", data.contents)
                 RESPONSE_COUNTER += 1
             else:
                 break

@@ -60,6 +60,7 @@ impl Response {
         }
     }
 
+    #[getter]
     /// Returns the `ResponseHeader`
     pub fn header(&self) -> ResponseHeader {
         match &*self.value.lock() {
@@ -70,6 +71,7 @@ impl Response {
         }
     }
 
+    #[getter]
     /// Returns a pointer to the user header of the response.
     pub fn user_header_ptr(&self) -> usize {
         match &*self.value.lock() {
@@ -80,6 +82,7 @@ impl Response {
         }
     }
 
+    #[getter]
     /// Returns a pointer to the payload of the response.
     pub fn payload_ptr(&self) -> usize {
         match &*self.value.lock() {
@@ -90,6 +93,7 @@ impl Response {
         }
     }
 
+    #[getter]
     /// Returns the `UniqueServerId` of the `Server` which sent the `Response`.
     pub fn origin(&self) -> UniqueServerId {
         match &*self.value.lock() {
