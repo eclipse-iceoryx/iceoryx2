@@ -160,25 +160,30 @@ impl ActiveRequest {
         }
     }
 
+    /// Loans uninitialized memory for a `ResponseMut` where the user can write its payload to.
+    pub fn __loan_uninit(&self) -> PyResult<ResponseMutUninit> {
+        self.__loan_slice_uninit(1)
+    }
+
     /// Loans/allocates a `ResponseMutUninit` from the underlying data segment of the
     /// `Server`. The user has to initialize the payload before it can be sent.
     ///
     /// On failure it emits `LoanError` describing the failure.
-    pub fn loan_slice_uninit(&self, slice_len: usize) -> PyResult<ResponseMutUninit> {
+    pub fn __loan_slice_uninit(&self, slice_len: usize) -> PyResult<ResponseMutUninit> {
         match &*self.value.lock() {
             ActiveRequestType::Ipc(Some(v)) => Ok(ResponseMutUninit {
-                value: Parc::new(ResponseMutUninitType::Ipc(Some(
-                    v.loan_slice_uninit(slice_len)
-                        .map_err(|e| LoanError::new_err(format!("{e:?}")))?,
-                ))),
+                value: Parc::new(ResponseMutUninitType::Ipc(Some(unsafe {
+                    v.loan_custom_payload(slice_len)
+                        .map_err(|e| LoanError::new_err(format!("{e:?}")))?
+                }))),
                 response_header_type_details: self.response_header_type_details.clone(),
                 response_payload_type_details: self.response_payload_type_details.clone(),
             }),
             ActiveRequestType::Local(Some(v)) => Ok(ResponseMutUninit {
-                value: Parc::new(ResponseMutUninitType::Local(Some(
-                    v.loan_slice_uninit(slice_len)
-                        .map_err(|e| LoanError::new_err(format!("{e:?}")))?,
-                ))),
+                value: Parc::new(ResponseMutUninitType::Local(Some(unsafe {
+                    v.loan_custom_payload(slice_len)
+                        .map_err(|e| LoanError::new_err(format!("{e:?}")))?
+                }))),
                 response_header_type_details: self.response_header_type_details.clone(),
                 response_payload_type_details: self.response_payload_type_details.clone(),
             }),

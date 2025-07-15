@@ -271,10 +271,43 @@ def allocation_strategy_response(
     return self.__allocation_strategy(value)
 
 
+def send_request_copy(self: Client, t: Type[ReqT]) -> PendingResponse:
+    """Sends a copy of the provided type."""
+    request_uninit = self.__loan_uninit()
+
+    assert ctypes.sizeof(t) == ctypes.sizeof(
+        request_uninit.__request_payload_type_details
+    )
+    assert ctypes.alignment(t) == ctypes.alignment(
+        request_uninit.__request_payload_type_details
+    )
+
+    ctypes.memmove(request_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
+    request = request_uninit.assume_init()
+    return request.send()
+
+
+def send_response_copy(self: ActiveRequest, t: Type[ResT]) -> Any:
+    """Sends a copy of the provided type."""
+    response_uninit = self.__loan_uninit()
+
+    assert ctypes.sizeof(t) == ctypes.sizeof(
+        response_uninit.__response_payload_type_details
+    )
+    assert ctypes.alignment(t) == ctypes.alignment(
+        response_uninit.__response_payload_type_details
+    )
+
+    ctypes.memmove(response_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
+    response = response_uninit.assume_init()
+    return response.send()
+
+
 ServiceBuilder.request_response = request_response
 ServiceBuilderRequestResponse.request_header = set_request_header
 ServiceBuilderRequestResponse.response_header = set_response_header
 
+ActiveRequest.send_copy = send_response_copy
 ActiveRequest.payload = request_payload
 ActiveRequest.user_header = request_header
 ActiveRequest.loan_uninit = loan_uninit_response
@@ -285,12 +318,18 @@ PortFactoryClient.allocation_strategy = allocation_strategy_request
 PortFactoryServer.initial_max_slice_len = initial_max_slice_len_response
 PortFactoryServer.allocation_strategy = allocation_strategy_response
 
+PendingResponse.payload = request_payload
+PendingResponse.user_header = request_header
+
 RequestMut.payload = request_payload
 RequestMut.user_header = request_header
 
 RequestMutUninit.payload = request_payload
 RequestMutUninit.user_header = request_header
 RequestMutUninit.write_payload = write_request_payload
+
+Response.payload = response_payload
+Response.user_header = response_header
 
 ResponseMut.payload = response_payload
 ResponseMut.user_header = response_header
@@ -301,4 +340,5 @@ ResponseMutUninit.write_payload = write_response_payload
 
 Client.loan_uninit = loan_uninit_request
 Client.loan_slice_uninit = loan_slice_uninit_request
+Client.send_copy = send_request_copy
 

@@ -88,6 +88,10 @@ impl Client {
         self.__loan_slice_uninit(1)
     }
 
+    /// Loans/allocates a `RequestMutUninit` from the underlying data segment of the `Client`.
+    /// The user has to initialize the payload before it can be sent.
+    ///
+    /// On failure it emits a `LoanError` describing the failure.
     pub fn __loan_slice_uninit(&self, slice_len: usize) -> PyResult<RequestMutUninit> {
         match &self.value {
             ClientType::Ipc(v) => Ok(RequestMutUninit {
