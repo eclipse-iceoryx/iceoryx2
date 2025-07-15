@@ -399,22 +399,22 @@ impl<const CAPACITY: usize> FixedSizeByteString<CAPACITY> {
 
     /// Returns a slice to the underlying bytes
     pub const fn as_bytes(&self) -> &[u8] {
-        unsafe { core::slice::from_raw_parts(self.data[0].as_ptr(), self.len) }
+        unsafe { core::slice::from_raw_parts(self.data.as_ptr() as *const u8, self.len) }
     }
 
     /// Returns a null-terminated slice to the underlying bytes
     pub const fn as_bytes_with_nul(&self) -> &[u8] {
-        unsafe { core::slice::from_raw_parts(self.data[0].as_ptr(), self.len + 1) }
+        unsafe { core::slice::from_raw_parts(self.data.as_ptr() as *const u8, self.len + 1) }
     }
 
     /// Returns a zero terminated slice of the underlying bytes
     pub const fn as_c_str(&self) -> *const core::ffi::c_char {
-        self.data[0].as_ptr() as *const core::ffi::c_char
+        self.data.as_ptr() as *const core::ffi::c_char
     }
 
     /// Returns a mutable slice to the underlying bytes
     pub fn as_mut_bytes(&mut self) -> &mut [u8] {
-        unsafe { core::slice::from_raw_parts_mut(self.data[0].as_mut_ptr(), self.len) }
+        unsafe { core::slice::from_raw_parts_mut(self.data.as_mut_ptr() as *mut u8, self.len) }
     }
 
     /// Returns the content as a string slice if the bytes are valid UTF-8

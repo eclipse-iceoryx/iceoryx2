@@ -55,6 +55,8 @@
     [#799](https://github.com/eclipse-iceoryx/iceoryx2/issues/799)
 * CMake no longer installs unusable binaries when FetchContent is used
     [#814](https://github.com/eclipse-iceoryx/iceoryx2/issues/814)
+* Miri complains about byte_string as_bytes* operations
+    [#875](https://github.com/eclipse-iceoryx/iceoryx2/issues/875)
 
 ### Refactoring
 
