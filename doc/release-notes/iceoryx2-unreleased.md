@@ -110,9 +110,11 @@
 
 ### Config Breaking Changes
 
-1. As `iceoryx.toml` is now by default not available so now need to
-generate the `iceoryx.toml` by following command:
+1. The previously separate fields `root-path-unix` and `root-path-windows`
+have been unified into a single `root-path` entry in configs.
 [#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
+
+    To generate new `iceoryx2.toml` use:
 
     ```cli
     iox2 config generate local
