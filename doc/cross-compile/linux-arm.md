@@ -32,12 +32,12 @@ Make a cmake file. You can put it anywhere. We'll just call it `cross-example.cm
 
 ### `cross-example.cmake`
 
-```bash
+```cmake
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
 # absolute path to extracted ARM toolchain archive, it should look like this
-set(TOOLCHAIN_ROOT "/home/ander/.../arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-linux-gnu")
+set(TOOLCHAIN_ROOT "/full/path/to/.../arm-gnu-toolchain-12.2.rel1-x86_64-aarch64-none-linux-gnu")
 
 set(CMAKE_C_COMPILER "${TOOLCHAIN_ROOT}/bin/aarch64-none-linux-gnu-gcc")
 set(CMAKE_CXX_COMPILER "${TOOLCHAIN_ROOT}/bin/aarch64-none-linux-gnu-g++")
@@ -50,7 +50,6 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-
 ```
 
 Build using configuration in `cross-example.cmake`:
@@ -68,9 +67,9 @@ located within the cloned repo, just use an absolute path for your system
 ```bash
 cmake -S examples/c/publish_subscribe \
   -B target/out-of-tree/examples/c/publish_subscribe \
-  -DCMAKE_TOOLCHAIN_FILE="/home/ander/.../cross-example.cmake" \
-  -DCMAKE_PREFIX_PATH="/home/ander/.../iceoryx2/target/ffi/install" \
-  -Diceoryx2-c_DIR="/home/ander/.../iceoryx2/target/ffi/install/lib/cmake/iceoryx2-c" \
+  -DCMAKE_TOOLCHAIN_FILE="/full/path/to/.../cross-example.cmake" \
+  -DCMAKE_PREFIX_PATH="/full/path/to/.../iceoryx2/target/ffi/install" \
+  -Diceoryx2-c_DIR="/full/path/to/.../iceoryx2/target/ffi/install/lib/cmake/iceoryx2-c" \
   -DCMAKE_FIND_DEBUG_MODE=ON
 ```
 
@@ -90,7 +89,7 @@ The following applies to Zig 0.14.0.
 ```c
 const std = @import("std");
 // replace with your own absolute path
-const iox2_root = "/home/ander/.../tgbot/c_deps/iceoryx2/target/ffi/install";
+const iox2_root = "/full/path/to/.../iceoryx2/target/ffi/install";
 
 pub fn build(b: *std.Build) void {
 
@@ -104,17 +103,17 @@ pub fn build(b: *std.Build) void {
 
     // Create your executable
     const exe = b.addExecutable(.{
-        .name = "gipop_tgbot",
+        .name = "my_app",
         .root_source_file = b.path("src/main.zig"),
         .target = target,
         .optimize = optimize,
     });
 
     exe.addIncludePath(
-        b.path("../tgbot/c_deps/iceoryx2/target/ffi/install/include/iceoryx2/v0.6.1/iox2/") // replace with your own relative path, this is where iceoryx2.h lives
+        b.path("../path/to/iceoryx2/target/ffi/install/include/iceoryx2/v0.6.1/iox2/") // replace with your own relative path, this is where iceoryx2.h lives
     );
     exe.linkSystemLibrary("gcc_s"); // For Rust C unwinder. This is needed by iceoryx2.
-    exe.addObjectFile(b.path("../tgbot/c_deps/iceoryx2/target/ffi/install/lib/libiceoryx2_ffi.a")); // replace with your own relative path to the static ffi lib
+    exe.addObjectFile(b.path("../path/to/iceoryx2/target/ffi/install/lib/libiceoryx2_ffi.a")); // replace with your own relative path to the static ffi lib
     exe.linkLibC();
     
     // Run step
@@ -137,8 +136,8 @@ This is a port of `subscriber.c`. Place `transmission_data.h` in the same
 directory as `main.zig`.
 
 ```c
-const iox2_root = "/home/ander/.../iceoryx2/target/ffi/install";
-const zig_proj_root = "/home/ander/.../src";
+const iox2_root = "/full/path/to/.../iceoryx2/target/ffi/install";
+const zig_proj_root = "/full/path/to/.../src";
 
 const std = @import("std");
 
