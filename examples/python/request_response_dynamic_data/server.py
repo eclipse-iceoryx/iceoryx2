@@ -13,6 +13,7 @@
 """Server example."""
 
 import ctypes
+
 import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
@@ -21,14 +22,15 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 service = (
-    node.service_builder(iox2.ServiceName.new("example//dynamic_request_response"))
+    node.service_builder(
+        iox2.ServiceName.new("example//dynamic_request_response")
+    )
     .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
     .open_or_create()
 )
 
 server = (
-    service
-    .server_builder()
+    service.server_builder()
     # We guess that the samples are at most 16 bytes in size.
     # This is just a hint to the underlying allocator and is purely optional
     # The better the guess is the less reallocations will be performed
@@ -36,8 +38,7 @@ server = (
     # The underlying sample size will be increased with a power of two strategy
     # when `ActiveRequest::loan_slice()` or `ActiveRequest::loan_slice_uninit()`
     # requires more memory than available.
-    .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
-    .create()
+    .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo).create()
 )
 
 COUNTER = 1
@@ -51,7 +52,9 @@ try:
                 print("received request with", data.len(), "bytes ...")
 
                 required_memory_size = min(COUNTER * COUNTER, 1000000)
-                response = active_request.loan_slice_uninit(required_memory_size)
+                response = active_request.loan_slice_uninit(
+                    required_memory_size
+                )
                 for byte_idx in range(0, required_memory_size):
                     response.payload()[byte_idx] = (byte_idx + COUNTER) % 255
                 response = response.assume_init()

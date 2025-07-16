@@ -13,6 +13,7 @@
 """Client example."""
 
 import ctypes
+
 import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
@@ -21,14 +22,15 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 service = (
-    node.service_builder(iox2.ServiceName.new("example//dynamic_request_response"))
+    node.service_builder(
+        iox2.ServiceName.new("example//dynamic_request_response")
+    )
     .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
     .open_or_create()
 )
 
 client = (
-    service
-    .client_builder()
+    service.client_builder()
     # We guess that the samples are at most 16 bytes in size.
     # This is just a hint to the underlying allocator and is purely optional
     # The better the guess is the less reallocations will be performed
@@ -36,8 +38,7 @@ client = (
     # The underlying sample size will be increased with a power of two strategy
     # when `Client::loan_slice()` or `Client::loan_slice_uninit()` requires more
     # memory than available.
-    .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
-    .create()
+    .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo).create()
 )
 
 COUNTER = 1
@@ -51,7 +52,9 @@ try:
         request = request.assume_init()
         pending_response = request.send()
 
-        print("send request", COUNTER, "with", required_memory_size, "bytes ...")
+        print(
+            "send request", COUNTER, "with", required_memory_size, "bytes ..."
+        )
 
         node.wait(cycle_time)
 
@@ -59,7 +62,9 @@ try:
             response = pending_response.receive()
             if response is not None:
                 data = response.payload()
-                print("received response with", response.payload().len(), "bytes")
+                print(
+                    "received response with", response.payload().len(), "bytes"
+                )
             else:
                 break
 

@@ -71,7 +71,7 @@ perform_lint() {
     fi
 
     echo -e "${COLOR_BLUE}[black] code formatting python bindings: ${USER_HINT}${COLOR_RESET}"
-    black --line-length=80 --check ${LINT_PATH}
+    black --line-length=80 ${BLACK_ARG} ${LINT_PATH}
     if [[ $? != "0" ]]; then
         echo -e "${COLOR_RED}${FONT_BOLD}code formatting python bindings: ${USER_HINT} - failed${COLOR_RESET}\n"
         SUCCESS_CODE=1;
@@ -80,7 +80,7 @@ perform_lint() {
     fi
 
     echo -e "${COLOR_BLUE}[isort] import ordering python bindings: ${USER_HINT}${COLOR_RESET}"
-    isort --check-only ${LINT_PATH}
+    isort ${ISORT_ARG} ${LINT_PATH}
     if [[ $? != "0" ]]; then
         echo -e "${COLOR_RED}${FONT_BOLD}import ordering python bindings: ${USER_HINT} - failed${COLOR_RESET}\n"
         SUCCESS_CODE=1;
@@ -101,9 +101,31 @@ execute_tests() {
     pytest iceoryx2-ffi/python/tests/*
 }
 
+help() {
+    echo
+    echo -e "  $0 ${COLOR_BLUE}[ACTION]${COLOR_RESET}"
+    echo
+    echo -e "${COLOR_BLUE}ACTION:${COLOR_RESET}"
+    echo -e "  ${FONT_BOLD}format${COLOR_RESET}    - format the code"
+    echo -e "  ${FONT_BOLD}check${COLOR_RESET}     - static code analysis"
+    exit 1
+}
+ 
+
+if [[ $1 == "format" ]]; then
+    BLACK_ARG=""
+    ISORT_ARG=""
+elif [[ $1 == "check" ]]; then
+    BLACK_ARG="--check"
+    ISORT_ARG="--check-only"
+else
+    help
+fi
+
 configure_python_env
 compile
 lint
 execute_tests
+
 
 exit $SUCCESS_CODE

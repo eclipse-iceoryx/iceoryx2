@@ -50,7 +50,11 @@ def test_send_and_receive_request_with_memmove_works(
     for i in range(0, number_of_requests):
         request_payload = Payload(data=19 + i)
         request_uninit = client.loan_uninit()
-        ctypes.memmove(request_uninit.payload_ptr, ctypes.byref(request_payload), ctypes.sizeof(Payload))
+        ctypes.memmove(
+            request_uninit.payload_ptr,
+            ctypes.byref(request_payload),
+            ctypes.sizeof(Payload),
+        )
         request = request_uninit.assume_init()
         request.send()
 
@@ -59,7 +63,11 @@ def test_send_and_receive_request_with_memmove_works(
         request = server.receive()
         assert request is not None
         request_payload = Payload(data=0)
-        ctypes.memmove(ctypes.byref(request_payload), request.payload_ptr, ctypes.sizeof(Payload))
+        ctypes.memmove(
+            ctypes.byref(request_payload),
+            request.payload_ptr,
+            ctypes.sizeof(Payload),
+        )
         assert request_payload.data == 19 + i
 
     assert not server.has_requests
@@ -91,7 +99,11 @@ def test_send_and_receive_responses_with_memmove_works(
     for i in range(0, number_of_responses):
         response_payload = Payload(data=3 + 2 * i)
         response_uninit = active_request.loan_uninit()
-        ctypes.memmove(response_uninit.payload_ptr, ctypes.byref(response_payload), ctypes.sizeof(Payload))
+        ctypes.memmove(
+            response_uninit.payload_ptr,
+            ctypes.byref(response_payload),
+            ctypes.sizeof(Payload),
+        )
         response = response_uninit.assume_init()
         response.send()
 
@@ -99,7 +111,9 @@ def test_send_and_receive_responses_with_memmove_works(
         assert pending_response.has_response()
         response = pending_response.receive()
         payload = Payload(data=0)
-        ctypes.memmove(ctypes.byref(payload), response.payload_ptr, ctypes.sizeof(Payload))
+        ctypes.memmove(
+            ctypes.byref(payload), response.payload_ptr, ctypes.sizeof(Payload)
+        )
         assert payload.data == 3 + 2 * i
 
     assert not pending_response.has_response()
@@ -285,7 +299,9 @@ def test_client_reallocation_fails_when_allocation_strategy_is_static(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .request_response(
+            iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8]
+        )
         .create()
     )
 
@@ -295,7 +311,6 @@ def test_client_reallocation_fails_when_allocation_strategy_is_static(
         .allocation_strategy(iox2.AllocationStrategy.Static)
         .create()
     )
-
 
     try:
         client.loan_slice_uninit(8)
@@ -316,7 +331,9 @@ def test_client_reallocation_works_when_allocation_strategy_is_not_static(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .request_response(
+            iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8]
+        )
         .create()
     )
 
@@ -326,7 +343,6 @@ def test_client_reallocation_works_when_allocation_strategy_is_not_static(
         .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
         .create()
     )
-
 
     try:
         client.loan_slice_uninit(12)
@@ -349,7 +365,12 @@ def test_server_reallocation_fails_when_allocation_strategy_is_static(
     )
 
     client = service.client_builder().create()
-    server = service.server_builder().initial_max_slice_len(8).allocation_strategy(iox2.AllocationStrategy.Static).create()
+    server = (
+        service.server_builder()
+        .initial_max_slice_len(8)
+        .allocation_strategy(iox2.AllocationStrategy.Static)
+        .create()
+    )
 
     pending_response = client.send_copy(Payload(data=1))
     active_request = server.receive()
@@ -378,7 +399,12 @@ def test_server_reallocation_works_when_allocation_strategy_is_not_static(
     )
 
     client = service.client_builder().create()
-    server = service.server_builder().initial_max_slice_len(8).allocation_strategy(iox2.AllocationStrategy.PowerOfTwo).create()
+    server = (
+        service.server_builder()
+        .initial_max_slice_len(8)
+        .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+        .create()
+    )
 
     pending_response = client.send_copy(Payload(data=1))
     active_request = server.receive()
@@ -399,7 +425,9 @@ def test_slice_type_forbids_use_of_non_slice_api(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .request_response(
+            iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8]
+        )
         .create()
     )
 
@@ -447,5 +475,3 @@ def test_non_slice_type_forbids_use_of_slice_api(
 
     with pytest.raises(AssertionError):
         active_request.loan_slice_uninit(1)
-
-

@@ -144,5 +144,3 @@ def test_deleting_response_mut_removes_it(
         response_uninit = active_request.loan_uninit()
     except iox2.LoanError:
         assert False
-
-

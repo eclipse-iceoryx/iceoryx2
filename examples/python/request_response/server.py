@@ -12,9 +12,10 @@
 
 """Publisher example."""
 
+import ctypes
+
 from transmission_data import TransmissionData
 
-import ctypes
 import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
@@ -41,7 +42,9 @@ try:
                 print("received request:", data.contents.value)
 
                 # send first response by using the slower, non-zero-copy API
-                response = TransmissionData(x=5+COUNTER, y=6*COUNTER, funky=7.77)
+                response = TransmissionData(
+                    x=5 + COUNTER, y=6 * COUNTER, funky=7.77
+                )
                 print("  send response:", response)
                 active_request.send_copy(response)
 
@@ -49,7 +52,11 @@ try:
                 for n in range(0, data.contents.value % 2):
                     response = active_request.loan_uninit()
                     response = response.write_payload(
-                        TransmissionData(x=COUNTER*(n + 1), y=COUNTER+n, funky=COUNTER * 0.1234)
+                        TransmissionData(
+                            x=COUNTER * (n + 1),
+                            y=COUNTER + n,
+                            funky=COUNTER * 0.1234,
+                        )
                     )
                     print("  send response:", response.payload().contents)
                     response.send()

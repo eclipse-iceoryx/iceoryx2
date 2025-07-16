@@ -231,7 +231,7 @@ jobs:
          python-version: 3.x
 
      - name: Language Binding Tests
-       run: internal/scripts/ci_check_python.sh
+       run: internal/scripts/ci_check_python.sh check
 
   end-to-end-tests:
     needs: [preflight-check, static-code-analysis, maturin]
