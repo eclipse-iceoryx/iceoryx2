@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     while node.wait(Duration::ZERO).is_ok() {
         if let Ok(Some(id)) = listener.timed_wait_one(CYCLE_TIME) {
             if id == reader_handle.entry_id() {
-                println!("read u64: {}", reader_handle.get());
+                println!("read: {}", reader_handle.get());
             }
         }
     }
