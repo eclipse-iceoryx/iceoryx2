@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import subprocess, os
+import subprocess, os, sys
 
 project = 'iceoryx2'
 copyright = '2024, ekxide IO GmbH'
@@ -20,9 +20,17 @@ subprocess.call('mkdir -p target/doxygen_docs', shell=True)
 subprocess.call('doxygen -g Doxyfile.global', shell=True)
 subprocess.call('doxygen Doxyfile', shell=True)
 
+sys.path.insert(0, os.path.abspath('../../iceoryx2-ffi/python/python-src/'))
+
 extensions = [
     'breathe',
     'exhale',
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.mathjax',
+    'sphinx.ext.viewcode',
+    'recommonmark',
+    'nbsphinx'
 ]
 
 # -- Exhale configuration ---------------------------------------------------

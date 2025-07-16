@@ -18,6 +18,8 @@ Welcome to iceoryx2's C / C++ documentation!
 
    iceoryx2_cxx_api
 
+   iceoryx2_python_api
+
 Introduction
 ------------
 
