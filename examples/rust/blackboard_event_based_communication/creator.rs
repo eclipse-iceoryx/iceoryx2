@@ -19,12 +19,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Trace);
     let node = NodeBuilder::new().create::<ipc::Service>()?;
     type KeyType = u32;
-    let key = 99;
+    let interesting_key = 99;
 
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .blackboard_creator::<KeyType>()
-        .add::<u64>(key, 2023)
+        .add_with_default::<u64>(0)
+        .add_with_default::<u64>(interesting_key)
         .create()?;
 
     let event_service = node
@@ -34,7 +35,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let listener = event_service.listener_builder().create()?;
 
     let reader = service.reader_builder().create()?;
-    let reader_handle = reader.entry::<u64>(&key)?;
+    let reader_handle = reader.entry::<u64>(&interesting_key)?;
 
     // wait for entry id
     while node.wait(Duration::ZERO).is_ok() {
