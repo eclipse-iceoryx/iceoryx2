@@ -14,17 +14,19 @@ use pyo3::prelude::*;
 
 use crate::unique_client_id::UniqueClientId;
 
-#[pyclass]
+#[pyclass(str = "{0:?}")]
 /// Request header used by `MessagingPattern::RequestResponse`
 pub struct RequestHeader(pub(crate) iceoryx2::service::header::request_response::RequestHeader);
 
 #[pymethods]
 impl RequestHeader {
+    #[getter]
     /// Returns the `UniqueClientId` of the `Client` which sent the `RequestMut`
     pub fn client_id(&self) -> UniqueClientId {
         UniqueClientId(self.0.client_id())
     }
 
+    #[getter]
     /// Returns how many elements are stored inside the requests's payload.
     pub fn number_of_elements(&self) -> u64 {
         self.0.number_of_elements()

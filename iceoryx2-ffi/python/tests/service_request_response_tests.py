@@ -133,7 +133,7 @@ def test_send_and_receive_request_with_sendcopy_works(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_send_with_request_header_works(
+def test_send_with_request_user_header_works(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -154,8 +154,10 @@ def test_send_with_request_header_works(
     ctypes.memmove(
         request_uninit.user_header_ptr, ctypes.byref(ctypes.c_uint64(89)), 8
     )
+    assert request_uninit.user_header().contents.value == 89
 
     request = request_uninit.assume_init()
+    assert request.user_header().contents.value == 89
     pending_response = request.send()
 
     active_request = server.receive()
@@ -163,7 +165,7 @@ def test_send_with_request_header_works(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_send_with_response_header_works(
+def test_send_with_response_user_header_works(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -196,3 +198,254 @@ def test_send_with_response_header_works(
 
     response = pending_response.receive()
     assert response.user_header().contents.value == 44
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_send_with_request_system_header_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .create()
+    )
+
+    client = service.client_builder().create()
+    server = service.server_builder().create()
+
+    request_uninit = client.loan_uninit()
+
+    assert request_uninit.header.client_id == client.id
+    assert request_uninit.header.number_of_elements == 1
+
+    request = request_uninit.assume_init()
+
+    assert request.header.client_id == client.id
+    assert request.header.number_of_elements == 1
+
+    _pending_response = request.send()
+
+    active_request = server.receive()
+
+    assert active_request.header.client_id == client.id
+    assert active_request.header.number_of_elements == 1
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_send_with_response_system_header_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .create()
+    )
+
+    client = service.client_builder().create()
+    server = service.server_builder().create()
+
+    request_uninit = client.loan_uninit()
+    request = request_uninit.assume_init()
+    pending_response = request.send()
+
+    active_request = server.receive()
+    response_uninit = active_request.loan_uninit()
+
+    assert response_uninit.header.server_id == server.id
+    assert response_uninit.header.number_of_elements == 1
+
+    response = response_uninit.assume_init()
+
+    assert response.header.server_id == server.id
+    assert response.header.number_of_elements == 1
+
+    response.send()
+
+    response = pending_response.receive()
+
+    assert response.header.server_id == server.id
+    assert response.header.number_of_elements == 1
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_client_reallocation_fails_when_allocation_strategy_is_static(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    client = (
+        service.client_builder()
+        .initial_max_slice_len(8)
+        .allocation_strategy(iox2.AllocationStrategy.Static)
+        .create()
+    )
+
+
+    try:
+        client.loan_slice_uninit(8)
+    except iox2.LoanError:
+        assert False
+
+    with pytest.raises(iox2.LoanError):
+        client.loan_slice_uninit(9)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_client_reallocation_works_when_allocation_strategy_is_not_static(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    client = (
+        service.client_builder()
+        .initial_max_slice_len(8)
+        .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo)
+        .create()
+    )
+
+
+    try:
+        client.loan_slice_uninit(12)
+    except iox2.LoanError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_server_reallocation_fails_when_allocation_strategy_is_static(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    client = service.client_builder().create()
+    server = service.server_builder().initial_max_slice_len(8).allocation_strategy(iox2.AllocationStrategy.Static).create()
+
+    pending_response = client.send_copy(Payload(data=1))
+    active_request = server.receive()
+
+    with pytest.raises(iox2.LoanError):
+        active_request.loan_slice_uninit(9)
+
+    try:
+        active_request.loan_slice_uninit(8)
+    except iox2.LoanError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_server_reallocation_works_when_allocation_strategy_is_not_static(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    client = service.client_builder().create()
+    server = service.server_builder().initial_max_slice_len(8).allocation_strategy(iox2.AllocationStrategy.PowerOfTwo).create()
+
+    pending_response = client.send_copy(Payload(data=1))
+    active_request = server.receive()
+
+    try:
+        active_request.loan_slice_uninit(12)
+    except iox2.LoanError:
+        assert False
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_slice_type_forbids_use_of_non_slice_api(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
+        .create()
+    )
+
+    server = service.server_builder().create()
+    client = service.client_builder().create()
+
+    with pytest.raises(AssertionError):
+        client.loan_uninit()
+
+    request_uninit = client.loan_slice_uninit(1)
+    request = request_uninit.assume_init()
+    request.send()
+
+    active_request = server.receive()
+
+    with pytest.raises(AssertionError):
+        active_request.loan_uninit()
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_non_slice_type_forbids_use_of_slice_api(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .create()
+    )
+
+    server = service.server_builder().create()
+    client = service.client_builder().create()
+
+    with pytest.raises(AssertionError):
+        client.loan_slice_uninit(1)
+
+    request_uninit = client.loan_uninit()
+    request = request_uninit.assume_init()
+    request.send()
+
+    active_request = server.receive()
+
+    with pytest.raises(AssertionError):
+        active_request.loan_slice_uninit(1)
+
+

@@ -105,7 +105,7 @@ impl ServiceBuilderRequestResponse {
     }
 
     pub fn __set_response_header_type(&mut self, value: PyObject) {
-        self.request_header_type_details.value = Some(value)
+        self.response_header_type_details.value = Some(value)
     }
 
     /// Defines the payload type for requests. To be able to connect to a `Service` the

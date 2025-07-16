@@ -231,7 +231,7 @@ def test_custom_user_header_can_be_used(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_slice_api_can_be_used(
+def test_reallocation_fails_when_allocation_strategy_is_static(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -261,7 +261,7 @@ def test_slice_api_can_be_used(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_slice_api_allocation_strategy_works(
+def test_reallocation_works_when_allocation_strategy_is_not_static(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
