@@ -16,7 +16,7 @@ cross build --target aarch64-unknown-linux-gnu --release --package iceoryx2-ffi
 Run the following at the repo root:
 
 ```bash
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=target/ffi/install -DRUST_TARGET_TRIPLET='aarch64-unknown-linux-gnu' -DBUILD_CXX_BINDING=OFF -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/aarch64-unknown-linux-gnu/release"
+cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=target/ffi/install -DBUILD_CXX_BINDING=OFF -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/aarch64-unknown-linux-gnu/release"
 ```
 
 ## Build C examples
