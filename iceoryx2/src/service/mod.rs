@@ -665,7 +665,12 @@ pub(crate) mod internal {
                 }
             };
 
+            trace!(from origin, ">>>>>>>>>>>>>>>>>>>>>>>Remove service? {remove_service}");
             if remove_service {
+                let static_storage_config =
+                    config_scheme::static_config_storage_config::<S>(config);
+                let x = static_storage_config.type_details();
+                let mgmt_name = core::any::type_name::<u64>();
                 match unsafe {
                     remove_static_service_config::<S>(config, &service_id.0.clone().into())
                 } {
@@ -677,12 +682,34 @@ pub(crate) mod internal {
                             crate::service::naming_scheme::blackboard_name(service_id.as_str());
                         let shm_config =
                             crate::service::config_scheme::blackboard_data_config::<S>(config);
+                        let l = <S::BlackboardPayload as NamedConceptMgmt>::list_cfg(&shm_config);
+                        if l.is_ok() {
+                            trace!(from origin, ">>>>>>>>>>>>> ok");
+                            let l = l.unwrap();
+                            for e in l {
+                                trace!(from origin, ">>>>>>>>>>>>> name: {}", e);
+                                trace!(from origin, ">>>>>>>>>>>>> id: {}", service_id.as_str());
+                            }
+                        }
                         let _x = unsafe {
                             <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
                                 &name,
                                 &shm_config,
                             )
                         };
+                        let mut mgmt_config =
+                            crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
+                        // TODO: readout key type from static config and use it here
+                        // TODO: when creating BlackboardMgmt call same function with config to
+                        // ensure that in static_config and DynamicStorage name the same type
+                        // identifier is used
+                        //   * otherwise DynamicStorage will always use core::any::type_name
+                        //   * static_config might contain user given type identifier !=
+                        //   core::any::type_name, see cross language
+                        unsafe {
+                            <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(&mut mgmt_config, "Asd")
+                        };
+
                         /////
                         dynamic_config.acquire_ownership()
                     }
