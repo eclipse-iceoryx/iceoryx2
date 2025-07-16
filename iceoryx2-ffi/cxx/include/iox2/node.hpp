@@ -80,18 +80,31 @@ class Node {
 
 /// Creates a new [`Node`].
 class NodeBuilder {
+  public:
     /// The [`NodeName`] that shall be assigned to the [`Node`]. It does not
     /// have to be unique. If no [`NodeName`] is defined then the [`Node`]
     /// does not have a name.
+#ifdef DOXYGEN_MACRO_FIX
+    auto name(const NodeName value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(NodeName, name);
+#endif
 
     /// The [`Config`] that shall be used for the [`Node`]. If no [`Config`]
     /// is specified the [`Config::global_config()`] is used.
+#ifdef DOXYGEN_MACRO_FIX
+    auto config(const Config value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(Config, config);
+#endif
 
     /// Defines the [`SignalHandlingMode`] for the [`Node`]. It affects the [`Node::wait()`] call
     /// that returns any received signal via its [`NodeWaitFailure`]
+#ifdef DOXYGEN_MACRO_FIX
+    auto signal_handling_mode(const SignalHandlingMode value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
+#endif
 
   public:
     NodeBuilder();

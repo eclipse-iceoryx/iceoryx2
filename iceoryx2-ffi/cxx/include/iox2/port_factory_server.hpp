@@ -30,14 +30,23 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 class PortFactoryServer {
+  public:
     /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Server`] shall behave
     /// when a [`Client`] cannot receive a [`Response`] since
     /// its internal buffer is full.
+#ifdef DOXYGEN_MACRO_FIX
+    auto unable_to_deliver_strategy(const UnableToDeliverStrategy value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
+#endif
 
     /// Defines the maximum number of [`ResponseMut`] that the [`Server`] can
     /// loan in parallel per [`ActiveRequest`].
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_loaned_responses_per_request(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_responses_per_request);
+#endif
 
   public:
     PortFactoryServer(const PortFactoryServer&) = delete;

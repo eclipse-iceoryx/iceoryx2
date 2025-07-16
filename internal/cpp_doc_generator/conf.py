@@ -30,7 +30,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'recommonmark',
-    'nbsphinx'
+    'nbsphinx',
 ]
 
 # -- Exhale configuration ---------------------------------------------------

@@ -2,6 +2,13 @@
 GENERATE_HTML                   = NO
 GENERATE_XML                    = YES
 XML_PROGRAMLISTING              = NO
+EXTRACT_ALL                     = YES
+EXTRACT_STATIC                  = YES
+MACRO_EXPANSION                 = YES
+EXPAND_ONLY_PREDEF              = NO
+ENABLE_PREPROCESSING            = YES
+
+PREDEFINED += DOXYGEN_MACRO_FIX
 
 PROJECT_NAME                    = "iceoryx2"
 OUTPUT_DIRECTORY                = "./target/doxygen_docs"

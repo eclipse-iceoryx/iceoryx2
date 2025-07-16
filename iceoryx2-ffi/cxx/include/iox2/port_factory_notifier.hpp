@@ -25,9 +25,14 @@ namespace iox2 {
 /// communication.
 template <ServiceType S>
 class PortFactoryNotifier {
+  public:
     /// Sets a default [`EventId`] for the [`Notifier`] that is used in
     /// [`Notifier::notify()`]
+#ifdef DOXYGEN_MACRO_FIX
+    auto default_event_id(const EventId value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(EventId, default_event_id);
+#endif
 
   public:
     PortFactoryNotifier(PortFactoryNotifier&&) noexcept = default;
