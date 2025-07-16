@@ -490,7 +490,8 @@ impl<
         }
     }
 
-    /// Returns the strategy the [`Server`] follows when a [`ResponseMut`] cannot be delivered
+    /// Returns the strategy the [`Server`] follows when a
+    /// [`ResponseMut`](crate::response_mut::ResponseMut) cannot be delivered
     /// if the [`Client`](crate::port::client::Client)s buffer is full.
     pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
         self.shared_state
