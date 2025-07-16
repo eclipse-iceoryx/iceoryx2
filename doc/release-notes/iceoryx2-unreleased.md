@@ -110,21 +110,13 @@
 
 ### Config Breaking Changes
 
-1. The previously separate fields `root-path-unix` and `root-path-windows`
-have been unified into a single `root-path` entry in configs.
-[#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
+1. The previously separate fields `root-path-unix` and `root-path-windows` have
+  been unified into a single `root-path` entry in configs, located in
+  the `[global]` section of `iceoryx2.toml`.
 
-    To generate new `iceoryx2.toml` use:
-
-    ```cli
-    iox2 config generate local
-    ```
-    Automatically generates the `config.toml` file at `$HOME/.config/iceoryx2/iceoryx2.toml`.
-
-    ```cli
-    iox2 config generate global
-    ```
-    Automatically generates the `config.toml` file at `/etc/iceoryx2/iceoryx2.toml`.
+    The config file template from `config/iceoryx2.toml` was removed and
+    please refer to `config/README.md` on how to generate a default config file.
+  [#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
 
 2. The default max event ID was reduced to 255 in order to have make bitset
    based event implementations work out of the box. If a larger event ID is

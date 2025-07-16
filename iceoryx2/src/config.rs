@@ -86,7 +86,7 @@ use iceoryx2_bb_log::{debug, fail, fatal_panic, info, trace, warn};
 
 use crate::port::unable_to_deliver_strategy::UnableToDeliverStrategy;
 
-use iceoryx2_pal_configuration::settings::ROOT_PATH;
+use iceoryx2_pal_configuration::settings::ICEORYX2_ROOT_PATH;
 
 const DEFAULT_CONFIG_FILE_NAME: &[u8] = b"iceoryx2.toml";
 const RELATIVE_LOCAL_CONFIG_PATH: &[u8] = b"config";
@@ -394,7 +394,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             global: Global {
-                root_path: Path::new(ROOT_PATH).unwrap(),
+                root_path: Path::new(ICEORYX2_ROOT_PATH).unwrap(),
                 prefix: FileName::new(b"iox2_").unwrap(),
                 service: Service {
                     directory: Path::new(b"services").unwrap(),
