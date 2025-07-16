@@ -2,8 +2,10 @@
 
 1. Install dependencies (archlinux):
    ```sh
-   yay -S python-exhale python-breathe python-sphinx python-sphinx_rtd_theme \
-          python-sphinx-sitemap doxygen
+   python -m venv .env
+   source .env/bin/activate      # bash shell
+   source .env/bin/activate.fish # fish shell
+   pip install -r requirements.txt
    ```
 2. Generate documentation:
    ```sh
