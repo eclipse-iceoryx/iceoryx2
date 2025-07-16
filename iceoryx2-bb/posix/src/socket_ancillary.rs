@@ -241,22 +241,16 @@ impl UdsMsgHeader {
 
 impl Default for SocketAncillary {
     fn default() -> Self {
+        let iovec = posix::iovec::default();
+        let mut msghdr = posix::msghdr::default();
+        msghdr.set_iovlen(IOVEC_BUFFER_CAPACITY as _);
+        msghdr.set_controllen(buffer_capacity() as _);
+
         let mut new_self = Self {
             message_buffer: [0u8; BUFFER_CAPACITY],
             iovec_buffer: [0u8; IOVEC_BUFFER_CAPACITY],
-            iovec: posix::iovec {
-                iov_base: core::ptr::null_mut::<posix::void>(),
-                iov_len: IOVEC_BUFFER_CAPACITY,
-            },
-            message: posix::msghdr {
-                msg_name: core::ptr::null_mut::<posix::void>(),
-                msg_namelen: 0,
-                msg_iov: core::ptr::null_mut::<posix::iovec>(),
-                msg_iovlen: IOVEC_BUFFER_CAPACITY as _,
-                msg_control: core::ptr::null_mut::<posix::void>(),
-                msg_controllen: buffer_capacity() as _,
-                msg_flags: 0,
-            },
+            iovec,
+            message: msghdr,
             file_descriptors: vec![],
             credentials: None,
             is_prepared_for_send: false,
@@ -265,7 +259,9 @@ impl Default for SocketAncillary {
             _pin: PhantomPinned,
         };
 
-        new_self.iovec.iov_base = new_self.iovec_buffer.as_mut_ptr() as *mut posix::void;
+        new_self
+            .iovec
+            .set_base(new_self.iovec_buffer.as_mut_ptr() as *mut posix::void);
         new_self.message.msg_iov = &mut new_self.iovec;
         new_self.message.msg_control = new_self.message_buffer.as_mut_ptr() as *mut posix::void;
 

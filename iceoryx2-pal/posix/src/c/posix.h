@@ -26,6 +26,11 @@
 #include <mach-o/dyld.h>
 #endif
 
+#ifdef __QNXNTO__
+#include <sys/neutrino.h>
+#include <sys/syspage.h> // needed for affinity setting
+#endif
+
 #if !(defined(_WIN64) || defined(_WIN32))
 #include <arpa/inet.h>
 #include <dirent.h>

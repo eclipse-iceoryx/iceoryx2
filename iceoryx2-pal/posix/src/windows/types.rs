@@ -253,6 +253,51 @@ pub struct msghdr {
 }
 impl MemZeroedStruct for msghdr {}
 
+impl msghdr {
+    pub fn set_name(&mut self, name: *mut ::core::ffi::c_void, namelen: socklen_t) {
+        self.msg_name = name;
+        self.msg_namelen = namelen;
+    }
+
+    pub fn set_namelen(&mut self, namelen: socklen_t) {
+        self.msg_namelen = namelen;
+    }
+
+    pub fn set_iov(&mut self, iov: *mut iovec) {
+        self.msg_iov = iov;
+    }
+
+    pub fn set_iovlen(&mut self, iovlen: ::core::ffi::c_int) {
+        self.msg_iovlen = iovlen;
+    }
+
+    pub fn set_control(&mut self, control: *mut ::core::ffi::c_void) {
+        self.msg_control = control;
+    }
+
+    pub fn set_controllen(&mut self, controllen: socklen_t) {
+        self.msg_controllen = controllen;
+    }
+
+    pub fn set_flags(&mut self, flags: ::core::ffi::c_int) {
+        self.msg_flags = flags;
+    }
+}
+
+impl Default for msghdr {
+    fn default() -> Self {
+        Self {
+            msg_name: ::core::ptr::null_mut(),
+            msg_namelen: 0,
+            msg_iov: ::core::ptr::null_mut(),
+            msg_iovlen: 0,
+            msg_control: ::core::ptr::null_mut(),
+            msg_controllen: 0,
+            msg_flags: 0,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct cmsghdr {
@@ -267,6 +312,24 @@ pub struct iovec {
     pub iov_len: size_t,
 }
 impl MemZeroedStruct for iovec {}
+
+impl iovec {
+    pub fn set_base(&mut self, base: *mut ::core::ffi::c_void) {
+        self.iov_base = base;
+    }
+    pub fn set_len(&mut self, len: usize) {
+        self.iov_len = len as _;
+    }
+}
+
+impl Default for iovec {
+    fn default() -> Self {
+        Self {
+            iov_base: ::core::ptr::null_mut(),
+            iov_len: 0,
+        }
+    }
+}
 
 pub struct sockaddr {}
 impl MemZeroedStruct for sockaddr {}

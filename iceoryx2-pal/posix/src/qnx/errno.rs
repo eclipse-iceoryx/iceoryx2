@@ -16,6 +16,9 @@ use crate::posix::types::*;
 use crate::ErrnoEnumGenerator;
 use core::{ffi::CStr, fmt::Display};
 
+extern crate alloc;
+use alloc::string::ToString;
+
 ErrnoEnumGenerator!(
   assign
     ESUCCES = 0;
@@ -54,46 +57,68 @@ ErrnoEnumGenerator!(
     EPIPE,
     EDOM,
     ERANGE,
-    //WOULDBLOCK = AGAIN
-
-    // GNU extensions for POSIX
-    EDEADLK,
-    ENAMETOOLONG,
-    ENOLCK,
-    ENOSYS,
-    ENOTEMPTY,
-    ELOOP,
     ENOMSG,
     EIDRM,
-    // ECHRNG,
-    // EL2NSYNC,
-    // EL3HLT,
-    // EL3RST,
-    // ELNRNG,
-    // EUNATCH,
-    // ENOCSI,
-    // EL2HLT,
-    // EBADE,
-    // EBADR,
-    // EXFULL,
-    // ENOANO,
-    // EBADRQC,
-    // EBADSLT,
+    ECHRNG,
+    EL2NSYNC,
+    EL3HLT,
+    EL3RST,
+    ELNRNG,
+    EUNATCH,
+    ENOCSI,
+    EL2HLT,
+    EDEADLK,
+    ENOLCK,
+    ECANCELED,
+    ENOTSUP,
+    EDQUOT,
+    EBADE,
+    EBADR,
+    EXFULL,
+    ENOANO,
+    EBADRQC,
+    EBADSLT,
+    EDEADLOCK,
+    EBFONT,
+    EOWNERDEAD,
+    ENOSTR,
+    ENODATA,
+    ETIME,
+    ENOSR,
+    ENONET,
+    ENOPKG,
+    EREMOTE,
+    ENOLINK,
+    EADV,
+    ESRMNT,
+    ECOMM,
+    EPROTO,
     EMULTIHOP,
-    EOVERFLOW,
-    // ENOTUNIQ,
-    // EBADFD,
     EBADMSG,
-    // EREMCHG,
-    // ELIBACC,
-    // ELIBBAD,
-    // ELIBSCN,
-    // ELIBMAX,
-    // ELIBEXEC,
+    ENAMETOOLONG,
+    EOVERFLOW,
+    ENOTUNIQ,
+    EBADFD,
+    EREMCHG,
+    ELIBACC,
+    ELIBBAD,
+    ELIBSCN,
+    ELIBMAX,
+    ELIBEXEC,
     EILSEQ,
-    // ERESTART,
-    // ESTRPIPE,
+    ENOSYS,
+    ELOOP,
+    ERESTART,
+    ESTRPIPE,
+    ENOTEMPTY,
     EUSERS,
+    ENOTRECOVERABLE,
+    EOPNOTSUPP,
+    EFPOS,
+    ESTALE,
+//     EWOULDBLOCK, // Duplicate value, same as EAGAIN
+    EINPROGRESS,
+    EALREADY,
     ENOTSOCK,
     EDESTADDRREQ,
     EMSGSIZE,
@@ -101,7 +126,6 @@ ErrnoEnumGenerator!(
     ENOPROTOOPT,
     EPROTONOSUPPORT,
     ESOCKTNOSUPPORT,
-    ENOTSUP,
     EPFNOSUPPORT,
     EAFNOSUPPORT,
     EADDRINUSE,
@@ -120,34 +144,33 @@ ErrnoEnumGenerator!(
     ECONNREFUSED,
     EHOSTDOWN,
     EHOSTUNREACH,
-    EALREADY,
-    EINPROGRESS,
-    ESTALE,
-    EDQUOT,
-    // ENOMEDIUM,
-    // EMEDIUMTYPE,
-    ECANCELED,
-    // ENOKEY,
-    // EKEYEXPIRED,
-    // EKEYREVOKED,
-    // EKEYREJECTED,
-    EOWNERDEAD,
-    ENOTRECOVERABLE
-    // ERFKILL,
-    // EHWPOISON,
+    EBADRPC,
+    ERPCMISMATCH,
+    EPROGUNAVAIL,
+    EPROGMISMATCH,
+    EPROCUNAVAIL,
+    ENOREMOTE,
+    ENONDP,
+    EBADFSYS,
+    EMORE,
+    ECTRLTERM,
+    ENOLIC,
+    ESRVRFAULT,
+    EENDIAN,
+    ESECTYPEINVAL
 );
 
 impl Errno {
     pub fn get() -> Errno {
-        unsafe { *crate::internal::__errno_location() }.into()
+        unsafe { *crate::internal::__get_errno_ptr() }.into()
     }
 
     pub fn set(value: Errno) {
-        unsafe { *crate::internal::__errno_location() = value as i32 };
+        unsafe { *crate::internal::__get_errno_ptr() = value as i32 };
     }
 
     pub fn reset() {
-        unsafe { *crate::internal::__errno_location() = 0 };
+        unsafe { *crate::internal::__get_errno_ptr() = 0 };
     }
 }
 

@@ -14,6 +14,9 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::posix::{closedir, opendir, readdir, types::*};
+extern crate alloc;
+use alloc::vec;
+use alloc::vec::Vec;
 
 pub unsafe fn mlock(addr: *const void, len: size_t) -> int {
     crate::internal::mlock(addr, len)
@@ -41,7 +44,9 @@ pub unsafe fn shm_unlink(name: *const c_char) -> int {
 
 pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     let mut result = vec![];
-    let dir = opendir(c"/dev/shm/".as_ptr().cast());
+    let mut search_path = iceoryx2_pal_configuration::SHARED_MEMORY_DIRECTORY.to_vec();
+    search_path.push(0);
+    let dir = opendir(search_path.as_ptr().cast());
     if dir.is_null() {
         return result;
     }
@@ -52,11 +57,27 @@ pub unsafe fn shm_list() -> Vec<[i8; 256]> {
             break;
         }
         let mut temp = [0i8; 256];
-        for (i, c) in temp.iter_mut().enumerate() {
-            *c = (*entry).d_name[i] as _;
-            if (*entry).d_name[i] == 0 {
+
+        // https://www.qnx.com/developers/docs/7.1/index.html#com.qnx.doc.neutrino.lib_ref/topic/d/dirent.html
+        // For some reason, the `d_name` field of `dirent` has size 1 on QNX.
+        // The docs mentions:
+        //   If using readdir(), the dirent structures returned by this function supply enough
+        //   space to hold the entire name.
+        //
+        // My assumption is that QNX creates a buffer large enough for the full name, but only
+        // provides the address to the first character.
+        //
+        // Therefore, I cast the d_name to a pointer and read each byte until the null terminator
+        // is found.
+        let name_ptr = (*entry).d_name.as_ptr();
+        let mut i = 0;
+        for c in temp.iter_mut() {
+            let byte_val = *name_ptr.add(i);
+            if byte_val == 0 {
                 break;
             }
+            *c = byte_val as i8;
+            i += 1;
         }
 
         // skip empty names
@@ -84,7 +105,7 @@ pub unsafe fn mmap(
     fd: int,
     off: off_t,
 ) -> *mut void {
-    crate::internal::mmap(addr, len, prot, flags, fd, off)
+    internal::mmap(addr, len, prot, flags, fd, off)
 }
 
 pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
@@ -93,4 +114,36 @@ pub unsafe fn munmap(addr: *mut void, len: size_t) -> int {
 
 pub unsafe fn mprotect(addr: *mut void, len: size_t, prot: int) -> int {
     crate::internal::mprotect(addr, len, prot)
+}
+
+#[cfg(target_pointer_width = "32")]
+mod internal {
+    use super::*;
+
+    pub unsafe fn mmap(
+        addr: *mut void,
+        len: size_t,
+        prot: int,
+        flags: int,
+        fd: int,
+        off: off_t,
+    ) -> *mut void {
+        crate::internal::mmap(addr, len, prot, flags, fd, off)
+    }
+}
+
+#[cfg(target_pointer_width = "64")]
+mod internal {
+    use super::*;
+
+    pub unsafe fn mmap(
+        addr: *mut void,
+        len: size_t,
+        prot: int,
+        flags: int,
+        fd: int,
+        off: off_t,
+    ) -> *mut void {
+        crate::internal::mmap64(addr, len, prot, flags, fd, off)
+    }
 }

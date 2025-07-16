@@ -16,9 +16,35 @@
 use crate::posix::types::*;
 
 pub unsafe fn getrlimit(resource: int, rlim: *mut rlimit) -> int {
-    crate::internal::getrlimit(resource, rlim)
+    internal::getrlimit(resource, rlim)
 }
 
 pub unsafe fn setrlimit(resource: int, rlim: *const rlimit) -> int {
-    crate::internal::setrlimit(resource, rlim)
+    internal::setrlimit(resource, rlim)
+}
+
+#[cfg(target_pointer_width = "32")]
+mod internal {
+    use super::*;
+
+    pub unsafe fn getrlimit(resource: int, rlim: *mut rlimit) -> int {
+        crate::internal::getrlimit(resource, rlim)
+    }
+
+    pub unsafe fn setrlimit(resource: int, rlim: *const rlimit) -> int {
+        crate::internal::setrlimit(resource, rlim)
+    }
+}
+
+#[cfg(target_pointer_width = "64")]
+mod internal {
+    use super::*;
+
+    pub unsafe fn getrlimit(resource: int, rlim: *mut rlimit) -> int {
+        crate::internal::getrlimit64(resource, rlim)
+    }
+
+    pub unsafe fn setrlimit(resource: int, rlim: *const rlimit) -> int {
+        crate::internal::setrlimit64(resource, rlim)
+    }
 }

@@ -14,15 +14,30 @@
 #![allow(clippy::missing_safety_doc)]
 
 use crate::posix::types::*;
+extern crate alloc;
+use alloc::borrow::ToOwned;
 use alloc::ffi::CString;
 
 pub unsafe fn proc_pidpath(pid: pid_t, buffer: *mut c_char, buffer_len: size_t) -> isize {
     let path = if pid == crate::internal::getpid() {
-        c"/proc/self/exe".to_owned()
+        c"/proc/self/exefile".to_owned()
     } else {
-        CString::new(format!("/proc/{pid}/exe")).expect("String without 0 bytes")
+        CString::new(alloc::format!("/proc/{pid}/exefile")).expect("String without 0 bytes")
     };
-    crate::internal::readlink(path.as_ptr().cast(), buffer.cast(), buffer_len)
+
+    // Open the file and read the contents (on QNX, this file is NOT a symlink)
+    let fd = crate::posix::open(path.as_ptr().cast(), crate::posix::O_RDONLY as _);
+    if fd < 0 {
+        return -1;
+    }
+    let bytes_read = crate::posix::read(fd, buffer.cast(), buffer_len);
+    if bytes_read < 0 {
+        return -1;
+    }
+    crate::posix::close(fd);
+
+    // Do not include the null terminator
+    bytes_read - 1 as isize
 }
 
 pub unsafe fn sysconf(name: int) -> long {
@@ -66,7 +81,7 @@ pub unsafe fn unlink(pathname: *const c_char) -> int {
 }
 
 pub unsafe fn lseek(fd: int, offset: off_t, whence: int) -> off_t {
-    crate::internal::lseek(fd, offset, whence)
+    internal::lseek(fd, offset, whence)
 }
 
 pub unsafe fn getuid() -> uid_t {
@@ -82,7 +97,7 @@ pub unsafe fn rmdir(pathname: *const c_char) -> int {
 }
 
 pub unsafe fn ftruncate(fd: int, length: off_t) -> int {
-    crate::internal::ftruncate(fd, length)
+    internal::ftruncate(fd, length)
 }
 
 pub unsafe fn fchown(fd: int, owner: uid_t, group: gid_t) -> int {
@@ -91,4 +106,28 @@ pub unsafe fn fchown(fd: int, owner: uid_t, group: gid_t) -> int {
 
 pub unsafe fn fsync(fd: int) -> int {
     crate::internal::fsync(fd)
+}
+
+#[cfg(target_pointer_width = "32")]
+mod internal {
+    use super::*;
+
+    pub unsafe fn lseek(fd: int, offset: off_t, whence: int) -> off_t {
+        crate::internal::lseek(fd, offset, whence)
+    }
+    pub unsafe fn ftruncate(fd: int, length: off_t) -> int {
+        crate::internal::ftruncate(fd, length)
+    }
+}
+
+#[cfg(target_pointer_width = "64")]
+mod internal {
+    use super::*;
+
+    pub unsafe fn lseek(fd: int, offset: off_t, whence: int) -> off_t {
+        crate::internal::lseek64(fd, offset, whence)
+    }
+    pub unsafe fn ftruncate(fd: int, length: off_t) -> int {
+        crate::internal::ftruncate64(fd, length)
+    }
 }

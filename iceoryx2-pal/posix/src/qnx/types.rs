@@ -44,8 +44,8 @@ pub type mode_t = crate::internal::mode_t;
 pub type nlink_t = crate::internal::nlink_t;
 pub type off_t = crate::internal::off_t;
 pub type pid_t = crate::internal::pid_t;
-pub type rlim_t = crate::internal::rlim_t;
-pub type __rlim_t = crate::internal::__rlim_t;
+pub type rlim_t = internal::rlim_t;
+pub type __rlim_t = internal::__rlim_t;
 pub type sa_family_t = crate::internal::sa_family_t;
 pub type short = core::ffi::c_short;
 pub type sighandler_t = size_t;
@@ -60,49 +60,53 @@ pub type uint = crate::internal::uint;
 pub type ushort = crate::internal::ushort;
 pub type void = core::ffi::c_void;
 
-pub(crate) type native_cpu_set_t = crate::internal::cpu_set_t;
-impl MemZeroedStruct for native_cpu_set_t {}
-
 pub type sigset_t = crate::internal::sigset_t;
 impl MemZeroedStruct for sigset_t {}
 
 pub type pthread_barrier_t = crate::internal::pthread_barrier_t;
 impl MemZeroedStruct for pthread_barrier_t {}
 
-pub type pthread_barrierattr_t = crate::internal::pthread_barrierattr_t;
-impl MemZeroedStruct for pthread_barrierattr_t {}
+pub type sync_t = crate::internal::sync_t;
+impl MemZeroedStruct for sync_t {}
 
-pub type pthread_attr_t = crate::internal::pthread_attr_t;
+pub type sync_attr_t = crate::internal::_sync_attr;
+impl MemZeroedStruct for sync_attr_t {}
+
+pub type pthread_barrierattr_t = sync_attr_t;
+
+pub(crate) type native_pthread_attr_t = crate::internal::pthread_attr_t;
+impl MemZeroedStruct for native_pthread_attr_t {}
+
+pub struct pthread_attr_t {
+    pub native: native_pthread_attr_t,
+    pub affinity_mask: Option<crate::posix::cpu_set_t>,
+}
 impl MemZeroedStruct for pthread_attr_t {}
 
 pub type pthread_t = crate::internal::pthread_t;
 impl MemZeroedStruct for pthread_t {}
 
-pub type pthread_rwlockattr_t = crate::internal::pthread_rwlockattr_t;
-impl MemZeroedStruct for pthread_rwlockattr_t {}
+pub type pthread_rwlockattr_t = sync_attr_t;
 
 pub type pthread_rwlock_t = crate::internal::pthread_rwlock_t;
 impl MemZeroedStruct for pthread_rwlock_t {}
 
-pub type pthread_mutex_t = crate::internal::pthread_mutex_t;
-impl MemZeroedStruct for pthread_mutex_t {}
+pub type pthread_mutex_t = sync_t;
 
-pub type pthread_mutexattr_t = crate::internal::pthread_mutexattr_t;
-impl MemZeroedStruct for pthread_mutexattr_t {}
+pub type pthread_mutexattr_t = sync_attr_t;
 
-pub type sem_t = crate::internal::sem_t;
-impl MemZeroedStruct for sem_t {}
+pub type sem_t = sync_t;
 
 pub type flock = crate::internal::flock;
 impl MemZeroedStruct for flock {}
 
-pub type rlimit = crate::internal::rlimit;
+pub type rlimit = internal::rlimit;
 impl MemZeroedStruct for rlimit {}
 
 pub type sched_param = crate::internal::sched_param;
 impl MemZeroedStruct for sched_param {}
 
-pub(crate) type native_stat_t = crate::internal::stat;
+pub(crate) type native_stat_t = internal::stat;
 impl MemZeroedStruct for native_stat_t {}
 
 #[repr(C)]
@@ -132,9 +136,9 @@ impl From<native_stat_t> for stat_t {
             st_gid: value.st_gid,
             st_rdev: value.st_rdev,
             st_size: value.st_size,
-            st_atime: value.st_atim.tv_sec,
-            st_mtime: value.st_mtim.tv_sec,
-            st_ctime: value.st_ctim.tv_sec,
+            st_atime: unsafe { value.__bindgen_anon_2.st_atim.tv_sec },
+            st_mtime: unsafe { value.__bindgen_anon_1.st_mtim.tv_sec },
+            st_ctime: unsafe { value.__bindgen_anon_3.st_ctim.tv_sec },
             st_blksize: value.st_blksize,
             st_blocks: value.st_blocks,
         }
@@ -157,11 +161,76 @@ impl MemZeroedStruct for dirent {}
 pub type msghdr = crate::internal::msghdr;
 impl MemZeroedStruct for msghdr {}
 
+impl msghdr {
+    pub fn set_name(&mut self, name: *mut ::core::ffi::c_void, namelen: socklen_t) {
+        self.msg_name = name;
+        self.msg_namelen = namelen;
+    }
+
+    pub fn set_namelen(&mut self, namelen: socklen_t) {
+        self.msg_namelen = namelen;
+    }
+
+    pub fn set_iov(&mut self, iov: *mut iovec) {
+        self.msg_iov = iov;
+    }
+
+    pub fn set_iovlen(&mut self, iovlen: ::core::ffi::c_int) {
+        self.msg_iovlen = iovlen;
+    }
+
+    pub fn set_control(&mut self, control: *mut ::core::ffi::c_void) {
+        self.msg_control = control;
+    }
+
+    pub fn set_controllen(&mut self, controllen: socklen_t) {
+        self.msg_controllen = controllen;
+    }
+
+    pub fn set_flags(&mut self, flags: ::core::ffi::c_int) {
+        self.msg_flags = flags;
+    }
+}
+
+impl Default for msghdr {
+    fn default() -> Self {
+        Self {
+            msg_name: ::core::ptr::null_mut(),
+            msg_namelen: 0,
+            msg_iov: ::core::ptr::null_mut(),
+            msg_iovlen: 0,
+            msg_control: ::core::ptr::null_mut(),
+            msg_controllen: 0,
+            msg_flags: 0,
+        }
+    }
+}
+
 pub type cmsghdr = crate::internal::cmsghdr;
 impl MemZeroedStruct for cmsghdr {}
 
 pub type iovec = crate::internal::iovec;
 impl MemZeroedStruct for iovec {}
+
+impl iovec {
+    pub fn set_base(&mut self, base: *mut ::core::ffi::c_void) {
+        self.__bindgen_anon_1.iov_base = base;
+    }
+    pub fn set_len(&mut self, len: usize) {
+        self.iov_len = len as _;
+    }
+}
+
+impl Default for iovec {
+    fn default() -> Self {
+        Self {
+            __bindgen_anon_1: crate::internal::iovec__bindgen_ty_1 {
+                iov_base: ::core::ptr::null_mut(),
+            },
+            iov_len: 0,
+        }
+    }
+}
 
 pub type sockaddr = crate::internal::sockaddr;
 impl MemZeroedStruct for sockaddr {}
@@ -187,3 +256,19 @@ impl MemZeroedStruct for passwd {}
 
 pub type group = crate::internal::group;
 impl MemZeroedStruct for group {}
+
+#[cfg(target_pointer_width = "32")]
+mod internal {
+    pub type rlim_t = crate::internal::rlimit;
+    pub type __rlim_t = crate::internal::rlim_t;
+    pub type rlimit = crate::internal::rlimit;
+    pub type stat = crate::internal::stat;
+}
+
+#[cfg(target_pointer_width = "64")]
+mod internal {
+    pub type rlim_t = crate::internal::rlimit64;
+    pub type __rlim_t = crate::internal::rlim64_t;
+    pub type rlimit = crate::internal::rlimit64;
+    pub type stat = crate::internal::stat64;
+}

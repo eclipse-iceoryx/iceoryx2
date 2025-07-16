@@ -25,7 +25,7 @@ impl MemZeroedStruct for sigaction_t {}
 impl sigaction_t {
     pub fn set_handler(&mut self, handler: sighandler_t) {
         unsafe {
-            self.0.__sigaction_handler.sa_handler = core::mem::transmute::<
+            self.0.__sa_un._sa_handler = core::mem::transmute::<
                 usize,
                 core::option::Option<unsafe extern "C" fn(i32)>,
             >(handler);
@@ -45,7 +45,7 @@ impl core::fmt::Debug for sigaction_t {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let sa_handler = unsafe {
             #[allow(clippy::missing_transmute_annotations)]
-            core::mem::transmute::<_, usize>(self.0.__sigaction_handler)
+            core::mem::transmute::<_, usize>(self.0.__sa_un._sa_handler)
         };
         f.debug_struct("sigaction_t")
             .field("__sigaction_handler", &sa_handler)

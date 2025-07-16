@@ -24,7 +24,6 @@ pub(crate) unsafe fn scandir_impl(
 
     *namelist = core::ptr::null_mut::<*mut dirent>();
     let mut entries = vec![];
-    const DIRENT_SIZE: usize = core::mem::size_of::<dirent>();
 
     let cleanup = |entries: &mut Vec<*mut void>, namelist: *mut *mut *mut dirent| {
         entries.drain(..).for_each(|entry| {
@@ -38,7 +37,8 @@ pub(crate) unsafe fn scandir_impl(
     };
 
     loop {
-        let dirent_ptr = malloc(DIRENT_SIZE);
+        let dirent_ptr = malloc(core::mem::offset_of!(dirent, d_name) + crate::posix::NAME_MAX + 1);
+
         let mut result_ptr: *mut dirent = core::ptr::null_mut();
 
         if readdir_r(dirfd, dirent_ptr.cast(), &mut result_ptr as _) != 0 {

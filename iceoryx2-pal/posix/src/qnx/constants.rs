@@ -15,7 +15,7 @@
 
 use crate::posix::types::*;
 
-pub const CPU_SETSIZE: usize = crate::internal::__CPU_SETSIZE as _;
+pub const CPU_SETSIZE: usize = 1024 as _;
 pub const FD_SETSIZE: usize = crate::internal::FD_SETSIZE as _;
 pub const NULL_TERMINATOR: c_char = 0;
 pub const USER_NAME_LENGTH: usize = 255;
@@ -51,14 +51,14 @@ pub const MCL_FUTURE: int = crate::internal::MCL_FUTURE as _;
 pub const MAP_SHARED: int = crate::internal::MAP_SHARED as _;
 pub const MAP_FAILED: *mut void = u64::MAX as *mut void;
 
-pub const PTHREAD_BARRIER_SERIAL_THREAD: int = crate::internal::PTHREAD_BARRIER_SERIAL_THREAD as _;
+pub const PTHREAD_BARRIER_SERIAL_THREAD: int = -1; // NOTE: not available
 pub const PTHREAD_EXPLICIT_SCHED: int = crate::internal::PTHREAD_EXPLICIT_SCHED as _;
 pub const PTHREAD_INHERIT_SCHED: int = crate::internal::PTHREAD_INHERIT_SCHED as _;
 
 pub const MAX_SIGNAL_VALUE: usize = 32;
 
-pub const SO_PASSCRED: int = crate::internal::SO_PASSCRED as _;
-pub const SO_PEERCRED: int = crate::internal::SO_PEERCRED as _;
+pub const SO_PASSCRED: int = -2; // NOTE: not available
+pub const SO_PEERCRED: int = -3; // NOTE: not available
 pub const SCM_CREDENTIALS: int = 0x02;
 
 pub const PTHREAD_MUTEX_NORMAL: int = crate::internal::PTHREAD_MUTEX_NORMAL as _;
@@ -79,7 +79,7 @@ pub const _SC_XBS5_ILP32_OFF32: int = crate::internal::_SC_XBS5_ILP32_OFF32 as _
 pub const _SC_XBS5_ILP32_OFFBIG: int = crate::internal::_SC_XBS5_ILP32_OFFBIG as _;
 pub const _SC_XBS5_LP64_OFF64: int = crate::internal::_SC_XBS5_LP64_OFF64 as _;
 pub const _SC_XBS5_LPBIG_OFFBIG: int = crate::internal::_SC_XBS5_LPBIG_OFFBIG as _;
-pub const _SC_STREAMS: int = crate::internal::_SC_STREAMS as _;
+pub const _SC_STREAMS: int = -4; // NOTE: not available
 pub const _SC_V7_ILP32_OFF32: int = crate::internal::_SC_V7_ILP32_OFF32 as _;
 pub const _SC_V7_ILP32_OFFBIG: int = crate::internal::_SC_V7_ILP32_OFFBIG as _;
 pub const _SC_V7_LP64_OFF64: int = crate::internal::_SC_V7_LP64_OFF64 as _;
@@ -88,10 +88,8 @@ pub const _SC_SS_REPL_MAX: int = crate::internal::_SC_SS_REPL_MAX as _;
 pub const _SC_TRACE_EVENT_NAME_MAX: int = crate::internal::_SC_TRACE_EVENT_NAME_MAX as _;
 pub const _SC_TRACE_NAME_MAX: int = crate::internal::_SC_TRACE_NAME_MAX as _;
 pub const _SC_TRACE_SYS_MAX: int = crate::internal::_SC_TRACE_SYS_MAX as _;
-pub const _SC_THREAD_ROBUST_PRIO_INHERIT: int =
-    crate::internal::_SC_THREAD_ROBUST_PRIO_INHERIT as _;
-pub const _SC_THREAD_ROBUST_PRIO_PROTECT: int =
-    crate::internal::_SC_THREAD_ROBUST_PRIO_PROTECT as _;
+pub const _SC_THREAD_ROBUST_PRIO_INHERIT: int = -5; // NOTE: not available
+pub const _SC_THREAD_ROBUST_PRIO_PROTECT: int = -6; // NOTE: not available
 pub const _PC_SOCK_MAXBUF: int = crate::internal::_PC_SOCK_MAXBUF as _;
 pub const _PC_2_SYMLINKS: int = crate::internal::_PC_2_SYMLINKS as _;
 pub const _SC_TRACE_USER_EVENT_MAX: int = crate::internal::_SC_TRACE_USER_EVENT_MAX as _;
@@ -161,7 +159,7 @@ pub const SIGXFSZ: int = crate::internal::SIGXFSZ as _;
 pub const SIG_ERR: sighandler_t = sighandler_t::MAX;
 pub const SIG_DFL: int = 0;
 pub const SIG_IGN: int = 1;
-pub const SA_RESTART: int = crate::internal::SA_RESTART as _;
+pub const SA_RESTART: int = -7; // NOTE: not available
 
 pub const AF_LOCAL: sa_family_t = crate::internal::AF_UNIX as _;
 pub const AF_UNIX: sa_family_t = crate::internal::AF_UNIX as _;
@@ -180,8 +178,8 @@ pub const SO_RCVTIMEO: int = crate::internal::SO_RCVTIMEO as _;
 pub const SO_SNDTIMEO: int = crate::internal::SO_SNDTIMEO_OLD as _;
 #[cfg(target_pointer_width = "64")]
 pub const SO_SNDTIMEO: int = crate::internal::SO_SNDTIMEO as _;
-pub const SOCK_STREAM: int = crate::internal::__socket_type_SOCK_STREAM as _;
-pub const SOCK_DGRAM: int = crate::internal::__socket_type_SOCK_DGRAM as _;
+pub const SOCK_STREAM: int = crate::internal::SOCK_STREAM as _;
+pub const SOCK_DGRAM: int = crate::internal::SOCK_DGRAM as _;
 pub const IPPROTO_UDP: int = crate::internal::IPPROTO_UDP as _;
 pub const SOCK_NONBLOCK: int = O_NONBLOCK;
 pub const MSG_PEEK: int = crate::internal::MSG_PEEK as _;
@@ -217,7 +215,7 @@ pub const S_ISVTX: mode_t = crate::internal::S_ISVTX as _;
 
 pub const CLOCK_REALTIME: clockid_t = crate::internal::CLOCK_REALTIME as _;
 pub const CLOCK_MONOTONIC: clockid_t = crate::internal::CLOCK_MONOTONIC as _;
-pub const CLOCK_TIMER_ABSTIME: int = 1;
+pub const CLOCK_TIMER_ABSTIME: int = crate::internal::TIMER_ABSTIME as _;
 
 pub const F_OK: int = crate::internal::F_OK as _;
 pub const R_OK: int = crate::internal::R_OK as _;

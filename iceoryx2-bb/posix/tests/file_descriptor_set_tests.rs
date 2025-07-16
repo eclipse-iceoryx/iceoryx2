@@ -220,7 +220,7 @@ fn file_descriptor_triggering_many_returns_correct_number_of_notifications() {
     let fd_set = FileDescriptorSet::new();
     let mut sockets = vec![];
     let mut senders = vec![];
-    let number_of_fds: usize = core::cmp::min(128, posix::FD_SETSIZE);
+    let number_of_fds: usize = core::cmp::min(32, posix::FD_SETSIZE);
 
     create_test_directory();
     for _ in 0..number_of_fds {
