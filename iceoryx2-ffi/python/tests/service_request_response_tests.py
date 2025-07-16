@@ -160,3 +160,39 @@ def test_send_with_request_header_works(
 
     active_request = server.receive()
     assert active_request.user_header().contents.value == 89
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_send_with_response_header_works(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .response_header(ctypes.c_uint64)
+        .create()
+    )
+
+    client = service.client_builder().create()
+    server = service.server_builder().create()
+
+    request_uninit = client.loan_uninit()
+    request = request_uninit.assume_init()
+    pending_response = request.send()
+
+    active_request = server.receive()
+    response_uninit = active_request.loan_uninit()
+    ctypes.memmove(
+        response_uninit.user_header_ptr, ctypes.byref(ctypes.c_uint64(44)), 8
+    )
+    assert response_uninit.user_header().contents.value == 44
+    response = response_uninit.assume_init()
+    assert response.user_header().contents.value == 44
+    response.send()
+
+    response = pending_response.receive()
+    assert response.user_header().contents.value == 44

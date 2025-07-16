@@ -125,6 +125,7 @@ def set_response_header(
 
 def request_payload(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the requests payload."""
+    assert self.__request_payload_type_details is not None
     if get_origin(self.__request_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__request_payload_type_details)
         return Slice(self.payload_ptr, self.__slice_len, contained_type)
@@ -136,6 +137,7 @@ def request_payload(self: Any) -> Any:
 
 def response_payload(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the responses payload."""
+    assert self.__response_payload_type_details is not None
     if get_origin(self.__response_payload_type_details) is Slice:
         (contained_type,) = get_args(self.__response_payload_type_details)
         return Slice(self.payload_ptr, self.__slice_len, contained_type)
@@ -147,6 +149,7 @@ def response_payload(self: Any) -> Any:
 
 def request_header(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the request header."""
+    assert self.__request_header_type_details is not None
     return ctypes.cast(
         self.user_header_ptr, ctypes.POINTER(self.__request_header_type_details)
     )
@@ -154,6 +157,7 @@ def request_header(self: Any) -> Any:
 
 def response_header(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the response header."""
+    assert self.__response_header_type_details is not None
     return ctypes.cast(
         self.user_header_ptr, ctypes.POINTER(self.__response_header_type_details)
     )
@@ -161,6 +165,7 @@ def response_header(self: Any) -> Any:
 
 def write_request_payload(self: RequestMutUninit, t: Type[ReqT]) -> RequestMut:
     """Writes the provided payload into the request."""
+    assert self.__request_payload_type_details is not None
     assert ctypes.sizeof(t) == ctypes.sizeof(self.__request_payload_type_details)
     assert ctypes.alignment(t) == ctypes.alignment(self.__request_payload_type_details)
 
@@ -170,6 +175,7 @@ def write_request_payload(self: RequestMutUninit, t: Type[ReqT]) -> RequestMut:
 
 def write_response_payload(self: ResponseMutUninit, t: Type[ReqT]) -> ResponseMut:
     """Writes the provided payload into the response."""
+    assert self.__response_payload_type_details is not None
     assert ctypes.sizeof(t) == ctypes.sizeof(self.__response_payload_type_details)
     assert ctypes.alignment(t) == ctypes.alignment(self.__response_payload_type_details)
 
@@ -273,6 +279,7 @@ def allocation_strategy_response(
 
 def send_request_copy(self: Client, t: Type[ReqT]) -> PendingResponse:
     """Sends a copy of the provided type."""
+    assert self.__request_payload_type_details is not None
     request_uninit = self.__loan_uninit()
 
     assert ctypes.sizeof(t) == ctypes.sizeof(
@@ -289,6 +296,7 @@ def send_request_copy(self: Client, t: Type[ReqT]) -> PendingResponse:
 
 def send_response_copy(self: ActiveRequest, t: Type[ResT]) -> Any:
     """Sends a copy of the provided type."""
+    assert self.__response_payload_type_details is not None
     response_uninit = self.__loan_uninit()
 
     assert ctypes.sizeof(t) == ctypes.sizeof(
