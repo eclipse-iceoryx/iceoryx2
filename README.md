@@ -2,13 +2,9 @@
 
 [![CI](https://github.com/eclipse-iceoryx/iceoryx2/workflows/CI/badge.svg)](https://github.com/eclipse-iceoryx/iceoryx2/actions/workflows/build-test.yml?query=branch%3Amain++)
 [![Codecov](https://codecov.io/gh/eclipse-iceoryx/iceoryx2/branch/main/graph/badge.svg?branch=main)](https://codecov.io/gh/eclipse-iceoryx/iceoryx2?branch=main)
-[![Benchmarks](https://img.shields.io/badge/Benchmarks-gray)](benchmarks/README.md)
-[![Changelog](https://img.shields.io/badge/Changelog-gray)](CHANGELOG.md)
-[![Crates.io](https://img.shields.io/crates/v/iceoryx2?color=blue)](https://crates.io/crates/iceoryx2)
 [![Examples](https://img.shields.io/badge/Examples-gray)](examples/)
 [![FAQ](https://img.shields.io/badge/FAQ-gray)](FAQ.md)
 [![Gitter](https://badges.gitter.im/eclipse-iceoryx/iceoryx.svg)](https://gitter.im/eclipse/iceoryx)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Roadmap](https://img.shields.io/badge/Roadmap-gray)](ROADMAP.md)
 
 <p align="center">
@@ -19,29 +15,22 @@
 
 # iceoryx2 - Zero-Copy Lock-Free IPC Purely Written In Rust
 
-* [iceoryx2 - Zero-Copy Lock-Free IPC Purely Written In Rust](#iceoryx2---zero-copy-lock-free-ipc-purely-written-in-rust)
-    * [Introduction](#introduction)
+* [Introduction](#introduction)
+* [Performance](#performance)
+    * [Comparision Of Mechanisms](#comparision-of-mechanisms)
+        * [Benchmark-System](#benchmark-system)
+    * [Comparision Of Architectures](#comparision-of-architectures)
+* [Getting Started](#getting-started)
     * [Documentation](#documentation)
-    * [Performance](#performance)
-        * [Comparision Of Mechanisms](#comparision-of-mechanisms)
-            * [Benchmark-System](#benchmark-system)
-        * [Comparision Of Architectures](#comparision-of-architectures)
-    * [Getting Started](#getting-started)
-        * [Publish Subscribe](#publish-subscribe)
-            * [publisher.rs](#publisherrs)
-            * [subscriber.rs](#subscriberrs)
-        * [Request Response](#request-response)
-            * [client.rs](#clientrs)
-            * [server.rs](#serverrs)
-        * [Events](#events)
-            * [notifier.rs](#notifierrs)
-            * [listener.rs](#listenerrs)
-            * [listener.rs (grabbing all events at once)](#listenerrs-grabbing-all-events-at-once)
-        * [Custom Configuration](#custom-configuration)
-    * [Supported Platforms](#supported-platforms)
-    * [Language Bindings](#language-bindings)
-    * [Commercial Support](#commercial-support)
-    * [Thanks To All Contributors](#thanks-to-all-contributors)
+    * [Publish Subscribe](#publish-subscribe)
+    * [Request Response](#request-response)
+    * [Events](#events)
+    * [Custom Configuration](#custom-configuration)
+    * [FAQ](#faq)
+* [Supported Platforms](#supported-platforms)
+* [Language Bindings](#language-bindings)
+* [Commercial Support](#commercial-support)
+* [Thanks To All Contributors](#thanks-to-all-contributors)
 
 ## Introduction
 
@@ -82,16 +71,6 @@ communication needs. So, if you're looking for lightning-fast, cross-platform
 communication that doesn't compromise on performance or modularity, iceoryx2 is
 your answer.
 
-## Documentation
-
-The documentation can be found at:
-
-| language |                          documentation link |
-| :------: | ------------------------------------------: |
-|    C     |           <https://iceoryx2.readthedocs.io> |
-|   C++    |           <https://iceoryx2.readthedocs.io> |
-|   Rust   | <https://docs.rs/iceoryx2/latest/iceoryx2/> |
-
 ## Performance
 
 ### Comparision Of Mechanisms
@@ -111,6 +90,17 @@ The documentation can be found at:
 ![benchmark on different systems](internal/plots/benchmark_architecture.svg)
 
 ## Getting Started
+
+### Documentation
+
+The documentation can be found at:
+
+| language |                          documentation link |
+| :------: | ------------------------------------------: |
+|    C     |           <https://iceoryx2.readthedocs.io> |
+|   C++    |           <https://iceoryx2.readthedocs.io> |
+|  Python  |           <https://iceoryx2.readthedocs.io> |
+|   Rust   | <https://docs.rs/iceoryx2/latest/iceoryx2/> |
 
 ### Publish Subscribe
 
@@ -391,6 +381,11 @@ It is possible to configure default quality of service settings, paths and file
 suffixes in a custom configuration file. For more details visit the
 [configuration directory](config/).
 
+### FAQ
+
+* [End-User FAQ](FAQ.md)
+* [Developer FAQ](FAQ.md)
+
 ## Supported Platforms
 
 The support levels can be adjusted when required.
@@ -419,7 +414,7 @@ The support levels can be adjusted when required.
 | Language |   State |
 | -------- | ------: |
 | C / C++  |    done |
-| Python   | planned |
+| Python   |    done |
 | Go       | planned |
 | C#       | planned |
 | Java     | planned |
