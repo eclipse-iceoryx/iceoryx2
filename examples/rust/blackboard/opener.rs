@@ -35,9 +35,9 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     while node.wait(CYCLE_TIME).is_ok() {
         println!("read values:");
 
-        println!("key: 0, {}", reader_handle_0.get());
-        println!("key: 5, {}", reader_handle_5.get());
-        println!("key: 9, {}\n", reader_handle_9.get());
+        println!("key: 0, value: {}", reader_handle_0.get());
+        println!("key: 5, value: {}", reader_handle_5.get());
+        println!("key: 9, value: {}\n", reader_handle_9.get());
     }
 
     println!("exit");
