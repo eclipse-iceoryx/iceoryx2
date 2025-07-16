@@ -27,12 +27,6 @@ clap = { workspace = true }
 name = "examples_common"
 path = "rust/_examples_common/lib.rs"
 
-# blackboard_remove
-
-[[example]]
-name = "blackboard"
-path = "rust/blackboard/blackboard.rs"
-
 # blackboard
 
 [[example]]
