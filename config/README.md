@@ -27,6 +27,19 @@ locations, in order:
 If no configuration file is found in these locations, **iceoryx2** will use
 its default settings.
 
+## Note
+
+* The command
+  ```cli
+  iox2 config generate local
+  ```
+  automatically generates the `config.toml` file at `$HOME/.config/iceoryx2/iceoryx2.toml`.
+* The command
+  ```cli
+  iox2 config generate global
+  ```
+  automatically generates the `config.toml` file at `/etc/iceoryx2/iceoryx2.toml`.
+
 ## Sections
 
 The configuration is organized into two main sections:
@@ -38,7 +51,7 @@ Adjusting `global` settings ensures a non-interfering setup.
 
 ## Global
 
-* `global.root-path-{unix|windows}` - [string]: Defines the path for all
+* `global.root-path` - [string]: Defines the path for all
   iceoryx2 files and directories.
 * `global.prefix` - [string]: Prefix that is used for every file iceoryx2
   creates.

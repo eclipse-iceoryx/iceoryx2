@@ -21,6 +21,7 @@ pub mod settings {
     pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"/dev/shm/";
     pub const PATH_SEPARATOR: u8 = b'/';
     pub const ROOT: &[u8] = b"/";
+    pub const ICEORYX2_ROOT_PATH: &[u8] = b"/tmp/iceoryx2/";
     pub const FILENAME_LENGTH: usize = 255;
     // it is actually 4096 but to be more compatible with windows and also safe some stack the number
     // is reduced to 255
@@ -40,6 +41,7 @@ pub mod settings {
     pub const SHARED_MEMORY_DIRECTORY: &[u8] = b"C:\\Temp\\iceoryx2\\shm\\";
     pub const PATH_SEPARATOR: u8 = b'\\';
     pub const ROOT: &[u8] = b"C:\\";
+    pub const ICEORYX2_ROOT_PATH: &[u8] = b"C:\\Temp\\iceoryx2\\";
     pub const FILENAME_LENGTH: usize = 255;
     pub const PATH_LENGTH: usize = 255;
     pub const AT_LEAST_TIMING_VARIANCE: f32 = 1.0;

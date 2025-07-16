@@ -76,6 +76,9 @@
   [#822](https://github.com/eclipse-iceoryx/iceoryx2/issues/822)
 * Make default max event ID smaller
   [#828](https://github.com/eclipse-iceoryx/iceoryx2/issues/828)
+* Remove the `config/iceoryx2.toml` to reduce effort to keep the
+  built in `iceoryx.toml` and `config.rs` in sync
+  [#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
 
 ### Testing
 
@@ -107,7 +110,15 @@
 
 ### Config Breaking Changes
 
-1. The default max event ID was reduced to 255 in order to have make bitset
+1. The previously separate fields `root-path-unix` and `root-path-windows` have
+  been unified into a single `root-path` entry in configs, located in
+  the `[global]` section of `iceoryx2.toml`.
+
+    The config file template from `config/iceoryx2.toml` was removed and
+    please refer to `config/README.md` on how to generate a default config file.
+  [#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
+
+2. The default max event ID was reduced to 255 in order to have make bitset
    based event implementations work out of the box. If a larger event ID is
    required, it can either be changed in the `iceoryx2.toml` file or with the
    `event_id_max_value` in the event service builder.
