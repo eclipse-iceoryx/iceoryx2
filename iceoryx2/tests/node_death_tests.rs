@@ -622,7 +622,7 @@ mod node_death_tests {
             S::Service::list(&config, |_| {
                 test_fail!("after the cleanup there shall be no more services");
             }),
-            is_err
+            is_ok
         );
     }
 

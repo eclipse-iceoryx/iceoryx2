@@ -667,10 +667,11 @@ pub(crate) mod internal {
 
             trace!(from origin, ">>>>>>>>>>>>>>>>>>>>>>>Remove service? {remove_service}");
             if remove_service {
-                let static_storage_config =
-                    config_scheme::static_config_storage_config::<S>(config);
-                let x = static_storage_config.type_details();
-                let mgmt_name = core::any::type_name::<u64>();
+                let details = details::<S>(config, &service_id.0.clone().into())
+                    .unwrap()
+                    .unwrap();
+                let mgmt_name = details.static_details.blackboard().type_details.type_name;
+                println!(">>>>>>>>>>>>>>>>> mgmt_name = {}", mgmt_name);
                 match unsafe {
                     remove_static_service_config::<S>(config, &service_id.0.clone().into())
                 } {
@@ -707,7 +708,24 @@ pub(crate) mod internal {
                         //   * static_config might contain user given type identifier !=
                         //   core::any::type_name, see cross language
                         unsafe {
-                            <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(&mut mgmt_config, "Asd")
+                            <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name.as_str().unwrap())
+                        };
+                        let l =
+                            <S::BlackboardMgmt<u64> as NamedConceptMgmt>::list_cfg(&mgmt_config);
+                        if l.is_ok() {
+                            trace!(from origin, ">>>>>>>>>>>>> found mgmt segment");
+                            let l = l.unwrap();
+                            trace!(from origin, ">>>>>>>>>>>>> how many: {}", l.len());
+                            for e in l {
+                                trace!(from origin, ">>>>>>>>>>>>> name: {}", e);
+                                trace!(from origin, ">>>>>>>>>>>>> id: {}", service_id.as_str());
+                            }
+                        }
+                        let _y = unsafe {
+                            <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
+                                &name,
+                                &mgmt_config,
+                            )
                         };
 
                         /////

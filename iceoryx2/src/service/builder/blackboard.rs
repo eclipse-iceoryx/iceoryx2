@@ -508,9 +508,17 @@ impl<
 
                 // create the management segment
                 let capacity = self.builder.internals.len();
-                let mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
+                //let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
+                //self.builder.base.shared_node.config(),
+                //);
+                /////////
+                let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                     self.builder.base.shared_node.config(),
                 );
+                unsafe {
+                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage::<Mgmt<KeyType>>>::__internal_set_type_name_in_config(&mut mgmt_config, core::any::type_name::<KeyType>())
+                };
+                ////////
                 let mgmt_storage = fail!(from self, when
                     <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<Mgmt<KeyType>,
                     >>::Builder::new(&name)
