@@ -21,7 +21,6 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     type KeyType = u32;
-    // TODO: create or open
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .blackboard_opener::<KeyType>()
@@ -30,7 +29,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let reader = service.reader_builder().create()?;
 
     let reader_handle_0 = reader.entry::<u64>(&0)?;
-    let reader_handle_5 = reader.entry::<FixedSizeByteString<100>>(&5)?;
+    let reader_handle_5 = reader.entry::<FixedSizeByteString<30>>(&5)?;
     let reader_handle_9 = reader.entry::<f32>(&9)?;
 
     while node.wait(CYCLE_TIME).is_ok() {
