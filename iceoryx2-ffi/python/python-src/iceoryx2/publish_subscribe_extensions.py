@@ -163,9 +163,7 @@ def initial_max_slice_len(
 def allocation_strategy(
     self: PortFactoryPublisher, value: AllocationStrategy
 ) -> PortFactoryPublisher:
-    """
-    Defines the allocation strategy that is used when the memory is exhausted.
-    """
+    """Defines the allocation strategy that is used when the memory is exhausted."""
     assert get_origin(self.__payload_type_details) is Slice
 
     return self.__allocation_strategy(value)

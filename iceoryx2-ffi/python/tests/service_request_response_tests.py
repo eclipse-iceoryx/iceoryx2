@@ -172,7 +172,7 @@ def test_send_with_request_user_header_works(
 
     request = request_uninit.assume_init()
     assert request.user_header().contents.value == 89
-    pending_response = request.send()
+    _pending_response = request.send()
 
     active_request = server.receive()
     assert active_request.user_header().contents.value == 89
@@ -372,7 +372,7 @@ def test_server_reallocation_fails_when_allocation_strategy_is_static(
         .create()
     )
 
-    pending_response = client.send_copy(Payload(data=1))
+    _pending_response = client.send_copy(Payload(data=1))
     active_request = server.receive()
 
     with pytest.raises(iox2.LoanError):
@@ -406,7 +406,7 @@ def test_server_reallocation_works_when_allocation_strategy_is_not_static(
         .create()
     )
 
-    pending_response = client.send_copy(Payload(data=1))
+    _pending_response = client.send_copy(Payload(data=1))
     active_request = server.receive()
 
     try:

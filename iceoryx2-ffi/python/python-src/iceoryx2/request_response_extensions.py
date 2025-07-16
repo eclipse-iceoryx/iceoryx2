@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-# """Strong type safe extensions for the request-response messaging pattern."""
+"""Strong type safe extensions for the request-response messaging pattern."""
 
 import ctypes
 from typing import Any, Type, TypeVar, get_args, get_origin
@@ -26,7 +26,11 @@ ResT = TypeVar("ResT", bound=ctypes.Structure)
 def request_response(
     self: ServiceBuilder, request: Type[ReqT], response: Type[ResT]
 ) -> ServiceBuilderPublishSubscribe:
-    """Returns the `ServiceBuilderRequestResponse` to create a new request-response service. The request/response payload ctype must be provided as argument."""
+    """
+    Returns the `ServiceBuilderRequestResponse` to create a new request-response service.
+
+    The request/response payload ctype must be provided as argument.
+    """
     request_type_name = request.__name__
     request_type_size = 0
     request_type_align = 0
@@ -274,9 +278,7 @@ def initial_max_slice_len_response(
 def allocation_strategy_request(
     self: PortFactoryClient, value: AllocationStrategy
 ) -> PortFactoryClient:
-    """
-    Defines the allocation strategy that is used when the memory is exhausted.
-    """
+    """Defines the allocation strategy that is used when the memory is exhausted."""
     assert get_origin(self.__request_payload_type_details) is Slice
 
     return self.__allocation_strategy(value)
@@ -285,9 +287,7 @@ def allocation_strategy_request(
 def allocation_strategy_response(
     self: PortFactoryServer, value: AllocationStrategy
 ) -> PortFactoryServer:
-    """
-    Defines the allocation strategy that is used when the memory is exhausted.
-    """
+    """Defines the allocation strategy that is used when the memory is exhausted."""
     assert get_origin(self.__response_payload_type_details) is Slice
 
     return self.__allocation_strategy(value)
