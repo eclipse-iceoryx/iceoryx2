@@ -1,4 +1,4 @@
-Welcome to iceoryx2's C / C++ documentation!
+Welcome to iceoryx2's documentation!
 ============================================
 
 .. image:: https://user-images.githubusercontent.com/8661268/114321508-64a6b000-9b1b-11eb-95ef-b84c91387cff.png

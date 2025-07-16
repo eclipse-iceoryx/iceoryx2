@@ -27,8 +27,13 @@ namespace iox2 {
 /// [`MessagingPattern::PublishSubscribe`] based communication.
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactorySubscriber {
+  public:
     /// Defines the required buffer size of the [`Subscriber`]. Smallest possible value is `1`.
+#ifdef DOXYGEN_MACRO_FIX
+    auto buffer_size(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, buffer_size);
+#endif
 
   public:
     PortFactorySubscriber(const PortFactorySubscriber&) = delete;

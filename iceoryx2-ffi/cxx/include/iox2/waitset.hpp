@@ -256,10 +256,15 @@ class WaitSet {
 
 /// The builder for the [`WaitSet`].
 class WaitSetBuilder {
+  public:
     /// Defines the [`SignalHandlingMode`] for the [`WaitSet`]. It affects the
     /// [`WaitSet::wait_and_process()`] and [`WaitSet::wait_and_process_once()`] calls
     /// that returns any received [`Signal`] via its [`WaitSetRunResult`] return value.
+#ifdef DOXYGEN_MACRO_FIX
+    auto signal_handling_mode(const SignalHandlingMode value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(SignalHandlingMode, signal_handling_mode);
+#endif
 
   public:
     WaitSetBuilder();
