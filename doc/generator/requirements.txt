@@ -6,3 +6,4 @@ sphinx-sitemap
 recommonmark
 nbsphinx
 myst-parser
+sphinx_design

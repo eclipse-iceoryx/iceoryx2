@@ -1,5 +1,5 @@
 Getting Started: C
-==================
+------------------
 
 .. include:: ../../../examples/c/README.md
    :parser: myst_parser.sphinx_

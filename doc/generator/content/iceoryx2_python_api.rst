@@ -1,5 +1,5 @@
 iceoryx2 Python API
-===================
+-------------------
 
 .. automodule:: iceoryx2
    :members:
