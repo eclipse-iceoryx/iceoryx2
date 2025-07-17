@@ -161,7 +161,7 @@ Language Bindings
    * - C / C++
      - done
    * - Python
-     - planned
+     - done
    * - Go
      - planned
    * - C#
