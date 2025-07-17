@@ -508,17 +508,29 @@ impl<
 
                 // create the management segment
                 let capacity = self.builder.internals.len();
-                //let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
-                //self.builder.base.shared_node.config(),
-                //);
-                /////////
+
                 let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                     self.builder.base.shared_node.config(),
                 );
-                unsafe {
-                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage::<Mgmt<KeyType>>>::__internal_set_type_name_in_config(&mut mgmt_config, core::any::type_name::<KeyType>())
+                let mgmt_name = match self
+                    .builder
+                    .config_details()
+                    .type_details
+                    .type_name
+                    .as_str()
+                {
+                    Ok(s) => s,
+                    Err(_) => {
+                        fail!(from self,
+                              with BlackboardCreateError::InternalFailure,
+                              "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
+                    }
                 };
-                ////////
+                // TODO: explain unsafe, open
+                unsafe {
+                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage::<Mgmt<KeyType>>>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name)
+                };
+
                 let mgmt_storage = fail!(from self, when
                     <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<Mgmt<KeyType>,
                     >>::Builder::new(&name)
@@ -739,9 +751,30 @@ impl<
 
                     let name =
                         blackboard_name(self.builder.base.service_config.service_id().as_str());
-                    let mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
+                    let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                         self.builder.base.shared_node.config(),
                     );
+                    let mgmt_name = match self
+                        .builder
+                        .config_details()
+                        .type_details
+                        .type_name
+                        .as_str()
+                    {
+                        Ok(s) => s,
+                        Err(_) => {
+                            fail!(from self,
+                              with BlackboardOpenError::InternalFailure,
+                              "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
+                        }
+                    };
+                    unsafe {
+                        <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<
+                            Mgmt<KeyType>,
+                        >>::__internal_set_type_name_in_config(
+                            &mut mgmt_config, mgmt_name
+                        )
+                    };
                     let mgmt_storage = fail!(from self, when
                         <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<Mgmt<KeyType>>
                         >::Builder::new(&name)

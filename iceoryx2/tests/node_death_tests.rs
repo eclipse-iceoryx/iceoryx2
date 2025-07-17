@@ -403,7 +403,7 @@ mod node_death_tests {
     // TODO: test writer
     #[test]
     fn dead_node_is_removed_from_blackboard_service<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
+        set_log_level_from_env_or(LogLevel::Trace);
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -627,7 +627,66 @@ mod node_death_tests {
     }
 
     #[test]
-    fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {}
+    fn writer_resources_are_removed_after_crash<S: Test>() {
+        // opener creates writer
+        // opener crashes
+        // new opener can create another writer
+    }
+
+    // TODO: test when key type has user defined name
+
+    #[test]
+    fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {
+        // either:
+        // find a way to list data and mgmt segment
+        // combine with "blackboard_service_is_removed_when_last_node_dies" test
+        // or:
+        // create blackboard service
+        // node crashes
+        // same service can be created
+        set_log_level_from_env_or(LogLevel::Trace);
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        let mut sut = S::create_test_node(&config).node;
+        core::mem::forget(
+            sut.service_builder(&service_name)
+                .blackboard_creator::<u64>()
+                .add_with_default::<u64>(0)
+                .create()
+                .unwrap(),
+        );
+        S::staged_death(&mut sut);
+
+        assert_that!(
+            S::Service::list(&config, |service_details| {
+                assert_that!(*service_details.static_details.name(), eq service_name);
+                CallbackProgression::Continue
+            }),
+            is_ok
+        );
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        assert_that!(
+            S::Service::list(&config, |_| {
+                test_fail!("after the cleanup there shall be no more services");
+            }),
+            is_ok
+        );
+
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<u64>(0)
+            .create();
+        assert_that!(service, is_ok);
+    }
 
     #[test]
     fn node_cleanup_option_works_on_node_creation<S: Test>() {

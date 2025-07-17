@@ -665,70 +665,88 @@ pub(crate) mod internal {
                 }
             };
 
-            trace!(from origin, ">>>>>>>>>>>>>>>>>>>>>>>Remove service? {remove_service}");
             if remove_service {
-                let details = details::<S>(config, &service_id.0.clone().into())
-                    .unwrap()
-                    .unwrap();
-                let mgmt_name = details.static_details.blackboard().type_details.type_name;
-                println!(">>>>>>>>>>>>>>>>> mgmt_name = {}", mgmt_name);
+                // check if service was a blackboard service to remove its additional resources
+                let blackboard_name =
+                    crate::service::naming_scheme::blackboard_name(service_id.as_str());
+                let blackboard_payload_config =
+                    crate::service::config_scheme::blackboard_data_config::<S>(config);
+                let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::list_cfg(
+                    &blackboard_payload_config,
+                );
+                if blackboard_payload.is_ok() && !blackboard_payload.unwrap().is_empty() {
+                    // TODO: explain unsafe
+                    match unsafe {
+                        <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
+                            &blackboard_name,
+                            &blackboard_payload_config,
+                        )
+                    } {
+                        Ok(true) => {
+                            trace!(from origin, "Remove blackboard payload segment.");
+                        }
+                        _ => {
+                            fail!(from origin, 
+                                  with ServiceRemoveNodeError::ServiceInCorruptedState,
+                                  "{} since the blackboard payload segment cannot be removed - service seems to be in a corrupted state.", msg);
+                        }
+                    }
+
+                    //// TODO: when creating BlackboardMgmt call same function with config to
+                    //// ensure that in static_config and DynamicStorage name the same type
+                    //// identifier is used
+                    ////   * otherwise DynamicStorage will always use core::any::type_name
+                    ////   * static_config might contain user given type identifier !=
+                    ////   core::any::type_name, see cross language
+                    let details = match details::<S>(config, &service_id.0.clone().into()) {
+                        Ok(Some(d)) => d,
+                        _ => {
+                            fail!(from origin,
+                                  with ServiceRemoveNodeError::ServiceInCorruptedState,
+                                  "{} due to a failure while acquiring the service details.", msg);
+                        }
+                    };
+                    let blackboard_mgmt_name = match
+                        details.static_details.blackboard().type_details.type_name.as_str() {
+                            Ok(s) => s,
+                            Err(_) => {
+                                fail!(from origin,
+                                      with ServiceRemoveNodeError::InternalError,
+                                      "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
+                            }
+                    };
+                    let mut blackboard_mgmt_config =
+                        crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
+                    // TODO: explain u64/unsafe
+                    unsafe {
+                        <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(
+                            &mut blackboard_mgmt_config,
+                            blackboard_mgmt_name
+                        )
+                    };
+                    // TODO: explain u64/unsafe
+                    match unsafe {
+                        <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
+                            &blackboard_name,
+                            &blackboard_mgmt_config,
+                        )
+                    }{
+                        Ok(true) => {
+                            trace!(from origin, "Remove blackboard mgmt segment.");
+                        }
+                        _ => {
+                            fail!(from origin, 
+                                  with ServiceRemoveNodeError::ServiceInCorruptedState,
+                                  "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
+                        }
+                    }
+                }
+
                 match unsafe {
                     remove_static_service_config::<S>(config, &service_id.0.clone().into())
                 } {
                     Ok(_) => {
                         trace!(from origin, "Remove unused service.");
-                        /////
-                        // TODO: write specific test for BlackboardResource cleanup?
-                        let name =
-                            crate::service::naming_scheme::blackboard_name(service_id.as_str());
-                        let shm_config =
-                            crate::service::config_scheme::blackboard_data_config::<S>(config);
-                        let l = <S::BlackboardPayload as NamedConceptMgmt>::list_cfg(&shm_config);
-                        if l.is_ok() {
-                            trace!(from origin, ">>>>>>>>>>>>> ok");
-                            let l = l.unwrap();
-                            for e in l {
-                                trace!(from origin, ">>>>>>>>>>>>> name: {}", e);
-                                trace!(from origin, ">>>>>>>>>>>>> id: {}", service_id.as_str());
-                            }
-                        }
-                        let _x = unsafe {
-                            <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
-                                &name,
-                                &shm_config,
-                            )
-                        };
-                        let mut mgmt_config =
-                            crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
-                        // TODO: readout key type from static config and use it here
-                        // TODO: when creating BlackboardMgmt call same function with config to
-                        // ensure that in static_config and DynamicStorage name the same type
-                        // identifier is used
-                        //   * otherwise DynamicStorage will always use core::any::type_name
-                        //   * static_config might contain user given type identifier !=
-                        //   core::any::type_name, see cross language
-                        unsafe {
-                            <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name.as_str().unwrap())
-                        };
-                        let l =
-                            <S::BlackboardMgmt<u64> as NamedConceptMgmt>::list_cfg(&mgmt_config);
-                        if l.is_ok() {
-                            trace!(from origin, ">>>>>>>>>>>>> found mgmt segment");
-                            let l = l.unwrap();
-                            trace!(from origin, ">>>>>>>>>>>>> how many: {}", l.len());
-                            for e in l {
-                                trace!(from origin, ">>>>>>>>>>>>> name: {}", e);
-                                trace!(from origin, ">>>>>>>>>>>>> id: {}", service_id.as_str());
-                            }
-                        }
-                        let _y = unsafe {
-                            <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
-                                &name,
-                                &mgmt_config,
-                            )
-                        };
-
-                        /////
                         dynamic_config.acquire_ownership()
                     }
                     Err(e) => {
@@ -930,7 +948,7 @@ fn details<S: Service>(
     config: &config::Config,
     uuid: &FileName,
 ) -> Result<Option<ServiceDetails<S>>, ServiceDetailsError> {
-    let msg = "Unable to acquire servic details";
+    let msg = "Unable to acquire service details";
     let origin = "Service::details()";
     let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
 
