@@ -8,12 +8,5 @@
 
    content/developer_guide
 
-   content/iceoryx_hoofs_api
-
-   content/iceoryx2_c_api
-
-   content/iceoryx2_cxx_api
-
-   content/iceoryx2_python_api
-
+   content/api_reference
 

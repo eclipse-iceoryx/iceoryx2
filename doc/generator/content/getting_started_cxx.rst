@@ -1,5 +1,5 @@
 Getting Started: C++
-====================
+--------------------
 
 .. include:: ../../../examples/cxx/README.md
    :parser: myst_parser.sphinx_

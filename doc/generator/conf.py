@@ -30,8 +30,11 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'nbsphinx',
-    'myst_parser'
+    'myst_parser',
+    'sphinx_design'
 ]
+
+myst_enable_extensions = ["colon_fence"]
 
 # -- Exhale configuration ---------------------------------------------------
 # Setup the breathe extension
