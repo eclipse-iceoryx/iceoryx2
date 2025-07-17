@@ -1,5 +1,5 @@
 Publish-Subscribe
-=================
+-----------------
 
 This minimal example showcases a publisher sending the number 1234 every second,
 while a subscriber efficiently receives and prints the data.
@@ -22,7 +22,7 @@ You can execute it by opening two terminals and calling:
 
 
 Publisher
----------
+^^^^^^^^^
 
 .. code-block:: C++
 
@@ -55,7 +55,7 @@ Publisher
    }
 
 Subscriber
-----------
+^^^^^^^^^^
 
 .. code-block:: C++
 

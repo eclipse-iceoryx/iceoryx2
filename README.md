@@ -75,7 +75,7 @@ your answer.
 
 ### Comparision Of Mechanisms
 
-![benchmark of different mechanism](internal/plots/benchmark_mechanism.svg)
+![benchmark of different mechanism](https://raw.githubusercontent.com/eclipse-iceoryx/iceoryx2/refs/heads/main/internal/plots/benchmark_mechanism.svg)
 
 #### Benchmark-System
 
@@ -87,7 +87,7 @@ your answer.
 
 ### Comparision Of Architectures
 
-![benchmark on different systems](internal/plots/benchmark_architecture.svg)
+![benchmark on different systems](https://raw.githubusercontent.com/eclipse-iceoryx/iceoryx2/refs/heads/main/internal/plots/benchmark_architecture.svg)
 
 ## Getting Started
 
@@ -162,7 +162,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 ```
 
 This example is a simplified version of the
-[publish-subscribe example](examples/rust/publish_subscribe/). You can execute
+[publish-subscribe example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/publish_subscribe/). You can execute
 it by opening two terminals and calling:
 
 **Terminal 1:**
@@ -253,7 +253,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 ```
 
 This example is a simplified version of the
-[request response example](examples/rust/request_response/). You can execute it
+[request response example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/request_response/). You can execute it
 by opening two terminals and calling:
 
 **Terminal 1:**
@@ -360,7 +360,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 ```
 
 This example is a simplified version of the
-[event example](examples/rust/event/). You can execute it by opening two
+[event example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/event/). You can execute it by opening two
 terminals and calling:
 
 **Terminal 1:**
@@ -379,12 +379,12 @@ cargo run --example event_listener
 
 It is possible to configure default quality of service settings, paths and file
 suffixes in a custom configuration file. For more details visit the
-[configuration directory](config/).
+[configuration directory](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/config/).
 
 ### FAQ
 
-* [End-User FAQ](FAQ.md)
-* [Developer FAQ](FAQ.md)
+* [End-User FAQ](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/FAQ.md)
+* [Developer FAQ](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/FAQ_ICEORYX_DEVS.md)
 
 ## Supported Platforms
 

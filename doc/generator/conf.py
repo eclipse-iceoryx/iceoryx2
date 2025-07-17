@@ -29,8 +29,8 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-    'recommonmark',
     'nbsphinx',
+    'myst_parser'
 ]
 
 # -- Exhale configuration ---------------------------------------------------
