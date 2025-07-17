@@ -400,7 +400,6 @@ mod node_death_tests {
         }
     }
 
-    // TODO: test writer
     #[test]
     fn dead_node_is_removed_from_blackboard_service<S: Test>() {
         set_log_level_from_env_or(LogLevel::Trace);
@@ -408,7 +407,6 @@ mod node_death_tests {
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
         const NUMBER_OF_SERVICES: usize = 5;
-        //const NUMBER_OF_NOTIFIERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
         const NUMBER_OF_READERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
 
         let mut config = generate_isolated_config();
@@ -431,9 +429,7 @@ mod node_death_tests {
         }
 
         let mut services = vec![];
-        //let mut bad_notifiers = vec![];
         let mut bad_readers = vec![];
-        //let mut good_notifiers = vec![];
         let mut good_readers = vec![];
 
         for _ in 0..NUMBER_OF_SERVICES {
@@ -453,7 +449,6 @@ mod node_death_tests {
                     .max_readers(NUMBER_OF_READERS)
                     .open()
                     .unwrap();
-                //bad_notifiers.push(service.notifier_builder().create().unwrap());
                 bad_readers.push(service.reader_builder().create().unwrap());
 
                 services.push(service);
@@ -466,7 +461,6 @@ mod node_death_tests {
                     .max_readers(NUMBER_OF_READERS)
                     .open()
                     .unwrap();
-                //good_notifiers.push(service.notifier_builder().create().unwrap());
                 good_readers.push(service.reader_builder().create().unwrap());
 
                 services.push(service);
@@ -478,13 +472,11 @@ mod node_death_tests {
             S::staged_death(&mut node);
         }
 
-        //core::mem::forget(bad_notifiers);
         core::mem::forget(bad_readers);
 
         assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES, failed_cleanups: 0});
 
         for service in &services {
-            //assert_that!(service.dynamic_config().number_of_notifiers(), eq NUMBER_OF_NOTIFIERS - NUMBER_OF_BAD_NODES);
             assert_that!(service.dynamic_config().number_of_readers(), eq NUMBER_OF_READERS - NUMBER_OF_BAD_NODES);
         }
     }
@@ -627,23 +619,96 @@ mod node_death_tests {
     }
 
     #[test]
-    fn writer_resources_are_removed_after_crash<S: Test>() {
-        // opener creates writer
-        // opener crashes
-        // new opener can create another writer
+    fn writer_and_reader_resources_are_removed_after_crash<S: Test>() {
+        set_log_level_from_env_or(LogLevel::Trace);
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        let good_node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+        let good_service = good_node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .max_readers(1)
+            .add_with_default::<u64>(0)
+            .create()
+            .unwrap();
+
+        let mut bad_node = S::create_test_node(&config).node;
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .blackboard_opener::<u64>()
+            .open()
+            .unwrap();
+        let writer = bad_service.writer_builder().create().unwrap();
+        let reader = bad_service.reader_builder().create().unwrap();
+
+        S::staged_death(&mut bad_node);
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        core::mem::forget(writer);
+        core::mem::forget(reader);
+
+        let writer = good_service.writer_builder().create();
+        assert_that!(writer, is_ok);
+        let reader = good_service.reader_builder().create();
+        assert_that!(reader, is_ok);
     }
 
-    // TODO: test when key type has user defined name
+    #[test]
+    fn blackboard_resources_are_removed_when_key_has_user_defined_name<S: Test>() {
+        set_log_level_from_env_or(LogLevel::Trace);
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        #[repr(C)]
+        #[derive(ZeroCopySend, Debug, Clone, PartialEq, Eq)]
+        #[type_name("SoSpecial")]
+        struct SpecialKey(u64);
+
+        let mut sut = S::create_test_node(&config).node;
+        core::mem::forget(
+            sut.service_builder(&service_name)
+                .blackboard_creator::<SpecialKey>()
+                .add_with_default::<u64>(SpecialKey(0))
+                .create()
+                .unwrap(),
+        );
+        S::staged_death(&mut sut);
+
+        assert_that!(
+            S::Service::list(&config, |service_details| {
+                assert_that!(*service_details.static_details.name(), eq service_name);
+                CallbackProgression::Continue
+            }),
+            is_ok
+        );
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        assert_that!(
+            S::Service::list(&config, |_| {
+                test_fail!("after the cleanup there shall be no more services");
+            }),
+            is_ok
+        );
+
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .blackboard_creator::<SpecialKey>()
+            .add_with_default::<u64>(SpecialKey(0))
+            .create();
+        assert_that!(service, is_ok);
+    }
 
     #[test]
     fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {
-        // either:
-        // find a way to list data and mgmt segment
-        // combine with "blackboard_service_is_removed_when_last_node_dies" test
-        // or:
-        // create blackboard service
-        // node crashes
-        // same service can be created
         set_log_level_from_env_or(LogLevel::Trace);
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();

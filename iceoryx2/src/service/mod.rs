@@ -642,10 +642,8 @@ pub(crate) mod internal {
                         }
                     }
                     UniquePortId::Reader(ref _id) => {
-                        // TODO: write specific test for BlackboardResource cleanup?
                     }
                     UniquePortId::Writer(ref _id) => {
-                        // TODO: write specific test for BlackboardResource cleanup?
                     }
                 };
 
