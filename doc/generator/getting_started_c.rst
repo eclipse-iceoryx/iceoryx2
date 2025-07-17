@@ -1,5 +1,7 @@
-C
--
+Getting Started: C
+==================
+
+.. include:: install_dependencies_c_cxx.rst
 
 All examples for all languages can be found in the table in the
 `iceoryx2 examples directory <https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples>`_.

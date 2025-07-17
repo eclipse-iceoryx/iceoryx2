@@ -1,11 +1,7 @@
-C++
----
+Getting Started: C++
+====================
 
-.. toctree::
-   :maxdepth: 1
-
-   cxx_pub_sub
-   cxx_event
+.. include:: install_dependencies_c_cxx.rst
 
 All examples for all languages can be found in the table in the
 `iceoryx2 examples directory <https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples>`_.
@@ -25,3 +21,9 @@ And in terminal 2:
    ./target/ffi/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_publisher
 
 You should observe how the publisher application sends data to the subscriber application.
+
+.. toctree::
+   :maxdepth: 1
+
+   cxx_pub_sub
+   cxx_event
