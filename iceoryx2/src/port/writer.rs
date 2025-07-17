@@ -393,7 +393,7 @@ impl<
     > EntryValueUninit<Service, KeyType, ValueType>
 {
     fn new(writer_handle: WriterHandle<Service, KeyType, ValueType>) -> Self {
-        let ptr = unsafe { writer_handle.producer.get_ptr_to_write_cell() };
+        let ptr = unsafe { writer_handle.producer.__internal_get_ptr_to_write_cell() };
         Self { ptr, writer_handle }
     }
 
@@ -510,7 +510,7 @@ impl<
     /// # }
     /// ```
     pub fn update(self) -> WriterHandle<Service, KeyType, ValueType> {
-        unsafe { self.writer_handle.producer.update_write_cell() };
+        unsafe { self.writer_handle.producer.__internal_update_write_cell() };
         self.writer_handle
     }
 

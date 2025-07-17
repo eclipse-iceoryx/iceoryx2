@@ -53,14 +53,27 @@ impl<T: Copy> Producer<'_, T> {
     }
 
     #[doc(hidden)]
-    pub unsafe fn get_ptr_to_write_cell(&self) -> *mut T {
+    // # Safety
+    //
+    //   * the memory position must not be modified after __internal_update_write_cell has been
+    //     called
+    pub unsafe fn __internal_get_ptr_to_write_cell(&self) -> *mut T {
         let write_cell = self.atomic.write_cell.load(Ordering::Relaxed);
         unsafe { (*self.atomic.data[write_cell as usize % NUMBER_OF_CELLS].get()).as_mut_ptr() }
     }
 
     #[doc(hidden)]
-    pub unsafe fn update_write_cell(&self) {
-        self.atomic.write_cell.fetch_add(1, Ordering::Relaxed);
+    // # Safety
+    //
+    //   * the method must not be called without first writing to the memory position returned by
+    //     __internal_get_ptr_to_write_cell
+    pub unsafe fn __internal_update_write_cell(&self) {
+        /////////////////////////
+        // SYNC POINT - write
+        // After writing the content of the write_cell, the content needs to be synced with the
+        // reader.
+        /////////////////////////
+        self.atomic.write_cell.fetch_add(1, Ordering::Release);
     }
 }
 
