@@ -1,5 +1,5 @@
-iceoryx2 C++ API
-----------------
+C++-API Reference
+=================
 
 .. doxygennamespace:: iox2
    :project: iceoryx2

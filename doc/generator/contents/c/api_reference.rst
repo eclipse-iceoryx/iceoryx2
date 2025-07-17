@@ -1,5 +1,5 @@
-iceoryx2 C API
---------------
+C-API Reference
+===============
 
 .. doxygenfile:: iceoryx2.h
    :project: iceoryx2
