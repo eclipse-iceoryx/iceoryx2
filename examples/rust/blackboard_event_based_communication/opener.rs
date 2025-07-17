@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
     let node = NodeBuilder::new().create::<ipc::Service>()?;
     type KeyType = u32;
-    let interesting_key = 99;
+    const INTERESTING_KEY: u32 = 1;
 
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
@@ -30,23 +30,22 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .event()
         .open_or_create()?;
-    let notifier = event_service.notifier_builder().create()?;
+    let listener = event_service.listener_builder().create()?;
 
-    let writer = service.writer_builder().create()?;
-    let writer_handle = writer.entry::<u64>(&0)?;
-    let interesting_writer_handle = writer.entry::<u64>(&interesting_key)?;
+    let reader = service.reader_builder().create()?;
+    let reader_handle = reader.entry::<u64>(&INTERESTING_KEY)?;
 
-    // notify with entry id
-    let mut counter: u64 = 0;
-    while node.wait(CYCLE_TIME).is_ok() {
-        counter += 1;
-        interesting_writer_handle.update_with_copy(counter);
-        notifier.notify_with_custom_event_id(interesting_writer_handle.entry_id())?;
-
-        writer_handle.update_with_copy(2 * counter);
-        notifier.notify_with_custom_event_id(writer_handle.entry_id())?;
-
-        println!("Trigger event with entry id...");
+    // wait for entry id
+    while node.wait(Duration::ZERO).is_ok() {
+        if let Ok(Some(id)) = listener.timed_wait_one(CYCLE_TIME) {
+            if id == reader_handle.entry_id() {
+                println!(
+                    "read: {} for entry id {}",
+                    reader_handle.get(),
+                    id.as_value()
+                );
+            }
+        }
     }
 
     println!("exit");
