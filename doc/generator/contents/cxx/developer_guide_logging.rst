@@ -1,6 +1,8 @@
 Logging
 -------
 
+.. toctree::
+
 In this section, the log mechanisms of iceoryx2 are described in detail. We
 begin by analyzing the structure of log messages and how they can be utilized
 when debugging a process. Next, we describe the error-handling strategy, how to

@@ -1,7 +1,9 @@
-Getting Started: C
-------------------
+Getting Started
+===============
 
-.. include:: ../../../examples/c/README.md
+.. toctree::
+
+.. include:: ../../../../examples/c/README.md
    :parser: myst_parser.sphinx_
 
 All examples for all languages can be found in the table in the

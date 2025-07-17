@@ -1,7 +1,13 @@
-Getting Started: C++
---------------------
+Getting Started
+===============
 
-.. include:: ../../../examples/cxx/README.md
+.. toctree::
+   :maxdepth: 1
+
+   cxx_pub_sub
+   cxx_event
+
+.. include:: ../../../../examples/cxx/README.md
    :parser: myst_parser.sphinx_
 
 All examples for all languages can be found in the table in the
@@ -23,8 +29,3 @@ And in terminal 2:
 
 You should observe how the publisher application sends data to the subscriber application.
 
-.. toctree::
-   :maxdepth: 1
-
-   cxx_pub_sub
-   cxx_event
