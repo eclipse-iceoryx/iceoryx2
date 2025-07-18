@@ -26,6 +26,7 @@ use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
 use builder::RETRY_LIMIT;
 use core::alloc::Layout;
+use core::hash::Hash;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::vec::RelocatableVec;
@@ -200,7 +201,7 @@ impl<ServiceType: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 
 
 #[derive(Debug)]
 struct Builder<
-    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend,
+    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
@@ -209,8 +210,10 @@ struct Builder<
     internals: Vec<BuilderInternals<KeyType>>,
 }
 
-impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: service::Service>
-    Builder<KeyType, ServiceType>
+impl<
+        KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+        ServiceType: service::Service,
+    > Builder<KeyType, ServiceType>
 {
     fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         let mut new_self = Self {
@@ -294,14 +297,16 @@ impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: serv
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Creator<
-    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend,
+    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
-impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: service::Service>
-    Creator<KeyType, ServiceType>
+impl<
+        KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+        ServiceType: service::Service,
+    > Creator<KeyType, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         Self {
@@ -575,14 +580,16 @@ impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: serv
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Opener<
-    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend,
+    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
-impl<KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend, ServiceType: service::Service>
-    Opener<KeyType, ServiceType>
+impl<
+        KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+        ServiceType: service::Service,
+    > Opener<KeyType, ServiceType>
 {
     pub(crate) fn new(base: builder::BuilderWithServiceType<ServiceType>) -> Self {
         Self {

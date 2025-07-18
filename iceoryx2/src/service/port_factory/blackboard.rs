@@ -47,6 +47,7 @@ use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
 use crate::service::{self, dynamic_config, static_config, ServiceState};
 use core::fmt::Debug;
+use core::hash::Hash;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
@@ -60,12 +61,12 @@ use alloc::sync::Arc;
 #[derive(Debug)]
 pub struct PortFactory<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
 > {
     pub(crate) service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
-impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash>
     crate::service::port_factory::PortFactory for PortFactory<Service, KeyType>
 {
     type Service = Service;
@@ -104,7 +105,7 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
     }
 }
 
-impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash>
     PortFactory<Service, KeyType>
 {
     pub(crate) fn new(

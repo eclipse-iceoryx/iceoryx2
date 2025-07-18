@@ -46,6 +46,7 @@ use crate::service::dynamic_config::blackboard::WriterDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
 use core::fmt::Debug;
+use core::hash::Hash;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
@@ -62,13 +63,13 @@ use super::port_identifiers::UniqueWriterId;
 #[derive(Debug)]
 struct WriterSharedState<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
 > {
     dynamic_writer_handle: Option<ContainerHandle>,
     service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
-impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static> Drop
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash> Drop
     for WriterSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
@@ -105,12 +106,15 @@ impl core::error::Error for WriterCreateError {}
 
 /// Producing endpoint of a blackboard based communication.
 #[derive(Debug)]
-pub struct Writer<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static> {
+pub struct Writer<
+    Service: service::Service,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+> {
     shared_state: Arc<WriterSharedState<Service, KeyType>>,
     writer_id: UniqueWriterId,
 }
 
-impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
+impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash>
     Writer<Service, KeyType>
 {
     pub(crate) fn new(
@@ -246,7 +250,7 @@ impl core::error::Error for WriterHandleError {}
 /// A handle for direct write access to a specific blackboard value.
 pub struct WriterHandle<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
     ValueType: Copy + 'static,
 > {
     producer: Producer<'static, ValueType>,
@@ -258,14 +262,14 @@ pub struct WriterHandle<
 // producer (struct fields are dropped in the same order as declared)
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
         ValueType: Copy + 'static,
     > Send for WriterHandle<Service, KeyType, ValueType>
 {
 }
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
         ValueType: Copy + 'static,
     > Sync for WriterHandle<Service, KeyType, ValueType>
 {
@@ -273,7 +277,7 @@ unsafe impl<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
         ValueType: Copy + 'static,
     > WriterHandle<Service, KeyType, ValueType>
 {
@@ -362,7 +366,7 @@ impl<
 /// Wrapper around an uninitiaized entry value that can be used for a zero-copy update.
 pub struct EntryValueUninit<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
     ValueType: Copy + 'static,
 > {
     ptr: *mut ValueType,
@@ -374,14 +378,14 @@ pub struct EntryValueUninit<
 // consuming.
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
         ValueType: Copy + 'static,
     > Send for EntryValueUninit<Service, KeyType, ValueType>
 {
 }
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
         ValueType: Copy + 'static,
     > Sync for EntryValueUninit<Service, KeyType, ValueType>
 {
@@ -389,7 +393,7 @@ unsafe impl<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
         ValueType: Copy + 'static,
     > EntryValueUninit<Service, KeyType, ValueType>
 {
@@ -453,7 +457,7 @@ impl<
 /// Wrapper around an initialized entry value that can be used for a zero-copy update.
 pub struct EntryValue<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
     ValueType: Copy + 'static,
 > {
     writer_handle: WriterHandle<Service, KeyType, ValueType>,
@@ -463,14 +467,14 @@ pub struct EntryValue<
 // consuming.
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
         ValueType: Copy + 'static,
     > Send for EntryValue<Service, KeyType, ValueType>
 {
 }
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
         ValueType: Copy + 'static,
     > Sync for EntryValue<Service, KeyType, ValueType>
 {
@@ -478,7 +482,7 @@ unsafe impl<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
         ValueType: Copy + 'static,
     > EntryValue<Service, KeyType, ValueType>
 {

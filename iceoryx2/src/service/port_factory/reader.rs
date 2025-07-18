@@ -33,6 +33,7 @@ use super::blackboard::PortFactory;
 use crate::port::reader::{Reader, ReaderCreateError};
 use crate::service;
 use core::fmt::Debug;
+use core::hash::Hash;
 use iceoryx2_bb_log::fail;
 
 /// Factory to create a new [`Reader`] port/endpoint for
@@ -42,13 +43,16 @@ use iceoryx2_bb_log::fail;
 pub struct PortFactoryReader<
     'factory,
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
 > {
     pub(crate) factory: &'factory PortFactory<Service, KeyType>,
 }
 
-impl<'factory, Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
-    PortFactoryReader<'factory, Service, KeyType>
+impl<
+        'factory,
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+    > PortFactoryReader<'factory, Service, KeyType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {
         Self { factory }

@@ -33,6 +33,7 @@ use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::static_config::*;
 use alloc::sync::Arc;
 use core::fmt::Debug;
+use core::hash::Hash;
 use core::marker::PhantomData;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
@@ -176,7 +177,7 @@ impl<S: Service> Builder<S> {
     /// Create a new builder to create a
     /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) [`Service`].
     pub fn blackboard_creator<
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend + Hash,
     >(
         self,
     ) -> blackboard::Creator<KeyType, S> {
@@ -192,7 +193,9 @@ impl<S: Service> Builder<S> {
 
     /// Create a new builder to open a
     /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) [`Service`].
-    pub fn blackboard_opener<KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend>(
+    pub fn blackboard_opener<
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend + Hash,
+    >(
         self,
     ) -> blackboard::Opener<KeyType, S> {
         BuilderWithServiceType::new(
@@ -242,13 +245,17 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         event::Builder::new(self)
     }
 
-    fn blackboard_creator<KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend>(
+    fn blackboard_creator<
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend + Hash,
+    >(
         self,
     ) -> blackboard::Creator<KeyType, ServiceType> {
         blackboard::Creator::new(self)
     }
 
-    fn blackboard_opener<KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend>(
+    fn blackboard_opener<
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend + Hash,
+    >(
         self,
     ) -> blackboard::Opener<KeyType, ServiceType> {
         blackboard::Opener::new(self)

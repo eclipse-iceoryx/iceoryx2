@@ -33,6 +33,7 @@ use super::blackboard::PortFactory;
 use crate::port::writer::{Writer, WriterCreateError};
 use crate::service;
 use core::fmt::Debug;
+use core::hash::Hash;
 use iceoryx2_bb_log::fail;
 
 /// Factory to create a new [`Writer`] port/endpoint for
@@ -42,13 +43,16 @@ use iceoryx2_bb_log::fail;
 pub struct PortFactoryWriter<
     'factory,
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
 > {
     pub(crate) factory: &'factory PortFactory<Service, KeyType>,
 }
 
-impl<'factory, Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
-    PortFactoryWriter<'factory, Service, KeyType>
+impl<
+        'factory,
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+    > PortFactoryWriter<'factory, Service, KeyType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {
         Self { factory }
