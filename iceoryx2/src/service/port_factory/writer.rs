@@ -17,8 +17,9 @@
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! type KeyType = u64;
 //! let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-//!     .blackboard_creator::<u64>()
+//!     .blackboard_creator::<KeyType>()
 //!     .add::<i32>(0,0)
 //!     .create()?;
 //!

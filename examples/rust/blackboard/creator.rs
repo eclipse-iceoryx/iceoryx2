@@ -20,9 +20,10 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
+    type KeyType = u32;
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .blackboard_creator::<u32>()
+        .blackboard_creator::<KeyType>()
         .add::<u64>(0, 0)
         .add::<FixedSizeByteString<100>>(5, "Groovy".try_into()?)
         .add::<f32>(9, 0.0)

@@ -18,11 +18,12 @@ const CYCLE_TIME: Duration = Duration::from_secs(1);
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Trace);
     let node = NodeBuilder::new().create::<ipc::Service>()?;
+    type KeyType = u32;
     let key = 99;
 
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .blackboard_opener::<u32>()
+        .blackboard_opener::<KeyType>()
         .open()?;
 
     let event_service = node

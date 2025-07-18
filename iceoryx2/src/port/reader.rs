@@ -16,8 +16,9 @@
 //! # use iceoryx2::prelude::*;
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! type KeyType = u64;
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-//!     .blackboard_creator::<u64>()
+//!     .blackboard_creator::<KeyType>()
 //!     .add::<i32>(1, -1)
 //!     .add::<u32>(9, 17)
 //!     .create()?;
@@ -77,12 +78,12 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
 }
 
 /// Defines a failure that can occur when a [`Reader`] is created with
-/// [`crate::service::port_factory::reader::PortFactoryReader`].
+/// [`PortFactoryReader`](crate::service::port_factory::reader::PortFactoryReader).
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ReaderCreateError {
     /// The maximum amount of [`Reader`]s that can connect to a
-    /// [`Service`](crate::service::Service) is
-    /// defined in [`crate::config::Config`]. When this is exceeded no more [`Reader`]s
+    /// [`Service`](crate::service::Service) is defined in
+    /// [`Config`](crate::config::Config). When this is exceeded no more [`Reader`]s
     /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedReaders,
     /// Errors that indicate either an implementation issue or a wrongly configured system.

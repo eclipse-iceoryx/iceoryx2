@@ -272,9 +272,10 @@
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! // create our port factory by creating the service
+//! type KeyType = u32;
 //! let service = node
 //!     .service_builder(&"My/Funk/ServiceName".try_into()?)
-//!     .blackboard_creator::<u32>()
+//!     .blackboard_creator::<KeyType>()
 //!     .add::<u64>(0, 0)
 //!     .create()?;
 //!
@@ -300,9 +301,10 @@
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
 //! // create our port factory by opening the service
+//! type KeyType = u32;
 //! let service = node
 //!     .service_builder(&"My/Funk/ServiceName".try_into()?)
-//!     .blackboard_opener::<u32>()
+//!     .blackboard_opener::<KeyType>()
 //!     .open()?;
 //!
 //! let writer = service.writer_builder().create()?;
@@ -444,8 +446,9 @@
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
+//! type KeyType = u64;
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-//!     .blackboard_creator::<u64>()
+//!     .blackboard_creator::<KeyType>()
 //!     // the maximum amount of readers of this service
 //!     .max_readers(4)
 //!     // the maximum amount of nodes that are able to open this service

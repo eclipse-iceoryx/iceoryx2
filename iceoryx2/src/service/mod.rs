@@ -178,9 +178,10 @@
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
 //!
+//! type KeyType = u64;
 //! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
 //!     // define the messaging pattern
-//!     .blackboard_creator::<u64>()
+//!     .blackboard_creator::<KeyType>()
 //!     // QoS
 //!     .max_readers(4)
 //!     .max_nodes(5)
