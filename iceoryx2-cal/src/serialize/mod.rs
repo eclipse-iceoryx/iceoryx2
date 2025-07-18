@@ -37,6 +37,7 @@
 //! }
 //! ```
 
+pub mod bincode;
 pub mod cdr;
 pub mod recommended;
 pub mod toml;
