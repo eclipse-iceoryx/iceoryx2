@@ -162,8 +162,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 ```
 
 This example is a simplified version of the
-[publish-subscribe example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/publish_subscribe/). You can execute
-it by opening two terminals and calling:
+[publish-subscribe example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/publish_subscribe/).
+You can execute it by opening two terminals and calling:
 
 **Terminal 1:**
 
@@ -253,8 +253,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 ```
 
 This example is a simplified version of the
-[request response example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/request_response/). You can execute it
-by opening two terminals and calling:
+[request response example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/request_response/).
+You can execute it by opening two terminals and calling:
 
 **Terminal 1:**
 
@@ -360,8 +360,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 ```
 
 This example is a simplified version of the
-[event example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/event/). You can execute it by opening two
-terminals and calling:
+[event example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/event/).
+You can execute it by opening two terminals and calling:
 
 **Terminal 1:**
 
