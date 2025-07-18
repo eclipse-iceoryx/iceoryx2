@@ -125,6 +125,7 @@ set timeout 20
 
 spawn cargo run --example health_monitoring_central_daemon
 set id_daemon $spawn_id
+# wait for daemon to be ready
 expect_output "Central daemon up and running."
 
 spawn cargo run --example health_monitoring_publisher_1
@@ -164,3 +165,17 @@ In this setup:
 * `expect_output_from $id_foo "bar"` checks for the output of the process with
   the provided `spawn_id`. To permanently use the output of a specific process
   for the checks, `set spawn_id $id_foo` can be used.
+
+<!-- markdownlint-disable MD082 Blank line inside blockquote -->
+> [!NOTE]
+> `expect_output` and `expect_output_from` can be used as synchronization
+> points, e.g. if an application needs to reach a specific operational state
+> before other applications can be started.
+
+> [!NOTE]
+> When multiple processes are spawned, it might happen that `expect` completely
+> stops the processes spawned first. In this case, the `expect_output` will run
+> in a timeout. To make `expect` run the initially spawned processes, it is
+> sufficient to have a `expect_output_from` call on the `spawn_id` of the
+> respective process before checking the output of the actual process.
+<!-- markdownlint-enable MD082 -->
