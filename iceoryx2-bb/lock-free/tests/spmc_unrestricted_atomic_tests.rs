@@ -157,8 +157,10 @@ fn spmc_unrestricted_atomic_get_ptr_write_and_update_works_concurrently() {
         });
     });
 
-    assert_that!(values.is_sorted(), eq true);
+    let mut pred = 0;
     for v in values {
         assert_that!(v, le NUMBER_OF_RUNS as u128);
+        assert_that!(v, ge pred);
+        pred = v;
     }
 }
