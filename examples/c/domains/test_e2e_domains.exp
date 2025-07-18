@@ -18,7 +18,7 @@ cd ${REPO_ROOT}
 
 source examples/cross-language-end-to-end-tests/common.exp
 
-#### Test Setup and assertions
+#### Test Setup and Assertions
 
 set timeout 10
 
@@ -26,9 +26,10 @@ spawn target/ffi/build/examples/c/domains/example_c_domains_publisher "fuu" "bar
 set id_publisher $spawn_id
 
 spawn target/ffi/build/examples/c/domains/example_c_domains_subscriber "fuu" "bar"
+set id_subscriber $spawn_id
 
 expect_output_from $id_publisher "*fuu*bar*Send sample*"
-expect_output "received: TransmissionData { .x: 3, .y: 9, .funky: 2436.36 }"
+expect_output_from $id_subscriber "received: TransmissionData { .x: 3, .y: 9, .funky: 2436.36 }"
 
 spawn target/ffi/build/examples/c/domains/example_c_domains_discovery "fuu"
 

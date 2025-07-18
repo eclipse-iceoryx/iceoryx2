@@ -23,10 +23,12 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn cargo run --bin iox2-service -- discovery
+# wait until ready
 expect_output "=== Service Started"
 
 spawn cargo run --example discovery_service
 set id_discovery_service $spawn_id
+# wait until ready
 expect_output "Discovery service ready!"
 
 spawn cargo run --example publish_subscribe_subscriber

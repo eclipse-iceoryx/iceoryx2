@@ -18,21 +18,24 @@ cd ${REPO_ROOT}
 
 source examples/cross-language-end-to-end-tests/common.exp
 
-#### Test Setup and Assertion
+#### Test Setup
 
 set timeout 10
 
 spawn cargo run --example service_attributes_creator
-
+# wait until ready
 expect_output "my_funky_service_name"
 
 spawn cargo run --example service_attributes_opener
-
-expect_output "camera_resolution"
+set id_opener $spawn_id
 
 spawn cargo run --example service_attributes_incompatible
+set id_incompatible $spawn_id
 
-expect_output "camera_resolution: 3840x2160 -> IncompatibleAttributes"
-expect_output "camera_type -> IncompatibleAttributes"
+#### Test Assertion
+
+expect_output_from $id_opener "camera_resolution"
+expect_output_from $id_incompatible "camera_resolution: 3840x2160 -> IncompatibleAttributes"
+expect_output_from $id_incompatible "camera_type -> IncompatibleAttributes"
 
 show_test_passed

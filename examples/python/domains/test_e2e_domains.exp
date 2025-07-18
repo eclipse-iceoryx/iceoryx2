@@ -18,7 +18,7 @@ cd ${REPO_ROOT}
 
 source examples/cross-language-end-to-end-tests/common.exp
 
-#### Test Setup and assertions
+#### Test Setup and Assertions
 
 set timeout 10
 
@@ -26,9 +26,10 @@ spawn python examples/python/domains/publisher.py fuu bar
 set id_publisher $spawn_id
 
 spawn python examples/python/domains/subscriber.py fuu bar
+set id_subscriber $spawn_id
 
 expect_output_from $id_publisher "*fuu*bar*Send sample*"
-expect_output "received: c_ulong(3)"
+expect_output_from $id_subscriber "received: c_ulong(3)"
 
 spawn python examples/python/domains/discovery.py fuu
 

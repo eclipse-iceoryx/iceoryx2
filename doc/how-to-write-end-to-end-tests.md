@@ -129,15 +129,16 @@ expect_output "Central daemon up and running."
 
 spawn cargo run --example health_monitoring_publisher_1
 set id_publisher_1 $spawn_id
-expect_output "service_1: Send sample*"
 
 spawn cargo run --example health_monitoring_publisher_2
 set id_publisher_2 $spawn_id
-expect_output "service_2: Send sample*"
 
 spawn cargo run --example health_monitoring_subscriber
 set id_subscriber $spawn_id
-expect_output "service_1: Received sample*"
+
+expect_output_from $id_publisher_1 "service_1: Send sample*"
+expect_output_from $id_publisher_2 "service_2: Send sample*"
+expect_output_from $id_subscriber "service_1: Received sample*"
 
 exec kill -SIGKILL [exp_pid -i $id_publisher_1]
 
