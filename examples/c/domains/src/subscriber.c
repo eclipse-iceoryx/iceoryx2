@@ -28,6 +28,9 @@ int main(int argc, char** argv) {
         exit(-1);
     }
 
+    // Setup logging
+    iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+
     // create a new config based on the global config
     iox2_config_ptr config_ptr = iox2_config_global_config();
     iox2_config_h config = NULL;
@@ -107,8 +110,10 @@ int main(int argc, char** argv) {
             struct TransmissionData* payload = NULL;
             iox2_sample_payload(&sample, (const void**) &payload, NULL);
 
-            printf(
-                "received: TransmissionData { .x: %d, .y: %d, .funky: %lf}\n", payload->x, payload->y, payload->funky);
+            printf("received: TransmissionData { .x: %d, .y: %d, .funky: %.2lf }\n",
+                   payload->x,
+                   payload->y,
+                   payload->funky);
             iox2_sample_drop(sample);
         }
     }

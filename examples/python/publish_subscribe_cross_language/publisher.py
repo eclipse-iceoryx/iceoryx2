@@ -46,7 +46,7 @@ try:
         )
 
         sample.send()
-        print("send sample", COUNTER, "...")
+        print("Send sample", COUNTER, "...")
 
 except iox2.NodeWaitFailure:
     print("exit")

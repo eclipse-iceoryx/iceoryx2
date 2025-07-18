@@ -23,13 +23,17 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn python examples/python/event_multiplexing/notifier.py hypnotoad 42
+set id_notifier_1 $spawn_id
 
 spawn python examples/python/event_multiplexing/notifier.py brainslug 13
+set id_notifier_2 $spawn_id
 
 spawn python examples/python/event_multiplexing/wait.py hypnotoad brainslug
 
 #### Test Assertion
 
+expect_output_from $id_notifier_1 "*Trigger event *"
+expect_output_from $id_notifier_2 "*Trigger event *"
 expect_output "Received trigger from \" hypnotoad \""
 expect_output "TriggerId(42)"
 expect_output "Received trigger from \" brainslug \""

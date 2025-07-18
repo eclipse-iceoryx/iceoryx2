@@ -18,68 +18,108 @@ COLOR_RED='\033[1;31m'
 COLOR_GREEN='\033[1;32m'
 COLOR_YELLOW='\033[1;33m'
 
-echo "##################################"
-echo "# Build and run end to end tests #"
-echo "##################################"
+BUILD_END_TO_END_TESTS=true
+RUN_END_TO_END_TESTS=true
+
+while (( "$#" )); do
+    case "$1" in
+        no-build)
+            BUILD_END_TO_END_TESTS=false
+            shift 1
+            ;;
+        no-run)
+            RUN_END_TO_END_TESTS=false
+            shift 1
+            ;;
+        "help")
+            echo "Script to run the end-to-end tests"
+            echo ""
+            echo "Args:"
+            echo "    no-build              Skips the build step"
+            echo "    no-run                Skips the run step"
+            echo ""
+            exit 0
+            ;;
+        *)
+            echo "Invalid argument '$1'. Try 'help' for options."
+            exit 1
+            ;;
+    esac
+done
 
 WORKSPACE=$(git rev-parse --show-toplevel)
 cd "${WORKSPACE}"
 
-cargo build --examples
+if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
+    echo "##########################"
+    echo "# Build end to end tests #"
+    echo "##########################"
 
-NUM_JOBS=1
-if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then
-    NUM_JOBS=$(nproc)
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    NUM_JOBS=$(sysctl -n hw.ncpu)
-fi
+    cargo build --examples
+    cargo build --bin iox2-service
 
-# Clean build for iceoryx_hoofs
-rm -rf ${WORKSPACE}/target/iceoryx
-${WORKSPACE}/internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-
-# Build the C and C++ bindings
-cargo build --package iceoryx2-ffi
-cmake -S . -B target/ffi/build \
-    -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
-    -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DBUILD_CXX_BINDING=ON \
-    -DBUILD_EXAMPLES=ON \
-    -DBUILD_TESTING=OFF
-cmake --build target/ffi/build -j$NUM_JOBS
-
-# Build the Python bindings
-rm -rf .env
-python -m venv .env
-source .env/bin/activate
-export PYTHONPATH="${WORKSPACE}/iceoryx2-ffi/python/python-src"
-rm -f iceoryx2-ffi/python/python-src/iceoryx2/*.so
-maturin develop  --manifest-path iceoryx2-ffi/python/Cargo.toml
-
-# Search for all end-to-end test files
-cd "${WORKSPACE}"
-FILES=$(find ${WORKSPACE} -type f | grep -E "test_e2e_.*\.exp" | sort)
-FILES_ARRAY=(${FILES})
-NUMBER_OF_FILES=${#FILES_ARRAY[@]}
-
-if [[ ${NUMBER_OF_FILES} -eq 0 ]]; then
-    echo -e "${COLOR_YELLOW}-> nothing to do${COLOR_OFF}"
-    return 0
-fi
-
-echo -e "${COLOR_GREEN}Running tests ...${COLOR_OFF}"
-FILE_COUNTER=1
-for FILE in $FILES; do
-    echo -e "${COLOR_GREEN}[${FILE_COUNTER}/${NUMBER_OF_FILES}]${COLOR_OFF} RUN ${FILE}"
-    FILE_COUNTER=$((FILE_COUNTER + 1))
-
-    if test -f "$FILE"; then
-        bash -c ${FILE}
-    else
-        echo -e "${COLOR_RED}File does not exist! Aborting!${COLOR_OFF}"
-        return 1
+    NUM_JOBS=1
+    if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then
+        NUM_JOBS=$(nproc)
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        NUM_JOBS=$(sysctl -n hw.ncpu)
     fi
-done
+
+    # Clean build for iceoryx_hoofs
+    rm -rf ${WORKSPACE}/target/iceoryx
+    ${WORKSPACE}/internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+
+    # Build the C and C++ bindings
+    cargo build --package iceoryx2-ffi
+    cmake -S . -B target/ffi/build \
+        -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
+        -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
+        -DCMAKE_BUILD_TYPE=Debug \
+        -DBUILD_CXX_BINDING=ON \
+        -DBUILD_EXAMPLES=ON \
+        -DBUILD_TESTING=OFF
+    cmake --build target/ffi/build -j$NUM_JOBS
+
+    # Build the Python bindings
+    rm -rf .env
+    python -m venv .env
+    source .env/bin/activate
+    rm -f iceoryx2-ffi/python/python-src/iceoryx2/*.so
+    maturin develop  --manifest-path iceoryx2-ffi/python/Cargo.toml
+fi
+
+
+if [[ ${RUN_END_TO_END_TESTS} == true ]]; then
+    echo "##########################"
+    echo "# Run end to end tests #"
+    echo "##########################"
+
+    # Search for all end-to-end test files
+    cd "${WORKSPACE}"
+    FILES=$(find ${WORKSPACE} -type f | grep -E "test_e2e_.*\.exp" | sort)
+    FILES_ARRAY=(${FILES})
+    NUMBER_OF_FILES=${#FILES_ARRAY[@]}
+
+    if [[ ${NUMBER_OF_FILES} -eq 0 ]]; then
+        echo -e "${COLOR_YELLOW}-> nothing to do${COLOR_OFF}"
+        return 0
+    fi
+
+    echo -e "${COLOR_GREEN}Running tests ...${COLOR_OFF}"
+    source .env/bin/activate
+    FILE_COUNTER=1
+    for FILE in $FILES; do
+        echo -e "${COLOR_GREEN}[${FILE_COUNTER}/${NUMBER_OF_FILES}]${COLOR_OFF} RUN ${FILE}"
+        FILE_COUNTER=$((FILE_COUNTER + 1))
+
+        if test -f "$FILE"; then
+            bash -c ${FILE}
+        else
+            echo -e "${COLOR_RED}File does not exist! Aborting!${COLOR_OFF}"
+            return 1
+        fi
+    done
+fi
+
 
 echo -e "${COLOR_GREEN}... done!${COLOR_OFF}"

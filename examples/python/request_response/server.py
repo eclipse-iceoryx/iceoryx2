@@ -31,6 +31,8 @@ service = (
 
 server = service.server_builder().create()
 
+print("Server ready to receive requests!")
+
 COUNTER = 0
 try:
     while True:

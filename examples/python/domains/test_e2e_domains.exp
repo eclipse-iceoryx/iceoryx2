@@ -1,0 +1,39 @@
+#!/usr/bin/expect
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source examples/cross-language-end-to-end-tests/common.exp
+
+#### Test Setup and Assertions
+
+set timeout 10
+
+spawn python examples/python/domains/publisher.py fuu bar
+set id_publisher $spawn_id
+
+spawn python examples/python/domains/subscriber.py fuu bar
+set id_subscriber $spawn_id
+
+expect_output_from $id_publisher "*fuu*bar*Send sample*"
+expect_output_from $id_subscriber "received: c_ulong(3)"
+
+spawn python examples/python/domains/discovery.py fuu
+
+expect_output "Services running in domain \"fuu\":"
+expect_output "*data: \"bar\"*"
+
+show_test_passed

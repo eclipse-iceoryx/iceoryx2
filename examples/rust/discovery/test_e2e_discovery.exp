@@ -1,0 +1,37 @@
+#!/usr/bin/expect
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source examples/cross-language-end-to-end-tests/common.exp
+
+#### Test Setup and Assertion
+
+set timeout 10
+
+spawn cargo run --example publish_subscribe_subscriber
+expect_output "Subscriber ready to receive data!"
+
+spawn cargo run --example discovery
+expect_output "messaging_pattern: PublishSubscribe"
+
+spawn cargo run --example event_listener
+expect_output "Listener ready to receive events!"
+
+spawn cargo run --example discovery
+expect_output "messaging_pattern: Event"
+
+show_test_passed

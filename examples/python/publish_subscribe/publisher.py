@@ -39,7 +39,7 @@ try:
             TransmissionData(x=COUNTER, y=COUNTER * 3, funky=COUNTER * 812.12)
         )
         sample.send()
-        print("send sample", COUNTER, "...")
+        print("Send sample", COUNTER, "...")
 
 except iox2.NodeWaitFailure:
     print("exit")

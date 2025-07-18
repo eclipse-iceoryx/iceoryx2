@@ -24,7 +24,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
             // `camera_resolution` attribute is `1920x1080` and not `3840x2160`
             &AttributeVerifier::new()
                 .require(&"camera_resolution".try_into()?, &"3840x2160".try_into()?),
-        );
+        )
+        .map_err(|e| println!("camera_resolution: 3840x2160 -> {:?}", e));
 
     let _incompatible_service = node
         .service_builder(&"Service/With/Properties".try_into()?)
@@ -32,7 +33,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .open_with_attributes(
             // the opening of the service will fail since the key is not defined.
             &AttributeVerifier::new().require_key(&"camera_type".try_into()?),
-        );
+        )
+        .map_err(|e| println!("camera_type -> {:?}", e));
 
     Ok(())
 }

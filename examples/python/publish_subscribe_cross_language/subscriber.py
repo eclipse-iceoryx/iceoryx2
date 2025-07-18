@@ -31,6 +31,8 @@ service = (
 
 subscriber = service.subscriber_builder().create()
 
+print("Subscriber ready to receive data!")
+
 try:
     while True:
         node.wait(cycle_time)

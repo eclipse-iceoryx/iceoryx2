@@ -1,0 +1,39 @@
+#!/usr/bin/expect
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source examples/cross-language-end-to-end-tests/common.exp
+
+#### Test Setup and Assertions
+
+set timeout 10
+
+spawn cargo run --example domains_publisher -- -d "fuu" -s "bar"
+set id_publisher $spawn_id
+
+spawn cargo run --example domains_subscriber -- -d "fuu" -s "bar"
+set id_subscriber $spawn_id
+
+expect_output_from $id_publisher "*fuu*bar*Send sample*"
+expect_output_from $id_subscriber "received: TransmissionData { x: 3, y: 9, funky: 2436.36 }"
+
+spawn cargo run --example domains_discovery -- -d "fuu"
+
+expect_output "Services running in domain \"fuu\":"
+expect_output "  bar"
+
+show_test_passed

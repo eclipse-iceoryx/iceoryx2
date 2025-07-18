@@ -28,7 +28,7 @@ struct Args {
     IOX_CLI_DEFINITION(Args);
     IOX_CLI_OPTIONAL(iox::string<64>, service1, { "fuu" }, 's', "service1", "The name of service 1.");
     IOX_CLI_OPTIONAL(iox::string<64>, service2, { "bar" }, 't', "service2", "The name of service 2.");
-    IOX_CLI_OPTIONAL(uint64_t, event_id, 0, 'e', "event_id", "The event id that shall be used to trigger the service.");
+    IOX_CLI_OPTIONAL(uint64_t, event_id, 0, 'e', "event-id", "The event id that shall be used to trigger the service.");
 };
 // NOLINTEND
 

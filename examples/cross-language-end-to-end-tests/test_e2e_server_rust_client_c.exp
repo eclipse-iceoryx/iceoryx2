@@ -23,6 +23,7 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn cargo run --example request_response_server
+set id_server $spawn_id
 
 spawn target/ffi/build/examples/c/request_response/example_c_request_response_client
 
@@ -30,6 +31,7 @@ set EXPECTED_OUTPUT "received response 3: *"
 
 #### Test Assertion
 
+expect_output_from $id_server "Server ready to receive requests!"
 expect_output "received response 3: *"
 
 show_test_passed

@@ -52,7 +52,15 @@ try:
         COUNTER += 1
         node.wait(cycle_time)
         publisher.send_copy(ctypes.c_uint64(COUNTER))
-        print("send sample", COUNTER, "...")
+        print(
+            '[domain: "',
+            domain,
+            '", service: "',
+            service_name,
+            '"] Send sample',
+            COUNTER,
+            "...",
+        )
 
 except iox2.NodeWaitFailure:
     print("exit")

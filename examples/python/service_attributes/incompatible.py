@@ -36,7 +36,7 @@ try:
         )
     )
 except iox2.PublishSubscribeOpenError as e:
-    print(e)
+    print(f"camera_resolution: 3840x2160 -> {e}")
 
 
 try:
@@ -50,4 +50,4 @@ try:
         )
     )
 except iox2.PublishSubscribeOpenError as e:
-    print(e)
+    print(f"camera_type -> {e}")

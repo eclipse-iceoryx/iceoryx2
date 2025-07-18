@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let missed_deadline = |service_name, cycle_time| {
         println!(
-            "{service_name:?}: violated contract and did not send a message after {cycle_time:?}."
+            "{service_name}: violated contract and did not send a message after {cycle_time:?}."
         );
     };
 
@@ -111,14 +111,14 @@ fn handle_incoming_event(
     listener
         .try_wait_all(|event_id| {
             if event_id == PubSubEvent::ProcessDied.into() {
-                println!("{service_name:?}: process died!");
+                println!("{service_name}: process died!");
             } else if event_id == PubSubEvent::PublisherConnected.into() {
-                println!("{service_name:?}: publisher connected!");
+                println!("{service_name}: publisher connected!");
             } else if event_id == PubSubEvent::PublisherDisconnected.into() {
-                println!("{service_name:?}: publisher disconnected!");
+                println!("{service_name}: publisher disconnected!");
             } else if event_id == PubSubEvent::SentSample.into() {
                 if let Some(sample) = subscriber.receive().expect("") {
-                    println!("{:?}: Received sample {} ...", service_name, *sample)
+                    println!("{}: Received sample {} ...", service_name, *sample)
                 }
             }
         })

@@ -28,6 +28,8 @@ config = iox2.config.global_config()
 # Therefore, different domain names never share the same resources.
 config.global_cfg.prefix = iox2.FileName.new(domain)
 
+print(f'Services running in domain "{domain}":')
+
 # use the custom config when listing the services
 services = iox2.Service.list(config, iox2.ServiceType.Ipc)
 for service in services:

@@ -94,6 +94,8 @@ int main(void) { // NOLINT
         goto drop_service;
     }
 
+    printf("Server ready to receive requests!\n");
+
     // Main loop
     int32_t counter = 0;
     while (iox2_node_wait(&node_handle, 0, CYCLE_TIME) == IOX2_OK) { // 100ms in nanoseconds

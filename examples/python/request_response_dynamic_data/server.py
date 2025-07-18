@@ -41,6 +41,8 @@ server = (
     .allocation_strategy(iox2.AllocationStrategy.PowerOfTwo).create()
 )
 
+print("Server ready to receive requests!")
+
 COUNTER = 1
 try:
     while True:
