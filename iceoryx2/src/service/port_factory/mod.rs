@@ -24,6 +24,12 @@ use super::{attribute::AttributeSet, service_name::ServiceName};
 /// communication and to acquire static and dynamic service information
 pub mod blackboard;
 
+/// Factory to create a [`Reader`](crate::port::reader::Reader)
+pub mod reader;
+
+/// Factory to create a [`Writer`](crate::port::writer::Writer)
+pub mod writer;
+
 pub mod request_response;
 
 pub mod client;

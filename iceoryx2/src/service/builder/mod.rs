@@ -33,6 +33,7 @@ use crate::service::dynamic_config::RegisterNodeResult;
 use crate::service::static_config::*;
 use alloc::sync::Arc;
 use core::fmt::Debug;
+use core::hash::Hash;
 use core::marker::PhantomData;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
@@ -175,7 +176,11 @@ impl<S: Service> Builder<S> {
 
     /// Create a new builder to create a
     /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) [`Service`].
-    pub fn blackboard<KeyType: ZeroCopySend + Debug>(self) -> blackboard::Builder<KeyType, S> {
+    pub fn blackboard_creator<
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend + Hash,
+    >(
+        self,
+    ) -> blackboard::Creator<KeyType, S> {
         BuilderWithServiceType::new(
             StaticConfig::new_blackboard::<S::ServiceNameHasher>(
                 &self.name,
@@ -183,7 +188,24 @@ impl<S: Service> Builder<S> {
             ),
             self.shared_node,
         )
-        .blackboard()
+        .blackboard_creator()
+    }
+
+    /// Create a new builder to open a
+    /// [`MessagingPattern::Blackboard`](crate::service::messaging_pattern::MessagingPattern::Blackboard) [`Service`].
+    pub fn blackboard_opener<
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend + Hash,
+    >(
+        self,
+    ) -> blackboard::Opener<KeyType, S> {
+        BuilderWithServiceType::new(
+            StaticConfig::new_blackboard::<S::ServiceNameHasher>(
+                &self.name,
+                self.shared_node.config(),
+            ),
+            self.shared_node,
+        )
+        .blackboard_opener()
     }
 }
 
@@ -223,10 +245,20 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         event::Builder::new(self)
     }
 
-    fn blackboard<KeyType: ZeroCopySend + Debug>(
+    fn blackboard_creator<
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend + Hash,
+    >(
         self,
-    ) -> blackboard::Builder<KeyType, ServiceType> {
-        blackboard::Builder::new(self)
+    ) -> blackboard::Creator<KeyType, ServiceType> {
+        blackboard::Creator::new(self)
+    }
+
+    fn blackboard_opener<
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend + Hash,
+    >(
+        self,
+    ) -> blackboard::Opener<KeyType, ServiceType> {
+        blackboard::Opener::new(self)
     }
 
     fn is_service_available(

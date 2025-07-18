@@ -47,7 +47,9 @@ unsafe impl<Service: service::Service> Send for PortFactoryListener<'_, Service>
 impl<Service: service::Service> PortFactoryListener<'_, Service> {
     /// Creates the [`Listener`] port or returns a [`ListenerCreateError`] on failure.
     pub fn create(self) -> Result<Listener<Service>, ListenerCreateError> {
-        Ok(fail!(from self, when Listener::new(&self.factory.service),
-                    "Failed to create new Listener port."))
+        Ok(
+            fail!(from self, when Listener::new(self.factory.service.clone()),
+                    "Failed to create new Listener port."),
+        )
     }
 }

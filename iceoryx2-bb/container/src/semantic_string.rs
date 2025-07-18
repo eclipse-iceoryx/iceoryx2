@@ -287,7 +287,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     /// Removes a range.
     /// If the removal would create an illegal content it fails.
     fn remove_range(&mut self, idx: usize, len: usize) -> Result<(), SemanticStringError> {
-        let mut temp = self.as_string().clone();
+        let mut temp = *self.as_string();
         temp.remove_range(idx, len);
         if Self::is_invalid_content(temp.as_bytes()) {
             fail!(from self, with SemanticStringError::InvalidContent,
@@ -302,7 +302,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     /// Removes all bytes which satisfy the provided clojure f.
     /// If the removal would create an illegal content it fails.
     fn retain<F: FnMut(u8) -> bool>(&mut self, f: F) -> Result<(), SemanticStringError> {
-        let mut temp = self.as_string().clone();
+        let mut temp = *self.as_string();
         let f = temp.retain_impl(f);
 
         if Self::is_invalid_content(temp.as_bytes()) {
@@ -319,7 +319,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     /// to an invalid string content it fails and returns [`SemanticStringError::InvalidContent`].
     /// After a successful removal it returns true.
     fn strip_prefix(&mut self, bytes: &[u8]) -> Result<bool, SemanticStringError> {
-        let mut temp = self.as_string().clone();
+        let mut temp = *self.as_string();
         if !temp.strip_prefix(bytes) {
             return Ok(false);
         }
@@ -341,7 +341,7 @@ pub trait SemanticString<const CAPACITY: usize>:
     /// to an invalid string content it fails and returns [`SemanticStringError::InvalidContent`].
     /// After a successful removal it returns true.
     fn strip_suffix(&mut self, bytes: &[u8]) -> Result<bool, SemanticStringError> {
-        let mut temp = self.as_string().clone();
+        let mut temp = *self.as_string();
         if !temp.strip_suffix(bytes) {
             return Ok(false);
         }
@@ -361,7 +361,7 @@ pub trait SemanticString<const CAPACITY: usize>:
 
     /// Truncates the string to new_len.
     fn truncate(&mut self, new_len: usize) -> Result<(), SemanticStringError> {
-        let mut temp = self.as_string().clone();
+        let mut temp = *self.as_string();
         temp.truncate(new_len);
 
         if Self::is_invalid_content(temp.as_bytes()) {

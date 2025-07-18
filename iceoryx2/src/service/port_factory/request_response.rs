@@ -49,10 +49,14 @@ use crate::{
     prelude::AttributeSet,
     service::{
         self, dynamic_config, service_id::ServiceId, service_name::ServiceName, static_config,
+        NoResource, ServiceState,
     },
 };
 
 use super::{client::PortFactoryClient, nodes, server::PortFactoryServer};
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 /// The factory for
 /// [`MessagingPattern::RequestResponse`](crate::service::messaging_pattern::MessagingPattern::RequestResponse).
@@ -67,7 +71,7 @@ pub struct PortFactory<
     ResponsePayload: Debug + ZeroCopySend + ?Sized,
     ResponseHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: Service,
+    pub(crate) service: Arc<ServiceState<Service, NoResource>>,
     _request_payload: PhantomData<RequestPayload>,
     _request_header: PhantomData<RequestHeader>,
     _response_payload: PhantomData<ResponsePayload>,
@@ -130,30 +134,23 @@ impl<
     type DynamicConfig = dynamic_config::request_response::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        self.service.__internal_state().static_config.name()
+        self.service.static_config.name()
     }
 
     fn service_id(&self) -> &ServiceId {
-        self.service.__internal_state().static_config.service_id()
+        self.service.static_config.service_id()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.__internal_state().static_config.attributes()
+        self.service.static_config.attributes()
     }
 
     fn static_config(&self) -> &Self::StaticConfig {
-        self.service
-            .__internal_state()
-            .static_config
-            .request_response()
+        self.service.static_config.request_response()
     }
 
     fn dynamic_config(&self) -> &Self::DynamicConfig {
-        self.service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .request_response()
+        self.service.dynamic_storage.get().request_response()
     }
 
     fn nodes<F: FnMut(crate::node::NodeState<Service>) -> CallbackProgression>(
@@ -161,8 +158,8 @@ impl<
         callback: F,
     ) -> Result<(), NodeListFailure> {
         nodes(
-            self.service.__internal_state().dynamic_storage.get(),
-            self.service.__internal_state().shared_node.config(),
+            self.service.dynamic_storage.get(),
+            self.service.shared_node.config(),
             callback,
         )
     }
@@ -176,9 +173,9 @@ impl<
         ResponseHeader: Debug + ZeroCopySend,
     > PortFactory<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
-    pub(crate) fn new(service: Service) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
         Self {
-            service,
+            service: Arc::new(service),
             _request_payload: PhantomData,
             _request_header: PhantomData,
             _response_payload: PhantomData,

@@ -39,6 +39,7 @@
 //! # Ok(())
 //! # }
 //! ```
+extern crate alloc;
 
 use core::{fmt::Debug, marker::PhantomData};
 
@@ -50,7 +51,8 @@ use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::service_id::ServiceId;
 use crate::service::service_name::ServiceName;
-use crate::service::{self, dynamic_config, static_config};
+use crate::service::{self, dynamic_config, static_config, NoResource, ServiceState};
+use alloc::sync::Arc;
 
 use super::nodes;
 use super::{publisher::PortFactoryPublisher, subscriber::PortFactorySubscriber};
@@ -66,7 +68,7 @@ pub struct PortFactory<
     Payload: Debug + ZeroCopySend + ?Sized,
     UserHeader: Debug + ZeroCopySend,
 > {
-    pub(crate) service: Service,
+    pub(crate) service: Arc<ServiceState<Service, NoResource>>,
     _payload: PhantomData<Payload>,
     _user_header: PhantomData<UserHeader>,
 }
@@ -97,30 +99,23 @@ impl<
     type DynamicConfig = dynamic_config::publish_subscribe::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        self.service.__internal_state().static_config.name()
+        self.service.static_config.name()
     }
 
     fn service_id(&self) -> &ServiceId {
-        self.service.__internal_state().static_config.service_id()
+        self.service.static_config.service_id()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.__internal_state().static_config.attributes()
+        self.service.static_config.attributes()
     }
 
     fn static_config(&self) -> &static_config::publish_subscribe::StaticConfig {
-        self.service
-            .__internal_state()
-            .static_config
-            .publish_subscribe()
+        self.service.static_config.publish_subscribe()
     }
 
     fn dynamic_config(&self) -> &dynamic_config::publish_subscribe::DynamicConfig {
-        self.service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .publish_subscribe()
+        self.service.dynamic_storage.get().publish_subscribe()
     }
 
     fn nodes<F: FnMut(crate::node::NodeState<Service>) -> CallbackProgression>(
@@ -128,8 +123,8 @@ impl<
         callback: F,
     ) -> Result<(), NodeListFailure> {
         nodes(
-            self.service.__internal_state().dynamic_storage.get(),
-            self.service.__internal_state().shared_node.config(),
+            self.service.dynamic_storage.get(),
+            self.service.shared_node.config(),
             callback,
         )
     }
@@ -141,9 +136,9 @@ impl<
         UserHeader: Debug + ZeroCopySend,
     > PortFactory<Service, Payload, UserHeader>
 {
-    pub(crate) fn new(service: Service) -> Self {
+    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
         Self {
-            service,
+            service: Arc::new(service),
             _payload: PhantomData,
             _user_header: PhantomData,
         }

@@ -164,7 +164,6 @@ impl<
     ) -> Self {
         let defs = &factory
             .service
-            .__internal_state()
             .shared_node
             .config()
             .defaults

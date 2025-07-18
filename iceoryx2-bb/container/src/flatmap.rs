@@ -33,6 +33,7 @@
 
 use crate::slotmap::FreeListEntry;
 use crate::slotmap::{MetaSlotMap, RelocatableSlotMap};
+use core::fmt::Debug;
 use core::mem::MaybeUninit;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
@@ -74,6 +75,21 @@ pub type RelocatableFlatMap<K, V> = MetaFlatMap<K, V, GenericRelocatablePointer>
 pub struct MetaFlatMap<K: Eq, V: Clone, Ptr: GenericPointer> {
     map: MetaSlotMap<Entry<K, V>, Ptr>,
     is_initialized: IoxAtomicBool,
+}
+
+impl<K: Eq + Debug, V: Clone + Debug, Ptr: GenericPointer> Debug for MetaFlatMap<K, V, Ptr> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "MetaFlatMap<{}, {}, {}> {{ len: {}, is_initialized: {} }}",
+            core::any::type_name::<K>(),
+            core::any::type_name::<V>(),
+            core::any::type_name::<Ptr>(),
+            self.len_impl(),
+            self.is_initialized
+                .load(core::sync::atomic::Ordering::Relaxed),
+        )
+    }
 }
 
 impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
@@ -367,6 +383,21 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> PlacementDefault for FixedSizeFlatM
 impl<K: Eq, V: Clone, const CAPACITY: usize> Default for FixedSizeFlatMap<K, V, CAPACITY> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl<K: Eq + Debug, V: Clone + Debug, const CAPACITY: usize> Debug
+    for FixedSizeFlatMap<K, V, CAPACITY>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "MetaFlatMap<{}, {}, {}> {{ {:?} }}",
+            core::any::type_name::<K>(),
+            core::any::type_name::<V>(),
+            CAPACITY,
+            self.map
+        )
     }
 }
 

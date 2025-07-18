@@ -66,7 +66,7 @@ impl<'factory, Service: service::Service> PortFactoryNotifier<'factory, Service>
     /// Creates a new [`Notifier`] port or returns a [`NotifierCreateError`] on failure.
     pub fn create(self) -> Result<Notifier<Service>, NotifierCreateError> {
         Ok(
-            fail!(from self, when Notifier::new(&self.factory.service, self.default_event_id),
+            fail!(from self, when Notifier::new(self.factory.service.clone(), self.default_event_id),
                     "Failed to create new Notifier port."),
         )
     }

@@ -351,22 +351,14 @@ impl<
         let service = &client_factory.factory.service;
         let client_id = UniqueClientId::new();
         let static_config = client_factory.factory.static_config();
-        let number_of_requests = unsafe {
-            service
-                .__internal_state()
-                .static_config
-                .messaging_pattern
-                .request_response()
-        }
-        .required_amount_of_chunks_per_client_data_segment(static_config.max_loaned_requests);
-        let server_list = &service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .request_response()
-            .servers;
+        let number_of_requests =
+            unsafe { service.static_config.messaging_pattern.request_response() }
+                .required_amount_of_chunks_per_client_data_segment(
+                    static_config.max_loaned_requests,
+                );
+        let server_list = &service.dynamic_storage.get().request_response().servers;
 
-        let global_config = service.__internal_state().shared_node.config();
+        let global_config = service.shared_node.config();
         let segment_name = data_segment_name(client_id.value());
         let data_segment_type = DataSegmentType::new_from_allocation_strategy(
             client_factory.config.allocation_strategy,
@@ -401,7 +393,7 @@ impl<
 
         let client_details = ClientDetails {
             client_id,
-            node_id: *service.__internal_state().shared_node.id(),
+            node_id: *service.shared_node.id(),
             number_of_requests,
             response_buffer_size: static_config.max_response_buffer_size,
             max_slice_len: client_factory.config.initial_max_slice_len,
@@ -420,7 +412,7 @@ impl<
                 v
             },
             sender_port_id: client_id.value(),
-            shared_node: service.__internal_state().shared_node.clone(),
+            shared_node: service.shared_node.clone(),
             connections: (0..server_list.capacity())
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
@@ -430,7 +422,7 @@ impl<
             degradation_callback: client_factory.request_degradation_callback,
             number_of_samples: number_of_requests,
             max_number_of_segments,
-            service_state: service.__internal_state().clone(),
+            service_state: service.clone(),
             tagger: CyclicTagger::new(),
             loan_counter: IoxAtomicUsize::new(0),
             sender_max_borrowed_samples: static_config.max_loaned_requests,
@@ -445,7 +437,6 @@ impl<
         };
 
         let number_of_to_be_removed_connections = service
-            .__internal_state()
             .shared_node
             .config()
             .defaults
@@ -458,7 +449,7 @@ impl<
         let response_receiver = Receiver {
             connections: Vec::from_fn(number_of_active_connections, |_| UnsafeCell::new(None)),
             receiver_port_id: client_id.value(),
-            service_state: service.__internal_state().clone(),
+            service_state: service.clone(),
             buffer_size: static_config.max_response_buffer_size,
             tagger: CyclicTagger::new(),
             to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
@@ -522,7 +513,6 @@ impl<
         // creation of all required resources
         unsafe {
             *new_self.client_shared_state.lock().client_handle.get() = match service
-                .__internal_state()
                 .dynamic_storage
                 .get()
                 .request_response()
@@ -533,7 +523,7 @@ impl<
                     fail!(from origin,
                       with ClientCreateError::ExceedsMaxSupportedClients,
                       "{} since it would exceed the maximum support amount of clients of {}.",
-                      msg, service.__internal_state().static_config.request_response().max_clients());
+                      msg, service.static_config.request_response().max_clients());
                 }
             }
         };

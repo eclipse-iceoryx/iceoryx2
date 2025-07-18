@@ -40,12 +40,15 @@ use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use crate::node::NodeListFailure;
 use crate::service::attribute::AttributeSet;
 use crate::service::service_id::ServiceId;
-use crate::service::{self, static_config};
+use crate::service::{self, static_config, NoResource, ServiceState};
 use crate::service::{dynamic_config, ServiceName};
 
 use super::listener::PortFactoryListener;
 use super::nodes;
 use super::notifier::PortFactoryNotifier;
+
+extern crate alloc;
+use alloc::sync::Arc;
 
 /// The factory for
 /// [`MessagingPattern::Event`](crate::service::messaging_pattern::MessagingPattern::Event). It can
@@ -53,7 +56,7 @@ use super::notifier::PortFactoryNotifier;
 /// or [`crate::port::listener::Listener`] ports.
 #[derive(Debug)]
 pub struct PortFactory<Service: service::Service> {
-    pub(crate) service: Service,
+    pub(crate) service: Arc<ServiceState<Service, NoResource>>,
 }
 
 unsafe impl<Service: service::Service> Send for PortFactory<Service> {}
@@ -65,27 +68,23 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
     type DynamicConfig = dynamic_config::event::DynamicConfig;
 
     fn name(&self) -> &ServiceName {
-        self.service.__internal_state().static_config.name()
+        self.service.static_config.name()
     }
 
     fn service_id(&self) -> &ServiceId {
-        self.service.__internal_state().static_config.service_id()
+        self.service.static_config.service_id()
     }
 
     fn attributes(&self) -> &AttributeSet {
-        self.service.__internal_state().static_config.attributes()
+        self.service.static_config.attributes()
     }
 
     fn static_config(&self) -> &static_config::event::StaticConfig {
-        self.service.__internal_state().static_config.event()
+        self.service.static_config.event()
     }
 
     fn dynamic_config(&self) -> &dynamic_config::event::DynamicConfig {
-        self.service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .event()
+        self.service.dynamic_storage.get().event()
     }
 
     fn nodes<F: FnMut(crate::node::NodeState<Service>) -> CallbackProgression>(
@@ -93,16 +92,18 @@ impl<Service: service::Service> crate::service::port_factory::PortFactory for Po
         callback: F,
     ) -> Result<(), NodeListFailure> {
         nodes(
-            self.service.__internal_state().dynamic_storage.get(),
-            self.service.__internal_state().shared_node.config(),
+            self.service.dynamic_storage.get(),
+            self.service.shared_node.config(),
             callback,
         )
     }
 }
 
 impl<Service: service::Service> PortFactory<Service> {
-    pub(crate) fn new(service: Service) -> Self {
-        Self { service }
+    pub(crate) fn new(service: ServiceState<Service, NoResource>) -> Self {
+        Self {
+            service: Arc::new(service),
+        }
     }
 
     /// Returns a [`PortFactoryNotifier`] to create a new [`crate::port::notifier::Notifier`] port
