@@ -673,7 +673,6 @@ pub(crate) mod internal {
                     &blackboard_payload_config,
                 );
                 if blackboard_payload.is_ok() && !blackboard_payload.unwrap().is_empty() {
-                    // TODO: explain unsafe
                     match unsafe {
                         <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
                             &blackboard_name,
@@ -690,12 +689,6 @@ pub(crate) mod internal {
                         }
                     }
 
-                    //// TODO: when creating BlackboardMgmt call same function with config to
-                    //// ensure that in static_config and DynamicStorage name the same type
-                    //// identifier is used
-                    ////   * otherwise DynamicStorage will always use core::any::type_name
-                    ////   * static_config might contain user given type identifier !=
-                    ////   core::any::type_name, see cross language
                     let details = match details::<S>(config, &service_id.0.clone().into()) {
                         Ok(Some(d)) => d,
                         _ => {
@@ -713,16 +706,18 @@ pub(crate) mod internal {
                                       "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
                             }
                     };
+                    // u64 is just a placeholder needed for the DynamicStorageConfiguration; it is
+                    // overwritten right below
                     let mut blackboard_mgmt_config =
                         crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
-                    // TODO: explain u64/unsafe
+                    // Safe since the same type name is set when creating the BlackboardMgmt in
+                    // Creator::create_impl so we can safely remove the concept.
                     unsafe {
                         <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(
                             &mut blackboard_mgmt_config,
                             blackboard_mgmt_name
                         )
                     };
-                    // TODO: explain u64/unsafe
                     match unsafe {
                         <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
                             &blackboard_name,
@@ -822,7 +817,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
 
     /// Defines the construct used to store the management data of the blackboard service.
-    type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static>: DynamicStorage<KeyType>;
+    type BlackboardMgmt<T: Send + Sync + Debug + 'static>: DynamicStorage<T>;
 
     /// Defines the construct used to store the payload data of the blackboard service.
     type BlackboardPayload: SharedMemory<BumpAllocator>;

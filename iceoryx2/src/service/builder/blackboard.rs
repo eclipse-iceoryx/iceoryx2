@@ -526,9 +526,12 @@ impl<
                               "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
                     }
                 };
-                // TODO: explain unsafe, open
+                // The name is set to be able to remove the concept when a node dies. Safe since the
+                // same name is set in ServiceInternal::__internal_remove_node_from_service.
                 unsafe {
-                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage::<Mgmt<KeyType>>>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name)
+                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage::<
+                        Mgmt<KeyType>,
+                    >>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name)
                 };
 
                 let mgmt_storage = fail!(from self, when
@@ -768,6 +771,9 @@ impl<
                               "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
                         }
                     };
+                    // The name was set in create_impl to be able to remove the concept when a node
+                    // dies. Safe since the same name is set in
+                    // ServiceInternal::__internal_remove_node_from_service.
                     unsafe {
                         <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<
                             Mgmt<KeyType>,

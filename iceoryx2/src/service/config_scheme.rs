@@ -14,10 +14,7 @@ use crate::{config, node::NodeId};
 use core::fmt::Debug;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
-use iceoryx2_cal::{
-    dynamic_storage::DynamicStorage,
-    named_concept::{NamedConceptConfiguration, NamedConceptMgmt},
-};
+use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
 
 pub(crate) fn dynamic_config_storage_config<Service: crate::service::Service>(
     global_config: &config::Config,
@@ -126,19 +123,10 @@ pub(crate) fn blackboard_mgmt_config<
 >(
     global_config: &config::Config,
 ) -> <Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration {
-    let mut ret_val = <<Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration>::default()
+    <<Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration>::default()
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.service.blackboard_mgmt_suffix)
-        .path_hint(global_config.global.root_path());
-
-    unsafe {
-        <Service::BlackboardMgmt<T> as DynamicStorage<T>>::__internal_set_type_name_in_config(
-            &mut ret_val,
-            T::type_name(),
-        )
-    };
-
-    ret_val
+        .path_hint(global_config.global.root_path())
 }
 
 pub(crate) fn blackboard_data_config<Service: crate::service::Service>(
