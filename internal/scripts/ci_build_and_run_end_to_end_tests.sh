@@ -56,7 +56,7 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
     echo "##########################"
 
     cargo build --examples
-    cargo build --package iceoryx2-cli
+    cargo build --bin iox2-service
 
     NUM_JOBS=1
     if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then
