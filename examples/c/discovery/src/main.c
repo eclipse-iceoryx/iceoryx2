@@ -20,6 +20,9 @@ iox2_callback_progression_e list_callback(const iox2_static_config_t* static_det
 }
 
 int main(void) {
+    // Setup logging
+    iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+
     if (iox2_service_list(iox2_service_type_e_IPC, iox2_config_global_config(), list_callback, NULL) != IOX2_OK) {
         printf("Failed to list all services.");
     }
