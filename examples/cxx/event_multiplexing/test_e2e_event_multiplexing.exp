@@ -23,13 +23,17 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn target/ffi/build/examples/cxx/event_multiplexing/example_cxx_event_multiplexing_notifier --service hypnotoad --event-id 42
+set id_notifier_1 $spawn_id
 
 spawn target/ffi/build/examples/cxx/event_multiplexing/example_cxx_event_multiplexing_notifier --service brainslug --event-id 13
+set id_notifier_2 $spawn_id
 
 spawn target/ffi/build/examples/cxx/event_multiplexing/example_cxx_event_multiplexing_wait --service1 hypnotoad --service2 brainslug
 
 #### Test Assertion
 
+expect_output_from $id_notifier_1 "Trigger event with id*"
+expect_output_from $id_notifier_2 "Trigger event with id*"
 expect_output "Received trigger from \"hypnotoad\""
 expect_output " EventId { m_value: 42 }"
 expect_output "Received trigger from \"brainslug\""

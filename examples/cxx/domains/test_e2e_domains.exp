@@ -23,9 +23,11 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn target/ffi/build/examples/cxx/domains/example_cxx_domains_publisher -d "fuu" -s "bar"
+set id_publisher $spawn_id
 
 spawn target/ffi/build/examples/cxx/domains/example_cxx_domains_subscriber -d "fuu" -s "bar"
 
+expect_output_from $id_publisher "*fuu*bar*Send sample*"
 expect_output "received: TransmissionData { x: 3, y: 9, funky: 2436.36 }"
 
 spawn target/ffi/build/examples/cxx/domains/example_cxx_domains_discovery -d "fuu"

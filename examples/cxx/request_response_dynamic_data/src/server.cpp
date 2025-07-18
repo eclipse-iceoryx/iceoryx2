@@ -40,6 +40,8 @@ auto main() -> int {
                       .create()
                       .expect("successful server creation");
 
+    std::cout << "Server ready to receive requests!" << std::endl;
+
     auto counter = 1;
 
     while (node.wait(CYCLE_TIME).has_value()) {

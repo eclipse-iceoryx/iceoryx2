@@ -23,11 +23,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn target/ffi/build/examples/c/event/example_c_event_notifier
+set id_notifier $spawn_id
 
 spawn target/ffi/build/examples/c/event/example_c_event_listener
 
 #### Test Assertion
 
+expect_output_from $id_notifier "Trigger event with id*"
 expect_output "event was triggered with id: 3"
 
 show_test_passed

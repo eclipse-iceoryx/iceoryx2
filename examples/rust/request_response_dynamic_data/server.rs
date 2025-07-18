@@ -36,6 +36,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .allocation_strategy(AllocationStrategy::PowerOfTwo)
         .create()?;
 
+    println!("Server ready to receive requests!");
+
     let mut counter = 1;
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(active_request) = server.receive()? {

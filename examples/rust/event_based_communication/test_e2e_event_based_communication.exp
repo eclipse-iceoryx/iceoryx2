@@ -23,11 +23,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn cargo run --example event_based_comm_publisher
+set id_publisher $spawn_id
 
 spawn cargo run --example event_based_comm_subscriber
 
 #### Test Assertion
 
+expect_output_from $id_publisher "send message*"
 expect_output "received: 2"
 
 show_test_passed

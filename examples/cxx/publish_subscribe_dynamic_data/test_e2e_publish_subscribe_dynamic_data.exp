@@ -23,11 +23,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_publisher
+set id_publisher $spawn_id
 
 spawn target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_subscriber
 
 #### Test Assertion
 
+expect_output_from $id_publisher "Send sample*"
 expect_output "received 9 bytes"
 
 show_test_passed

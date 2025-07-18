@@ -23,13 +23,17 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn cargo run --example event_multiplexing_notifier -- --service hypnotoad --event-id 42
+set id_notifier_1 $spawn_id
 
 spawn cargo run --example event_multiplexing_notifier -- --service brainslug --event-id 13
+set id_notifier_2 $spawn_id
 
 spawn cargo run --example event_multiplexing_wait -- --services hypnotoad --services brainslug
 
 #### Test Assertion
 
+expect_output_from $id_notifier_1 "*Trigger event *"
+expect_output_from $id_notifier_2 "*Trigger event *"
 expect_output "Received trigger from \"hypnotoad\" :: TriggerId(42)"
 expect_output "Received trigger from \"brainslug\" :: TriggerId(13)"
 

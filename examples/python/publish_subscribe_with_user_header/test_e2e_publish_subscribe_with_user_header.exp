@@ -23,11 +23,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn python examples/python/publish_subscribe_with_user_header/publisher.py
+set id_publisher $spawn_id
 
 spawn python examples/python/publish_subscribe_with_user_header/subscriber.py
 
 #### Test Assertion
 
+expect_output_from $id_publisher "Send sample*"
 expect_output "received: c_ulong(3) , user_header: CustomHeader { version: 123, timestamp: 80340 }"
 
 show_test_passed

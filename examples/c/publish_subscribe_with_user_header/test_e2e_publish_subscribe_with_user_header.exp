@@ -23,11 +23,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn target/ffi/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_publisher
+set id_publisher $spawn_id
 
 spawn target/ffi/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_subscriber
 
 #### Test Assertion
 
+expect_output_from $id_publisher "Send sample*"
 expect_output "received: 3, user_header: version = 123, timestamp = 80340"
 
 show_test_passed

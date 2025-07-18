@@ -23,11 +23,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn cargo run --example event_notifier
+set id_notifier $spawn_id
 
 spawn cargo run --example event_listener
 
 #### Test Assertion
 
+expect_output_from $id_notifier "Trigger event with id*"
 expect_output "event was triggered with id: TriggerId(3)"
 
 show_test_passed

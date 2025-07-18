@@ -23,11 +23,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn cargo run --example request_response_server
+set id_server $spawn_id
 
 spawn python examples/python/request_response/client.py
 
 #### Test Assertion
 
-expect_output "received response 3: *"
+expect_output_from $id_server "Server ready to receive requests!"
+expect_output "received response 3 *"
 
 show_test_passed

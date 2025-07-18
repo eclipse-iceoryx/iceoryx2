@@ -23,9 +23,11 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn python examples/python/domains/publisher.py fuu bar
+set id_publisher $spawn_id
 
 spawn python examples/python/domains/subscriber.py fuu bar
 
+expect_output_from $id_publisher "*fuu*bar*Send sample*"
 expect_output "received: c_ulong(3)"
 
 spawn python examples/python/domains/discovery.py fuu
