@@ -3,3 +3,7 @@ breathe
 sphinx
 sphinx_rtd_theme
 sphinx-sitemap
+recommonmark
+nbsphinx
+myst-parser
+sphinx_design

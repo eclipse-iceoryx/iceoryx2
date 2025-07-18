@@ -29,10 +29,15 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 class PortFactoryClient {
+  public:
     /// Sets the [`UnableToDeliverStrategy`] which defines how the [`Client`] shall behave
     /// when a [`Server`] cannot receive a [`RequestMut`] since
     /// its internal buffer is full.
+#ifdef DOXYGEN_MACRO_FIX
+    auto unable_to_deliver_strategy(const UnableToDeliverStrategy value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
+#endif
 
   public:
     PortFactoryClient(const PortFactoryClient&) = delete;
