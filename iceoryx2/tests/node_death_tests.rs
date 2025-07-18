@@ -70,7 +70,6 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         const NUMBER_OF_DEAD_NODES_LIMIT: usize = 5;
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -110,7 +109,6 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_removed_from_pub_sub_service<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -192,7 +190,6 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_removed_from_event_service<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -275,7 +272,6 @@ mod node_death_tests {
 
     #[test]
     fn notifier_of_dead_node_emits_death_event_when_configured<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         let _watchdog = Watchdog::new();
         let mut config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -319,7 +315,6 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_removed_from_request_response_service<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 2;
         const NUMBER_OF_GOOD_NODES: usize = 3;
@@ -402,7 +397,6 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_removed_from_blackboard_service<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Trace);
         let _watchdog = Watchdog::new();
         const NUMBER_OF_BAD_NODES: usize = 3;
         const NUMBER_OF_GOOD_NODES: usize = 4;
@@ -483,7 +477,6 @@ mod node_death_tests {
 
     #[test]
     fn event_service_is_removed_when_last_node_dies<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -517,7 +510,6 @@ mod node_death_tests {
 
     #[test]
     fn pubsub_service_is_removed_when_last_node_dies<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -551,7 +543,6 @@ mod node_death_tests {
 
     #[test]
     fn request_response_service_is_removed_when_last_node_dies<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -585,7 +576,6 @@ mod node_death_tests {
 
     #[test]
     fn blackboard_service_is_removed_when_last_node_dies<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Trace);
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -620,7 +610,6 @@ mod node_death_tests {
 
     #[test]
     fn writer_and_reader_resources_are_removed_after_crash<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Trace);
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -658,13 +647,12 @@ mod node_death_tests {
 
     #[test]
     fn blackboard_resources_are_removed_when_key_has_user_defined_name<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Trace);
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
         #[repr(C)]
-        #[derive(ZeroCopySend, Debug, Clone, PartialEq, Eq)]
+        #[derive(ZeroCopySend, Debug, Clone, PartialEq, Eq, Hash)]
         #[type_name("SoSpecial")]
         struct SpecialKey(u64);
 
@@ -709,7 +697,6 @@ mod node_death_tests {
 
     #[test]
     fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Trace);
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -755,7 +742,6 @@ mod node_death_tests {
 
     #[test]
     fn node_cleanup_option_works_on_node_creation<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
@@ -799,7 +785,6 @@ mod node_death_tests {
 
     #[test]
     fn node_cleanup_option_works_on_node_destruction<S: Test>() {
-        set_log_level_from_env_or(LogLevel::Info);
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_destruction = true;
         let node_with_cleanup = NodeBuilder::new()

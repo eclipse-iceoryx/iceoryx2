@@ -100,12 +100,12 @@ impl DynamicConfig {
             + Container::<WriterDetails>::memory_size(config.number_of_writers)
     }
 
-    /// Returns how many [`crate::port::reader::Reader`] ports are currently connected.
+    /// Returns how many [`Reader`](crate::port::reader::Reader) ports are currently connected.
     pub fn number_of_readers(&self) -> usize {
         self.readers.len()
     }
 
-    /// Returns how many [`crate::port::writer::Writer`] ports are currently connected.
+    /// Returns how many [`Writer`](crate::port::writer::Writer) ports are currently connected.
     pub fn number_of_writers(&self) -> usize {
         self.writers.len()
     }
