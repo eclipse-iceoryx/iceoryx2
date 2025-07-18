@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+pub mod active_request;
 pub mod alignment;
 pub mod allocation_strategy;
 pub mod attribute;
@@ -41,6 +42,7 @@ pub mod node_state;
 pub mod notifier;
 pub mod parc;
 pub mod path;
+pub mod pending_response;
 pub mod port_factory_client;
 pub mod port_factory_event;
 pub mod port_factory_listener;
@@ -51,6 +53,13 @@ pub mod port_factory_request_response;
 pub mod port_factory_server;
 pub mod port_factory_subscriber;
 pub mod publisher;
+pub mod request_header;
+pub mod request_mut;
+pub mod request_mut_uninit;
+pub mod response;
+pub mod response_header;
+pub mod response_mut;
+pub mod response_mut_uninit;
 pub mod sample;
 pub mod sample_mut;
 pub mod sample_mut_uninit;
@@ -104,6 +113,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
         crate::log::set_log_level_from_env_or_default
     ))?;
 
+    m.add_class::<crate::active_request::ActiveRequest>()?;
     m.add_class::<crate::alignment::Alignment>()?;
     m.add_class::<crate::allocation_strategy::AllocationStrategy>()?;
     m.add_class::<crate::attribute::Attribute>()?;
@@ -132,6 +142,7 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::node_state::NodeDetails>()?;
     m.add_class::<crate::notifier::Notifier>()?;
     m.add_class::<crate::path::Path>()?;
+    m.add_class::<crate::pending_response::PendingResponse>()?;
     m.add_class::<crate::port_factory_client::PortFactoryClient>()?;
     m.add_class::<crate::port_factory_event::PortFactoryEvent>()?;
     m.add_class::<crate::port_factory_listener::PortFactoryListener>()?;
@@ -142,6 +153,13 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<crate::port_factory_server::PortFactoryServer>()?;
     m.add_class::<crate::port_factory_subscriber::PortFactorySubscriber>()?;
     m.add_class::<crate::publisher::Publisher>()?;
+    m.add_class::<crate::request_header::RequestHeader>()?;
+    m.add_class::<crate::request_mut::RequestMut>()?;
+    m.add_class::<crate::request_mut_uninit::RequestMutUninit>()?;
+    m.add_class::<crate::response::Response>()?;
+    m.add_class::<crate::response_header::ResponseHeader>()?;
+    m.add_class::<crate::response_mut::ResponseMut>()?;
+    m.add_class::<crate::response_mut_uninit::ResponseMutUninit>()?;
     m.add_class::<crate::sample::Sample>()?;
     m.add_class::<crate::sample_mut::SampleMut>()?;
     m.add_class::<crate::sample_mut_uninit::SampleMutUninit>()?;
@@ -270,6 +288,10 @@ fn _iceoryx2(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "RequestResponseOpenOrCreateError",
         py.get_type::<crate::error::RequestResponseOpenOrCreateError>(),
+    )?;
+    m.add(
+        "RequestSendError",
+        py.get_type::<crate::error::RequestSendError>(),
     )?;
     m.add(
         "ServerCreateError",

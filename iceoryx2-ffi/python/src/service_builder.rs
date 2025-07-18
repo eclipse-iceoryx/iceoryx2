@@ -68,11 +68,11 @@ impl ServiceBuilder {
     }
 
     /// Create a new builder to create a `MessagingPattern::RequestResponse` `Service`.
-    pub fn request_response(&self) -> ServiceBuilderRequestResponse {
+    pub fn __request_response(&self) -> ServiceBuilderRequestResponse {
         match &self.0 {
             ServiceBuilderType::Ipc(v) => {
                 let this = v.clone();
-                ServiceBuilderRequestResponse(ServiceBuilderRequestResponseType::Ipc(
+                ServiceBuilderRequestResponse::new(ServiceBuilderRequestResponseType::Ipc(
                     this.request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
                         .request_user_header::<CustomHeaderMarker>()
                         .response_user_header::<CustomHeaderMarker>(),
@@ -80,7 +80,7 @@ impl ServiceBuilder {
             }
             ServiceBuilderType::Local(v) => {
                 let this = v.clone();
-                ServiceBuilderRequestResponse(ServiceBuilderRequestResponseType::Local(
+                ServiceBuilderRequestResponse::new(ServiceBuilderRequestResponseType::Local(
                     this.request_response::<[CustomPayloadMarker], [CustomPayloadMarker]>()
                         .request_user_header::<CustomHeaderMarker>()
                         .response_user_header::<CustomHeaderMarker>(),

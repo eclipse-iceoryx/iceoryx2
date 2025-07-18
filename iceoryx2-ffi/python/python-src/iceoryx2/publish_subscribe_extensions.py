@@ -24,6 +24,7 @@ T = TypeVar("T", bound=ctypes.Structure)
 
 def payload(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the payload."""
+    assert self.__payload_type_details is not None
     if get_origin(self.__payload_type_details) is Slice:
         (contained_type,) = get_args(self.__payload_type_details)
         return Slice(self.payload_ptr, self.__slice_len, contained_type)
@@ -35,6 +36,7 @@ def payload(self: Any) -> Any:
 
 def user_header(self: Any) -> Any:
     """Returns a `ctypes.POINTER` to the user header."""
+    assert self.__user_header_type_details is not None
     return ctypes.cast(
         self.user_header_ptr, ctypes.POINTER(self.__user_header_type_details)
     )
@@ -97,6 +99,7 @@ def set_user_header(
 
 def send_copy(self: Publisher, t: Type[T]) -> Any:
     """Sends a copy of the provided type."""
+    assert self.__payload_type_details is not None
     sample_uninit = self.loan_uninit()
 
     assert ctypes.sizeof(t) == ctypes.sizeof(
@@ -112,7 +115,8 @@ def send_copy(self: Publisher, t: Type[T]) -> Any:
 
 
 def write_payload(self: SampleMutUninit, t: Type[T]) -> SampleMut:
-    """Sends a copy of the provided type."""
+    """Writes the provided payload into the sample."""
+    assert self.__payload_type_details is not None
     assert ctypes.sizeof(t) == ctypes.sizeof(self.__payload_type_details)
     assert ctypes.alignment(t) == ctypes.alignment(self.__payload_type_details)
 
@@ -159,12 +163,7 @@ def initial_max_slice_len(
 def allocation_strategy(
     self: PortFactoryPublisher, value: AllocationStrategy
 ) -> PortFactoryPublisher:
-    """
-    Defines the allocation strategy that is used when the memory is exhausted.
-
-    This happens when the user acquires more than max slice len in `ActiveRequest::loan_slice()`
-    or `ActiveRequest::loan_slice_uninit()`.
-    """
+    """Defines the allocation strategy that is used when the memory is exhausted."""
     assert get_origin(self.__payload_type_details) is Slice
 
     return self.__allocation_strategy(value)

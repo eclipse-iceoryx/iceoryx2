@@ -12,7 +12,7 @@
 
 use pyo3::prelude::*;
 
-#[pyclass(eq)]
+#[pyclass(eq, str = "{0:?}")]
 #[derive(PartialEq, Eq)]
 /// The system-wide unique id of a `Listener`.
 pub struct UniqueListenerId(pub(crate) iceoryx2::port::port_identifiers::UniqueListenerId);

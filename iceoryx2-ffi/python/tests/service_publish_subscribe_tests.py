@@ -50,18 +50,25 @@ def test_send_and_receive_with_memmove_works(
     for i in range(0, number_of_samples):
         send_payload = Payload(data=82 + i)
         sample_uninit = publisher.loan_uninit()
-        ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(send_payload), 1)
+        ctypes.memmove(
+            sample_uninit.payload_ptr,
+            ctypes.byref(send_payload),
+            ctypes.sizeof(Payload),
+        )
         sample = sample_uninit.assume_init()
         sample.send()
 
     assert subscriber.has_samples()
 
     for i in range(0, number_of_samples):
+        assert subscriber.has_samples()
         received_sample = subscriber.receive()
         assert received_sample is not None
         received_payload = Payload(data=0)
         ctypes.memmove(
-            ctypes.byref(received_payload), received_sample.payload_ptr, 1
+            ctypes.byref(received_payload),
+            received_sample.payload_ptr,
+            ctypes.sizeof(Payload),
         )
         assert received_payload.data == 82 + i
 
@@ -230,7 +237,7 @@ def test_custom_user_header_can_be_used(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_slice_api_can_be_used(
+def test_reallocation_fails_when_allocation_strategy_is_static(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()
@@ -260,7 +267,7 @@ def test_slice_api_can_be_used(
 
 
 @pytest.mark.parametrize("service_type", service_types)
-def test_slice_api_allocation_strategy_works(
+def test_reallocation_works_when_allocation_strategy_is_not_static(
     service_type: iox2.ServiceType,
 ) -> None:
     config = iox2.testing.generate_isolated_config()

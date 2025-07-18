@@ -89,6 +89,7 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::prelude::UnableToDeliverStrategy;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
@@ -485,6 +486,16 @@ impl<
                 .request_receiver
                 .has_samples_in_active_connection(REQUEST_CHANNEL_ID))
         }
+    }
+
+    /// Returns the strategy the [`Server`] follows when a
+    /// [`ResponseMut`](crate::response_mut::ResponseMut) cannot be delivered
+    /// if the [`Client`](crate::port::client::Client)s buffer is full.
+    pub fn unable_to_deliver_strategy(&self) -> UnableToDeliverStrategy {
+        self.shared_state
+            .lock()
+            .response_sender
+            .unable_to_deliver_strategy
     }
 
     fn receive_impl(&self) -> Result<Option<(ChunkDetails, Chunk)>, ReceiveError> {

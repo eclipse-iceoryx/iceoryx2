@@ -10,11 +10,38 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+import ctypes
+
 import pytest
 
 import iceoryx2 as iox2
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
+
+
+class Payload(ctypes.Structure):
+    _fields_ = [("data", ctypes.c_ubyte)]
+
+
+class HeaderPayload(ctypes.Structure):
+    _fields_ = [("data", ctypes.c_ubyte), ("fuu", ctypes.c_int)]
+
+
+class Payload2(ctypes.Structure):
+    _fields_ = [
+        ("data", ctypes.c_uint64),
+        ("fuu", ctypes.c_uint64),
+        ("bar", ctypes.c_uint64),
+    ]
+
+
+class HeaderPayload2(ctypes.Structure):
+    _fields_ = [
+        ("data", ctypes.c_uint64),
+        ("fuu", ctypes.c_uint64),
+        ("bar", ctypes.c_uint64),
+        ("whatever", ctypes.c_uint64),
+    ]
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -25,7 +52,11 @@ def test_non_existing_service_can_be_created(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     try:
         service_name = iox2.testing.generate_service_name()
-        sut = node.service_builder(service_name).request_response().create()
+        sut = (
+            node.service_builder(service_name)
+            .request_response(Payload, Payload)
+            .create()
+        )
         assert sut.name == service_name
     except iox2.RequestResponseCreateError:
         assert False
@@ -40,11 +71,15 @@ def test_existing_service_cannot_be_created(
 
     service_name = iox2.testing.generate_service_name()
     _existing_service = (
-        node.service_builder(service_name).request_response().create()
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .create()
     )
 
     with pytest.raises(iox2.RequestResponseCreateError):
-        node.service_builder(service_name).request_response().create()
+        node.service_builder(service_name).request_response(
+            Payload, Payload
+        ).create()
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -54,10 +89,16 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
 
     service_name = iox2.testing.generate_service_name()
     _existing_service = (
-        node.service_builder(service_name).request_response().create()
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .create()
     )
     try:
-        sut = node.service_builder(service_name).request_response().open()
+        sut = (
+            node.service_builder(service_name)
+            .request_response(Payload, Payload)
+            .open()
+        )
         assert sut.name == service_name
     except iox2.RequestResponseOpenError:
         assert False
@@ -72,7 +113,9 @@ def test_non_existing_service_cannot_be_opened(
 
     service_name = iox2.testing.generate_service_name()
     with pytest.raises(iox2.RequestResponseOpenError):
-        node.service_builder(service_name).request_response().open()
+        node.service_builder(service_name).request_response(
+            Payload, Payload
+        ).open()
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -86,7 +129,7 @@ def test_non_existing_service_is_created_with_open_or_create(
     try:
         sut = (
             node.service_builder(service_name)
-            .request_response()
+            .request_response(Payload, Payload)
             .open_or_create()
         )
         assert sut.name == service_name
@@ -103,13 +146,15 @@ def test_existing_service_is_opened_with_open_or_create(
 
     service_name = iox2.testing.generate_service_name()
     _existing_service = (
-        node.service_builder(service_name).request_response().create()
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .create()
     )
 
     try:
         sut = (
             node.service_builder(service_name)
-            .request_response()
+            .request_response(Payload, Payload)
             .open_or_create()
         )
         assert sut.name == service_name
@@ -130,11 +175,15 @@ def test_create_service_with_attributes_work(
     service_name = iox2.testing.generate_service_name()
     sut_create = (
         node.service_builder(service_name)
-        .request_response()
+        .request_response(Payload, Payload)
         .create_with_attributes(attribute_spec)
     )
 
-    sut_open = node.service_builder(service_name).request_response().open()
+    sut_open = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .open()
+    )
 
     assert sut_create.attributes == attribute_spec.attributes
     assert sut_create.attributes == sut_open.attributes
@@ -157,11 +206,15 @@ def test_open_or_create_service_with_attributes_work(
     service_name = iox2.testing.generate_service_name()
     sut_create = (
         node.service_builder(service_name)
-        .request_response()
+        .request_response(Payload, Payload)
         .open_or_create_with_attributes(attribute_verifier)
     )
 
-    sut_open = node.service_builder(service_name).request_response().open()
+    sut_open = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .open()
+    )
 
     assert sut_create.attributes == attribute_spec.attributes
     assert sut_create.attributes == sut_open.attributes
@@ -184,13 +237,13 @@ def test_open_service_with_attributes_work(
     service_name = iox2.testing.generate_service_name()
     sut_create = (
         node.service_builder(service_name)
-        .request_response()
+        .request_response(Payload, Payload)
         .create_with_attributes(attribute_spec)
     )
 
     sut_open = (
         node.service_builder(service_name)
-        .request_response()
+        .request_response(Payload, Payload)
         .open_with_attributes(attribute_verifier)
     )
 
@@ -204,7 +257,11 @@ def test_node_listing_works(service_type: iox2.ServiceType) -> None:
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    sut = node.service_builder(service_name).request_response().create()
+    sut = (
+        node.service_builder(service_name)
+        .request_response(Payload, Payload)
+        .create()
+    )
 
     nodes = sut.nodes
 
@@ -241,7 +298,7 @@ def test_service_builder_configuration_works(
     max_borrowed_responses_per_pending_response = 33
     sut = (
         node.service_builder(service_name)
-        .request_response()
+        .request_response(Payload, Payload)
         .enable_safe_overflow_for_requests(safe_overflow_requests)
         .enable_safe_overflow_for_responses(safe_overflow_responses)
         .enable_fire_and_forget_requests(fire_and_forget)
@@ -290,15 +347,14 @@ def test_custom_request_payload_works(service_type: iox2.ServiceType) -> None:
     service_name = iox2.testing.generate_service_name()
     payload = (
         iox2.TypeDetail.new()
-        .type_variant(iox2.TypeVariant.Dynamic)
-        .type_name(iox2.TypeName.new("froooogs"))
-        .size(512)
-        .alignment(128)
+        .type_variant(iox2.TypeVariant.FixedSize)
+        .type_name(iox2.TypeName.new("Payload"))
+        .size(ctypes.sizeof(Payload))
+        .alignment(ctypes.alignment(Payload))
     )
     sut = (
         node.service_builder(service_name)
-        .request_response()
-        .request_payload_type_details(payload)
+        .request_response(Payload, Payload2)
         .create()
     )
 
@@ -314,14 +370,14 @@ def test_custom_request_header_works(service_type: iox2.ServiceType) -> None:
     user_header = (
         iox2.TypeDetail.new()
         .type_variant(iox2.TypeVariant.FixedSize)
-        .type_name(iox2.TypeName.new("touch the stone, but gently"))
-        .size(8192)
-        .alignment(4096)
+        .type_name(iox2.TypeName.new("HeaderPayload"))
+        .size(ctypes.sizeof(HeaderPayload))
+        .alignment(ctypes.alignment(HeaderPayload))
     )
     sut = (
         node.service_builder(service_name)
-        .request_response()
-        .request_header_type_details(user_header)
+        .request_response(Payload, Payload)
+        .request_header(HeaderPayload)
         .create()
     )
 
@@ -339,15 +395,14 @@ def test_custom_response_payload_works(service_type: iox2.ServiceType) -> None:
     service_name = iox2.testing.generate_service_name()
     payload = (
         iox2.TypeDetail.new()
-        .type_variant(iox2.TypeVariant.Dynamic)
-        .type_name(iox2.TypeName.new("you crinkled the candle"))
-        .size(8)
-        .alignment(8)
+        .type_variant(iox2.TypeVariant.FixedSize)
+        .type_name(iox2.TypeName.new("Payload2"))
+        .size(ctypes.sizeof(Payload2))
+        .alignment(ctypes.alignment(Payload2))
     )
     sut = (
         node.service_builder(service_name)
-        .request_response()
-        .response_payload_type_details(payload)
+        .request_response(Payload, Payload2)
         .create()
     )
 
@@ -363,14 +418,14 @@ def test_custom_response_header_works(service_type: iox2.ServiceType) -> None:
     user_header = (
         iox2.TypeDetail.new()
         .type_variant(iox2.TypeVariant.FixedSize)
-        .type_name(iox2.TypeName.new("now the candle bends you"))
-        .size(16)
-        .alignment(1)
+        .type_name(iox2.TypeName.new("HeaderPayload2"))
+        .size(ctypes.sizeof(HeaderPayload2))
+        .alignment(ctypes.alignment(HeaderPayload2))
     )
     sut = (
         node.service_builder(service_name)
-        .request_response()
-        .response_header_type_details(user_header)
+        .request_response(Payload, Payload)
+        .response_header(HeaderPayload2)
         .create()
     )
 

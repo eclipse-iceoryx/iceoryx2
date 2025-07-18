@@ -12,6 +12,7 @@
 
 use std::sync::Arc;
 
+use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
@@ -22,8 +23,8 @@ use crate::{
 #[allow(clippy::large_enum_variant)] // used purely for python and there it will reside always in
                                      // the heap
 pub(crate) enum ListenerType {
-    Ipc(Arc<iceoryx2::port::listener::Listener<crate::IpcService>>),
-    Local(Arc<iceoryx2::port::listener::Listener<crate::LocalService>>),
+    Ipc(Option<Arc<iceoryx2::port::listener::Listener<crate::IpcService>>>),
+    Local(Option<Arc<iceoryx2::port::listener::Listener<crate::LocalService>>>),
 }
 
 #[pyclass]
@@ -36,8 +37,10 @@ impl Listener {
     /// Returns the deadline of the corresponding `Service`.
     pub fn deadline(&self) -> Option<Duration> {
         match &self.0 {
-            ListenerType::Ipc(v) => v.deadline().map(Duration),
-            ListenerType::Local(v) => v.deadline().map(Duration),
+            ListenerType::Ipc(Some(v)) => v.deadline().map(Duration),
+            ListenerType::Local(Some(v)) => v.deadline().map(Duration),
+            _ => fatal_panic!(from "Listener::deadline()",
+                    "Accessing a released listener."),
         }
     }
 
@@ -45,14 +48,16 @@ impl Listener {
     /// On error it emits `ListenerWaitError`.
     pub fn try_wait_one(&self) -> PyResult<Option<EventId>> {
         match &self.0 {
-            ListenerType::Ipc(v) => Ok(v
+            ListenerType::Ipc(Some(v)) => Ok(v
                 .try_wait_one()
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
-            ListenerType::Local(v) => Ok(v
+            ListenerType::Local(Some(v)) => Ok(v
                 .try_wait_one()
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
+            _ => fatal_panic!(from "Listener::try_wait_one()",
+                    "Accessing a released listener."),
         }
     }
 
@@ -61,14 +66,16 @@ impl Listener {
     /// On error it emits `ListenerWaitError`.
     pub fn timed_wait_one(&self, timeout: &Duration) -> PyResult<Option<EventId>> {
         match &self.0 {
-            ListenerType::Ipc(v) => Ok(v
+            ListenerType::Ipc(Some(v)) => Ok(v
                 .timed_wait_one(timeout.0)
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
-            ListenerType::Local(v) => Ok(v
+            ListenerType::Local(Some(v)) => Ok(v
                 .timed_wait_one(timeout.0)
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
+            _ => fatal_panic!(from "Listener::timed_wait_one()",
+                    "Accessing a released listener."),
         }
     }
 
@@ -77,14 +84,16 @@ impl Listener {
     /// On error it emits `ListenerWaitError`.
     pub fn blocking_wait_one(&self) -> PyResult<Option<EventId>> {
         match &self.0 {
-            ListenerType::Ipc(v) => Ok(v
+            ListenerType::Ipc(Some(v)) => Ok(v
                 .blocking_wait_one()
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
-            ListenerType::Local(v) => Ok(v
+            ListenerType::Local(Some(v)) => Ok(v
                 .blocking_wait_one()
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?
                 .map(EventId)),
+            _ => fatal_panic!(from "Listener::blocking_wait_one()",
+                    "Accessing a released listener."),
         }
     }
 
@@ -94,12 +103,14 @@ impl Listener {
     pub fn try_wait_all(&self) -> PyResult<Vec<EventId>> {
         let mut event_ids = vec![];
         match &self.0 {
-            ListenerType::Ipc(v) => v
+            ListenerType::Ipc(Some(v)) => v
                 .try_wait_all(|e| event_ids.push(EventId(e)))
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
-            ListenerType::Local(v) => v
+            ListenerType::Local(Some(v)) => v
                 .try_wait_all(|e| event_ids.push(EventId(e)))
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
+            _ => fatal_panic!(from "Listener::try_wait_all()",
+                    "Accessing a released listener."),
         }
 
         Ok(event_ids)
@@ -112,12 +123,14 @@ impl Listener {
     pub fn timed_wait_all(&self, timeout: &Duration) -> PyResult<Vec<EventId>> {
         let mut event_ids = vec![];
         match &self.0 {
-            ListenerType::Ipc(v) => v
+            ListenerType::Ipc(Some(v)) => v
                 .timed_wait_all(|e| event_ids.push(EventId(e)), timeout.0)
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
-            ListenerType::Local(v) => v
+            ListenerType::Local(Some(v)) => v
                 .timed_wait_all(|e| event_ids.push(EventId(e)), timeout.0)
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
+            _ => fatal_panic!(from "Listener::timed_wait_all()",
+                    "Accessing a released listener."),
         }
 
         Ok(event_ids)
@@ -130,12 +143,14 @@ impl Listener {
     pub fn blocking_wait_all(&self) -> PyResult<Vec<EventId>> {
         let mut event_ids = vec![];
         match &self.0 {
-            ListenerType::Ipc(v) => v
+            ListenerType::Ipc(Some(v)) => v
                 .blocking_wait_all(|e| event_ids.push(EventId(e)))
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
-            ListenerType::Local(v) => v
+            ListenerType::Local(Some(v)) => v
                 .blocking_wait_all(|e| event_ids.push(EventId(e)))
                 .map_err(|e| ListenerWaitError::new_err(format!("{e:?}")))?,
+            _ => fatal_panic!(from "Listener::blocking_wait_all()",
+                    "Accessing a released listener."),
         }
 
         Ok(event_ids)
@@ -145,8 +160,24 @@ impl Listener {
     /// Returns the `UniqueListenerId` of the `Listener`
     pub fn id(&self) -> UniqueListenerId {
         match &self.0 {
-            ListenerType::Ipc(v) => UniqueListenerId(v.id()),
-            ListenerType::Local(v) => UniqueListenerId(v.id()),
+            ListenerType::Ipc(Some(v)) => UniqueListenerId(v.id()),
+            ListenerType::Local(Some(v)) => UniqueListenerId(v.id()),
+            _ => fatal_panic!(from "Listener::id()",
+                    "Accessing a released listener."),
+        }
+    }
+
+    /// Releases the `Listener`.
+    ///
+    /// After this call the `Listener` is no longer usable!
+    pub fn delete(&mut self) {
+        match self.0 {
+            ListenerType::Ipc(ref mut v) => {
+                v.take();
+            }
+            ListenerType::Local(ref mut v) => {
+                v.take();
+            }
         }
     }
 }

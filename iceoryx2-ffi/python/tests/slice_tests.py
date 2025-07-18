@@ -50,3 +50,9 @@ def test_get_set_item_raises_exception_when_out_of_bounds() -> None:
 
     with pytest.raises(IndexError):
         sut[number_of_elements + 1] = ctypes.c_uint8(7)
+
+    with pytest.raises(IndexError):
+        _unused = sut[-1]
+
+    with pytest.raises(IndexError):
+        sut[-1] = ctypes.c_uint8(7)

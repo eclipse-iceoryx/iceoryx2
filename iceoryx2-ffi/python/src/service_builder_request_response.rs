@@ -24,66 +24,121 @@ use crate::port_factory_request_response::{
     PortFactoryRequestResponse, PortFactoryRequestResponseType,
 };
 use crate::type_detail::TypeDetail;
+use crate::type_storage::TypeStorage;
+
+type IpcBuilder = iceoryx2::service::builder::request_response::Builder<
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    crate::IpcService,
+>;
+
+type LocalBuilder = iceoryx2::service::builder::request_response::Builder<
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    [CustomPayloadMarker],
+    CustomHeaderMarker,
+    crate::LocalService,
+>;
 
 #[derive(Clone)]
 pub(crate) enum ServiceBuilderRequestResponseType {
-    Ipc(
-        iceoryx2::service::builder::request_response::Builder<
-            [CustomPayloadMarker],
-            CustomHeaderMarker,
-            [CustomPayloadMarker],
-            CustomHeaderMarker,
-            crate::IpcService,
-        >,
-    ),
-    Local(
-        iceoryx2::service::builder::request_response::Builder<
-            [CustomPayloadMarker],
-            CustomHeaderMarker,
-            [CustomPayloadMarker],
-            CustomHeaderMarker,
-            crate::LocalService,
-        >,
-    ),
+    Ipc(IpcBuilder),
+    Local(LocalBuilder),
 }
 
 #[pyclass]
 /// Builder to create new `MessagingPattern::RequestResponse` based `Service`s
-pub struct ServiceBuilderRequestResponse(pub(crate) ServiceBuilderRequestResponseType);
+pub struct ServiceBuilderRequestResponse {
+    pub(crate) value: ServiceBuilderRequestResponseType,
+    pub(crate) request_payload_type_details: TypeStorage,
+    pub(crate) response_payload_type_details: TypeStorage,
+    pub(crate) request_header_type_details: TypeStorage,
+    pub(crate) response_header_type_details: TypeStorage,
+}
+
+impl ServiceBuilderRequestResponse {
+    pub(crate) fn new(value: ServiceBuilderRequestResponseType) -> Self {
+        Self {
+            value,
+            request_payload_type_details: TypeStorage::new(),
+            response_payload_type_details: TypeStorage::new(),
+            request_header_type_details: TypeStorage::new(),
+            response_header_type_details: TypeStorage::new(),
+        }
+    }
+
+    fn clone_ipc(&self, builder: IpcBuilder) -> Self {
+        Self {
+            value: ServiceBuilderRequestResponseType::Ipc(builder),
+            request_payload_type_details: self.request_payload_type_details.clone(),
+            response_payload_type_details: self.response_payload_type_details.clone(),
+            request_header_type_details: self.request_header_type_details.clone(),
+            response_header_type_details: self.response_header_type_details.clone(),
+        }
+    }
+
+    fn clone_local(&self, builder: LocalBuilder) -> Self {
+        Self {
+            value: ServiceBuilderRequestResponseType::Local(builder),
+            request_payload_type_details: self.request_payload_type_details.clone(),
+            response_payload_type_details: self.response_payload_type_details.clone(),
+            request_header_type_details: self.request_header_type_details.clone(),
+            response_header_type_details: self.response_header_type_details.clone(),
+        }
+    }
+}
 
 #[pymethods]
 impl ServiceBuilderRequestResponse {
+    pub fn __set_request_payload_type(&mut self, value: PyObject) {
+        self.request_payload_type_details.value = Some(value)
+    }
+
+    pub fn __set_response_payload_type(&mut self, value: PyObject) {
+        self.response_payload_type_details.value = Some(value)
+    }
+
+    pub fn __set_request_header_type(&mut self, value: PyObject) {
+        self.request_header_type_details.value = Some(value)
+    }
+
+    pub fn __set_response_header_type(&mut self, value: PyObject) {
+        self.response_header_type_details.value = Some(value)
+    }
+
     /// Defines the payload type for requests. To be able to connect to a `Service` the
     /// `TypeDetail` must be identical in all participants since the communication is always
     /// strongly typed.
-    pub fn request_payload_type_details(&self, value: &TypeDetail) -> Self {
-        match &self.0 {
+    pub fn __request_payload_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_request_payload_type_details(&value.0) };
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_request_payload_type_details(&value.0) };
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
 
     /// Defines the request header type. To be able to connect to a `Service` the `TypeDetail` must
     /// be identical in all participants since the communication is always strongly typed.
-    pub fn request_header_type_details(&self, value: &TypeDetail) -> Self {
-        match &self.0 {
+    pub fn __request_header_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_request_header_type_details(&value.0) };
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_request_header_type_details(&value.0) };
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -91,34 +146,34 @@ impl ServiceBuilderRequestResponse {
     /// Defines the payload type for responses. To be able to connect to a `Service` the
     /// `TypeDetail` must be identical in all participants since the communication is always
     /// strongly typed.
-    pub fn response_payload_type_details(&self, value: &TypeDetail) -> Self {
-        match &self.0 {
+    pub fn __response_payload_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_response_payload_type_details(&value.0) };
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_response_payload_type_details(&value.0) };
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
 
     /// Defines the response header type. To be able to connect to a `Service` the `TypeDetail`
     /// must be identical in all participants since the communication is always strongly typed.
-    pub fn response_header_type_details(&self, value: &TypeDetail) -> Self {
-        match &self.0 {
+    pub fn __response_header_type_details(&self, value: &TypeDetail) -> Self {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_response_header_type_details(&value.0) };
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = unsafe { this.__internal_set_response_header_type_details(&value.0) };
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -127,16 +182,16 @@ impl ServiceBuilderRequestResponse {
     /// used in SIMD operations. To be able to connect to a `Service` the payload alignment must be
     /// identical in all participants since the communication is always strongly typed.
     pub fn request_payload_alignment(&self, value: &Alignment) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.request_payload_alignment(value.0);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.request_payload_alignment(value.0);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -145,16 +200,16 @@ impl ServiceBuilderRequestResponse {
     /// used in SIMD operations. To be able to connect to a `Service` the payload alignment must be
     /// identical in all participants since the communication is always strongly typed.
     pub fn response_payload_alignment(&self, value: &Alignment) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.response_payload_alignment(value.0);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.response_payload_alignment(value.0);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -163,16 +218,16 @@ impl ServiceBuilderRequestResponse {
     /// If an existing `Service` is opened it requires the service to have the defined overflow
     /// behavior.
     pub fn enable_safe_overflow_for_requests(&self, value: bool) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.enable_safe_overflow_for_requests(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.enable_safe_overflow_for_requests(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -181,16 +236,16 @@ impl ServiceBuilderRequestResponse {
     /// If an existing `Service` is opened it requires the service to have the defined overflow
     /// behavior.
     pub fn enable_safe_overflow_for_responses(&self, value: bool) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.enable_safe_overflow_for_responses(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.enable_safe_overflow_for_responses(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -198,16 +253,16 @@ impl ServiceBuilderRequestResponse {
     /// If the `Service` is created, defines the fire-and-forget behavior of the service for
     /// requests.
     pub fn enable_fire_and_forget_requests(&self, value: bool) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.enable_fire_and_forget_requests(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.enable_fire_and_forget_requests(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -216,16 +271,16 @@ impl ServiceBuilderRequestResponse {
     /// parallel per `Client`. The objects are used to send answers to a request that was
     /// received earlier from a `Client`.
     pub fn max_active_requests_per_client(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_active_requests_per_client(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_active_requests_per_client(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -233,16 +288,16 @@ impl ServiceBuilderRequestResponse {
     /// If the `Service` is created it defines how many `RequestMut` a
     /// `Client` can loan in parallel.
     pub fn max_loaned_requests(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_loaned_requests(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_loaned_requests(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -250,16 +305,16 @@ impl ServiceBuilderRequestResponse {
     /// If the `Service` is created it defines how many responses fit in the
     /// `Clients`s buffer. If an existing `Service` is opened it defines the minimum required.
     pub fn max_response_buffer_size(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_response_buffer_size(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_response_buffer_size(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -268,16 +323,16 @@ impl ServiceBuilderRequestResponse {
     /// be supported at most. If an existing `Service` is opened it defines how many
     /// `Server`s must be at least supported.
     pub fn max_servers(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_servers(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_servers(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -286,16 +341,16 @@ impl ServiceBuilderRequestResponse {
     /// be supported at most. If an existing `Service` is opened it defines how many
     /// `Client`s must be at least supported.
     pub fn max_clients(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_clients(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_clients(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -304,16 +359,16 @@ impl ServiceBuilderRequestResponse {
     /// be able to open it in parallel. If an existing `Service` is opened it defines how many
     /// `Node`s must be at least supported.
     pub fn max_nodes(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_nodes(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_nodes(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -322,16 +377,16 @@ impl ServiceBuilderRequestResponse {
     /// be able to be borrowed in parallel per `PendingResponse`. If an
     /// existing `Service` is opened it defines how many borrows must be at least supported.
     pub fn max_borrowed_responses_per_pending_response(&self, value: usize) -> Self {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
                 let this = this.max_borrowed_responses_per_pending_response(value);
-                Self(ServiceBuilderRequestResponseType::Ipc(this))
+                self.clone_ipc(this)
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
                 let this = this.max_borrowed_responses_per_pending_response(value);
-                Self(ServiceBuilderRequestResponseType::Local(this))
+                self.clone_local(this)
             }
         }
     }
@@ -339,22 +394,34 @@ impl ServiceBuilderRequestResponse {
     /// If the `Service` exists, it will be opened otherwise a new `Service` will be created.
     /// On failure `RequestResponseOpenOrCreateError` will be emitted.
     pub fn open_or_create(&self) -> PyResult<PortFactoryRequestResponse> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Ipc(this.open_or_create().map_err(|e| {
-                        RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
-                    })?),
-                )))
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Ipc(
+                        this.open_or_create().map_err(|e| {
+                            RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
+                        })?,
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Local(this.open_or_create().map_err(|e| {
-                        RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
-                    })?),
-                )))
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Local(
+                        this.open_or_create().map_err(|e| {
+                            RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
+                        })?,
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
         }
     }
@@ -370,28 +437,36 @@ impl ServiceBuilderRequestResponse {
         &self,
         verifier: &AttributeVerifier,
     ) -> PyResult<PortFactoryRequestResponse> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Ipc(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Ipc(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
                                 RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Local(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Local(
                         this.open_or_create_with_attributes(&verifier.0)
                             .map_err(|e| {
                                 RequestResponseOpenOrCreateError::new_err(format!("{e:?}"))
                             })?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
         }
     }
@@ -399,24 +474,32 @@ impl ServiceBuilderRequestResponse {
     /// Opens an existing `Service`.
     /// On failure `RequestResponseOpenError` will be emitted.
     pub fn open(&self) -> PyResult<PortFactoryRequestResponse> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Ipc(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Ipc(
                         this.open()
                             .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Local(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Local(
                         this.open()
                             .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
         }
     }
@@ -428,24 +511,32 @@ impl ServiceBuilderRequestResponse {
         &self,
         verifier: &AttributeVerifier,
     ) -> PyResult<PortFactoryRequestResponse> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Ipc(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Ipc(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Local(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Local(
                         this.open_with_attributes(&verifier.0)
                             .map_err(|e| RequestResponseOpenError::new_err(format!("{e:?}")))?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
         }
     }
@@ -453,24 +544,32 @@ impl ServiceBuilderRequestResponse {
     /// Creates a new `Service`.
     /// On failure `RequestResponseCreateError` will be emitted.
     pub fn create(&self) -> PyResult<PortFactoryRequestResponse> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Ipc(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Ipc(
                         this.create()
                             .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Local(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Local(
                         this.create()
                             .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
         }
     }
@@ -481,24 +580,32 @@ impl ServiceBuilderRequestResponse {
         &self,
         attributes: &AttributeSpecifier,
     ) -> PyResult<PortFactoryRequestResponse> {
-        match &self.0 {
+        match &self.value {
             ServiceBuilderRequestResponseType::Ipc(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Ipc(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Ipc(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
             ServiceBuilderRequestResponseType::Local(v) => {
                 let this = v.clone();
-                Ok(PortFactoryRequestResponse(Parc::new(
-                    PortFactoryRequestResponseType::Local(
+                Ok(PortFactoryRequestResponse {
+                    value: Parc::new(PortFactoryRequestResponseType::Local(
                         this.create_with_attributes(&attributes.0)
                             .map_err(|e| RequestResponseCreateError::new_err(format!("{e:?}")))?,
-                    ),
-                )))
+                    )),
+                    request_payload_type_details: self.request_payload_type_details.clone(),
+                    request_header_type_details: self.request_header_type_details.clone(),
+                    response_payload_type_details: self.response_payload_type_details.clone(),
+                    response_header_type_details: self.response_header_type_details.clone(),
+                })
             }
         }
     }
