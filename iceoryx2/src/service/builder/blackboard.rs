@@ -169,9 +169,6 @@ impl<KeyType> Debug for BuilderInternals<KeyType> {
 #[derive(Debug)]
 pub(crate) struct Entry {
     pub(crate) type_details: TypeDetail,
-    // offset is sufficient for static single-writer case (no insert after creation, no remove)
-    // dynamic single-writer case (additional inserts after service creation and remove): offset (32 bit) + aba counter (32 bit)
-    // dynamic multi-writer case: offset (32 bit) + writer segment id (8 bit) + aba counter (24 bit)
     pub(crate) offset: IoxAtomicU64,
 }
 
@@ -521,23 +518,25 @@ impl<
                             }
                             for i in 0..capacity {
                                 // write value passed to add() to payload_shm
-                                let mem = payload_shm.allocate(unsafe { Layout::from_size_align_unchecked(self.builder.internals[i].internal_value_size, self.builder.internals[i].internal_value_alignment) });
-                                if mem.is_err() {
-                                    error!("Writing the value to the blackboard data segment failed.");
-                                    return false
-                                }
-                                let mem = mem.unwrap();
+                                let mem = match payload_shm.allocate(unsafe { Layout::from_size_align_unchecked(self.builder.internals[i].internal_value_size, self.builder.internals[i].internal_value_alignment) })
+                                {
+                                    Ok(m) => m,
+                                    Err(_) => {
+                                        error!(from self, "Writing the value to the blackboard data segment failed.");
+                                        return false
+                                    }
+                                };
                                 (*self.builder.internals[i].value_writer)(mem.data_ptr);
                                 // write offset to value in payload_shm to entries vector
                                 let res = unsafe {entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: IoxAtomicU64::new(mem.offset.offset() as u64)})};
                                 if !res {
-                                    error!("Writing the value offset to the blackboard management segment failed.");
+                                    error!(from self, "Writing the value offset to the blackboard management segment failed.");
                                     return false
                                 }
                                 // write offset index to map
                                 let res = unsafe {entry.map.insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1)};
                                 if res.is_err() {
-                                    error!("Inserting the key-value pair into the blackboard management segment failed.");
+                                    error!(from self, "Inserting the key-value pair into the blackboard management segment failed.");
                                     return false
                                 }
                             }

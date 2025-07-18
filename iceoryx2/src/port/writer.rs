@@ -191,7 +191,7 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
         let msg = "Unable to create writer handle";
 
         // check if key exists
-        let index = unsafe {
+        let index = match unsafe {
             self.shared_state
                 .service_state
                 .additional_resource
@@ -199,11 +199,13 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
                 .get()
                 .map
                 .get(key)
-        };
-        if index.is_none() {
-            fail!(from self, with WriterHandleError::EntryDoesNotExist,
+        } {
+            Some(i) => i,
+            None => {
+                fail!(from self, with WriterHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key exists.", msg);
-        }
+            }
+        };
 
         let entry = &self
             .shared_state
@@ -211,7 +213,7 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
             .additional_resource
             .mgmt
             .get()
-            .entries[index.unwrap()];
+            .entries[index];
 
         // check if ValueType matches
         if TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {

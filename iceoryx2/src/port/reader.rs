@@ -46,7 +46,7 @@ use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
 
@@ -87,8 +87,6 @@ pub enum ReaderCreateError {
     /// [`Config`](crate::config::Config). When this is exceeded no more [`Reader`]s
     /// can be created for a specific [`Service`](crate::service::Service).
     ExceedsMaxSupportedReaders,
-    /// Errors that indicate either an implementation issue or a wrongly configured system.
-    InternalFailure,
 }
 
 impl core::fmt::Display for ReaderCreateError {
@@ -147,8 +145,8 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
 
         match Arc::get_mut(&mut new_self.shared_state) {
             None => {
-                fail!(from origin, with ReaderCreateError::InternalFailure,
-                    "{} due to an internal failure.", msg);
+                fatal_panic!(from origin,
+                    "This should never happen! Member has already multiple references while Reader creation is not yet completed.");
             }
             Some(reader_state) => reader_state.dynamic_reader_handle = Some(dynamic_reader_handle),
         }
@@ -185,7 +183,7 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
         let msg = "Unable to create reader handle";
 
         // check if key exists
-        let index = unsafe {
+        let index = match unsafe {
             self.shared_state
                 .service_state
                 .additional_resource
@@ -193,11 +191,13 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
                 .get()
                 .map
                 .get(key)
-        };
-        if index.is_none() {
-            fail!(from self, with ReaderHandleError::EntryDoesNotExist,
+        } {
+            Some(i) => i,
+            None => {
+                fail!(from self, with ReaderHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key exists.", msg);
-        }
+            }
+        };
 
         let entry = &self
             .shared_state
@@ -205,7 +205,7 @@ impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'sta
             .additional_resource
             .mgmt
             .get()
-            .entries[index.unwrap()];
+            .entries[index];
 
         // check if ValueType matches
         if TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
