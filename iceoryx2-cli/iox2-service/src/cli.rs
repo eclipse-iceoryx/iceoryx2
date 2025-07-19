@@ -248,6 +248,20 @@ pub struct SubscribeOptions {
         help = "Defines how the data shall be displayed."
     )]
     pub data_representation: DataRepresentation,
+
+    #[clap(
+        short,
+        long,
+        help = "Maximum runtime in milliseconds. When the timeout has passed the process stops."
+    )]
+    pub timeout: Option<u64>,
+
+    #[clap(
+        short,
+        long,
+        help = "Maximum number of messages to be received before the process stops."
+    )]
+    pub max_messages: Option<u64>,
 }
 
 #[derive(Subcommand)]
