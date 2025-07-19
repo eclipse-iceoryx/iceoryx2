@@ -72,7 +72,9 @@ fn main() -> Result<()> {
                 }
             }
             Action::Subscribe(options) => {
-                todo!()
+                if let Err(e) = commands::subscribe(options, cli.format) {
+                    error!("failed to subscribe and receive messages: {}", e);
+                }
             }
             Action::Discovery(options) => {
                 let should_publish = !options.disable_publish;
