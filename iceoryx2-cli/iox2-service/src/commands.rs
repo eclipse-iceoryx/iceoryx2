@@ -12,7 +12,7 @@
 
 use core::ptr::copy_nonoverlapping;
 use core::time::Duration;
-use std::io::Write;
+use std::io::{BufRead, Write};
 use std::time::Instant;
 
 use anyhow::anyhow;
@@ -147,7 +147,7 @@ pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
     Ok(())
 }
 
-pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
+pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
     let node = NodeBuilder::new()
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;
@@ -251,7 +251,7 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
     Ok(())
 }
 
-pub fn publish(options: PublishOptions, format: Format) -> Result<()> {
+pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     let node = NodeBuilder::new()
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;
@@ -287,7 +287,7 @@ pub fn publish(options: PublishOptions, format: Format) -> Result<()> {
             .create()?,
     };
 
-    for message in options.message {
+    let send_message = |message: &String| -> Result<()> {
         let mut sample = unsafe { publisher.loan_custom_payload(message.len())? };
         unsafe {
             copy_nonoverlapping(
@@ -299,6 +299,23 @@ pub fn publish(options: PublishOptions, format: Format) -> Result<()> {
         let sample = unsafe { sample.assume_init() };
         sample.send()?;
         std::thread::sleep(Duration::from_millis(options.time_between_messages as _));
+        Ok(())
+    };
+
+    if options.message.is_empty() {
+        let stdin = std::io::stdin();
+        let handle = stdin.lock();
+
+        for line in handle.lines() {
+            match line {
+                Ok(content) => send_message(&content)?,
+                Err(e) => eprintln!("Failed to read line from stdin ({e:?})."),
+            }
+        }
+    } else {
+        for message in &options.message {
+            send_message(message)?;
+        }
     }
 
     Ok(())

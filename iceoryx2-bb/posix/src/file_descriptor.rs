@@ -137,9 +137,9 @@ impl FileDescriptor {
             return None;
         }
 
-        Some(FileDescriptor {
-            value,
-            is_owned: false,
+        Self::new(value).map(|mut fd| {
+            fd.is_owned = false;
+            fd
         })
     }
 
