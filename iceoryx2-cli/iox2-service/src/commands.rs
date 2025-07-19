@@ -228,9 +228,13 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
             };
 
             if let Some(file) = &mut file {
-                if let Some(content) = content {
-                    file.write(content.as_bytes())?;
+                if let Some(ref content) = content {
+                    writeln!(file, "{}", content)?;
                 }
+            }
+
+            if let Some(ref content) = content {
+                println!("{content}");
             }
 
             msg_counter += 1;
