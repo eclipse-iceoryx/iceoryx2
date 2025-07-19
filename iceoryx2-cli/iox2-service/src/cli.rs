@@ -13,6 +13,7 @@
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
+use clap::ValueEnum;
 
 use iceoryx2_cli::filter::MessagingPatternFilter;
 use iceoryx2_cli::help_template;
@@ -142,6 +143,95 @@ pub struct ListenOptions {
     pub repetitions: Option<u64>,
 }
 
+#[derive(Clone, Copy, ValueEnum)]
+#[value(rename_all = "UPPERCASE")]
+pub enum CliTypeVariant {
+    Dynamic,
+    FixedSize,
+}
+
+#[derive(Parser)]
+pub struct PublishOptions {
+    #[clap(help = "Name of the service which shall the message be sent to.")]
+    pub service: String,
+    #[clap(
+        short,
+        long,
+        default_value = "shell_node",
+        help = "Defines the node name of the publish endpoint."
+    )]
+    pub node_name: String,
+    #[clap(short, long, help = "The messages that shall be sent.")]
+    pub message: Vec<String>,
+    #[clap(
+        short,
+        long,
+        default_value = "1000",
+        help = "Time between the messages in milliseconds."
+    )]
+    pub time_between_messages: usize,
+
+    #[clap(
+        long,
+        default_value = "4096",
+        help = "It defines the initial payload size for dynamic type variants."
+    )]
+    pub initial_payload_size: usize,
+
+    #[clap(
+        long,
+        default_value = "u8",
+        help = "Defines the unique type identifier of the services type."
+    )]
+    pub type_name: String,
+    #[clap(
+        long,
+        default_value = "1",
+        help = "Defines the type size of the services type."
+    )]
+    pub type_size: usize,
+    #[clap(
+        long,
+        default_value = "1",
+        help = "Defines the type alignment of the services type."
+    )]
+    pub type_alignment: usize,
+    #[clap(long, default_value = "DYNAMIC", help = "Defines variant.")]
+    pub type_variant: CliTypeVariant,
+
+    #[clap(
+        long,
+        default_value = "()",
+        help = "Defines the unique type identifier of the services user header type."
+    )]
+    pub header_type_name: String,
+    #[clap(
+        long,
+        default_value = "0",
+        help = "Defines the type size of the services user header type."
+    )]
+    pub header_type_size: usize,
+    #[clap(
+        long,
+        default_value = "1",
+        help = "Defines the type alignment of the services user header type."
+    )]
+    pub header_type_alignment: usize,
+}
+
+#[derive(Parser)]
+pub struct SubscribeOptions {
+    #[clap(help = "Name of the service which shall be waited on for a message.")]
+    pub service: String,
+    #[clap(
+        short,
+        long,
+        default_value = "shell_node",
+        help = "Defines the node name of the subscriber endpoint."
+    )]
+    pub node_name: String,
+}
+
 #[derive(Subcommand)]
 pub enum Action {
     #[clap(
@@ -169,4 +259,14 @@ pub enum Action {
         help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Listen(ListenOptions),
+    #[clap(
+        about = "Publish a message",
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
+    )]
+    Publish(PublishOptions),
+    #[clap(
+        about = "Receive messages",
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
+    )]
+    Subscribe(SubscribeOptions),
 }

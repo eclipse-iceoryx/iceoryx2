@@ -10,12 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::ptr::copy_nonoverlapping;
 use core::time::Duration;
 use std::io::Write;
 
 use anyhow::anyhow;
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
+use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::static_config::message_type_details::{
+    TypeDetail, TypeNameString, TypeVariant,
+};
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
@@ -25,7 +30,7 @@ use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
 use serde::Serialize;
 
-use crate::cli::{ListenOptions, NotifyOptions, OutputFilter};
+use crate::cli::{CliTypeVariant, ListenOptions, NotifyOptions, OutputFilter, PublishOptions};
 
 #[allow(clippy::enum_variant_names)] // explicitly allow same prefix Notification since it shall
 // be human readable on command line
@@ -125,6 +130,59 @@ pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
     }
 
     notify()?;
+
+    Ok(())
+}
+
+pub fn publish(options: PublishOptions, format: Format) -> Result<()> {
+    let node = NodeBuilder::new()
+        .name(&NodeName::new(&options.node_name)?)
+        .create::<ipc::Service>()?;
+
+    let service = unsafe {
+        node.service_builder(&ServiceName::new(&options.service)?)
+            .publish_subscribe::<[CustomPayloadMarker]>()
+            .user_header::<CustomHeaderMarker>()
+            .__internal_set_payload_type_details(&TypeDetail {
+                variant: match options.type_variant {
+                    CliTypeVariant::Dynamic => TypeVariant::Dynamic,
+                    CliTypeVariant::FixedSize => TypeVariant::FixedSize,
+                },
+                type_name: TypeNameString::try_from(options.type_name.as_str())?,
+                size: options.type_size,
+                alignment: options.type_alignment,
+            })
+            .__internal_set_user_header_type_details(&TypeDetail {
+                variant: TypeVariant::FixedSize,
+                type_name: TypeNameString::try_from(options.header_type_name.as_str())?,
+                size: options.header_type_size,
+                alignment: options.header_type_alignment,
+            })
+            .open_or_create()?
+    };
+
+    let publisher = match options.type_variant {
+        CliTypeVariant::FixedSize => service.publisher_builder().create()?,
+        CliTypeVariant::Dynamic => service
+            .publisher_builder()
+            .initial_max_slice_len(4096)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()?,
+    };
+
+    for message in options.message {
+        let mut sample = unsafe { publisher.loan_custom_payload(message.len())? };
+        unsafe {
+            copy_nonoverlapping(
+                message.as_ptr(),
+                sample.payload_mut().as_mut_ptr().cast(),
+                message.len(),
+            )
+        };
+        let sample = unsafe { sample.assume_init() };
+        sample.send()?;
+        std::thread::sleep(Duration::from_millis(options.time_between_messages as _));
+    }
 
     Ok(())
 }
