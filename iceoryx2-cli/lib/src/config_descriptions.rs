@@ -27,14 +27,9 @@ pub fn get_sections() -> Vec<CliSection> {
             name: "Global",
             entries: vec![
                 CliEntry {
-                    key: "global.root-path-unix",
+                    key: "global.root-path",
                     value_type: "[string]",
-                    description: "Path used as root for IPC-related files on Unix-based systems.",
-                },
-                CliEntry {
-                    key: "global.root-path-windows",
-                    value_type: "[string]",
-                    description: "Path used as root for IPC-related files on Windows systems.",
+                    description: "Defines the path for all iceoryx2 files and directories.",
                 },
                 CliEntry {
                     key: "global.prefix",

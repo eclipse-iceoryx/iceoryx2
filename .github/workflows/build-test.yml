@@ -82,6 +82,14 @@ jobs:
           GITHUB_BEFORE: ${{ github.event.before }}
           GITHUB_AFTER: ${{ github.event.after }}
         run: ./internal/scripts/ci_check_markdown_linting.sh
+      
+      - name: Check config key documentation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_BEFORE: ${{ github.event.before }}
+          GITHUB_AFTER: ${{ github.event.after }}
+        run: ./internal/scripts/ci_check_description_vector_and_README.sh
 
   static-code-analysis-rust:
     needs: preflight-check
