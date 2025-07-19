@@ -66,6 +66,14 @@ fn main() -> Result<()> {
                     error!("failed to retrieve service details: {}", e);
                 }
             }
+            Action::Publish(options) => {
+                if let Err(e) = commands::publish(options, cli.format) {
+                    error!("failed to publish messages: {}", e);
+                }
+            }
+            Action::Subscribe(options) => {
+                todo!()
+            }
             Action::Discovery(options) => {
                 let should_publish = !options.disable_publish;
                 let should_notify = !options.disable_notify;
