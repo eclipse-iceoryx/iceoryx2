@@ -23,6 +23,8 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 use std::panic::catch_unwind;
 
+use iceoryx2_cli::config_descriptions::get_sections;
+
 /// Prints the whole system configuration with all limits, features and details to the console.
 pub fn print_system_configuration() {
     println!(
@@ -193,6 +195,25 @@ fn generate(config_dir: Path, filepath: FilePath) -> Result<()> {
         .expect("Failed to write to file");
 
     println!("Default configuration is generated at {filepath}");
+
+    Ok(())
+}
+
+pub fn print_config_description() -> Result<()> {
+    let sections = get_sections();
+
+    for section in sections {
+        println!("\n{}", format!("== {} ==", section.name).bright_green());
+
+        for entry in section.entries {
+            println!(
+                "{} [{}]",
+                entry.key.bright_blue(),
+                entry.value_type.bright_yellow()
+            );
+            println!("{}", entry.description.italic());
+        }
+    }
 
     Ok(())
 }
