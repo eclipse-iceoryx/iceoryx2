@@ -200,18 +200,20 @@ fn generate(config_dir: Path, filepath: FilePath) -> Result<()> {
 }
 
 pub fn print_config_description() -> Result<()> {
-    // Get a vector here that consists of all the configuration parameters and descriptions
     let sections = get_sections();
+
     for section in sections {
-        println!("\n== {} ==\n", section.name.bright_green());
+        println!("\n{}", format!("== {} ==", section.name).bright_green());
+
         for entry in section.entries {
             println!(
-                "{:<50} {:<15} {}",
+                "{} [{}]",
                 entry.key.bright_blue(),
-                entry.value_type.bright_yellow(),
-                entry.description.italic()
+                entry.value_type.bright_yellow()
             );
+            println!("{}", entry.description.italic());
         }
     }
+
     Ok(())
 }
