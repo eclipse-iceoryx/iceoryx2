@@ -171,7 +171,7 @@ pub struct PublishOptions {
     #[clap(
         short,
         long,
-        help = "The messages that shall be sent. Can be multiple messages."
+        help = "The messages that shall be sent. Can be multiple messages. If no messages are given stdin is read."
     )]
     pub message: Vec<String>,
     #[clap(
@@ -181,6 +181,13 @@ pub struct PublishOptions {
         help = "Time between the messages in milliseconds."
     )]
     pub time_between_messages: usize,
+
+    #[clap(
+        long,
+        default_value = "TEXT",
+        help = "Defines how the provided data is encoded."
+    )]
+    pub data_representation: DataRepresentation,
 
     #[clap(
         long,
