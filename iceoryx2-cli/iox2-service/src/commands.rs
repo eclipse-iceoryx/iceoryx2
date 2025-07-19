@@ -13,6 +13,7 @@
 use core::ptr::copy_nonoverlapping;
 use core::time::Duration;
 use std::io::Write;
+use std::time::Instant;
 
 use anyhow::anyhow;
 use anyhow::{Context, Error, Result};
@@ -54,10 +55,7 @@ struct EventFeedback {
 fn raw_data_to_hex_string(data: &[u8]) -> String {
     let mut ret_val = String::with_capacity(2 * data.len());
     for byte in data {
-        if byte == 0 {
-        } else {
-            ret_val.push_str(&format!("{0:2x} ", byte));
-        }
+        ret_val.push_str(&format!("{0:0>2x} ", byte));
     }
 
     ret_val
@@ -193,7 +191,9 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
     let subscriber = service.subscriber_builder().create()?;
     let cycle_time = Duration::from_millis(10);
 
-    while node.wait(cycle_time).is_ok() {
+    let start = Instant::now();
+    let mut msg_counter = 0u64;
+    'node_loop: while node.wait(cycle_time).is_ok() {
         while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
             match options.data_representation {
                 DataRepresentation::Hex => {
@@ -214,6 +214,19 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
                     Ok(content) => println!("{content}"),
                     Err(e) => eprintln!("received data contains invalid UTF-8 symbols ({e:?})."),
                 },
+            }
+
+            msg_counter += 1;
+            if let Some(max_messages) = options.max_messages {
+                if msg_counter >= max_messages {
+                    break 'node_loop;
+                }
+            }
+
+            if let Some(timeout) = options.timeout {
+                if start.elapsed().as_millis() >= timeout as _ {
+                    break 'node_loop;
+                }
             }
         }
     }
