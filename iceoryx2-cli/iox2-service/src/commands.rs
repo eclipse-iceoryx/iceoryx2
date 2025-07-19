@@ -165,6 +165,17 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
             }
         };
 
+    let mut file = match options.output_file {
+        Some(v) => Some(
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .append(true)
+                .open(v)?,
+        ),
+        None => None,
+    };
+
     let service = unsafe {
         node.service_builder(&service_name)
             .publish_subscribe::<[CustomPayloadMarker]>()
@@ -195,25 +206,31 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
     let mut msg_counter = 0u64;
     'node_loop: while node.wait(cycle_time).is_ok() {
         while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
-            match options.data_representation {
-                DataRepresentation::Hex => {
-                    let content = raw_data_to_hex_string(unsafe {
-                        core::slice::from_raw_parts(
-                            sample.payload().as_ptr().cast(),
-                            sample.payload().len(),
-                        )
-                    });
-                    println!("{content}");
-                }
+            let content = match options.data_representation {
+                DataRepresentation::Hex => Some(raw_data_to_hex_string(unsafe {
+                    core::slice::from_raw_parts(
+                        sample.payload().as_ptr().cast(),
+                        sample.payload().len(),
+                    )
+                })),
                 DataRepresentation::Text => match str::from_utf8(unsafe {
                     core::slice::from_raw_parts(
                         sample.payload().as_ptr().cast(),
                         sample.payload().len(),
                     )
                 }) {
-                    Ok(content) => println!("{content}"),
-                    Err(e) => eprintln!("received data contains invalid UTF-8 symbols ({e:?})."),
+                    Ok(content) => Some(content.to_string()),
+                    Err(e) => {
+                        eprintln!("received data contains invalid UTF-8 symbols ({e:?}).");
+                        None
+                    }
                 },
+            };
+
+            if let Some(file) = &mut file {
+                if let Some(content) = content {
+                    file.write(content.as_bytes())?;
+                }
             }
 
             msg_counter += 1;

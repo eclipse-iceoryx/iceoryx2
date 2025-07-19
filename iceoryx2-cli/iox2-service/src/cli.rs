@@ -262,6 +262,13 @@ pub struct SubscribeOptions {
         help = "Maximum number of messages to be received before the process stops."
     )]
     pub max_messages: Option<u64>,
+
+    #[clap(
+        short,
+        long,
+        help = "When set, the received data is additionally added to the provided file."
+    )]
+    pub output_file: Option<String>,
 }
 
 #[derive(Subcommand)]
