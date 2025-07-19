@@ -150,6 +150,13 @@ pub enum CliTypeVariant {
     FixedSize,
 }
 
+#[derive(Clone, Copy, ValueEnum)]
+#[value(rename_all = "UPPERCASE")]
+pub enum DataRepresentation {
+    Text,
+    Hex,
+}
+
 #[derive(Parser)]
 pub struct PublishOptions {
     #[clap(help = "Name of the service which shall the message be sent to.")]
@@ -161,7 +168,11 @@ pub struct PublishOptions {
         help = "Defines the node name of the publish endpoint."
     )]
     pub node_name: String,
-    #[clap(short, long, help = "The messages that shall be sent.")]
+    #[clap(
+        short,
+        long,
+        help = "The messages that shall be sent. Can be multiple messages."
+    )]
     pub message: Vec<String>,
     #[clap(
         short,
@@ -230,6 +241,13 @@ pub struct SubscribeOptions {
         help = "Defines the node name of the subscriber endpoint."
     )]
     pub node_name: String,
+
+    #[clap(
+        long,
+        default_value = "HEX",
+        help = "Defines how the data shall be displayed."
+    )]
+    pub data_representation: DataRepresentation,
 }
 
 #[derive(Subcommand)]

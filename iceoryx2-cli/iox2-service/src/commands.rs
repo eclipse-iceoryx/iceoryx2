@@ -30,7 +30,10 @@ use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
 use serde::Serialize;
 
-use crate::cli::{CliTypeVariant, ListenOptions, NotifyOptions, OutputFilter, PublishOptions};
+use crate::cli::{
+    CliTypeVariant, DataRepresentation, ListenOptions, NotifyOptions, OutputFilter, PublishOptions,
+    SubscribeOptions,
+};
 
 #[allow(clippy::enum_variant_names)] // explicitly allow same prefix Notification since it shall
 // be human readable on command line
@@ -46,6 +49,18 @@ struct EventFeedback {
     event_type: EventType,
     service: String,
     event_id: Option<usize>,
+}
+
+fn raw_data_to_hex_string(data: &[u8]) -> String {
+    let mut ret_val = String::with_capacity(2 * data.len());
+    for byte in data {
+        if byte == 0 {
+        } else {
+            ret_val.push_str(&format!("{0:2x} ", byte));
+        }
+    }
+
+    ret_val
 }
 
 pub fn listen(options: ListenOptions, format: Format) -> Result<()> {
@@ -130,6 +145,78 @@ pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
     }
 
     notify()?;
+
+    Ok(())
+}
+
+pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
+    let node = NodeBuilder::new()
+        .name(&NodeName::new(&options.node_name)?)
+        .create::<ipc::Service>()?;
+
+    let config = iceoryx2::config::Config::global_config();
+    let service_name = ServiceName::new(&options.service)?;
+    let service_details =
+        match ipc::Service::details(&service_name, config, MessagingPattern::PublishSubscribe)? {
+            Some(v) => v,
+            None => {
+                return Err(anyhow!(
+                    "unable to access service \"{}\", does it exist?",
+                    options.service
+                ))
+            }
+        };
+
+    let service = unsafe {
+        node.service_builder(&service_name)
+            .publish_subscribe::<[CustomPayloadMarker]>()
+            .user_header::<CustomHeaderMarker>()
+            .__internal_set_payload_type_details(
+                &service_details
+                    .static_details
+                    .messaging_pattern()
+                    .publish_subscribe()
+                    .message_type_details()
+                    .payload,
+            )
+            .__internal_set_user_header_type_details(
+                &service_details
+                    .static_details
+                    .messaging_pattern()
+                    .publish_subscribe()
+                    .message_type_details()
+                    .user_header,
+            )
+            .open_or_create()?
+    };
+
+    let subscriber = service.subscriber_builder().create()?;
+    let cycle_time = Duration::from_millis(10);
+
+    while node.wait(cycle_time).is_ok() {
+        while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
+            match options.data_representation {
+                DataRepresentation::Hex => {
+                    let content = raw_data_to_hex_string(unsafe {
+                        core::slice::from_raw_parts(
+                            sample.payload().as_ptr().cast(),
+                            sample.payload().len(),
+                        )
+                    });
+                    println!("{content}");
+                }
+                DataRepresentation::Text => match str::from_utf8(unsafe {
+                    core::slice::from_raw_parts(
+                        sample.payload().as_ptr().cast(),
+                        sample.payload().len(),
+                    )
+                }) {
+                    Ok(content) => println!("{content}"),
+                    Err(e) => eprintln!("received data contains invalid UTF-8 symbols ({e:?})."),
+                },
+            }
+        }
+    }
 
     Ok(())
 }
