@@ -84,7 +84,7 @@ fn main() -> Result<()> {
             },
             Action::Explain => {
                 if let Err(e) = commands::print_config_description() {
-                    eprintln!("Failed to display configuration description: {}", e);
+                    eprintln!("Failed to display configuration description: {e}");
                 }
             }
         }
