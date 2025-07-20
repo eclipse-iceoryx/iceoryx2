@@ -52,13 +52,22 @@ struct EventFeedback {
     event_id: Option<usize>,
 }
 
-fn raw_data_to_hex_string(data: &[u8]) -> String {
-    let mut ret_val = String::with_capacity(2 * data.len());
-    for byte in data {
+fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
+    let mut ret_val = String::with_capacity(2 * raw_data.len());
+    for byte in raw_data {
         ret_val.push_str(&format!("{0:0>2x} ", byte));
     }
 
     ret_val
+}
+
+fn hex_string_to_raw_data(hex_string: &str) -> Vec<u8> {
+    let mut hex_string = hex_string.to_string();
+    hex_string.retain(|c| !c.is_whitespace());
+    (0..hex_string.len())
+        .step_by(2)
+        .map(|n| u8::from_str_radix(&hex_string[n..n + 2], 16).unwrap())
+        .collect::<Vec<u8>>()
 }
 
 pub fn listen(options: ListenOptions, format: Format) -> Result<()> {
@@ -291,16 +300,54 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
             .create()?,
     };
 
+    let loan = |len| match options.type_variant {
+        CliTypeVariant::Dynamic => unsafe {
+            publisher
+                .loan_custom_payload(len)
+                .map_err(|e| anyhow::anyhow!("failed to loan sample ({e:?})"))
+        },
+        CliTypeVariant::FixedSize => {
+            let sample = unsafe { publisher.loan_custom_payload(1) }
+                .map_err(|e| anyhow::anyhow!("failed to loan sample ({e:?})"))?;
+            if sample.payload().len() != len {
+                Err(anyhow::anyhow!(
+                    "raw message size of {} does not fit required type size of {}",
+                    len,
+                    sample.payload().len()
+                ))
+            } else {
+                Ok(sample)
+            }
+        }
+    };
+
     let send_message = |message: &String| -> Result<()> {
-        let mut sample = unsafe { publisher.loan_custom_payload(message.len())? };
-        unsafe {
-            copy_nonoverlapping(
-                message.as_ptr(),
-                sample.payload_mut().as_mut_ptr().cast(),
-                message.len(),
-            )
+        let sample = match options.data_representation {
+            DataRepresentation::Text => {
+                let mut sample = loan(message.len())?;
+                unsafe {
+                    copy_nonoverlapping(
+                        message.as_ptr(),
+                        sample.payload_mut().as_mut_ptr().cast(),
+                        message.len(),
+                    )
+                }
+                unsafe { sample.assume_init() }
+            }
+            DataRepresentation::Hex => {
+                let decoded_message = hex_string_to_raw_data(message);
+                let mut sample = loan(decoded_message.len())?;
+                unsafe {
+                    copy_nonoverlapping(
+                        decoded_message.as_ptr(),
+                        sample.payload_mut().as_mut_ptr().cast(),
+                        decoded_message.len(),
+                    )
+                }
+                unsafe { sample.assume_init() }
+            }
         };
-        let sample = unsafe { sample.assume_init() };
+
         sample.send()?;
         std::thread::sleep(Duration::from_millis(options.time_between_messages as _));
         Ok(())
@@ -309,16 +356,28 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     if options.message.is_empty() {
         let stdin = std::io::stdin();
         let handle = stdin.lock();
+        let mut buffer = vec![];
 
         for line in handle.lines() {
             match line {
-                Ok(content) => send_message(&content)?,
+                Ok(content) => {
+                    send_message(&content)?;
+                    buffer.push(content);
+                }
                 Err(e) => eprintln!("Failed to read line from stdin ({e:?})."),
             }
         }
+
+        for _ in 1..options.repetitions {
+            for message in &buffer {
+                send_message(message)?;
+            }
+        }
     } else {
-        for message in &options.message {
-            send_message(message)?;
+        for _ in 0..options.repetitions {
+            for message in &options.message {
+                send_message(message)?;
+            }
         }
     }
 

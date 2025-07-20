@@ -183,11 +183,20 @@ pub struct PublishOptions {
     pub time_between_messages: usize,
 
     #[clap(
+        short,
         long,
         default_value = "TEXT",
         help = "Defines how the provided data is encoded."
     )]
     pub data_representation: DataRepresentation,
+
+    #[clap(
+        short,
+        long,
+        default_value = "1",
+        help = "How often shall the messages be sent."
+    )]
+    pub repetitions: usize,
 
     #[clap(
         long,
@@ -250,6 +259,7 @@ pub struct SubscribeOptions {
     pub node_name: String,
 
     #[clap(
+        short,
         long,
         default_value = "HEX",
         help = "Defines how the data shall be displayed."
