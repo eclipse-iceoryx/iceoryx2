@@ -237,7 +237,7 @@ macro_rules! assert_that {
     [color_start] => {
         {
             use std::io::IsTerminal;
-            if std::io::stdout().is_terminal() {
+            if std::io::stderr().is_terminal() {
                 "\x1b[1;4;33m"
             } else {
                 ""
@@ -247,7 +247,7 @@ macro_rules! assert_that {
     [color_end] => {
         {
             use std::io::IsTerminal;
-            if std::io::stdout().is_terminal() {
+            if std::io::stderr().is_terminal() {
                 "\x1b[0m"
             } else {
                 ""

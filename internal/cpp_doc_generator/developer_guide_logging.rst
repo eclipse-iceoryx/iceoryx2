@@ -289,7 +289,7 @@ The following code snippet demonstrates how to implement a simple `println!` log
 
     impl Log for PrintLogger {
         fn log(&self, log_level: LogLevel, origin: core::fmt::Arguments, message: core::fmt::Arguments ) {
-            println!("log level: {:?}, origin: {}, message: {}",
+            eprintln!("log level: {:?}, origin: {}, message: {}",
                     log_level, origin.to_string(), message.to_string());
         }
     }
@@ -298,7 +298,7 @@ The following code snippet demonstrates how to implement a simple `println!` log
 
     fn main() {
         if !set_logger(&*LOGGER) {
-            println!("Failed to set logger");
+            eprintln!("Failed to set logger");
         }
     }
 

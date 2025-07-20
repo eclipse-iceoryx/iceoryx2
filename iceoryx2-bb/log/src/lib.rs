@@ -199,7 +199,7 @@ impl LogLevel {
             "error" => LogLevel::Error,
             "fatal" => LogLevel::Fatal,
             _ => {
-                println!(
+                eprintln!(
                     "Invalid value for 'IOX2_LOG_LEVEL' environment variable!\
                 \nFound: {log_level_string:?}\
                 \nAllowed is one of: fatal, error, warn, info, debug, trace\
