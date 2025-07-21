@@ -1,27 +1,34 @@
 # Roadmap
 
-## v0.6
-
-### Main Focus
+## Main Focus
 
 The list is sorted by priority
 
-* [x] Request/Response
-* [ ] Zenoh Gateway
-* [ ] Finalize C and C++ API (still some tiny things open)
-* [x] Improve cross-compilation support
+### Planned For v0.7
 
-### Bonus
+* [x] Python Language Bindings
+* [x] Basic Host2Host Communication based on zenoh
+* [ ] `iox2` cli service debugging
+* [ ] Detailed getting started documentation for all supported languages
 
-The list is sorted by priority
+### After v0.7
 
-* [ ] Derive macro for SHM transferable types
-* [ ] proof of concept with <https://github.com/rkyv/rkyv>
-* [ ] `#![no_std]` for low-level crates
-* [ ] Finish ROS 2 rmw binding (requires request/response)
-* [ ] `serde`-based shm serialization to transmit arbitrary types
+* [ ] Embedded Platforms: QNX 7.1 & QNX 8.0
+* [ ] Blackboard Messaging Pattern
 
 ## Backlog
+
+**All features in the backlog still require funding.**
+The features in our backlog have no set timeline and will be eventually worked
+on if capacity becomes available.
+If there is a feature you would like to see completed within a certain
+timeline,
+[please don't hesitate to reach out!](https://github.com/eclipse-iceoryx/iceoryx2?tab=readme-ov-file#commercial-support)
+Features in the backlog (or new ones) can be sponsored to be prioritized.
+
+The funds we receive through sponsored features help us keep the lights
+on - they go towards making iceoryx2 awesome and
+making sure we can continue maintaining it for everyone.
 
 ### Moonshots
 
@@ -29,7 +36,9 @@ The list is sorted by priority
 * [ ] `#![no_std]` on `nightly` on all tier 1 platforms
 * [ ] `#![no_std]` on `stable` on all tier 1 platforms
 * [x] completely dynamic setup with dynamic shared memory
-* [ ] iceoryx on a rover on the moon
+* [ ] iceoryx2 on a rover on the moon
+* [ ] iceoryx2 can communicate with every SOA protocol transparently with
+      gateways that are activated automatically
 
 ### Shared Memory Container & Types
 
@@ -48,7 +57,8 @@ The list is sorted by priority
 
 * [x] C
 * [x] C++
-* [ ] Python
+* [x] Python
+* [ ] Go
 * [ ] Swift
 * [ ] Kotlin
 * [ ] Typescript
@@ -59,31 +69,34 @@ The list is sorted by priority
 ### Building Blocks
 
 * [x] WaitSet - event multiplexer based on reactor pattern
-* [ ] Introduce trait and proc macro to generate types that can be sent via
-      shared memory
+* [x] Introduce trait and proc macro to generate types that can be sent via
+      shared memory (`ZeroCopySend`)
     * ensure that only these types are used for inter-process communication
 
 ### Gateways
 
 * [ ] Host2Host Communication based on <https://github.com/smoltcp-rs/smoltcp>
+* [ ] Host2Host Communication based on zenoh
 * [ ] mqtt (rumqtt)
 * [ ] dds (rustdds or dustdds)
 * [ ] zenoh
 * [ ] someip (maybe sommr)
 * [ ] dbus (zbus)
+* [ ] websocket
 
 ### Microservices (Quality of Life Improvements)
 
 #### iceoryx Tooling
 
-* [ ] Service Discovery
+* [x] Service Discovery
 * [ ] Introspection Service
 * [ ] Process Monitor (process can register and cleans up resources when process
       dies)
 * [ ] Health Monitor
-* [ ] Basic command line introspection tooling
+* [x] Basic command line introspection tooling
 * [ ] Tooling for advanced introspection, cool WebGUI
 * [ ] Command line client as interface to microservices
+* [ ] `iox2` cli service debugging
 
 #### Tools and Gadgets
 
@@ -98,8 +111,9 @@ The list is sorted by priority
 * [ ] Single Publisher Subscribe with history
 * [ ] Multi Publisher without history (except there is a brilliant idea on how
       to realize it with history)
-* [ ] Request Response Messaging Pattern
+* [x] Request Response Messaging Pattern
 * [ ] Blackboard Messaging Pattern
+* [ ] Log messaging pattern
 * [ ] Pipeline Messaging Pattern
 * [ ] PubSub, ReqRes, Pipeline variant that works with copies (poor mans mixed
       criticality)
@@ -113,6 +127,7 @@ The list is sorted by priority
     * Buddy allocator for sender data-segment
     * Introduce runtime fixed-size types
 * [x] Untyped API
+* [ ] Zero-copy based on dmaheap in linux
 
 ### Expert/Advanced Features
 
@@ -134,6 +149,7 @@ The list is sorted by priority
 ### Platform Support
 
 * [ ] Android
+* [ ] Android Automotive
 * [x] Linux
 * [x] Windows
 * [x] Mac Os
