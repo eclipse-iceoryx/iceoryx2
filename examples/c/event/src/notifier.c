@@ -24,6 +24,9 @@
 #endif
 
 int main(void) {
+    // Setup logging
+    iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;

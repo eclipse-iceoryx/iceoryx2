@@ -25,6 +25,8 @@ event = (
 
 listener = event.listener_builder().create()
 
+print("Listener ready to receive events!")
+
 cycle_time = iox2.Duration.from_secs(1)
 
 try:

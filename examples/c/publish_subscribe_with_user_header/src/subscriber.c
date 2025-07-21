@@ -23,6 +23,9 @@
 #include <string.h>
 
 int main(void) {
+    // Setup logging
+    iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
@@ -85,6 +88,8 @@ int main(void) {
         printf("Unable to create subscriber!\n");
         goto drop_service;
     }
+
+    printf("Subscriber ready to receive data!\n");
 
     while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
         // receive sample

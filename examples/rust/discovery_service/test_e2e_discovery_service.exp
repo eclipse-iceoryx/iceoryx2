@@ -1,0 +1,48 @@
+#!/usr/bin/expect
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+#### Common Setup
+
+set REPO_ROOT [exec git rev-parse --show-toplevel]
+cd ${REPO_ROOT}
+
+source examples/cross-language-end-to-end-tests/common.exp
+
+#### Test Setup and Assertion
+
+set timeout 10
+
+spawn cargo run --bin iox2-service -- discovery
+# wait until ready
+expect_output "=== Service Started"
+
+spawn cargo run --example discovery_service
+set id_discovery_service $spawn_id
+# wait until ready
+expect_output "Discovery service ready!"
+
+spawn cargo run --example publish_subscribe_subscriber
+set id_subscriber $spawn_id
+expect_output "Subscriber ready to receive data!"
+
+expect_output_from $id_discovery_service "Added: ServiceName*My/Funk/ServiceName*"
+
+spawn cargo run --example discovery_service_client
+expect_output "Service Name: \"My/Funk/ServiceName\""
+
+# Send CTRL+C (SIGINT) to the subscriber process
+exec kill -SIGINT [exp_pid -i $id_subscriber]
+
+expect_output_from $id_discovery_service "Removed: ServiceName*My/Funk/ServiceName*"
+
+show_test_passed

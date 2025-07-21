@@ -34,6 +34,8 @@ auto main() -> int {
 
     auto subscriber = service.subscriber_builder().create().expect("successful subscriber creation");
 
+    std::cout << "Subscriber ready to receive data!" << std::endl;
+
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().expect("receive succeeds");
         while (sample.has_value()) {

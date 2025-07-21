@@ -27,6 +27,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let server = service.server_builder().create()?;
 
+    println!("Server ready to receive requests!");
+
     let mut counter = 0;
     while node.wait(CYCLE_TIME).is_ok() {
         while let Some(active_request) = server.receive()? {

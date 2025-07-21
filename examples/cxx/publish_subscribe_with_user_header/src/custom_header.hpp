@@ -22,7 +22,7 @@ struct CustomHeader {
 };
 
 inline auto operator<<(std::ostream& stream, const CustomHeader& value) -> std::ostream& {
-    stream << "CustomHeader { version: " << value.version << ", timestamp: " << value.timestamp << "}";
+    stream << "CustomHeader { version: " << value.version << ", timestamp: " << value.timestamp << " }";
     return stream;
 }
 

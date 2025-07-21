@@ -17,6 +17,9 @@
 #include <string.h>
 
 int main(void) {
+    // Setup logging
+    iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     iox2_node_h node_handle = NULL;
@@ -51,6 +54,8 @@ int main(void) {
         goto drop_service;
     }
     iox2_event_id_t event_id;
+
+    printf("Listener ready to receive events!\n");
 
     while (iox2_node_wait(&node_handle, 0, 0) == IOX2_OK) {
         bool has_received_one = false;

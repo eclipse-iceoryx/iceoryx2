@@ -40,6 +40,9 @@ auto main(int argc, char** argv) -> int {
     // Therefore, different domain names never share the same resources.
     config.global().set_prefix(iox::FileName::create(args.domain()).expect("valid domain name"));
 
+
+    std::cout << "Services running in domain \"" << args.domain() << "\":" << std::endl;
+
     Service<ServiceType::Ipc>::list(config.view(), [](auto service) {
         std::cout << service.static_details << std::endl;
         return CallbackProgression::Continue;

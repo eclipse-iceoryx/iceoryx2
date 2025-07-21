@@ -42,6 +42,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let guard = waitset.attach_notification(&listener)?;
     let attachment = WaitSetAttachmentId::from_guard(&guard);
 
+    println!("Discovery service ready!");
+
     let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
         if attachment_id == attachment {
             // Drain all pending.

@@ -22,14 +22,14 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-# TODO create a python example that is compatible with cross-language Rust, C and C++ examples
-spawn python examples/python/publish_subscribe/publisher.py
+spawn python examples/python/publish_subscribe_cross_language/publisher.py
+set id_publisher $spawn_id
 
-# spawn cargo run --example publish_subscribe_cross_language_subscriber
-spawn cargo run --example publish_subscribe_subscriber
+spawn cargo run --example publish_subscribe_cross_language_subscriber
 
 #### Test Assertion
 
+expect_output_from $id_publisher "Send sample*"
 expect_output "received: TransmissionData { x: 3, y: 9, funky: 2436.36 }*"
 
 show_test_passed

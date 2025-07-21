@@ -86,7 +86,7 @@
 
 ### Testing
 
-* Create Cross-Language E2E Tests
+* Create E2E Tests for all examples
   [#730](https://github.com/eclipse-iceoryx/iceoryx2/issues/730)
 
 ### Workflow
