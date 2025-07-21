@@ -641,10 +641,8 @@ pub(crate) mod internal {
                             return PortCleanupAction::SkipPort;
                         }
                     }
-                    UniquePortId::Reader(ref _id) => {
-                    }
-                    UniquePortId::Writer(ref _id) => {
-                    }
+                    UniquePortId::Reader(ref _id) => {}
+                    UniquePortId::Writer(ref _id) => {}
                 };
 
                 trace!(from origin, "Remove port {:?} from service.", port_id);
@@ -683,7 +681,7 @@ pub(crate) mod internal {
                             trace!(from origin, "Remove blackboard payload segment.");
                         }
                         _ => {
-                            fail!(from origin, 
+                            fail!(from origin,
                                   with ServiceRemoveNodeError::ServiceInCorruptedState,
                                   "{} since the blackboard payload segment cannot be removed - service seems to be in a corrupted state.", msg);
                         }
@@ -697,14 +695,19 @@ pub(crate) mod internal {
                                   "{} due to a failure while acquiring the service details.", msg);
                         }
                     };
-                    let blackboard_mgmt_name = match
-                        details.static_details.blackboard().type_details.type_name.as_str() {
-                            Ok(s) => s,
-                            Err(_) => {
-                                fail!(from origin,
+                    let blackboard_mgmt_name = match details
+                        .static_details
+                        .blackboard()
+                        .type_details
+                        .type_name
+                        .as_str()
+                    {
+                        Ok(s) => s,
+                        Err(_) => {
+                            fail!(from origin,
                                       with ServiceRemoveNodeError::InternalError,
                                       "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
-                            }
+                        }
                     };
                     // u64 is just a placeholder needed for the DynamicStorageConfiguration; it is
                     // overwritten right below
@@ -723,12 +726,12 @@ pub(crate) mod internal {
                             &blackboard_name,
                             &blackboard_mgmt_config,
                         )
-                    }{
+                    } {
                         Ok(true) => {
                             trace!(from origin, "Remove blackboard mgmt segment.");
                         }
                         _ => {
-                            fail!(from origin, 
+                            fail!(from origin,
                                   with ServiceRemoveNodeError::ServiceInCorruptedState,
                                   "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
                         }
