@@ -27,6 +27,26 @@ clap = { workspace = true }
 name = "examples_common"
 path = "rust/_examples_common/lib.rs"
 
+# blackboard
+
+[[example]]
+name = "blackboard_opener"
+path = "rust/blackboard/opener.rs"
+
+[[example]]
+name = "blackboard_creator"
+path = "rust/blackboard/creator.rs"
+
+# blackboard event based communication
+
+[[example]]
+name = "blackboard_event_based_opener"
+path = "rust/blackboard_event_based_communication/opener.rs"
+
+[[example]]
+name = "blackboard_event_based_creator"
+path = "rust/blackboard_event_based_communication/creator.rs"
+
 # complex data types
 
 [[example]]
@@ -77,7 +97,7 @@ path = "rust/event_based_communication/publisher.rs"
 name = "event_based_comm_subscriber"
 path = "rust/event_based_communication/subscriber.rs"
 
-# event based communication
+# health monitoring
 
 [[example]]
 name = "health_monitoring_publisher_1"

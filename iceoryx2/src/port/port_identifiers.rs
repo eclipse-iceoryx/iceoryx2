@@ -74,6 +74,10 @@ generate_id! {
     /// The system-wide unique id of a [`Reader`](crate::port::reader::Reader).
     UniqueReaderId
 }
+generate_id! {
+    /// The system-wide unique id of a [`Writer`](crate::port::writer::Writer).
+    UniqueWriterId
+}
 
 /// Enum that contains the unique port id
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

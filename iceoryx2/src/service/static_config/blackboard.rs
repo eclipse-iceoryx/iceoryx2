@@ -17,9 +17,11 @@
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//! type KeyType = u64;
 //! let blackboard = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-//!     .blackboard::<u64>()
-//!     .open_or_create()?;
+//!     .blackboard_creator::<KeyType>()
+//!     .add::<i32>(0,0)
+//!     .create()?;
 //!
 //! println!("type details: {:?}", blackboard.static_config().type_details());
 //! println!("max readers: {:?}", blackboard.static_config().max_readers());
@@ -28,11 +30,10 @@
 //! # }
 //! ```
 
+use crate::config;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use serde::{Deserialize, Serialize};
-
-use crate::config;
 
 use super::message_type_details::TypeDetail;
 
@@ -43,6 +44,7 @@ use super::message_type_details::TypeDetail;
 #[repr(C)]
 pub struct StaticConfig {
     pub(crate) max_readers: usize,
+    pub(crate) max_writers: usize,
     pub(crate) max_nodes: usize,
     pub(crate) type_details: TypeDetail,
 }
@@ -51,6 +53,7 @@ impl StaticConfig {
     pub(crate) fn new(config: &config::Config) -> Self {
         Self {
             max_readers: config.defaults.blackboard.max_readers,
+            max_writers: 1,
             max_nodes: config.defaults.blackboard.max_nodes,
             type_details: TypeDetail::default(),
         }

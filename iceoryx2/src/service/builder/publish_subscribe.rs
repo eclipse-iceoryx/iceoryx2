@@ -614,12 +614,13 @@ impl<
                 }
 
                 Ok(publish_subscribe::PortFactory::new(
-                    ServiceType::__internal_from_state(service::ServiceState::new(
+                    service::ServiceState::new(
                         self.base.service_config.clone(),
                         self.base.shared_node.clone(),
                         dynamic_config,
                         unlocked_static_details,
-                    )),
+                        NoResource,
+                    ),
                 ))
             }
             Some(_) => {
@@ -695,12 +696,13 @@ impl<
                     }
 
                     return Ok(publish_subscribe::PortFactory::new(
-                        ServiceType::__internal_from_state(service::ServiceState::new(
+                        service::ServiceState::new(
                             static_config,
                             self.base.shared_node.clone(),
                             dynamic_config,
                             static_storage,
-                        )),
+                            NoResource,
+                        ),
                     ));
                 }
             }

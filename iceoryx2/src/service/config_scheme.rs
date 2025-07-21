@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::{config, node::NodeId};
+use core::fmt::Debug;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
 
@@ -113,4 +114,25 @@ pub(crate) fn service_tag_config<Service: crate::service::Service>(
         .prefix(&global_config.global.prefix)
         .suffix(&global_config.global.node.service_tag_suffix)
         .path_hint(&node_details_path(global_config, node_id))
+}
+
+pub(crate) fn blackboard_mgmt_config<
+    Service: crate::service::Service,
+    T: Send + Sync + Debug + 'static,
+>(
+    global_config: &config::Config,
+) -> <Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration {
+    <<Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration>::default()
+        .prefix(&global_config.global.prefix)
+        .suffix(&global_config.global.service.blackboard_mgmt_suffix)
+        .path_hint(global_config.global.root_path())
+}
+
+pub(crate) fn blackboard_data_config<Service: crate::service::Service>(
+    global_config: &config::Config,
+) -> <Service::BlackboardPayload as NamedConceptMgmt>::Configuration {
+    <<Service::BlackboardPayload as NamedConceptMgmt>::Configuration>::default()
+        .prefix(&global_config.global.prefix)
+        .suffix(&global_config.global.service.blackboard_data_suffix)
+        .path_hint(global_config.global.root_path())
 }

@@ -32,20 +32,16 @@
 //!
 //! See [`Service`](crate::service) for more detailed examples.
 
-use alloc::sync::Arc;
 use core::fmt::Debug;
 
 use crate::service::dynamic_config::DynamicConfig;
+use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::shm_allocator::pool_allocator::PoolAllocator;
 use iceoryx2_cal::*;
 
-use super::ServiceState;
-
 /// Defines a process local or single address space communication setup.
 #[derive(Debug, Clone)]
-pub struct Service {
-    state: Arc<ServiceState<Self>>,
-}
+pub struct Service {}
 
 impl crate::service::Service for Service {
     type StaticStorage = static_storage::recommended::Local;
@@ -60,16 +56,9 @@ impl crate::service::Service for Service {
     type Reactor = reactor::recommended::Local;
     type ArcThreadSafetyPolicy<T: Send + Debug> =
         arc_sync_policy::single_threaded::SingleThreaded<T>;
+    type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static> =
+        dynamic_storage::recommended::Local<KeyType>;
+    type BlackboardPayload = shared_memory::recommended::Local<BumpAllocator>;
 }
 
-impl crate::service::internal::ServiceInternal<Service> for Service {
-    fn __internal_from_state(state: ServiceState<Self>) -> Self {
-        Self {
-            state: Arc::new(state),
-        }
-    }
-
-    fn __internal_state(&self) -> &Arc<ServiceState<Self>> {
-        &self.state
-    }
-}
+impl crate::service::internal::ServiceInternal<Service> for Service {}

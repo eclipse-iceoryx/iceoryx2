@@ -118,7 +118,8 @@ use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::publisher::LocalPublisherConfig;
 use crate::service::static_config::message_type_details::TypeVariant;
 use crate::service::static_config::publish_subscribe;
-use crate::service::{self};
+use crate::service::{self, NoResource, ServiceState};
+use alloc::sync::Arc;
 use core::any::TypeId;
 use core::cell::UnsafeCell;
 use core::fmt::Debug;
@@ -357,7 +358,7 @@ impl<
     > Publisher<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
-        service: &Service,
+        service: Arc<ServiceState<Service, NoResource>>,
         static_config: &publish_subscribe::StaticConfig,
         config: LocalPublisherConfig,
     ) -> Result<Self, PublisherCreateError> {
@@ -365,20 +366,14 @@ impl<
         let origin = "Publisher::new()";
         let port_id = UniquePublisherId::new();
         let subscriber_list = &service
-            .__internal_state()
             .dynamic_storage
             .get()
             .publish_subscribe()
             .subscribers;
 
-        let number_of_samples = unsafe {
-            service
-                .__internal_state()
-                .static_config
-                .messaging_pattern
-                .publish_subscribe()
-        }
-        .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
+        let number_of_samples =
+            unsafe { service.static_config.messaging_pattern.publish_subscribe() }
+                .required_amount_of_samples_per_data_segment(config.max_loaned_samples);
 
         let data_segment_type =
             DataSegmentType::new_from_allocation_strategy(config.allocation_strategy);
@@ -395,10 +390,10 @@ impl<
             publisher_id: port_id,
             number_of_samples,
             max_slice_len,
-            node_id: *service.__internal_state().shared_node.id(),
+            node_id: *service.shared_node.id(),
             max_number_of_segments,
         };
-        let global_config = service.__internal_state().shared_node.config();
+        let global_config = service.shared_node.config();
 
         let segment_name = data_segment_name(publisher_details.publisher_id.value());
         let data_segment = match data_segment_type {
@@ -439,14 +434,14 @@ impl<
                         .map(|_| UnsafeCell::new(None))
                         .collect(),
                     sender_port_id: port_id.value(),
-                    shared_node: service.__internal_state().shared_node.clone(),
+                    shared_node: service.shared_node.clone(),
                     receiver_max_buffer_size: static_config.subscriber_max_buffer_size,
                     receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
                     enable_safe_overflow: static_config.enable_safe_overflow,
                     number_of_samples,
                     max_number_of_segments,
                     degradation_callback: None,
-                    service_state: service.__internal_state().clone(),
+                    service_state: service.clone(),
                     tagger: CyclicTagger::new(),
                     loan_counter: IoxAtomicUsize::new(0),
                     sender_max_borrowed_samples: config.max_loaned_samples,
@@ -492,7 +487,6 @@ impl<
         // !MUST! be the last task otherwise a publisher is added to the dynamic config without the
         // creation of all required resources
         let dynamic_publisher_handle = match service
-            .__internal_state()
             .dynamic_storage
             .get()
             .publish_subscribe()
@@ -502,7 +496,7 @@ impl<
             None => {
                 fail!(from origin, with PublisherCreateError::ExceedsMaxSupportedPublishers,
                             "{} since it would exceed the maximum supported amount of publishers of {}.",
-                            msg, service.__internal_state().static_config.publish_subscribe().max_publishers);
+                            msg, service.static_config.publish_subscribe().max_publishers);
             }
         };
 
@@ -553,7 +547,7 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .create()?;
+    /// #                        .create()?;
     ///
     /// publisher.send_copy(1234)?;
     /// # Ok(())
@@ -584,7 +578,7 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .create()?;
+    /// #                        .create()?;
     ///
     /// let sample = publisher.loan_uninit()?;
     /// let sample = sample.write_payload(42); // alternatively `sample.payload_mut()` can be use to access the `MaybeUninit<Payload>`
@@ -688,8 +682,8 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .initial_max_slice_len(120)
-    ///                          .create()?;
+    /// #                        .initial_max_slice_len(120)
+    /// #                        .create()?;
     ///
     /// let slice_length = 5;
     /// let mut sample = publisher.loan_slice(slice_length)?;
@@ -740,8 +734,8 @@ impl<
     /// #     .open_or_create()?;
     /// #
     /// # let publisher = service.publisher_builder()
-    ///                          .initial_max_slice_len(120)
-    ///                          .create()?;
+    /// #                        .initial_max_slice_len(120)
+    /// #                        .create()?;
     ///
     /// let slice_length = 5;
     /// let sample = publisher.loan_slice_uninit(slice_length)?;

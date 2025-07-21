@@ -103,12 +103,12 @@ impl DynamicConfig {
             + Container::<NotifierDetails>::memory_size(config.number_of_notifiers)
     }
 
-    /// Returns the how many [`crate::port::listener::Listener`] ports are currently connected.
+    /// Returns how many [`Listener`](crate::port::listener::Listener) ports are currently connected.
     pub fn number_of_listeners(&self) -> usize {
         self.listeners.len()
     }
 
-    /// Returns the how many [`crate::port::notifier::Notifier`] ports are currently connected.
+    /// Returns how many [`Notifier`](crate::port::notifier::Notifier) ports are currently connected.
     pub fn number_of_notifiers(&self) -> usize {
         self.notifiers.len()
     }

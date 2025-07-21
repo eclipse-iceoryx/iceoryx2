@@ -51,6 +51,30 @@ impl<T: Copy> Producer<'_, T> {
     pub fn store(&self, new_value: T) {
         self.atomic.store(new_value);
     }
+
+    #[doc(hidden)]
+    // # Safety
+    //
+    //   * the memory position must not be modified after __internal_update_write_cell has been
+    //     called
+    pub unsafe fn __internal_get_ptr_to_write_cell(&self) -> *mut T {
+        let write_cell = self.atomic.write_cell.load(Ordering::Relaxed);
+        unsafe { (*self.atomic.data[write_cell as usize % NUMBER_OF_CELLS].get()).as_mut_ptr() }
+    }
+
+    #[doc(hidden)]
+    // # Safety
+    //
+    //   * the method must not be called without first writing to the memory position returned by
+    //     __internal_get_ptr_to_write_cell
+    pub unsafe fn __internal_update_write_cell(&self) {
+        /////////////////////////
+        // SYNC POINT - write
+        // After writing the content of the write_cell, the content needs to be synced with the
+        // reader.
+        /////////////////////////
+        self.atomic.write_cell.fetch_add(1, Ordering::Release);
+    }
 }
 
 impl<T: Copy> Drop for Producer<'_, T> {
@@ -62,7 +86,7 @@ impl<T: Copy> Drop for Producer<'_, T> {
 unsafe impl<T: Copy> Send for Producer<'_, T> {}
 unsafe impl<T: Copy> Sync for Producer<'_, T> {}
 
-/// An atomic implementation where the underlying type has to by copyable but is otherwise
+/// An atomic implementation where the underlying type has to be copyable but is otherwise
 /// unrestricted.
 #[repr(C)]
 pub struct UnrestrictedAtomic<T: Copy> {
@@ -122,7 +146,7 @@ impl<T: Copy> UnrestrictedAtomic<T> {
         /////////////////////////
         // SYNC POINT - write
         // prevent reordering of `data` after advancing `write_cell` which would signal
-        // the completion of the store operation an would result in a data race when
+        // the completion of the store operation and would result in a data race when
         // `data` would be written after the `write_cell` operation
         /////////////////////////
         self.write_cell.fetch_add(1, Ordering::Release);

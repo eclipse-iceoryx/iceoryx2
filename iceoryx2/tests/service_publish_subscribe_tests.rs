@@ -2221,6 +2221,7 @@ mod service_publish_subscribe {
         assert_that!(publisher.send_copy(PAYLOAD), eq Ok(1));
         assert_that!(*subscriber.receive().unwrap().unwrap(), eq PAYLOAD);
     }
+
     #[test]
     fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
         let service_name = generate_name();

@@ -108,3 +108,59 @@ fn spmc_unrestricted_atomic_load_store_works_concurrently() {
         });
     });
 }
+
+#[test]
+fn spmc_unrestricted_atomic_get_ptr_write_and_update_works() {
+    let _test_lock = TEST_LOCK.lock().unwrap();
+    let sut = UnrestrictedAtomic::<u32>::new(0);
+
+    let p = sut.acquire_producer().unwrap();
+    let entry = unsafe { p.__internal_get_ptr_to_write_cell() };
+    assert_that!(sut.load(), eq 0);
+
+    unsafe { *entry = 1 };
+    assert_that!(sut.load(), eq 0);
+
+    unsafe { p.__internal_update_write_cell() };
+    assert_that!(sut.load(), eq 1);
+}
+
+#[test]
+fn spmc_unrestricted_atomic_get_ptr_write_and_update_works_concurrently() {
+    let _test_lock = TEST_LOCK.lock().unwrap();
+    let store_finished = AtomicBool::new(false);
+    let sut = UnrestrictedAtomic::<u128>::new(0);
+    let handle = BarrierHandle::new();
+    let barrier = BarrierBuilder::new(2).create(&handle).unwrap();
+
+    let mut values = vec![];
+    thread::scope(|s| {
+        s.spawn(|| {
+            barrier.wait();
+
+            while !store_finished.load(Ordering::Relaxed) {
+                values.push(sut.load());
+            }
+        });
+
+        s.spawn(|| {
+            let producer = sut.acquire_producer().unwrap();
+            barrier.wait();
+
+            for i in 0..NUMBER_OF_RUNS as u128 {
+                let entry = unsafe { producer.__internal_get_ptr_to_write_cell() };
+                unsafe { *entry = i };
+                unsafe { producer.__internal_update_write_cell() };
+            }
+
+            store_finished.store(true, Ordering::Relaxed);
+        });
+    });
+
+    let mut pred = 0;
+    for v in values {
+        assert_that!(v, le NUMBER_OF_RUNS as u128);
+        assert_that!(v, ge pred);
+        pred = v;
+    }
+}

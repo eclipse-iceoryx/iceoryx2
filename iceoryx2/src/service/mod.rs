@@ -165,6 +165,37 @@
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! ## Blackboard
+//!
+//! For a detailed documentation see the
+//! [`blackboard::Creator`](crate::service::builder::blackboard::Creator)
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! type KeyType = u64;
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     // define the messaging pattern
+//!     .blackboard_creator::<KeyType>()
+//!     // QoS
+//!     .max_readers(4)
+//!     .max_nodes(5)
+//!     // add key-value pairs
+//!     .add::<i32>(0, -9)
+//!     .add::<bool>(5, true)
+//!     .add::<FixedSizeByteString<8>>(17, "Nalalala".try_into().unwrap())
+//!     .add_with_default::<u32>(2)
+//!     // create the service
+//!     .create()?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 
 pub(crate) mod stale_resource_cleanup;
 
@@ -247,7 +278,8 @@ use iceoryx2_cal::named_concept::*;
 use iceoryx2_cal::reactor::Reactor;
 use iceoryx2_cal::resizable_shared_memory::ResizableSharedMemoryForPoolAllocator;
 use iceoryx2_cal::serialize::Serialize;
-use iceoryx2_cal::shared_memory::SharedMemoryForPoolAllocator;
+use iceoryx2_cal::shared_memory::{SharedMemory, SharedMemoryForPoolAllocator};
+use iceoryx2_cal::shm_allocator::bump_allocator::BumpAllocator;
 use iceoryx2_cal::static_storage::*;
 use iceoryx2_cal::zero_copy_connection::ZeroCopyConnection;
 use service_id::ServiceId;
@@ -335,25 +367,28 @@ pub struct ServiceDetails<S: Service> {
 
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
-pub struct ServiceState<S: Service> {
+pub struct ServiceState<S: Service, R: ServiceResource> {
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: Arc<SharedNode<S>>,
     pub(crate) dynamic_storage: S::DynamicStorage,
     pub(crate) static_storage: S::StaticStorage,
+    pub(crate) additional_resource: R,
 }
 
-impl<S: Service> ServiceState<S> {
+impl<S: Service, R: ServiceResource> ServiceState<S, R> {
     pub(crate) fn new(
         static_config: StaticConfig,
         shared_node: Arc<SharedNode<S>>,
         dynamic_storage: S::DynamicStorage,
         static_storage: S::StaticStorage,
+        additional_resource: R,
     ) -> Self {
         let new_self = Self {
             static_config,
             shared_node,
             dynamic_storage,
             static_storage,
+            additional_resource,
         };
         trace!(from "Service::open()", "open service: {} ({:?})",
             new_self.static_config.name(), new_self.static_config.service_id());
@@ -361,7 +396,7 @@ impl<S: Service> ServiceState<S> {
     }
 }
 
-impl<S: Service> Drop for ServiceState<S> {
+impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
     fn drop(&mut self) {
         let origin = "ServiceState::drop()";
         let id = self.static_config.service_id();
@@ -380,6 +415,7 @@ impl<S: Service> Drop for ServiceState<S> {
                 DeregisterNodeState::NoMoreOwners => {
                     self.static_storage.acquire_ownership();
                     self.dynamic_storage.acquire_ownership();
+                    self.additional_resource.acquire_ownership();
                     trace!(from origin, "close and remove service: {} ({:?})",
                             self.static_config.name(), id);
                 }
@@ -462,7 +498,7 @@ pub(crate) mod internal {
         };
 
         let notifier = match Notifier::new_without_auto_event_emission(
-            &service.service,
+            service.service,
             EventId::new(0),
         ) {
             Ok(notifier) => notifier,
@@ -524,10 +560,6 @@ pub(crate) mod internal {
     }
 
     pub(crate) trait ServiceInternal<S: Service> {
-        fn __internal_from_state(state: ServiceState<S>) -> S;
-
-        fn __internal_state(&self) -> &Arc<ServiceState<S>>;
-
         fn __internal_remove_node_from_service(
             node_id: &NodeId,
             service_id: &ServiceId,
@@ -652,6 +684,20 @@ pub(crate) mod internal {
     }
 }
 
+/// Represents additional resources a service could use and have to be cleaned up when no owners
+/// are left
+pub trait ServiceResource {
+    /// Acquires the ownership of the additional resources. When the objects go out of scope the
+    /// underlying resources will be removed.
+    fn acquire_ownership(&self);
+}
+
+#[derive(Debug)]
+pub(crate) struct NoResource;
+impl ServiceResource for NoResource {
+    fn acquire_ownership(&self) {}
+}
+
 /// Represents a service. Used to create or open new services with the
 /// [`crate::node::Node::service_builder()`].
 /// Contains the building blocks a [`Service`] requires to create the underlying resources and
@@ -693,10 +739,16 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// Defines the thread-safety policy of the service. If it is defined as
     /// [`MutexProtected`](iceoryx2_cal::arc_sync_policy::mutex_protected::MutexProtected), the
     /// [`Service`]s ports are threadsafe and the payload can be moved into threads. If it is set
-    /// to to [`SingleThreaded`](iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded),
+    /// to [`SingleThreaded`](iceoryx2_cal::arc_sync_policy::single_threaded::SingleThreaded),
     /// the [`Service`]s ports and payload cannot be shared ([`Sync`]) between threads or moved
     /// ([`Send`]) into other threads.
     type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
+
+    /// Defines the construct used to store the management data of the blackboard service.
+    type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static>: DynamicStorage<KeyType>;
+
+    /// Defines the construct used to store the payload data of the blackboard service.
+    type BlackboardPayload: SharedMemory<BumpAllocator>;
 
     /// Checks if a service under a given [`config::Config`] does exist
     ///

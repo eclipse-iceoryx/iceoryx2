@@ -524,7 +524,7 @@ where
                 return None;
             }
 
-            let mut raw_segment_id = name.as_string().clone();
+            let mut raw_segment_id = *name.as_string();
             raw_segment_id.remove_range(0, segment_id_start_pos);
 
             // check nymber of digits

@@ -255,6 +255,71 @@
 //! # }
 //! ```
 //!
+//! ## Blackboard
+//!
+//! Explore a simple blackboard setup with one key-value pair which is continuously updated by the
+//! writer and read by the reader until the processes are gracefully terminated with `CTRL+C`.
+//!
+//! **Reader (Process 1)**
+//!
+//! ```no_run
+//! use core::time::Duration;
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! const CYCLE_TIME: Duration = Duration::from_secs(1);
+//!
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! // create our port factory by creating the service
+//! type KeyType = u32;
+//! let service = node
+//!     .service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard_creator::<KeyType>()
+//!     .add::<u64>(0, 0)
+//!     .create()?;
+//!
+//! let reader = service.reader_builder().create()?;
+//! let reader_handle = reader.entry::<u64>(&0)?;
+//!
+//! while node.wait(CYCLE_TIME).is_ok() {
+//!     println!("read: {}", reader_handle.get());
+//! }
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! **Writer (Process 2)**
+//!
+//! ```no_run
+//! use core::time::Duration;
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! const CYCLE_TIME: Duration = Duration::from_secs(1);
+//!
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! // create our port factory by opening the service
+//! type KeyType = u32;
+//! let service = node
+//!     .service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard_opener::<KeyType>()
+//!     .open()?;
+//!
+//! let writer = service.writer_builder().create()?;
+//! let writer_handle = writer.entry::<u64>(&0)?;
+//!
+//! let mut counter = 0;
+//! while node.wait(CYCLE_TIME).is_ok() {
+//!     counter += 1;
+//!     writer_handle.update_with_copy(counter);
+//! }
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
 //! # Quality Of Services
 //!
 //! Quality of service settings, or service settings, play a crucial role in determining memory
@@ -366,6 +431,31 @@
 //!     // a signal will be received
 //!     .deadline(Duration::from_secs(1))
 //!     .create()?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ## Blackboard
+//!
+//! For a detailed documentation see the
+//! [`blackboard::Creator`](crate::service::builder::blackboard::Creator)
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let node = NodeBuilder::new().create::<ipc::Service>()?;
+//!
+//! type KeyType = u64;
+//! let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
+//!     .blackboard_creator::<KeyType>()
+//!     // the maximum amount of readers of this service
+//!     .max_readers(4)
+//!     // the maximum amount of nodes that are able to open this service
+//!     .max_nodes(5)
+//!     .add::<u64>(0, 0)
+//!     .create()?;
+//!
 //! # Ok(())
 //! # }
 //! ```

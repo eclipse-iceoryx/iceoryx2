@@ -93,6 +93,7 @@ use crate::prelude::UnableToDeliverStrategy;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
 use crate::service::port_factory::server::LocalServerConfig;
+use crate::service::NoResource;
 use crate::{
     active_request::ActiveRequest,
     prelude::PortFactory,
@@ -130,7 +131,7 @@ pub(crate) struct SharedServerState<Service: service::Service> {
     server_handle: UnsafeCell<Option<ContainerHandle>>,
     pub(crate) request_receiver: Receiver<Service>,
     client_list_state: UnsafeCell<ContainerState<ClientDetails>>,
-    service_state: Arc<ServiceState<Service>>,
+    service_state: Arc<ServiceState<Service, NoResource>>,
 }
 
 impl<Service: service::Service> Drop for SharedServerState<Service> {
@@ -274,36 +275,22 @@ impl<
         let server_id = UniqueServerId::new();
         let service = &server_factory.factory.service;
         let static_config = server_factory.factory.static_config();
-        let number_of_requests_per_client = unsafe {
-            service
-                .__internal_state()
-                .static_config
-                .messaging_pattern
-                .request_response()
-        }
-        .required_amount_of_chunks_per_client_data_segment(static_config.max_loaned_requests);
+        let number_of_requests_per_client =
+            unsafe { service.static_config.messaging_pattern.request_response() }
+                .required_amount_of_chunks_per_client_data_segment(
+                    static_config.max_loaned_requests,
+                );
 
-        let number_of_responses = unsafe {
-            service
-                .__internal_state()
-                .static_config
-                .messaging_pattern
-                .request_response()
-        }
-        .required_amount_of_chunks_per_server_data_segment(
-            server_factory.max_loaned_responses_per_request,
-            number_of_requests_per_client,
-        );
+        let number_of_responses =
+            unsafe { service.static_config.messaging_pattern.request_response() }
+                .required_amount_of_chunks_per_server_data_segment(
+                    server_factory.max_loaned_responses_per_request,
+                    number_of_requests_per_client,
+                );
 
-        let client_list = &service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .request_response()
-            .clients;
+        let client_list = &service.dynamic_storage.get().request_response().clients;
 
         let number_of_to_be_removed_connections = service
-            .__internal_state()
             .shared_node
             .config()
             .defaults
@@ -316,7 +303,7 @@ impl<
         let request_receiver = Receiver {
             connections: Vec::from_fn(number_of_active_connections, |_| UnsafeCell::new(None)),
             receiver_port_id: server_id.value(),
-            service_state: service.__internal_state().clone(),
+            service_state: service.clone(),
             message_type_details: static_config.request_message_type_details.clone(),
             receiver_max_borrowed_samples: static_config.max_active_requests_per_client,
             enable_safe_overflow: static_config.enable_safe_overflow_for_requests,
@@ -334,7 +321,7 @@ impl<
             connection_storage: UnsafeCell::new(SlotMap::new(number_of_connections)),
         };
 
-        let global_config = service.__internal_state().shared_node.config();
+        let global_config = service.shared_node.config();
         let data_segment_type = DataSegmentType::new_from_allocation_strategy(
             server_factory.config.allocation_strategy,
         );
@@ -379,7 +366,7 @@ impl<
                 .map(|_| UnsafeCell::new(None))
                 .collect(),
             sender_port_id: server_id.value(),
-            shared_node: service.__internal_state().shared_node.clone(),
+            shared_node: service.shared_node.clone(),
             receiver_max_buffer_size: static_config.max_response_buffer_size,
             receiver_max_borrowed_samples: static_config
                 .max_borrowed_responses_per_pending_response,
@@ -390,7 +377,7 @@ impl<
             number_of_samples: number_of_responses,
             max_number_of_segments,
             degradation_callback: server_factory.response_degradation_callback,
-            service_state: service.__internal_state().clone(),
+            service_state: service.clone(),
             tagger: CyclicTagger::new(),
             loan_counter: IoxAtomicUsize::new(0),
             unable_to_deliver_strategy: server_factory.config.unable_to_deliver_strategy,
@@ -403,7 +390,7 @@ impl<
             request_receiver,
             client_list_state: UnsafeCell::new(unsafe { client_list.get_state() }),
             server_handle: UnsafeCell::new(None),
-            service_state: service.__internal_state().clone(),
+            service_state: service.clone(),
             response_sender,
         });
 
@@ -418,7 +405,6 @@ impl<
         let new_self = Self {
             max_loaned_responses_per_request: server_factory.max_loaned_responses_per_request,
             enable_fire_and_forget: service
-                .__internal_state()
                 .static_config
                 .request_response()
                 .enable_fire_and_forget_requests,
@@ -439,13 +425,12 @@ impl<
         // creation of all required resources
         unsafe {
             *new_self.shared_state.lock().server_handle.get() = match service
-                .__internal_state()
                 .dynamic_storage
                 .get()
                 .request_response()
                 .add_server_id(ServerDetails {
                     server_id,
-                    node_id: *service.__internal_state().shared_node.id(),
+                    node_id: *service.shared_node.id(),
                     request_buffer_size: static_config.max_active_requests_per_client,
                     number_of_responses,
                     max_slice_len: server_factory.config.initial_max_slice_len,
@@ -457,7 +442,7 @@ impl<
                     fail!(from origin,
                     with ServerCreateError::ExceedsMaxSupportedServers,
                     "{} since it would exceed the maximum supported amount of servers of {}.",
-                    msg, service.__internal_state().static_config.request_response().max_servers());
+                    msg, service.static_config.request_response().max_servers());
                 }
             }
         };

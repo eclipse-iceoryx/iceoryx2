@@ -54,6 +54,7 @@ use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, Subscr
 use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::subscriber::SubscriberConfig;
 use crate::service::static_config::publish_subscribe::StaticConfig;
+use crate::service::{NoResource, ServiceState};
 use crate::{raw_sample::RawSample, sample::Sample, service};
 
 use super::details::chunk::Chunk;
@@ -62,6 +63,8 @@ use super::details::receiver::*;
 use super::port_identifiers::UniqueSubscriberId;
 use super::update_connections::ConnectionFailure;
 use super::ReceiveError;
+
+use alloc::sync::Arc;
 
 /// Describes the failures when a new [`Subscriber`] is created via the
 /// [`crate::service::port_factory::subscriber::PortFactorySubscriber`].
@@ -155,7 +158,7 @@ impl<
     > Subscriber<Service, Payload, UserHeader>
 {
     pub(crate) fn new(
-        service: &Service,
+        service: Arc<ServiceState<Service, NoResource>>,
         static_config: &StaticConfig,
         config: SubscriberConfig,
     ) -> Result<Self, SubscriberCreateError> {
@@ -163,12 +166,7 @@ impl<
         let origin = "Subscriber::new()";
         let subscriber_id = UniqueSubscriberId::new();
 
-        let publisher_list = &service
-            .__internal_state()
-            .dynamic_storage
-            .get()
-            .publish_subscribe()
-            .publishers;
+        let publisher_list = &service.dynamic_storage.get().publish_subscribe().publishers;
 
         let buffer_size = match config.buffer_size {
             Some(buffer_size) => {
@@ -183,7 +181,6 @@ impl<
         };
 
         let number_of_to_be_removed_connections = service
-            .__internal_state()
             .shared_node
             .config()
             .defaults
@@ -198,7 +195,7 @@ impl<
             receiver: Receiver {
                 connections: Vec::from_fn(number_of_active_connections, |_| UnsafeCell::new(None)),
                 receiver_port_id: subscriber_id.value(),
-                service_state: service.__internal_state().clone(),
+                service_state: service.clone(),
                 message_type_details: static_config.message_type_details.clone(),
                 receiver_max_borrowed_samples: static_config.subscriber_max_borrowed_samples,
                 enable_safe_overflow: static_config.enable_safe_overflow,
@@ -239,20 +236,19 @@ impl<
         // !MUST! be the last task otherwise a subscriber is added to the dynamic config without
         // the creation of all required channels
         let dynamic_subscriber_handle = match service
-            .__internal_state()
             .dynamic_storage
             .get()
             .publish_subscribe()
             .add_subscriber_id(SubscriberDetails {
                 subscriber_id,
                 buffer_size,
-                node_id: *service.__internal_state().shared_node.id(),
+                node_id: *service.shared_node.id(),
             }) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from new_self, with SubscriberCreateError::ExceedsMaxSupportedSubscribers,
                                 "{} since it would exceed the maximum supported amount of subscribers of {}.",
-                                msg, service.__internal_state().static_config.publish_subscribe().max_subscribers);
+                                msg, service.static_config.publish_subscribe().max_subscribers);
             }
         };
 
