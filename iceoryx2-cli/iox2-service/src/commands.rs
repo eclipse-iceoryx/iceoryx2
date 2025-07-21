@@ -337,33 +337,53 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
         }
     };
 
-    let send_message = |message: &String| -> Result<()> {
-        let sample = match options.data_representation {
+    let send_message = |user_header: &str, payload: &str| -> Result<()> {
+        let mut sample = match options.data_representation {
             DataRepresentation::Text => {
-                let mut sample = loan(message.len())?;
+                let mut sample = loan(payload.len())?;
                 unsafe {
                     copy_nonoverlapping(
-                        message.as_ptr(),
+                        payload.as_ptr(),
                         sample.payload_mut().as_mut_ptr().cast(),
-                        message.len(),
+                        payload.len(),
                     )
                 }
-                unsafe { sample.assume_init() }
+                sample
             }
             DataRepresentation::Hex => {
-                let decoded_message = hex_string_to_raw_data(message);
-                let mut sample = loan(decoded_message.len())?;
+                let decoded_payload = hex_string_to_raw_data(payload);
+                let mut sample = loan(decoded_payload.len())?;
                 unsafe {
                     copy_nonoverlapping(
-                        decoded_message.as_ptr(),
+                        decoded_payload.as_ptr(),
                         sample.payload_mut().as_mut_ptr().cast(),
-                        decoded_message.len(),
+                        decoded_payload.len(),
                     )
                 }
-                unsafe { sample.assume_init() }
+                sample
             }
         };
 
+        if options.header_type_size != 0 {
+            let decoded_user_header = hex_string_to_raw_data(user_header);
+            if decoded_user_header.len() != options.header_type_size {
+                return Err(anyhow::anyhow!(
+                    "raw user header size of {} does not fit required user header type size of {}",
+                    decoded_user_header.len(),
+                    options.header_type_size
+                ));
+            }
+
+            unsafe {
+                copy_nonoverlapping(
+                    decoded_user_header.as_ptr(),
+                    (sample.user_header_mut() as *mut CustomHeaderMarker).cast(),
+                    options.header_type_size,
+                );
+            }
+        }
+
+        let sample = unsafe { sample.assume_init() };
         sample.send()?;
         std::thread::sleep(Duration::from_millis(options.time_between_messages as _));
         Ok(())
@@ -374,25 +394,31 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
         let handle = stdin.lock();
         let mut buffer = vec![];
 
+        let mut header = None;
         for line in handle.lines() {
             match line {
                 Ok(content) => {
-                    send_message(&content)?;
-                    buffer.push(content);
+                    if header.is_none() {
+                        header = Some(content.clone());
+                    } else {
+                        send_message(header.as_ref().unwrap(), &content)?;
+                        buffer.push((header.as_ref().unwrap().clone(), content));
+                        header = None;
+                    }
                 }
                 Err(e) => eprintln!("Failed to read line from stdin ({e:?})."),
             }
         }
 
         for _ in 1..options.repetitions {
-            for message in &buffer {
-                send_message(message)?;
+            for (header, payload) in &buffer {
+                send_message(header, payload)?;
             }
         }
     } else {
         for _ in 0..options.repetitions {
             for message in &options.message {
-                send_message(message)?;
+                send_message("", message)?;
             }
         }
     }
