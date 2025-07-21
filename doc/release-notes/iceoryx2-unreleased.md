@@ -11,6 +11,8 @@
     conflicts when merging.
 -->
 
+* Python language binding
+  [#419](https://github.com/eclipse-iceoryx/iceoryx2/issues/419)
 * Tunnel over zenoh for publish-subscribe and event services
   [#593](https://github.com/eclipse-iceoryx/iceoryx2/issues/593)
 * `iox2 tunnel zenoh`
@@ -86,7 +88,7 @@
 
 * Create Cross-Language E2E Tests
   [#730](https://github.com/eclipse-iceoryx/iceoryx2/issues/730)
-  
+
 ### Workflow
 
 <!--
