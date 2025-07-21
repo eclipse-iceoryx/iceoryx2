@@ -185,6 +185,14 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
         None => None,
     };
 
+    let user_header_type = unsafe {
+        &service_details
+            .static_details
+            .messaging_pattern()
+            .publish_subscribe()
+            .message_type_details()
+            .user_header
+    };
     let service = unsafe {
         node.service_builder(&service_name)
             .publish_subscribe::<[CustomPayloadMarker]>()
@@ -197,14 +205,7 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
                     .message_type_details()
                     .payload,
             )
-            .__internal_set_user_header_type_details(
-                &service_details
-                    .static_details
-                    .messaging_pattern()
-                    .publish_subscribe()
-                    .message_type_details()
-                    .user_header,
-            )
+            .__internal_set_user_header_type_details(user_header_type)
             .open_or_create()?
     };
 
@@ -215,7 +216,20 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
     let mut msg_counter = 0u64;
     'node_loop: while node.wait(cycle_time).is_ok() {
         while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
-            let content = match options.data_representation {
+            // acquire user header
+            let user_header = if user_header_type.size != 0 {
+                raw_data_to_hex_string(unsafe {
+                    core::slice::from_raw_parts(
+                        (sample.user_header() as *const CustomHeaderMarker).cast(),
+                        user_header_type.size,
+                    )
+                })
+            } else {
+                "".to_string()
+            };
+
+            // acquire payload
+            let payload = match options.data_representation {
                 DataRepresentation::Hex => Some(raw_data_to_hex_string(unsafe {
                     core::slice::from_raw_parts(
                         sample.payload().as_ptr().cast(),
@@ -228,7 +242,7 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
                         sample.payload().len(),
                     )
                 }) {
-                    Ok(content) => Some(content.to_string()),
+                    Ok(payload) => Some(payload.to_string()),
                     Err(e) => {
                         eprintln!("received data contains invalid UTF-8 symbols ({e:?}).");
                         None
@@ -237,13 +251,15 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
             };
 
             if let Some(file) = &mut file {
-                if let Some(ref content) = content {
-                    writeln!(file, "{}", content)?;
+                if let Some(ref payload) = payload {
+                    writeln!(file, "{user_header}")?;
+                    writeln!(file, "{payload}")?;
                 }
             }
 
-            if let Some(ref content) = content {
-                println!("{content}");
+            if let Some(ref payload) = payload {
+                println!("header:  {user_header}");
+                println!("payload: {payload}\n");
             }
 
             msg_counter += 1;
