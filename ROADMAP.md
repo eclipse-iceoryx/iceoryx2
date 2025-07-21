@@ -18,17 +18,19 @@ The list is sorted by priority
 
 ## Backlog
 
-**All features in the backlog still require funding.**
-The features in our backlog have no set timeline and will be eventually worked
-on if capacity becomes available.
-If there is a feature you would like to see completed within a certain
-timeline,
-[please don't hesitate to reach out!](https://github.com/eclipse-iceoryx/iceoryx2?tab=readme-ov-file#commercial-support)
-Features in the backlog (or new ones) can be sponsored to be prioritized.
-
-The funds we receive through sponsored features help us keep the lights
-on - they go towards making iceoryx2 awesome and
-making sure we can continue maintaining it for everyone.
+> [!IMPORTANT]
+>
+> The features in our backlog have no set timeline and will be eventually worked
+> on if capacity becomes available.
+>
+> If there is a feature you would like to see completed within a certain
+> timeline,
+> [please don't hesitate to reach out!](https://github.com/eclipse-iceoryx/iceoryx2?tab=readme-ov-file#commercial-support)
+> Features in the backlog (or new ones) can be sponsored to be prioritized.
+>
+> The funds we receive through sponsored features help us keep the lights
+> on - they go towards making `iceoryx2` awesome and
+> making sure we can continue maintaining it for everyone.
 
 ### Moonshots
 
@@ -58,13 +60,14 @@ making sure we can continue maintaining it for everyone.
 * [x] C
 * [x] C++
 * [x] Python
-* [ ] Go
-* [ ] Swift
-* [ ] Kotlin
-* [ ] Typescript
-* [ ] Lua
-* [ ] Zig
 * [ ] C#
+* [ ] Dash/Flutter
+* [ ] Kotlin
+* [ ] Go
+* [ ] Lua
+* [ ] Swift
+* [ ] Typescript
+* [ ] Zig
 
 ### Building Blocks
 
@@ -127,7 +130,7 @@ making sure we can continue maintaining it for everyone.
     * Buddy allocator for sender data-segment
     * Introduce runtime fixed-size types
 * [x] Untyped API
-* [ ] Zero-copy based on dmaheap in linux
+* [ ] Zero-copy based on dma-heap in linux
 
 ### Expert/Advanced Features
 
