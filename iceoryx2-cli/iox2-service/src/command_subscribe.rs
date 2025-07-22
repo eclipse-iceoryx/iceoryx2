@@ -97,11 +97,11 @@ fn output_iox2_dump_data(
 ) -> Result<()> {
     if !options.quiet {
         print!("header {{len = {}}}: ", user_header.len());
-        std::io::stdout().write_all(user_header).ok();
+        std::io::stdout().write_all(user_header)?;
         println!();
 
         print!("payload {{len = {}}}: ", payload.len());
-        std::io::stdout().write_all(payload).ok();
+        std::io::stdout().write_all(payload)?;
         println!();
     }
 

@@ -26,13 +26,16 @@ use std::io::Read;
 use std::ptr::copy_nonoverlapping;
 use std::time::Duration;
 
-fn hex_string_to_raw_data(hex_string: &str) -> Vec<u8> {
+fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>> {
     let mut hex_string = hex_string.to_string();
     hex_string.retain(|c| !c.is_whitespace());
     (0..hex_string.len())
         .step_by(2)
-        .map(|n| u8::from_str_radix(&hex_string[n..n + 2], 16).unwrap())
-        .collect::<Vec<u8>>()
+        .map(|n| {
+            u8::from_str_radix(&hex_string[n..n + 2], 16)
+                .map_err(|e| anyhow::anyhow!("Invalid hex input at position {}: {}", n, e))
+        })
+        .collect::<Result<Vec<u8>>>()
 }
 
 fn loan(
@@ -111,14 +114,12 @@ fn read_file_into_buffer(
             DataRepresentation::Hex => {
                 let mut header = None;
                 for line in read_to_string(file)?.lines() {
-                    if header.is_none() {
-                        header = Some(hex_string_to_raw_data(line));
-                    } else {
-                        message_buffer.push((
-                            header.as_ref().unwrap().clone(),
-                            hex_string_to_raw_data(line),
-                        ));
-                        header = None;
+                    match header {
+                        None => header = Some(hex_string_to_raw_data(line)?),
+                        Some(ref h) => {
+                            message_buffer.push((h.clone(), hex_string_to_raw_data(line)?));
+                            header = None;
+                        }
                     }
                 }
             }
@@ -152,18 +153,20 @@ fn read_file_into_buffer(
 fn read_cli_msg_into_buffer(
     message_buffer: &mut Vec<(Vec<u8>, Vec<u8>)>,
     options: &PublishOptions,
-) {
+) -> Result<()> {
     for message in &options.message {
         match options.data_representation {
             DataRepresentation::Iox2Dump => {
                 message_buffer.push((vec![], message.as_bytes().to_vec()))
             }
             DataRepresentation::Hex => {
-                let payload = hex_string_to_raw_data(message);
+                let payload = hex_string_to_raw_data(message)?;
                 message_buffer.push((vec![], payload));
             }
         }
     }
+
+    Ok(())
 }
 
 pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
@@ -204,7 +207,7 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
 
     let mut message_buffer = vec![];
     read_file_into_buffer(&mut message_buffer, &options)?;
-    read_cli_msg_into_buffer(&mut message_buffer, &options);
+    read_cli_msg_into_buffer(&mut message_buffer, &options)?;
 
     for _ in 0..options.repetitions {
         for (header, payload) in &message_buffer {
