@@ -153,7 +153,7 @@ pub enum CliTypeVariant {
 #[derive(Clone, Copy, ValueEnum)]
 #[value(rename_all = "UPPERCASE")]
 pub enum DataRepresentation {
-    Text,
+    Raw,
     Hex,
 }
 
@@ -185,7 +185,7 @@ pub struct PublishOptions {
     #[clap(
         short,
         long,
-        default_value = "TEXT",
+        default_value = "HEX",
         help = "Defines how the provided data is encoded."
     )]
     pub data_representation: DataRepresentation,
@@ -286,6 +286,9 @@ pub struct SubscribeOptions {
         help = "When set, the received data is additionally added to the provided file."
     )]
     pub output_file: Option<String>,
+
+    #[clap(action, short, long, help = "Do not show the received data.")]
+    pub quiet: bool,
 }
 
 #[derive(Subcommand)]
