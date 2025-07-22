@@ -207,9 +207,18 @@ pub fn print_config_description() -> Result<()> {
 
         for entry in section.entries {
             println!(
-                "{} [{}]",
+                "{} {}",
                 entry.key.bright_blue(),
-                entry.value_type.bright_yellow()
+                entry.value_type.bright_red()
+            );
+            println!(
+                "{}",
+                format!(
+                    "(Required: {}. Default value: {})",
+                    entry.required.to_string().bright_white(),
+                    entry.default.bright_white()
+                )
+                .bright_yellow()
             );
             println!("{}", entry.description.italic());
         }
