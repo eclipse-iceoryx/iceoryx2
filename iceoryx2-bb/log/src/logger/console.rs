@@ -44,7 +44,7 @@ impl Logger {
     }
 
     fn log_level_string(log_level: crate::LogLevel) -> &'static str {
-        if std::io::stdout().is_terminal() {
+        if std::io::stderr().is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[0;90m[T]",
                 LogLevel::Debug => "\x1b[0;93m[D]",
@@ -66,7 +66,7 @@ impl Logger {
     }
 
     fn message_color(log_level: crate::LogLevel) -> &'static str {
-        if std::io::stdout().is_terminal() {
+        if std::io::stderr().is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[1;90m",
                 LogLevel::Debug => "\x1b[1;90m",
@@ -81,7 +81,7 @@ impl Logger {
     }
 
     fn counter_color(_log_level: crate::LogLevel) -> &'static str {
-        if std::io::stdout().is_terminal() {
+        if std::io::stderr().is_terminal() {
             "\x1b[0;90m"
         } else {
             ""
@@ -89,7 +89,7 @@ impl Logger {
     }
 
     fn origin_color(log_level: crate::LogLevel) -> &'static str {
-        if std::io::stdout().is_terminal() {
+        if std::io::stderr().is_terminal() {
             match log_level {
                 LogLevel::Trace => "\x1b[0;90m",
                 LogLevel::Debug => "\x1b[0;90m",
@@ -104,16 +104,16 @@ impl Logger {
     }
 
     fn print(separator: &str, color: &str, output: &str) {
-        if std::io::stdout().is_terminal() {
+        if std::io::stderr().is_terminal() {
             std::print!("{color}");
         }
 
         std::print!("{separator}{output}");
 
-        if std::io::stdout().is_terminal() {
-            std::println!("\x1b[0m");
+        if std::io::stderr().is_terminal() {
+            std::eprintln!("\x1b[0m");
         } else {
-            std::println!(" ");
+            std::eprintln!(" ");
         }
     }
 
@@ -155,7 +155,7 @@ impl crate::Log for Logger {
                         );
                         Self::print_origin(log_level, &origin_str);
                     }
-                    true => std::println!(
+                    true => std::eprintln!(
                         "{}{}.{:0>9} {} ",
                         Logger::counter_color(log_level),
                         time.as_secs(),

@@ -119,7 +119,7 @@ macro_rules! win32call {
                             buffer.len() as u32,
                             core::ptr::null::<*const i8>()
                         );
-                        std::println!(
+                        std::eprintln!(
                             "< Win32 API error > {}:{} {} \n [ {} ] {}",
                             std::file!(), std::line!(), std::stringify!($call), last_error,
                             core::str::from_utf8(&buffer).unwrap_or("non UTF-8 error messages are not supported")
@@ -160,7 +160,7 @@ macro_rules! win32call {
                             buffer.len() as u32,
                             core::ptr::null::<*const i8>(),
                         );
-                        std::println!(
+                        std::eprintln!(
                             "< Win32 WinSock2 API error > {}:{} {} \n [ {} ] {}",
                             std::file!(), std::line!(), std::stringify!($call), last_error,
                             core::str::from_utf8(&buffer).unwrap_or("non UTF-8 error messages are not supported")
