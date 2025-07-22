@@ -26,7 +26,7 @@ use std::time::Instant;
 fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
     let mut ret_val = String::with_capacity(2 * raw_data.len());
     for byte in raw_data {
-        ret_val.push_str(&format!("{0:0>2x} ", byte));
+        ret_val.push_str(&format!("{byte:0>2x} "));
     }
 
     ret_val
@@ -97,12 +97,12 @@ fn output_iox2_dump_data(
 ) -> Result<()> {
     if !options.quiet {
         print!("header {{len = {}}}: ", user_header.len());
-        std::io::stdout().write(user_header).ok();
-        print!("\n");
+        std::io::stdout().write_all(user_header).ok();
+        println!();
 
         print!("payload {{len = {}}}: ", payload.len());
-        std::io::stdout().write(payload).ok();
-        print!("\n");
+        std::io::stdout().write_all(payload).ok();
+        println!();
     }
 
     if let Some(ref mut file) = file {
@@ -154,7 +154,6 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
         Some(v) => Some(
             std::fs::OpenOptions::new()
                 .create(true)
-                .write(true)
                 .append(true)
                 .open(v)?,
         ),
