@@ -68,7 +68,7 @@ fn send_message(
     publisher: &Publisher<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
     options: &PublishOptions,
 ) -> Result<()> {
-    let mut sample = loan(payload.len(), &publisher, &options)?;
+    let mut sample = loan(payload.len(), publisher, options)?;
     unsafe {
         copy_nonoverlapping(
             payload.as_ptr(),
@@ -159,7 +159,7 @@ fn read_cli_msg_into_buffer(
                 message_buffer.push((vec![], message.as_bytes().to_vec()))
             }
             DataRepresentation::Hex => {
-                let payload = hex_string_to_raw_data(&message);
+                let payload = hex_string_to_raw_data(message);
                 message_buffer.push((vec![], payload));
             }
         }
