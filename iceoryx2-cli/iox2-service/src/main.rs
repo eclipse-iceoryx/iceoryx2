@@ -16,6 +16,7 @@ use human_panic::setup_panic;
 extern crate better_panic;
 
 mod cli;
+mod command_subscribe;
 mod commands;
 mod filter;
 
@@ -72,7 +73,7 @@ fn main() -> Result<()> {
                 }
             }
             Action::Subscribe(options) => {
-                if let Err(e) = commands::subscribe(options, cli.format) {
+                if let Err(e) = command_subscribe::subscribe(options, cli.format) {
                     error!("failed to subscribe and receive messages: {}", e);
                 }
             }

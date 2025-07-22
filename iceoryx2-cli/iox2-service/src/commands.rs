@@ -13,7 +13,6 @@
 use core::ptr::copy_nonoverlapping;
 use core::time::Duration;
 use std::io::{BufRead, Write};
-use std::time::Instant;
 
 use anyhow::anyhow;
 use anyhow::{Context, Error, Result};
@@ -33,7 +32,6 @@ use serde::Serialize;
 
 use crate::cli::{
     CliTypeVariant, DataRepresentation, ListenOptions, NotifyOptions, OutputFilter, PublishOptions,
-    SubscribeOptions,
 };
 
 #[allow(clippy::enum_variant_names)] // explicitly allow same prefix Notification since it shall
@@ -50,15 +48,6 @@ struct EventFeedback {
     event_type: EventType,
     service: String,
     event_id: Option<usize>,
-}
-
-fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
-    let mut ret_val = String::with_capacity(2 * raw_data.len());
-    for byte in raw_data {
-        ret_val.push_str(&format!("{0:0>2x} ", byte));
-    }
-
-    ret_val
 }
 
 fn hex_string_to_raw_data(hex_string: &str) -> Vec<u8> {
@@ -156,130 +145,6 @@ pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
     Ok(())
 }
 
-pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
-    let node = NodeBuilder::new()
-        .name(&NodeName::new(&options.node_name)?)
-        .create::<ipc::Service>()?;
-
-    let config = iceoryx2::config::Config::global_config();
-    let service_name = ServiceName::new(&options.service)?;
-    let service_details =
-        match ipc::Service::details(&service_name, config, MessagingPattern::PublishSubscribe)? {
-            Some(v) => v,
-            None => {
-                return Err(anyhow!(
-                    "unable to access service \"{}\", does it exist?",
-                    options.service
-                ))
-            }
-        };
-
-    let mut file = match options.output_file {
-        Some(v) => Some(
-            std::fs::OpenOptions::new()
-                .create(true)
-                .write(true)
-                .append(true)
-                .open(v)?,
-        ),
-        None => None,
-    };
-
-    let user_header_type = unsafe {
-        &service_details
-            .static_details
-            .messaging_pattern()
-            .publish_subscribe()
-            .message_type_details()
-            .user_header
-    };
-    let service = unsafe {
-        node.service_builder(&service_name)
-            .publish_subscribe::<[CustomPayloadMarker]>()
-            .user_header::<CustomHeaderMarker>()
-            .__internal_set_payload_type_details(
-                &service_details
-                    .static_details
-                    .messaging_pattern()
-                    .publish_subscribe()
-                    .message_type_details()
-                    .payload,
-            )
-            .__internal_set_user_header_type_details(user_header_type)
-            .open_or_create()?
-    };
-
-    let subscriber = service.subscriber_builder().create()?;
-    let cycle_time = Duration::from_millis(10);
-
-    let start = Instant::now();
-    let mut msg_counter = 0u64;
-    'node_loop: while node.wait(cycle_time).is_ok() {
-        while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
-            // acquire user header
-            let user_header = if user_header_type.size != 0 {
-                raw_data_to_hex_string(unsafe {
-                    core::slice::from_raw_parts(
-                        (sample.user_header() as *const CustomHeaderMarker).cast(),
-                        user_header_type.size,
-                    )
-                })
-            } else {
-                "".to_string()
-            };
-
-            // acquire payload
-            let payload = match options.data_representation {
-                DataRepresentation::Hex => Some(raw_data_to_hex_string(unsafe {
-                    core::slice::from_raw_parts(
-                        sample.payload().as_ptr().cast(),
-                        sample.payload().len(),
-                    )
-                })),
-                DataRepresentation::Text => match str::from_utf8(unsafe {
-                    core::slice::from_raw_parts(
-                        sample.payload().as_ptr().cast(),
-                        sample.payload().len(),
-                    )
-                }) {
-                    Ok(payload) => Some(payload.to_string()),
-                    Err(e) => {
-                        eprintln!("received data contains invalid UTF-8 symbols ({e:?}).");
-                        None
-                    }
-                },
-            };
-
-            if let Some(file) = &mut file {
-                if let Some(ref payload) = payload {
-                    writeln!(file, "{user_header}")?;
-                    writeln!(file, "{payload}")?;
-                }
-            }
-
-            if let Some(ref payload) = payload {
-                println!("header:  {user_header}");
-                println!("payload: {payload}\n");
-            }
-
-            msg_counter += 1;
-            if let Some(max_messages) = options.max_messages {
-                if msg_counter >= max_messages {
-                    break 'node_loop;
-                }
-            }
-
-            if let Some(timeout) = options.timeout {
-                if start.elapsed().as_millis() >= timeout as _ {
-                    break 'node_loop;
-                }
-            }
-        }
-    }
-
-    Ok(())
-}
-
 pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     let node = NodeBuilder::new()
         .name(&NodeName::new(&options.node_name)?)
@@ -339,7 +204,7 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
 
     let send_message = |user_header: &str, payload: &str| -> Result<()> {
         let mut sample = match options.data_representation {
-            DataRepresentation::Text => {
+            DataRepresentation::Raw => {
                 let mut sample = loan(payload.len())?;
                 unsafe {
                     copy_nonoverlapping(
