@@ -10,17 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::ptr::copy_nonoverlapping;
 use core::time::Duration;
-use std::io::{BufRead, Write};
+use std::io::Write;
 
 use anyhow::anyhow;
 use anyhow::{Context, Error, Result};
 use iceoryx2::prelude::*;
-use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
-use iceoryx2::service::static_config::message_type_details::{
-    TypeDetail, TypeNameString, TypeVariant,
-};
 use iceoryx2_cli::filter::Filter;
 use iceoryx2_cli::output::ServiceDescription;
 use iceoryx2_cli::output::ServiceDescriptor;
@@ -30,9 +25,7 @@ use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
 use serde::Serialize;
 
-use crate::cli::{
-    CliTypeVariant, DataRepresentation, ListenOptions, NotifyOptions, OutputFilter, PublishOptions,
-};
+use crate::cli::{ListenOptions, NotifyOptions, OutputFilter};
 
 #[allow(clippy::enum_variant_names)] // explicitly allow same prefix Notification since it shall
 // be human readable on command line
@@ -48,15 +41,6 @@ struct EventFeedback {
     event_type: EventType,
     service: String,
     event_id: Option<usize>,
-}
-
-fn hex_string_to_raw_data(hex_string: &str) -> Vec<u8> {
-    let mut hex_string = hex_string.to_string();
-    hex_string.retain(|c| !c.is_whitespace());
-    (0..hex_string.len())
-        .step_by(2)
-        .map(|n| u8::from_str_radix(&hex_string[n..n + 2], 16).unwrap())
-        .collect::<Vec<u8>>()
 }
 
 pub fn listen(options: ListenOptions, format: Format) -> Result<()> {
@@ -141,152 +125,6 @@ pub fn notify(options: NotifyOptions, format: Format) -> Result<()> {
     }
 
     notify()?;
-
-    Ok(())
-}
-
-pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
-    let node = NodeBuilder::new()
-        .name(&NodeName::new(&options.node_name)?)
-        .create::<ipc::Service>()?;
-
-    let service = unsafe {
-        node.service_builder(&ServiceName::new(&options.service)?)
-            .publish_subscribe::<[CustomPayloadMarker]>()
-            .user_header::<CustomHeaderMarker>()
-            .__internal_set_payload_type_details(&TypeDetail {
-                variant: match options.type_variant {
-                    CliTypeVariant::Dynamic => TypeVariant::Dynamic,
-                    CliTypeVariant::FixedSize => TypeVariant::FixedSize,
-                },
-                type_name: TypeNameString::try_from(options.type_name.as_str())?,
-                size: options.type_size,
-                alignment: options.type_alignment,
-            })
-            .__internal_set_user_header_type_details(&TypeDetail {
-                variant: TypeVariant::FixedSize,
-                type_name: TypeNameString::try_from(options.header_type_name.as_str())?,
-                size: options.header_type_size,
-                alignment: options.header_type_alignment,
-            })
-            .open_or_create()?
-    };
-
-    let publisher = match options.type_variant {
-        CliTypeVariant::FixedSize => service.publisher_builder().create()?,
-        CliTypeVariant::Dynamic => service
-            .publisher_builder()
-            .initial_max_slice_len(4096)
-            .allocation_strategy(AllocationStrategy::PowerOfTwo)
-            .create()?,
-    };
-
-    let loan = |len| match options.type_variant {
-        CliTypeVariant::Dynamic => unsafe {
-            publisher
-                .loan_custom_payload(len)
-                .map_err(|e| anyhow::anyhow!("failed to loan sample ({e:?})"))
-        },
-        CliTypeVariant::FixedSize => {
-            let sample = unsafe { publisher.loan_custom_payload(1) }
-                .map_err(|e| anyhow::anyhow!("failed to loan sample ({e:?})"))?;
-            if sample.payload().len() != len {
-                Err(anyhow::anyhow!(
-                    "raw message size of {} does not fit required type size of {}",
-                    len,
-                    sample.payload().len()
-                ))
-            } else {
-                Ok(sample)
-            }
-        }
-    };
-
-    let send_message = |user_header: &str, payload: &str| -> Result<()> {
-        let mut sample = match options.data_representation {
-            DataRepresentation::Raw => {
-                let mut sample = loan(payload.len())?;
-                unsafe {
-                    copy_nonoverlapping(
-                        payload.as_ptr(),
-                        sample.payload_mut().as_mut_ptr().cast(),
-                        payload.len(),
-                    )
-                }
-                sample
-            }
-            DataRepresentation::Hex => {
-                let decoded_payload = hex_string_to_raw_data(payload);
-                let mut sample = loan(decoded_payload.len())?;
-                unsafe {
-                    copy_nonoverlapping(
-                        decoded_payload.as_ptr(),
-                        sample.payload_mut().as_mut_ptr().cast(),
-                        decoded_payload.len(),
-                    )
-                }
-                sample
-            }
-        };
-
-        if options.header_type_size != 0 {
-            let decoded_user_header = hex_string_to_raw_data(user_header);
-            if decoded_user_header.len() != options.header_type_size {
-                return Err(anyhow::anyhow!(
-                    "raw user header size of {} does not fit required user header type size of {}",
-                    decoded_user_header.len(),
-                    options.header_type_size
-                ));
-            }
-
-            unsafe {
-                copy_nonoverlapping(
-                    decoded_user_header.as_ptr(),
-                    (sample.user_header_mut() as *mut CustomHeaderMarker).cast(),
-                    options.header_type_size,
-                );
-            }
-        }
-
-        let sample = unsafe { sample.assume_init() };
-        sample.send()?;
-        std::thread::sleep(Duration::from_millis(options.time_between_messages as _));
-        Ok(())
-    };
-
-    if options.message.is_empty() {
-        let stdin = std::io::stdin();
-        let handle = stdin.lock();
-        let mut buffer = vec![];
-
-        let mut header = None;
-        for line in handle.lines() {
-            match line {
-                Ok(content) => {
-                    if header.is_none() {
-                        header = Some(content.clone());
-                    } else {
-                        send_message(header.as_ref().unwrap(), &content)?;
-                        buffer.push((header.as_ref().unwrap().clone(), content));
-                        header = None;
-                    }
-                }
-                Err(e) => eprintln!("Failed to read line from stdin ({e:?})."),
-            }
-        }
-
-        for _ in 1..options.repetitions {
-            for (header, payload) in &buffer {
-                send_message(header, payload)?;
-            }
-        }
-    } else {
-        for _ in 0..options.repetitions {
-            for message in &options.message {
-                send_message("", message)?;
-            }
-        }
-    }
 
     Ok(())
 }

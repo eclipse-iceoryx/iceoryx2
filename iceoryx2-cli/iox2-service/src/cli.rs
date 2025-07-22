@@ -153,7 +153,7 @@ pub enum CliTypeVariant {
 #[derive(Clone, Copy, ValueEnum)]
 #[value(rename_all = "UPPERCASE")]
 pub enum DataRepresentation {
-    Raw,
+    Iox2Dump,
     Hex,
 }
 
@@ -174,6 +174,8 @@ pub struct PublishOptions {
         help = "The messages that shall be sent. Can be multiple messages. If no messages are given stdin is read."
     )]
     pub message: Vec<String>,
+    #[clap(short, long, help = "When set, the data from this file is published.")]
+    pub input_file: Option<String>,
     #[clap(
         short,
         long,

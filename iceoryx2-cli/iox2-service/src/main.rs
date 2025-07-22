@@ -16,6 +16,7 @@ use human_panic::setup_panic;
 extern crate better_panic;
 
 mod cli;
+mod command_publish;
 mod command_subscribe;
 mod commands;
 mod filter;
@@ -68,7 +69,7 @@ fn main() -> Result<()> {
                 }
             }
             Action::Publish(options) => {
-                if let Err(e) = commands::publish(options, cli.format) {
+                if let Err(e) = command_publish::publish(options, cli.format) {
                     error!("failed to publish messages: {}", e);
                 }
             }
