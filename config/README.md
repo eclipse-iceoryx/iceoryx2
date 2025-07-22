@@ -90,6 +90,10 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `global.service.creation-timeout.nanos` - [int]: Additional nanoseconds for
   service setup timeout.Maximum time for service
   setup.
+* `global.service.blackboard-mgmt-suffix` - [string]: The suffix of the blackboard
+management data segment
+* `global.service.blackboard-data-suffix` - [string]: The suffix of the blackboard
+payload data segment
 
 ## Defaults
 

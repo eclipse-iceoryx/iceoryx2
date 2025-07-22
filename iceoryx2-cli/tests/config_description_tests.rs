@@ -48,7 +48,6 @@ mod config_descriptions_tests {
 
     #[test]
     fn check_config_description_is_present_for_all_config_parameters() {
-        // Replace this with a version of Config that populates all Option<T> fields
         let config = Config::default();
 
         let ron_string = to_string(&config).expect("Failed to serialize config to RON");
