@@ -285,7 +285,7 @@ pub fn get_sections() -> Vec<CliSection> {
                     key: "defaults.event.deadline",
                     value_type: "Option<Duration>",
                     required: false,
-                    default: config.defaults.event.deadline.map_or("None".to_string(), |e| format!("{:?}", e)),
+                    default: config.defaults.event.deadline.map_or("None".to_string(), |e| format!("{e:?}")),
                     description: "Maximum allowed time between two consecutive notifications. If not sent after this time, all listeners attached to a WaitSet will be notified.",
                 },
                 CliEntry {
