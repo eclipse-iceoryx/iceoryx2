@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -89,7 +89,7 @@ fn extract_payload<'a>(
     (user_header, payload)
 }
 
-fn output_raw_data(
+fn output_iox2_dump_data(
     user_header: &[u8],
     payload: &[u8],
     options: &SubscribeOptions,
@@ -106,9 +106,9 @@ fn output_raw_data(
     }
 
     if let Some(ref mut file) = file {
-        file.write_all(&(user_header.len() as u64).to_ne_bytes())?;
+        file.write_all(&(user_header.len() as u64).to_le_bytes())?;
         file.write_all(user_header)?;
-        file.write_all(&(payload.len() as u64).to_ne_bytes())?;
+        file.write_all(&(payload.len() as u64).to_le_bytes())?;
         file.write_all(payload)?;
     }
 
@@ -180,8 +180,8 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
             let (user_header, payload) = extract_payload(&sample, &user_header_type);
 
             match options.data_representation {
-                DataRepresentation::Raw => {
-                    output_raw_data(user_header, payload, &options, &mut file)?
+                DataRepresentation::Iox2Dump => {
+                    output_iox2_dump_data(user_header, payload, &options, &mut file)?
                 }
                 DataRepresentation::Hex => {
                     output_hex_data(user_header, payload, &options, &mut file)?
