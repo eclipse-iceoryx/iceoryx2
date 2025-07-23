@@ -203,8 +203,7 @@ pub fn print_config_description() -> Result<()> {
     let sections = get_sections();
 
     println!(
-        "\n{}",
-        "Note: Fields marked with \"**\" could have None as a default value but if \nthe configs have None value then the feature using these values are deactivated."
+        "\nNote: Fields marked with \"**\" could have None as a default value but if \nthe configs have None value then the feature using these values are deactivated."
     );
     for section in sections {
         println!("\n{}", format!("== {} ==", section.name).bright_green());
