@@ -45,6 +45,47 @@ pub fn get_sections() -> Vec<CliSection> {
             ],
         },
         CliSection {
+            name: "Global: Node",
+            entries: vec![
+                CliEntry {
+                    key: "global.node.directory",
+                    value_type: "string",
+                    default: format!("\"{}\"", config.global.node.directory),
+                    description: "Specifies the path for node-related files under `global.root-path`.",
+                },
+                CliEntry {
+                    key: "global.node.monitor-suffix",
+                    value_type: "string",
+                    default: format!("\"{}\"", config.global.node.monitor_suffix),
+                    description: "Suffix added to the node monitor.",
+                },
+                CliEntry {
+                    key: "global.node.static-config-suffix",
+                    value_type: "string",
+                    default: format!("\"{}\"", config.global.node.static_config_suffix),
+                    description: "Suffix added to the static config of the node.",
+                },
+                CliEntry {
+                    key: "global.node.service-tag-suffix",
+                    value_type: "string",
+                    default: format!("\"{}\"", config.global.node.service_tag_suffix),
+                    description: "Suffix added to the service tag of the node.",
+                },
+                CliEntry {
+                    key: "global.node.cleanup-dead-nodes-on-creation",
+                    value_type: "`true`|`false`",
+                    default: config.global.node.cleanup_dead_nodes_on_creation.to_string(),
+                    description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever a new node is created.",
+                },
+                CliEntry {
+                    key: "global.node.cleanup-dead-nodes-on-destruction",
+                    value_type: "`true`|`false`",
+                    default: config.global.node.cleanup_dead_nodes_on_destruction.to_string(),
+                    description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever a node is going out-of-scope.",
+                },
+            ],
+        },
+        CliSection {
             name: "Global: Service",
             entries: vec![
                 CliEntry {
@@ -94,47 +135,6 @@ pub fn get_sections() -> Vec<CliSection> {
                     value_type: "string",
                     default: format!("\"{}\"", config.global.service.blackboard_data_suffix),
                     description: "The suffix of the blackboard payload data segment.",
-                },
-            ],
-        },
-        CliSection {
-            name: "Global: Node",
-            entries: vec![
-                CliEntry {
-                    key: "global.node.directory",
-                    value_type: "string",
-                    default: format!("\"{}\"", config.global.node.directory),
-                    description: "Specifies the path for node-related files under `global.root-path`.",
-                },
-                CliEntry {
-                    key: "global.node.monitor-suffix",
-                    value_type: "string",
-                    default: format!("\"{}\"", config.global.node.monitor_suffix),
-                    description: "Suffix added to the node monitor.",
-                },
-                CliEntry {
-                    key: "global.node.static-config-suffix",
-                    value_type: "string",
-                    default: format!("\"{}\"", config.global.node.static_config_suffix),
-                    description: "Suffix added to the static config of the node.",
-                },
-                CliEntry {
-                    key: "global.node.service-tag-suffix",
-                    value_type: "string",
-                    default: format!("\"{}\"", config.global.node.service_tag_suffix),
-                    description: "Suffix added to the service tag of the node.",
-                },
-                CliEntry {
-                    key: "global.node.cleanup-dead-nodes-on-creation",
-                    value_type: "`true`|`false`",
-                    default: config.global.node.cleanup_dead_nodes_on_creation.to_string(),
-                    description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever a new node is created.",
-                },
-                CliEntry {
-                    key: "global.node.cleanup-dead-nodes-on-destruction",
-                    value_type: "`true`|`false`",
-                    default: config.global.node.cleanup_dead_nodes_on_destruction.to_string(),
-                    description: "Defines if there shall be a scan for dead nodes with a following stale resource cleanup whenever a node is going out-of-scope.",
                 },
             ],
         },
@@ -251,25 +251,25 @@ pub fn get_sections() -> Vec<CliSection> {
                     key: "defaults.event.deadline",
                     value_type: "Option<Duration>",
                     default: config.defaults.event.deadline.map_or("None".to_string(), |e| format!("{e:?}")),
-                    description: "Maximum allowed time between two consecutive notifications. If not sent after this time, all listeners attached to a WaitSet will be notified.",
+                    description: "** Maximum allowed time between two consecutive notifications. If not sent after this time, all listeners attached to a WaitSet will be notified.",
                 },
                 CliEntry {
                     key: "defaults.event.notifier-created-event",
                     value_type: "Option<int>",
                     default: config.defaults.event.notifier_created_event.map_or("None".to_string(), |e| e.to_string()),
-                    description: "Event id emitted after a new notifier is created.",
+                    description: "** Event id emitted after a new notifier is created.",
                 },
                 CliEntry {
                     key: "defaults.event.notifier-dropped-event",
                     value_type: "Option<int>",
                     default: config.defaults.event.notifier_dropped_event.map_or("None".to_string(), |e| e.to_string()),
-                    description: "Event id emitted before a notifier is dropped.",
+                    description: "** Event id emitted before a notifier is dropped.",
                 },
                 CliEntry {
                     key: "defaults.event.notifier-dead-event",
                     value_type: "Option<int>",
                     default: config.defaults.event.notifier_dead_event.map_or("None".to_string(), |e| e.to_string()),
-                    description: "Event id emitted if a notifier is identified as dead.",
+                    description: "** Event id emitted if a notifier is identified as dead.",
                 },
             ],
         },
