@@ -390,20 +390,21 @@ suffixes in a custom configuration file. For more details visit the
 
 The support levels can be adjusted when required.
 
-| Operating System | State   | Current Support Level | Target Support Level |
-| ---------------- | :------ | :-------------------: | -------------------: |
-| Android          | planned |           -           |               tier 1 |
-| FreeBSD          | done    |        tier 2         |               tier 1 |
-| FreeRTOS         | planned |           -           |               tier 2 |
-| iOS              | planned |           -           |               tier 2 |
-| Linux (x86_64)   | done    |        tier 2         |               tier 1 |
-| Linux (aarch64)  | done    |        tier 2         |               tier 1 |
-| Linux (32-bit)   | done    |        tier 2         |               tier 1 |
-| Mac OS           | done    |        tier 2         |               tier 2 |
-| QNX              | planned |           -           |               tier 1 |
-| VxWorks          | planned |           -           |               tier 1 |
-| WatchOS          | planned |           -           |               tier 2 |
-| Windows          | done    |        tier 2         |               tier 2 |
+| Operating System | State       | Current Support Level | Target Support Level |
+| ---------------- | :------     | :-------------------: | -------------------: |
+| Android          | planned     |           -           |               tier 1 |
+| FreeBSD          | done        |        tier 2         |               tier 1 |
+| FreeRTOS         | planned     |           -           |               tier 2 |
+| ThreadX          | planned     |           -           |               tier 2 |
+| iOS              | planned     |           -           |               tier 2 |
+| Linux (x86_64)   | done        |        tier 2         |               tier 1 |
+| Linux (aarch64)  | done        |        tier 2         |               tier 1 |
+| Linux (32-bit)   | done        |        tier 2         |               tier 1 |
+| Mac OS           | done        |        tier 2         |               tier 2 |
+| QNX              | in-progress |        tier 3         |               tier 1 |
+| VxWorks          | planned     |           -           |               tier 1 |
+| WatchOS          | planned     |           -           |               tier 2 |
+| Windows          | done        |        tier 2         |               tier 2 |
 
 * **tier 1** - All safety and security features are working.
 * **tier 2** - Works with a restricted security and safety feature set.
