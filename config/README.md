@@ -104,8 +104,8 @@ payload data segment
 * `defaults.event.max-nodes` - [int]: Maximum number of nodes.
 * `defaults.event.event-id-max-value` - [int]: Greatest value an [`EventId`] can
   have.
-* `defaults.event.deadline` - [int]: Maximum allowed time between two
-  consecutive notifications. If not sent after this time, all listeners attached
+* `defaults.event.deadline` - [Option\<Duration\>]: Maximum allowed time between
+  two consecutive notifications. If not sent after this time, all listeners attached
   to a WaitSet will be notified.
 * `defaults.event.notifier-created-event` - [Option\<int\>]: If defined,
     it defines the event id that is emitted when a new notifier is created.
@@ -159,8 +159,8 @@ payload data segment
   overflows.
 * `defaults.request-response.max-active-requests-per-client` - [int]:
   The maximum of active requests a server can hold per client
-* `defaults.request-response.max-borrowed-responses-per-pending-response` -
-  [int]: The maximum number of borrowed responses a client can hold in
+* `defaults.request-response.max-borrowed-responses-per-pending-response` - [int]:
+  The maximum number of borrowed responses a client can hold in
   parallel per pending response.
 * `defaults.request-response.max-clients` - [int]:
   The maximum amount of supported clients.
