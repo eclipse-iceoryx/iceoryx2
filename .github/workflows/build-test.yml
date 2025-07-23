@@ -83,7 +83,7 @@ jobs:
         run: ./internal/scripts/ci_check_markdown_linting.sh
       
       - name: Check config key documentation
-        run: chmod +x ./internal/scripts/ci_check_description_vector_and_README.sh && ./internal/scripts/ci_check_description_vector_and_README.sh
+        run: ./internal/scripts/ci_check_description_vector_and_README.sh
 
   static-code-analysis-rust:
     needs: preflight-check

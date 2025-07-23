@@ -202,20 +202,24 @@ fn generate(config_dir: Path, filepath: FilePath) -> Result<()> {
 pub fn print_config_description() -> Result<()> {
     let sections = get_sections();
 
+    println!(
+        "\n{}",
+        "Note: Fields marked with \"**\" could have None as a default value but if \nthe configs have None value then the feature using these values are deactivated."
+    );
     for section in sections {
         println!("\n{}", format!("== {} ==", section.name).bright_green());
 
         for entry in section.entries {
             println!(
-                "{} [{}]",
+                "-> {} [{}]",
                 entry.key.bright_blue(),
                 entry.value_type.bright_red()
             );
             println!(
-                "{}",
+                "   {}",
                 format!("(Default value: {})", entry.default.bright_white()).bright_yellow()
             );
-            println!("{}", entry.description.italic());
+            println!("   {}", entry.description.italic());
         }
     }
 
