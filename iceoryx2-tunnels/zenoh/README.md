@@ -12,7 +12,7 @@ A tunnel utilizing the [`zenoh`](https://github.com/eclipse-zenoh/zenoh)
 network middleware to bridge communication between `iceoryx2` instances on
 different hosts.
 
-## Usage
+## Basic Usage
 
 1. Install the latest CLI:
     ```console
@@ -28,3 +28,18 @@ different hosts.
 1. Use `iceoryx2` as normal
     * The tunnel will periodically to discover services and propagate
       payloads between hosts
+
+## Advanced Configuration
+
+### Zenoh
+
+The tunnel uses the [default zenoh configuration](
+https://github.com/eclipse-zenoh/zenoh/blob/1.3.4/DEFAULT_CONFIG.json5) by
+default.
+
+If desired, a path to a custom configuration can be provided when launching
+the tunnel via the CLI:
+
+```console
+iox2 tunnel zenoh --zenoh-config path/to/custom/config
+```

@@ -41,24 +41,32 @@ pub struct Cli {
 
     #[clap(
         long,
-        help = "Periodically poll for discovery updates and samples at the provided rate (in milliseconds) [default]",
         value_name = "RATE",
         global = true,
-        conflicts_with = "reactive"
+        conflicts_with = "reactive",
+        help = "Periodically poll for discovery updates and samples at the provided rate (in milliseconds) [default]"
     )]
     pub poll: Option<u64>,
 
     #[clap(
         long,
-        help = "Reactively process discovery updates and samples",
         global = true,
-        conflicts_with = "poll"
+        conflicts_with = "poll",
+        help = "Reactively process discovery updates and samples"
     )]
     pub reactive: bool,
 }
 
 #[derive(Parser)]
-pub struct ZenohOptions {}
+pub struct ZenohOptions {
+    #[clap(
+        short,
+        long,
+        value_name = "PATH",
+        help = "Path to a Zenoh configuration file to use to configure the Zenoh session used by the tunnel"
+    )]
+    pub zenoh_config: Option<String>,
+}
 
 #[derive(Subcommand)]
 pub enum Transport {

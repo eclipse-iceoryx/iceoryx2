@@ -23,13 +23,11 @@ mod supported_platform {
 
     #[cfg(not(debug_assertions))]
     use human_panic::setup_panic;
-    use iceoryx2_bb_log::warn;
     #[cfg(debug_assertions)]
     extern crate better_panic;
 
     use super::cli;
 
-    use anyhow::Result;
     use clap::Parser;
     use cli::Cli;
     use cli::Transport;
@@ -38,13 +36,14 @@ mod supported_platform {
 
     use iceoryx2_bb_log::info;
     use iceoryx2_bb_log::set_log_level_from_env_or;
+    use iceoryx2_bb_log::warn;
     use iceoryx2_bb_log::LogLevel;
 
     use iceoryx2_tunnels_zenoh::Scope;
     use iceoryx2_tunnels_zenoh::Tunnel;
     use iceoryx2_tunnels_zenoh::TunnelConfig;
 
-    pub fn main() -> Result<()> {
+    pub fn main() -> anyhow::Result<()> {
         #[cfg(not(debug_assertions))]
         {
             setup_panic!();
@@ -72,12 +71,19 @@ mod supported_platform {
 
         if let Some(transport) = cli.transport {
             match transport {
-                Transport::Zenoh(_zenoh_options) => {
+                Transport::Zenoh(zenoh_options) => {
                     let tunnel_config = TunnelConfig {
                         discovery_service: cli.discovery_service,
                     };
+
                     let iox_config = iceoryx2::config::Config::default();
-                    let zenoh_config = zenoh::Config::default();
+
+                    let zenoh_config = match zenoh_options.zenoh_config {
+                        Some(path) => zenoh::Config::from_file(&path).map_err(|e| {
+                            anyhow::anyhow!("failed to read zenoh config file '{path}': {e}")
+                        })?,
+                        None => zenoh::Config::default(),
+                    };
 
                     let mut tunnel =
                         Tunnel::<ipc::Service>::create(&tunnel_config, &iox_config, &zenoh_config)?;
