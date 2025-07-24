@@ -177,6 +177,7 @@ pub unsafe fn shm_open(name: *const c_char, oflag: int, mode: mode_t) -> int {
 
         if shm_handle == 0 {
             Errno::set(Errno::ENOENT);
+            shm_unlink(name);
             win32call! {CloseHandle(shm_state_handle)};
             return -1;
         }
