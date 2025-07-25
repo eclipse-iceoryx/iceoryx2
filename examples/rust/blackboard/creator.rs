@@ -29,6 +29,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .add_with_default::<f32>(9)
         .create()?;
 
+    println!("Blackboard created.\n");
+
     let writer = service.writer_builder().create()?;
 
     let writer_handle_0 = writer.entry::<u64>(&0)?;
