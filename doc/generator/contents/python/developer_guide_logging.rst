@@ -1,6 +1,8 @@
 Logging
 -------
 
+.. toctree::
+
 In this section, the log mechanisms of iceoryx2 are described in detail. We
 begin by analyzing the structure of log messages and how they can be utilized
 when debugging a process. Next, we describe the error-handling strategy, how to
@@ -289,7 +291,7 @@ The following code snippet demonstrates how to implement a simple `println!` log
 
     impl Log for PrintLogger {
         fn log(&self, log_level: LogLevel, origin: core::fmt::Arguments, message: core::fmt::Arguments ) {
-            eprintln!("log level: {:?}, origin: {}, message: {}",
+            println!("log level: {:?}, origin: {}, message: {}",
                     log_level, origin.to_string(), message.to_string());
         }
     }
@@ -298,7 +300,7 @@ The following code snippet demonstrates how to implement a simple `println!` log
 
     fn main() {
         if !set_logger(&*LOGGER) {
-            eprintln!("Failed to set logger");
+            println!("Failed to set logger");
         }
     }
 

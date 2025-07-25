@@ -1,5 +1,7 @@
 Event
-=====
+-----
+
+.. toctree::
 
 This minimal example showcases how push-notifications can be realized by using services
 with event messaging pattern between two processes. The listener hereby waits for a
@@ -23,7 +25,7 @@ You can execute it by opening two terminals and calling:
 
 
 Listener
---------
+^^^^^^^^
 
 .. code-block:: C++
 
@@ -60,7 +62,7 @@ Listener
    }
 
 Notifier
---------
+^^^^^^^^
 
 .. code-block:: C++
 

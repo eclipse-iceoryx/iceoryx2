@@ -32,64 +32,113 @@ template <typename RequestPayload,
           typename ResponseUserHeader,
           ServiceType S>
 class ServiceBuilderRequestResponse {
+  public:
     /// If the [`Service`] is created, it defines the request [`Alignment`] of the payload for the
     /// service. If an existing [`Service`] is opened it requires the service to have at least the
     /// defined [`Alignment`]. If the Payload [`Alignment`] is greater than the provided
     /// [`Alignment`] then the Payload [`Alignment`] is used.
+#ifdef DOXYGEN_MACRO_FIX
+    auto request_payload_alignment(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, request_payload_alignment);
+#endif
 
     /// If the [`Service`] is created, it defines the response [`Alignment`] of the payload for the
     /// service. If an existing [`Service`] is opened it requires the service to have at least the
     /// defined [`Alignment`]. If the Payload [`Alignment`] is greater than the provided
     /// [`Alignment`] then the Payload [`Alignment`] is used.
+#ifdef DOXYGEN_MACRO_FIX
+    auto response_payload_alignment(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, response_payload_alignment);
+#endif
 
     /// If the [`Service`] is created, defines the overflow behavior of the service for requests.
     /// If an existing [`Service`] is opened it requires the service to have the defined overflow
     /// behavior.
+#ifdef DOXYGEN_MACRO_FIX
+    auto enable_safe_overflow_for_requests(const bool value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_requests);
+#endif
 
     /// If the [`Service`] is created, defines the overflow behavior of the service for responses.
     /// If an existing [`Service`] is opened it requires the service to have the defined overflow
     /// behavior.
+#ifdef DOXYGEN_MACRO_FIX
+    auto enable_safe_overflow_for_responses(const bool value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow_for_responses);
+#endif
 
     /// Defines how many active requests a [`Server`] can hold in
     /// parallel per [`Client`]. The objects are used to send answers to a request that was
     /// received earlier from a [`Client`]
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_active_requests_per_client(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_active_requests_per_client);
+#endif
 
     /// If the [`Service`] is created it defines how many responses fit in the
     /// [`Clients`]s buffer. If an existing
     /// [`Service`] is opened it defines the minimum required.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_response_buffer_size(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_response_buffer_size);
+#endif
 
     /// If the [`Service`] is created it defines how many [`Server`]s shall
     /// be supported at most. If an existing [`Service`] is opened it defines how many
     /// [`Server`]s must be at least supported.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_servers(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_servers);
+#endif
 
     /// If the [`Service`] is created it defines how many [`Client`]s shall
     /// be supported at most. If an existing [`Service`] is opened it defines how many
     /// [`Client`]s must be at least supported.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_clients(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_clients);
+#endif
 
     /// If the [`Service`] is created it defines how many [`Node`]s shall
     /// be able to open it in parallel. If an existing [`Service`] is opened it defines how many
     /// [`Node`]s must be at least supported.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_nodes(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+#endif
 
     /// If the [`Service`] is created it defines how many [`Response`]s shall
     /// be able to be borrowed in parallel per [`PendingResponse`]. If an
     /// existing [`Service`] is opened it defines how many borrows must be at least supported.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_borrowed_responses_per_pending_response(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_borrowed_responses_per_pending_response);
+#endif
 
     /// If the [`Service`] is created it defines how many [`RequestMut`] a
     /// [`Client`] can loan in parallel.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_loaned_requests(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_requests);
+#endif
 
     /// If the [`Service`] is created, defines the fire-and-forget behavior of the service for requests.
+#ifdef DOXYGEN_MACRO_FIX
+    auto enable_fire_and_forget_requests(const bool value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(bool, enable_fire_and_forget_requests);
+#endif
 
   public:
     /// Sets the request user header type of the [`Service`].

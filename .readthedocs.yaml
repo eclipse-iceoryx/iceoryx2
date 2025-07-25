@@ -39,12 +39,16 @@ build:
   jobs:
     pre_build:
       - "cargo build -p iceoryx2-ffi"
+      - "cargo install maturin"
+      - "python -m venv .env"
+      - "source .env/bin/activate.fish"
+      - "maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml"
       - "mkdir -p target/ffi/build/_deps/"
       - "git clone https://github.com/eclipse-iceoryx/iceoryx target/ffi/build/_deps/iceoryx-src"
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
-  configuration: internal/cpp_doc_generator/conf.py
+  configuration: doc/generator/conf.py
 
 # Optionally build your docs in additional formats such as PDF and ePub
 # formats:

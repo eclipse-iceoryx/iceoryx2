@@ -28,12 +28,21 @@ namespace iox2 {
 /// [`MessagingPattern::PublishSubscribe`] based communication.
 template <ServiceType S, typename Payload, typename UserHeader>
 class PortFactoryPublisher {
+  public:
     /// Sets the [`UnableToDeliverStrategy`].
+#ifdef DOXYGEN_MACRO_FIX
+    auto unable_to_deliver_strategy(const UnableToDeliverStrategy value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(UnableToDeliverStrategy, unable_to_deliver_strategy);
+#endif
 
     /// Defines how many [`SampleMut`] the [`Publisher`] can loan with
     /// [`Publisher::loan()`] or [`Publisher::loan_uninit()`] in parallel.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_loaned_samples(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_loaned_samples);
+#endif
 
   public:
     PortFactoryPublisher(const PortFactoryPublisher&) = delete;

@@ -29,44 +29,77 @@ namespace iox2 {
 /// Builder to create new [`MessagingPattern::PublishSubscribe`] based [`Service`]s
 template <typename Payload, typename UserHeader, ServiceType S>
 class ServiceBuilderPublishSubscribe {
+  public:
     /// If the [`Service`] is created, it defines the [`Alignment`] of the payload for the service. If
     /// an existing [`Service`] is opened it requires the service to have at least the defined
     /// [`Alignment`]. If the Payload [`Alignment`] is greater than the provided [`Alignment`]
     /// then the Payload [`Alignment`] is used.
+#ifdef DOXYGEN_MACRO_FIX
+    auto payload_alignment(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, payload_alignment);
+#endif
 
     /// If the [`Service`] is created, defines the overflow behavior of the service. If an existing
     /// [`Service`] is opened it requires the service to have the defined overflow behavior.
+#ifdef DOXYGEN_MACRO_FIX
+    auto enable_safe_overflow(const bool value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(bool, enable_safe_overflow);
+#endif
 
     /// If the [`Service`] is created it defines how many [`Sample`]s a
     /// [`Subscriber`] can borrow at most in parallel. If an existing
     /// [`Service`] is opened it defines the minimum required.
+#ifdef DOXYGEN_MACRO_FIX
+    auto subscriber_max_borrowed_samples(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_borrowed_samples);
+#endif
 
     /// If the [`Service`] is created it defines the maximum history size a
     /// [`Subscriber`] can request on connection. If an existing
     /// [`Service`] is opened it defines the minimum required.
+#ifdef DOXYGEN_MACRO_FIX
+    auto history_size(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, history_size);
+#endif
 
     /// If the [`Service`] is created it defines how many [`Sample`] a `Subscriber` can store in
     /// its internal buffer. If an existing [`Service`] is opened it defines the minimum required.
+#ifdef DOXYGEN_MACRO_FIX
+    auto subscriber_max_buffer_size(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, subscriber_max_buffer_size);
+#endif
 
     /// If the [`Service`] is created it defines how many [`Subscriber`] shall be supported at
     /// most. If an existing [`Service`] is opened it defines how many [`Subscriber`] must be at
     /// least supported.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_subscribers(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_subscribers);
+#endif
 
     /// If the [`Service`] is created it defines how many [`Publisher`] shall be supported at
     /// most. If an existing [`Service`] is opened it defines how many [`Publisher`] must be at
     /// least supported.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_publishers(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_publishers);
+#endif
 
     /// If the [`Service`] is created it defines how many [`Node`]s shall be able to open it in
     /// parallel. If an existing [`Service`] is opened it defines how many [`Node`]s must be at
     /// least supported.
+#ifdef DOXYGEN_MACRO_FIX
+    auto max_nodes(const uint64_t value) -> decltype(auto);
+#else
     IOX_BUILDER_OPTIONAL(uint64_t, max_nodes);
+#endif
 
   public:
     /// Sets the user header type of the [`Service`].
