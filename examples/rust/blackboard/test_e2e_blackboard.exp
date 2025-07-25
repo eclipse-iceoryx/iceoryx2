@@ -23,14 +23,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 set timeout 10
 
 spawn cargo run --example blackboard_creator
+set id_creator $spawn_id
 
 spawn cargo run --example blackboard_opener
 
 #### Test Assertion
 
-expect_output "read values:"
-expect_output "key: 0, value: 4"
-expect_output "key: 5, value: Funky 4"
-expect_output "key: 9, value: 30.8"
+expect_output_from $id_creator "Write new value for key 0: 3"
+expect_output "key: 0, value: 3"
 
 show_test_passed

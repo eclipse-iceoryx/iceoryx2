@@ -29,6 +29,7 @@ spawn cargo run --example blackboard_event_based_opener
 
 #### Test Assertion
 
-expect_output_from $id_creator "read: 3"
+expect_output_from $id_creator "Trigger event with entry id*"
+expect_output "read: 3 for entry id*"
 
 show_test_passed
