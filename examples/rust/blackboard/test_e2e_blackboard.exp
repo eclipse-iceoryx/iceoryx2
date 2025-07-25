@@ -24,12 +24,14 @@ set timeout 10
 
 spawn cargo run --example blackboard_creator
 set id_creator $spawn_id
+# wait until ready
+expect_output "Blackboard created."
 
 spawn cargo run --example blackboard_opener
 
 #### Test Assertion
 
-expect_output_from $id_creator "Write new value for key 0: 3"
-expect_output "key: 0, value: 3"
+expect_output_from $id_creator "Write new value for key 0: 4"
+expect_output "key: 0, value: 4"
 
 show_test_passed

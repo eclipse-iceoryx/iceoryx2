@@ -28,6 +28,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .add_with_default::<u64>(INTERESTING_KEY)
         .create()?;
 
+    println!("Blackboard created.\n");
+
     let event_service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .event()
