@@ -645,6 +645,8 @@ mod node_death_tests {
         assert_that!(reader, is_ok);
     }
 
+    // test disabled on Windows as the state files cannot be removed after simulated node death
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn blackboard_resources_are_removed_when_key_has_user_defined_name<S: Test>() {
         let service_name = generate_service_name();
@@ -695,6 +697,8 @@ mod node_death_tests {
         assert_that!(service, is_ok);
     }
 
+    // test disabled on Windows as the state files cannot be removed after simulated node death
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {
         let service_name = generate_service_name();
