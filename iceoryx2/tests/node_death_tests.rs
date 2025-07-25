@@ -476,6 +476,50 @@ mod node_death_tests {
     }
 
     #[test]
+    fn opened_blackboard_can_be_accessed_after_creator_node_crash<S: Test>() {
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        let service_name = generate_service_name();
+
+        let mut bad_node = S::create_test_node(&config).node;
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<u64>(0)
+            .create()
+            .unwrap();
+        let writer = bad_service.writer_builder().create().unwrap();
+
+        let good_node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+        let good_service = good_node
+            .service_builder(&service_name)
+            .blackboard_opener::<u64>()
+            .open()
+            .unwrap();
+        let reader = good_service.reader_builder().create().unwrap();
+
+        S::staged_death(&mut bad_node);
+        core::mem::forget(writer);
+        core::mem::forget(bad_service);
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        assert_that!(good_service.dynamic_config().number_of_readers(), eq 1);
+        assert_that!(good_service.dynamic_config().number_of_writers(), eq 0);
+        assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 0);
+
+        let writer = good_service.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u64>(&0).unwrap();
+        writer_handle.update_with_copy(1);
+
+        assert_that!(good_service.dynamic_config().number_of_readers(), eq 1);
+        assert_that!(good_service.dynamic_config().number_of_writers(), eq 1);
+        assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 1);
+    }
+
+    #[test]
     fn event_service_is_removed_when_last_node_dies<S: Test>() {
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
