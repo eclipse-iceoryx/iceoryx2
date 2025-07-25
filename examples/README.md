@@ -30,8 +30,8 @@ patterns, including:
   to a server, which responds with the requested data or action, making it
   suitable for interactive, transactional communication.
 
-* **Blackboard:** This pattern realizes a key-value store in shared memory which
-  can be modified by one writer and several readers.
+* **Blackboard (in progress):** This pattern realizes a key-value store in
+  shared memory which can be modified by one writer and several readers.
 
 * **Pipeline:** (planned) Borrowed from the Unix command line, this pattern
   involves a data source that produces data and transfers ownership to a sink,

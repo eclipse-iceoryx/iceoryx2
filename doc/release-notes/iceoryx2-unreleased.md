@@ -23,8 +23,6 @@
   [#777](https://github.com/eclipse-iceoryx/iceoryx2/issues/777)
 * `iox2 service listen` and `iox2 service notify`
   [#790](https://github.com/eclipse-iceoryx/iceoryx2/issues/790)
-* Blackboard messaging pattern
-  [#817](https://github.com/eclipse-iceoryx/iceoryx2/issues/817)
 * Use minimal iceoryx_hoofs subset for iceoryx2 C++ bindings
   [#824](https://github.com/eclipse-iceoryx/iceoryx2/issues/824)
 * PubSub ports implement `Send` + `Sync`, samples implement `Send` when using

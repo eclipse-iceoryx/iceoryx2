@@ -26,7 +26,7 @@
 //! - Publish-Subscribe
 //! - Events
 //! - Request-Response
-//! - Blackboard
+//! - Blackboard (planned)
 //! - Pipeline (planned)
 //!
 //! For a comprehensive list of all planned features, please refer to the

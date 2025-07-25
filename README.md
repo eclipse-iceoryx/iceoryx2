@@ -25,7 +25,6 @@
     * [Publish Subscribe](#publish-subscribe)
     * [Request Response](#request-response)
     * [Events](#events)
-    * [Blackboard](#blackboard)
     * [Custom Configuration](#custom-configuration)
     * [FAQ](#faq)
 * [Supported Platforms](#supported-platforms)
@@ -43,7 +42,7 @@ So if you want to communicate efficiently between multiple processes or
 applications iceoryx2 is for you. With iceoryx2, you can:
 
 * Send huge amounts of data using a publish/subscribe, request/response,
-  blackboard pattern or pipeline (planned), making it ideal
+  pipeline (planned) or blackboard pattern (planned), making it ideal
   for scenarios where large datasets need to be shared.
 * Exchange signals through events, enabling quick and reliable signaling between
   processes.
@@ -53,8 +52,8 @@ seamless inter-process communication (IPC).
 
 It is all about providing a seamless experience for inter-process communication,
 featuring versatile messaging patterns. Whether you're diving into
-publish-subscribe, events, request-response, blackboard, or the promise of
-upcoming features like pipelines, iceoryx2 has you covered.
+publish-subscribe, events, request-response, or the promise of upcoming features
+like pipelines, and blackboard, iceoryx2 has you covered.
 
 One of the features of iceoryx2 is its consistently low transmission latency
 regardless of payload size, ensuring a predictable and reliable communication
@@ -374,85 +373,6 @@ cargo run --example event_notifier
 
 ```sh
 cargo run --example event_listener
-```
-
-### Blackboard
-
-This minimal example showcases a writer updating a value stored in a blackboard
-every second while a reader efficiently reads the value.
-
-#### creator.rs
-
-```rust
-use core::time::Duration;
-use iceoryx2::prelude::*;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .blackboard_creator::<u32>()
-        .add_with_default::<u64>(0)
-        .create()?;
-
-    let writer = service.writer_builder().create()?;
-    let writer_handle = writer.entry::<u64>(&0)?;
-
-    let mut counter = 0;
-    while node.wait(CYCLE_TIME).is_ok() {
-        counter += 1;
-
-        writer_handle.update_with_copy(counter);
-        println!("Write new value for key 0: {counter}");
-    }
-
-    Ok(())
-}
-```
-
-#### opener.rs
-
-```rust
-use core::time::Duration;
-use iceoryx2::prelude::*;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .blackboard_opener::<u32>()
-        .open()?;
-
-    let reader = service.reader_builder().create()?;
-    let reader_handle = reader.entry::<u64>(&0)?;
-
-    while node.wait(CYCLE_TIME).is_ok() {
-        println!("key: 0, value: {}", reader_handle.get());
-    }
-
-    Ok(())
-```
-
-This example is a simplified version of the
-[blackboard example](examples/rust/blackboard). You can execute it by opening
-two terminals and calling:
-
-**Terminal 1:**
-
-```sh
-cargo run --example blackboard_creator
-```
-
-**Terminal 2:**
-
-```sh
-cargo run --example blackboard_opener
 ```
 
 ### Custom Configuration
