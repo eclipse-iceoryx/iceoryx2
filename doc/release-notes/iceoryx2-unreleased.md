@@ -31,6 +31,8 @@
 * ReqRes & events implement `Send` + `Sync` in
   `**_threadsafe` service variant
   [#838](https://github.com/eclipse-iceoryx/iceoryx2/issues/838)
+* Send/receive samples with `iox2` + simple record & replay
+  [#884](https://github.com/eclipse-iceoryx/iceoryx2/issues/884)
 
 ### Bugfixes
 

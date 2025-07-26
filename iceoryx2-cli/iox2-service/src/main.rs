@@ -16,6 +16,8 @@ use human_panic::setup_panic;
 extern crate better_panic;
 
 mod cli;
+mod command_publish;
+mod command_subscribe;
 mod commands;
 mod filter;
 
@@ -64,6 +66,16 @@ fn main() -> Result<()> {
             Action::Details(options) => {
                 if let Err(e) = commands::details(options.service, options.filter, cli.format) {
                     error!("failed to retrieve service details: {}", e);
+                }
+            }
+            Action::Publish(options) => {
+                if let Err(e) = command_publish::publish(options, cli.format) {
+                    error!("failed to publish messages: {}", e);
+                }
+            }
+            Action::Subscribe(options) => {
+                if let Err(e) = command_subscribe::subscribe(options, cli.format) {
+                    error!("failed to subscribe and receive messages: {}", e);
                 }
             }
             Action::Discovery(options) => {
