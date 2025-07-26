@@ -34,6 +34,7 @@ use crate::port::reader::{Reader, ReaderCreateError};
 use crate::service;
 use core::fmt::Debug;
 use core::hash::Hash;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 
 /// Factory to create a new [`Reader`] port/endpoint for
@@ -43,7 +44,7 @@ use iceoryx2_bb_log::fail;
 pub struct PortFactoryReader<
     'factory,
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<Service, KeyType>,
 }
@@ -51,7 +52,7 @@ pub struct PortFactoryReader<
 impl<
         'factory,
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
     > PortFactoryReader<'factory, Service, KeyType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {

@@ -17,10 +17,12 @@ use crate::{
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::{file_name::*, file_path::FilePath, path::Path};
 
-pub(crate) trait DynamicStorageConfiguration<T>: NamedConceptConfiguration {
+pub(crate) trait DynamicStorageConfiguration: NamedConceptConfiguration {
+    fn type_name(&self) -> &str;
+
     fn path_for_with_type(&self, value: &FileName) -> FilePath {
         let mut path = self.get_path_hint().clone();
-        let type_hash = Sha1::new(core::any::type_name::<T>().as_bytes()).value();
+        let type_hash = Sha1::new(self.type_name().as_bytes()).value();
 
         fatal_panic!(from self, when path.add_path_entry(&self.get_prefix().into()),
                     "The path \"{}\" in combination with the prefix \"{}\" exceed the maximum supported path length of {} of the operating system.",
@@ -51,7 +53,7 @@ pub(crate) trait DynamicStorageConfiguration<T>: NamedConceptConfiguration {
             return None;
         }
 
-        let type_hash = Sha1::new(core::any::type_name::<T>().as_bytes()).value();
+        let type_hash = Sha1::new(self.type_name().as_bytes()).value();
 
         if !fatal_panic!(from self, when file.strip_prefix(type_hash.as_base64url().as_bytes()),
                     "Stripping the type hash \"{:?}\" from the file name \"{}\" leads to invalid content.",

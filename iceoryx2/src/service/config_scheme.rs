@@ -12,6 +12,7 @@
 
 use crate::{config, node::NodeId};
 use core::fmt::Debug;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_cal::named_concept::{NamedConceptConfiguration, NamedConceptMgmt};
 
@@ -118,7 +119,7 @@ pub(crate) fn service_tag_config<Service: crate::service::Service>(
 
 pub(crate) fn blackboard_mgmt_config<
     Service: crate::service::Service,
-    T: Send + Sync + Debug + 'static,
+    T: ZeroCopySend + Send + Sync + Debug + 'static,
 >(
     global_config: &config::Config,
 ) -> <Service::BlackboardMgmt<T> as NamedConceptMgmt>::Configuration {

@@ -96,4 +96,6 @@ pub enum UniquePortId {
     Server(UniqueServerId),
     /// The system-wide unique id of a [`Reader`](crate::port::reader::Reader).
     Reader(UniqueReaderId),
+    /// The system-wide unique id of a [`Writer`](crate::port::writer::Writer).
+    Writer(UniqueWriterId),
 }

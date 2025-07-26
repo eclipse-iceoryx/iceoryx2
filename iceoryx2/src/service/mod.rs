@@ -641,9 +641,8 @@ pub(crate) mod internal {
                             return PortCleanupAction::SkipPort;
                         }
                     }
-                    UniquePortId::Reader(ref _id) => {
-                        todo!()
-                    }
+                    UniquePortId::Reader(ref _id) => {}
+                    UniquePortId::Writer(ref _id) => {}
                 };
 
                 trace!(from origin, "Remove port {:?} from service.", port_id);
@@ -663,6 +662,82 @@ pub(crate) mod internal {
             };
 
             if remove_service {
+                // check if service was a blackboard service to remove its additional resources
+                let blackboard_name =
+                    crate::service::naming_scheme::blackboard_name(service_id.as_str());
+                let blackboard_payload_config =
+                    crate::service::config_scheme::blackboard_data_config::<S>(config);
+                let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::list_cfg(
+                    &blackboard_payload_config,
+                );
+                if blackboard_payload.is_ok() && !blackboard_payload.unwrap().is_empty() {
+                    match unsafe {
+                        <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
+                            &blackboard_name,
+                            &blackboard_payload_config,
+                        )
+                    } {
+                        Ok(true) => {
+                            trace!(from origin, "Remove blackboard payload segment.");
+                        }
+                        _ => {
+                            fail!(from origin,
+                                  with ServiceRemoveNodeError::ServiceInCorruptedState,
+                                  "{} since the blackboard payload segment cannot be removed - service seems to be in a corrupted state.", msg);
+                        }
+                    }
+
+                    let details = match details::<S>(config, &service_id.0.clone().into()) {
+                        Ok(Some(d)) => d,
+                        _ => {
+                            fail!(from origin,
+                                  with ServiceRemoveNodeError::ServiceInCorruptedState,
+                                  "{} due to a failure while acquiring the service details.", msg);
+                        }
+                    };
+                    let blackboard_mgmt_name = match details
+                        .static_details
+                        .blackboard()
+                        .type_details
+                        .type_name
+                        .as_str()
+                    {
+                        Ok(s) => s,
+                        Err(_) => {
+                            fail!(from origin,
+                                      with ServiceRemoveNodeError::InternalError,
+                                      "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
+                        }
+                    };
+                    // u64 is just a placeholder needed for the DynamicStorageConfiguration; it is
+                    // overwritten right below
+                    let mut blackboard_mgmt_config =
+                        crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
+                    // Safe since the same type name is set when creating the BlackboardMgmt in
+                    // Creator::create_impl so we can safely remove the concept.
+                    unsafe {
+                        <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(
+                            &mut blackboard_mgmt_config,
+                            blackboard_mgmt_name
+                        )
+                    };
+                    match unsafe {
+                        <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
+                            &blackboard_name,
+                            &blackboard_mgmt_config,
+                        )
+                    } {
+                        Ok(true) => {
+                            trace!(from origin, "Remove blackboard mgmt segment.");
+                        }
+                        _ => {
+                            fail!(from origin,
+                                  with ServiceRemoveNodeError::ServiceInCorruptedState,
+                                  "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
+                        }
+                    }
+                }
+
                 match unsafe {
                     remove_static_service_config::<S>(config, &service_id.0.clone().into())
                 } {
@@ -745,7 +820,7 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     type ArcThreadSafetyPolicy<T: Send + Debug>: ArcSyncPolicy<T>;
 
     /// Defines the construct used to store the management data of the blackboard service.
-    type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static>: DynamicStorage<KeyType>;
+    type BlackboardMgmt<T: Send + Sync + Debug + 'static>: DynamicStorage<T>;
 
     /// Defines the construct used to store the payload data of the blackboard service.
     type BlackboardPayload: SharedMemory<BumpAllocator>;
@@ -869,7 +944,7 @@ fn details<S: Service>(
     config: &config::Config,
     uuid: &FileName,
 ) -> Result<Option<ServiceDetails<S>>, ServiceDetailsError> {
-    let msg = "Unable to acquire servic details";
+    let msg = "Unable to acquire service details";
     let origin = "Service::details()";
     let static_storage_config = config_scheme::static_config_storage_config::<S>(config);
 

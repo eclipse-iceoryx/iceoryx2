@@ -34,6 +34,7 @@ use crate::port::writer::{Writer, WriterCreateError};
 use crate::service;
 use core::fmt::Debug;
 use core::hash::Hash;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 
 /// Factory to create a new [`Writer`] port/endpoint for
@@ -43,7 +44,7 @@ use iceoryx2_bb_log::fail;
 pub struct PortFactoryWriter<
     'factory,
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     pub(crate) factory: &'factory PortFactory<Service, KeyType>,
 }
@@ -51,7 +52,7 @@ pub struct PortFactoryWriter<
 impl<
         'factory,
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
     > PortFactoryWriter<'factory, Service, KeyType>
 {
     pub(crate) fn new(factory: &'factory PortFactory<Service, KeyType>) -> Self {

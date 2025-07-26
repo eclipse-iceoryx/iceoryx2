@@ -58,14 +58,16 @@ use super::port_identifiers::UniqueReaderId;
 #[derive(Debug)]
 struct ReaderSharedState<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     dynamic_reader_handle: Option<ContainerHandle>,
     service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
-impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash> Drop
-    for ReaderSharedState<Service, KeyType>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    > Drop for ReaderSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
         if let Some(handle) = self.dynamic_reader_handle {
@@ -101,14 +103,16 @@ impl core::error::Error for ReaderCreateError {}
 #[derive(Debug)]
 pub struct Reader<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
     shared_state: Arc<ReaderSharedState<Service, KeyType>>,
     reader_id: UniqueReaderId,
 }
 
-impl<Service: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash>
-    Reader<Service, KeyType>
+impl<
+        Service: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
+    > Reader<Service, KeyType>
 {
     pub(crate) fn new(
         service: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
@@ -244,7 +248,7 @@ impl core::error::Error for ReaderHandleError {}
 /// A handle for direct read access to a specific blackboard value.
 pub struct ReaderHandle<
     Service: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
     ValueType: Copy,
 > {
     atomic: *const UnrestrictedAtomic<ValueType>,
@@ -257,14 +261,14 @@ pub struct ReaderHandle<
 // fields are dropped in the same order as declared)
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
         ValueType: Copy + 'static,
     > Send for ReaderHandle<Service, KeyType, ValueType>
 {
 }
 unsafe impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
         ValueType: Copy + 'static,
     > Sync for ReaderHandle<Service, KeyType, ValueType>
 {
@@ -272,7 +276,7 @@ unsafe impl<
 
 impl<
         Service: service::Service,
-        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
         ValueType: Copy,
     > ReaderHandle<Service, KeyType, ValueType>
 {
