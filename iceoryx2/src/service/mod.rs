@@ -562,6 +562,64 @@ pub(crate) mod internal {
         Ok(())
     }
 
+    fn remove_additional_blackboard_resources<S: Service>(
+        config: &config::Config,
+        blackboard_name: &FileName,
+        blackboard_payload_config: &<S::BlackboardPayload as NamedConceptMgmt>::Configuration,
+        blackboard_mgmt_name: &FixedSizeByteString<MAX_TYPE_NAME_LENGTH>,
+        origin: &str,
+        msg: &str,
+    ) {
+        match unsafe {
+            <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
+                blackboard_name,
+                blackboard_payload_config,
+            )
+        } {
+            Ok(true) => {
+                trace!(from origin, "Remove blackboard payload segment.");
+            }
+            _ => {
+                error!(from origin,
+                                  "{} since the blackboard payload segment cannot be removed - service seems to be in a corrupted state.", msg);
+            }
+        }
+
+        match blackboard_mgmt_name.as_str() {
+            Ok(s) => {
+                // u64 is just a placeholder needed for the DynamicStorageConfiguration; it is
+                // overwritten right below
+                let mut blackboard_mgmt_config =
+                    crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
+                // Safe since the same type name is set when creating the BlackboardMgmt in
+                // Creator::create_impl so we can safely remove the concept.
+                unsafe {
+                    <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(
+                                            &mut blackboard_mgmt_config,
+                                    s
+                                        )
+                };
+                match unsafe {
+                    <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
+                        blackboard_name,
+                        &blackboard_mgmt_config,
+                    )
+                } {
+                    Ok(true) => {
+                        trace!(from origin, "Remove blackboard mgmt segment.");
+                    }
+                    _ => {
+                        error!(from origin,
+                                            "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
+                    }
+                }
+            }
+            Err(_) => {
+                error!(from origin, "{} since the blackboard mgmt segment name cannot be acquired.", msg);
+            }
+        }
+    }
+
     pub(crate) trait ServiceInternal<S: Service> {
         fn __internal_remove_node_from_service(
             node_id: &NodeId,
@@ -670,12 +728,13 @@ pub(crate) mod internal {
                     crate::service::naming_scheme::blackboard_name(service_id.as_str());
                 let blackboard_payload_config =
                     crate::service::config_scheme::blackboard_data_config::<S>(config);
-                let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::list_cfg(
+                let blackboard_payload = <S::BlackboardPayload as NamedConceptMgmt>::does_exist_cfg(
+                    &blackboard_name,
                     &blackboard_payload_config,
                 );
                 let mut is_blackboard = false;
                 let mut blackboard_mgmt_name = FixedSizeByteString::<MAX_TYPE_NAME_LENGTH>::new();
-                if blackboard_payload.is_ok() && !blackboard_payload.unwrap().is_empty() {
+                if let Ok(true) = blackboard_payload {
                     is_blackboard = true;
 
                     let details = match details::<S>(config, &service_id.0.clone().into()) {
@@ -701,57 +760,14 @@ pub(crate) mod internal {
 
                         // remove additional blackboard resources
                         if is_blackboard {
-                            match unsafe {
-                                <S::BlackboardPayload as NamedConceptMgmt>::remove_cfg(
-                                    &blackboard_name,
-                                    &blackboard_payload_config,
-                                )
-                            } {
-                                Ok(true) => {
-                                    trace!(from origin, "Remove blackboard payload segment.");
-                                }
-                                _ => {
-                                    error!(from origin,
-                                  "{} since the blackboard payload segment cannot be removed - service seems to be in a corrupted state.", msg);
-                                }
-                            }
-
-                            match blackboard_mgmt_name.as_str() {
-                                Ok(s) => {
-                                    // u64 is just a placeholder needed for the DynamicStorageConfiguration; it is
-                                    // overwritten right below
-                                    let mut blackboard_mgmt_config =
-                                        crate::service::config_scheme::blackboard_mgmt_config::<
-                                            S,
-                                            u64,
-                                        >(config);
-                                    // Safe since the same type name is set when creating the BlackboardMgmt in
-                                    // Creator::create_impl so we can safely remove the concept.
-                                    unsafe {
-                                        <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(
-                                            &mut blackboard_mgmt_config,
-                                    s
-                                        )
-                                    };
-                                    match unsafe {
-                                        <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
-                                            &blackboard_name,
-                                            &blackboard_mgmt_config,
-                                        )
-                                    } {
-                                        Ok(true) => {
-                                            trace!(from origin, "Remove blackboard mgmt segment.");
-                                        }
-                                        _ => {
-                                            error!(from origin,
-                                            "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
-                                        }
-                                    }
-                                }
-                                Err(_) => {
-                                    error!(from origin, "{} since the blackboard mgmt segment name cannot be acquired.", msg);
-                                }
-                            }
+                            remove_additional_blackboard_resources::<S>(
+                                config,
+                                &blackboard_name,
+                                &blackboard_payload_config,
+                                &blackboard_mgmt_name,
+                                &origin,
+                                msg,
+                            );
                         }
 
                         dynamic_config.acquire_ownership()
