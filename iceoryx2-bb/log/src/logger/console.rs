@@ -105,10 +105,10 @@ impl Logger {
 
     fn print(separator: &str, color: &str, output: &str) {
         if std::io::stderr().is_terminal() {
-            std::print!("{color}");
+            std::eprint!("{color}");
         }
 
-        std::print!("{separator}{output}");
+        std::eprint!("{separator}{output}");
 
         if std::io::stderr().is_terminal() {
             std::eprintln!("\x1b[0m");
@@ -122,7 +122,7 @@ impl Logger {
     }
 
     fn print_origin(log_level: crate::LogLevel, origin: &str) {
-        print!("{} ", Logger::log_level_string(log_level));
+        eprint!("{} ", Logger::log_level_string(log_level));
         Self::print("", Logger::origin_color(log_level), origin);
     }
 }
@@ -147,7 +147,7 @@ impl crate::Log for Logger {
 
                 match origin_str.is_empty() {
                     false => {
-                        std::print!(
+                        std::eprint!(
                             "{}{}.{:0>9} ",
                             Logger::counter_color(log_level),
                             time.as_secs(),
@@ -166,10 +166,10 @@ impl crate::Log for Logger {
             }
             ConsoleLogOrder::Counter => match origin.to_string().is_empty() {
                 false => {
-                    std::print!("{}{} ", Logger::counter_color(log_level), counter);
+                    std::eprint!("{}{} ", Logger::counter_color(log_level), counter);
                     Self::print_origin(log_level, &origin_str);
                 }
-                true => std::print!(
+                true => std::eprint!(
                     "{}{:9} {} ",
                     Logger::counter_color(log_level),
                     counter,
