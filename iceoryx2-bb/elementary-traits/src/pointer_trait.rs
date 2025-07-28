@@ -31,4 +31,12 @@ pub trait PointerTrait<T> {
     ///  * Do not call this method when the pointer contains a null pointer.
     ///
     unsafe fn as_mut_ptr(&mut self) -> *mut T;
+
+    /// Indicates whether the pointer has been initialized.
+    ///
+    /// *Note:* This method should not be used when the pointer can be initialized to
+    /// point to itself; it is allowed to report false negatives in this case.
+    fn is_initialized(&self) -> bool {
+        true
+    }
 }
