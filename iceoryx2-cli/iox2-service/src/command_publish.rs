@@ -111,7 +111,7 @@ fn read_file_into_buffer(
 ) -> Result<()> {
     if let Some(ref file) = options.input_file {
         match options.data_representation {
-            DataRepresentation::Hex => {
+            DataRepresentation::HumanReadable => {
                 let mut header = None;
                 for line in read_to_string(file)?.lines() {
                     match header {
@@ -159,7 +159,7 @@ fn read_cli_msg_into_buffer(
             DataRepresentation::Iox2Dump => {
                 message_buffer.push((vec![], message.as_bytes().to_vec()))
             }
-            DataRepresentation::Hex => {
+            DataRepresentation::HumanReadable => {
                 let payload = hex_string_to_raw_data(message)?;
                 message_buffer.push((vec![], payload));
             }

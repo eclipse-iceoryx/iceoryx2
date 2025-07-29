@@ -176,7 +176,7 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
                     print_iox2_dump(user_header, payload, &options)?;
                     record_to_file(user_header, payload)?;
                 }
-                DataRepresentation::Hex => {
+                DataRepresentation::HumanReadable => {
                     let hex_user_header = raw_data_to_hex_string(user_header);
                     let hex_payload = raw_data_to_hex_string(payload);
                     print_hex_dump(hex_user_header.as_bytes(), hex_payload.as_bytes(), &options)?;

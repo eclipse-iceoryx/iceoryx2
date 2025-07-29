@@ -155,14 +155,14 @@ pub enum CliTypeVariant {
 pub enum DataRepresentation {
     Iox2Dump,
     #[default]
-    Hex,
+    HumanReadable,
 }
 
 impl From<DataRepresentation> for iceoryx2_userland_record_and_replay::record::DataRepresentation {
     fn from(value: DataRepresentation) -> Self {
         match value {
-            DataRepresentation::Hex => {
-                iceoryx2_userland_record_and_replay::record::DataRepresentation::Hex
+            DataRepresentation::HumanReadable => {
+                iceoryx2_userland_record_and_replay::record::DataRepresentation::HumanReadable
             }
             DataRepresentation::Iox2Dump => {
                 iceoryx2_userland_record_and_replay::record::DataRepresentation::Iox2Dump
@@ -201,7 +201,7 @@ pub struct PublishOptions {
     #[clap(
         short,
         long,
-        default_value = "HEX",
+        default_value = "HUMANREADABLE",
         help = "Defines how the provided data is encoded."
     )]
     pub data_representation: DataRepresentation,

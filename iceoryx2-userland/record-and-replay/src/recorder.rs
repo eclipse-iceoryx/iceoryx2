@@ -107,7 +107,7 @@ impl RecorderBuilder {
         data_representation: DataRepresentation,
     ) -> Result<(), RecorderCreateError> {
         match data_representation {
-            DataRepresentation::Hex => self.write_hex_header(file, file_header),
+            DataRepresentation::HumanReadable => self.write_hex_header(file, file_header),
             DataRepresentation::Iox2Dump => self.write_iox2dump_header(file, file_header),
         }
     }

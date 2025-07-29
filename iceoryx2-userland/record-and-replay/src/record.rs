@@ -21,7 +21,7 @@ pub const HEX_START_RECORD_MARKER: &[u8] = b"### Recorded Data Start ###";
 pub enum DataRepresentation {
     Iox2Dump,
     #[default]
-    Hex,
+    HumanReadable,
 }
 
 pub struct Record {
@@ -65,7 +65,7 @@ impl<'a> RecordCreator<'a> {
         };
 
         match self.data_representation {
-            DataRepresentation::Hex => {
+            DataRepresentation::HumanReadable => {
                 let time_stamp = format!("time:    {}\n", self.time_stamp.as_millis() as u64);
                 write_to_file(time_stamp.as_bytes())?;
                 write_to_file(b"header:  ")?;

@@ -119,7 +119,7 @@ impl ReplayerOpener {
         let origin = "read_header()";
 
         match data_representation {
-            DataRepresentation::Hex => {
+            DataRepresentation::HumanReadable => {
                 let mut buffer: Vec<u8> = vec![];
                 let mut buffer_position = 0;
 
@@ -179,7 +179,7 @@ impl Replayer {
     pub fn next_record(&mut self) -> Result<Option<Record>, ReplayerOpenError> {
         let msg = "Unable to read next record";
         match self.data_representation {
-            DataRepresentation::Hex => {
+            DataRepresentation::HumanReadable => {
                 let mut timestamp = None;
                 let mut header = None;
                 let mut line = String::new();
