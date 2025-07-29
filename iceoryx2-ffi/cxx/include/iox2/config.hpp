@@ -355,6 +355,27 @@ class RequestResponse {
     iox2_config_h* m_config = nullptr;
 };
 
+/// Default settings for the blackboard messaging pattern. These settings are
+/// used unless the user specifies custom QoS or port settings.
+class Blackboard {
+  public:
+    /// The maximum amount of supported [`Reader`]s
+    auto max_readers() && -> size_t;
+    /// Set the maximum amount of supported [`Reader`]s
+    void set_max_readers(size_t value) &&;
+    /// The maximum amount of supported [`Node`]s. Defines indirectly how many
+    /// processes can open the service at the same time.
+    auto max_nodes() && -> size_t;
+    /// Set the maximum amount of supported [`Node`]s.
+    void set_max_nodes(size_t value) &&;
+
+  private:
+    friend class Defaults;
+    explicit Blackboard(iox2_config_h* config);
+
+    iox2_config_h* m_config = nullptr;
+};
+
 /// Default settings. These values are used when the user in the code does not specify anything
 /// else.
 class Defaults {
@@ -365,6 +386,8 @@ class Defaults {
     auto event() && -> Event;
     /// Returns the request_response part of the default settings
     auto request_response() && -> RequestResponse;
+    /// Returns the blackboard part of the default settings
+    auto blackboard() && -> Blackboard;
 
   private:
     friend class ::iox2::Config;
