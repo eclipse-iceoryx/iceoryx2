@@ -16,6 +16,7 @@ use anyhow::Result;
 use iceoryx2::prelude::*;
 use iceoryx2::sample::Sample;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::header::publish_subscribe::Header;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::recorder::RecorderBuilder;
@@ -77,7 +78,13 @@ fn get_service_types(
 fn extract_payload<'a>(
     sample: &'a Sample<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
     user_header_type: &TypeDetail,
-) -> (&'a [u8], &'a [u8]) {
+) -> (&'a [u8], &'a [u8], &'a [u8]) {
+    let system_header = unsafe {
+        core::slice::from_raw_parts(
+            (sample.header() as *const Header).cast(),
+            core::mem::size_of::<Header>(),
+        )
+    };
     let user_header = unsafe {
         core::slice::from_raw_parts(
             (sample.user_header() as *const CustomHeaderMarker).cast(),
@@ -88,16 +95,27 @@ fn extract_payload<'a>(
         core::slice::from_raw_parts(sample.payload().as_ptr().cast(), sample.payload().len())
     };
 
-    (user_header, payload)
+    (system_header, user_header, payload)
 }
 
-fn print_hex_dump(user_header: &[u8], payload: &[u8], options: &SubscribeOptions) -> Result<()> {
+fn print_hex_dump(
+    system_header: &[u8],
+    user_header: &[u8],
+    payload: &[u8],
+    options: &SubscribeOptions,
+) -> Result<()> {
     if options.quiet {
         return Ok(());
     }
 
     println!(
-        "header {{len = {}}}: {}",
+        "system header {{len = {}}}: {}",
+        system_header.len(),
+        str::from_utf8(system_header)?,
+    );
+
+    println!(
+        "user header {{len = {}}}: {}",
         user_header.len(),
         str::from_utf8(user_header)?,
     );
@@ -111,14 +129,20 @@ fn print_hex_dump(user_header: &[u8], payload: &[u8], options: &SubscribeOptions
     Ok(())
 }
 
-fn print_iox2_dump(user_header: &[u8], payload: &[u8], options: &SubscribeOptions) -> Result<()> {
+fn print_iox2_dump(
+    system_header: &[u8],
+    user_header: &[u8],
+    payload: &[u8],
+    options: &SubscribeOptions,
+) -> Result<()> {
     if options.quiet {
         return Ok(());
     }
 
+    print!("system header {{len = {}}}", system_header.len());
+    println!("{}", raw_data_to_hex_string(system_header));
     print!("header {{len = {}}}: ", user_header.len());
-    std::io::stdout().write_all(user_header)?;
-    println!();
+    println!("{}", raw_data_to_hex_string(user_header));
 
     print!("payload {{len = {}}}: ", payload.len());
     std::io::stdout().write_all(payload)?;
@@ -161,11 +185,11 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
     let mut msg_counter = 0u64;
     'node_loop: while node.wait(cycle_time).is_ok() {
         while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
-            let (user_header, payload) = extract_payload(&sample, &user_header_type);
+            let (system_header, user_header, payload) = extract_payload(&sample, &user_header_type);
 
-            let mut record_to_file = |user_header, payload| -> Result<()> {
+            let mut record_to_file = |system_header, user_header, payload| -> Result<()> {
                 if let Some(file) = &mut file {
-                    file.write_payload(user_header, payload, start.elapsed())?;
+                    file.write_payload(system_header, user_header, payload, start.elapsed())?;
                 }
 
                 Ok(())
@@ -173,14 +197,24 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
 
             match options.data_representation {
                 DataRepresentation::Iox2Dump => {
-                    print_iox2_dump(user_header, payload, &options)?;
-                    record_to_file(user_header, payload)?;
+                    print_iox2_dump(system_header, user_header, payload, &options)?;
+                    record_to_file(system_header, user_header, payload)?;
                 }
                 DataRepresentation::HumanReadable => {
+                    let hex_system_header = raw_data_to_hex_string(system_header);
                     let hex_user_header = raw_data_to_hex_string(user_header);
                     let hex_payload = raw_data_to_hex_string(payload);
-                    print_hex_dump(hex_user_header.as_bytes(), hex_payload.as_bytes(), &options)?;
-                    record_to_file(hex_user_header.as_bytes(), hex_payload.as_bytes())?;
+                    print_hex_dump(
+                        hex_system_header.as_bytes(),
+                        hex_user_header.as_bytes(),
+                        hex_payload.as_bytes(),
+                        &options,
+                    )?;
+                    record_to_file(
+                        hex_system_header.as_bytes(),
+                        hex_user_header.as_bytes(),
+                        hex_payload.as_bytes(),
+                    )?;
                 }
             }
 

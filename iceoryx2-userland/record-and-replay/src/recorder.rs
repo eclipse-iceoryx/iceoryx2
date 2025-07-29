@@ -175,6 +175,7 @@ pub struct Recorder {
 impl Recorder {
     pub fn write_payload(
         &mut self,
+        system_header: &[u8],
         user_header: &[u8],
         payload: &[u8],
         time_stamp: Duration,
@@ -182,6 +183,6 @@ impl Recorder {
         RecordWriter::new(&mut self.file)
             .data_representation(self.data_representation)
             .time_stamp(time_stamp)
-            .write(user_header, payload)
+            .write(system_header, user_header, payload)
     }
 }

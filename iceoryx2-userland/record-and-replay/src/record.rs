@@ -29,6 +29,7 @@ pub enum DataRepresentation {
 
 pub struct Record {
     pub timestamp: Duration,
+    pub system_header: Vec<u8>,
     pub user_header: Vec<u8>,
     pub payload: Vec<u8>,
 }
@@ -87,7 +88,20 @@ impl RecordReader {
     ) -> Result<(), ReplayerOpenError> {
         if header.len() != self.header.payload_type.size {
             fail!(from self, with ReplayerOpenError::CorruptedUserHeaderRecord,
-                                "{error_msg} since the payload record is corrupted (has wrong size).");
+                                "{error_msg} since the user header record is corrupted (has wrong size).");
+        }
+
+        Ok(())
+    }
+
+    fn verify_system_header(
+        &self,
+        header: &Vec<u8>,
+        error_msg: &str,
+    ) -> Result<(), ReplayerOpenError> {
+        if header.len() != self.header.payload_type.size {
+            fail!(from self, with ReplayerOpenError::CorruptedSystemHeaderRecord,
+                                "{error_msg} since the system header record is corrupted (has wrong size).");
         }
 
         Ok(())
@@ -98,22 +112,33 @@ impl RecordReader {
         match self.data_representation {
             DataRepresentation::HumanReadable => {
                 let mut timestamp = None;
+                let mut system_header = None;
                 let mut header = None;
                 let mut line = String::new();
                 while file.read_line_to_string(&mut line).unwrap() != 0 {
+                    const READABLE_PREFIX_LEN: usize = 10;
                     if timestamp.is_none() {
                         timestamp = Some(Duration::from_millis(
                             line.as_str()[9..].parse::<u64>().unwrap(),
                         ));
+                    } else if system_header.is_none() {
+                        system_header = Some(Self::hex_string_to_raw_data(
+                            &line.as_str()[READABLE_PREFIX_LEN..],
+                        )?);
                     } else if header.is_none() {
-                        header = Some(Self::hex_string_to_raw_data(&line.as_str()[9..])?);
+                        header = Some(Self::hex_string_to_raw_data(
+                            &line.as_str()[READABLE_PREFIX_LEN..],
+                        )?);
                     } else {
-                        let payload = Self::hex_string_to_raw_data(&line.as_str()[9..])?;
+                        let payload =
+                            Self::hex_string_to_raw_data(&line.as_str()[READABLE_PREFIX_LEN..])?;
                         self.verify_payload(&payload, msg)?;
                         self.verify_user_header(header.as_ref().unwrap(), msg)?;
+                        self.verify_system_header(system_header.as_ref().unwrap(), msg)?;
 
                         return Ok(Some(Record {
                             timestamp: timestamp.take().unwrap(),
+                            system_header: system_header.take().unwrap(),
                             user_header: header.take().unwrap(),
                             payload: Self::hex_string_to_raw_data(&line.as_str()[9..])?,
                         }));
@@ -140,9 +165,14 @@ impl RecordReader {
                 let timestamp = u64::from_le_bytes(buffer);
 
                 read(&mut buffer)?;
-                let header_len = u64::from_le_bytes(buffer);
-                let mut header = vec![0u8; header_len as usize];
-                read(&mut header)?;
+                let system_header_len = u64::from_le_bytes(buffer);
+                let mut system_header = vec![0u8; system_header_len as usize];
+                read(&mut system_header)?;
+
+                read(&mut buffer)?;
+                let user_header_len = u64::from_le_bytes(buffer);
+                let mut user_header = vec![0u8; user_header_len as usize];
+                read(&mut user_header)?;
 
                 read(&mut buffer)?;
                 let payload_len = u64::from_le_bytes(buffer);
@@ -150,10 +180,12 @@ impl RecordReader {
                 read(&mut payload)?;
 
                 self.verify_payload(&payload, msg)?;
-                self.verify_user_header(&header, msg)?;
+                self.verify_user_header(&user_header, msg)?;
+                self.verify_user_header(&system_header, msg)?;
                 Ok(Some(Record {
                     timestamp: Duration::from_millis(timestamp),
-                    user_header: header,
+                    system_header: system_header,
+                    user_header: user_header,
                     payload: payload,
                 }))
             }
@@ -187,7 +219,12 @@ impl<'a> RecordWriter<'a> {
         self
     }
 
-    pub(crate) fn write(self, user_header: &[u8], payload: &[u8]) -> Result<(), FileWriteError> {
+    pub(crate) fn write(
+        self,
+        system_header: &[u8],
+        user_header: &[u8],
+        payload: &[u8],
+    ) -> Result<(), FileWriteError> {
         let origin = format!("{self:?}");
         let mut write_to_file = |data| -> Result<(), FileWriteError> {
             fail!(from origin, when self.file.write(data),
@@ -197,18 +234,24 @@ impl<'a> RecordWriter<'a> {
 
         match self.data_representation {
             DataRepresentation::HumanReadable => {
-                let time_stamp = format!("time:    {}\n", self.time_stamp.as_millis() as u64);
+                let time_stamp = format!("time:     {}\n", self.time_stamp.as_millis() as u64);
                 write_to_file(time_stamp.as_bytes())?;
-                write_to_file(b"header:  ")?;
+                write_to_file(b"sys head: ")?;
+                write_to_file(system_header)?;
+                write_to_file(b"\n")?;
+                write_to_file(b"usr head: ")?;
                 write_to_file(user_header)?;
                 write_to_file(b"\n")?;
-                write_to_file(b"payload: ")?;
+                write_to_file(b"payload:  ")?;
                 write_to_file(payload)?;
                 write_to_file(b"\n\n")?;
             }
             DataRepresentation::Iox2Dump => {
                 let time_stamp = (self.time_stamp.as_millis() as u64).to_be_bytes();
                 write_to_file(&time_stamp)?;
+                let system_header_len = (system_header.len() as u64).to_le_bytes();
+                write_to_file(&system_header_len)?;
+                write_to_file(system_header)?;
                 let user_header_len = (user_header.len() as u64).to_le_bytes();
                 write_to_file(&user_header_len)?;
                 write_to_file(user_header)?;

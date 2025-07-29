@@ -31,6 +31,7 @@ pub enum ReplayerOpenError {
     FailedToReadFile,
     ActualHeaderDoesNotMatchRequiredHeader,
     UnableToDeserializeRecordHeader,
+    CorruptedSystemHeaderRecord,
     CorruptedPayloadRecord,
     CorruptedUserHeaderRecord,
 }
