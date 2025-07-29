@@ -22,13 +22,6 @@ pub(crate) unsafe fn c_string_length(value: *const crate::posix::c_char) -> usiz
     unreachable!()
 }
 
-pub(crate) unsafe fn print_char(value: *const crate::posix::c_char) {
-    let len = crate::posix::c_string_length(value);
-
-    let text = core::str::from_utf8(core::slice::from_raw_parts(value as *const u8, len)).unwrap();
-    println!("{text}");
-}
-
 pub(crate) unsafe fn c_wide_string_length(value: *const u16) -> usize {
     for i in 0..usize::MAX {
         if *value.add(i) == 0u16 {

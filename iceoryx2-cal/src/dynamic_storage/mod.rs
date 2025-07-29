@@ -73,7 +73,8 @@ impl<T> Debug for Initializer<'_, T> {
     }
 }
 
-pub(crate) mod dynamic_storage_configuration;
+#[doc(hidden)]
+pub mod dynamic_storage_configuration;
 pub mod posix_shared_memory;
 pub mod process_local;
 pub mod recommended;
@@ -178,4 +179,12 @@ pub trait DynamicStorage<T: Send + Sync>:
     fn default_suffix() -> FileName {
         unsafe { FileName::new_unchecked(b".dyn") }
     }
+
+    #[doc(hidden)]
+    /// # Safety
+    ///
+    /// * ensure that the contained type matches the semantic type_name given with `T`
+    /// * if `T` is some arbitary placeholder, then only use it to remove the concept or list it
+    ///   * DO NOT OPEN IT
+    unsafe fn __internal_set_type_name_in_config(config: &mut Self::Configuration, type_name: &str);
 }

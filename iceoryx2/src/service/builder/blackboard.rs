@@ -30,6 +30,7 @@ use core::hash::Hash;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::vec::RelocatableVec;
+use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
 use iceoryx2_bb_log::{error, fatal_panic};
@@ -166,14 +167,16 @@ impl<KeyType> Debug for BuilderInternals<KeyType> {
     }
 }
 
-#[derive(Debug)]
+#[repr(C)]
+#[derive(Debug, ZeroCopySend)]
 pub(crate) struct Entry {
     pub(crate) type_details: TypeDetail,
     pub(crate) offset: IoxAtomicU64,
 }
 
-#[derive(Debug)]
-pub(crate) struct Mgmt<KeyType: Eq + Clone + Debug> {
+#[repr(C)]
+#[derive(Debug, ZeroCopySend)]
+pub(crate) struct Mgmt<KeyType: Eq + Clone + Debug + ZeroCopySend> {
     pub(crate) map: RelocatableFlatMap<KeyType, usize>,
     pub(crate) entries: RelocatableVec<Entry>,
 }
@@ -181,14 +184,16 @@ pub(crate) struct Mgmt<KeyType: Eq + Clone + Debug> {
 #[derive(Debug)]
 pub(crate) struct BlackboardResources<
     ServiceType: service::Service,
-    KeyType: Send + Sync + Eq + Clone + Debug + 'static,
+    KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend,
 > {
     pub(crate) mgmt: ServiceType::BlackboardMgmt<Mgmt<KeyType>>,
     pub(crate) data: ServiceType::BlackboardPayload,
 }
 
-impl<ServiceType: service::Service, KeyType: Send + Sync + Eq + Clone + Debug + 'static>
-    ServiceResource for BlackboardResources<ServiceType, KeyType>
+impl<
+        ServiceType: service::Service,
+        KeyType: Send + Sync + Eq + Clone + Debug + 'static + ZeroCopySend,
+    > ServiceResource for BlackboardResources<ServiceType, KeyType>
 {
     fn acquire_ownership(&self) {
         self.data.acquire_ownership();
@@ -503,9 +508,32 @@ impl<
 
                 // create the management segment
                 let capacity = self.builder.internals.len();
-                let mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
+
+                let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                     self.builder.base.shared_node.config(),
                 );
+                let mgmt_name = match self
+                    .builder
+                    .config_details()
+                    .type_details
+                    .type_name
+                    .as_str()
+                {
+                    Ok(s) => s,
+                    Err(_) => {
+                        fail!(from self,
+                              with BlackboardCreateError::InternalFailure,
+                              "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
+                    }
+                };
+                // The name is set to be able to remove the concept when a node dies. Safe since the
+                // same name is set in ServiceInternal::__internal_remove_node_from_service.
+                unsafe {
+                    <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage::<
+                        Mgmt<KeyType>,
+                    >>::__internal_set_type_name_in_config(&mut mgmt_config, mgmt_name)
+                };
+
                 let mgmt_storage = fail!(from self, when
                     <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<Mgmt<KeyType>,
                     >>::Builder::new(&name)
@@ -726,9 +754,33 @@ impl<
 
                     let name =
                         blackboard_name(self.builder.base.service_config.service_id().as_str());
-                    let mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
+                    let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                         self.builder.base.shared_node.config(),
                     );
+                    let mgmt_name = match self
+                        .builder
+                        .config_details()
+                        .type_details
+                        .type_name
+                        .as_str()
+                    {
+                        Ok(s) => s,
+                        Err(_) => {
+                            fail!(from self,
+                              with BlackboardOpenError::InternalFailure,
+                              "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
+                        }
+                    };
+                    // The name was set in create_impl to be able to remove the concept when a node
+                    // dies. Safe since the same name is set in
+                    // ServiceInternal::__internal_remove_node_from_service.
+                    unsafe {
+                        <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<
+                            Mgmt<KeyType>,
+                        >>::__internal_set_type_name_in_config(
+                            &mut mgmt_config, mgmt_name
+                        )
+                    };
                     let mgmt_storage = fail!(from self, when
                         <ServiceType::BlackboardMgmt<Mgmt<KeyType>> as DynamicStorage<Mgmt<KeyType>>
                         >::Builder::new(&name)

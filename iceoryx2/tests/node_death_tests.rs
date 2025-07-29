@@ -396,6 +396,130 @@ mod node_death_tests {
     }
 
     #[test]
+    fn dead_node_is_removed_from_blackboard_service<S: Test>() {
+        let _watchdog = Watchdog::new();
+        const NUMBER_OF_BAD_NODES: usize = 3;
+        const NUMBER_OF_GOOD_NODES: usize = 4;
+        const NUMBER_OF_SERVICES: usize = 5;
+        const NUMBER_OF_READERS: usize = NUMBER_OF_BAD_NODES + NUMBER_OF_GOOD_NODES;
+
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        let mut bad_nodes = vec![];
+        let mut good_nodes = vec![];
+
+        for _ in 0..NUMBER_OF_BAD_NODES {
+            bad_nodes.push(S::create_test_node(&config).node);
+        }
+
+        for _ in 0..NUMBER_OF_GOOD_NODES {
+            good_nodes.push(
+                NodeBuilder::new()
+                    .config(&config)
+                    .create::<S::Service>()
+                    .unwrap(),
+            );
+        }
+
+        let mut services = vec![];
+        let mut bad_readers = vec![];
+        let mut good_readers = vec![];
+
+        for _ in 0..NUMBER_OF_SERVICES {
+            let service_name = generate_service_name();
+            let _service = bad_nodes[0]
+                .service_builder(&service_name)
+                .blackboard_creator::<u64>()
+                .max_readers(NUMBER_OF_READERS)
+                .add_with_default::<u64>(0)
+                .create()
+                .unwrap();
+
+            for node in &bad_nodes {
+                let service = node
+                    .service_builder(&service_name)
+                    .blackboard_opener::<u64>()
+                    .max_readers(NUMBER_OF_READERS)
+                    .open()
+                    .unwrap();
+                bad_readers.push(service.reader_builder().create().unwrap());
+
+                services.push(service);
+            }
+
+            for node in &good_nodes {
+                let service = node
+                    .service_builder(&service_name)
+                    .blackboard_opener::<u64>()
+                    .max_readers(NUMBER_OF_READERS)
+                    .open()
+                    .unwrap();
+                good_readers.push(service.reader_builder().create().unwrap());
+
+                services.push(service);
+            }
+        }
+
+        for _ in 0..NUMBER_OF_BAD_NODES {
+            let mut node = bad_nodes.pop().unwrap();
+            S::staged_death(&mut node);
+        }
+
+        core::mem::forget(bad_readers);
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: NUMBER_OF_BAD_NODES, failed_cleanups: 0});
+
+        for service in &services {
+            assert_that!(service.dynamic_config().number_of_readers(), eq NUMBER_OF_READERS - NUMBER_OF_BAD_NODES);
+        }
+    }
+
+    #[test]
+    fn opened_blackboard_can_be_accessed_after_creator_node_crash<S: Test>() {
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        let service_name = generate_service_name();
+
+        let mut bad_node = S::create_test_node(&config).node;
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<u64>(0)
+            .create()
+            .unwrap();
+        let writer = bad_service.writer_builder().create().unwrap();
+
+        let good_node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+        let good_service = good_node
+            .service_builder(&service_name)
+            .blackboard_opener::<u64>()
+            .open()
+            .unwrap();
+        let reader = good_service.reader_builder().create().unwrap();
+
+        S::staged_death(&mut bad_node);
+        core::mem::forget(writer);
+        core::mem::forget(bad_service);
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        assert_that!(good_service.dynamic_config().number_of_readers(), eq 1);
+        assert_that!(good_service.dynamic_config().number_of_writers(), eq 0);
+        assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 0);
+
+        let writer = good_service.writer_builder().create().unwrap();
+        let writer_handle = writer.entry::<u64>(&0).unwrap();
+        writer_handle.update_with_copy(1);
+
+        assert_that!(good_service.dynamic_config().number_of_readers(), eq 1);
+        assert_that!(good_service.dynamic_config().number_of_writers(), eq 1);
+        assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 1);
+    }
+
+    #[test]
     fn event_service_is_removed_when_last_node_dies<S: Test>() {
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
@@ -492,6 +616,176 @@ mod node_death_tests {
             }),
             is_ok
         );
+    }
+
+    #[test]
+    fn blackboard_service_is_removed_when_last_node_dies<S: Test>() {
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        let mut sut = S::create_test_node(&config).node;
+        core::mem::forget(
+            sut.service_builder(&service_name)
+                .blackboard_creator::<u64>()
+                .add_with_default::<u64>(0)
+                .create()
+                .unwrap(),
+        );
+        S::staged_death(&mut sut);
+
+        assert_that!(
+            S::Service::list(&config, |service_details| {
+                assert_that!(*service_details.static_details.name(), eq service_name);
+                CallbackProgression::Continue
+            }),
+            is_ok
+        );
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        assert_that!(
+            S::Service::list(&config, |_| {
+                test_fail!("after the cleanup there shall be no more services");
+            }),
+            is_ok
+        );
+    }
+
+    #[test]
+    fn writer_and_reader_resources_are_removed_after_crash<S: Test>() {
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+        let good_node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+        let good_service = good_node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .max_readers(1)
+            .add_with_default::<u64>(0)
+            .create()
+            .unwrap();
+
+        let mut bad_node = S::create_test_node(&config).node;
+        let bad_service = bad_node
+            .service_builder(&service_name)
+            .blackboard_opener::<u64>()
+            .open()
+            .unwrap();
+        let writer = bad_service.writer_builder().create().unwrap();
+        let reader = bad_service.reader_builder().create().unwrap();
+
+        S::staged_death(&mut bad_node);
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+        core::mem::forget(writer);
+        core::mem::forget(reader);
+
+        let writer = good_service.writer_builder().create();
+        assert_that!(writer, is_ok);
+        let reader = good_service.reader_builder().create();
+        assert_that!(reader, is_ok);
+    }
+
+    // test disabled on Windows as the state files cannot be removed after simulated node death
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn blackboard_resources_are_removed_when_key_has_user_defined_name<S: Test>() {
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        #[repr(C)]
+        #[derive(ZeroCopySend, Debug, Clone, PartialEq, Eq, Hash)]
+        #[type_name("SoSpecial")]
+        struct SpecialKey(u64);
+
+        let mut sut = S::create_test_node(&config).node;
+        core::mem::forget(
+            sut.service_builder(&service_name)
+                .blackboard_creator::<SpecialKey>()
+                .add_with_default::<u64>(SpecialKey(0))
+                .create()
+                .unwrap(),
+        );
+        S::staged_death(&mut sut);
+
+        assert_that!(
+            S::Service::list(&config, |service_details| {
+                assert_that!(*service_details.static_details.name(), eq service_name);
+                CallbackProgression::Continue
+            }),
+            is_ok
+        );
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        assert_that!(
+            S::Service::list(&config, |_| {
+                test_fail!("after the cleanup there shall be no more services");
+            }),
+            is_ok
+        );
+
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .blackboard_creator::<SpecialKey>()
+            .add_with_default::<u64>(SpecialKey(0))
+            .create();
+        assert_that!(service, is_ok);
+    }
+
+    // test disabled on Windows as the state files cannot be removed after simulated node death
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {
+        let service_name = generate_service_name();
+        let mut config = generate_isolated_config();
+        config.global.node.cleanup_dead_nodes_on_creation = false;
+
+        let mut sut = S::create_test_node(&config).node;
+        core::mem::forget(
+            sut.service_builder(&service_name)
+                .blackboard_creator::<u64>()
+                .add_with_default::<u64>(0)
+                .create()
+                .unwrap(),
+        );
+        S::staged_death(&mut sut);
+
+        assert_that!(
+            S::Service::list(&config, |service_details| {
+                assert_that!(*service_details.static_details.name(), eq service_name);
+                CallbackProgression::Continue
+            }),
+            is_ok
+        );
+
+        assert_that!(Node::<S::Service>::cleanup_dead_nodes(&config), eq CleanupState { cleanups: 1, failed_cleanups: 0});
+
+        assert_that!(
+            S::Service::list(&config, |_| {
+                test_fail!("after the cleanup there shall be no more services");
+            }),
+            is_ok
+        );
+
+        let node = NodeBuilder::new()
+            .config(&config)
+            .create::<S::Service>()
+            .unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<u64>(0)
+            .create();
+        assert_that!(service, is_ok);
     }
 
     #[test]

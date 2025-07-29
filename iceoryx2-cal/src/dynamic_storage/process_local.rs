@@ -83,6 +83,7 @@ pub struct Configuration<T: Send + Sync + Debug> {
     prefix: FileName,
     path_hint: Path,
     _data: PhantomData<T>,
+    type_name: String,
 }
 
 impl<T: Send + Sync + Debug> Clone for Configuration<T> {
@@ -92,6 +93,7 @@ impl<T: Send + Sync + Debug> Clone for Configuration<T> {
             prefix: self.prefix.clone(),
             path_hint: self.path_hint.clone(),
             _data: PhantomData,
+            type_name: self.type_name.clone(),
         }
     }
 }
@@ -103,11 +105,16 @@ impl<T: Send + Sync + Debug> Default for Configuration<T> {
             prefix: Storage::<()>::default_prefix(),
             path_hint: Storage::<()>::default_path_hint(),
             _data: PhantomData,
+            type_name: core::any::type_name::<T>().to_string(),
         }
     }
 }
 
-impl<T: Send + Sync + Debug> DynamicStorageConfiguration<T> for Configuration<T> {}
+impl<T: Send + Sync + Debug> DynamicStorageConfiguration for Configuration<T> {
+    fn type_name(&self) -> &str {
+        &self.type_name
+    }
+}
 
 impl<T: Send + Sync + Debug> NamedConceptConfiguration for Configuration<T> {
     fn prefix(mut self, value: &FileName) -> Self {
@@ -304,6 +311,13 @@ impl<T: Send + Sync + Debug + 'static> DynamicStorage<T> for Storage<T> {
 
     fn release_ownership(&self) {
         self.has_ownership.store(false, Ordering::Relaxed)
+    }
+
+    unsafe fn __internal_set_type_name_in_config(
+        config: &mut Self::Configuration,
+        type_name: &str,
+    ) {
+        config.type_name = type_name.to_string()
     }
 }
 
