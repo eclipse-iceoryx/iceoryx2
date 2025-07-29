@@ -17,6 +17,14 @@ use std::io::Write;
 
 use crate::cli::DataRepresentation;
 
+pub const HEX_START_RECORD_MARKER: &[u8] = b"### Recorded Data Start ###";
+
+pub struct Record {
+    pub timestamp: Duration,
+    pub user_header: Vec<u8>,
+    pub payload: Vec<u8>,
+}
+
 pub struct RecordCreator<'a> {
     file: &'a File,
     data_representation: DataRepresentation,
@@ -45,13 +53,13 @@ impl<'a> RecordCreator<'a> {
     pub fn write(mut self, user_header: &[u8], payload: &[u8]) -> Result<()> {
         match self.data_representation {
             DataRepresentation::Hex => {
-                writeln!(self.file, "+{}", self.time_stamp.as_millis())?;
+                writeln!(self.file, "+{}", self.time_stamp.as_millis() as u64)?;
                 writeln!(self.file, "{}", str::from_utf8(user_header)?)?;
                 writeln!(self.file, "{}", str::from_utf8(payload)?)?;
             }
             DataRepresentation::Iox2Dump => {
                 self.file
-                    .write_all(&self.time_stamp.as_millis().to_le_bytes())?;
+                    .write_all(&(self.time_stamp.as_millis() as u64).to_le_bytes())?;
                 self.file
                     .write_all(&(user_header.len() as u64).to_le_bytes())?;
                 self.file.write_all(user_header)?;

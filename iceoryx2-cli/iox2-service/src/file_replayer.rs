@@ -12,53 +12,154 @@
 
 use anyhow::anyhow;
 use anyhow::Result;
-use iceoryx2::prelude::MessagingPattern;
-use iceoryx2::service::static_config::message_type_details::TypeDetail;
-use iceoryx2_bb_elementary::package_version::PackageVersion;
+use core::mem::MaybeUninit;
+use core::time::Duration;
+use iceoryx2_cal::serialize::toml::Toml;
+use iceoryx2_cal::serialize::Serialize;
 use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
+use std::io::Read;
 
 use crate::cli::DataRepresentation;
+use crate::record::Record;
+use crate::record::HEX_START_RECORD_MARKER;
 use crate::record_file_header::RecordFileHeader;
 
+fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>> {
+    let mut hex_string = hex_string.to_string();
+    hex_string.retain(|c| !c.is_whitespace());
+    hex_string
+        .split_ascii_whitespace()
+        .map(|hex| {
+            u8::from_str_radix(&hex, 16)
+                .map_err(|e| anyhow::anyhow!("Invalid hex input at position {}.", e))
+        })
+        .collect::<Result<Vec<u8>>>()
+}
+
 pub struct FileReplayer {
+    file: BufReader<File>,
     data_representation: DataRepresentation,
+    data_position: usize,
+    header: RecordFileHeader,
+    buffer: Vec<Record>,
 }
 
 impl FileReplayer {
-    pub fn open(
-        file_name: &str,
-        payload_type: &TypeDetail,
-        header_type: &TypeDetail,
-        data_representation: DataRepresentation,
-        messaging_pattern: MessagingPattern,
-    ) -> Result<Self> {
-        let file = std::fs::OpenOptions::new().read(true).open(file_name)?;
-        let expected_file_header = RecordFileHeader {
-            version: PackageVersion::get().to_u64(),
-            payload_type: payload_type.clone(),
-            header_type: header_type.clone(),
-            messaging_pattern,
-        };
-
-        let current_file_header = Self::read_file_header(&file, data_representation)?;
-        if expected_file_header != current_file_header {
-            return Err(anyhow!("Failed to open record file since the file header does not match. Expected ({expected_file_header:?}), file header in record file ({current_file_header:?})."));
-        }
-
+    pub fn open(file_name: &str, data_representation: DataRepresentation) -> Result<Self> {
+        let mut file = BufReader::new(File::open(file_name)?);
+        let (header, data_position) = Self::read_file_header(&mut file, data_representation)?;
         Ok(Self {
             data_representation,
+            data_position,
+            buffer: vec![],
+            header,
+            file,
         })
     }
 
+    pub fn fill_buffer(&mut self) -> Result<()> {
+        match self.data_representation {
+            DataRepresentation::Hex => {
+                let mut timestamp = None;
+                let mut header = None;
+                for line in (&mut self.file)
+                    .lines()
+                    .enumerate()
+                    .skip(self.data_position)
+                {
+                    if timestamp.is_none() {
+                        timestamp =
+                            Some(Duration::from_millis(line.1?.as_str()[1..].parse::<u64>()?));
+                    } else if header.is_none() {
+                        header = Some(hex_string_to_raw_data(&line.1?)?);
+                    } else {
+                        self.buffer.push(Record {
+                            timestamp: timestamp.take().unwrap(),
+                            user_header: header.take().unwrap(),
+                            payload: hex_string_to_raw_data(&line.1?)?,
+                        })
+                    }
+                }
+            }
+            DataRepresentation::Iox2Dump => {
+                let mut buffer = [0u8; 8];
+                let mut read_buffer = || -> Result<()> {
+                    self.file.read_exact(&mut buffer)?;
+                    let timestamp = u64::from_le_bytes(buffer);
+
+                    self.file.read_exact(&mut buffer)?;
+                    let header_len = u64::from_le_bytes(buffer);
+                    let mut header = vec![0u8; header_len as usize];
+                    self.file.read_exact(&mut header)?;
+
+                    self.file.read_exact(&mut buffer)?;
+                    let payload_len = u64::from_le_bytes(buffer);
+                    let mut payload = vec![0u8; payload_len as usize];
+                    self.file.read_exact(&mut payload)?;
+
+                    self.buffer.push(Record {
+                        timestamp: Duration::from_millis(timestamp),
+                        user_header: header,
+                        payload: payload,
+                    });
+
+                    Ok(())
+                };
+
+                while read_buffer().is_ok() {}
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn header(&self) -> &RecordFileHeader {
+        &self.header
+    }
+
+    pub fn buffer(&self) -> &Vec<Record> {
+        &self.buffer
+    }
+
     fn read_file_header(
-        file: &File,
+        file: &mut BufReader<File>,
         data_representation: DataRepresentation,
-    ) -> Result<RecordFileHeader> {
+    ) -> Result<(RecordFileHeader, usize)> {
         match data_representation {
             DataRepresentation::Hex => {
-                todo!();
+                let mut buffer: Vec<u8> = vec![];
+                let mut data_position = 0;
+                for (line_nr, line) in file.lines().enumerate() {
+                    let line = line?;
+                    if line.as_bytes() == HEX_START_RECORD_MARKER {
+                        data_position = line_nr;
+                        break;
+                    }
+                    buffer.extend_from_slice(line.as_bytes());
+                }
+
+                Ok((
+                    Toml::deserialize::<RecordFileHeader>(buffer.as_slice())
+                        .map_err(|e| anyhow!("Failed to deserialize RecordFileHeader ({e:?})."))?,
+                    data_position,
+                ))
             }
-            DataRepresentation::Iox2Dump => todo!(),
+            DataRepresentation::Iox2Dump => {
+                let mut header = MaybeUninit::<RecordFileHeader>::uninit();
+                file.read_exact(unsafe {
+                    core::slice::from_raw_parts_mut(
+                        header.as_mut_ptr() as *mut u8,
+                        core::mem::size_of::<RecordFileHeader>(),
+                    )
+                })?;
+
+                Ok((
+                    unsafe { header.assume_init() },
+                    core::mem::size_of::<RecordFileHeader>(),
+                ))
+            }
         }
     }
 }

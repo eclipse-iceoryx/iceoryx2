@@ -12,6 +12,7 @@
 
 use anyhow::anyhow;
 use anyhow::Result;
+use core::time::Duration;
 use iceoryx2::prelude::MessagingPattern;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
@@ -19,16 +20,15 @@ use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_cal::serialize::Serialize;
 use std::fs::File;
 use std::io::Write;
-use std::time::Instant;
 
 use crate::cli::DataRepresentation;
 use crate::record::RecordCreator;
+use crate::record::HEX_START_RECORD_MARKER;
 use crate::record_file_header::RecordFileHeader;
 
 pub struct FileRecorder {
     file: File,
     data_representation: DataRepresentation,
-    start: Instant,
 }
 
 impl FileRecorder {
@@ -58,14 +58,18 @@ impl FileRecorder {
         Ok(Self {
             file,
             data_representation,
-            start: Instant::now(),
         })
     }
 
-    pub fn write_payload(&mut self, user_header: &[u8], payload: &[u8]) -> Result<()> {
+    pub fn write_payload(
+        &mut self,
+        user_header: &[u8],
+        payload: &[u8],
+        time_stamp: Duration,
+    ) -> Result<()> {
         RecordCreator::new(&mut self.file)
             .data_representation(self.data_representation)
-            .time_stamp(self.start.elapsed())
+            .time_stamp(time_stamp)
             .write(user_header, payload)
     }
 
@@ -98,13 +102,10 @@ impl FileRecorder {
 
         file.write(&serialized)?;
 
-        let data_start_comment = r#"
-##############################
-### start of recorded data ###
-##############################
-
-"#;
-        file.write(data_start_comment.as_bytes())?;
+        writeln!(file, "")?;
+        writeln!(file, "")?;
+        file.write(HEX_START_RECORD_MARKER)?;
+        writeln!(file, "")?;
 
         Ok(())
     }

@@ -166,7 +166,7 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
 
             let mut record_to_file = |user_header, payload| -> Result<()> {
                 if let Some(file) = &mut file {
-                    file.write_payload(user_header, payload)?;
+                    file.write_payload(user_header, payload, start.elapsed())?;
                 }
 
                 Ok(())
