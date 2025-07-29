@@ -20,9 +20,18 @@ use iceoryx2::service::header::publish_subscribe::Header;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::recorder::RecorderBuilder;
-use std::io::Write;
 use std::time::Duration;
 use std::time::Instant;
+
+#[derive(serde::Serialize)]
+struct Message {
+    system_header_len: usize,
+    system_header: String,
+    user_header_len: usize,
+    user_header: String,
+    payload_len: usize,
+    payload: String,
+}
 
 fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
     use std::fmt::Write;
@@ -103,27 +112,26 @@ fn print_hex_dump(
     user_header: &[u8],
     payload: &[u8],
     options: &SubscribeOptions,
+    format: Format,
 ) -> Result<()> {
     if options.quiet {
         return Ok(());
     }
 
-    println!(
-        "system header {{len = {}}}: {}",
-        system_header.len(),
-        str::from_utf8(system_header)?,
-    );
+    let msg = Message {
+        system_header_len: system_header.len(),
+        system_header: String::from_utf8_lossy(system_header).to_string(),
+        user_header_len: user_header.len(),
+        user_header: String::from_utf8_lossy(user_header).to_string(),
+        payload_len: payload.len(),
+        payload: String::from_utf8_lossy(payload).to_string(),
+    };
 
     println!(
-        "user header {{len = {}}}: {}",
-        user_header.len(),
-        str::from_utf8(user_header)?,
-    );
-
-    println!(
-        "payload {{len = {}}}: {}",
-        payload.len(),
-        str::from_utf8(payload)?
+        "{}",
+        format
+            .as_string(&msg)
+            .unwrap_or("Failed to format message".to_string())
     );
 
     Ok(())
@@ -134,24 +142,32 @@ fn print_iox2_dump(
     user_header: &[u8],
     payload: &[u8],
     options: &SubscribeOptions,
+    format: Format,
 ) -> Result<()> {
     if options.quiet {
         return Ok(());
     }
 
-    print!("system header {{len = {}}}", system_header.len());
-    println!("{}", raw_data_to_hex_string(system_header));
-    print!("header {{len = {}}}: ", user_header.len());
-    println!("{}", raw_data_to_hex_string(user_header));
+    let msg = Message {
+        system_header_len: system_header.len(),
+        system_header: raw_data_to_hex_string(system_header),
+        user_header_len: user_header.len(),
+        user_header: raw_data_to_hex_string(user_header),
+        payload_len: payload.len(),
+        payload: String::from_utf8_lossy(payload).to_string(),
+    };
 
-    print!("payload {{len = {}}}: ", payload.len());
-    std::io::stdout().write_all(payload)?;
-    println!();
+    println!(
+        "{}",
+        format
+            .as_string(&msg)
+            .unwrap_or("Failed to format message".to_string())
+    );
 
     Ok(())
 }
 
-pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
+pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
     let node = NodeBuilder::new()
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;
@@ -197,7 +213,7 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
 
             match options.data_representation {
                 DataRepresentation::Iox2Dump => {
-                    print_iox2_dump(system_header, user_header, payload, &options)?;
+                    print_iox2_dump(system_header, user_header, payload, &options, format)?;
                     record_to_file(system_header, user_header, payload)?;
                 }
                 DataRepresentation::HumanReadable => {
@@ -209,6 +225,7 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
                         hex_user_header.as_bytes(),
                         hex_payload.as_bytes(),
                         &options,
+                        format,
                     )?;
                     record_to_file(
                         hex_system_header.as_bytes(),
