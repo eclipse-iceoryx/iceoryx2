@@ -68,8 +68,11 @@ impl<'a> RecordCreator<'a> {
             DataRepresentation::Hex => {
                 let time_stamp = format!("+{}", self.time_stamp.as_millis() as u64);
                 write_to_file(time_stamp.as_bytes())?;
+                write_to_file(b"\n")?;
                 write_to_file(user_header)?;
+                write_to_file(b"\n")?;
                 write_to_file(payload)?;
+                write_to_file(b"\n")?;
             }
             DataRepresentation::Iox2Dump => {
                 let time_stamp = (self.time_stamp.as_millis() as u64).to_be_bytes();

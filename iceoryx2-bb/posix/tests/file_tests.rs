@@ -197,6 +197,24 @@ fn file_simple_read_write_works() {
 }
 
 #[test]
+fn file_write_appends_content_to_file() {
+    let test = TestFixture::new();
+    let mut file = test.create_file(&test.file);
+
+    assert_that!(file.write(b"another file bytes the dust\n"), is_ok);
+    assert_that!(
+        file.write(b"a horse with a blanket does not require shoes"),
+        is_ok
+    );
+    assert_that!(file.flush(), is_ok);
+
+    let mut read_content = String::new();
+    let result = file.read_to_string(&mut read_content);
+    assert_that!(result, is_ok);
+    assert_that!(read_content.as_bytes(), eq b"another file bytes the dust\na horse with a blanket does not require shoes");
+}
+
+#[test]
 fn file_two_file_objects_read_work_with_ranges_in_same_file() {
     let test = TestFixture::new();
     let mut file_a = test.create_file(&test.file);

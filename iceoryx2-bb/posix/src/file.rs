@@ -754,17 +754,6 @@ impl File {
 
     /// Writes a slice into a file and returns the number of bytes which were written.
     pub fn write(&mut self, buf: &[u8]) -> Result<u64, FileWriteError> {
-        self.write_at(0, buf)
-    }
-
-    /// Writes a slice into a file beginning from `start` and returns the number of bytes which were written.
-    pub fn write_at(&mut self, start: u64, buf: &[u8]) -> Result<u64, FileWriteError> {
-        let offset = fail!(from self, when File::set_offset(self, start), "Unable to set offset to write content at a specific position.");
-
-        if offset != start {
-            return Ok(0);
-        }
-
         let bytes_written = unsafe {
             posix::write(
                 self.file_descriptor.native_handle(),
@@ -788,6 +777,17 @@ impl File {
             Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).",msg, v)
         );
+    }
+
+    /// Writes a slice into a file beginning from `start` and returns the number of bytes which were written.
+    pub fn write_at(&mut self, start: u64, buf: &[u8]) -> Result<u64, FileWriteError> {
+        let offset = fail!(from self, when File::set_offset(self, start), "Unable to set offset to write content at a specific position.");
+
+        if offset != start {
+            return Ok(0);
+        }
+
+        self.write(buf)
     }
 
     /// Syncs all file modification with the file system.
