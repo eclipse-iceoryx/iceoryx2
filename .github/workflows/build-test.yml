@@ -88,7 +88,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macOS-latest]
+        os: [windows-latest, ubuntu-latest, macOS-15]
         cargo-features-flag: [""]
         include:
           - os: ubuntu-latest
@@ -175,7 +175,7 @@ jobs:
     needs: preflight-check
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
@@ -194,7 +194,7 @@ jobs:
     needs: preflight-check
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
@@ -412,7 +412,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-15]
         # NOTE: enable for MinGW
         # toolchain: [stable, stable-gnu, 1.81.0]
         toolchain: [stable, 1.81.0]
@@ -443,7 +443,7 @@ jobs:
           #   toolchain: stable-gnu
           - os: windows-latest
             cargo-features-flag: "--features libc_platform"
-          - os: macos-latest
+          - os: macos-15
             cargo-features-flag: "--features libc_platform"
     timeout-minutes: 90
     runs-on: ${{ matrix.os }}
@@ -536,7 +536,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-15]
         toolchain: [beta, nightly]
         mode: 
           - name: "release"
