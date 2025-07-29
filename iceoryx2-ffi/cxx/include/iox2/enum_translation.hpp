@@ -14,6 +14,7 @@
 #define IOX2_ENUM_TRANSLATION_HPP
 
 #include "iox/assertions.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/into.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/callback_progression.hpp"
@@ -29,8 +30,11 @@
 #include "iox2/notifier_error.hpp"
 #include "iox2/port_error.hpp"
 #include "iox2/publisher_error.hpp"
+#include "iox2/reader_error.hpp"
+#include "iox2/reader_handle_error.hpp"
 #include "iox2/semantic_string.hpp"
 #include "iox2/server_error.hpp"
+#include "iox2/service_builder_blackboard_error.hpp"
 #include "iox2/service_builder_event_error.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_builder_request_response_error.hpp"
@@ -41,6 +45,8 @@
 #include "iox2/type_variant.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 #include "iox2/waitset_enums.hpp"
+#include "iox2/writer_error.hpp"
+#include "iox2/writer_handle_error.hpp"
 
 namespace iox {
 template <>
@@ -238,6 +244,8 @@ constexpr auto from<iox2::MessagingPattern, iox2_messaging_pattern_e>(const iox2
         return iox2_messaging_pattern_e_EVENT;
     case iox2::MessagingPattern::RequestResponse:
         return iox2_messaging_pattern_e_REQUEST_RESPONSE;
+    case iox2::MessagingPattern::Blackboard:
+        IOX_TODO();
     }
 
     IOX_UNREACHABLE();
@@ -1111,6 +1119,248 @@ from<iox2::RequestResponseOpenOrCreateError, const char*>(const iox2::RequestRes
     -> const char* {
     return iox2_request_response_open_or_create_error_string(
         iox::into<iox2_request_response_open_or_create_error_e>(value));
+}
+
+template <>
+constexpr auto from<int, iox2::BlackboardCreateError>(const int value) noexcept -> iox2::BlackboardCreateError {
+    const auto error = static_cast<iox2_blackboard_create_error_e>(value);
+    switch (error) {
+    case iox2_blackboard_create_error_e_C_ALREADY_EXISTS:
+        return iox2::BlackboardCreateError::AlreadyExists;
+    case iox2_blackboard_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE:
+        return iox2::BlackboardCreateError::IsBeingCreatedByAnotherInstance;
+    case iox2_blackboard_create_error_e_C_INTERNAL_FAILURE:
+        return iox2::BlackboardCreateError::InternalFailure;
+    case iox2_blackboard_create_error_e_C_INSUFFICIENT_PERMISSIONS:
+        return iox2::BlackboardCreateError::InsufficientPermissions;
+    case iox2_blackboard_create_error_e_C_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::BlackboardCreateError::ServiceInCorruptedState;
+    case iox2_blackboard_create_error_e_C_HANGS_IN_CREATION:
+        return iox2::BlackboardCreateError::HangsInCreation;
+    case iox2_blackboard_create_error_e_C_NO_ENTRIES_PROVIDED:
+        return iox2::BlackboardCreateError::NoEntriesProvided;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto
+from<iox2::BlackboardCreateError, iox2_blackboard_create_error_e>(const iox2::BlackboardCreateError value) noexcept
+    -> iox2_blackboard_create_error_e {
+    switch (value) {
+    case iox2::BlackboardCreateError::AlreadyExists:
+        return iox2_blackboard_create_error_e_C_ALREADY_EXISTS;
+    case iox2::BlackboardCreateError::IsBeingCreatedByAnotherInstance:
+        return iox2_blackboard_create_error_e_C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE;
+    case iox2::BlackboardCreateError::InternalFailure:
+        return iox2_blackboard_create_error_e_C_INTERNAL_FAILURE;
+    case iox2::BlackboardCreateError::InsufficientPermissions:
+        return iox2_blackboard_create_error_e_C_INSUFFICIENT_PERMISSIONS;
+    case iox2::BlackboardCreateError::ServiceInCorruptedState:
+        return iox2_blackboard_create_error_e_C_SERVICE_IN_CORRUPTED_STATE;
+    case iox2::BlackboardCreateError::HangsInCreation:
+        return iox2_blackboard_create_error_e_C_HANGS_IN_CREATION;
+    case iox2::BlackboardCreateError::NoEntriesProvided:
+        return iox2_blackboard_create_error_e_C_NO_ENTRIES_PROVIDED;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+inline auto from<iox2::BlackboardCreateError, const char*>(const iox2::BlackboardCreateError value) noexcept -> const
+    char* {
+    return iox2_blackboard_create_error_string(iox::into<iox2_blackboard_create_error_e>(value));
+}
+
+template <>
+constexpr auto from<int, iox2::BlackboardOpenError>(const int value) noexcept -> iox2::BlackboardOpenError {
+    const auto error = static_cast<iox2_blackboard_open_error_e>(value);
+    switch (error) {
+    case iox2_blackboard_open_error_e_O_DOES_NOT_EXIST:
+        return iox2::BlackboardOpenError::DoesNotExist;
+    case iox2_blackboard_open_error_e_O_SERVICE_IN_CORRUPTED_STATE:
+        return iox2::BlackboardOpenError::ServiceInCorruptedState;
+    case iox2_blackboard_open_error_e_O_INCOMPATIBLE_KEYS:
+        return iox2::BlackboardOpenError::IncompatibleKeys;
+    case iox2_blackboard_open_error_e_O_INTERNAL_FAILURE:
+        return iox2::BlackboardOpenError::InternalFailure;
+    case iox2_blackboard_open_error_e_O_INCOMPATIBLE_ATTRIBUTES:
+        return iox2::BlackboardOpenError::IncompatibleAttributes;
+    case iox2_blackboard_open_error_e_O_INCOMPATIBLE_MESSAGING_PATTERN:
+        return iox2::BlackboardOpenError::IncompatibleMessagingPattern;
+    case iox2_blackboard_open_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_READERS:
+        return iox2::BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders;
+    case iox2_blackboard_open_error_e_O_INSUFFICIENT_PERMISSIONS:
+        return iox2::BlackboardOpenError::InsufficientPermissions;
+    case iox2_blackboard_open_error_e_O_HANGS_IN_CREATION:
+        return iox2::BlackboardOpenError::HangsInCreation;
+    case iox2_blackboard_open_error_e_O_IS_MARKED_FOR_DESTRUCTION:
+        return iox2::BlackboardOpenError::IsMarkedForDestruction;
+    case iox2_blackboard_open_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES:
+        return iox2::BlackboardOpenError::ExceedsMaxNumberOfNodes;
+    case iox2_blackboard_open_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES:
+        return iox2::BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto
+from<iox2::BlackboardOpenError, iox2_blackboard_open_error_e>(const iox2::BlackboardOpenError value) noexcept
+    -> iox2_blackboard_open_error_e {
+    switch (value) {
+    case iox2::BlackboardOpenError::DoesNotExist:
+        return iox2_blackboard_open_error_e_O_DOES_NOT_EXIST;
+    case iox2::BlackboardOpenError::ServiceInCorruptedState:
+        return iox2_blackboard_open_error_e_O_SERVICE_IN_CORRUPTED_STATE;
+    case iox2::BlackboardOpenError::IncompatibleKeys:
+        return iox2_blackboard_open_error_e_O_INCOMPATIBLE_KEYS;
+    case iox2::BlackboardOpenError::InternalFailure:
+        return iox2_blackboard_open_error_e_O_INTERNAL_FAILURE;
+    case iox2::BlackboardOpenError::IncompatibleAttributes:
+        return iox2_blackboard_open_error_e_O_INCOMPATIBLE_ATTRIBUTES;
+    case iox2::BlackboardOpenError::IncompatibleMessagingPattern:
+        return iox2_blackboard_open_error_e_O_INCOMPATIBLE_MESSAGING_PATTERN;
+    case iox2::BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders:
+        return iox2_blackboard_open_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_READERS;
+    case iox2::BlackboardOpenError::InsufficientPermissions:
+        return iox2_blackboard_open_error_e_O_INSUFFICIENT_PERMISSIONS;
+    case iox2::BlackboardOpenError::HangsInCreation:
+        return iox2_blackboard_open_error_e_O_HANGS_IN_CREATION;
+    case iox2::BlackboardOpenError::IsMarkedForDestruction:
+        return iox2_blackboard_open_error_e_O_IS_MARKED_FOR_DESTRUCTION;
+    case iox2::BlackboardOpenError::ExceedsMaxNumberOfNodes:
+        return iox2_blackboard_open_error_e_O_EXCEEDS_MAX_NUMBER_OF_NODES;
+    case iox2::BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes:
+        return iox2_blackboard_open_error_e_O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+inline auto from<iox2::BlackboardOpenError, const char*>(const iox2::BlackboardOpenError value) noexcept -> const
+    char* {
+    return iox2_blackboard_open_error_string(iox::into<iox2_blackboard_open_error_e>(value));
+}
+
+template <>
+constexpr auto from<int, iox2::WriterCreateError>(const int value) noexcept -> iox2::WriterCreateError {
+    const auto error = static_cast<iox2_writer_create_error_e>(value);
+    switch (error) {
+    case iox2_writer_create_error_e_C_EXCEEDS_MAX_SUPPORTED_WRITERS:
+        return iox2::WriterCreateError::ExceedsMaxSupportedWriters;
+    case iox2_writer_create_error_e_C_INTERNAL_FAILURE:
+        return iox2::WriterCreateError::InternalFailure;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto from<iox2::WriterCreateError, iox2_writer_create_error_e>(const iox2::WriterCreateError value) noexcept
+    -> iox2_writer_create_error_e {
+    switch (value) {
+    case iox2::WriterCreateError::ExceedsMaxSupportedWriters:
+        return iox2_writer_create_error_e_C_EXCEEDS_MAX_SUPPORTED_WRITERS;
+    case iox2::WriterCreateError::InternalFailure:
+        return iox2_writer_create_error_e_C_INTERNAL_FAILURE;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+inline auto from<iox2::WriterCreateError, const char*>(const iox2::WriterCreateError value) noexcept -> const char* {
+    return iox2_writer_create_error_string(iox::into<iox2_writer_create_error_e>(value));
+}
+
+template <>
+constexpr auto from<int, iox2::WriterHandleError>(const int value) noexcept -> iox2::WriterHandleError {
+    const auto error = static_cast<iox2_writer_handle_error_e>(value);
+    switch (error) {
+    case iox2_writer_handle_error_e_C_ENTRY_DOES_NOT_EXIST:
+        return iox2::WriterHandleError::EntryDoesNotExist;
+    case iox2_writer_handle_error_e_C_HANDLE_ALREADY_EXISTS:
+        return iox2::WriterHandleError::HandleAlreadyExists;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto from<iox2::WriterHandleError, iox2_writer_handle_error_e>(const iox2::WriterHandleError value) noexcept
+    -> iox2_writer_handle_error_e {
+    switch (value) {
+    case iox2::WriterHandleError::EntryDoesNotExist:
+        return iox2_writer_handle_error_e_C_ENTRY_DOES_NOT_EXIST;
+    case iox2::WriterHandleError::HandleAlreadyExists:
+        return iox2_writer_handle_error_e_C_HANDLE_ALREADY_EXISTS;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+inline auto from<iox2::WriterHandleError, const char*>(const iox2::WriterHandleError value) noexcept -> const char* {
+    return iox2_writer_handle_error_string(iox::into<iox2_writer_handle_error_e>(value));
+}
+
+template <>
+constexpr auto from<int, iox2::ReaderCreateError>(const int value) noexcept -> iox2::ReaderCreateError {
+    const auto error = static_cast<iox2_reader_create_error_e>(value);
+    switch (error) {
+    case iox2_reader_create_error_e_C_EXCEEDS_MAX_SUPPORTED_READERS:
+        return iox2::ReaderCreateError::ExceedsMaxSupportedReaders;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto from<iox2::ReaderCreateError, iox2_reader_create_error_e>(const iox2::ReaderCreateError value) noexcept
+    -> iox2_reader_create_error_e {
+    switch (value) {
+    case iox2::ReaderCreateError::ExceedsMaxSupportedReaders:
+        return iox2_reader_create_error_e_C_EXCEEDS_MAX_SUPPORTED_READERS;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+inline auto from<iox2::ReaderCreateError, const char*>(const iox2::ReaderCreateError value) noexcept -> const char* {
+    return iox2_reader_create_error_string(iox::into<iox2_reader_create_error_e>(value));
+}
+
+template <>
+constexpr auto from<int, iox2::ReaderHandleError>(const int value) noexcept -> iox2::ReaderHandleError {
+    const auto error = static_cast<iox2_reader_handle_error_e>(value);
+    switch (error) {
+    case iox2_reader_handle_error_e_C_ENTRY_DOES_NOT_EXIST:
+        return iox2::ReaderHandleError::EntryDoesNotExist;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+constexpr auto from<iox2::ReaderHandleError, iox2_reader_handle_error_e>(const iox2::ReaderHandleError value) noexcept
+    -> iox2_reader_handle_error_e {
+    switch (value) {
+    case iox2::ReaderHandleError::EntryDoesNotExist:
+        return iox2_reader_handle_error_e_C_ENTRY_DOES_NOT_EXIST;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
+
+template <>
+inline auto from<iox2::ReaderHandleError, const char*>(const iox2::ReaderHandleError value) noexcept -> const char* {
+    return iox2_reader_handle_error_string(iox::into<iox2_reader_handle_error_e>(value));
 }
 
 template <>
