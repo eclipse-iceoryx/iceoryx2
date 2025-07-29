@@ -189,6 +189,7 @@ fn file_simple_read_write_works() {
     assert_that!(content, len result.ok().unwrap() as usize);
 
     let mut read_content = String::new();
+    assert_that!(file.seek(0), is_ok);
     let result = file.read_to_string(&mut read_content);
     assert_that!(result, is_ok);
     assert_that!(content, len result.ok().unwrap() as usize);
@@ -207,11 +208,55 @@ fn file_write_appends_content_to_file() {
         is_ok
     );
     assert_that!(file.flush(), is_ok);
+    assert_that!(file.seek(0), is_ok);
 
     let mut read_content = String::new();
     let result = file.read_to_string(&mut read_content);
     assert_that!(result, is_ok);
     assert_that!(read_content.as_bytes(), eq b"another file bytes the dust\na horse with a blanket does not require shoes");
+}
+
+#[test]
+fn file_multiple_read_calls_move_file_cursor() {
+    let test = TestFixture::new();
+    let mut file = test.create_file(&test.file);
+
+    assert_that!(file.write(b"hakuna matata"), is_ok);
+    assert_that!(file.flush(), is_ok);
+    assert_that!(file.seek(0), is_ok);
+
+    let mut buffer = [0u8; 1];
+    assert_that!(file.read(&mut buffer), is_ok);
+    assert_that!(buffer[0], eq b'h');
+
+    assert_that!(file.read(&mut buffer), is_ok);
+    assert_that!(buffer[0], eq b'a');
+
+    assert_that!(file.read(&mut buffer), is_ok);
+    assert_that!(buffer[0], eq b'k');
+}
+
+#[test]
+fn file_read_line_works() {
+    let test = TestFixture::new();
+    let mut file = test.create_file(&test.file);
+
+    assert_that!(
+        file.write(b"whatever you do\nwherever you go\ndo not forget your towel!"),
+        is_ok
+    );
+    assert_that!(file.flush(), is_ok);
+    assert_that!(file.seek(0), is_ok);
+
+    let mut buffer = String::new();
+    assert_that!(file.read_line_to_string(&mut buffer), is_ok);
+    assert_that!(buffer, eq "whatever you do");
+
+    assert_that!(file.read_line_to_string(&mut buffer), is_ok);
+    assert_that!(buffer, eq "wherever you go");
+
+    assert_that!(file.read_line_to_string(&mut buffer), is_ok);
+    assert_that!(buffer, eq "do not forget your towel!");
 }
 
 #[test]

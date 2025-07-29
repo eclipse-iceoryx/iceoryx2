@@ -672,35 +672,32 @@ impl File {
         }
     }
 
+    /// Reads the current line into a provided vector.
+    pub fn read_line_to_vector(&self, buf: &mut Vec<u8>) -> Result<u64, FileReadError> {
+        let mut buffer = [0u8; 1];
+        buf.clear();
+
+        let mut counter = 0;
+        while self.read(&mut buffer)? == 1 {
+            if buffer[0] == b'\n' {
+                break;
+            }
+
+            buf.push(buffer[0]);
+            counter += 1;
+        }
+
+        Ok(counter)
+    }
+
+    /// Reads the current line into a provided string.
+    pub fn read_line_to_string(&self, buf: &mut String) -> Result<u64, FileReadError> {
+        self.read_line_to_vector(unsafe { buf.as_mut_vec() })
+    }
+
     /// Reads the content of a file into a slice and returns the number of bytes read but at most
     /// `buf.len()` bytes.
     pub fn read(&self, buf: &mut [u8]) -> Result<u64, FileReadError> {
-        self.read_range(0, buf)
-    }
-
-    /// Reads and appending the content of a file into a vector and returns the number of bytes read.
-    pub fn read_to_vector(&self, buf: &mut Vec<u8>) -> Result<u64, FileReadError> {
-        let attr = fail!(from self, when File::acquire_attributes(self), "Unable to acquire file length to read contents of file.");
-
-        let start = buf.len();
-        buf.resize(attr.st_size as usize + start, 0u8);
-        self.read(&mut buf[start..])
-    }
-
-    /// Reads and appending the content of a file into a string and returns the number of bytes read.
-    pub fn read_to_string(&self, buf: &mut String) -> Result<u64, FileReadError> {
-        self.read_to_vector(unsafe { buf.as_mut_vec() })
-    }
-
-    /// Reads a range of a file beginning from `start`. The range length is determined by
-    /// to length of the slice `buf`. Returns the bytes read.
-    pub fn read_range(&self, start: u64, buf: &mut [u8]) -> Result<u64, FileReadError> {
-        let offset = fail!(from self, when File::set_offset(self, start), "Unable to set offset to read a range from the file.");
-
-        if offset != start {
-            return Ok(0);
-        }
-
         let bytes_read = unsafe {
             posix::read(
                 self.file_descriptor.native_handle(),
@@ -724,6 +721,32 @@ impl File {
             Errno::ENXIO => (NonExistingOrIncapableDevice, "{} since the device either does not exist or is not capable of that operation.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         )
+    }
+
+    /// Reads and appending the content of a file into a vector and returns the number of bytes read.
+    pub fn read_to_vector(&self, buf: &mut Vec<u8>) -> Result<u64, FileReadError> {
+        let attr = fail!(from self, when File::acquire_attributes(self), "Unable to acquire file length to read contents of file.");
+
+        let start = buf.len();
+        buf.resize(attr.st_size as usize + start, 0u8);
+        self.read(&mut buf[start..])
+    }
+
+    /// Reads and appending the content of a file into a string and returns the number of bytes read.
+    pub fn read_to_string(&self, buf: &mut String) -> Result<u64, FileReadError> {
+        self.read_to_vector(unsafe { buf.as_mut_vec() })
+    }
+
+    /// Reads a range of a file beginning from `start`. The range length is determined by
+    /// to length of the slice `buf`. Returns the bytes read.
+    pub fn read_range(&self, start: u64, buf: &mut [u8]) -> Result<u64, FileReadError> {
+        let offset = fail!(from self, when self.seek(start), "Unable to set offset to read a range from the file.");
+
+        if offset != start {
+            return Ok(0);
+        }
+
+        self.read(buf)
     }
 
     /// Reads a range of a file beginning from `start` until `end` and returns the bytes read.
@@ -781,7 +804,7 @@ impl File {
 
     /// Writes a slice into a file beginning from `start` and returns the number of bytes which were written.
     pub fn write_at(&mut self, start: u64, buf: &[u8]) -> Result<u64, FileWriteError> {
-        let offset = fail!(from self, when File::set_offset(self, start), "Unable to set offset to write content at a specific position.");
+        let offset = fail!(from self, when self.seek(start), "Unable to set offset to write content at a specific position.");
 
         if offset != start {
             return Ok(0);
@@ -863,6 +886,36 @@ impl File {
         );
     }
 
+    /// Seek to an absolute position in the file.
+    pub fn seek(&self, offset: u64) -> Result<u64, FileOffsetError> {
+        Self::set_offset(self, offset)
+    }
+
+    pub(crate) fn set_offset<T: FileDescriptorBased + Debug>(
+        this: &T,
+        offset: u64,
+    ) -> Result<u64, FileOffsetError> {
+        let new_offset = unsafe {
+            posix::lseek(
+                this.file_descriptor().native_handle(),
+                offset as posix::off_t,
+                posix::SEEK_SET,
+            )
+        };
+
+        if new_offset >= 0 {
+            return Ok(new_offset as u64);
+        }
+
+        let msg = "Unable to change read/write position to";
+        handle_errno!(FileOffsetError, from this,
+            Errno::EBADF => (InvalidFileDescriptor, "{} {} since the provide file-descriptor was not valid.", msg, offset),
+            Errno::EOVERFLOW => (FileTooBig, "{} {} since the file size is so large that ic cannot be represented by an internal structure.", msg, offset),
+            Errno::ESPIPE => (DoesNotSupportSeeking, "{} {} since the file type does not support seeking.", msg, offset),
+            v => (UnknownError(v as i32), "{} {} due to an unknown error ({}).", msg, offset, v)
+        );
+    }
+
     pub(crate) fn truncate<T: FileDescriptorBased + Debug>(
         this: &T,
         size: usize,
@@ -899,31 +952,6 @@ impl File {
         }
 
         Ok(attr)
-    }
-
-    pub(crate) fn set_offset<T: FileDescriptorBased + Debug>(
-        this: &T,
-        offset: u64,
-    ) -> Result<u64, FileOffsetError> {
-        let new_offset = unsafe {
-            posix::lseek(
-                this.file_descriptor().native_handle(),
-                offset as posix::off_t,
-                posix::SEEK_SET,
-            )
-        };
-
-        if new_offset >= 0 {
-            return Ok(new_offset as u64);
-        }
-
-        let msg = "Unable to change read/write position to";
-        handle_errno!(FileOffsetError, from this,
-            Errno::EBADF => (InvalidFileDescriptor, "{} {} since the provide file-descriptor was not valid.", msg, offset),
-            Errno::EOVERFLOW => (FileTooBig, "{} {} since the file size is so large that ic cannot be represented by an internal structure.", msg, offset),
-            Errno::ESPIPE => (DoesNotSupportSeeking, "{} {} since the file type does not support seeking.", msg, offset),
-            v => (UnknownError(v as i32), "{} {} due to an unknown error ({}).", msg, offset, v)
-        );
     }
 
     pub(crate) fn set_permission<T: FileDescriptorBased + Debug>(
