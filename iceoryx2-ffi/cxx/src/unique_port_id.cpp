@@ -289,4 +289,96 @@ void UniqueServerId::drop() {
         m_handle = nullptr;
     }
 }
+
+UniqueReaderId::UniqueReaderId(UniqueReaderId&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+auto UniqueReaderId::operator=(UniqueReaderId&& rhs) noexcept -> UniqueReaderId& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+UniqueReaderId::~UniqueReaderId() {
+    drop();
+}
+
+auto operator==(const UniqueReaderId& lhs, const UniqueReaderId& rhs) -> bool {
+    return iox2_unique_reader_id_eq(&lhs.m_handle, &rhs.m_handle);
+}
+
+auto operator<(const UniqueReaderId& lhs, const UniqueReaderId& rhs) -> bool {
+    return iox2_unique_reader_id_less(&lhs.m_handle, &rhs.m_handle);
+}
+
+UniqueReaderId::UniqueReaderId(iox2_unique_reader_id_h handle)
+    : m_handle { handle } {
+}
+
+auto UniqueReaderId::bytes() const -> const iox::optional<RawIdType>& {
+    if (!m_raw_id.has_value() && m_handle != nullptr) {
+        RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
+        iox2_unique_reader_id_value(m_handle, bytes.data(), bytes.size());
+        m_raw_id.emplace(std::move(bytes));
+    }
+    return m_raw_id;
+};
+
+void UniqueReaderId::drop() {
+    if (m_handle != nullptr) {
+        iox2_unique_reader_id_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
+
+UniqueWriterId::UniqueWriterId(UniqueWriterId&& rhs) noexcept {
+    *this = std::move(rhs);
+}
+
+auto UniqueWriterId::operator=(UniqueWriterId&& rhs) noexcept -> UniqueWriterId& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
+}
+
+UniqueWriterId::~UniqueWriterId() {
+    drop();
+}
+
+auto operator==(const UniqueWriterId& lhs, const UniqueWriterId& rhs) -> bool {
+    return iox2_unique_writer_id_eq(&lhs.m_handle, &rhs.m_handle);
+}
+
+auto operator<(const UniqueWriterId& lhs, const UniqueWriterId& rhs) -> bool {
+    return iox2_unique_writer_id_less(&lhs.m_handle, &rhs.m_handle);
+}
+
+UniqueWriterId::UniqueWriterId(iox2_unique_writer_id_h handle)
+    : m_handle { handle } {
+}
+
+auto UniqueWriterId::bytes() const -> const iox::optional<RawIdType>& {
+    if (!m_raw_id.has_value() && m_handle != nullptr) {
+        RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
+        iox2_unique_writer_id_value(m_handle, bytes.data(), bytes.size());
+        m_raw_id.emplace(std::move(bytes));
+    }
+    return m_raw_id;
+};
+
+void UniqueWriterId::drop() {
+    if (m_handle != nullptr) {
+        iox2_unique_writer_id_drop(m_handle);
+        m_handle = nullptr;
+    }
+}
 } // namespace iox2
