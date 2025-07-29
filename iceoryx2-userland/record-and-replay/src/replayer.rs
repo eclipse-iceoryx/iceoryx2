@@ -11,8 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
-use core::time::Duration;
-use iceoryx2_bb_log::debug;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::file::File;
@@ -23,6 +21,7 @@ use iceoryx2_cal::serialize::Serialize;
 
 use crate::record::DataRepresentation;
 use crate::record::Record;
+use crate::record::RecordReader;
 use crate::record::HEX_START_RECORD_MARKER;
 use crate::record_header::RecordHeader;
 
@@ -32,21 +31,8 @@ pub enum ReplayerOpenError {
     FailedToReadFile,
     ActualHeaderDoesNotMatchRequiredHeader,
     UnableToDeserializeRecordHeader,
-}
-
-fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>, ReplayerOpenError> {
-    let mut hex_string = hex_string.to_string();
-    hex_string.retain(|c| !c.is_whitespace());
-    hex_string
-        .split_ascii_whitespace()
-        .map(|hex| {
-            u8::from_str_radix(&hex, 16).map_err(|e| {
-                debug!(from "hex_string_to_raw_data()",
-                    "Unable convert {hex} to hex-code ({e:?}).");
-                ReplayerOpenError::InvalidHexCode
-            })
-        })
-        .collect::<Result<Vec<u8>, ReplayerOpenError>>()
+    CorruptedPayloadRecord,
+    CorruptedUserHeaderRecord,
 }
 
 #[derive(Debug)]
@@ -177,64 +163,9 @@ pub struct Replayer {
 
 impl Replayer {
     pub fn next_record(&mut self) -> Result<Option<Record>, ReplayerOpenError> {
-        let msg = "Unable to read next record";
-        match self.data_representation {
-            DataRepresentation::HumanReadable => {
-                let mut timestamp = None;
-                let mut header = None;
-                let mut line = String::new();
-                while self.file.read_line_to_string(&mut line).unwrap() != 0 {
-                    if timestamp.is_none() {
-                        timestamp = Some(Duration::from_millis(
-                            line.as_str()[9..].parse::<u64>().unwrap(),
-                        ));
-                    } else if header.is_none() {
-                        header = Some(hex_string_to_raw_data(&line.as_str()[9..])?);
-                    } else {
-                        return Ok(Some(Record {
-                            timestamp: timestamp.take().unwrap(),
-                            user_header: header.take().unwrap(),
-                            payload: hex_string_to_raw_data(&line.as_str()[9..])?,
-                        }));
-                    }
-                }
-
-                Ok(None)
-            }
-            DataRepresentation::Iox2Dump => {
-                let read = |buffer: &mut [u8]| {
-                    let len = fail!(from self, when self.file.read(buffer),
-                        with ReplayerOpenError::FailedToReadFile,
-                        "{msg} since the underlying file could not be read.");
-                    if len != buffer.len() as u64 {
-                        fail!(from self, with ReplayerOpenError::FailedToReadFile,
-                            "{msg} since the record has a size of {len} and {} bytes are expected.",
-                            buffer.len());
-                    }
-
-                    Ok(())
-                };
-                let mut buffer = [0u8; 8];
-                read(&mut buffer)?;
-                let timestamp = u64::from_le_bytes(buffer);
-
-                read(&mut buffer)?;
-                let header_len = u64::from_le_bytes(buffer);
-                let mut header = vec![0u8; header_len as usize];
-                read(&mut header)?;
-
-                read(&mut buffer)?;
-                let payload_len = u64::from_le_bytes(buffer);
-                let mut payload = vec![0u8; payload_len as usize];
-                read(&mut payload)?;
-
-                Ok(Some(Record {
-                    timestamp: Duration::from_millis(timestamp),
-                    user_header: header,
-                    payload: payload,
-                }))
-            }
-        }
+        RecordReader::new(&self.header)
+            .data_representation(self.data_representation)
+            .read(&self.file)
     }
 
     pub fn header(&self) -> &RecordHeader {

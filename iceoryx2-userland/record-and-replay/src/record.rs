@@ -12,8 +12,11 @@
 
 use anyhow::Result;
 use core::time::Duration;
-use iceoryx2_bb_log::fail;
+use iceoryx2::service::static_config::message_type_details::TypeVariant;
+use iceoryx2_bb_log::{debug, fail};
 use iceoryx2_bb_posix::file::{File, FileWriteError};
+
+use crate::{record_header::RecordHeader, replayer::ReplayerOpenError};
 
 pub const HEX_START_RECORD_MARKER: &[u8] = b"### Recorded Data Start ###";
 
@@ -31,13 +34,141 @@ pub struct Record {
 }
 
 #[derive(Debug)]
-pub(crate) struct RecordCreator<'a> {
+pub(crate) struct RecordReader {
+    header: RecordHeader,
+    data_representation: DataRepresentation,
+}
+
+impl RecordReader {
+    pub(crate) fn new(header: &RecordHeader) -> Self {
+        Self {
+            header: header.clone(),
+            data_representation: DataRepresentation::default(),
+        }
+    }
+
+    pub(crate) fn data_representation(mut self, value: DataRepresentation) -> Self {
+        self.data_representation = value;
+        self
+    }
+
+    fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>, ReplayerOpenError> {
+        let mut hex_string = hex_string.to_string();
+        hex_string.retain(|c| !c.is_whitespace());
+        hex_string
+            .split_ascii_whitespace()
+            .map(|hex| {
+                u8::from_str_radix(&hex, 16).map_err(|e| {
+                    debug!(from "hex_string_to_raw_data()",
+                        "Unable convert {hex} to hex-code ({e:?}).");
+                    ReplayerOpenError::InvalidHexCode
+                })
+            })
+            .collect::<Result<Vec<u8>, ReplayerOpenError>>()
+    }
+
+    fn verify_payload(&self, payload: &Vec<u8>, error_msg: &str) -> Result<(), ReplayerOpenError> {
+        if (self.header.payload_type.variant == TypeVariant::FixedSize
+            && payload.len() != self.header.payload_type.size)
+            || (self.header.payload_type.variant == TypeVariant::Dynamic
+                && payload.len() % self.header.payload_type.size != 0)
+        {
+            fail!(from self, with ReplayerOpenError::CorruptedPayloadRecord,
+                                "{error_msg} since the payload record is corrupted (has wrong size).");
+        }
+
+        Ok(())
+    }
+
+    fn verify_user_header(
+        &self,
+        header: &Vec<u8>,
+        error_msg: &str,
+    ) -> Result<(), ReplayerOpenError> {
+        if header.len() != self.header.payload_type.size {
+            fail!(from self, with ReplayerOpenError::CorruptedUserHeaderRecord,
+                                "{error_msg} since the payload record is corrupted (has wrong size).");
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn read(self, file: &File) -> Result<Option<Record>, ReplayerOpenError> {
+        let msg = "Unable to read next record";
+        match self.data_representation {
+            DataRepresentation::HumanReadable => {
+                let mut timestamp = None;
+                let mut header = None;
+                let mut line = String::new();
+                while file.read_line_to_string(&mut line).unwrap() != 0 {
+                    if timestamp.is_none() {
+                        timestamp = Some(Duration::from_millis(
+                            line.as_str()[9..].parse::<u64>().unwrap(),
+                        ));
+                    } else if header.is_none() {
+                        header = Some(Self::hex_string_to_raw_data(&line.as_str()[9..])?);
+                    } else {
+                        let payload = Self::hex_string_to_raw_data(&line.as_str()[9..])?;
+                        self.verify_payload(&payload, msg)?;
+                        self.verify_user_header(header.as_ref().unwrap(), msg)?;
+
+                        return Ok(Some(Record {
+                            timestamp: timestamp.take().unwrap(),
+                            user_header: header.take().unwrap(),
+                            payload: Self::hex_string_to_raw_data(&line.as_str()[9..])?,
+                        }));
+                    }
+                }
+
+                Ok(None)
+            }
+            DataRepresentation::Iox2Dump => {
+                let read = |buffer: &mut [u8]| {
+                    let len = fail!(from self, when file.read(buffer),
+                        with ReplayerOpenError::FailedToReadFile,
+                        "{msg} since the underlying file could not be read.");
+                    if len != buffer.len() as u64 {
+                        fail!(from self, with ReplayerOpenError::FailedToReadFile,
+                            "{msg} since the record has a size of {len} and {} bytes are expected.",
+                            buffer.len());
+                    }
+
+                    Ok(())
+                };
+                let mut buffer = [0u8; 8];
+                read(&mut buffer)?;
+                let timestamp = u64::from_le_bytes(buffer);
+
+                read(&mut buffer)?;
+                let header_len = u64::from_le_bytes(buffer);
+                let mut header = vec![0u8; header_len as usize];
+                read(&mut header)?;
+
+                read(&mut buffer)?;
+                let payload_len = u64::from_le_bytes(buffer);
+                let mut payload = vec![0u8; payload_len as usize];
+                read(&mut payload)?;
+
+                self.verify_payload(&payload, msg)?;
+                self.verify_user_header(&header, msg)?;
+                Ok(Some(Record {
+                    timestamp: Duration::from_millis(timestamp),
+                    user_header: header,
+                    payload: payload,
+                }))
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct RecordWriter<'a> {
     file: &'a mut File,
     data_representation: DataRepresentation,
     time_stamp: Duration,
 }
 
-impl<'a> RecordCreator<'a> {
+impl<'a> RecordWriter<'a> {
     pub(crate) fn new(file: &'a mut File) -> Self {
         Self {
             file,

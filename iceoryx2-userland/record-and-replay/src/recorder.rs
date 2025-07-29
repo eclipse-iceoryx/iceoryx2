@@ -22,7 +22,7 @@ use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_cal::serialize::Serialize;
 
 use crate::record::DataRepresentation;
-use crate::record::RecordCreator;
+use crate::record::RecordWriter;
 use crate::record::HEX_START_RECORD_MARKER;
 use crate::record_header::RecordHeader;
 
@@ -179,7 +179,7 @@ impl Recorder {
         payload: &[u8],
         time_stamp: Duration,
     ) -> Result<(), FileWriteError> {
-        RecordCreator::new(&mut self.file)
+        RecordWriter::new(&mut self.file)
             .data_representation(self.data_representation)
             .time_stamp(time_stamp)
             .write(user_header, payload)
