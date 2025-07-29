@@ -150,10 +150,11 @@ pub enum CliTypeVariant {
     FixedSize,
 }
 
-#[derive(Clone, Copy, ValueEnum)]
+#[derive(Clone, Copy, ValueEnum, Default)]
 #[value(rename_all = "UPPERCASE")]
 pub enum DataRepresentation {
     Iox2Dump,
+    #[default]
     Hex,
 }
 

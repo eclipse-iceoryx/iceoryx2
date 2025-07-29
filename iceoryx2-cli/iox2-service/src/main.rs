@@ -22,6 +22,7 @@ mod commands;
 mod file_recorder;
 mod file_replayer;
 mod filter;
+mod record;
 mod record_file_header;
 
 use anyhow::Result;

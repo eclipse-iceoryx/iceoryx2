@@ -19,13 +19,16 @@ use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_cal::serialize::Serialize;
 use std::fs::File;
 use std::io::Write;
+use std::time::Instant;
 
 use crate::cli::DataRepresentation;
+use crate::record::RecordCreator;
 use crate::record_file_header::RecordFileHeader;
 
 pub struct FileRecorder {
     file: File,
     data_representation: DataRepresentation,
+    start: Instant,
 }
 
 impl FileRecorder {
@@ -55,25 +58,15 @@ impl FileRecorder {
         Ok(Self {
             file,
             data_representation,
+            start: Instant::now(),
         })
     }
 
     pub fn write_payload(&mut self, user_header: &[u8], payload: &[u8]) -> Result<()> {
-        match self.data_representation {
-            DataRepresentation::Hex => {
-                writeln!(self.file, "{}", str::from_utf8(user_header)?)?;
-                writeln!(self.file, "{}", str::from_utf8(payload)?)?;
-            }
-            DataRepresentation::Iox2Dump => {
-                self.file
-                    .write_all(&(user_header.len() as u64).to_le_bytes())?;
-                self.file.write_all(user_header)?;
-                self.file.write_all(&(payload.len() as u64).to_le_bytes())?;
-                self.file.write_all(payload)?;
-            }
-        }
-
-        Ok(())
+        RecordCreator::new(&mut self.file)
+            .data_representation(self.data_representation)
+            .time_stamp(self.start.elapsed())
+            .write(user_header, payload)
     }
 
     fn write_file_header(
@@ -110,7 +103,7 @@ impl FileRecorder {
 ### start of recorded data ###
 ##############################
 
-        "#;
+"#;
         file.write(data_start_comment.as_bytes())?;
 
         Ok(())

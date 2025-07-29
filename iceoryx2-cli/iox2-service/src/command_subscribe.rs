@@ -156,7 +156,7 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
     };
 
     let subscriber = service.subscriber_builder().create()?;
-    let cycle_time = Duration::from_millis(10);
+    let cycle_time = Duration::from_millis(1);
 
     let start = Instant::now();
     let mut msg_counter = 0u64;
