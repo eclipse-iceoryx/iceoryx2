@@ -158,6 +158,19 @@ pub enum DataRepresentation {
     Hex,
 }
 
+impl From<DataRepresentation> for iceoryx2_userland_record_and_replay::record::DataRepresentation {
+    fn from(value: DataRepresentation) -> Self {
+        match value {
+            DataRepresentation::Hex => {
+                iceoryx2_userland_record_and_replay::record::DataRepresentation::Hex
+            }
+            DataRepresentation::Iox2Dump => {
+                iceoryx2_userland_record_and_replay::record::DataRepresentation::Iox2Dump
+            }
+        }
+    }
+}
+
 #[derive(Parser)]
 pub struct PublishOptions {
     #[clap(help = "Name of the service which shall the message be sent to.")]

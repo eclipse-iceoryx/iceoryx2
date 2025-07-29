@@ -21,7 +21,7 @@ use iceoryx2_cal::serialize::Serialize;
 use std::fs::File;
 use std::io::Write;
 
-use crate::cli::DataRepresentation;
+use crate::record::DataRepresentation;
 use crate::record::RecordCreator;
 use crate::record::HEX_START_RECORD_MARKER;
 use crate::record_file_header::RecordFileHeader;

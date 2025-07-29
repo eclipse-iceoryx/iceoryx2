@@ -21,7 +21,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
 
-use crate::cli::DataRepresentation;
+use crate::record::DataRepresentation;
 use crate::record::Record;
 use crate::record::HEX_START_RECORD_MARKER;
 use crate::record_file_header::RecordFileHeader;

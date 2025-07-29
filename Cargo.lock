@@ -1477,6 +1477,7 @@ dependencies = [
  "iceoryx2-pal-testing",
  "iceoryx2-services-discovery",
  "iceoryx2-tunnels-zenoh",
+ "iceoryx2-userland-record-and-replay",
  "ron",
  "serde",
  "serde_json",
@@ -1599,6 +1600,13 @@ dependencies = [
 [[package]]
 name = "iceoryx2-userland-record-and-replay"
 version = "0.6.1"
+dependencies = [
+ "anyhow",
+ "iceoryx2",
+ "iceoryx2-bb-elementary",
+ "iceoryx2-cal",
+ "serde",
+]
 
 [[package]]
 name = "icu_collections"

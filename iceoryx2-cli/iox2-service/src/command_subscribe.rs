@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::cli::{DataRepresentation, SubscribeOptions};
-use crate::file_recorder::FileRecorder;
 use anyhow::anyhow;
 use anyhow::Result;
 use iceoryx2::prelude::*;
@@ -19,6 +18,7 @@ use iceoryx2::sample::Sample;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2_cli::Format;
+use iceoryx2_userland_record_and_replay::file_recorder::FileRecorder;
 use std::io::Write;
 use std::time::Duration;
 use std::time::Instant;
@@ -140,7 +140,7 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
             v,
             &payload_type,
             &user_header_type,
-            options.data_representation,
+            options.data_representation.into(),
             MessagingPattern::PublishSubscribe,
         )?),
         None => None,

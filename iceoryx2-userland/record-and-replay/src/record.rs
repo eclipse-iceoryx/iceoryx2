@@ -15,9 +15,14 @@ use core::time::Duration;
 use std::fs::File;
 use std::io::Write;
 
-use crate::cli::DataRepresentation;
-
 pub const HEX_START_RECORD_MARKER: &[u8] = b"### Recorded Data Start ###";
+
+#[derive(Clone, Copy, Default)]
+pub enum DataRepresentation {
+    Iox2Dump,
+    #[default]
+    Hex,
+}
 
 pub struct Record {
     pub timestamp: Duration,
