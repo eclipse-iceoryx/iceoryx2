@@ -251,9 +251,11 @@ fn file_read_line_works() {
     let mut buffer = String::new();
     assert_that!(file.read_line_to_string(&mut buffer), is_ok);
     assert_that!(buffer, eq "whatever you do");
+    buffer.clear();
 
     assert_that!(file.read_line_to_string(&mut buffer), is_ok);
     assert_that!(buffer, eq "wherever you go");
+    buffer.clear();
 
     assert_that!(file.read_line_to_string(&mut buffer), is_ok);
     assert_that!(buffer, eq "do not forget your towel!");

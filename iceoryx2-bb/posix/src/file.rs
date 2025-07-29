@@ -675,7 +675,6 @@ impl File {
     /// Reads the current line into a provided vector.
     pub fn read_line_to_vector(&self, buf: &mut Vec<u8>) -> Result<u64, FileReadError> {
         let mut buffer = [0u8; 1];
-        buf.clear();
 
         let mut counter = 0;
         while self.read(&mut buffer)? == 1 {
