@@ -11,6 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::cli::{DataRepresentation, SubscribeOptions};
+use crate::record_file::RecordFile;
 use anyhow::anyhow;
 use anyhow::Result;
 use iceoryx2::prelude::*;
@@ -18,7 +19,6 @@ use iceoryx2::sample::Sample;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2_cli::Format;
-use std::fs::File;
 use std::io::Write;
 use std::time::Duration;
 use std::time::Instant;
@@ -26,7 +26,7 @@ use std::time::Instant;
 fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
     use std::fmt::Write;
 
-    let mut ret_val = String::with_capacity(2 * raw_data.len());
+    let mut ret_val = String::with_capacity(3 * raw_data.len());
     for byte in raw_data {
         let _ = write!(&mut ret_val, "{byte:0>2x} ");
     }
@@ -91,55 +91,38 @@ fn extract_payload<'a>(
     (user_header, payload)
 }
 
-fn output_iox2_dump_data(
-    user_header: &[u8],
-    payload: &[u8],
-    options: &SubscribeOptions,
-    file: &mut Option<File>,
-) -> Result<()> {
-    if !options.quiet {
-        print!("header {{len = {}}}: ", user_header.len());
-        std::io::stdout().write_all(user_header)?;
-        println!();
-
-        print!("payload {{len = {}}}: ", payload.len());
-        std::io::stdout().write_all(payload)?;
-        println!();
+fn print_hex_dump(user_header: &[u8], payload: &[u8], options: &SubscribeOptions) -> Result<()> {
+    if options.quiet {
+        return Ok(());
     }
 
-    if let Some(ref mut file) = file {
-        file.write_all(&(user_header.len() as u64).to_le_bytes())?;
-        file.write_all(user_header)?;
-        file.write_all(&(payload.len() as u64).to_le_bytes())?;
-        file.write_all(payload)?;
-    }
+    println!(
+        "header {{len = {}}}: {}",
+        user_header.len(),
+        str::from_utf8(user_header)?,
+    );
+
+    println!(
+        "payload {{len = {}}}: {}",
+        payload.len(),
+        str::from_utf8(payload)?
+    );
 
     Ok(())
 }
 
-fn output_hex_data(
-    user_header: &[u8],
-    payload: &[u8],
-    options: &SubscribeOptions,
-    file: &mut Option<File>,
-) -> Result<()> {
-    let hex_user_header = raw_data_to_hex_string(user_header);
-    let hex_payload = raw_data_to_hex_string(payload);
-
-    if !options.quiet {
-        println!(
-            "header {{len = {}}}: {}",
-            user_header.len(),
-            hex_user_header
-        );
-
-        println!("payload {{len = {}}}: {}", payload.len(), hex_payload);
+fn print_iox2_dump(user_header: &[u8], payload: &[u8], options: &SubscribeOptions) -> Result<()> {
+    if options.quiet {
+        return Ok(());
     }
 
-    if let Some(ref mut file) = file {
-        writeln!(file, "{hex_user_header}")?;
-        writeln!(file, "{hex_payload}")?;
-    }
+    print!("header {{len = {}}}: ", user_header.len());
+    std::io::stdout().write_all(user_header)?;
+    println!();
+
+    print!("payload {{len = {}}}: ", payload.len());
+    std::io::stdout().write_all(payload)?;
+    println!();
 
     Ok(())
 }
@@ -153,12 +136,13 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
     let (user_header_type, payload_type) = get_service_types(&options, &node)?;
 
     let mut file = match &options.output_file {
-        Some(v) => Some(
-            std::fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(v)?,
-        ),
+        Some(v) => Some(RecordFile::create_or_open(
+            v,
+            payload_type.clone(),
+            user_header_type.clone(),
+            options.data_representation,
+            MessagingPattern::PublishSubscribe,
+        )?),
         None => None,
     };
 
@@ -180,12 +164,24 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
         while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
             let (user_header, payload) = extract_payload(&sample, &user_header_type);
 
+            let mut record_to_file = |user_header, payload| -> Result<()> {
+                if let Some(file) = &mut file {
+                    file.write_payload(user_header, payload)?;
+                }
+
+                Ok(())
+            };
+
             match options.data_representation {
                 DataRepresentation::Iox2Dump => {
-                    output_iox2_dump_data(user_header, payload, &options, &mut file)?
+                    print_iox2_dump(user_header, payload, &options)?;
+                    record_to_file(user_header, payload)?;
                 }
                 DataRepresentation::Hex => {
-                    output_hex_data(user_header, payload, &options, &mut file)?
+                    let hex_user_header = raw_data_to_hex_string(user_header);
+                    let hex_payload = raw_data_to_hex_string(payload);
+                    print_hex_dump(hex_user_header.as_bytes(), hex_payload.as_bytes(), &options)?;
+                    record_to_file(hex_user_header.as_bytes(), hex_payload.as_bytes())?;
                 }
             }
 

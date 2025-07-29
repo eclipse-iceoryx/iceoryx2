@@ -196,7 +196,7 @@ pub struct PublishOptions {
         short,
         long,
         default_value = "1",
-        help = "How often shall the messages be sent."
+        help = "How often shall the messages be sent. If `0` is set the messages will be sent indefinitely."
     )]
     pub repetitions: usize,
 

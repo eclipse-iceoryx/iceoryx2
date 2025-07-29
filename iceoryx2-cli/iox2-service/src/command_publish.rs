@@ -210,9 +210,17 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     read_file_into_buffer(&mut message_buffer, &options)?;
     read_cli_msg_into_buffer(&mut message_buffer, &options)?;
 
-    for _ in 0..options.repetitions {
+    let mut counter = 0;
+    loop {
         for (header, payload) in &message_buffer {
             send_message(header.as_slice(), payload.as_slice(), &publisher, &options)?;
+        }
+
+        if options.repetitions != 0 {
+            counter += 1;
+            if counter == options.repetitions {
+                break;
+            }
         }
     }
 

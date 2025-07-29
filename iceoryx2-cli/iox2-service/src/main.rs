@@ -20,8 +20,9 @@ mod command_publish;
 mod command_subscribe;
 mod commands;
 mod filter;
+mod record_file;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
