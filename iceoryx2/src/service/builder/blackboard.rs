@@ -48,7 +48,7 @@ enum ServiceAvailabilityState {
 /// Errors that can occur when an existing [`MessagingPattern::Blackboard`] [`Service`] shall be opened.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BlackboardOpenError {
-    /// Service could not be openen since it does not exist
+    /// The [`Service`] could not be opened since it does not exist
     DoesNotExist,
     /// Some underlying resources of the [`Service`] are either missing, corrupted or unaccessible.
     ServiceInCorruptedState,
