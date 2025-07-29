@@ -16,7 +16,7 @@ use iceoryx2::{
 
 #[repr(C)]
 #[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
-pub struct RecordFileHeader {
+pub struct RecordHeader {
     pub version: u64,
     pub payload_type: TypeDetail,
     pub header_type: TypeDetail,

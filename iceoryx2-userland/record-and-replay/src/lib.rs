@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod file_recorder;
-pub mod file_replayer;
 pub mod record;
-pub mod record_file_header;
+pub mod record_header;
+pub mod recorder;
+pub mod replayer;

@@ -24,9 +24,9 @@ use iceoryx2_cal::serialize::Serialize;
 use crate::record::DataRepresentation;
 use crate::record::Record;
 use crate::record::HEX_START_RECORD_MARKER;
-use crate::record_file_header::RecordFileHeader;
+use crate::record_header::RecordHeader;
 
-pub enum ReplayOpenError {
+pub enum ReplayerOpenError {
     InvalidHexCode,
     FailedToOpenFile,
     FailedToReadFile,
@@ -34,7 +34,7 @@ pub enum ReplayOpenError {
     UnableToDeserializeRecordHeader,
 }
 
-fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>, ReplayOpenError> {
+fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>, ReplayerOpenError> {
     let mut hex_string = hex_string.to_string();
     hex_string.retain(|c| !c.is_whitespace());
     hex_string
@@ -43,20 +43,20 @@ fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>, ReplayOpenError> 
             u8::from_str_radix(&hex, 16).map_err(|e| {
                 debug!(from "hex_string_to_raw_data()",
                     "Unable convert {hex} to hex-code ({e:?}).");
-                ReplayOpenError::InvalidHexCode
+                ReplayerOpenError::InvalidHexCode
             })
         })
-        .collect::<Result<Vec<u8>, ReplayOpenError>>()
+        .collect::<Result<Vec<u8>, ReplayerOpenError>>()
 }
 
 #[derive(Debug)]
-pub struct ReplayOpener {
+pub struct ReplayerOpener {
     file_path: FilePath,
     data_representation: DataRepresentation,
-    required_header: Option<RecordFileHeader>,
+    required_header: Option<RecordHeader>,
 }
 
-impl ReplayOpener {
+impl ReplayerOpener {
     pub fn new(file_path: FilePath) -> Self {
         Self {
             file_path,
@@ -65,12 +65,12 @@ impl ReplayOpener {
         }
     }
 
-    pub fn require_header(mut self, header: RecordFileHeader) -> Self {
+    pub fn require_header(mut self, header: RecordHeader) -> Self {
         self.required_header = Some(header);
         self
     }
 
-    pub fn read_into_buffer(self) -> Result<(Vec<Record>, RecordFileHeader), ReplayOpenError> {
+    pub fn read_into_buffer(self) -> Result<(Vec<Record>, RecordHeader), ReplayerOpenError> {
         let mut replay = self.open()?;
 
         let mut buffer = vec![];
@@ -81,7 +81,7 @@ impl ReplayOpener {
         Ok((buffer, replay.header().clone()))
     }
 
-    pub fn open(self) -> Result<Replay, ReplayOpenError> {
+    pub fn open(self) -> Result<Replayer, ReplayerOpenError> {
         let msg = "Unable to read recorded data";
         let origin = format!("{self:?}");
         let mut file = match FileBuilder::new(&self.file_path)
@@ -90,33 +90,33 @@ impl ReplayOpener {
         {
             Ok(v) => v,
             Err(e) => {
-                fail!(from self, with ReplayOpenError::FailedToOpenFile,
+                fail!(from self, with ReplayerOpenError::FailedToOpenFile,
                                 "{msg} since the file could not be opened ({e:?}).");
             }
         };
 
-        let actual_header = Self::read_file_header(&mut file, self.data_representation)?;
+        let actual_header = Self::read_header(&mut file, self.data_representation)?;
 
         if let Some(required_header) = self.required_header {
             if required_header != actual_header {
-                fail!(from origin, with ReplayOpenError::ActualHeaderDoesNotMatchRequiredHeader,
+                fail!(from origin, with ReplayerOpenError::ActualHeaderDoesNotMatchRequiredHeader,
                     "{msg} since the required header: {required_header:?} does not match the actual header {actual_header:?}.");
             }
         }
 
-        Ok(Replay {
+        Ok(Replayer {
             file,
             data_representation: self.data_representation,
             header: actual_header.clone(),
         })
     }
 
-    fn read_file_header(
+    fn read_header(
         file: &mut File,
         data_representation: DataRepresentation,
-    ) -> Result<RecordFileHeader, ReplayOpenError> {
+    ) -> Result<RecordHeader, ReplayerOpenError> {
         let msg = "Unable to read record file header";
-        let origin = "read_file_header()";
+        let origin = "read_header()";
 
         match data_representation {
             DataRepresentation::Hex => {
@@ -125,7 +125,7 @@ impl ReplayOpener {
 
                 loop {
                     let line_length = fail!(from origin, when file.read_line_to_vector(&mut buffer),
-                            with ReplayOpenError::FailedToReadFile,
+                            with ReplayerOpenError::FailedToReadFile,
                             "{msg} since the next line could not be read.");
 
                     if line_length == 0
@@ -138,27 +138,27 @@ impl ReplayOpener {
                 }
 
                 let record_file_header = fail!(from origin,
-                    when Toml::deserialize::<RecordFileHeader>(buffer.as_slice()),
-                    with ReplayOpenError::UnableToDeserializeRecordHeader,
-                    "{msg} since the record file header could not be deserialized.");
+                    when Toml::deserialize::<RecordHeader>(buffer.as_slice()),
+                    with ReplayerOpenError::UnableToDeserializeRecordHeader,
+                    "{msg} since the record header could not be deserialized.");
 
                 Ok(record_file_header)
             }
             DataRepresentation::Iox2Dump => {
-                let mut header = MaybeUninit::<RecordFileHeader>::uninit();
+                let mut header = MaybeUninit::<RecordHeader>::uninit();
                 let result = file.read(unsafe {
                     core::slice::from_raw_parts_mut(
                         header.as_mut_ptr() as *mut u8,
-                        core::mem::size_of::<RecordFileHeader>(),
+                        core::mem::size_of::<RecordHeader>(),
                     )
                 });
 
                 let read_bytes = fail!(from origin, when result,
-                                    with ReplayOpenError::FailedToReadFile,
-                                    "{msg} since the record file header could not be read.");
+                                    with ReplayerOpenError::FailedToReadFile,
+                                    "{msg} since the record header could not be read.");
 
-                if read_bytes != core::mem::size_of::<RecordFileHeader>() as u64 {
-                    fail!(from origin, with ReplayOpenError::UnableToDeserializeRecordHeader,
+                if read_bytes != core::mem::size_of::<RecordHeader>() as u64 {
+                    fail!(from origin, with ReplayerOpenError::UnableToDeserializeRecordHeader,
                         "{msg} since the record file entry is too short.");
                 }
 
@@ -169,14 +169,14 @@ impl ReplayOpener {
 }
 
 #[derive(Debug)]
-pub struct Replay {
+pub struct Replayer {
     file: File,
     data_representation: DataRepresentation,
-    header: RecordFileHeader,
+    header: RecordHeader,
 }
 
-impl Replay {
-    pub fn next_record(&mut self) -> Result<Option<Record>, ReplayOpenError> {
+impl Replayer {
+    pub fn next_record(&mut self) -> Result<Option<Record>, ReplayerOpenError> {
         let msg = "Unable to read next record";
         match self.data_representation {
             DataRepresentation::Hex => {
@@ -186,15 +186,15 @@ impl Replay {
                 while self.file.read_line_to_string(&mut line).unwrap() != 0 {
                     if timestamp.is_none() {
                         timestamp = Some(Duration::from_millis(
-                            line.as_str()[1..].parse::<u64>().unwrap(),
+                            line.as_str()[9..].parse::<u64>().unwrap(),
                         ));
                     } else if header.is_none() {
-                        header = Some(hex_string_to_raw_data(&line)?);
+                        header = Some(hex_string_to_raw_data(&line.as_str()[9..])?);
                     } else {
                         return Ok(Some(Record {
                             timestamp: timestamp.take().unwrap(),
                             user_header: header.take().unwrap(),
-                            payload: hex_string_to_raw_data(&line)?,
+                            payload: hex_string_to_raw_data(&line.as_str()[9..])?,
                         }));
                     }
                 }
@@ -204,10 +204,10 @@ impl Replay {
             DataRepresentation::Iox2Dump => {
                 let read = |buffer: &mut [u8]| {
                     let len = fail!(from self, when self.file.read(buffer),
-                        with ReplayOpenError::FailedToReadFile,
+                        with ReplayerOpenError::FailedToReadFile,
                         "{msg} since the underlying file could not be read.");
                     if len != buffer.len() as u64 {
-                        fail!(from self, with ReplayOpenError::FailedToReadFile,
+                        fail!(from self, with ReplayerOpenError::FailedToReadFile,
                             "{msg} since the record has a size of {len} and {} bytes are expected.",
                             buffer.len());
                     }
@@ -237,7 +237,7 @@ impl Replay {
         }
     }
 
-    pub fn header(&self) -> &RecordFileHeader {
+    pub fn header(&self) -> &RecordHeader {
         &self.header
     }
 }

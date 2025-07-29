@@ -18,8 +18,7 @@ use iceoryx2::sample::Sample;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2_cli::Format;
-use iceoryx2_userland_record_and_replay::file_recorder::FileRecorder;
-use iceoryx2_userland_record_and_replay::file_recorder::FileRecorderBuilder;
+use iceoryx2_userland_record_and_replay::recorder::RecorderBuilder;
 use std::io::Write;
 use std::time::Duration;
 use std::time::Instant;
@@ -138,7 +137,7 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
 
     let mut file = match &options.output_file {
         Some(v) => Some(
-            FileRecorderBuilder::new(&payload_type, &user_header_type)
+            RecorderBuilder::new(&payload_type, &user_header_type)
                 .data_representation(options.data_representation.into())
                 .messaging_pattern(MessagingPattern::PublishSubscribe)
                 .create(&FilePath::new(v.as_bytes())?)?,

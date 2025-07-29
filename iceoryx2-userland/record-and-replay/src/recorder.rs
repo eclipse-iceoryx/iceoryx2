@@ -24,32 +24,32 @@ use iceoryx2_cal::serialize::Serialize;
 use crate::record::DataRepresentation;
 use crate::record::RecordCreator;
 use crate::record::HEX_START_RECORD_MARKER;
-use crate::record_file_header::RecordFileHeader;
+use crate::record_header::RecordHeader;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum FileRecorderCreateError {
+pub enum RecorderCreateError {
     FailedToCreateRecordFile,
     UnableToWriteFile,
-    UnableToSerializeRecordFileHeader,
+    UnableToSerializeRecordHeader,
 }
 
-impl core::fmt::Display for FileRecorderCreateError {
+impl core::fmt::Display for RecorderCreateError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "FileRecorderCreateError::{self:?}")
+        write!(f, "RecorderCreateError::{self:?}")
     }
 }
 
-impl core::error::Error for FileRecorderCreateError {}
+impl core::error::Error for RecorderCreateError {}
 
 #[derive(Debug)]
-pub struct FileRecorderBuilder {
+pub struct RecorderBuilder {
     payload_type: TypeDetail,
     header_type: TypeDetail,
     data_representation: DataRepresentation,
     messaging_pattern: MessagingPattern,
 }
 
-impl FileRecorderBuilder {
+impl RecorderBuilder {
     pub fn new(payload_type: &TypeDetail, header_type: &TypeDetail) -> Self {
         Self {
             payload_type: payload_type.clone(),
@@ -69,7 +69,7 @@ impl FileRecorderBuilder {
         self
     }
 
-    pub fn create(self, file_name: &FilePath) -> Result<FileRecorder, FileRecorderCreateError> {
+    pub fn create(self, file_name: &FilePath) -> Result<Recorder, RecorderCreateError> {
         let msg = format!("Unable to create file recorder for \"{}\"", file_name);
         let mut file = match FileBuilder::new(file_name)
             .has_ownership(false)
@@ -78,14 +78,14 @@ impl FileRecorderBuilder {
         {
             Ok(v) => v,
             Err(e) => {
-                fail!(from self, with FileRecorderCreateError::FailedToCreateRecordFile,
+                fail!(from self, with RecorderCreateError::FailedToCreateRecordFile,
                     "{msg} since the underlying file could not be created ({e:?}).");
             }
         };
 
-        self.write_file_header(
+        self.write_header(
             &mut file,
-            RecordFileHeader {
+            RecordHeader {
                 version: PackageVersion::get().to_u64(),
                 payload_type: self.payload_type.clone(),
                 header_type: self.header_type.clone(),
@@ -94,66 +94,66 @@ impl FileRecorderBuilder {
             self.data_representation,
         )?;
 
-        Ok(FileRecorder {
+        Ok(Recorder {
             file,
             data_representation: self.data_representation,
         })
     }
 
-    fn write_file_header(
+    fn write_header(
         &self,
         file: &mut File,
-        file_header: RecordFileHeader,
+        file_header: RecordHeader,
         data_representation: DataRepresentation,
-    ) -> Result<(), FileRecorderCreateError> {
+    ) -> Result<(), RecorderCreateError> {
         match data_representation {
-            DataRepresentation::Hex => self.write_hex_file_header(file, file_header),
-            DataRepresentation::Iox2Dump => self.write_iox2dump_file_header(file, file_header),
+            DataRepresentation::Hex => self.write_hex_header(file, file_header),
+            DataRepresentation::Iox2Dump => self.write_iox2dump_header(file, file_header),
         }
     }
 
-    fn write_iox2dump_file_header(
+    fn write_iox2dump_header(
         &self,
         file: &mut File,
-        file_header: RecordFileHeader,
-    ) -> Result<(), FileRecorderCreateError> {
+        file_header: RecordHeader,
+    ) -> Result<(), RecorderCreateError> {
         let msg = format!(
-            "Unable to write RecordFileHeader into iox2dump file \"{:?}\"",
+            "Unable to write RecordHeader into iox2dump file \"{:?}\"",
             file.path()
         );
         let buffer = unsafe {
             core::slice::from_raw_parts(
-                (&file_header as *const RecordFileHeader) as *const u8,
-                core::mem::size_of::<RecordFileHeader>(),
+                (&file_header as *const RecordHeader) as *const u8,
+                core::mem::size_of::<RecordHeader>(),
             )
         };
 
         fail!(from self,
                 when file.write(buffer),
-                with FileRecorderCreateError::UnableToWriteFile,
+                with RecorderCreateError::UnableToWriteFile,
                 "{msg} since the file could not be written.");
 
         Ok(())
     }
 
-    fn write_hex_file_header(
+    fn write_hex_header(
         &self,
         file: &mut File,
-        file_header: RecordFileHeader,
-    ) -> Result<(), FileRecorderCreateError> {
+        file_header: RecordHeader,
+    ) -> Result<(), RecorderCreateError> {
         let msg = format!(
             "Unable to write RecordFileHeader into hex file \"{:?}\"",
             file.path()
         );
         let serialized = fail!(from self,
                                when Toml::serialize(&file_header),
-                               with FileRecorderCreateError::UnableToSerializeRecordFileHeader,
+                               with RecorderCreateError::UnableToSerializeRecordHeader,
                                "{msg} since the RecordFileHeader could not be serialized.");
 
-        let mut write_to_file = |data| -> Result<(), FileRecorderCreateError> {
+        let mut write_to_file = |data| -> Result<(), RecorderCreateError> {
             fail!(from self,
               when file.write(data),
-              with FileRecorderCreateError::UnableToWriteFile,
+              with RecorderCreateError::UnableToWriteFile,
               "{msg} since the file could not be written.");
             Ok(())
         };
@@ -167,12 +167,12 @@ impl FileRecorderBuilder {
     }
 }
 
-pub struct FileRecorder {
+pub struct Recorder {
     file: File,
     data_representation: DataRepresentation,
 }
 
-impl FileRecorder {
+impl Recorder {
     pub fn write_payload(
         &mut self,
         user_header: &[u8],
