@@ -10,15 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::{
-    prelude::MessagingPattern, service::static_config::message_type_details::TypeDetail,
-};
+use iceoryx2::prelude::MessagingPattern;
+
+use crate::recorder::ServiceTypes;
 
 #[repr(C)]
 #[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
 pub struct RecordHeader {
     pub version: u64,
-    pub payload_type: TypeDetail,
-    pub header_type: TypeDetail,
+    pub types: ServiceTypes,
     pub messaging_pattern: MessagingPattern,
 }

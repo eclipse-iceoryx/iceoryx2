@@ -25,6 +25,7 @@ use crate::record::RecordReader;
 use crate::record::HEX_START_RECORD_MARKER;
 use crate::record_header::RecordHeader;
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ReplayerOpenError {
     InvalidHexCode,
     FailedToOpenFile,
@@ -44,12 +45,17 @@ pub struct ReplayerOpener {
 }
 
 impl ReplayerOpener {
-    pub fn new(file_path: FilePath) -> Self {
+    pub fn new(file_path: &FilePath) -> Self {
         Self {
-            file_path,
+            file_path: file_path.clone(),
             data_representation: DataRepresentation::default(),
             required_header: None,
         }
+    }
+
+    pub fn data_representation(mut self, value: DataRepresentation) -> Self {
+        self.data_representation = value;
+        self
     }
 
     pub fn require_header(mut self, header: RecordHeader) -> Self {

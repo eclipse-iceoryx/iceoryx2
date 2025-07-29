@@ -1603,11 +1603,14 @@ version = "0.6.1"
 dependencies = [
  "anyhow",
  "iceoryx2",
+ "iceoryx2-bb-container",
  "iceoryx2-bb-elementary",
  "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-system-types",
  "iceoryx2-cal",
+ "iceoryx2-pal-concurrency-sync",
+ "iceoryx2-pal-testing",
  "serde",
 ]
 

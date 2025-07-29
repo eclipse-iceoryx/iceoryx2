@@ -41,19 +41,24 @@ impl core::fmt::Display for RecorderCreateError {
 
 impl core::error::Error for RecorderCreateError {}
 
+#[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
+pub struct ServiceTypes {
+    pub payload: TypeDetail,
+    pub user_header: TypeDetail,
+    pub system_header: TypeDetail,
+}
+
 #[derive(Debug)]
 pub struct RecorderBuilder {
-    payload_type: TypeDetail,
-    header_type: TypeDetail,
+    types: ServiceTypes,
     data_representation: DataRepresentation,
     messaging_pattern: MessagingPattern,
 }
 
 impl RecorderBuilder {
-    pub fn new(payload_type: &TypeDetail, header_type: &TypeDetail) -> Self {
+    pub fn new(types: &ServiceTypes) -> Self {
         Self {
-            payload_type: payload_type.clone(),
-            header_type: header_type.clone(),
+            types: types.clone(),
             data_representation: DataRepresentation::default(),
             messaging_pattern: MessagingPattern::PublishSubscribe,
         }
@@ -87,8 +92,7 @@ impl RecorderBuilder {
             &mut file,
             RecordHeader {
                 version: PackageVersion::get().to_u64(),
-                payload_type: self.payload_type.clone(),
-                header_type: self.header_type.clone(),
+                types: self.types.clone(),
                 messaging_pattern: self.messaging_pattern,
             },
             self.data_representation,

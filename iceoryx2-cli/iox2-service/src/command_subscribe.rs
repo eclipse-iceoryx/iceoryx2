@@ -18,8 +18,10 @@ use iceoryx2::sample::Sample;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::header::publish_subscribe::Header;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
+use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::recorder::RecorderBuilder;
+use iceoryx2_userland_record_and_replay::recorder::ServiceTypes;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -47,7 +49,7 @@ fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
 fn get_service_types(
     options: &SubscribeOptions,
     node: &Node<ipc::Service>,
-) -> Result<(TypeDetail, TypeDetail)> {
+) -> Result<ServiceTypes> {
     let service_name = ServiceName::new(&options.service)?;
     let service_details = match ipc::Service::details(
         &service_name,
@@ -63,25 +65,33 @@ fn get_service_types(
         }
     };
 
-    let user_header_type = unsafe {
-        &service_details
+    let user_header = unsafe {
+        service_details
             .static_details
             .messaging_pattern()
             .publish_subscribe()
             .message_type_details()
             .user_header
+            .clone()
     };
 
-    let payload_type = unsafe {
-        &service_details
+    let payload = unsafe {
+        service_details
             .static_details
             .messaging_pattern()
             .publish_subscribe()
             .message_type_details()
             .payload
+            .clone()
     };
 
-    Ok((user_header_type.clone(), payload_type.clone()))
+    let system_header = TypeDetail::__internal_new::<Header>(TypeVariant::FixedSize);
+
+    Ok(ServiceTypes {
+        payload,
+        user_header,
+        system_header,
+    })
 }
 
 fn extract_payload<'a>(
@@ -173,11 +183,11 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
         .create::<ipc::Service>()?;
 
     let service_name = ServiceName::new(&options.service)?;
-    let (user_header_type, payload_type) = get_service_types(&options, &node)?;
+    let service_types = get_service_types(&options, &node)?;
 
     let mut file = match &options.output_file {
         Some(v) => Some(
-            RecorderBuilder::new(&payload_type, &user_header_type)
+            RecorderBuilder::new(&service_types)
                 .data_representation(options.data_representation.into())
                 .messaging_pattern(MessagingPattern::PublishSubscribe)
                 .create(&FilePath::new(v.as_bytes())?)?,
@@ -189,8 +199,8 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
         node.service_builder(&service_name)
             .publish_subscribe::<[CustomPayloadMarker]>()
             .user_header::<CustomHeaderMarker>()
-            .__internal_set_payload_type_details(&payload_type)
-            .__internal_set_user_header_type_details(&user_header_type)
+            .__internal_set_payload_type_details(&service_types.payload)
+            .__internal_set_user_header_type_details(&service_types.user_header)
             .open_or_create()?
     };
 
@@ -201,7 +211,8 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
     let mut msg_counter = 0u64;
     'node_loop: while node.wait(cycle_time).is_ok() {
         while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
-            let (system_header, user_header, payload) = extract_payload(&sample, &user_header_type);
+            let (system_header, user_header, payload) =
+                extract_payload(&sample, &service_types.user_header);
 
             let mut record_to_file = |system_header, user_header, payload| -> Result<()> {
                 if let Some(file) = &mut file {
