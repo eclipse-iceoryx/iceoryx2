@@ -1604,6 +1604,9 @@ dependencies = [
  "anyhow",
  "iceoryx2",
  "iceoryx2-bb-elementary",
+ "iceoryx2-bb-log",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-system-types",
  "iceoryx2-cal",
  "serde",
 ]

@@ -12,12 +12,12 @@
 
 use anyhow::Result;
 use core::time::Duration;
-use std::fs::File;
-use std::io::Write;
+use iceoryx2_bb_log::fail;
+use iceoryx2_bb_posix::file::{File, FileWriteError};
 
 pub const HEX_START_RECORD_MARKER: &[u8] = b"### Recorded Data Start ###";
 
-#[derive(Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default)]
 pub enum DataRepresentation {
     Iox2Dump,
     #[default]
@@ -30,14 +30,15 @@ pub struct Record {
     pub payload: Vec<u8>,
 }
 
-pub struct RecordCreator<'a> {
-    file: &'a File,
+#[derive(Debug)]
+pub(crate) struct RecordCreator<'a> {
+    file: &'a mut File,
     data_representation: DataRepresentation,
     time_stamp: Duration,
 }
 
 impl<'a> RecordCreator<'a> {
-    pub fn new(file: &'a mut File) -> Self {
+    pub(crate) fn new(file: &'a mut File) -> Self {
         Self {
             file,
             data_representation: DataRepresentation::default(),
@@ -45,31 +46,40 @@ impl<'a> RecordCreator<'a> {
         }
     }
 
-    pub fn data_representation(mut self, data_representation: DataRepresentation) -> Self {
+    pub(crate) fn data_representation(mut self, data_representation: DataRepresentation) -> Self {
         self.data_representation = data_representation;
         self
     }
 
-    pub fn time_stamp(mut self, time: Duration) -> Self {
+    pub(crate) fn time_stamp(mut self, time: Duration) -> Self {
         self.time_stamp = time;
         self
     }
 
-    pub fn write(mut self, user_header: &[u8], payload: &[u8]) -> Result<()> {
+    pub(crate) fn write(self, user_header: &[u8], payload: &[u8]) -> Result<(), FileWriteError> {
+        let origin = format!("{self:?}");
+        let mut write_to_file = |data| -> Result<(), FileWriteError> {
+            fail!(from origin, when self.file.write(data),
+                "Failed to Record entry into file.");
+            Ok(())
+        };
+
         match self.data_representation {
             DataRepresentation::Hex => {
-                writeln!(self.file, "+{}", self.time_stamp.as_millis() as u64)?;
-                writeln!(self.file, "{}", str::from_utf8(user_header)?)?;
-                writeln!(self.file, "{}", str::from_utf8(payload)?)?;
+                let time_stamp = format!("+{}", self.time_stamp.as_millis() as u64);
+                write_to_file(time_stamp.as_bytes())?;
+                write_to_file(user_header)?;
+                write_to_file(payload)?;
             }
             DataRepresentation::Iox2Dump => {
-                self.file
-                    .write_all(&(self.time_stamp.as_millis() as u64).to_le_bytes())?;
-                self.file
-                    .write_all(&(user_header.len() as u64).to_le_bytes())?;
-                self.file.write_all(user_header)?;
-                self.file.write_all(&(payload.len() as u64).to_le_bytes())?;
-                self.file.write_all(payload)?;
+                let time_stamp = (self.time_stamp.as_millis() as u64).to_be_bytes();
+                write_to_file(&time_stamp)?;
+                let user_header_len = (user_header.len() as u64).to_le_bytes();
+                write_to_file(&user_header_len)?;
+                write_to_file(user_header)?;
+                let payload_len = (payload.len() as u64).to_le_bytes();
+                write_to_file(&payload_len)?;
+                write_to_file(payload)?;
             }
         }
 

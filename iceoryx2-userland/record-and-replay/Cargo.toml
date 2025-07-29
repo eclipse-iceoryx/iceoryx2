@@ -14,6 +14,9 @@ version = { workspace = true }
 iceoryx2 = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
 
 anyhow = { workspace = true }
 serde = { workspace = true }
