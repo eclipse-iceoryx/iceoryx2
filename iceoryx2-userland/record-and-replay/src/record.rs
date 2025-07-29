@@ -60,7 +60,7 @@ impl<'a> RecordCreator<'a> {
         let origin = format!("{self:?}");
         let mut write_to_file = |data| -> Result<(), FileWriteError> {
             fail!(from origin, when self.file.write(data),
-                "Failed to Record entry into file.");
+                "Failed to write data record entry into file.");
             Ok(())
         };
 
