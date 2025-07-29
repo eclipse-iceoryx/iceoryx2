@@ -321,12 +321,12 @@ pub enum Action {
     )]
     Listen(ListenOptions),
     #[clap(
-        about = "Publish a message",
+        about = "Publish a message to any service.",
         help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Publish(PublishOptions),
     #[clap(
-        about = "Receive messages",
+        about = "Subscribe to any service and introspect its messages.",
         help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Subscribe(SubscribeOptions),

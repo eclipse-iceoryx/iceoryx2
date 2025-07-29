@@ -24,9 +24,11 @@ use std::time::Duration;
 use std::time::Instant;
 
 fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
+    use std::fmt::Write;
+
     let mut ret_val = String::with_capacity(2 * raw_data.len());
     for byte in raw_data {
-        ret_val.push_str(&format!("{byte:0>2x} "));
+        let _ = write!(&mut ret_val, "{byte:0>2x} ");
     }
 
     ret_val

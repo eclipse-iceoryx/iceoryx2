@@ -22,18 +22,18 @@ use iceoryx2::service::static_config::message_type_details::{
 };
 use iceoryx2_cli::Format;
 use std::fs::{read_to_string, File};
-use std::io::Read;
+use std::io::{BufReader, Read};
 use std::ptr::copy_nonoverlapping;
 use std::time::Duration;
 
 fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>> {
     let mut hex_string = hex_string.to_string();
     hex_string.retain(|c| !c.is_whitespace());
-    (0..hex_string.len())
-        .step_by(2)
-        .map(|n| {
-            u8::from_str_radix(&hex_string[n..n + 2], 16)
-                .map_err(|e| anyhow::anyhow!("Invalid hex input at position {}: {}", n, e))
+    hex_string
+        .split_ascii_whitespace()
+        .map(|hex| {
+            u8::from_str_radix(&hex, 16)
+                .map_err(|e| anyhow::anyhow!("Invalid hex input at position {}.", e))
         })
         .collect::<Result<Vec<u8>>>()
 }
@@ -124,7 +124,7 @@ fn read_file_into_buffer(
                 }
             }
             DataRepresentation::Iox2Dump => {
-                let mut file = File::open(file)?;
+                let mut file = BufReader::new(File::open(file)?);
 
                 let mut buffer = [0u8; 8];
                 let mut read_buffer = || -> Result<()> {
@@ -206,6 +206,7 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     };
 
     let mut message_buffer = vec![];
+
     read_file_into_buffer(&mut message_buffer, &options)?;
     read_cli_msg_into_buffer(&mut message_buffer, &options)?;
 
