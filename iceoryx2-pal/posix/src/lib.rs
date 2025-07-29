@@ -67,6 +67,8 @@ pub mod posix {
     pub use common::cpu_set_t::cpu_set_t;
     pub use common::mem_zeroed_struct::MemZeroedStruct;
     pub use common::sockaddr_in::SockAddrIn;
+
+    #[allow(unused_imports)]
     pub(crate) use common::string_operations::*;
 
     pub use crate::platform::*;
