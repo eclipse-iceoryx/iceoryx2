@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::cli::{DataRepresentation, SubscribeOptions};
-use crate::record_file::RecordFile;
+use crate::file_recorder::FileRecorder;
 use anyhow::anyhow;
 use anyhow::Result;
 use iceoryx2::prelude::*;
@@ -136,10 +136,10 @@ pub fn subscribe(options: SubscribeOptions, _format: Format) -> Result<()> {
     let (user_header_type, payload_type) = get_service_types(&options, &node)?;
 
     let mut file = match &options.output_file {
-        Some(v) => Some(RecordFile::create_or_open(
+        Some(v) => Some(FileRecorder::create(
             v,
-            payload_type.clone(),
-            user_header_type.clone(),
+            &payload_type,
+            &user_header_type,
             options.data_representation,
             MessagingPattern::PublishSubscribe,
         )?),

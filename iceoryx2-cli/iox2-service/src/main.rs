@@ -19,10 +19,12 @@ mod cli;
 mod command_publish;
 mod command_subscribe;
 mod commands;
+mod file_recorder;
+mod file_replayer;
 mod filter;
-mod record_file;
+mod record_file_header;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;

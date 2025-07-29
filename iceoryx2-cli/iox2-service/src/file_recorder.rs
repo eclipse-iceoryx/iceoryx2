@@ -21,26 +21,18 @@ use std::fs::File;
 use std::io::Write;
 
 use crate::cli::DataRepresentation;
+use crate::record_file_header::RecordFileHeader;
 
-#[repr(C)]
-#[derive(serde::Serialize, serde::Deserialize)]
-struct FileHeader {
-    version: u64,
-    payload_type: TypeDetail,
-    header_type: TypeDetail,
-    messaging_pattern: MessagingPattern,
-}
-
-pub struct RecordFile {
+pub struct FileRecorder {
     file: File,
     data_representation: DataRepresentation,
 }
 
-impl RecordFile {
-    pub fn create_or_open(
+impl FileRecorder {
+    pub fn create(
         file_name: &str,
-        payload_type: TypeDetail,
-        header_type: TypeDetail,
+        payload_type: &TypeDetail,
+        header_type: &TypeDetail,
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) -> Result<Self> {
@@ -51,10 +43,10 @@ impl RecordFile {
 
         Self::write_file_header(
             &mut file,
-            FileHeader {
+            RecordFileHeader {
                 version: PackageVersion::get().to_u64(),
-                payload_type,
-                header_type,
+                payload_type: payload_type.clone(),
+                header_type: header_type.clone(),
                 messaging_pattern,
             },
             data_representation,
@@ -86,7 +78,7 @@ impl RecordFile {
 
     fn write_file_header(
         file: &mut File,
-        file_header: FileHeader,
+        file_header: RecordFileHeader,
         data_representation: DataRepresentation,
     ) -> Result<()> {
         match data_representation {
@@ -95,11 +87,11 @@ impl RecordFile {
         }
     }
 
-    fn write_iox2dump_file_header(file: &mut File, file_header: FileHeader) -> Result<()> {
+    fn write_iox2dump_file_header(file: &mut File, file_header: RecordFileHeader) -> Result<()> {
         let buffer = unsafe {
             core::slice::from_raw_parts(
-                (&file_header as *const FileHeader) as *const u8,
-                core::mem::size_of::<FileHeader>(),
+                (&file_header as *const RecordFileHeader) as *const u8,
+                core::mem::size_of::<RecordFileHeader>(),
             )
         };
         file.write(buffer)?;
@@ -107,7 +99,7 @@ impl RecordFile {
         Ok(())
     }
 
-    fn write_hex_file_header(file: &mut File, file_header: FileHeader) -> Result<()> {
+    fn write_hex_file_header(file: &mut File, file_header: RecordFileHeader) -> Result<()> {
         let serialized = Toml::serialize(&file_header)
             .map_err(|e| anyhow!("Failed to serialize FileHeader ({e:?})."))?;
 
