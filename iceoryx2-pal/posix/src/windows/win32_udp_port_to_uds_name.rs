@@ -31,30 +31,31 @@ const SHM_SEGMENT_NAME: &CStr = c"/port_to_uds_name_map";
 const SHM_SIZE: usize = core::mem::size_of::<PortToUdsNameMap>();
 const UNINITIALIZED_ENTRY: u64 = 1;
 
-struct Entry {
-    aba_counter: IoxAtomicU64,
-    value: [UnsafeCell<[u8; PATH_LENGTH]>; 2],
+struct Entries<const N: usize> {
+    aba_counters: [IoxAtomicU64; N],
+    storages: [[UnsafeCell<[u8; PATH_LENGTH]>; 2]; N],
 }
 
-impl Entry {
+impl<const N: usize> Entries<N> {
     fn initialize(&mut self) {
-        self.aba_counter = IoxAtomicU64::new(UNINITIALIZED_ENTRY);
-        self.value = [
-            UnsafeCell::new([0; PATH_LENGTH]),
-            UnsafeCell::new([0; PATH_LENGTH]),
-        ];
+        for i in 0..N {
+            self.aba_counters[i] = IoxAtomicU64::new(UNINITIALIZED_ENTRY);
+        }
     }
 
-    fn is_set(&self) -> bool {
-        let mut current = self.aba_counter.load(Ordering::Relaxed);
+    fn is_set(&self, index: usize) -> bool {
+        let aba_counter = &self.aba_counters[index];
+        let storage = &self.storages[index];
+
+        let mut current = aba_counter.load(Ordering::Relaxed);
         if current == UNINITIALIZED_ENTRY {
             return false;
         }
 
         loop {
-            let first_char = unsafe { (*self.value[((current - 1) % 2) as usize].get())[0] };
-            if current != self.aba_counter.load(Ordering::Relaxed) {
-                current = self.aba_counter.load(Ordering::Relaxed);
+            let first_char = unsafe { (*storage[((current - 1) % 2) as usize].get())[0] };
+            if current != aba_counter.load(Ordering::Relaxed) {
+                current = aba_counter.load(Ordering::Relaxed);
                 continue;
             }
 
@@ -62,36 +63,58 @@ impl Entry {
         }
     }
 
-    fn set(&self, value: &[u8]) {
-        let current = self.aba_counter.load(Ordering::Acquire);
+    fn set(&self, index: usize, value: &[u8]) {
+        let aba_counter = &self.aba_counters[index];
+        let storage = &self.storages[index];
+
+        let current = aba_counter.load(Ordering::Acquire);
         unsafe {
-            (*self.value[(current % 2) as usize].get()) = [0u8; PATH_LENGTH];
-            (&mut (*self.value[(current % 2) as usize].get()))[..value.len()]
-                .copy_from_slice(value);
+            (*storage[(current % 2) as usize].get()) = [0u8; PATH_LENGTH];
+            (&mut (*storage[(current % 2) as usize].get()))[..value.len()].copy_from_slice(value);
         };
-        self.aba_counter.fetch_add(1, Ordering::Release);
+        aba_counter.fetch_add(1, Ordering::Release);
     }
 
-    fn get(&self) -> [u8; PATH_LENGTH] {
-        let current = self.aba_counter.load(Ordering::Acquire);
+    fn get(&self, index: usize) -> Option<[u8; PATH_LENGTH]> {
+        let aba_counter = &self.aba_counters[index];
+        let storage = &self.storages[index];
+
+        let current = aba_counter.load(Ordering::Acquire);
         let mut result;
         loop {
             if current == UNINITIALIZED_ENTRY {
-                return [0u8; PATH_LENGTH];
+                return None;
             }
 
-            result = unsafe { *self.value[((current - 1) % 2) as usize].get() };
-            if current == self.aba_counter.load(Ordering::Acquire) {
+            result = unsafe { *storage[((current - 1) % 2) as usize].get() };
+            if current == aba_counter.load(Ordering::Acquire) {
                 break;
             }
+        }
+
+        Some(result)
+    }
+
+    fn reset(&self, index: usize) {
+        self.aba_counters[index].store(UNINITIALIZED_ENTRY, Ordering::Relaxed);
+    }
+
+    fn list(&self) -> Vec<[u8; PATH_LENGTH]> {
+        let mut result = vec![];
+
+        for i in 0..N {
+            if !self.is_set(i) {
+                continue;
+            }
+
+            result.push(self.get(i).unwrap());
         }
 
         result
     }
 
-    fn reset(&self) {
-        self.aba_counter
-            .store(UNINITIALIZED_ENTRY, Ordering::Relaxed);
+    const fn len(&self) -> usize {
+        N
     }
 }
 
@@ -121,7 +144,7 @@ fn normalized_name(name: &[u8]) -> [u8; PATH_LENGTH] {
 #[repr(C)]
 struct PortToUdsNameMap {
     init_check: IoxAtomicU64,
-    uds_names: [Entry; 65535],
+    uds_names: Entries<65535>,
 }
 
 impl PortToUdsNameMap {
@@ -135,9 +158,7 @@ impl PortToUdsNameMap {
             Ordering::Relaxed,
         ) {
             Ok(_) => {
-                for i in 0..self.uds_names.len() {
-                    self.uds_names[i].initialize();
-                }
+                self.uds_names.initialize();
                 self.init_check.store(IS_INITIALIZED, Ordering::Relaxed);
             }
             Err(_) => while self.init_check.load(Ordering::Relaxed) != IS_INITIALIZED {},
@@ -146,20 +167,24 @@ impl PortToUdsNameMap {
 
     fn set(&self, port: u16, name: &[u8]) {
         let name = normalized_name(name);
-        self.uds_names[port as usize].set(&name);
+        self.uds_names.set(port as usize, &name);
     }
 
     fn get_port(&self, name: &[u8]) -> u16 {
         let name = normalized_name(name);
         for i in 0..self.uds_names.len() {
-            let entry_name = self.uds_names[i].get();
-            let pos = entry_name.iter().position(|c| *c == 0).unwrap_or(0);
-            if pos == 0 || pos > name.len() {
-                continue;
-            }
+            match self.uds_names.get(i) {
+                Some(entry_name) => {
+                    let pos = entry_name.iter().position(|c| *c == 0).unwrap_or(0);
+                    if pos == 0 || pos > name.len() {
+                        continue;
+                    }
 
-            if entry_name[..pos] == name[..pos] {
-                return i as _;
+                    if entry_name[..pos] == name[..pos] {
+                        return i as _;
+                    }
+                }
+                None => continue,
             }
         }
         0
@@ -175,7 +200,7 @@ impl PortToUdsNameMap {
             return false;
         }
 
-        self.uds_names[port as usize].reset();
+        self.uds_names.reset(port as usize);
         true
     }
 }
@@ -260,52 +285,49 @@ impl PortToUds {
 
         let mut result = vec![];
 
-        for entry in unsafe { &(*self.map).uds_names } {
-            if entry.is_set() {
-                let value = entry.get();
-                let value_len = unsafe { c_string_length(value.as_ptr().cast()) };
-                if value_len == 0 || value_len <= path_len {
+        for value in unsafe { &(*self.map).uds_names.list() } {
+            let value_len = unsafe { c_string_length(value.as_ptr().cast()) };
+            if value_len == 0 || value_len <= path_len {
+                continue;
+            }
+
+            if value[..path_len] == path[..path_len] {
+                let mut file_name = [0u8; PATH_LENGTH];
+                let mut start_adjustment = 0;
+
+                if path_len != 0 {
+                    for c in value.iter().take(value_len).skip(path_len) {
+                        if !(*c == b'\\' || *c == b'/') {
+                            break;
+                        }
+                        start_adjustment += 1;
+                    }
+                }
+
+                let mut is_filename = true;
+                for c in value
+                    .iter()
+                    .take(value_len)
+                    .skip(path_len + start_adjustment)
+                {
+                    if *c == b'\\' || *c == b'/' {
+                        is_filename = false;
+                        break;
+                    }
+                }
+
+                if !is_filename {
                     continue;
                 }
 
-                if value[..path_len] == path[..path_len] {
-                    let mut file_name = [0u8; PATH_LENGTH];
-                    let mut start_adjustment = 0;
-
-                    if path_len != 0 {
-                        for c in value.iter().take(value_len).skip(path_len) {
-                            if !(*c == b'\\' || *c == b'/') {
-                                break;
-                            }
-                            start_adjustment += 1;
-                        }
-                    }
-
-                    let mut is_filename = true;
-                    for c in value
-                        .iter()
-                        .take(value_len)
-                        .skip(path_len + start_adjustment)
-                    {
-                        if *c == b'\\' || *c == b'/' {
-                            is_filename = false;
-                            break;
-                        }
-                    }
-
-                    if !is_filename {
-                        continue;
-                    }
-
-                    if value_len <= path_len + start_adjustment {
-                        continue;
-                    }
-
-                    file_name[..(value_len - path_len - start_adjustment)]
-                        .copy_from_slice(&value[path_len + start_adjustment..value_len]);
-
-                    result.push(file_name);
+                if value_len <= path_len + start_adjustment {
+                    continue;
                 }
+
+                file_name[..(value_len - path_len - start_adjustment)]
+                    .copy_from_slice(&value[path_len + start_adjustment..value_len]);
+
+                result.push(file_name);
             }
         }
 
