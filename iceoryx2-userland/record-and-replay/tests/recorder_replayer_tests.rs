@@ -18,7 +18,6 @@ mod recorder_replayer {
     use iceoryx2::{
         prelude::MessagingPattern, service::static_config::message_type_details::TypeVariant,
     };
-    use iceoryx2_bb_log::{set_log_level, LogLevel};
     use iceoryx2_bb_posix::file::File;
     use iceoryx2_pal_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{
@@ -134,7 +133,7 @@ mod recorder_replayer {
         }
 
         let (buffer, record_header) = ReplayerOpener::new(&file_name)
-            .data_representation(DataRepresentation::Iox2Dump)
+            .data_representation(data_representation)
             .read_into_buffer()
             .unwrap();
 

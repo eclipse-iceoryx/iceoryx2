@@ -124,8 +124,11 @@ impl RecordReader {
                 let mut timestamp = None;
                 let mut system_header = None;
                 let mut header = None;
-                let mut line = String::new();
-                while file.read_line_to_string(&mut line).unwrap() != 0 {
+                loop {
+                    let mut line = String::new();
+                    if file.read_line_to_string(&mut line).unwrap() == 0 {
+                        break;
+                    }
                     const READABLE_PREFIX_LEN: usize = 10;
                     if timestamp.is_none() {
                         timestamp = Some(Duration::from_millis(
