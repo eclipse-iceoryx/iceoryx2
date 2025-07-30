@@ -23,27 +23,40 @@ use crate::{
     replayer::ReplayerOpenError,
 };
 
-pub const HEX_START_RECORD_MARKER: &[u8] = b"### Recorded Data Start ###";
+pub(crate) const HEX_START_RECORD_MARKER: &[u8] = b"### Recorded Data Start ###";
 
 #[derive(Debug, Clone, Copy, Default)]
+/// Defines the internal data representation in the recorded file.
 pub enum DataRepresentation {
+    /// Memory efficiently as a raw bytes
     Iox2Dump,
     #[default]
+    /// Human Readable hex-codes for all payloads
     HumanReadable,
 }
 
+/// Represents a all the data required for a record captured by a receiver.
 pub struct RawRecord<'a> {
+    /// The time this data was captured.
     pub timestamp: Duration,
+    /// The system header of the data.
     pub system_header: &'a [u8],
+    /// The user header of the data.
     pub user_header: &'a [u8],
+    /// The payload of the data.
     pub payload: &'a [u8],
 }
 
 #[derive(Debug)]
+/// Represents a stored record.
 pub struct Record {
+    /// The time this data was captured.
     pub timestamp: Duration,
+    /// The system header of the data.
     pub system_header: Vec<u8>,
+    /// The user header of the data.
     pub user_header: Vec<u8>,
+    /// The payload of the data.
     pub payload: Vec<u8>,
 }
 
@@ -113,22 +126,27 @@ impl RecordReader {
                 let mut header = None;
                 loop {
                     let mut line = String::new();
-                    match file.read_line_to_string(&mut line).unwrap() {
-                        FileReadLineState::EndOfFile(_) => break,
-                        FileReadLineState::LineLen(0) => continue,
-                        FileReadLineState::LineLen(n) => {
+                    match file.read_line_to_string(&mut line) {
+                        Ok(FileReadLineState::EndOfFile(_)) => break,
+                        Ok(FileReadLineState::LineLen(0)) => continue,
+                        Ok(FileReadLineState::LineLen(n)) => {
                             if n < READABLE_PREFIX_LEN {
                                 fail!(from self, with ReplayerOpenError::CorruptedContent,
                                     "{msg} since the content seems to be corrupted.");
                             }
                         }
+                        Err(e) => {
+                            fail!(from self, with ReplayerOpenError::FailedToReadFile,
+                                "{msg} since the file could not be read ({e:?}).");
+                        }
                     }
 
                     const READABLE_PREFIX_LEN: usize = 10;
                     if timestamp.is_none() {
-                        timestamp = Some(Duration::from_millis(
-                            line.as_str()[READABLE_PREFIX_LEN..].parse::<u64>().unwrap(),
-                        ));
+                        timestamp = Some(Duration::from_millis(fail!(from self,
+                                when line.as_str()[READABLE_PREFIX_LEN..].parse::<u64>(),
+                                with ReplayerOpenError::CorruptedTimeStamp,
+                                "{msg} since the timestamp entry is corrupted.")));
                     } else if system_header.is_none() {
                         system_header =
                             Some(hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?);

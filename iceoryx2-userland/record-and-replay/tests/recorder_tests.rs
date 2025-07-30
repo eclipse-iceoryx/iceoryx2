@@ -19,6 +19,7 @@ mod recorder_tests {
         prelude::MessagingPattern,
         service::static_config::message_type_details::{TypeDetail, TypeVariant},
     };
+    use iceoryx2_bb_log::set_log_level;
     use iceoryx2_pal_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{
         record::{DataRepresentation, RawRecord},
@@ -52,6 +53,7 @@ mod recorder_tests {
 
     #[test]
     fn simple_recording_works() {
+        set_log_level(iceoryx2_bb_log::LogLevel::Trace);
         let file_name = generate_file_name();
         let service_types = ServiceTypes {
             payload: TypeDetail::new::<u64>(TypeVariant::FixedSize),
@@ -69,7 +71,7 @@ mod recorder_tests {
             timestamp: Duration::ZERO,
             system_header: &[0u8; 8],
             user_header: &[0u8; 0],
-            payload: &[0u8, 8],
+            payload: &[0u8; 8],
         });
 
         assert_that!(result, is_ok);

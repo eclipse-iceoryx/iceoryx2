@@ -16,8 +16,13 @@ use crate::recorder::ServiceTypes;
 
 #[repr(C)]
 #[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
+/// Represents the header of a recorded file which identifies the type details and iceoryx2
+/// version used when the data was captured.
 pub struct RecordHeader {
+    /// The version of iceoryx2 used when the data was captured.
     pub version: u64,
+    /// The types to which the stored payload corresponds.
     pub types: ServiceTypes,
+    /// The messaging pattern of the recorded service.
     pub messaging_pattern: MessagingPattern,
 }

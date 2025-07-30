@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#![warn(missing_docs)]
+
 //! # iceoryx2 userland - record and replay
 //!
 //! Provides building blocks to record and replay data from and into iceoryx2.
@@ -51,7 +53,7 @@
 //!     timestamp: Duration::ZERO,
 //!     system_header: &[0u8; 8],
 //!     user_header: &[0u8; 0],
-//!     payload: &[0u8, 8]
+//!     payload: &[0u8; 8]
 //! })?;
 //!
 //! # Ok(())
@@ -116,12 +118,23 @@
 //! # }
 //! ```
 
-#[warn(missing_docs)]
+/// Free functions to convert bytes to a hex string and back.
 pub mod hex_conversion;
+
+/// Loads a meaninful subset.
 pub mod prelude;
+
+/// Contains the [`Record`](crate::record::Record) and [`RawRecord`](crate::record::RawRecord)
+/// which represent a single entry that is added to the file.
 pub mod record;
+
+/// The header of the record file which contains all necessary type information.
 pub mod record_header;
+
+/// Contains the [`Recorder`](crate::recorder::Recorder) to write captured payload into a file.
 pub mod recorder;
+
+/// Contains the [`Replayer`](crate::replayer::Replayer) to read captured payload from a file.
 pub mod replayer;
 
 #[doc(hidden)]

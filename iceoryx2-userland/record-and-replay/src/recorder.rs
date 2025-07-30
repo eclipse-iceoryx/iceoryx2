@@ -26,10 +26,16 @@ use crate::record::{DataRepresentation, RawRecord};
 use crate::record_header::RecordHeader;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Errors that can occur when a new [`Recorder`] is created with
+/// [`RecorderBuilder::create()`].
 pub enum RecorderCreateError {
+    /// The recorded file already exists.
     FileAlreadyExists,
+    /// The record file could not be created.
     FailedToCreateRecordFile,
+    /// The record file was created but cannot be written to.
     UnableToWriteFile,
+    /// The record header could not be serialized.
     UnableToSerializeRecordHeader,
 }
 
@@ -42,11 +48,19 @@ impl core::fmt::Display for RecorderCreateError {
 impl core::error::Error for RecorderCreateError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+/// Errors that can occur when data is written with the [`Recorder`].
 pub enum RecorderWriteError {
+    /// The underlying file could not be written.
     FileWriteError(FileWriteError),
+    /// The user wanted to write a system header that is not compatible with the [`ServiceTypes`]
     CorruptedSystemHeaderRecord,
+    /// The user wanted to write a payload that is not compatible with the [`ServiceTypes`]
     CorruptedPayloadRecord,
+    /// The user wanted to write a user header that is not compatible with the [`ServiceTypes`]
     CorruptedUserHeaderRecord,
+    /// The record was older than the previously stored record. All records must have a
+    /// monotonic timestamp - no time backward jumps.
+    TimestampOlderThanPreviousRecord,
 }
 
 impl core::fmt::Display for RecorderWriteError {
@@ -58,13 +72,18 @@ impl core::fmt::Display for RecorderWriteError {
 impl core::error::Error for RecorderWriteError {}
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
+/// The types that are used by the iceoryx2 [`Service`](iceoryx2::service::Service)
 pub struct ServiceTypes {
+    /// Defines the type of the payload.
     pub payload: TypeDetail,
+    /// Defines the type of the user header.
     pub user_header: TypeDetail,
+    /// Defines the type of the iceoryx2 internal system header.
     pub system_header: TypeDetail,
 }
 
 #[derive(Debug)]
+/// Builder to create a new [`Recorder`].
 pub struct RecorderBuilder {
     types: ServiceTypes,
     data_representation: DataRepresentation,
@@ -72,6 +91,7 @@ pub struct RecorderBuilder {
 }
 
 impl RecorderBuilder {
+    /// Creates a new [`RecorderBuilder`] for the given set of [`ServiceTypes`].
     pub fn new(types: &ServiceTypes) -> Self {
         Self {
             types: types.clone(),
@@ -80,16 +100,20 @@ impl RecorderBuilder {
         }
     }
 
+    /// Defines the data representation of the file content the [`Recorder`] will create.
     pub fn data_representation(mut self, value: DataRepresentation) -> Self {
         self.data_representation = value;
         self
     }
 
+    /// Defines the messaging pattern of the recorded file.
     pub fn messaging_pattern(mut self, value: MessagingPattern) -> Self {
         self.messaging_pattern = value;
         self
     }
 
+    /// Creates a new file with and writes the record header into it. On failure
+    /// [`RecorderCreateError`] is returned describing the error.
     pub fn create(self, file_name: &FilePath) -> Result<Recorder, RecorderCreateError> {
         let msg = format!("Unable to create file recorder for \"{file_name}\"");
         let mut file = match FileBuilder::new(file_name)
@@ -119,6 +143,7 @@ impl RecorderBuilder {
             file,
             header,
             data_representation: self.data_representation,
+            last_timestamp: 0,
         })
     }
 
@@ -190,13 +215,17 @@ impl RecorderBuilder {
 }
 
 #[derive(Debug)]
+/// Is created by [`RecorderBuilder`] and stores captured payload records into the underlying
+/// file.
 pub struct Recorder {
     file: File,
     data_representation: DataRepresentation,
     header: RecordHeader,
+    last_timestamp: u64,
 }
 
 impl Recorder {
+    /// Writes a captured record into the file.
     pub fn write(&mut self, record: RawRecord) -> Result<(), RecorderWriteError> {
         let msg = "Unable to write new record";
 
@@ -228,6 +257,11 @@ impl Recorder {
                 self.header.types.payload.size(), record.payload.len());
         }
 
+        if self.last_timestamp > record.timestamp.as_millis() as u64 {
+            fail!(from self, with RecorderWriteError::TimestampOlderThanPreviousRecord,
+                "{msg} since record timestamp is older than the previous record entry. Records are not allowed to jump back in time.");
+        }
+
         self.write_unchecked(record)
     }
 
@@ -237,6 +271,7 @@ impl Recorder {
             .write(record)
     }
 
+    /// Returns the [`RecordHeader`] of the underlying file.
     pub fn header(&self) -> &RecordHeader {
         &self.header
     }
