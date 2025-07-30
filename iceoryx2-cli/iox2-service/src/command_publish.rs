@@ -21,20 +21,9 @@ use iceoryx2::service::static_config::message_type_details::{
     TypeDetail, TypeNameString, TypeVariant,
 };
 use iceoryx2_cli::Format;
+use iceoryx2_userland_record_and_replay::hex_conversion::hex_string_to_bytes;
 use std::ptr::copy_nonoverlapping;
 use std::time::Duration;
-
-fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>> {
-    let mut hex_string = hex_string.to_string();
-    hex_string.retain(|c| !c.is_whitespace());
-    hex_string
-        .split_ascii_whitespace()
-        .map(|hex| {
-            u8::from_str_radix(hex, 16)
-                .map_err(|e| anyhow::anyhow!("Invalid hex input at position {}.", e))
-        })
-        .collect::<Result<Vec<u8>>>()
-}
 
 fn loan(
     len: usize,
@@ -113,7 +102,7 @@ fn read_cli_msg_into_buffer(
                 message_buffer.push((vec![], message.as_bytes().to_vec()))
             }
             DataRepresentation::HumanReadable => {
-                let payload = hex_string_to_raw_data(message)?;
+                let payload = hex_string_to_bytes(message)?;
                 message_buffer.push((vec![], payload));
             }
         }

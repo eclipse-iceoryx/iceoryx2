@@ -20,6 +20,7 @@ use iceoryx2::service::header::publish_subscribe::Header;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_cli::Format;
+use iceoryx2_userland_record_and_replay::hex_conversion::bytes_to_hex_string;
 use iceoryx2_userland_record_and_replay::recorder::ServiceTypes;
 use std::time::Duration;
 use std::time::Instant;
@@ -32,17 +33,6 @@ struct Message {
     user_header: String,
     payload_len: usize,
     payload: String,
-}
-
-fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
-    use std::fmt::Write;
-
-    let mut ret_val = String::with_capacity(3 * raw_data.len());
-    for byte in raw_data {
-        let _ = write!(&mut ret_val, "{byte:0>2x} ");
-    }
-
-    ret_val
 }
 
 fn get_service_types(
@@ -124,11 +114,11 @@ fn print_hex_dump(
 ) -> Result<()> {
     let msg = Message {
         system_header_len: system_header.len(),
-        system_header: raw_data_to_hex_string(system_header),
+        system_header: bytes_to_hex_string(system_header),
         user_header_len: user_header.len(),
-        user_header: raw_data_to_hex_string(user_header),
+        user_header: bytes_to_hex_string(user_header),
         payload_len: payload.len(),
-        payload: raw_data_to_hex_string(payload),
+        payload: bytes_to_hex_string(payload),
     };
 
     println!(
@@ -149,9 +139,9 @@ fn print_iox2_dump(
 ) -> Result<()> {
     let msg = Message {
         system_header_len: system_header.len(),
-        system_header: raw_data_to_hex_string(system_header),
+        system_header: bytes_to_hex_string(system_header),
         user_header_len: user_header.len(),
-        user_header: raw_data_to_hex_string(user_header),
+        user_header: bytes_to_hex_string(user_header),
         payload_len: payload.len(),
         payload: String::from_utf8_lossy(payload).to_string(),
     };
