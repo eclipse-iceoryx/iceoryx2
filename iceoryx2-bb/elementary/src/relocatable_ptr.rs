@@ -141,6 +141,10 @@ impl<T> PointerTrait<T> for RelocatablePointer<T> {
     unsafe fn as_mut_ptr(&mut self) -> *mut T {
         self.as_ptr() as *mut T
     }
+
+    fn is_initialized(&self) -> bool {
+        self.distance.load(core::sync::atomic::Ordering::Relaxed) != 0
+    }
 }
 
 impl GenericPointer for GenericRelocatablePointer {

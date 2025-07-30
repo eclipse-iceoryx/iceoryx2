@@ -67,6 +67,8 @@
     conflicts when merging.
 -->
 
+* Removed `MetaVec::is_initialized` field
+  [#900](https://github.com/eclipse-iceoryx/iceoryx2/issues/900)
 * Implement `ZeroCopySend` for all system types
   [#732](https://github.com/eclipse-iceoryx/iceoryx2/issues/732)
 * Remove trait re-exports from iceoryx2-bb-elementary
