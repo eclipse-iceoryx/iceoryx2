@@ -20,6 +20,7 @@ use iceoryx2::service::header::publish_subscribe::Header;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_cli::Format;
+use iceoryx2_userland_record_and_replay::record::RawRecord;
 use iceoryx2_userland_record_and_replay::recorder::RecorderBuilder;
 use iceoryx2_userland_record_and_replay::recorder::ServiceTypes;
 use std::time::Duration;
@@ -216,7 +217,12 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
 
             let mut record_to_file = |system_header, user_header, payload| -> Result<()> {
                 if let Some(file) = &mut file {
-                    file.write_payload(system_header, user_header, payload, start.elapsed())?;
+                    file.write(RawRecord {
+                        timestamp: start.elapsed(),
+                        system_header,
+                        user_header,
+                        payload,
+                    })?;
                 }
 
                 Ok(())

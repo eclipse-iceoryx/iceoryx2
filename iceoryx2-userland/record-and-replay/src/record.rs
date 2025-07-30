@@ -27,6 +27,13 @@ pub enum DataRepresentation {
     HumanReadable,
 }
 
+pub struct RawRecord<'a> {
+    pub timestamp: Duration,
+    pub system_header: &'a [u8],
+    pub user_header: &'a [u8],
+    pub payload: &'a [u8],
+}
+
 pub struct Record {
     pub timestamp: Duration,
     pub system_header: Vec<u8>,
@@ -155,16 +162,23 @@ impl RecordReader {
                     let len = fail!(from self, when file.read(buffer),
                         with ReplayerOpenError::FailedToReadFile,
                         "{msg} since the underlying file could not be read.");
+
+                    if len == 0 {
+                        return Ok(false);
+                    }
+
                     if len != buffer.len() as u64 {
                         fail!(from self, with ReplayerOpenError::FailedToReadFile,
                             "{msg} since the record has a size of {len} and {} bytes are expected.",
                             buffer.len());
                     }
 
-                    Ok(())
+                    Ok(true)
                 };
                 let mut buffer = [0u8; 8];
-                read(&mut buffer)?;
+                if !read(&mut buffer)? {
+                    return Ok(None);
+                }
                 let timestamp = u64::from_le_bytes(buffer);
 
                 read(&mut buffer)?;
@@ -201,7 +215,6 @@ impl RecordReader {
 pub(crate) struct RecordWriter<'a> {
     file: &'a mut File,
     data_representation: DataRepresentation,
-    time_stamp: Duration,
 }
 
 impl<'a> RecordWriter<'a> {
@@ -209,7 +222,6 @@ impl<'a> RecordWriter<'a> {
         Self {
             file,
             data_representation: DataRepresentation::default(),
-            time_stamp: Duration::ZERO,
         }
     }
 
@@ -218,17 +230,7 @@ impl<'a> RecordWriter<'a> {
         self
     }
 
-    pub(crate) fn time_stamp(mut self, time: Duration) -> Self {
-        self.time_stamp = time;
-        self
-    }
-
-    pub(crate) fn write(
-        self,
-        system_header: &[u8],
-        user_header: &[u8],
-        payload: &[u8],
-    ) -> Result<(), FileWriteError> {
+    pub(crate) fn write(self, record: RawRecord) -> Result<(), FileWriteError> {
         let origin = format!("{self:?}");
         let mut write_to_file = |data| -> Result<(), FileWriteError> {
             fail!(from origin, when self.file.write(data),
@@ -238,30 +240,30 @@ impl<'a> RecordWriter<'a> {
 
         match self.data_representation {
             DataRepresentation::HumanReadable => {
-                let time_stamp = format!("time:     {}\n", self.time_stamp.as_millis() as u64);
+                let time_stamp = format!("time:     {}\n", record.timestamp.as_millis() as u64);
                 write_to_file(time_stamp.as_bytes())?;
                 write_to_file(b"sys head: ")?;
-                write_to_file(system_header)?;
+                write_to_file(record.system_header)?;
                 write_to_file(b"\n")?;
                 write_to_file(b"usr head: ")?;
-                write_to_file(user_header)?;
+                write_to_file(record.user_header)?;
                 write_to_file(b"\n")?;
                 write_to_file(b"payload:  ")?;
-                write_to_file(payload)?;
+                write_to_file(record.payload)?;
                 write_to_file(b"\n\n")?;
             }
             DataRepresentation::Iox2Dump => {
-                let time_stamp = (self.time_stamp.as_millis() as u64).to_be_bytes();
+                let time_stamp = (record.timestamp.as_millis() as u64).to_le_bytes();
                 write_to_file(&time_stamp)?;
-                let system_header_len = (system_header.len() as u64).to_le_bytes();
+                let system_header_len = (record.system_header.len() as u64).to_le_bytes();
                 write_to_file(&system_header_len)?;
-                write_to_file(system_header)?;
-                let user_header_len = (user_header.len() as u64).to_le_bytes();
+                write_to_file(record.system_header)?;
+                let user_header_len = (record.user_header.len() as u64).to_le_bytes();
                 write_to_file(&user_header_len)?;
-                write_to_file(user_header)?;
-                let payload_len = (payload.len() as u64).to_le_bytes();
+                write_to_file(record.user_header)?;
+                let payload_len = (record.payload.len() as u64).to_le_bytes();
                 write_to_file(&payload_len)?;
-                write_to_file(payload)?;
+                write_to_file(record.payload)?;
             }
         }
 

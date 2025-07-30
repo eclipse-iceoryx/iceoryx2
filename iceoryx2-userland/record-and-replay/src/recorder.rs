@@ -10,7 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::time::Duration;
 use iceoryx2::prelude::MessagingPattern;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
@@ -21,9 +20,9 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_cal::serialize::Serialize;
 
-use crate::record::DataRepresentation;
 use crate::record::RecordWriter;
 use crate::record::HEX_START_RECORD_MARKER;
+use crate::record::{DataRepresentation, RawRecord};
 use crate::record_header::RecordHeader;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -88,18 +87,16 @@ impl RecorderBuilder {
             }
         };
 
-        self.write_header(
-            &mut file,
-            RecordHeader {
-                version: PackageVersion::get().to_u64(),
-                types: self.types.clone(),
-                messaging_pattern: self.messaging_pattern,
-            },
-            self.data_representation,
-        )?;
+        let header = RecordHeader {
+            version: PackageVersion::get().to_u64(),
+            types: self.types.clone(),
+            messaging_pattern: self.messaging_pattern,
+        };
+        self.write_header(&mut file, &header, self.data_representation)?;
 
         Ok(Recorder {
             file,
+            header,
             data_representation: self.data_representation,
         })
     }
@@ -107,7 +104,7 @@ impl RecorderBuilder {
     fn write_header(
         &self,
         file: &mut File,
-        file_header: RecordHeader,
+        file_header: &RecordHeader,
         data_representation: DataRepresentation,
     ) -> Result<(), RecorderCreateError> {
         match data_representation {
@@ -119,7 +116,7 @@ impl RecorderBuilder {
     fn write_iox2dump_header(
         &self,
         file: &mut File,
-        file_header: RecordHeader,
+        file_header: &RecordHeader,
     ) -> Result<(), RecorderCreateError> {
         let msg = format!(
             "Unable to write RecordHeader into iox2dump file \"{:?}\"",
@@ -127,7 +124,7 @@ impl RecorderBuilder {
         );
         let buffer = unsafe {
             core::slice::from_raw_parts(
-                (&file_header as *const RecordHeader) as *const u8,
+                (file_header as *const RecordHeader) as *const u8,
                 core::mem::size_of::<RecordHeader>(),
             )
         };
@@ -143,7 +140,7 @@ impl RecorderBuilder {
     fn write_hex_header(
         &self,
         file: &mut File,
-        file_header: RecordHeader,
+        file_header: &RecordHeader,
     ) -> Result<(), RecorderCreateError> {
         let msg = format!(
             "Unable to write RecordFileHeader into hex file \"{:?}\"",
@@ -174,19 +171,17 @@ impl RecorderBuilder {
 pub struct Recorder {
     file: File,
     data_representation: DataRepresentation,
+    header: RecordHeader,
 }
 
 impl Recorder {
-    pub fn write_payload(
-        &mut self,
-        system_header: &[u8],
-        user_header: &[u8],
-        payload: &[u8],
-        time_stamp: Duration,
-    ) -> Result<(), FileWriteError> {
+    pub fn write(&mut self, record: RawRecord) -> Result<(), FileWriteError> {
         RecordWriter::new(&mut self.file)
             .data_representation(self.data_representation)
-            .time_stamp(time_stamp)
-            .write(system_header, user_header, payload)
+            .write(record)
+    }
+
+    pub fn header(&self) -> &RecordHeader {
+        &self.header
     }
 }
