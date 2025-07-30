@@ -78,6 +78,11 @@ pub struct CustomHeaderMarker {}
 #[doc(hidden)]
 pub struct CustomPayloadMarker(u8);
 
+#[repr(C)]
+#[derive(ZeroCopySend, Debug, Clone, PartialEq, Eq, Hash)]
+#[doc(hidden)]
+pub struct CustomKeyMarker {}
+
 enum_gen! {
 #[doc(hidden)]
     OpenDynamicStorageFailure

@@ -15,6 +15,7 @@
 //! See [`crate::service`]
 //!
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
+use super::CustomKeyMarker;
 use super::{OpenDynamicStorageFailure, ServiceState};
 use crate::service;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
@@ -211,6 +212,7 @@ struct Builder<
     verify_max_readers: bool,
     verify_max_nodes: bool,
     internals: Vec<BuilderInternals<KeyType>>,
+    override_key_type: Option<TypeDetail>,
 }
 
 impl<
@@ -224,6 +226,7 @@ impl<
             verify_max_readers: false,
             verify_max_nodes: false,
             internals: Vec::<BuilderInternals<KeyType>>::new(),
+            override_key_type: None,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Blackboard(
@@ -596,6 +599,14 @@ impl<
                 ))
             }
         }
+    }
+}
+
+impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
+        self.builder.override_key_type = Some(value.clone());
+        self
     }
 }
 

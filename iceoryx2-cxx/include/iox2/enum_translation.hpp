@@ -1639,6 +1639,8 @@ constexpr auto from<int, iox2::MessagingPattern>(const int value) noexcept -> io
         return iox2::MessagingPattern::PublishSubscribe;
     case iox2_messaging_pattern_e_REQUEST_RESPONSE:
         return iox2::MessagingPattern::RequestResponse;
+    case iox2_messaging_pattern_e_BLACKBOARD:
+        return iox2::MessagingPattern::Blackboard;
     }
 
     IOX_UNREACHABLE();
