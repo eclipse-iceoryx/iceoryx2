@@ -10,6 +10,47 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! ## Example
+//!
+//! The individual types used by [`ServiceTypes`](crate::recorder::ServiceTypes) can be acquired
+//! from the [`StaticConfig`](iceoryx2::service::static_config::StaticConfig) of a
+//! [`Service`](iceoryx2::service::Service). For publish susbcribe one can call for instance
+//! [`publish_subscribe::StaticConfig::message_type_details()`](iceoryx2::service::static_config::publish_subscribe::StaticConfig::message_type_details())
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! use iceoryx2_userland_record_and_replay::prelude::*;
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::TypeVariant;
+//! use core::time::Duration;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let service_types = ServiceTypes {
+//!     payload: TypeDetail::new::<u64>(TypeVariant::FixedSize),
+//!     user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
+//!     system_header: TypeDetail::new::<u64>(TypeVariant::FixedSize),
+//! };
+//!
+//! // create the file recorder
+//! let mut recorder = RecorderBuilder::new(&service_types)
+//!     .data_representation(DataRepresentation::HumanReadable)
+//!     .messaging_pattern(MessagingPattern::PublishSubscribe)
+//!     .create(&FilePath::new(b"recorded_data.iox2")?)?;
+//!
+//! # iceoryx2_bb_posix::file::File::remove(&FilePath::new(b"recorded_data.iox2")?)?;
+//!
+//! // add some recorded data
+//! recorder.write(RawRecord {
+//!     timestamp: Duration::ZERO,
+//!     system_header: &[0u8; 8],
+//!     user_header: &[0u8; 0],
+//!     payload: &[0u8; 8]
+//! })?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use iceoryx2::prelude::MessagingPattern;
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_bb_elementary::package_version::PackageVersion;

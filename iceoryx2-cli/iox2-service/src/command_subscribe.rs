@@ -11,17 +11,12 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::cli::{DataRepresentation, SubscribeOptions};
-use anyhow::anyhow;
+use crate::helper_functions::{extract_pubsub_payload, get_pubsub_service_types};
 use anyhow::Result;
 use iceoryx2::prelude::*;
-use iceoryx2::sample::Sample;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
-use iceoryx2::service::header::publish_subscribe::Header;
-use iceoryx2::service::static_config::message_type_details::TypeDetail;
-use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::hex_conversion::bytes_to_hex_string;
-use iceoryx2_userland_record_and_replay::recorder::ServiceTypes;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -33,77 +28,6 @@ struct Message {
     user_header: String,
     payload_len: usize,
     payload: String,
-}
-
-fn get_service_types(
-    options: &SubscribeOptions,
-    node: &Node<ipc::Service>,
-) -> Result<ServiceTypes> {
-    let service_name = ServiceName::new(&options.service)?;
-    let service_details = match ipc::Service::details(
-        &service_name,
-        node.config(),
-        MessagingPattern::PublishSubscribe,
-    )? {
-        Some(v) => v,
-        None => {
-            return Err(anyhow!(
-                "unable to access service \"{}\", does it exist?",
-                options.service
-            ))
-        }
-    };
-
-    let user_header = unsafe {
-        service_details
-            .static_details
-            .messaging_pattern()
-            .publish_subscribe()
-            .message_type_details()
-            .user_header
-            .clone()
-    };
-
-    let payload = unsafe {
-        service_details
-            .static_details
-            .messaging_pattern()
-            .publish_subscribe()
-            .message_type_details()
-            .payload
-            .clone()
-    };
-
-    let system_header = TypeDetail::new::<Header>(TypeVariant::FixedSize);
-
-    Ok(ServiceTypes {
-        payload,
-        user_header,
-        system_header,
-    })
-}
-
-fn extract_payload<'a>(
-    sample: &'a Sample<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
-    user_header_type: &TypeDetail,
-) -> (&'a [u8], &'a [u8], &'a [u8]) {
-    let system_header = unsafe {
-        core::slice::from_raw_parts(
-            (sample.header() as *const Header).cast(),
-            core::mem::size_of::<Header>(),
-        )
-    };
-    let user_header = unsafe {
-        core::slice::from_raw_parts(
-            (sample.user_header() as *const CustomHeaderMarker).cast(),
-            user_header_type.size(),
-        )
-    };
-    let payload = unsafe {
-        core::slice::from_raw_parts(sample.payload().as_ptr().cast(), sample.payload().len())
-    };
-
-    (system_header, user_header, payload)
 }
 
 fn print_hex_dump(
@@ -162,7 +86,7 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
         .create::<ipc::Service>()?;
 
     let service_name = ServiceName::new(&options.service)?;
-    let service_types = get_service_types(&options, &node)?;
+    let service_types = get_pubsub_service_types(ServiceName::new(&options.service)?, &node)?;
 
     let service = unsafe {
         node.service_builder(&service_name)
@@ -174,14 +98,14 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
     };
 
     let subscriber = service.subscriber_builder().create()?;
-    let cycle_time = Duration::from_millis(1);
+    let cycle_time = Duration::from_millis(100);
 
     let start = Instant::now();
     let mut msg_counter = 0u64;
     'node_loop: while node.wait(cycle_time).is_ok() {
         while let Some(sample) = unsafe { subscriber.receive_custom_payload()? } {
             let (system_header, user_header, payload) =
-                extract_payload(&sample, &service_types.user_header);
+                extract_pubsub_payload(&sample, &service_types.user_header);
 
             match options.data_representation {
                 DataRepresentation::Iox2Dump => {

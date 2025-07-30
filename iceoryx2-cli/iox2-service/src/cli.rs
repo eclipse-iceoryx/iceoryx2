@@ -171,6 +171,23 @@ impl From<DataRepresentation> for iceoryx2_userland_record_and_replay::record::D
     }
 }
 
+#[derive(Clone, Copy, ValueEnum, Default)]
+#[value(rename_all = "UPPERCASE")]
+pub enum MessagingPattern {
+    #[default]
+    PublishSubscribe,
+}
+
+impl From<MessagingPattern> for iceoryx2::prelude::MessagingPattern {
+    fn from(value: MessagingPattern) -> Self {
+        match value {
+            MessagingPattern::PublishSubscribe => {
+                iceoryx2::prelude::MessagingPattern::PublishSubscribe
+            }
+        }
+    }
+}
+
 #[derive(Parser)]
 pub struct PublishOptions {
     #[clap(help = "Name of the service which shall the message be sent to.")]
@@ -296,6 +313,105 @@ pub struct SubscribeOptions {
     pub max_messages: Option<u64>,
 }
 
+#[derive(Parser)]
+pub struct RecordOptions {
+    #[clap(help = "Name of the service which shall be recorded.")]
+    pub service: String,
+
+    #[clap(
+        short,
+        long,
+        default_value = "shell_node",
+        help = "Defines the node name of the recorder endpoint."
+    )]
+    pub node_name: String,
+
+    #[clap(
+        short,
+        long,
+        help = "Non-existing file which will be created and the captured records will be stored."
+    )]
+    pub output: String,
+
+    #[clap(
+        short,
+        long,
+        default_value = "1",
+        help = "Cycle time that defines how long the recorder will wait before polling for further messages."
+    )]
+    pub cycle_time_in_ms: u64,
+
+    #[clap(
+        short,
+        long,
+        default_value = "HUMANREADABLE",
+        help = "Defines the data format of the recorded file."
+    )]
+    pub data_representation: DataRepresentation,
+
+    #[clap(
+        short,
+        long,
+        default_value = "PUBLISHSUBSCRIBE",
+        help = "Defines the messaging pattern of the service."
+    )]
+    pub messaging_pattern: MessagingPattern,
+
+    #[clap(
+        short,
+        long,
+        help = "Maximum runtime in seconds. When the timeout has passed the recorder stops."
+    )]
+    pub timeout_in_sec: Option<u64>,
+
+    #[clap(
+        long,
+        help = "Maximum number of messages to be received before the recorder stops."
+    )]
+    pub max_messages: Option<u64>,
+}
+
+#[derive(Parser)]
+pub struct ReplayOptions {
+    #[clap(help = "Name of the service where the recorded data shall be replayed.")]
+    pub service: String,
+
+    #[clap(
+        short,
+        long,
+        default_value = "shell_node",
+        help = "Defines the node name of the replayer endpoint."
+    )]
+    pub node_name: String,
+
+    #[clap(short, long, help = "The file that contains the recorded data.")]
+    pub file: String,
+
+    #[clap(
+        short,
+        long,
+        default_value = "HUMANREADABLE",
+        help = "Defines how the data in the file is encoded."
+    )]
+    pub data_representation: DataRepresentation,
+
+    #[clap(
+        short,
+        long,
+        default_value = "1",
+        help = "How often the recorded data shall be sent repeatedly."
+    )]
+    pub repetitions: usize,
+
+    #[clap(
+        short,
+        long,
+        default_value = "1.0",
+        help = "The timings in the file will be multiplied by the given factor to increase or slow down the playback."
+    )]
+    pub time_factor: f32,
+}
+
 #[derive(Subcommand)]
 pub enum Action {
     #[clap(
@@ -333,4 +449,14 @@ pub enum Action {
         help_template = help_template(HelpOptions::DontPrintCommandSection)
     )]
     Subscribe(SubscribeOptions),
+    #[clap(
+        about = "Record data from any service.",
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
+    )]
+    Record(RecordOptions),
+    #[clap(
+        about = "Replay pre-recorded data to any service.",
+        help_template = help_template(HelpOptions::DontPrintCommandSection)
+    )]
+    Replay(ReplayOptions),
 }

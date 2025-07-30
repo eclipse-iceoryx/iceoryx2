@@ -17,9 +17,12 @@ extern crate better_panic;
 
 mod cli;
 mod command_publish;
+mod command_record;
+mod command_replay;
 mod command_subscribe;
 mod commands;
 mod filter;
+mod helper_functions;
 
 use anyhow::Result;
 use clap::Parser;
@@ -76,6 +79,16 @@ fn main() -> Result<()> {
             Action::Subscribe(options) => {
                 if let Err(e) = command_subscribe::subscribe(options, cli.format) {
                     error!("failed to subscribe and receive messages: {}", e);
+                }
+            }
+            Action::Record(options) => {
+                if let Err(e) = command_record::record(options, cli.format) {
+                    error!("failed to record data: {}", e);
+                }
+            }
+            Action::Replay(options) => {
+                if let Err(e) = command_replay::replay(options, cli.format) {
+                    error!("failed to replay data: {}", e);
                 }
             }
             Action::Discovery(options) => {

@@ -163,11 +163,9 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
             send_message(header.as_slice(), payload.as_slice(), &publisher, &options)?;
         }
 
-        if options.repetitions != 0 {
-            counter += 1;
-            if counter == options.repetitions {
-                break;
-            }
+        counter += 1;
+        if counter == options.repetitions {
+            break;
         }
     }
 
