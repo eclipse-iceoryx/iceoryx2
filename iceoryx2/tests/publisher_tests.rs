@@ -22,7 +22,7 @@ mod publisher {
     use iceoryx2::service::builder::CustomPayloadMarker;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{service_name::ServiceName, Service};
-    use iceoryx2::testing::*;
+    use iceoryx2::testing;
     use iceoryx2_bb_posix::barrier::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -43,7 +43,7 @@ mod publisher {
     #[test]
     fn publisher_loan_and_send_sample_works<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -62,7 +62,7 @@ mod publisher {
     #[test]
     fn loan_initializes_sample_with_default<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -81,7 +81,7 @@ mod publisher {
     #[test]
     fn drop_is_not_called_for_underlying_type_of_sample<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -102,7 +102,7 @@ mod publisher {
     #[test]
     fn loan_uninit_does_not_initialize_sample<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -122,7 +122,7 @@ mod publisher {
     fn publisher_loan_slice_initializes_sample_with_default<Sut: Service>() -> TestResult<()> {
         const NUMBER_OF_ELEMENTS: usize = 120;
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -145,7 +145,7 @@ mod publisher {
     fn slice_sample_does_not_call_drop_for_underlying_value<Sut: Service>() -> TestResult<()> {
         const NUMBER_OF_ELEMENTS: usize = 120;
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -170,7 +170,7 @@ mod publisher {
     fn publisher_loan_slice_up_to_max_elements_works<Sut: Service>() -> TestResult<()> {
         const NUMBER_OF_ELEMENTS: usize = 125;
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -194,7 +194,7 @@ mod publisher {
     fn publisher_loan_slice_more_than_max_elements_fails<Sut: Service>() -> TestResult<()> {
         const NUMBER_OF_ELEMENTS: usize = 125;
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -216,7 +216,7 @@ mod publisher {
     #[test]
     fn publisher_loan_unit_and_send_sample_works<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -235,7 +235,7 @@ mod publisher {
     #[test]
     fn publisher_can_borrow_multiple_sample_at_once<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -268,7 +268,7 @@ mod publisher {
     #[test]
     fn publisher_max_loaned_samples_works<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -290,7 +290,7 @@ mod publisher {
     #[test]
     fn publisher_sending_sample_reduces_loan_counter<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -315,7 +315,7 @@ mod publisher {
     #[test]
     fn publisher_dropping_sample_reduces_loan_counter<Sut: Service>() -> TestResult<()> {
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)
@@ -341,7 +341,7 @@ mod publisher {
     fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>() -> TestResult<()> {
         let _watchdog = Watchdog::new();
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
         let service = node
             .lock()
@@ -422,7 +422,7 @@ mod publisher {
     #[test]
     fn id_is_unique<Sut: Service>() {
         let service_name = generate_name().unwrap();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_PUBLISHERS: usize = 8;
 
@@ -447,10 +447,10 @@ mod publisher {
     fn publisher_with_custom_payload_details_adjusts_slice_len<Sut: Service>() -> TestResult<()> {
         const TYPE_SIZE_OVERRIDE: usize = 128;
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let mut type_detail = TypeDetail::new::<u8>(TypeVariant::FixedSize);
-        type_detail.size = TYPE_SIZE_OVERRIDE;
+        testing::type_detail_set_size(&mut type_detail, TYPE_SIZE_OVERRIDE);
 
         let service = unsafe {
             node.service_builder(&service_name)
@@ -474,10 +474,10 @@ mod publisher {
     fn publisher_with_custom_payload_details_panics_when_calling_loan_slice_uninit<Sut: Service>() {
         const TYPE_SIZE_OVERRIDE: usize = 128;
         let service_name = generate_name().unwrap();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let mut type_detail = TypeDetail::new::<u8>(TypeVariant::FixedSize);
-        type_detail.size = TYPE_SIZE_OVERRIDE;
+        testing::type_detail_set_size(&mut type_detail, TYPE_SIZE_OVERRIDE);
 
         let service = unsafe {
             node.service_builder(&service_name)
@@ -499,7 +499,7 @@ mod publisher {
     fn custom_fixed_size_payload_panics_when_loaning_more_than_one_element<Sut: Service>() {
         set_log_level(LogLevel::Error);
         let service_name = generate_name().unwrap();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
 
@@ -524,7 +524,7 @@ mod publisher {
         const ITERATIONS: usize = 20;
         const SUBSCRIBER_BUFFER_SIZE: usize = 7;
         let service_name = generate_name()?;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let service = node
             .service_builder(&service_name)

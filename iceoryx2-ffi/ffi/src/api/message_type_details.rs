@@ -36,16 +36,16 @@ pub struct iox2_message_type_details_t {
 impl From<&TypeDetail> for iox2_type_detail_t {
     fn from(value: &TypeDetail) -> Self {
         Self {
-            variant: (&value.variant).into(),
+            variant: (&value.variant()).into(),
             type_name: core::array::from_fn(|n| {
-                if n < value.type_name.len() {
-                    value.type_name.as_bytes()[n] as _
+                if n < value.type_name().len() {
+                    value.type_name().as_bytes()[n] as _
                 } else {
                     0
                 }
             }),
-            size: value.size,
-            alignment: value.alignment,
+            size: value.size(),
+            alignment: value.alignment(),
         }
     }
 }

@@ -225,12 +225,12 @@ pub(crate) unsafe fn create_type_details(
         Err(_) => return Err(iox2_type_detail_error_e::INVALID_SIZE_OR_ALIGNMENT_VALUE as c_int),
     }
 
-    Ok(TypeDetail {
-        variant: type_variant.into(),
-        type_name,
-        size,
-        alignment,
-    })
+    let mut type_detail = TypeDetail::new::<()>(type_variant.into());
+    iceoryx2::testing::type_detail_set_name(&mut type_detail, type_name);
+    iceoryx2::testing::type_detail_set_size(&mut type_detail, size);
+    iceoryx2::testing::type_detail_set_alignment(&mut type_detail, alignment);
+
+    Ok(type_detail)
 }
 
 /// Sets the request header type details for the builder

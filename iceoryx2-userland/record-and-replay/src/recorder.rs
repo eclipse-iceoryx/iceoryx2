@@ -200,32 +200,32 @@ impl Recorder {
     pub fn write(&mut self, record: RawRecord) -> Result<(), RecorderWriteError> {
         let msg = "Unable to write new record";
 
-        if record.system_header.len() != self.header.types.system_header.size {
+        if record.system_header.len() != self.header.types.system_header.size() {
             fail!(from self, with RecorderWriteError::CorruptedSystemHeaderRecord,
                 "{msg} since the system header entry is corrupted. Expected a size of {} but provided a size of {}.",
-                self.header.types.system_header.size, record.system_header.len());
+                self.header.types.system_header.size(), record.system_header.len());
         }
 
-        if record.user_header.len() != self.header.types.user_header.size {
+        if record.user_header.len() != self.header.types.user_header.size() {
             fail!(from self, with RecorderWriteError::CorruptedUserHeaderRecord,
                 "{msg} since the user header entry is corrupted. Expected a size of {} but provided a size of {}.",
-                self.header.types.user_header.size, record.user_header.len());
+                self.header.types.user_header.size(), record.user_header.len());
         }
 
-        if self.header.types.payload.variant == TypeVariant::FixedSize
-            && record.payload.len() != self.header.types.payload.size
+        if self.header.types.payload.variant() == TypeVariant::FixedSize
+            && record.payload.len() != self.header.types.payload.size()
         {
             fail!(from self, with RecorderWriteError::CorruptedPayloadRecord,
                 "{msg} since the payload entry is corrupted. Expected a size of {} but provided a size of {}.",
-                self.header.types.payload.size, record.payload.len());
+                self.header.types.payload.size(), record.payload.len());
         }
 
-        if self.header.types.payload.variant == TypeVariant::Dynamic
-            && record.payload.len() % self.header.types.payload.size != 0
+        if self.header.types.payload.variant() == TypeVariant::Dynamic
+            && record.payload.len() % self.header.types.payload.size() != 0
         {
             fail!(from self, with RecorderWriteError::CorruptedPayloadRecord,
                 "{msg} since the payload entry is corrupted. Expected a size which is a multiple of {} but provided a size of {}.",
-                self.header.types.payload.size, record.payload.len());
+                self.header.types.payload.size(), record.payload.len());
         }
 
         RecordWriter::new(&mut self.file)

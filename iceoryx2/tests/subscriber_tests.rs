@@ -21,7 +21,7 @@ mod subscriber {
         node::NodeBuilder,
         port::subscriber::SubscriberCreateError,
         service::{service_name::ServiceName, Service},
-        testing::*,
+        testing,
     };
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
@@ -51,7 +51,7 @@ mod subscriber {
     #[test]
     fn id_is_unique<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_SUBSCRIBERS: usize = 8;
 
@@ -80,10 +80,10 @@ mod subscriber {
     >() {
         const TYPE_SIZE_OVERRIDE: usize = 128;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let mut type_detail = TypeDetail::new::<u8>(TypeVariant::FixedSize);
-        type_detail.size = TYPE_SIZE_OVERRIDE;
+        testing::type_detail_set_size(&mut type_detail, TYPE_SIZE_OVERRIDE);
 
         let service = unsafe {
             node.service_builder(&service_name)

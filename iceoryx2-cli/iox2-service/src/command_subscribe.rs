@@ -108,7 +108,7 @@ fn extract_payload<'a>(
     let user_header = unsafe {
         core::slice::from_raw_parts(
             (sample.user_header() as *const CustomHeaderMarker).cast(),
-            user_header_type.size,
+            user_header_type.size(),
         )
     };
     let payload = unsafe {

@@ -174,25 +174,31 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;
 
+    let mut payload_type = TypeDetail::new::<()>(match options.type_variant {
+        CliTypeVariant::Dynamic => TypeVariant::Dynamic,
+        CliTypeVariant::FixedSize => TypeVariant::FixedSize,
+    });
+    iceoryx2::testing::type_detail_set_size(&mut payload_type, options.type_size);
+    iceoryx2::testing::type_detail_set_alignment(&mut payload_type, options.type_alignment);
+    iceoryx2::testing::type_detail_set_name(
+        &mut payload_type,
+        TypeNameString::from_str_truncated(options.type_name.as_str()),
+    );
+
+    let mut header_type = TypeDetail::new::<()>(TypeVariant::FixedSize);
+    iceoryx2::testing::type_detail_set_size(&mut header_type, options.header_type_size);
+    iceoryx2::testing::type_detail_set_alignment(&mut header_type, options.header_type_alignment);
+    iceoryx2::testing::type_detail_set_name(
+        &mut header_type,
+        TypeNameString::from_str_truncated(options.header_type_name.as_str()),
+    );
+
     let service = unsafe {
         node.service_builder(&ServiceName::new(&options.service)?)
             .publish_subscribe::<[CustomPayloadMarker]>()
             .user_header::<CustomHeaderMarker>()
-            .__internal_set_payload_type_details(&TypeDetail {
-                variant: match options.type_variant {
-                    CliTypeVariant::Dynamic => TypeVariant::Dynamic,
-                    CliTypeVariant::FixedSize => TypeVariant::FixedSize,
-                },
-                type_name: TypeNameString::try_from(options.type_name.as_str())?,
-                size: options.type_size,
-                alignment: options.type_alignment,
-            })
-            .__internal_set_user_header_type_details(&TypeDetail {
-                variant: TypeVariant::FixedSize,
-                type_name: TypeNameString::try_from(options.header_type_name.as_str())?,
-                size: options.header_type_size,
-                alignment: options.header_type_alignment,
-            })
+            .__internal_set_payload_type_details(&payload_type)
+            .__internal_set_user_header_type_details(&header_type)
             .open_or_create()?
     };
 

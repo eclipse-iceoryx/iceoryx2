@@ -27,6 +27,7 @@ mod recorder_replayer {
     };
 
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+    use iceoryx2::testing;
     use iceoryx2_bb_container::semantic_string::SemanticString;
     use iceoryx2_bb_posix::config::test_directory;
     use iceoryx2_bb_posix::testing::create_test_directory;
@@ -51,14 +52,12 @@ mod recorder_replayer {
     }
 
     fn generate_type_detail(variant: TypeVariant, size: usize, alignment: usize) -> TypeDetail {
-        TypeDetail {
+        testing::create_custom_type_detail(
             variant,
-            type_name: TypeNameString::from_str_truncated(
-                &UniqueSystemId::new().unwrap().value().to_string(),
-            ),
+            TypeNameString::from_str_truncated(&UniqueSystemId::new().unwrap().value().to_string()),
             size,
             alignment,
-        }
+        )
     }
 
     struct Data {
@@ -81,9 +80,9 @@ mod recorder_replayer {
 
     fn generate_service_data(types: &ServiceTypes, timestamp: Duration) -> Data {
         Data {
-            payload: generate_data(types.payload.size),
-            user_header: generate_data(types.user_header.size),
-            system_header: generate_data(types.system_header.size),
+            payload: generate_data(types.payload.size()),
+            user_header: generate_data(types.user_header.size()),
+            system_header: generate_data(types.system_header.size()),
             timestamp,
         }
     }
@@ -178,7 +177,7 @@ mod recorder_replayer {
         let mut dataset = vec![];
         for n in 0..NUMBER_OF_DATA {
             let mut data = generate_service_data(&types, Duration::from_millis(n as _));
-            data.payload = generate_data(types.payload.size * (n + 1));
+            data.payload = generate_data(types.payload.size() * (n + 1));
             dataset.push(data);
         }
 
@@ -246,7 +245,7 @@ mod recorder_replayer {
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
-        data.payload = generate_data(types.payload.size + 1);
+        data.payload = generate_data(types.payload.size() + 1);
 
         assert_that!(
             recorder.write(RawRecord {
@@ -303,7 +302,7 @@ mod recorder_replayer {
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
-        data.payload = generate_data(types.payload.size + 1);
+        data.payload = generate_data(types.payload.size() + 1);
 
         assert_that!(
             recorder.write(RawRecord {
@@ -360,7 +359,7 @@ mod recorder_replayer {
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
-        data.user_header = generate_data(types.user_header.size - 1);
+        data.user_header = generate_data(types.user_header.size() - 1);
 
         assert_that!(
             recorder.write(RawRecord {

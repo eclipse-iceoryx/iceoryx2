@@ -76,14 +76,14 @@ impl RecordReader {
     }
 
     fn verify_payload(&self, payload: &Vec<u8>, error_msg: &str) -> Result<(), ReplayerOpenError> {
-        if (self.header.types.payload.variant == TypeVariant::FixedSize
-            && payload.len() != self.header.types.payload.size)
-            || (self.header.types.payload.variant == TypeVariant::Dynamic
-                && payload.len() % self.header.types.payload.size != 0)
+        if (self.header.types.payload.variant() == TypeVariant::FixedSize
+            && payload.len() != self.header.types.payload.size())
+            || (self.header.types.payload.variant() == TypeVariant::Dynamic
+                && payload.len() % self.header.types.payload.size() != 0)
         {
             fail!(from self, with ReplayerOpenError::CorruptedPayloadRecord,
                                 "{error_msg} since the payload record is corrupted (has wrong size {}, expected {}).",
-                                payload.len(), self.header.types.payload.size);
+                                payload.len(), self.header.types.payload.size());
         }
 
         Ok(())
@@ -94,10 +94,10 @@ impl RecordReader {
         header: &Vec<u8>,
         error_msg: &str,
     ) -> Result<(), ReplayerOpenError> {
-        if header.len() != self.header.types.user_header.size {
+        if header.len() != self.header.types.user_header.size() {
             fail!(from self, with ReplayerOpenError::CorruptedUserHeaderRecord,
                                 "{error_msg} since the system header record is corrupted (has wrong size {}, expected {}).",
-                                header.len(), self.header.types.user_header.size);
+                                header.len(), self.header.types.user_header.size());
         }
 
         Ok(())
@@ -108,10 +108,10 @@ impl RecordReader {
         header: &Vec<u8>,
         error_msg: &str,
     ) -> Result<(), ReplayerOpenError> {
-        if header.len() != self.header.types.system_header.size {
+        if header.len() != self.header.types.system_header.size() {
             fail!(from self, with ReplayerOpenError::CorruptedSystemHeaderRecord,
                                 "{error_msg} since the system header record is corrupted (has wrong size {}, expected {}).",
-                                header.len(), self.header.types.system_header.size);
+                                header.len(), self.header.types.system_header.size());
         }
 
         Ok(())
