@@ -257,10 +257,12 @@ impl Recorder {
                 self.header.types.payload.size(), record.payload.len());
         }
 
-        if self.last_timestamp > record.timestamp.as_millis() as u64 {
+        let new_timestamp = record.timestamp.as_millis() as u64;
+        if self.last_timestamp > new_timestamp {
             fail!(from self, with RecorderWriteError::TimestampOlderThanPreviousRecord,
                 "{msg} since record timestamp is older than the previous record entry. Records are not allowed to jump back in time.");
         }
+        self.last_timestamp = new_timestamp;
 
         self.write_unchecked(record)
     }

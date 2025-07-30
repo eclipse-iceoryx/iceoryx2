@@ -51,6 +51,8 @@ pub enum ReplayerOpenError {
     CorruptedTimeStamp,
     /// The overall content of the file is corrupted.
     CorruptedContent,
+    /// The file contains records that jump back and forth in time.
+    CorruptedTimeline,
 }
 
 impl From<HexToBytesConversionError> for ReplayerOpenError {
@@ -142,6 +144,7 @@ impl ReplayerOpener {
             file,
             data_representation: self.data_representation,
             header: actual_header.clone(),
+            last_timestamp: 0,
         })
     }
 
@@ -213,15 +216,29 @@ pub struct Replayer {
     file: File,
     data_representation: DataRepresentation,
     header: RecordHeader,
+    last_timestamp: u64,
 }
 
 impl Replayer {
     /// Returns the next contained [`Record`]. If it reached the end of the file it
     /// returns [`None`].
     pub fn next_record(&mut self) -> Result<Option<Record>, ReplayerOpenError> {
-        RecordReader::new(&self.header)
+        if let Some(record) = RecordReader::new(&self.header)
             .data_representation(self.data_representation)
-            .read(&self.file)
+            .read(&self.file)?
+        {
+            let new_timestamp = record.timestamp.as_millis() as u64;
+            if self.last_timestamp > new_timestamp {
+                fail!(from self, with ReplayerOpenError::CorruptedTimeline,
+                    "Unable to read next record since the next entries time stamp is older than the previous entries timestamp. The entries are not allowed to jump back and forth in time.");
+            }
+
+            self.last_timestamp = new_timestamp;
+
+            return Ok(Some(record));
+        }
+
+        Ok(None)
     }
 
     /// Returns the header of the recorded file.

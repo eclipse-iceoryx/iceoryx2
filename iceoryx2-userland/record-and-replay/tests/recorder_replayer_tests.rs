@@ -72,8 +72,8 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
         user_header_type: TypeDetail,
+        number_of_data: usize,
     ) {
-        const NUMBER_OF_DATA: usize = 129;
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -88,7 +88,7 @@ mod recorder_replayer {
             .unwrap();
 
         let mut dataset = vec![];
-        for n in 0..NUMBER_OF_DATA {
+        for n in 0..number_of_data {
             dataset.push(generate_service_data(&types, Duration::from_millis(n as _)))
         }
 
@@ -128,6 +128,7 @@ mod recorder_replayer {
             DataRepresentation::Iox2Dump,
             MessagingPattern::PublishSubscribe,
             generate_type_detail(TypeVariant::FixedSize, 16, 8),
+            129,
         );
     }
 
@@ -137,6 +138,7 @@ mod recorder_replayer {
             DataRepresentation::HumanReadable,
             MessagingPattern::RequestResponse,
             generate_type_detail(TypeVariant::FixedSize, 32, 8),
+            89,
         );
     }
 
@@ -146,6 +148,7 @@ mod recorder_replayer {
             DataRepresentation::Iox2Dump,
             MessagingPattern::PublishSubscribe,
             TypeDetail::new::<()>(TypeVariant::FixedSize),
+            145,
         );
     }
 
@@ -155,6 +158,27 @@ mod recorder_replayer {
             DataRepresentation::HumanReadable,
             MessagingPattern::RequestResponse,
             TypeDetail::new::<()>(TypeVariant::FixedSize),
+            99,
+        );
+    }
+
+    #[test]
+    fn record_and_replay_works_with_empty_record_for_iox2dump() {
+        record_and_replay_works(
+            DataRepresentation::Iox2Dump,
+            MessagingPattern::PublishSubscribe,
+            generate_type_detail(TypeVariant::FixedSize, 16, 8),
+            0,
+        );
+    }
+
+    #[test]
+    fn record_and_replay_works_with_empty_record_for_human_readable() {
+        record_and_replay_works(
+            DataRepresentation::HumanReadable,
+            MessagingPattern::RequestResponse,
+            generate_type_detail(TypeVariant::FixedSize, 32, 8),
+            0,
         );
     }
 
@@ -227,6 +251,56 @@ mod recorder_replayer {
             DataRepresentation::HumanReadable,
             MessagingPattern::RequestResponse,
         );
+    }
+
+    fn writing_decreasing_timestamps_fails(data_representation: DataRepresentation) {
+        let file_name = generate_file_name();
+        let types = ServiceTypes {
+            payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
+            user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
+            system_header: generate_type_detail(TypeVariant::FixedSize, 16, 8),
+        };
+
+        let mut recorder = RecorderBuilder::new(&types)
+            .data_representation(data_representation)
+            .create(&file_name)
+            .unwrap();
+
+        let mut dataset = vec![];
+        dataset.push(generate_service_data(&types, Duration::from_millis(5)));
+        dataset.push(generate_service_data(&types, Duration::from_millis(2)));
+
+        assert_that!(
+            recorder.write(RawRecord {
+                timestamp: dataset[0].timestamp,
+                system_header: &dataset[0].system_header,
+                user_header: &dataset[0].user_header,
+                payload: &dataset[0].payload
+            }),
+            is_ok
+        );
+
+        assert_that!(
+            recorder.write(RawRecord {
+                timestamp: dataset[1].timestamp,
+                system_header: &dataset[1].system_header,
+                user_header: &dataset[1].user_header,
+                payload: &dataset[1].payload
+            }).err(),
+            eq Some(RecorderWriteError::TimestampOlderThanPreviousRecord)
+        );
+
+        File::remove(&file_name).unwrap();
+    }
+
+    #[test]
+    fn writing_decreasing_timestamps_fails_for_iox2dump() {
+        writing_decreasing_timestamps_fails(DataRepresentation::Iox2Dump);
+    }
+
+    #[test]
+    fn writing_decreasing_timestamps_fails_for_human_readable() {
+        writing_decreasing_timestamps_fails(DataRepresentation::HumanReadable);
     }
 
     fn writing_invalid_fixed_size_payload_fails(
@@ -719,5 +793,56 @@ mod recorder_replayer {
             DataRepresentation::HumanReadable,
             MessagingPattern::PublishSubscribe,
         );
+    }
+
+    fn reading_decreasing_timestamps_fails(data_representation: DataRepresentation) {
+        let file_name = generate_file_name();
+        let types = ServiceTypes {
+            payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
+            user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
+            system_header: generate_type_detail(TypeVariant::FixedSize, 16, 8),
+        };
+
+        let mut recorder = RecorderBuilder::new(&types)
+            .data_representation(data_representation)
+            .create(&file_name)
+            .unwrap();
+
+        let mut dataset = vec![];
+        dataset.push(generate_service_data(&types, Duration::from_millis(5)));
+        dataset.push(generate_service_data(&types, Duration::from_millis(2)));
+
+        for data in dataset {
+            assert_that!(
+                testing::recorder_write_unchecked(
+                    &mut recorder,
+                    RawRecord {
+                        timestamp: data.timestamp,
+                        system_header: &data.system_header,
+                        user_header: &data.user_header,
+                        payload: &data.payload
+                    }
+                ),
+                is_ok
+            );
+        }
+
+        let result = ReplayerOpener::new(&file_name)
+            .data_representation(data_representation)
+            .read_into_buffer();
+
+        assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedTimeline));
+
+        File::remove(&file_name).unwrap();
+    }
+
+    #[test]
+    fn reading_decreasing_timestamps_fails_for_iox2dump() {
+        reading_decreasing_timestamps_fails(DataRepresentation::Iox2Dump);
+    }
+
+    #[test]
+    fn reading_decreasing_timestamps_fails_for_human_readable() {
+        reading_decreasing_timestamps_fails(DataRepresentation::HumanReadable);
     }
 }
