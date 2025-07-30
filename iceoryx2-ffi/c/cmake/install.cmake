@@ -62,6 +62,7 @@ configure_package_config_file(
 #
 
 # target directories
+if(BUILD_SHARED_LIBS)
 install(
     TARGETS includes-only static-lib shared-lib
     EXPORT ${TARGETS_EXPORT_NAME}
@@ -69,6 +70,15 @@ install(
     LIBRARY DESTINATION ${DESTINATION_LIBDIR} COMPONENT lib
     ARCHIVE DESTINATION ${DESTINATION_LIBDIR} COMPONENT lib
 )
+else()
+install(
+    TARGETS includes-only static-lib
+    EXPORT ${TARGETS_EXPORT_NAME}
+    RUNTIME DESTINATION ${DESTINATION_BINDIR} COMPONENT bin
+    LIBRARY DESTINATION ${DESTINATION_LIBDIR} COMPONENT lib
+    ARCHIVE DESTINATION ${DESTINATION_LIBDIR} COMPONENT lib
+)
+endif()
 
 # header
 install(
