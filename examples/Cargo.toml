@@ -67,6 +67,20 @@ path = "rust/discovery_service/discovery_service.rs"
 name = "discovery_service_client"
 path = "rust/discovery_service/discovery_service_client.rs"
 
+# domains
+
+[[example]]
+name = "domains_publisher"
+path = "rust/domains/publisher.rs"
+
+[[example]]
+name = "domains_subscriber"
+path = "rust/domains/subscriber.rs"
+
+[[example]]
+name = "domains_discovery"
+path = "rust/domains/discovery.rs"
+
 # event
 
 [[example]]
@@ -189,16 +203,17 @@ path = "rust/service_attributes/opener.rs"
 name = "service_attributes_incompatible"
 path = "rust/service_attributes/incompatible.rs"
 
-# domains
+# service variants
 
 [[example]]
-name = "domains_publisher"
-path = "rust/domains/publisher.rs"
+name = "service_variants_ipc_threadsafe_subscriber"
+path = "rust/service_variants/ipc_threadsafe_subscriber.rs"
 
 [[example]]
-name = "domains_subscriber"
-path = "rust/domains/subscriber.rs"
+name = "service_variants_ipc_publisher"
+path = "rust/service_variants/ipc_publisher.rs"
 
 [[example]]
-name = "domains_discovery"
-path = "rust/domains/discovery.rs"
+name = "service_variants_local_pubsub"
+path = "rust/service_variants/local_pubsub.rs"
+
