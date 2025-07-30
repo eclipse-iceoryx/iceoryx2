@@ -25,8 +25,8 @@ namespace iox2 {
 template <ServiceType S, typename KeyType>
 class Writer {
   public:
-    Writer(Writer&&) noexcept;
-    auto operator=(Writer&&) noexcept -> Writer&;
+    Writer(Writer&& rhs) noexcept;
+    auto operator=(Writer&& rhs) noexcept -> Writer&;
     ~Writer();
 
     Writer(const Writer&) = delete;
@@ -44,23 +44,20 @@ class Writer {
     template <ServiceType, KeyType>
     friend class PortFactoryWriter;
 
-    explicit Writer(iox2_writer_h handle);
+    explicit Writer(/*iox2_writer_h handle*/);
     void drop();
 
-    iox2_writer_h m_handle = nullptr;
+    // iox2_writer_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType>
-inline Writer<S, KeyType>::Writer(iox2_writer_h handle)
-    : m_handle { handle } {
+inline Writer<S, KeyType>::Writer(/*iox2_writer_h handle*/) {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 inline void Writer<S, KeyType>::drop() {
-    if (m_handle != nullptr) {
-        iox2_writer_drop(m_handle);
-        m_handle = nullptr;
-    }
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
@@ -69,14 +66,8 @@ inline Writer<S, KeyType>::Writer(Writer&& rhs) noexcept {
 }
 
 template <ServiceType S, typename KeyType>
-inline auto Writer<S, KeyType>::operator=(Writer&& rhs) noexcept -> Writer& {
-    if (this != &rhs) {
-        drop();
-        m_handle = std::move(rhs.m_handle);
-        rhs.m_handle = nullptr;
-    }
-
-    return *this;
+inline auto Writer<S, KeyType>::operator=([[maybe_unused]] Writer&& rhs) noexcept -> Writer& {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
@@ -86,15 +77,12 @@ inline Writer<S, KeyType>::~Writer() {
 
 template <ServiceType S, typename KeyType>
 inline auto Writer<S, KeyType>::id() const -> UniqueWriterId {
-    iox2_unique_writer_id_h id_handle = nullptr;
-
-    iox2_writer_id(&m_handle, nullptr, &id_handle);
-    return UniqueWriterId { id_handle };
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 template <typename ValueType>
-inline auto Writer<S, KeyType>::entry(const KeyType& key)
+inline auto Writer<S, KeyType>::entry([[maybe_unused]] const KeyType& key)
     -> iox::expected<WriterHandle<S, KeyType, ValueType>, WriterHandleError> {
     IOX_TODO();
 }

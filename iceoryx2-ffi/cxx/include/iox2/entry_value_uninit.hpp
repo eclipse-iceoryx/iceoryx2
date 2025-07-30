@@ -48,13 +48,14 @@ class EntryValueUninit {
 };
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto write(EntryValueUninit<S, KeyType, ValueType>&& self, ValueType value)
+inline auto write([[maybe_unused]] EntryValueUninit<S, KeyType, ValueType>&& self, [[maybe_unused]] ValueType value)
     -> EntryValue<S, KeyType, ValueType> {
     IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto discard(EntryValueUninit<S, KeyType, ValueType>&& self) -> WriterHandle<S, KeyType, ValueType> {
+inline auto discard([[maybe_unused]] EntryValueUninit<S, KeyType, ValueType>&& self)
+    -> WriterHandle<S, KeyType, ValueType> {
     IOX_TODO();
 }
 } // namespace iox2

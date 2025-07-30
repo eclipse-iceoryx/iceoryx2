@@ -643,20 +643,24 @@ void RequestResponse::set_enable_fire_and_forget_requests(bool value) && {
 /////////////////////////
 // BEGIN: Blackboard
 /////////////////////////
-auto Blackboard::max_readers() && -> size_t {
-    return iox2_config_defaults_blackboard_max_readers(m_config);
+Blackboard::Blackboard(iox2_config_h* config)
+    : m_config { config } {
 }
 
-void Blackboard::set_max_readers(size_t value) && {
-    iox2_config_defaults_blackboard_set_max_readers(m_config);
+auto Blackboard::max_readers() && -> size_t {
+    IOX_TODO();
+}
+
+void Blackboard::set_max_readers([[maybe_unused]] size_t value) && {
+    IOX_TODO();
 }
 
 auto Blackboard::max_nodes() && -> size_t {
-    return iox2_config_defaults_blackboard_max_nodes(m_config);
+    IOX_TODO();
 }
 
-void Blackboard::set_max_nodes(size_t value) && {
-    iox2_config_defaults_blackboard_set_max_nodes(m_config);
+void Blackboard::set_max_nodes([[maybe_unused]] size_t value) && {
+    IOX_TODO();
 }
 /////////////////////////
 // END: Blackboard

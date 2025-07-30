@@ -25,8 +25,8 @@ class EntryValueUninit;
 template <ServiceType S, typename KeyType, typename ValueType>
 class WriterHandle {
   public:
-    WriterHandle(WriterHandle&&) noexcept;
-    auto operator=(WriterHandle&&) noexcept -> WriterHandle&;
+    WriterHandle(WriterHandle&& rhs) noexcept;
+    auto operator=(WriterHandle&& rhs) noexcept -> WriterHandle&;
     ~WriterHandle();
 
     WriterHandle(const WriterHandle&) = delete;
@@ -48,23 +48,20 @@ class WriterHandle {
     template <ServiceType, typename, typename>
     friend class EntryValue;
 
-    explicit WriterHandle(iox2_writer_handle_h handle);
+    explicit WriterHandle(/*iox2_writer_handle_h handle*/);
     void drop();
 
-    iox2_writer_handle_h m_handle = nullptr;
+    // iox2_writer_handle_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline WriterHandle<S, KeyType, ValueType>::WriterHandle(iox2_writer_handle_h handle)
-    : m_handle { handle } {
+inline WriterHandle<S, KeyType, ValueType>::WriterHandle(/*iox2_writer_handle_h handle*/) {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline void WriterHandle<S, KeyType, ValueType>::drop() {
-    if (m_handle != nullptr) {
-        iox2_writer_handle_drop(m_handle);
-        m_handle = nullptr;
-    }
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
@@ -73,14 +70,9 @@ inline WriterHandle<S, KeyType, ValueType>::WriterHandle(WriterHandle&& rhs) noe
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto WriterHandle<S, KeyType, ValueType>::operator=(WriterHandle&& rhs) noexcept -> WriterHandle& {
-    if (this != &rhs) {
-        drop();
-        m_handle = std::move(rhs.m_handle);
-        rhs.m_handle = nullptr;
-    }
-
-    return *this;
+inline auto WriterHandle<S, KeyType, ValueType>::operator=([[maybe_unused]] WriterHandle&& rhs) noexcept
+    -> WriterHandle& {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>

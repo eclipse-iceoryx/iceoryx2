@@ -22,8 +22,8 @@ namespace iox2 {
 template <ServiceType S, typename KeyType, typename ValueType>
 class ReaderHandle {
   public:
-    ReaderHandle(ReaderHandle&&) noexcept;
-    auto operator=(ReaderHandle&&) noexcept -> ReaderHandle&;
+    ReaderHandle(ReaderHandle&& rhs) noexcept;
+    auto operator=(ReaderHandle&& rhs) noexcept -> ReaderHandle&;
     ~ReaderHandle();
 
     ReaderHandle(const ReaderHandle&) = delete;
@@ -37,23 +37,20 @@ class ReaderHandle {
     auto entry_id() const -> EventId;
 
   private:
-    explicit ReaderHandle(iox2_reader_handle_h handle);
+    explicit ReaderHandle(/*iox2_reader_handle_h handle*/);
     void drop();
 
-    iox2_reader_handle_h m_handle = nullptr;
+    // iox2_reader_handle_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline ReaderHandle<S, KeyType, ValueType>::ReaderHandle(iox2_reader_handle_h handle)
-    : m_handle { handle } {
+inline ReaderHandle<S, KeyType, ValueType>::ReaderHandle(/*iox2_reader_handle_h handle*/) {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline void ReaderHandle<S, KeyType, ValueType>::drop() {
-    if (m_handle != nullptr) {
-        iox2_reader_handle_drop(m_handle);
-        m_handle = nullptr;
-    }
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
@@ -62,14 +59,9 @@ inline ReaderHandle<S, KeyType, ValueType>::ReaderHandle(ReaderHandle&& rhs) noe
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto ReaderHandle<S, KeyType, ValueType>::operator=(ReaderHandle&& rhs) noexcept -> ReaderHandle& {
-    if (this != &rhs) {
-        drop();
-        m_handle = std::move(rhs.m_handle);
-        rhs.m_handle = nullptr;
-    }
-
-    return *this;
+inline auto ReaderHandle<S, KeyType, ValueType>::operator=([[maybe_unused]] ReaderHandle&& rhs) noexcept
+    -> ReaderHandle& {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>

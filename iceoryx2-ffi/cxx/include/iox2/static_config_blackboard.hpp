@@ -33,12 +33,12 @@ class StaticConfigBlackboard {
     auto type_details() const -> TypeDetail&;
 
   private:
-    template <ServiceType>
+    template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
-    explicit StaticConfigBlackboard(iox2_static_config_blackboard_t value);
+    explicit StaticConfigBlackboard(/*iox2_static_config_blackboard_t value*/);
 
-    iox2_static_config_blackboard_t m_value;
+    // iox2_static_config_blackboard_t m_value;
 };
 } // namespace iox2
 

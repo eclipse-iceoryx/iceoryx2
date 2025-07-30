@@ -47,12 +47,12 @@ class EntryValue {
 };
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto update(EntryValue<S, KeyType, ValueType>&& self) -> WriterHandle<S, KeyType, ValueType> {
+inline auto update([[maybe_unused]] EntryValue<S, KeyType, ValueType>&& self) -> WriterHandle<S, KeyType, ValueType> {
     IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto discard(EntryValue<S, KeyType, ValueType>&& self) -> WriterHandle<S, KeyType, ValueType> {
+inline auto discard([[maybe_unused]] EntryValue<S, KeyType, ValueType>&& self) -> WriterHandle<S, KeyType, ValueType> {
     IOX_TODO();
 }
 } // namespace iox2

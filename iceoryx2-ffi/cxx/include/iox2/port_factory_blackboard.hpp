@@ -14,11 +14,9 @@
 #define IOX2_PORTFACTORY_BLACKBOARD_HPP
 
 #include "iox/expected.hpp"
-#include "iox/uninitialized_array.hpp"
 #include "iox2/attribute_set.hpp"
 #include "iox2/dynamic_config_blackboard.hpp"
 #include "iox2/iceoryx2.h"
-#include "iox2/internal/callback_context.hpp"
 #include "iox2/node_state.hpp"
 #include "iox2/port_factory_reader.hpp"
 #include "iox2/port_factory_writer.hpp"
@@ -32,8 +30,8 @@ namespace iox2 {
 template <ServiceType S, typename KeyType>
 class PortFactoryBlackboard {
   public:
-    PortFactoryBlackboard(PortFactoryBlackboard&&) noexcept;
-    auto operator=(PortFactoryBlackboard&&) noexcept -> PortFactoryBlackboard&;
+    PortFactoryBlackboard(PortFactoryBlackboard&& rhs) noexcept;
+    auto operator=(PortFactoryBlackboard&& rhs) noexcept -> PortFactoryBlackboard&;
     ~PortFactoryBlackboard();
 
     PortFactoryBlackboard(const PortFactoryBlackboard&) = delete;
@@ -64,32 +62,29 @@ class PortFactoryBlackboard {
         -> iox::expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactoryWriter`] to create a new [`Writer`] port
-    auto writer_builder() const -> PortFactoryWriter<S>;
+    auto writer_builder() const -> PortFactoryWriter<S, KeyType>;
 
     /// Returns a [`PortFactoryReader`] to create a new [`Reader`] port
-    auto reader_builder() const -> PortFactoryReader<S>;
+    auto reader_builder() const -> PortFactoryReader<S, KeyType>;
 
   private:
     template <ServiceType>
     friend class ServiceBuilderBlackboard;
 
-    explicit PortFactoryBlackboard(iox2_port_factory_blackboard_h handle);
+    explicit PortFactoryBlackboard(/*iox2_port_factory_blackboard_h handle*/);
     void drop() noexcept;
 
-    iox2_port_factory_blackboard_h m_handle = nullptr;
+    // iox2_port_factory_blackboard_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType>
-inline PortFactoryBlackboard<S, KeyType>::PortFactoryBlackboard(iox2_port_factory_blackboard_h handle)
-    : m_handle { handle } {
+inline PortFactoryBlackboard<S, KeyType>::PortFactoryBlackboard(/*iox2_port_factory_blackboard_h handle*/) {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 inline void PortFactoryBlackboard<S, KeyType>::drop() noexcept {
-    if (m_handle != nullptr) {
-        iox2_port_factory_blackboard_drop(m_handle);
-        m_handle = nullptr;
-    }
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
@@ -98,15 +93,9 @@ inline PortFactoryBlackboard<S, KeyType>::PortFactoryBlackboard(PortFactoryBlack
 }
 
 template <ServiceType S, typename KeyType>
-inline auto PortFactoryBlackboard<S, KeyType>::operator=(PortFactoryBlackboard&& rhs) noexcept
+inline auto PortFactoryBlackboard<S, KeyType>::operator=([[maybe_unused]] PortFactoryBlackboard&& rhs) noexcept
     -> PortFactoryBlackboard& {
-    if (this != &rhs) {
-        drop();
-        m_handle = std::move(rhs.m_handle);
-        rhs.m_handle = nullptr;
-    }
-
-    return *this;
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
@@ -116,60 +105,44 @@ inline PortFactoryBlackboard<S, KeyType>::~PortFactoryBlackboard() {
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::name() const -> ServiceNameView {
-    const auto* service_name_ptr = iox2_port_factory_blackboard_service_name(&m_handle);
-    return ServiceNameView(service_name_ptr);
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::service_id() const -> ServiceId {
-    iox::UninitializedArray<char, IOX2_SERVICE_ID_LENGTH> buffer;
-    iox2_port_factory_blackboard_service_id(&m_handle, &buffer[0], IOX2_SERVICE_ID_LENGTH);
-
-    return ServiceId(iox::string<IOX2_SERVICE_ID_LENGTH>(iox::TruncateToCapacity, &buffer[0]));
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::attributes() const -> AttributeSetView {
-    return AttributeSetView(iox2_port_factory_blackboard_attributes(&m_handle));
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::static_config() const -> StaticConfigBlackboard {
-    iox2_static_config_blackboard_t static_config {};
-    iox2_port_factory_blackboard_static_config(&m_handle, &static_config);
-
-    return StaticConfigBlackboard(static_config);
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::dynamic_config() const -> DynamicConfigBlackboard {
-    return DynamicConfigBlackboard(m_handle);
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
-inline auto
-PortFactoryBlackboard<S, KeyType>::nodes(const iox::function<CallbackProgression(NodeState<S>)>& callback) const
+inline auto PortFactoryBlackboard<S, KeyType>::nodes(
+    [[maybe_unused]] const iox::function<CallbackProgression(NodeState<S>)>& callback) const
     -> iox::expected<void, NodeListFailure> {
-    auto ctx = internal::ctx(callback);
-
-    const auto ret_val =
-        iox2_port_factory_blackboard_nodes(&m_handle, internal::list_callback<S>, static_cast<void*>(&ctx));
-
-    if (ret_val == IOX2_OK) {
-        return iox::ok();
-    }
-
-    return iox::err(iox::into<NodeListFailure>(ret_val));
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::writer_builder() const -> PortFactoryWriter<S, KeyType> {
-    return PortFactoryWriter<S, KeyType>(iox2_port_factory_blackboard_writer_builder(&m_handle, nullptr));
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::reader_builder() const -> PortFactoryReader<S, KeyType> {
-    return PortFactoryReader<S, KeyType>(iox2_port_factory_blackboard_reader_builder(&m_handle, nullptr));
+    IOX_TODO();
 }
 } // namespace iox2
 

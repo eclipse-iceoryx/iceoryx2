@@ -373,7 +373,7 @@ class Blackboard {
     friend class Defaults;
     explicit Blackboard(iox2_config_h* config);
 
-    iox2_config_h* m_config = nullptr;
+    [[maybe_unused]] iox2_config_h* m_config = nullptr;
 };
 
 /// Default settings. These values are used when the user in the code does not specify anything

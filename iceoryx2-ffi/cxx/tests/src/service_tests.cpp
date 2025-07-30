@@ -86,6 +86,8 @@ TYPED_TEST(ServiceTest, list_works) {
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_3.service_id().c_str()));
             break;
+        case MessagingPattern::Blackboard:
+            break;
         }
 
         return CallbackProgression::Continue;
@@ -169,6 +171,8 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
                 return CallbackProgression::Continue;
             });
             EXPECT_THAT(counter, Eq(1));
+            break;
+        case MessagingPattern::Blackboard:
             break;
         }
 

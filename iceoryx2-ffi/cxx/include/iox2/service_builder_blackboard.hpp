@@ -68,7 +68,7 @@ class ServiceBuilderBlackboardCreator {
 
     void set_parameters();
 
-    iox2_service_builder_blackboard_creator_h m_handle = nullptr;
+    // iox2_service_builder_blackboard_creator_h m_handle = nullptr;
 };
 
 template <typename KeyType, ServiceType S>
@@ -106,7 +106,7 @@ class ServiceBuilderBlackboardOpener {
 
     void set_parameters();
 
-    iox2_service_builder_blackboard_opener_h m_handle = nullptr;
+    // iox2_service_builder_blackboard_opener_h m_handle = nullptr;
 };
 
 template <typename KeyType, ServiceType S>
@@ -132,7 +132,7 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create() && -> iox::exp
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create_with_attributes(
-    const AttributeSpecifier&
+    [[maybe_unused]] const AttributeSpecifier&
         attributes) && -> iox::expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError> {
     IOX_TODO();
 }
@@ -145,7 +145,7 @@ inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open() && -> iox::expect
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open_with_attributes(
-    const AttributeVerifier&
+    [[maybe_unused]] const AttributeVerifier&
         required_attributes) && -> iox::expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError> {
     IOX_TODO();
 }

@@ -13,20 +13,20 @@
 #include "iox2/static_config_blackboard.hpp"
 
 namespace iox2 {
-StaticConfigBlackboard::StaticConfigBlackboard(iox2_static_config_blackboard_t value)
-    : m_value { value } {
+StaticConfigBlackboard::StaticConfigBlackboard(/*iox2_static_config_blackboard_t value*/) {
+    IOX_TODO();
 }
 
 auto StaticConfigBlackboard::max_nodes() const -> size_t {
-    return m_value.max_nodes;
+    IOX_TODO();
 }
 
 auto StaticConfigBlackboard::max_readers() const -> size_t {
-    return m_value.max_readers;
+    IOX_TODO();
 }
 
 auto StaticConfigBlackboard::type_details() const -> TypeDetail& {
-    return m_value.type_details;
+    IOX_TODO();
 }
 
 } // namespace iox2

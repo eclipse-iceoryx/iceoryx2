@@ -15,7 +15,6 @@
 
 #include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
-#include "iox2/internal/iceoryx2.hpp"
 #include "iox2/reader.hpp"
 #include "iox2/reader_error.hpp"
 #include "iox2/service_type.hpp"
@@ -40,14 +39,14 @@ class PortFactoryReader {
     template <ServiceType, KeyType>
     friend class PortFactoryBlackboard;
 
-    explicit PortFactoryReader(iox2_port_factory_reader_builder_h handle);
+    explicit PortFactoryReader(/*iox2_port_factory_reader_builder_h handle*/);
 
-    iox2_port_factory_reader_builder_h m_handle = nullptr;
+    // iox2_port_factory_reader_builder_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType>
-inline PortFactoryReader<S, KeyType>::PortFactoryReader(iox2_port_factory_reader_builder_h handle)
-    : m_handle { handle } {
+inline PortFactoryReader<S, KeyType>::PortFactoryReader(/*iox2_port_factory_reader_builder_h handle*/) {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>

@@ -25,8 +25,8 @@ namespace iox2 {
 template <ServiceType S, typename KeyType>
 class Reader {
   public:
-    Reader(Reader&&) noexcept;
-    auto operator=(Reader&&) noexcept -> Reader&;
+    Reader(Reader&& rhs) noexcept;
+    auto operator=(Reader&& rhs) noexcept -> Reader&;
     ~Reader();
 
     Reader(const Reader&) = delete;
@@ -43,23 +43,20 @@ class Reader {
     template <ServiceType, KeyType>
     friend class PortFactoryReader;
 
-    explicit Reader(iox2_reader_h handle);
+    explicit Reader(/*iox2_reader_h handle*/);
     void drop();
 
-    iox2_reader_h m_handle = nullptr;
+    // iox2_reader_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType>
-inline Reader<S, KeyType>::Reader(iox2_reader_h handle)
-    : m_handle { handle } {
+inline Reader<S, KeyType>::Reader(/*iox2_reader_h handle*/) {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 inline void Reader<S, KeyType>::drop() {
-    if (m_handle != nullptr) {
-        iox2_reader_drop(m_handle);
-        m_handle = nullptr;
-    }
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
@@ -68,14 +65,8 @@ inline Reader<S, KeyType>::Reader(Reader&& rhs) noexcept {
 }
 
 template <ServiceType S, typename KeyType>
-inline auto Reader<S, KeyType>::operator=(Reader&& rhs) noexcept -> Reader& {
-    if (this != &rhs) {
-        drop();
-        m_handle = std::move(rhs.m_handle);
-        rhs.m_handle = nullptr;
-    }
-
-    return *this;
+inline auto Reader<S, KeyType>::operator=([[maybe_unused]] Reader&& rhs) noexcept -> Reader& {
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
@@ -85,15 +76,12 @@ inline Reader<S, KeyType>::~Reader() {
 
 template <ServiceType S, typename KeyType>
 inline auto Reader<S, KeyType>::id() const -> UniqueReaderId {
-    iox2_unique_reader_id_h id_handle = nullptr;
-
-    iox2_reader_id(&m_handle, nullptr, &id_handle);
-    return UniqueReaderId { id_handle };
+    IOX_TODO();
 }
 
 template <ServiceType S, typename KeyType>
 template <typename ValueType>
-inline auto Reader<S, KeyType>::entry(const KeyType& key)
+inline auto Reader<S, KeyType>::entry([[maybe_unused]] const KeyType& key)
     -> iox::expected<ReaderHandle<S, KeyType, ValueType>, ReaderHandleError> {
     IOX_TODO();
 }
