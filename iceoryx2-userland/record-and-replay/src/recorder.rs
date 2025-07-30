@@ -91,7 +91,7 @@ impl RecorderBuilder {
     }
 
     pub fn create(self, file_name: &FilePath) -> Result<Recorder, RecorderCreateError> {
-        let msg = format!("Unable to create file recorder for \"{}\"", file_name);
+        let msg = format!("Unable to create file recorder for \"{file_name}\"");
         let mut file = match FileBuilder::new(file_name)
             .has_ownership(false)
             .creation_mode(CreationMode::CreateExclusive)

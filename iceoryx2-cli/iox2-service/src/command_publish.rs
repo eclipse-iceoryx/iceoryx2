@@ -32,7 +32,7 @@ fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>> {
     hex_string
         .split_ascii_whitespace()
         .map(|hex| {
-            u8::from_str_radix(&hex, 16)
+            u8::from_str_radix(hex, 16)
                 .map_err(|e| anyhow::anyhow!("Invalid hex input at position {}.", e))
         })
         .collect::<Result<Vec<u8>>>()

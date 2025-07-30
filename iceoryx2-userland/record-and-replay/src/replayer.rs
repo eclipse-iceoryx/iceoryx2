@@ -136,7 +136,7 @@ impl ReplayerOpener {
                     buffer.push(b'\n');
 
                     if let FileReadLineState::LineLen(line_length) = line_length {
-                        buffer_position += line_length as usize + 1;
+                        buffer_position += line_length + 1;
                     } else {
                         fail!(from origin,
                             with ReplayerOpenError::FailedToReadFile,

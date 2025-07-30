@@ -66,7 +66,7 @@ impl RecordReader {
         self
     }
 
-    fn verify_payload(&self, payload: &Vec<u8>, error_msg: &str) -> Result<(), ReplayerOpenError> {
+    fn verify_payload(&self, payload: &[u8], error_msg: &str) -> Result<(), ReplayerOpenError> {
         if (self.header.types.payload.variant() == TypeVariant::FixedSize
             && payload.len() != self.header.types.payload.size())
             || (self.header.types.payload.variant() == TypeVariant::Dynamic
@@ -80,11 +80,7 @@ impl RecordReader {
         Ok(())
     }
 
-    fn verify_user_header(
-        &self,
-        header: &Vec<u8>,
-        error_msg: &str,
-    ) -> Result<(), ReplayerOpenError> {
+    fn verify_user_header(&self, header: &[u8], error_msg: &str) -> Result<(), ReplayerOpenError> {
         if header.len() != self.header.types.user_header.size() {
             fail!(from self, with ReplayerOpenError::CorruptedUserHeaderRecord,
                                 "{error_msg} since the system header record is corrupted (has wrong size {}, expected {}).",
@@ -96,7 +92,7 @@ impl RecordReader {
 
     fn verify_system_header(
         &self,
-        header: &Vec<u8>,
+        header: &[u8],
         error_msg: &str,
     ) -> Result<(), ReplayerOpenError> {
         if header.len() != self.header.types.system_header.size() {
@@ -200,9 +196,9 @@ impl RecordReader {
 
                 Ok(Some(Record {
                     timestamp: Duration::from_millis(timestamp),
-                    system_header: system_header,
-                    user_header: user_header,
-                    payload: payload,
+                    system_header,
+                    user_header,
+                    payload,
                 }))
             }
         }

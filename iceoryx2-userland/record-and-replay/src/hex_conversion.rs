@@ -21,7 +21,7 @@ pub fn hex_string_to_bytes(hex_string: &str) -> Result<Vec<u8>, HexToBytesConver
     hex_string
         .split_ascii_whitespace()
         .map(|hex| {
-            u8::from_str_radix(&hex, 16).map_err(|e| {
+            u8::from_str_radix(hex, 16).map_err(|e| {
                 debug!(from "hex_string_to_raw_data()",
                         "Unable convert \"{hex}\" to hex-code ({e:?}).");
                 HexToBytesConversionError::InvalidHexCode
