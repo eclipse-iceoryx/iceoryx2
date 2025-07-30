@@ -385,7 +385,7 @@ pub struct ReplayOptions {
     pub node_name: String,
 
     #[clap(short, long, help = "The file that contains the recorded data.")]
-    pub file: String,
+    pub input: String,
 
     #[clap(
         short,
@@ -398,10 +398,18 @@ pub struct ReplayOptions {
     #[clap(
         short,
         long,
+        default_value = "PUBLISHSUBSCRIBE",
+        help = "Defines the messaging pattern of the service."
+    )]
+    pub messaging_pattern: MessagingPattern,
+
+    #[clap(
+        short,
+        long,
         default_value = "1",
         help = "How often the recorded data shall be sent repeatedly."
     )]
-    pub repetitions: usize,
+    pub repetitions: u64,
 
     #[clap(
         short,

@@ -10,6 +10,66 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! ## Examples
+//!
+//! ### Load Recorded Data Into Memory Buffer (Small Payload)
+//!
+//! The whole recorded file is loaded into memory. Useful, when the data is not that large.
+//!
+//! ```no_run
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::TypeVariant;
+//! use iceoryx2::prelude::*;
+//! use iceoryx2_userland_record_and_replay::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//!
+//! let (buffer, record_header) = ReplayerOpener::new(&FilePath::new(b"recorded_data.iox2")?)
+//!     .data_representation(DataRepresentation::HumanReadable)
+//!     .read_into_buffer()?;
+//!
+//! println!("record header of service types {record_header:?}");
+//!
+//! for record in buffer {
+//!     println!("payload: {:?}", record.payload);
+//!     println!("user_header: {:?}", record.user_header);
+//!     println!("system_header: {:?}", record.system_header);
+//!     println!("timestamp: {:?}", record.timestamp);
+//! }
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ### Read Record One-By-One (Large Payload)
+//!
+//! The recorded file is opened and the records are read one-by-one.
+//!
+//! ```no_run
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::TypeVariant;
+//! use iceoryx2::prelude::*;
+//! use iceoryx2_userland_record_and_replay::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//!
+//! let mut replayer = ReplayerOpener::new(&FilePath::new(b"recorded_data.iox2")?)
+//!     .data_representation(DataRepresentation::HumanReadable)
+//!     .open()?;
+//!
+//! println!("record header of service types {:?}", replayer.header());
+//!
+//! while let Some(record) = replayer.next_record()? {
+//!     println!("payload: {:?}", record.payload);
+//!     println!("user_header: {:?}", record.user_header);
+//!     println!("system_header: {:?}", record.system_header);
+//!     println!("timestamp: {:?}", record.timestamp);
+//! }
+//!
+//! # Ok(())
+//! # }
+//! ```
+
 use core::mem::MaybeUninit;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file::AccessMode;

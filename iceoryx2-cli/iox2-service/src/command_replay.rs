@@ -10,11 +10,89 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::ptr::copy_nonoverlapping;
+use core::time::Duration;
+use std::io::Write;
+use std::time::Instant;
+
+use crate::{cli::ReplayOptions, helper_functions::get_pubsub_service_types};
 use anyhow::Result;
+use iceoryx2::prelude::*;
+use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
+use iceoryx2::service::static_config::message_type_details::TypeVariant;
+use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_cli::Format;
+use iceoryx2_userland_record_and_replay::{prelude::*, record_header::RecordHeader};
 
-use crate::cli::ReplayOptions;
+pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
+    let node = NodeBuilder::new()
+        .name(&NodeName::new(&options.node_name)?)
+        .create::<ipc::Service>()?;
 
-pub fn replay(options: ReplayOptions, format: Format) -> Result<()> {
-    todo!()
+    let required_header = RecordHeader {
+        version: PackageVersion::get().to_u64(),
+        types: get_pubsub_service_types(ServiceName::new(&options.service)?, &node)?,
+        messaging_pattern: options.messaging_pattern.into(),
+    };
+
+    let (buffer, _) = ReplayerOpener::new(&FilePath::new(options.input.as_bytes())?)
+        .data_representation(options.data_representation.into())
+        .require_header(&required_header)
+        .read_into_buffer()?;
+
+    let service = unsafe {
+        node.service_builder(&ServiceName::new(&options.service)?)
+            .publish_subscribe::<[CustomPayloadMarker]>()
+            .user_header::<CustomHeaderMarker>()
+            .__internal_set_payload_type_details(&required_header.types.payload)
+            .__internal_set_user_header_type_details(&required_header.types.user_header)
+            .open_or_create()?
+    };
+
+    let publisher = match required_header.types.payload.variant() {
+        TypeVariant::FixedSize => service.publisher_builder().create()?,
+        TypeVariant::Dynamic => service
+            .publisher_builder()
+            .initial_max_slice_len(4096)
+            .allocation_strategy(AllocationStrategy::PowerOfTwo)
+            .create()?,
+    };
+
+    for n in 0..u64::MAX {
+        let start = Instant::now();
+        for data in &buffer {
+            let sample = unsafe {
+                let mut sample = publisher.loan_custom_payload(1)?;
+                copy_nonoverlapping(
+                    data.payload.as_ptr() as *const u8,
+                    sample.payload_mut().as_ptr() as *mut u8,
+                    data.payload.len(),
+                );
+                if !data.user_header.is_empty() {
+                    copy_nonoverlapping(
+                        data.user_header.as_ptr() as *const u8,
+                        (sample.user_header_mut() as *mut CustomHeaderMarker) as *mut u8,
+                        data.user_header.len(),
+                    );
+                }
+                sample.assume_init()
+            };
+
+            let elapsed = start.elapsed().as_millis() as f64 * options.time_factor as f64;
+            let timestamp = data.timestamp.as_millis() as f64 * options.time_factor as f64;
+            if elapsed < timestamp {
+                std::thread::sleep(Duration::from_millis((timestamp - elapsed) as u64));
+            }
+
+            sample.send()?;
+            print!(".");
+            std::io::stdout().flush()?;
+        }
+
+        if options.repetitions < n {
+            break;
+        }
+    }
+
+    Ok(())
 }
