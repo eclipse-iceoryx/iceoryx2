@@ -60,8 +60,8 @@ impl ReplayerOpener {
         self
     }
 
-    pub fn require_header(mut self, header: RecordHeader) -> Self {
-        self.required_header = Some(header);
+    pub fn require_header(mut self, header: &RecordHeader) -> Self {
+        self.required_header = Some(header.clone());
         self
     }
 

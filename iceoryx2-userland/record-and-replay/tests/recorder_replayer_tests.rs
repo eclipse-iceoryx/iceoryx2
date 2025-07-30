@@ -28,28 +28,9 @@ mod recorder_replayer {
     };
 
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
-    use iceoryx2_bb_container::semantic_string::SemanticString;
-    use iceoryx2_bb_posix::config::test_directory;
-    use iceoryx2_bb_posix::testing::create_test_directory;
+    use iceoryx2_bb_posix::testing::generate_file_name;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
-    use iceoryx2_bb_system_types::file_name::FileName;
-    use iceoryx2_bb_system_types::file_path::FilePath;
     use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU8;
-
-    fn generate_file_name() -> FilePath {
-        create_test_directory();
-        let mut file = FileName::new(b"record_replay_tests_").unwrap();
-        file.push_bytes(
-            UniqueSystemId::new()
-                .unwrap()
-                .value()
-                .to_string()
-                .as_bytes(),
-        )
-        .unwrap();
-
-        FilePath::from_path_and_file(&test_directory(), &file).unwrap()
-    }
 
     fn generate_type_detail(variant: TypeVariant, size: usize, alignment: usize) -> TypeDetail {
         iceoryx2::testing::create_custom_type_detail(
