@@ -10,7 +10,115 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! # iceoryx2 userland - record and replay
+//!
+//! Provides building blocks to record and replay data from and into iceoryx2.
+//! The library itself does not capture the data, this has to be implemented by the user.
+//!
+//! ## Example
+//!
+//! ### Record Data
+//!
+//! The individual types used by [`ServiceTypes`](crate::recorder::ServiceTypes) can be acquired
+//! from the [`StaticConfig`](iceoryx2::service::static_config::StaticConfig) of a
+//! [`Service`](iceoryx2::service::Service). For publish susbcribe one can call for instance
+//! [`publish_subscribe::StaticConfig::message_type_details()`](iceoryx2::service::static_config::publish_subscribe::StaticConfig::message_type_details())
+//!
+//! ```
+//! use iceoryx2::prelude::*;
+//! use iceoryx2_userland_record_and_replay::prelude::*;
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::TypeVariant;
+//! use core::time::Duration;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//! let service_types = ServiceTypes {
+//!     payload: TypeDetail::new::<u64>(TypeVariant::FixedSize),
+//!     user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
+//!     system_header: TypeDetail::new::<u64>(TypeVariant::FixedSize),
+//! };
+//!
+//! // create the file recorder
+//! let mut recorder = RecorderBuilder::new(&service_types)
+//!     .data_representation(DataRepresentation::HumanReadable)
+//!     .messaging_pattern(MessagingPattern::PublishSubscribe)
+//!     .create(&FilePath::new(b"recorded_data.iox2")?)?;
+//!
+//! # iceoryx2_bb_posix::file::File::remove(&FilePath::new(b"recorded_data.iox2")?)?;
+//!
+//! // add some recorded data
+//! recorder.write(RawRecord {
+//!     timestamp: Duration::ZERO,
+//!     system_header: &[0u8; 8],
+//!     user_header: &[0u8; 0],
+//!     payload: &[0u8, 8]
+//! })?;
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ### Load Recorded Data Into Memory Buffer (Small Payload)
+//!
+//! The whole recorded file is loaded into memory. Useful, when the data is not that large.
+//!
+//! ```no_run
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::TypeVariant;
+//! use iceoryx2::prelude::*;
+//! use iceoryx2_userland_record_and_replay::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//!
+//! let (buffer, record_header) = ReplayerOpener::new(&FilePath::new(b"recorded_data.iox2")?)
+//!     .data_representation(DataRepresentation::HumanReadable)
+//!     .read_into_buffer()?;
+//!
+//! println!("record header of service types {record_header:?}");
+//!
+//! for record in buffer {
+//!     println!("payload: {:?}", record.payload);
+//!     println!("user_header: {:?}", record.user_header);
+//!     println!("system_header: {:?}", record.system_header);
+//!     println!("timestamp: {:?}", record.timestamp);
+//! }
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! ### Read Record One-By-One (Large Payload)
+//!
+//! The recorded file is opened and the records are read one-by-one.
+//!
+//! ```no_run
+//! use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
+//! use iceoryx2::service::static_config::message_type_details::TypeVariant;
+//! use iceoryx2::prelude::*;
+//! use iceoryx2_userland_record_and_replay::prelude::*;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
+//!
+//! let mut replayer = ReplayerOpener::new(&FilePath::new(b"recorded_data.iox2")?)
+//!     .data_representation(DataRepresentation::HumanReadable)
+//!     .open()?;
+//!
+//! println!("record header of service types {:?}", replayer.header());
+//!
+//! while let Some(record) = replayer.next_record()? {
+//!     println!("payload: {:?}", record.payload);
+//!     println!("user_header: {:?}", record.user_header);
+//!     println!("system_header: {:?}", record.system_header);
+//!     println!("timestamp: {:?}", record.timestamp);
+//! }
+//!
+//! # Ok(())
+//! # }
+//! ```
+
+#[warn(missing_docs)]
 pub mod hex_conversion;
+pub mod prelude;
 pub mod record;
 pub mod record_header;
 pub mod recorder;

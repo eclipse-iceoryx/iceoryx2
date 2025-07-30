@@ -46,6 +46,14 @@ impl From<HexToBytesConversionError> for ReplayerOpenError {
     }
 }
 
+impl core::fmt::Display for ReplayerOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "ReplayerOpenError::{self:?}")
+    }
+}
+
+impl core::error::Error for ReplayerOpenError {}
+
 #[derive(Debug)]
 pub struct ReplayerOpener {
     file_path: FilePath,

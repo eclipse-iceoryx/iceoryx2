@@ -17,6 +17,14 @@ pub enum HexToBytesConversionError {
     InvalidHexCode,
 }
 
+impl core::fmt::Display for HexToBytesConversionError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "HexToBytesConversionError::{self:?}")
+    }
+}
+
+impl core::error::Error for HexToBytesConversionError {}
+
 pub fn hex_string_to_bytes(hex_string: &str) -> Result<Vec<u8>, HexToBytesConversionError> {
     hex_string
         .split_ascii_whitespace()
