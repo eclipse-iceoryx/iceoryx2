@@ -23,11 +23,11 @@ mod recorder_replayer {
     use iceoryx2_userland_record_and_replay::{
         record::{DataRepresentation, RawRecord},
         recorder::{RecorderBuilder, RecorderWriteError, ServiceTypes},
-        replayer::ReplayerOpener,
+        replayer::{ReplayerOpenError, ReplayerOpener},
+        testing,
     };
 
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeNameString};
-    use iceoryx2::testing;
     use iceoryx2_bb_container::semantic_string::SemanticString;
     use iceoryx2_bb_posix::config::test_directory;
     use iceoryx2_bb_posix::testing::create_test_directory;
@@ -52,7 +52,7 @@ mod recorder_replayer {
     }
 
     fn generate_type_detail(variant: TypeVariant, size: usize, alignment: usize) -> TypeDetail {
-        testing::create_custom_type_detail(
+        iceoryx2::testing::create_custom_type_detail(
             variant,
             TypeNameString::from_str_truncated(&UniqueSystemId::new().unwrap().value().to_string()),
             size,
@@ -492,7 +492,250 @@ mod recorder_replayer {
     #[test]
     fn writing_invalid_system_header_fails_for_human_readable() {
         writing_invalid_system_header_fails(
+            DataRepresentation::HumanReadable,
+            MessagingPattern::PublishSubscribe,
+        );
+    }
+
+    fn record_and_replay_by_reading_step_by_step_works(
+        data_representation: DataRepresentation,
+        messaging_pattern: MessagingPattern,
+    ) {
+        const NUMBER_OF_DATA: usize = 129;
+        let file_name = generate_file_name();
+        let types = ServiceTypes {
+            payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
+            user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
+            system_header: generate_type_detail(TypeVariant::FixedSize, 16, 8),
+        };
+
+        let mut recorder = RecorderBuilder::new(&types)
+            .data_representation(data_representation)
+            .messaging_pattern(messaging_pattern)
+            .create(&file_name)
+            .unwrap();
+
+        let mut dataset = vec![];
+        for n in 0..NUMBER_OF_DATA {
+            dataset.push(generate_service_data(&types, Duration::from_millis(n as _)))
+        }
+
+        for data in &dataset {
+            assert_that!(
+                recorder.write(RawRecord {
+                    timestamp: data.timestamp,
+                    system_header: &data.system_header,
+                    user_header: &data.user_header,
+                    payload: &data.payload
+                }),
+                is_ok
+            );
+        }
+
+        let mut replayer = ReplayerOpener::new(&file_name)
+            .data_representation(data_representation)
+            .open()
+            .unwrap();
+
+        assert_that!(replayer.header(), eq recorder.header());
+
+        for n in 0..dataset.len() {
+            let record = replayer.next_record().unwrap().unwrap();
+            assert_that!(record.payload, eq dataset[n].payload);
+            assert_that!(record.user_header, eq dataset[n].user_header);
+            assert_that!(record.system_header, eq dataset[n].system_header);
+            assert_that!(record.timestamp, eq dataset[n].timestamp);
+        }
+
+        File::remove(&file_name).unwrap();
+    }
+
+    #[test]
+    fn record_and_replay_by_reading_step_by_step_works_for_iox2dump() {
+        record_and_replay_by_reading_step_by_step_works(
             DataRepresentation::Iox2Dump,
+            MessagingPattern::PublishSubscribe,
+        );
+    }
+
+    #[test]
+    fn record_and_replay_by_reading_step_by_step_works_for_human_readable() {
+        record_and_replay_by_reading_step_by_step_works(
+            DataRepresentation::HumanReadable,
+            MessagingPattern::PublishSubscribe,
+        );
+    }
+
+    fn reading_corrupted_payload_fails(
+        data_representation: DataRepresentation,
+        messaging_pattern: MessagingPattern,
+    ) {
+        let file_name = generate_file_name();
+        let types = ServiceTypes {
+            payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
+            user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
+            system_header: generate_type_detail(TypeVariant::FixedSize, 16, 8),
+        };
+
+        let mut recorder = RecorderBuilder::new(&types)
+            .data_representation(data_representation)
+            .messaging_pattern(messaging_pattern)
+            .create(&file_name)
+            .unwrap();
+
+        let mut data = generate_service_data(&types, Duration::ZERO);
+        data.payload = generate_data(types.payload.size() + 5);
+
+        assert_that!(
+            testing::recorder_write_unchecked(
+                &mut recorder,
+                RawRecord {
+                    timestamp: data.timestamp,
+                    system_header: &data.system_header,
+                    user_header: &data.user_header,
+                    payload: &data.payload
+                }
+            ),
+            is_ok
+        );
+
+        let result = ReplayerOpener::new(&file_name)
+            .data_representation(data_representation)
+            .read_into_buffer();
+
+        assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedPayloadRecord));
+
+        File::remove(&file_name).unwrap();
+    }
+
+    #[test]
+    fn reading_corrupted_payload_fails_for_iox2dump() {
+        reading_corrupted_payload_fails(
+            DataRepresentation::Iox2Dump,
+            MessagingPattern::PublishSubscribe,
+        );
+    }
+
+    #[test]
+    fn reading_corrupted_payload_fails_for_human_readable() {
+        reading_corrupted_payload_fails(
+            DataRepresentation::HumanReadable,
+            MessagingPattern::PublishSubscribe,
+        );
+    }
+
+    fn reading_corrupted_user_header_fails(
+        data_representation: DataRepresentation,
+        messaging_pattern: MessagingPattern,
+    ) {
+        let file_name = generate_file_name();
+        let types = ServiceTypes {
+            payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
+            user_header: generate_type_detail(TypeVariant::FixedSize, 32, 4),
+            system_header: generate_type_detail(TypeVariant::FixedSize, 16, 8),
+        };
+
+        let mut recorder = RecorderBuilder::new(&types)
+            .data_representation(data_representation)
+            .messaging_pattern(messaging_pattern)
+            .create(&file_name)
+            .unwrap();
+
+        let mut data = generate_service_data(&types, Duration::ZERO);
+        data.user_header = generate_data(types.user_header.size() + 5);
+
+        assert_that!(
+            testing::recorder_write_unchecked(
+                &mut recorder,
+                RawRecord {
+                    timestamp: data.timestamp,
+                    system_header: &data.system_header,
+                    user_header: &data.user_header,
+                    payload: &data.payload
+                }
+            ),
+            is_ok
+        );
+
+        let result = ReplayerOpener::new(&file_name)
+            .data_representation(data_representation)
+            .read_into_buffer();
+
+        assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedUserHeaderRecord));
+
+        File::remove(&file_name).unwrap();
+    }
+
+    #[test]
+    fn reading_corrupted_user_header_fails_for_iox2dump() {
+        reading_corrupted_user_header_fails(
+            DataRepresentation::Iox2Dump,
+            MessagingPattern::PublishSubscribe,
+        );
+    }
+
+    #[test]
+    fn reading_corrupted_user_header_fails_for_human_readable() {
+        reading_corrupted_user_header_fails(
+            DataRepresentation::HumanReadable,
+            MessagingPattern::PublishSubscribe,
+        );
+    }
+
+    fn reading_corrupted_system_header_fails(
+        data_representation: DataRepresentation,
+        messaging_pattern: MessagingPattern,
+    ) {
+        let file_name = generate_file_name();
+        let types = ServiceTypes {
+            payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
+            user_header: generate_type_detail(TypeVariant::FixedSize, 32, 4),
+            system_header: generate_type_detail(TypeVariant::FixedSize, 16, 8),
+        };
+
+        let mut recorder = RecorderBuilder::new(&types)
+            .data_representation(data_representation)
+            .messaging_pattern(messaging_pattern)
+            .create(&file_name)
+            .unwrap();
+
+        let mut data = generate_service_data(&types, Duration::ZERO);
+        data.system_header = generate_data(types.system_header.size() + 5);
+
+        assert_that!(
+            testing::recorder_write_unchecked(
+                &mut recorder,
+                RawRecord {
+                    timestamp: data.timestamp,
+                    system_header: &data.system_header,
+                    user_header: &data.user_header,
+                    payload: &data.payload
+                }
+            ),
+            is_ok
+        );
+
+        let result = ReplayerOpener::new(&file_name)
+            .data_representation(data_representation)
+            .read_into_buffer();
+
+        assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedSystemHeaderRecord));
+
+        File::remove(&file_name).unwrap();
+    }
+
+    #[test]
+    fn reading_corrupted_system_header_fails_for_iox2dump() {
+        reading_corrupted_system_header_fails(
+            DataRepresentation::Iox2Dump,
+            MessagingPattern::PublishSubscribe,
+        );
+    }
+
+    #[test]
+    fn reading_corrupted_system_header_fails_for_human_readable() {
+        reading_corrupted_system_header_fails(
+            DataRepresentation::HumanReadable,
             MessagingPattern::PublishSubscribe,
         );
     }

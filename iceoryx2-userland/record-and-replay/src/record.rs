@@ -36,6 +36,7 @@ pub struct RawRecord<'a> {
     pub payload: &'a [u8],
 }
 
+#[derive(Debug)]
 pub struct Record {
     pub timestamp: Duration,
     pub system_header: Vec<u8>,

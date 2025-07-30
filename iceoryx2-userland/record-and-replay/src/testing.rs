@@ -10,10 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub mod record;
-pub mod record_header;
-pub mod recorder;
-pub mod replayer;
+use crate::{
+    record::RawRecord,
+    recorder::{Recorder, RecorderWriteError},
+};
 
-#[doc(hidden)]
-pub mod testing;
+pub fn recorder_write_unchecked(
+    recorder: &mut Recorder,
+    record: RawRecord,
+) -> Result<(), RecorderWriteError> {
+    recorder.write_unchecked(record)
+}

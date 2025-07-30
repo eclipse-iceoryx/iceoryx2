@@ -228,6 +228,10 @@ impl Recorder {
                 self.header.types.payload.size(), record.payload.len());
         }
 
+        self.write_unchecked(record)
+    }
+
+    pub(crate) fn write_unchecked(&mut self, record: RawRecord) -> Result<(), RecorderWriteError> {
         RecordWriter::new(&mut self.file)
             .data_representation(self.data_representation)
             .write(record)
