@@ -31,6 +31,8 @@
 * ReqRes & events implement `Send` + `Sync` in
   `**_threadsafe` service variant
   [#838](https://github.com/eclipse-iceoryx/iceoryx2/issues/838)
+* C example for service attributes
+  [#909](https://github.com/eclipse-iceoryx/iceoryx2/issues/909)
 
 ### Bugfixes
 
