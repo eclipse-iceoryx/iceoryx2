@@ -90,12 +90,13 @@ mod recorder_replayer {
     fn record_and_replay_works(
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
+        user_header_type: TypeDetail,
     ) {
         const NUMBER_OF_DATA: usize = 129;
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
-            user_header: generate_type_detail(TypeVariant::FixedSize, 4, 1),
+            user_header: user_header_type,
             system_header: generate_type_detail(TypeVariant::FixedSize, 16, 8),
         };
 
@@ -145,6 +146,7 @@ mod recorder_replayer {
         record_and_replay_works(
             DataRepresentation::Iox2Dump,
             MessagingPattern::PublishSubscribe,
+            generate_type_detail(TypeVariant::FixedSize, 16, 8),
         );
     }
 
@@ -153,6 +155,25 @@ mod recorder_replayer {
         record_and_replay_works(
             DataRepresentation::HumanReadable,
             MessagingPattern::RequestResponse,
+            generate_type_detail(TypeVariant::FixedSize, 32, 8),
+        );
+    }
+
+    #[test]
+    fn record_and_replay_works_for_iox2dump_with_unit_user_header() {
+        record_and_replay_works(
+            DataRepresentation::Iox2Dump,
+            MessagingPattern::PublishSubscribe,
+            TypeDetail::new::<()>(TypeVariant::FixedSize),
+        );
+    }
+
+    #[test]
+    fn record_and_replay_works_for_human_readable_with_unit_user_header() {
+        record_and_replay_works(
+            DataRepresentation::HumanReadable,
+            MessagingPattern::RequestResponse,
+            TypeDetail::new::<()>(TypeVariant::FixedSize),
         );
     }
 
@@ -344,11 +365,12 @@ mod recorder_replayer {
     fn writing_invalid_user_header_fails(
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
+        user_header_type: TypeDetail,
     ) {
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
-            user_header: generate_type_detail(TypeVariant::FixedSize, 4, 2),
+            user_header: user_header_type,
             system_header: generate_type_detail(TypeVariant::FixedSize, 128, 64),
         };
 
@@ -359,7 +381,7 @@ mod recorder_replayer {
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
-        data.user_header = generate_data(types.user_header.size() - 1);
+        data.user_header = generate_data(types.user_header.size() + 1);
 
         assert_that!(
             recorder.write(RawRecord {
@@ -387,6 +409,7 @@ mod recorder_replayer {
         writing_invalid_user_header_fails(
             DataRepresentation::Iox2Dump,
             MessagingPattern::PublishSubscribe,
+            generate_type_detail(TypeVariant::FixedSize, 8, 2),
         );
     }
 
@@ -395,17 +418,36 @@ mod recorder_replayer {
         writing_invalid_user_header_fails(
             DataRepresentation::HumanReadable,
             MessagingPattern::RequestResponse,
+            generate_type_detail(TypeVariant::FixedSize, 8, 4),
         );
     }
 
-    fn writing_invalid_user_header_for_unit_type_fails(
+    #[test]
+    fn writing_invalid_user_header_for_unit_type_fails_for_iox2dump() {
+        writing_invalid_user_header_fails(
+            DataRepresentation::Iox2Dump,
+            MessagingPattern::PublishSubscribe,
+            TypeDetail::new::<()>(TypeVariant::FixedSize),
+        );
+    }
+
+    #[test]
+    fn writing_invalid_user_header_for_unit_type_fails_for_human_readable() {
+        writing_invalid_user_header_fails(
+            DataRepresentation::HumanReadable,
+            MessagingPattern::RequestResponse,
+            TypeDetail::new::<()>(TypeVariant::FixedSize),
+        );
+    }
+
+    fn writing_invalid_system_header_fails(
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
-            user_header: TypeDetail::new::<()>(TypeVariant::FixedSize),
+            user_header: generate_type_detail(TypeVariant::Dynamic, 32, 4),
             system_header: generate_type_detail(TypeVariant::FixedSize, 128, 64),
         };
 
@@ -416,7 +458,7 @@ mod recorder_replayer {
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
-        data.user_header = generate_data(1);
+        data.system_header = generate_data(types.system_header.size() - 1);
 
         assert_that!(
             recorder.write(RawRecord {
@@ -425,7 +467,7 @@ mod recorder_replayer {
                 user_header: &data.user_header,
                 payload: &data.payload
             }),
-            eq Err(RecorderWriteError::CorruptedUserHeaderRecord)
+            eq Err(RecorderWriteError::CorruptedSystemHeaderRecord)
         );
 
         let (buffer, record_header) = ReplayerOpener::new(&file_name)
@@ -440,18 +482,18 @@ mod recorder_replayer {
     }
 
     #[test]
-    fn writing_invalid_user_header_for_unit_type_fails_for_iox2dump() {
-        writing_invalid_user_header_for_unit_type_fails(
+    fn writing_invalid_system_header_fails_for_iox2dump() {
+        writing_invalid_system_header_fails(
             DataRepresentation::Iox2Dump,
             MessagingPattern::PublishSubscribe,
         );
     }
 
     #[test]
-    fn writing_invalid_user_header_for_unit_type_fails_for_human_readable() {
-        writing_invalid_user_header_for_unit_type_fails(
-            DataRepresentation::HumanReadable,
-            MessagingPattern::RequestResponse,
+    fn writing_invalid_system_header_fails_for_human_readable() {
+        writing_invalid_system_header_fails(
+            DataRepresentation::Iox2Dump,
+            MessagingPattern::PublishSubscribe,
         );
     }
 }
