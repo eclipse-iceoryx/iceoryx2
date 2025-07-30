@@ -986,7 +986,7 @@ mod service_request_response {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
         type_details.size = 1024;
         type_details.alignment = 1024;
 
@@ -1039,7 +1039,7 @@ mod service_request_response {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
         type_details.size = 512;
         type_details.alignment = 256;
 
@@ -1099,7 +1099,7 @@ mod service_request_response {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
         type_details.size = 2048;
         type_details.alignment = 8;
 
@@ -1144,7 +1144,7 @@ mod service_request_response {
         let service_name = generate_service_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
         type_details.size = 4096;
         type_details.alignment = 32;
 

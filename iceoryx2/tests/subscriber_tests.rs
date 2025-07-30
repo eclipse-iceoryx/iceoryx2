@@ -82,7 +82,7 @@ mod subscriber {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let mut type_detail = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        let mut type_detail = TypeDetail::new::<u8>(TypeVariant::FixedSize);
         type_detail.size = TYPE_SIZE_OVERRIDE;
 
         let service = unsafe {

@@ -69,8 +69,9 @@ pub struct TypeDetail {
 }
 
 impl TypeDetail {
-    #[doc(hidden)]
-    pub fn __internal_new<T: ZeroCopySend>(variant: TypeVariant) -> Self {
+    /// Creates a new [`TypeDetail`] from the provided `T`. The [`TypeVariant`] defines if
+    /// the type is part of a slice or directly contained.
+    pub fn new<T: ZeroCopySend>(variant: TypeVariant) -> Self {
         Self {
             variant,
             type_name: unsafe {
@@ -104,9 +105,9 @@ impl MessageTypeDetails {
         payload_variant: TypeVariant,
     ) -> Self {
         Self {
-            header: TypeDetail::__internal_new::<Header>(TypeVariant::FixedSize),
-            user_header: TypeDetail::__internal_new::<UserHeader>(TypeVariant::FixedSize),
-            payload: TypeDetail::__internal_new::<Payload>(payload_variant),
+            header: TypeDetail::new::<Header>(TypeVariant::FixedSize),
+            user_header: TypeDetail::new::<UserHeader>(TypeVariant::FixedSize),
+            payload: TypeDetail::new::<Payload>(payload_variant),
         }
     }
 

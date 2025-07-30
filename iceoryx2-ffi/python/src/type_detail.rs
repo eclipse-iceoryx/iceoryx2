@@ -33,7 +33,7 @@ impl TypeDetail {
     /// Creates a new `TypeDetail` for the unit type. Meaning size == 0, alignment == 1
     pub fn new() -> Self {
         Self(
-            iceoryx2::service::static_config::message_type_details::TypeDetail::__internal_new::<()>(
+            iceoryx2::service::static_config::message_type_details::TypeDetail::new::<()>(
                 iceoryx2::service::static_config::message_type_details::TypeVariant::FixedSize,
             ),
         )

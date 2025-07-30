@@ -14,9 +14,11 @@ use anyhow::Result;
 use core::time::Duration;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_bb_log::{debug, fail};
-use iceoryx2_bb_posix::file::{File, FileReadLineState, FileWriteError};
+use iceoryx2_bb_posix::file::{File, FileReadLineState};
 
-use crate::{record_header::RecordHeader, replayer::ReplayerOpenError};
+use crate::{
+    record_header::RecordHeader, recorder::RecorderWriteError, replayer::ReplayerOpenError,
+};
 
 pub const HEX_START_RECORD_MARKER: &[u8] = b"### Recorded Data Start ###";
 
@@ -250,12 +252,17 @@ impl<'a> RecordWriter<'a> {
         ret_val
     }
 
-    pub(crate) fn write(self, record: RawRecord) -> Result<(), FileWriteError> {
+    pub(crate) fn write(self, record: RawRecord) -> Result<(), RecorderWriteError> {
         let origin = format!("{self:?}");
-        let mut write_to_file = |data| -> Result<(), FileWriteError> {
-            fail!(from origin, when self.file.write(data),
-                "Failed to write data record entry into file.");
-            Ok(())
+        let mut write_to_file = |data| -> Result<(), RecorderWriteError> {
+            match self.file.write(data) {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    fail!(from origin,
+                            with RecorderWriteError::FileWriteError(e),
+                            "Failed to write data record entry into file ({e:?}).");
+                }
+            }
         };
 
         match self.data_representation {

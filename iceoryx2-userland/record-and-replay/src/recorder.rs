@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::prelude::MessagingPattern;
-use iceoryx2::service::static_config::message_type_details::TypeDetail;
+use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file::{CreationMode, FileCreationError, FileWriteError};
@@ -40,6 +40,22 @@ impl core::fmt::Display for RecorderCreateError {
 }
 
 impl core::error::Error for RecorderCreateError {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum RecorderWriteError {
+    FileWriteError(FileWriteError),
+    CorruptedSystemHeaderRecord,
+    CorruptedPayloadRecord,
+    CorruptedUserHeaderRecord,
+}
+
+impl core::fmt::Display for RecorderWriteError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "RecorderWriteError::{self:?}")
+    }
+}
+
+impl core::error::Error for RecorderWriteError {}
 
 #[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
 pub struct ServiceTypes {
@@ -173,6 +189,7 @@ impl RecorderBuilder {
     }
 }
 
+#[derive(Debug)]
 pub struct Recorder {
     file: File,
     data_representation: DataRepresentation,
@@ -180,7 +197,37 @@ pub struct Recorder {
 }
 
 impl Recorder {
-    pub fn write(&mut self, record: RawRecord) -> Result<(), FileWriteError> {
+    pub fn write(&mut self, record: RawRecord) -> Result<(), RecorderWriteError> {
+        let msg = "Unable to write new record";
+
+        if record.system_header.len() != self.header.types.system_header.size {
+            fail!(from self, with RecorderWriteError::CorruptedSystemHeaderRecord,
+                "{msg} since the system header entry is corrupted. Expected a size of {} but provided a size of {}.",
+                self.header.types.system_header.size, record.system_header.len());
+        }
+
+        if record.user_header.len() != self.header.types.user_header.size {
+            fail!(from self, with RecorderWriteError::CorruptedUserHeaderRecord,
+                "{msg} since the user header entry is corrupted. Expected a size of {} but provided a size of {}.",
+                self.header.types.user_header.size, record.user_header.len());
+        }
+
+        if self.header.types.payload.variant == TypeVariant::FixedSize
+            && record.payload.len() != self.header.types.payload.size
+        {
+            fail!(from self, with RecorderWriteError::CorruptedPayloadRecord,
+                "{msg} since the payload entry is corrupted. Expected a size of {} but provided a size of {}.",
+                self.header.types.payload.size, record.payload.len());
+        }
+
+        if self.header.types.payload.variant == TypeVariant::Dynamic
+            && record.payload.len() % self.header.types.payload.size != 0
+        {
+            fail!(from self, with RecorderWriteError::CorruptedPayloadRecord,
+                "{msg} since the payload entry is corrupted. Expected a size which is a multiple of {} but provided a size of {}.",
+                self.header.types.payload.size, record.payload.len());
+        }
+
         RecordWriter::new(&mut self.file)
             .data_representation(self.data_representation)
             .write(record)

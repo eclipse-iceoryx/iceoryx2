@@ -27,7 +27,7 @@ mod service_static_config_message_type_details {
         #[derive(ZeroCopySend)]
         #[repr(C)]
         struct Tmp;
-        let sut = TypeDetail::__internal_new::<Tmp>(TypeVariant::FixedSize);
+        let sut = TypeDetail::new::<Tmp>(TypeVariant::FixedSize);
         let expected = TypeDetail {
             variant: TypeVariant::FixedSize,
             type_name: core::any::type_name::<Tmp>().try_into().unwrap(),
@@ -36,7 +36,7 @@ mod service_static_config_message_type_details {
         };
         assert_that!(sut, eq expected);
 
-        let sut = TypeDetail::__internal_new::<i64>(TypeVariant::FixedSize);
+        let sut = TypeDetail::new::<i64>(TypeVariant::FixedSize);
         let expected = TypeDetail {
             variant: TypeVariant::FixedSize,
             type_name: core::any::type_name::<i64>().try_into().unwrap(),

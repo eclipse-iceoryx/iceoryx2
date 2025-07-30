@@ -2617,7 +2617,7 @@ mod service_publish_subscribe {
         let _sut = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
-                .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
+                .__internal_set_payload_type_details(&TypeDetail::new::<u64>(
                     TypeVariant::FixedSize,
                 ))
                 .create()
@@ -2651,9 +2651,9 @@ mod service_publish_subscribe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
                 .user_header::<CustomHeaderMarker>()
-                .__internal_set_user_header_type_details(&TypeDetail::__internal_new::<
-                    [u64; HEADER_SIZE],
-                >(TypeVariant::FixedSize))
+                .__internal_set_user_header_type_details(&TypeDetail::new::<[u64; HEADER_SIZE]>(
+                    TypeVariant::FixedSize,
+                ))
                 .create()
                 .unwrap()
         };
@@ -2662,9 +2662,9 @@ mod service_publish_subscribe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
                 .user_header::<CustomHeaderMarker>()
-                .__internal_set_user_header_type_details(&TypeDetail::__internal_new::<
-                    [u64; HEADER_SIZE],
-                >(TypeVariant::FixedSize))
+                .__internal_set_user_header_type_details(&TypeDetail::new::<[u64; HEADER_SIZE]>(
+                    TypeVariant::FixedSize,
+                ))
                 .open()
                 .unwrap()
         };
@@ -2710,7 +2710,7 @@ mod service_publish_subscribe {
         let sut2 = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
-                .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u128>(
+                .__internal_set_payload_type_details(&TypeDetail::new::<u128>(
                     TypeVariant::FixedSize,
                 ))
                 .open()
@@ -2721,7 +2721,7 @@ mod service_publish_subscribe {
         let sut3 = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
-                .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
+                .__internal_set_payload_type_details(&TypeDetail::new::<u64>(
                     TypeVariant::FixedSize,
                 ))
                 .open()
@@ -2914,7 +2914,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
         type_details.size = 1024;
         type_details.alignment = 1024;
 
@@ -2949,7 +2949,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::Dynamic);
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::Dynamic);
         type_details.size = 2048;
         type_details.alignment = 2048;
 

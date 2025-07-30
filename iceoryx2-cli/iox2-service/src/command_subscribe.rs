@@ -86,7 +86,7 @@ fn get_service_types(
             .clone()
     };
 
-    let system_header = TypeDetail::__internal_new::<Header>(TypeVariant::FixedSize);
+    let system_header = TypeDetail::new::<Header>(TypeVariant::FixedSize);
 
     Ok(ServiceTypes {
         payload,
