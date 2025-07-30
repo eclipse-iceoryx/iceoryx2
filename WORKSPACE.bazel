@@ -115,6 +115,7 @@ maybe(
         "//:iceoryx2-pal/configuration/Cargo.toml",
         "//:iceoryx2-pal/posix/Cargo.toml",
         "//:iceoryx2-pal/testing/Cargo.toml",
+        "//:iceoryx2-userland/record-and-replay/Cargo.toml",
     ]
 )
 
