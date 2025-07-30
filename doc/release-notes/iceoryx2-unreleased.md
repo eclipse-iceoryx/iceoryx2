@@ -122,6 +122,9 @@
     please refer to `config/README.md` on how to generate a default config file.
   [#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
 
+* Recreate the cmake patch, used in the yocto layer
+  [#663](https://github.com/eclipse-iceoryx/iceoryx2/issues/663)
+
 2. The default max event ID was reduced to 255 in order to have make bitset
    based event implementations work out of the box. If a larger event ID is
    required, it can either be changed in the `iceoryx2.toml` file or with the
