@@ -78,7 +78,7 @@ pub fn record(options: RecordOptions, _format: Format) -> Result<()> {
             }
         }
 
-        if !node.wait(cycle_time).is_ok() {
+        if node.wait(cycle_time).is_err() {
             break 'node_loop;
         }
     }

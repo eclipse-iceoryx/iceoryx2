@@ -64,13 +64,13 @@ pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
             let sample = unsafe {
                 let mut sample = publisher.loan_custom_payload(1)?;
                 copy_nonoverlapping(
-                    data.payload.as_ptr() as *const u8,
+                    data.payload.as_ptr(),
                     sample.payload_mut().as_ptr() as *mut u8,
                     data.payload.len(),
                 );
                 if !data.user_header.is_empty() {
                     copy_nonoverlapping(
-                        data.user_header.as_ptr() as *const u8,
+                        data.user_header.as_ptr(),
                         (sample.user_header_mut() as *mut CustomHeaderMarker) as *mut u8,
                         data.user_header.len(),
                     );

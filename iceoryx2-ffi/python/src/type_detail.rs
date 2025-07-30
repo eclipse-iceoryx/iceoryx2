@@ -53,7 +53,7 @@ impl TypeDetail {
     /// Sets the unique `TypeName` of the type
     pub fn type_name(&self, name: &TypeName) -> Self {
         let mut this = self.0.clone();
-        testing::type_detail_set_name(&mut this, name.0.clone());
+        testing::type_detail_set_name(&mut this, name.0);
         Self(this)
     }
 
