@@ -13,11 +13,14 @@
 use anyhow::Result;
 use core::time::Duration;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_bb_log::{debug, fail};
+use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file::{File, FileReadLineState};
 
 use crate::{
-    record_header::RecordHeader, recorder::RecorderWriteError, replayer::ReplayerOpenError,
+    hex_conversion::{bytes_to_hex_string, hex_string_to_bytes},
+    record_header::RecordHeader,
+    recorder::RecorderWriteError,
+    replayer::ReplayerOpenError,
 };
 
 pub const HEX_START_RECORD_MARKER: &[u8] = b"### Recorded Data Start ###";
@@ -61,19 +64,6 @@ impl RecordReader {
     pub(crate) fn data_representation(mut self, value: DataRepresentation) -> Self {
         self.data_representation = value;
         self
-    }
-
-    fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>, ReplayerOpenError> {
-        hex_string
-            .split_ascii_whitespace()
-            .map(|hex| {
-                u8::from_str_radix(&hex, 16).map_err(|e| {
-                    debug!(from "hex_string_to_raw_data()",
-                        "Unable convert \"{hex}\" to hex-code ({e:?}).");
-                    ReplayerOpenError::InvalidHexCode
-                })
-            })
-            .collect::<Result<Vec<u8>, ReplayerOpenError>>()
     }
 
     fn verify_payload(&self, payload: &Vec<u8>, error_msg: &str) -> Result<(), ReplayerOpenError> {
@@ -144,16 +134,12 @@ impl RecordReader {
                             line.as_str()[READABLE_PREFIX_LEN..].parse::<u64>().unwrap(),
                         ));
                     } else if system_header.is_none() {
-                        system_header = Some(Self::hex_string_to_raw_data(
-                            &line.as_str()[READABLE_PREFIX_LEN..],
-                        )?);
+                        system_header =
+                            Some(hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?);
                     } else if header.is_none() {
-                        header = Some(Self::hex_string_to_raw_data(
-                            &line.as_str()[READABLE_PREFIX_LEN..],
-                        )?);
+                        header = Some(hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?);
                     } else {
-                        let payload =
-                            Self::hex_string_to_raw_data(&line.as_str()[READABLE_PREFIX_LEN..])?;
+                        let payload = hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?;
                         self.verify_payload(&payload, msg)?;
                         self.verify_user_header(header.as_ref().unwrap(), msg)?;
                         self.verify_system_header(system_header.as_ref().unwrap(), msg)?;
@@ -162,7 +148,7 @@ impl RecordReader {
                             timestamp: timestamp.take().unwrap(),
                             system_header: system_header.take().unwrap(),
                             user_header: header.take().unwrap(),
-                            payload: Self::hex_string_to_raw_data(&line.as_str()[9..])?,
+                            payload: hex_string_to_bytes(&line.as_str()[9..])?,
                         }));
                     }
                 }
@@ -242,17 +228,6 @@ impl<'a> RecordWriter<'a> {
         self
     }
 
-    fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
-        use std::fmt::Write;
-
-        let mut ret_val = String::with_capacity(3 * raw_data.len());
-        for byte in raw_data {
-            let _ = write!(&mut ret_val, "{byte:0>2x} ");
-        }
-
-        ret_val
-    }
-
     pub(crate) fn write(self, record: RawRecord) -> Result<(), RecorderWriteError> {
         let origin = format!("{self:?}");
         let mut write_to_file = |data| -> Result<(), RecorderWriteError> {
@@ -271,15 +246,15 @@ impl<'a> RecordWriter<'a> {
                 let time_stamp = format!("time:     {}\n", record.timestamp.as_millis() as u64);
                 write_to_file(time_stamp.as_bytes())?;
                 write_to_file(b"sys head: ")?;
-                let hex_system_header = Self::raw_data_to_hex_string(record.system_header);
+                let hex_system_header = bytes_to_hex_string(record.system_header);
                 write_to_file(hex_system_header.as_bytes())?;
                 write_to_file(b"\n")?;
                 write_to_file(b"usr head: ")?;
-                let hex_user_header = Self::raw_data_to_hex_string(record.user_header);
+                let hex_user_header = bytes_to_hex_string(record.user_header);
                 write_to_file(hex_user_header.as_bytes())?;
                 write_to_file(b"\n")?;
                 write_to_file(b"payload:  ")?;
-                let hex_payload = Self::raw_data_to_hex_string(record.payload);
+                let hex_payload = bytes_to_hex_string(record.payload);
                 write_to_file(hex_payload.as_bytes())?;
                 write_to_file(b"\n\n")?;
             }

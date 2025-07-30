@@ -20,6 +20,7 @@ use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_cal::serialize::Serialize;
 
+use crate::hex_conversion::HexToBytesConversionError;
 use crate::record::DataRepresentation;
 use crate::record::Record;
 use crate::record::RecordReader;
@@ -37,6 +38,12 @@ pub enum ReplayerOpenError {
     CorruptedPayloadRecord,
     CorruptedUserHeaderRecord,
     CorruptedContent,
+}
+
+impl From<HexToBytesConversionError> for ReplayerOpenError {
+    fn from(_value: HexToBytesConversionError) -> Self {
+        Self::InvalidHexCode
+    }
 }
 
 #[derive(Debug)]
