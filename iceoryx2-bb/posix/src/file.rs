@@ -328,6 +328,12 @@ impl From<()> for FileStatError {
     }
 }
 
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+pub enum FileReadLineState {
+    LineLen(usize),
+    EndOfFile(usize),
+}
+
 /// Opens or creates a new [`File`]. When calling [`FileBuilder::creation_mode`] the
 /// [`FileCreationBuilder`] is returned which provides additional settings only available
 /// for newly created files.
@@ -673,24 +679,32 @@ impl File {
     }
 
     /// Reads the current line into a provided vector.
-    pub fn read_line_to_vector(&self, buf: &mut Vec<u8>) -> Result<u64, FileReadError> {
+    pub fn read_line_to_vector(
+        &self,
+        buf: &mut Vec<u8>,
+    ) -> Result<FileReadLineState, FileReadError> {
         let mut buffer = [0u8; 1];
 
         let mut counter = 0;
-        while self.read(&mut buffer)? == 1 {
+        loop {
+            if self.read(&mut buffer)? == 0 {
+                return Ok(FileReadLineState::EndOfFile(counter));
+            }
+
             if buffer[0] == b'\n' {
-                break;
+                return Ok(FileReadLineState::LineLen(counter));
             }
 
             buf.push(buffer[0]);
             counter += 1;
         }
-
-        Ok(counter)
     }
 
     /// Reads the current line into a provided string.
-    pub fn read_line_to_string(&self, buf: &mut String) -> Result<u64, FileReadError> {
+    pub fn read_line_to_string(
+        &self,
+        buf: &mut String,
+    ) -> Result<FileReadLineState, FileReadError> {
         self.read_line_to_vector(unsafe { buf.as_mut_vec() })
     }
 

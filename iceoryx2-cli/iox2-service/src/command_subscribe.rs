@@ -131,11 +131,11 @@ fn print_hex_dump(
 
     let msg = Message {
         system_header_len: system_header.len(),
-        system_header: String::from_utf8_lossy(system_header).to_string(),
+        system_header: raw_data_to_hex_string(system_header),
         user_header_len: user_header.len(),
-        user_header: String::from_utf8_lossy(user_header).to_string(),
+        user_header: raw_data_to_hex_string(user_header),
         payload_len: payload.len(),
-        payload: String::from_utf8_lossy(payload).to_string(),
+        payload: raw_data_to_hex_string(payload),
     };
 
     println!(
@@ -234,21 +234,8 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
                     record_to_file(system_header, user_header, payload)?;
                 }
                 DataRepresentation::HumanReadable => {
-                    let hex_system_header = raw_data_to_hex_string(system_header);
-                    let hex_user_header = raw_data_to_hex_string(user_header);
-                    let hex_payload = raw_data_to_hex_string(payload);
-                    print_hex_dump(
-                        hex_system_header.as_bytes(),
-                        hex_user_header.as_bytes(),
-                        hex_payload.as_bytes(),
-                        &options,
-                        format,
-                    )?;
-                    record_to_file(
-                        hex_system_header.as_bytes(),
-                        hex_user_header.as_bytes(),
-                        hex_payload.as_bytes(),
-                    )?;
+                    print_hex_dump(system_header, user_header, payload, &options, format)?;
+                    record_to_file(system_header, user_header, payload)?;
                 }
             }
 

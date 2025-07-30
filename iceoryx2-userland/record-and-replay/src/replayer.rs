@@ -15,6 +15,7 @@ use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file::AccessMode;
 use iceoryx2_bb_posix::file::File;
 use iceoryx2_bb_posix::file::FileBuilder;
+use iceoryx2_bb_posix::file::FileReadLineState;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_cal::serialize::toml::Toml;
 use iceoryx2_cal::serialize::Serialize;
@@ -35,6 +36,7 @@ pub enum ReplayerOpenError {
     CorruptedSystemHeaderRecord,
     CorruptedPayloadRecord,
     CorruptedUserHeaderRecord,
+    CorruptedContent,
 }
 
 #[derive(Debug)]
@@ -121,17 +123,22 @@ impl ReplayerOpener {
                             with ReplayerOpenError::FailedToReadFile,
                             "{msg} since the next line could not be read.");
 
-                    if line_length == 0
-                        || &buffer.as_slice()[buffer_position..] == HEX_START_RECORD_MARKER
-                    {
+                    if &buffer.as_slice()[buffer_position..] == HEX_START_RECORD_MARKER {
                         break;
                     }
+                    buffer.push(b'\n');
 
-                    buffer_position += line_length as usize;
+                    if let FileReadLineState::LineLen(line_length) = line_length {
+                        buffer_position += line_length as usize + 1;
+                    } else {
+                        fail!(from origin,
+                            with ReplayerOpenError::FailedToReadFile,
+                            "{msg} since the file ends prematurely.");
+                    }
                 }
 
                 let record_file_header = fail!(from origin,
-                    when Toml::deserialize::<RecordHeader>(buffer.as_slice()),
+                    when Toml::deserialize::<RecordHeader>(&buffer.as_slice()[0..buffer_position]),
                     with ReplayerOpenError::UnableToDeserializeRecordHeader,
                     "{msg} since the record header could not be deserialized.");
 

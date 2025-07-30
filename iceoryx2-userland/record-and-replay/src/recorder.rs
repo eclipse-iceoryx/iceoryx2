@@ -14,7 +14,7 @@ use iceoryx2::prelude::MessagingPattern;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
-use iceoryx2_bb_posix::file::{CreationMode, FileWriteError};
+use iceoryx2_bb_posix::file::{CreationMode, FileCreationError, FileWriteError};
 use iceoryx2_bb_posix::file::{File, FileBuilder};
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_cal::serialize::toml::Toml;
@@ -27,6 +27,7 @@ use crate::record_header::RecordHeader;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum RecorderCreateError {
+    FileAlreadyExists,
     FailedToCreateRecordFile,
     UnableToWriteFile,
     UnableToSerializeRecordHeader,
@@ -81,6 +82,10 @@ impl RecorderBuilder {
             .create()
         {
             Ok(v) => v,
+            Err(FileCreationError::FileAlreadyExists) => {
+                fail!(from self, with RecorderCreateError::FileAlreadyExists,
+                    "{msg} since the file already exists.");
+            }
             Err(e) => {
                 fail!(from self, with RecorderCreateError::FailedToCreateRecordFile,
                     "{msg} since the underlying file could not be created ({e:?}).");

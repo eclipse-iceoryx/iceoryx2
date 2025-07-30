@@ -14,7 +14,7 @@ use anyhow::Result;
 use core::time::Duration;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_bb_log::{debug, fail};
-use iceoryx2_bb_posix::file::{File, FileWriteError};
+use iceoryx2_bb_posix::file::{File, FileReadLineState, FileWriteError};
 
 use crate::{record_header::RecordHeader, replayer::ReplayerOpenError};
 
@@ -61,14 +61,12 @@ impl RecordReader {
     }
 
     fn hex_string_to_raw_data(hex_string: &str) -> Result<Vec<u8>, ReplayerOpenError> {
-        let mut hex_string = hex_string.to_string();
-        hex_string.retain(|c| !c.is_whitespace());
         hex_string
             .split_ascii_whitespace()
             .map(|hex| {
                 u8::from_str_radix(&hex, 16).map_err(|e| {
                     debug!(from "hex_string_to_raw_data()",
-                        "Unable convert {hex} to hex-code ({e:?}).");
+                        "Unable convert \"{hex}\" to hex-code ({e:?}).");
                     ReplayerOpenError::InvalidHexCode
                 })
             })
@@ -126,13 +124,21 @@ impl RecordReader {
                 let mut header = None;
                 loop {
                     let mut line = String::new();
-                    if file.read_line_to_string(&mut line).unwrap() == 0 {
-                        break;
+                    match file.read_line_to_string(&mut line).unwrap() {
+                        FileReadLineState::EndOfFile(_) => break,
+                        FileReadLineState::LineLen(0) => continue,
+                        FileReadLineState::LineLen(n) => {
+                            if n < READABLE_PREFIX_LEN {
+                                fail!(from self, with ReplayerOpenError::CorruptedContent,
+                                    "{msg} since the content seems to be corrupted.");
+                            }
+                        }
                     }
+
                     const READABLE_PREFIX_LEN: usize = 10;
                     if timestamp.is_none() {
                         timestamp = Some(Duration::from_millis(
-                            line.as_str()[9..].parse::<u64>().unwrap(),
+                            line.as_str()[READABLE_PREFIX_LEN..].parse::<u64>().unwrap(),
                         ));
                     } else if system_header.is_none() {
                         system_header = Some(Self::hex_string_to_raw_data(
@@ -233,6 +239,17 @@ impl<'a> RecordWriter<'a> {
         self
     }
 
+    fn raw_data_to_hex_string(raw_data: &[u8]) -> String {
+        use std::fmt::Write;
+
+        let mut ret_val = String::with_capacity(3 * raw_data.len());
+        for byte in raw_data {
+            let _ = write!(&mut ret_val, "{byte:0>2x} ");
+        }
+
+        ret_val
+    }
+
     pub(crate) fn write(self, record: RawRecord) -> Result<(), FileWriteError> {
         let origin = format!("{self:?}");
         let mut write_to_file = |data| -> Result<(), FileWriteError> {
@@ -246,13 +263,16 @@ impl<'a> RecordWriter<'a> {
                 let time_stamp = format!("time:     {}\n", record.timestamp.as_millis() as u64);
                 write_to_file(time_stamp.as_bytes())?;
                 write_to_file(b"sys head: ")?;
-                write_to_file(record.system_header)?;
+                let hex_system_header = Self::raw_data_to_hex_string(record.system_header);
+                write_to_file(hex_system_header.as_bytes())?;
                 write_to_file(b"\n")?;
                 write_to_file(b"usr head: ")?;
-                write_to_file(record.user_header)?;
+                let hex_user_header = Self::raw_data_to_hex_string(record.user_header);
+                write_to_file(hex_user_header.as_bytes())?;
                 write_to_file(b"\n")?;
                 write_to_file(b"payload:  ")?;
-                write_to_file(record.payload)?;
+                let hex_payload = Self::raw_data_to_hex_string(record.payload);
+                write_to_file(hex_payload.as_bytes())?;
                 write_to_file(b"\n\n")?;
             }
             DataRepresentation::Iox2Dump => {
