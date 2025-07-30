@@ -20,8 +20,6 @@ use iceoryx2::service::header::publish_subscribe::Header;
 use iceoryx2::service::static_config::message_type_details::TypeDetail;
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_cli::Format;
-use iceoryx2_userland_record_and_replay::record::RawRecord;
-use iceoryx2_userland_record_and_replay::recorder::RecorderBuilder;
 use iceoryx2_userland_record_and_replay::recorder::ServiceTypes;
 use std::time::Duration;
 use std::time::Instant;
@@ -122,13 +120,8 @@ fn print_hex_dump(
     system_header: &[u8],
     user_header: &[u8],
     payload: &[u8],
-    options: &SubscribeOptions,
     format: Format,
 ) -> Result<()> {
-    if options.quiet {
-        return Ok(());
-    }
-
     let msg = Message {
         system_header_len: system_header.len(),
         system_header: raw_data_to_hex_string(system_header),
@@ -152,13 +145,8 @@ fn print_iox2_dump(
     system_header: &[u8],
     user_header: &[u8],
     payload: &[u8],
-    options: &SubscribeOptions,
     format: Format,
 ) -> Result<()> {
-    if options.quiet {
-        return Ok(());
-    }
-
     let msg = Message {
         system_header_len: system_header.len(),
         system_header: raw_data_to_hex_string(system_header),
@@ -186,16 +174,6 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
     let service_name = ServiceName::new(&options.service)?;
     let service_types = get_service_types(&options, &node)?;
 
-    let mut file = match &options.output_file {
-        Some(v) => Some(
-            RecorderBuilder::new(&service_types)
-                .data_representation(options.data_representation.into())
-                .messaging_pattern(MessagingPattern::PublishSubscribe)
-                .create(&FilePath::new(v.as_bytes())?)?,
-        ),
-        None => None,
-    };
-
     let service = unsafe {
         node.service_builder(&service_name)
             .publish_subscribe::<[CustomPayloadMarker]>()
@@ -215,27 +193,12 @@ pub fn subscribe(options: SubscribeOptions, format: Format) -> Result<()> {
             let (system_header, user_header, payload) =
                 extract_payload(&sample, &service_types.user_header);
 
-            let mut record_to_file = |system_header, user_header, payload| -> Result<()> {
-                if let Some(file) = &mut file {
-                    file.write(RawRecord {
-                        timestamp: start.elapsed(),
-                        system_header,
-                        user_header,
-                        payload,
-                    })?;
-                }
-
-                Ok(())
-            };
-
             match options.data_representation {
                 DataRepresentation::Iox2Dump => {
-                    print_iox2_dump(system_header, user_header, payload, &options, format)?;
-                    record_to_file(system_header, user_header, payload)?;
+                    print_iox2_dump(system_header, user_header, payload, format)?;
                 }
                 DataRepresentation::HumanReadable => {
-                    print_hex_dump(system_header, user_header, payload, &options, format)?;
-                    record_to_file(system_header, user_header, payload)?;
+                    print_hex_dump(system_header, user_header, payload, format)?;
                 }
             }
 

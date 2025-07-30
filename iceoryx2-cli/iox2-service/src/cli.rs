@@ -188,8 +188,7 @@ pub struct PublishOptions {
         help = "The messages that shall be sent. Can be multiple messages. If no messages are given stdin is read."
     )]
     pub message: Vec<String>,
-    #[clap(short, long, help = "When set, the data from this file is published.")]
-    pub input_file: Option<String>,
+
     #[clap(
         short,
         long,
@@ -295,16 +294,6 @@ pub struct SubscribeOptions {
         help = "Maximum number of messages to be received before the process stops."
     )]
     pub max_messages: Option<u64>,
-
-    #[clap(
-        short,
-        long,
-        help = "When set, the received data is additionally added to the provided file."
-    )]
-    pub output_file: Option<String>,
-
-    #[clap(action, short, long, help = "Do not show the received data.")]
-    pub quiet: bool,
 }
 
 #[derive(Subcommand)]

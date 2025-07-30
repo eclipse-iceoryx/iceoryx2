@@ -21,8 +21,6 @@ use iceoryx2::service::static_config::message_type_details::{
     TypeDetail, TypeNameString, TypeVariant,
 };
 use iceoryx2_cli::Format;
-use std::fs::{read_to_string, File};
-use std::io::{BufReader, Read};
 use std::ptr::copy_nonoverlapping;
 use std::time::Duration;
 
@@ -105,51 +103,6 @@ fn send_message(
     Ok(())
 }
 
-fn read_file_into_buffer(
-    message_buffer: &mut Vec<(Vec<u8>, Vec<u8>)>,
-    options: &PublishOptions,
-) -> Result<()> {
-    if let Some(ref file) = options.input_file {
-        match options.data_representation {
-            DataRepresentation::HumanReadable => {
-                let mut header = None;
-                for line in read_to_string(file)?.lines() {
-                    match header {
-                        None => header = Some(hex_string_to_raw_data(line)?),
-                        Some(ref h) => {
-                            message_buffer.push((h.clone(), hex_string_to_raw_data(line)?));
-                            header = None;
-                        }
-                    }
-                }
-            }
-            DataRepresentation::Iox2Dump => {
-                let mut file = BufReader::new(File::open(file)?);
-
-                let mut buffer = [0u8; 8];
-                let mut read_buffer = || -> Result<()> {
-                    file.read_exact(&mut buffer)?;
-                    let header_len = u64::from_le_bytes(buffer);
-                    let mut header = vec![0u8; header_len as usize];
-                    file.read_exact(&mut header)?;
-
-                    file.read_exact(&mut buffer)?;
-                    let payload_len = u64::from_le_bytes(buffer);
-                    let mut payload = vec![0u8; payload_len as usize];
-                    file.read_exact(&mut payload)?;
-
-                    message_buffer.push((header, payload));
-                    Ok(())
-                };
-
-                while read_buffer().is_ok() {}
-            }
-        }
-    }
-
-    Ok(())
-}
-
 fn read_cli_msg_into_buffer(
     message_buffer: &mut Vec<(Vec<u8>, Vec<u8>)>,
     options: &PublishOptions,
@@ -213,7 +166,6 @@ pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
 
     let mut message_buffer = vec![];
 
-    read_file_into_buffer(&mut message_buffer, &options)?;
     read_cli_msg_into_buffer(&mut message_buffer, &options)?;
 
     let mut counter = 0;
