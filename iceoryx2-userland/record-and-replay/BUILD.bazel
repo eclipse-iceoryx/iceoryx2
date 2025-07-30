@@ -25,11 +25,11 @@ rust_library(
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-cal:iceoryx2-cal",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
-        "//iceoryx2-bb/log:iceoryx2-bb-log",
-        "//iceoryx2-bb/container:iceoryx2-bb-container",
         "@crate_index//:anyhow",
         "@crate_index//:serde",
     ],
@@ -40,8 +40,11 @@ rust_test_suite(
     srcs = glob(["tests/**/*.rs"]),
     deps = [
         ":iceoryx2-userland-record-and-replay",
-        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
         "@crate_index//:serde_test",
     ],
 )
