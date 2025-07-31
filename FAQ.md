@@ -68,6 +68,54 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
 Take a look at the
 [publish-subscribe dynamic data size example](examples/rust/publish_subscribe_dynamic_data).
 
+## How To Use iceoryx2 For Inter-Thread Communication (As MPMC Queue Alternative)
+
+iceoryx2 provides service variants optimized for different use cases. One such
+variant is the local variant, which relies solely on mechanisms restricted to
+the local process. For example, using the heap instead of shared memory.
+
+By selecting the appropriate service variant, you can use iceoryx2 for
+inter-thread communication as an alternative to MPMC queues. This approach
+offers the added benefit of making it easy to extract threads into separate
+processes later on, without needing to change anything except switching the
+service variant from `Local` to `Ipc`.
+
+### Rust
+```rust
+let node = NodeBuilder::new()
+     // or local_threadsafe::Service, or ipc::Service, or ipc_threadsafe::Service
+     .create::<local::Service>()?;
+```
+
+### Python
+```python
+// or iox2.ServiceType.Ipc
+node = iox2.NodeBuilder.new().create(iox2.ServiceType.Local)
+```
+
+### C++
+```cxx
+auto node = NodeBuilder()
+     // or Service::Ipc
+    .create<ServiceType::Local>().expect("successful node creation");
+```
+
+### C
+```c
+iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
+iox2_node_h node_handle = NULL;
+// or iox2_service_type_e_IPC
+if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_LOCAL, &node_handle) != IOX2_OK) {
+    printf("Could not create node!\n");
+    goto end;
+}
+```
+
+### Example
+
+Take a look at the
+[local_pubsub file in the service variants example](examples/rust/service_variants)
+
 ## How To Make 32-bit and 64-bit iceoryx2 Applications Interoperatable
 
 This is currently not possible since we cannot guarantee to have the same layout
@@ -155,7 +203,7 @@ use iceoryx2::prelude::*
 set_log_level_from_env_or_default();
 
 // Reads LogLevel from env and sets it with a user-given value
-// if the environment variable is not set or has an unsupported value  
+// if the environment variable is not set or has an unsupported value
 set_log_level_from_env_or(LogLevel::DEBUG);
 
 // sets LogLevel programmatically with a supported user-given value
