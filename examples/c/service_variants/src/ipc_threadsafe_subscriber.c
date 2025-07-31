@@ -13,6 +13,7 @@
 #include "iox2/iceoryx2.h"
 
 #ifndef _WIN64
+#include <pthread.h>
 #include <stdalign.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -23,16 +24,25 @@ struct res { // NOLINT
     iox2_service_name_h service_name;
     iox2_port_factory_pub_sub_h service;
     iox2_subscriber_h subscriber;
+    pthread_t background_thread;
+    bool background_thread_started;
 };
+
+static struct res example; // NOLINT
 
 void init_res(struct res* const value) { // NOLINT
     value->node = NULL;
     value->service_name = NULL;
     value->service = NULL;
     value->subscriber = NULL;
+    value->background_thread_started = false;
 }
 
 void drop_res(struct res* const value) { // NOLINT
+    if (value->background_thread_started) {
+        pthread_join(value->background_thread, NULL);
+    }
+
     if (value->subscriber != NULL) {
         iox2_subscriber_drop(value->subscriber);
     }
@@ -50,15 +60,39 @@ void drop_res(struct res* const value) { // NOLINT
     }
 }
 
+void* background_thread(void* unused) {
+    while (iox2_node_wait(&example.node, 1, 0) == IOX2_OK) {
+        // receive sample
+        iox2_sample_h sample = NULL;
+        if (iox2_subscriber_receive(&example.subscriber, NULL, &sample) != IOX2_OK) {
+            printf("Failed to receive sample\n");
+            break;
+        }
+
+        if (sample != NULL) {
+            uint64_t* payload = NULL;
+            iox2_sample_payload(&sample, (const void**) &payload, NULL);
+            printf("[thread] received: %llu\n", (unsigned long long) *payload);
+            iox2_sample_drop(sample);
+        }
+    }
+
+    return NULL;
+}
+
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
 
-    struct res example;
     init_res(&example);
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
+    // In contrast to Rust, all service variants in C have threadsafe ports
+    // but one has to pay the cost of an additional mutex lock/unlock call.
+    //
+    // An `iox2_service_type_e_IPC` service cannot communicate with an
+    // `iox2_service_type_e_LOCAL` service.
     if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &example.node) != IOX2_OK) {
         printf("Could not create node!\n");
         goto end;
@@ -98,16 +132,23 @@ int main(void) {
     // create subscriber
     iox2_port_factory_subscriber_builder_h subscriber_builder =
         iox2_port_factory_pub_sub_subscriber_builder(&example.service, NULL);
-    iox2_subscriber_h subscriber = NULL;
-    if (iox2_port_factory_subscriber_builder_create(subscriber_builder, NULL, &subscriber) != IOX2_OK) {
+    if (iox2_port_factory_subscriber_builder_create(subscriber_builder, NULL, &example.subscriber) != IOX2_OK) {
         printf("Unable to create subscriber!\n");
         goto end;
     }
 
+    // All ports (like Subscriber, Publisher, Server, Client) are threadsafe
+    // by default so we can access them from multiple threads.
+    if (pthread_create(&example.background_thread, NULL, background_thread, NULL) != 0) {
+        printf("unable to start background thread\n");
+        goto end;
+    }
+    example.background_thread_started = true;
+
     while (iox2_node_wait(&example.node, 1, 0) == IOX2_OK) {
         // receive sample
         iox2_sample_h sample = NULL;
-        if (iox2_subscriber_receive(&subscriber, NULL, &sample) != IOX2_OK) {
+        if (iox2_subscriber_receive(&example.subscriber, NULL, &sample) != IOX2_OK) {
             printf("Failed to receive sample\n");
             goto end;
         }
