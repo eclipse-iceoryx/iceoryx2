@@ -61,4 +61,3 @@ inline auto discard([[maybe_unused]] EntryValueUninit<S, KeyType, ValueType>&& s
 } // namespace iox2
 
 #endif
-

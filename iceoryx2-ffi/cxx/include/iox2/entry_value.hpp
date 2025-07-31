@@ -58,4 +58,3 @@ inline auto discard([[maybe_unused]] EntryValue<S, KeyType, ValueType>&& self) -
 } // namespace iox2
 
 #endif
-

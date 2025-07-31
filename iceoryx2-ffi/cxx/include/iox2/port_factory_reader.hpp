@@ -56,4 +56,3 @@ inline auto PortFactoryReader<S, KeyType>::create() && -> iox::expected<Reader<S
 } // namespace iox2
 
 #endif
-

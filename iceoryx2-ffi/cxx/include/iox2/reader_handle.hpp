@@ -81,4 +81,3 @@ inline auto ReaderHandle<S, KeyType, ValueType>::get() const -> ValueType {
 } // namespace iox2
 
 #endif
-

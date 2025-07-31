@@ -33,4 +33,3 @@ auto WriterDetailsView::node_id() const -> NodeId {
     IOX_TODO();
 }
 } // namespace iox2
-

@@ -56,4 +56,3 @@ inline auto PortFactoryWriter<S, KeyType>::create() && -> iox::expected<Writer<S
 } // namespace iox2
 
 #endif
-

@@ -97,4 +97,3 @@ inline auto WriterHandle<S, KeyType, ValueType>::entry_id() const -> EventId {
 } // namespace iox2
 
 #endif
-
