@@ -44,9 +44,6 @@ mod serialize {
     #[instantiate_tests(<iceoryx2_cal::serialize::cdr::Cdr>)]
     mod cdr {}
 
-    #[instantiate_tests(<iceoryx2_cal::serialize::bincode::Bincode>)]
-    mod bincode {}
-
     #[instantiate_tests(<iceoryx2_cal::serialize::postcard::Postcard>)]
     mod postcard {}
 }

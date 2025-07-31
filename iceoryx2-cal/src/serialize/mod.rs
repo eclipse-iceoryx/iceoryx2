@@ -37,7 +37,6 @@
 //! }
 //! ```
 
-pub mod bincode;
 pub mod cdr;
 pub mod postcard;
 pub mod recommended;
