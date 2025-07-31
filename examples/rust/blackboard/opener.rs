@@ -29,15 +29,15 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let reader = service.reader_builder().create()?;
 
     let reader_handle_0 = reader.entry::<u64>(&0)?;
-    let reader_handle_5 = reader.entry::<FixedSizeByteString<100>>(&5)?;
+    let reader_handle_5 = reader.entry::<FixedSizeByteString<30>>(&5)?;
     let reader_handle_9 = reader.entry::<f32>(&9)?;
 
     while node.wait(CYCLE_TIME).is_ok() {
         println!("read values:");
 
-        println!("key: 0, {}", reader_handle_0.get());
-        println!("key: 5, {}", reader_handle_5.get());
-        println!("key: 9, {}\n", reader_handle_9.get());
+        println!("key: 0, value: {}", reader_handle_0.get());
+        println!("key: 5, value: {}", reader_handle_5.get());
+        println!("key: 9, value: {}\n", reader_handle_9.get());
     }
 
     println!("exit");
