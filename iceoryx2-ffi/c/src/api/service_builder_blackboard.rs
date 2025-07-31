@@ -26,6 +26,7 @@ use core::mem::ManuallyDrop;
 use iceoryx2::service::builder::blackboard::{
     BlackboardCreateError, BlackboardOpenError, Creator, Opener,
 };
+use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
 

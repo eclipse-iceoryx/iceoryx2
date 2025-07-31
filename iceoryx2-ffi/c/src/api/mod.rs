@@ -41,6 +41,7 @@ mod node_name;
 mod notifier;
 mod notifier_details;
 mod pending_response;
+mod port_factory_blackboard;
 mod port_factory_client_builder;
 mod port_factory_event;
 mod port_factory_listener_builder;
