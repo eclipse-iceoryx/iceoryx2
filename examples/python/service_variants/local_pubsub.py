@@ -27,7 +27,13 @@ class BackgroundThread(threading.Thread):
 
     def run(self):
         # we create another node inside this thread to communicate to the main thread
-        node = iox2.NodeBuilder.new().create(iox2.ServiceType.Local)
+        node = (
+            iox2.NodeBuilder.new()
+            # optionally, provide a name to the node which helps identifying them later during
+            # debugging or introspection
+            .name(iox2.NodeName.new("threadnode"))
+            .create(iox2.ServiceType.Local)
+        )
 
         service = (
             node.service_builder(iox2.ServiceName.new("Service-Variants-Example"))
@@ -53,7 +59,13 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 # like shared memory or unix domain sockets but mechanisms like socketpairs and heap.
 #
 # Those services can communicate only within a single process.
-node = iox2.NodeBuilder.new().create(iox2.ServiceType.Local)
+node = (
+    iox2.NodeBuilder.new()
+    # optionally, provide a name to the node which helps identifying them later during
+    # debugging or introspection
+    .name(iox2.NodeName.new("mainnode"))
+    .create(iox2.ServiceType.Local)
+)
 
 service = (
     node.service_builder(iox2.ServiceName.new("Service-Variants-Example"))

@@ -19,7 +19,12 @@ static KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
 fn background_thread() {
     // we create another node inside this thread to communicate to the main thread
-    let node = NodeBuilder::new().create::<local::Service>().unwrap();
+    let node = NodeBuilder::new()
+        // optionally, provide a name to the node which helps identifying them later during
+        // debugging or introspection
+        .name("threadnode".try_into().unwrap())
+        .create::<local::Service>()
+        .unwrap();
 
     let service = node
         .service_builder(&"Service-Variants-Example".try_into().unwrap())
@@ -40,6 +45,9 @@ fn background_thread() {
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
     let node = NodeBuilder::new()
+        // optionally, provide a name to the node which helps identifying them later during
+        // debugging or introspection
+        .name("mainnode".try_into()?)
         // When choosing `local::Service` the service does not use inter-process mechanisms
         // like shared memory or unix domain sockets but mechanisms like socketpairs and heap.
         //

@@ -21,7 +21,7 @@ import iceoryx2 as iox2
 cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
-# In contrast to Rust, all service variants in python have threadsafe ports.
+# In contrast to Rust, all service variants in python have threadsafe ports
 # but one has to pay the cost of an additional mutex lock/unlock call.
 #
 # An `iox2.ServiceType.Ipc` service cannot communicate with an
