@@ -15,7 +15,17 @@ use crate::{
     recorder::{Recorder, RecorderWriteError},
 };
 
-pub fn recorder_write_unchecked(
+/// Stores a [`RawRecord`] in the [`Recorder`] without verifying if the payload size matches
+/// the type sizes defined in [`RecordHeader`](crate::record_header::RecordHeader).
+///
+/// In testing scenarios the safety requirements can be explicitly violated!
+///
+/// # Safety
+///
+///  * ensure that the data len in the [`RawRecord`] matches the corresponding type len in the
+///    header
+///  * The timestamp must be greater or equal to the timestamp of the previous entry.
+pub unsafe fn recorder_write_unchecked(
     recorder: &mut Recorder,
     record: RawRecord,
 ) -> Result<(), RecorderWriteError> {

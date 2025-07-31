@@ -642,15 +642,17 @@ mod recorder_replayer {
         data.payload = generate_data(types.payload.size() + 5);
 
         assert_that!(
-            testing::recorder_write_unchecked(
-                &mut recorder,
-                RawRecord {
-                    timestamp: data.timestamp,
-                    system_header: &data.system_header,
-                    user_header: &data.user_header,
-                    payload: &data.payload
-                }
-            ),
+            unsafe {
+                testing::recorder_write_unchecked(
+                    &mut recorder,
+                    RawRecord {
+                        timestamp: data.timestamp,
+                        system_header: &data.system_header,
+                        user_header: &data.user_header,
+                        payload: &data.payload,
+                    },
+                )
+            },
             is_ok
         );
 
@@ -700,15 +702,17 @@ mod recorder_replayer {
         data.user_header = generate_data(types.user_header.size() + 5);
 
         assert_that!(
-            testing::recorder_write_unchecked(
-                &mut recorder,
-                RawRecord {
-                    timestamp: data.timestamp,
-                    system_header: &data.system_header,
-                    user_header: &data.user_header,
-                    payload: &data.payload
-                }
-            ),
+            unsafe {
+                testing::recorder_write_unchecked(
+                    &mut recorder,
+                    RawRecord {
+                        timestamp: data.timestamp,
+                        system_header: &data.system_header,
+                        user_header: &data.user_header,
+                        payload: &data.payload,
+                    },
+                )
+            },
             is_ok
         );
 
@@ -758,15 +762,17 @@ mod recorder_replayer {
         data.system_header = generate_data(types.system_header.size() + 5);
 
         assert_that!(
-            testing::recorder_write_unchecked(
-                &mut recorder,
-                RawRecord {
-                    timestamp: data.timestamp,
-                    system_header: &data.system_header,
-                    user_header: &data.user_header,
-                    payload: &data.payload
-                }
-            ),
+            unsafe {
+                testing::recorder_write_unchecked(
+                    &mut recorder,
+                    RawRecord {
+                        timestamp: data.timestamp,
+                        system_header: &data.system_header,
+                        user_header: &data.user_header,
+                        payload: &data.payload,
+                    },
+                )
+            },
             is_ok
         );
 
@@ -814,15 +820,17 @@ mod recorder_replayer {
 
         for data in dataset {
             assert_that!(
-                testing::recorder_write_unchecked(
-                    &mut recorder,
-                    RawRecord {
-                        timestamp: data.timestamp,
-                        system_header: &data.system_header,
-                        user_header: &data.user_header,
-                        payload: &data.payload
-                    }
-                ),
+                unsafe {
+                    testing::recorder_write_unchecked(
+                        &mut recorder,
+                        RawRecord {
+                            timestamp: data.timestamp,
+                            system_header: &data.system_header,
+                            user_header: &data.user_header,
+                            payload: &data.payload,
+                        },
+                    )
+                },
                 is_ok
             );
         }
