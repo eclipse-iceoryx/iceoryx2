@@ -212,7 +212,7 @@ impl<
             .entries[index];
 
         // check if ValueType matches
-        if TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
+        if TypeDetail::new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
             fail!(from self, with ReaderHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key and value type exists.", msg);
         }

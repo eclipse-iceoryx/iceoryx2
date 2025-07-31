@@ -13,6 +13,7 @@
 use pyo3::prelude::*;
 
 use crate::{type_name::TypeName, type_variant::TypeVariant};
+use iceoryx2::testing;
 
 #[pyclass(str = "{0:?}", eq)]
 /// Contains all type details required to connect to a `Service`
@@ -33,7 +34,7 @@ impl TypeDetail {
     /// Creates a new `TypeDetail` for the unit type. Meaning size == 0, alignment == 1
     pub fn new() -> Self {
         Self(
-            iceoryx2::service::static_config::message_type_details::TypeDetail::__internal_new::<()>(
+            iceoryx2::service::static_config::message_type_details::TypeDetail::new::<()>(
                 iceoryx2::service::static_config::message_type_details::TypeVariant::FixedSize,
             ),
         )
@@ -44,28 +45,29 @@ impl TypeDetail {
     /// array or vector
     pub fn type_variant(&self, value: &TypeVariant) -> Self {
         let mut this = self.0.clone();
-        this.variant = (value.clone()).into();
+
+        testing::type_detail_set_variant(&mut this, (value.clone()).into());
         Self(this)
     }
 
     /// Sets the unique `TypeName` of the type
     pub fn type_name(&self, name: &TypeName) -> Self {
         let mut this = self.0.clone();
-        this.type_name = name.0;
+        testing::type_detail_set_name(&mut this, name.0);
         Self(this)
     }
 
     /// Sets the size of the type
     pub fn size(&self, size: usize) -> Self {
         let mut this = self.0.clone();
-        this.size = size;
+        testing::type_detail_set_size(&mut this, size);
         Self(this)
     }
 
     /// Sets the alignment of the type
     pub fn alignment(&self, alignment: usize) -> Self {
         let mut this = self.0.clone();
-        this.alignment = alignment;
+        testing::type_detail_set_alignment(&mut this, alignment);
         Self(this)
     }
 }

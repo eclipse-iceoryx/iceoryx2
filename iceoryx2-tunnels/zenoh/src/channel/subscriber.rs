@@ -98,8 +98,8 @@ impl<ServiceType: iceoryx2::service::Service> Channel for SubscriberChannel<Serv
                 .iox_service_config
                 .publish_subscribe()
                 .message_type_details();
-            let iox_payload_size = iox_message_type_details.payload.size;
-            let _iox_payload_alignment = iox_message_type_details.payload.alignment;
+            let iox_payload_size = iox_message_type_details.payload.size();
+            let _iox_payload_alignment = iox_message_type_details.payload.alignment();
 
             // TODO(correctness): verify size and alignment
             let z_payload = z_sample.payload();

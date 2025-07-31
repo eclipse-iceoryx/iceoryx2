@@ -68,6 +68,14 @@ enum_gen! { FileRemoveError
     UnknownError(i32)
 }
 
+impl core::fmt::Display for FileRemoveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileRemoveError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileRemoveError {}
+
 enum_gen! { FileAccessError
   entry:
     LoopInSymbolicLinks,
@@ -75,6 +83,14 @@ enum_gen! { FileAccessError
     InsufficientPermissions,
     UnknownError(i32)
 }
+
+impl core::fmt::Display for FileAccessError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileAccessError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileAccessError {}
 
 enum_gen! { FileCreationError
   entry:
@@ -104,6 +120,14 @@ enum_gen! { FileCreationError
     FileRemoveError
 }
 
+impl core::fmt::Display for FileCreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileCreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileCreationError {}
+
 enum_gen! { FileOpenError
   entry:
     InsufficientPermissions,
@@ -120,6 +144,14 @@ enum_gen! { FileOpenError
     UnknownError(i32)
 }
 
+impl core::fmt::Display for FileOpenError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileOpenError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileOpenError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileTruncateError {
     Interrupt,
@@ -130,6 +162,14 @@ pub enum FileTruncateError {
     UnknownError(i32),
 }
 
+impl core::fmt::Display for FileTruncateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileTruncateError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileTruncateError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileStatError {
     InvalidFileDescriptor,
@@ -139,6 +179,14 @@ pub enum FileStatError {
     UnknownError(i32),
 }
 
+impl core::fmt::Display for FileStatError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileStatError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileStatError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileSetPermissionError {
     InvalidFileDescriptor,
@@ -146,6 +194,14 @@ pub enum FileSetPermissionError {
     ReadOnlyFilesystem,
     UnknownError(i32),
 }
+
+impl core::fmt::Display for FileSetPermissionError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileSetPermissionError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileSetPermissionError {}
 
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileSetOwnerError {
@@ -157,6 +213,14 @@ pub enum FileSetOwnerError {
     Interrupt,
     UnknownError(i32),
 }
+
+impl core::fmt::Display for FileSetOwnerError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileSetOwnerError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileSetOwnerError {}
 
 enum_gen! { FileReadError
   entry:
@@ -174,6 +238,14 @@ enum_gen! { FileReadError
     FileStatError
 }
 
+impl core::fmt::Display for FileReadError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileReadError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileReadError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileOffsetError {
     InvalidFileDescriptor,
@@ -181,6 +253,14 @@ pub enum FileOffsetError {
     DoesNotSupportSeeking,
     UnknownError(i32),
 }
+
+impl core::fmt::Display for FileOffsetError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileOffsetError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileOffsetError {}
 
 enum_gen! { FileWriteError
   entry:
@@ -196,6 +276,14 @@ enum_gen! { FileWriteError
     FileOffsetError
 }
 
+impl core::fmt::Display for FileWriteError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileWriteError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileWriteError {}
+
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
 pub enum FileSyncError {
     Interrupt,
@@ -203,6 +291,14 @@ pub enum FileSyncError {
     IOerror,
     UnknownError(i32),
 }
+
+impl core::fmt::Display for FileSyncError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileSyncError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileSyncError {}
 
 enum_gen! {
     /// The FileError enum is a generalization when one doesn't require the fine-grained error
@@ -218,10 +314,24 @@ enum_gen! {
     Stat <= FileStatError
 }
 
+impl core::fmt::Display for FileError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "FileError::{self:?}")
+    }
+}
+
+impl core::error::Error for FileError {}
+
 impl From<()> for FileStatError {
     fn from(_: ()) -> Self {
         FileStatError::UnknownFileType
     }
+}
+
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
+pub enum FileReadLineState {
+    LineLen(usize),
+    EndOfFile(usize),
 }
 
 /// Opens or creates a new [`File`]. When calling [`FileBuilder::creation_mode`] the
@@ -568,35 +678,39 @@ impl File {
         }
     }
 
+    /// Reads the current line into a provided vector.
+    pub fn read_line_to_vector(
+        &self,
+        buf: &mut Vec<u8>,
+    ) -> Result<FileReadLineState, FileReadError> {
+        let mut buffer = [0u8; 1];
+
+        let mut counter = 0;
+        loop {
+            if self.read(&mut buffer)? == 0 {
+                return Ok(FileReadLineState::EndOfFile(counter));
+            }
+
+            if buffer[0] == b'\n' {
+                return Ok(FileReadLineState::LineLen(counter));
+            }
+
+            buf.push(buffer[0]);
+            counter += 1;
+        }
+    }
+
+    /// Reads the current line into a provided string.
+    pub fn read_line_to_string(
+        &self,
+        buf: &mut String,
+    ) -> Result<FileReadLineState, FileReadError> {
+        self.read_line_to_vector(unsafe { buf.as_mut_vec() })
+    }
+
     /// Reads the content of a file into a slice and returns the number of bytes read but at most
     /// `buf.len()` bytes.
     pub fn read(&self, buf: &mut [u8]) -> Result<u64, FileReadError> {
-        self.read_range(0, buf)
-    }
-
-    /// Reads and appending the content of a file into a vector and returns the number of bytes read.
-    pub fn read_to_vector(&self, buf: &mut Vec<u8>) -> Result<u64, FileReadError> {
-        let attr = fail!(from self, when File::acquire_attributes(self), "Unable to acquire file length to read contents of file.");
-
-        let start = buf.len();
-        buf.resize(attr.st_size as usize + start, 0u8);
-        self.read(&mut buf[start..])
-    }
-
-    /// Reads and appending the content of a file into a string and returns the number of bytes read.
-    pub fn read_to_string(&self, buf: &mut String) -> Result<u64, FileReadError> {
-        self.read_to_vector(unsafe { buf.as_mut_vec() })
-    }
-
-    /// Reads a range of a file beginning from `start`. The range length is determined by
-    /// to length of the slice `buf`. Returns the bytes read.
-    pub fn read_range(&self, start: u64, buf: &mut [u8]) -> Result<u64, FileReadError> {
-        let offset = fail!(from self, when File::set_offset(self, start), "Unable to set offset to read a range from the file.");
-
-        if offset != start {
-            return Ok(0);
-        }
-
         let bytes_read = unsafe {
             posix::read(
                 self.file_descriptor.native_handle(),
@@ -620,6 +734,32 @@ impl File {
             Errno::ENXIO => (NonExistingOrIncapableDevice, "{} since the device either does not exist or is not capable of that operation.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
         )
+    }
+
+    /// Reads and appending the content of a file into a vector and returns the number of bytes read.
+    pub fn read_to_vector(&self, buf: &mut Vec<u8>) -> Result<u64, FileReadError> {
+        let attr = fail!(from self, when File::acquire_attributes(self), "Unable to acquire file length to read contents of file.");
+
+        let start = buf.len();
+        buf.resize(attr.st_size as usize + start, 0u8);
+        self.read(&mut buf[start..])
+    }
+
+    /// Reads and appending the content of a file into a string and returns the number of bytes read.
+    pub fn read_to_string(&self, buf: &mut String) -> Result<u64, FileReadError> {
+        self.read_to_vector(unsafe { buf.as_mut_vec() })
+    }
+
+    /// Reads a range of a file beginning from `start`. The range length is determined by
+    /// to length of the slice `buf`. Returns the bytes read.
+    pub fn read_range(&self, start: u64, buf: &mut [u8]) -> Result<u64, FileReadError> {
+        let offset = fail!(from self, when self.seek(start), "Unable to set offset to read a range from the file.");
+
+        if offset != start {
+            return Ok(0);
+        }
+
+        self.read(buf)
     }
 
     /// Reads a range of a file beginning from `start` until `end` and returns the bytes read.
@@ -650,17 +790,6 @@ impl File {
 
     /// Writes a slice into a file and returns the number of bytes which were written.
     pub fn write(&mut self, buf: &[u8]) -> Result<u64, FileWriteError> {
-        self.write_at(0, buf)
-    }
-
-    /// Writes a slice into a file beginning from `start` and returns the number of bytes which were written.
-    pub fn write_at(&mut self, start: u64, buf: &[u8]) -> Result<u64, FileWriteError> {
-        let offset = fail!(from self, when File::set_offset(self, start), "Unable to set offset to write content at a specific position.");
-
-        if offset != start {
-            return Ok(0);
-        }
-
         let bytes_written = unsafe {
             posix::write(
                 self.file_descriptor.native_handle(),
@@ -684,6 +813,17 @@ impl File {
             Errno::EACCES => (InsufficientPermissions, "{} due to insufficient permissions.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).",msg, v)
         );
+    }
+
+    /// Writes a slice into a file beginning from `start` and returns the number of bytes which were written.
+    pub fn write_at(&mut self, start: u64, buf: &[u8]) -> Result<u64, FileWriteError> {
+        let offset = fail!(from self, when self.seek(start), "Unable to set offset to write content at a specific position.");
+
+        if offset != start {
+            return Ok(0);
+        }
+
+        self.write(buf)
     }
 
     /// Syncs all file modification with the file system.
@@ -759,6 +899,36 @@ impl File {
         );
     }
 
+    /// Seek to an absolute position in the file.
+    pub fn seek(&self, offset: u64) -> Result<u64, FileOffsetError> {
+        Self::set_offset(self, offset)
+    }
+
+    pub(crate) fn set_offset<T: FileDescriptorBased + Debug>(
+        this: &T,
+        offset: u64,
+    ) -> Result<u64, FileOffsetError> {
+        let new_offset = unsafe {
+            posix::lseek(
+                this.file_descriptor().native_handle(),
+                offset as posix::off_t,
+                posix::SEEK_SET,
+            )
+        };
+
+        if new_offset >= 0 {
+            return Ok(new_offset as u64);
+        }
+
+        let msg = "Unable to change read/write position to";
+        handle_errno!(FileOffsetError, from this,
+            Errno::EBADF => (InvalidFileDescriptor, "{} {} since the provide file-descriptor was not valid.", msg, offset),
+            Errno::EOVERFLOW => (FileTooBig, "{} {} since the file size is so large that ic cannot be represented by an internal structure.", msg, offset),
+            Errno::ESPIPE => (DoesNotSupportSeeking, "{} {} since the file type does not support seeking.", msg, offset),
+            v => (UnknownError(v as i32), "{} {} due to an unknown error ({}).", msg, offset, v)
+        );
+    }
+
     pub(crate) fn truncate<T: FileDescriptorBased + Debug>(
         this: &T,
         size: usize,
@@ -795,31 +965,6 @@ impl File {
         }
 
         Ok(attr)
-    }
-
-    pub(crate) fn set_offset<T: FileDescriptorBased + Debug>(
-        this: &T,
-        offset: u64,
-    ) -> Result<u64, FileOffsetError> {
-        let new_offset = unsafe {
-            posix::lseek(
-                this.file_descriptor().native_handle(),
-                offset as posix::off_t,
-                posix::SEEK_SET,
-            )
-        };
-
-        if new_offset >= 0 {
-            return Ok(new_offset as u64);
-        }
-
-        let msg = "Unable to change read/write position to";
-        handle_errno!(FileOffsetError, from this,
-            Errno::EBADF => (InvalidFileDescriptor, "{} {} since the provide file-descriptor was not valid.", msg, offset),
-            Errno::EOVERFLOW => (FileTooBig, "{} {} since the file size is so large that ic cannot be represented by an internal structure.", msg, offset),
-            Errno::ESPIPE => (DoesNotSupportSeeking, "{} {} since the file type does not support seeking.", msg, offset),
-            v => (UnknownError(v as i32), "{} {} due to an unknown error ({}).", msg, offset, v)
-        );
     }
 
     pub(crate) fn set_permission<T: FileDescriptorBased + Debug>(

@@ -34,4 +34,5 @@ cargo publish -p iceoryx2-cal
 cargo publish -p iceoryx2-bb-trait-tests
 cargo publish -p iceoryx2
 cargo publish -p iceoryx2-services-discovery
+cargo publish -p iceoryx2-userland-record-and-replay
 cargo publish -p iceoryx2-cli

@@ -46,8 +46,10 @@
 //! [`Reader`](crate::port::reader::Reader)s. Updates and reads are made on a key basis, not
 //! on the entire shared memory.
 
+use serde::{Deserialize, Serialize};
+
 /// Identifies the kind of messaging pattern the [`Service`](crate::service::Service) will use.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 #[repr(u32)]
 pub enum MessagingPattern {
     /// Unidirectional communication pattern where the

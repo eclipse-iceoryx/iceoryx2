@@ -23,6 +23,7 @@ use iceoryx2_bb_system_types::file_name::*;
 use crate::{
     config::Config,
     prelude::{NodeName, ServiceName},
+    service::static_config::message_type_details::{TypeDetail, TypeNameString, TypeVariant},
 };
 
 pub fn generate_service_name() -> ServiceName {
@@ -60,4 +61,34 @@ pub fn generate_isolated_config() -> Config {
     config.global.prefix = prefix;
 
     config
+}
+
+pub fn create_custom_type_detail(
+    variant: TypeVariant,
+    type_name: TypeNameString,
+    size: usize,
+    alignment: usize,
+) -> TypeDetail {
+    TypeDetail {
+        variant,
+        type_name,
+        size,
+        alignment,
+    }
+}
+
+pub fn type_detail_set_size(v: &mut TypeDetail, value: usize) {
+    v.size = value;
+}
+
+pub fn type_detail_set_alignment(v: &mut TypeDetail, value: usize) {
+    v.alignment = value;
+}
+
+pub fn type_detail_set_name(v: &mut TypeDetail, value: TypeNameString) {
+    v.type_name = value;
+}
+
+pub fn type_detail_set_variant(v: &mut TypeDetail, value: TypeVariant) {
+    v.variant = value;
 }

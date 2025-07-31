@@ -272,7 +272,7 @@ impl<
 
     fn prepare_config_details(&mut self) {
         self.config_details_mut().type_details =
-            TypeDetail::__internal_new::<KeyType>(message_type_details::TypeVariant::FixedSize);
+            TypeDetail::new::<KeyType>(message_type_details::TypeVariant::FixedSize);
     }
 
     /// If the [`Service`] is created it defines how many [`Reader`](crate::port::reader::Reader)s
@@ -336,7 +336,7 @@ impl<
     ) -> Self {
         self.builder.internals.push(BuilderInternals {
             key,
-            value_type_details: TypeDetail::__internal_new::<ValueType>(
+            value_type_details: TypeDetail::new::<ValueType>(
                 message_type_details::TypeVariant::FixedSize,
             ),
             value_writer: Box::new(move |mem: *mut u8| {
@@ -357,7 +357,7 @@ impl<
     ) -> Self {
         self.builder.internals.push(BuilderInternals {
             key,
-            value_type_details: TypeDetail::__internal_new::<ValueType>(
+            value_type_details: TypeDetail::new::<ValueType>(
                 message_type_details::TypeVariant::FixedSize,
             ),
             value_writer: Box::new(move |mem: *mut u8| {
