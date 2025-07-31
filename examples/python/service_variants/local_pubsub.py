@@ -49,7 +49,7 @@ class BackgroundThread(threading.Thread):
                 sample = subscriber.receive()
                 if sample is not None:
                     data = sample.payload()
-                    print("received:", data.contents)
+                    print("received:", data.contents.value)
                 else:
                     break
 

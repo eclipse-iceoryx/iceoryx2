@@ -22,20 +22,19 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/build/examples/cxx/service_attributes/example_cxx_service_attributes_creator
-# wait until ready
-expect_output "my_funky_service_name"
+spawn target/ffi/build/examples/cxx/service_variants/example_cxx_service_variants_ipc_publisher
+set ipc_publisher $spawn_id
 
-spawn target/ffi/build/examples/cxx/service_attributes/example_cxx_service_attributes_opener
-set id_opener $spawn_id
+spawn target/ffi/build/examples/cxx/service_variants/example_cxx_service_variants_ipc_threadsafe_subscriber
+set ipc_threadsafe_subscriber $spawn_id
 
-spawn target/ffi/build/examples/cxx/service_attributes/example_cxx_service_attributes_incompatible
-set id_incompatible $spawn_id
+spawn target/ffi/build/examples/cxx/service_variants/example_cxx_service_variants_local_pubsub
+set local_pubsub $spawn_id
 
 #### Test Assertion
 
-expect_output_from $id_opener "camera_resolution"
-expect_output_from $id_incompatible "camera_resolution: 3840x2160 -> not available"
-expect_output_from $id_incompatible "camera_type -> not available"
+expect_output_from $ipc_publisher "send: 0"
+expect_output_from $ipc_threadsafe_subscriber "*received: 3"
+expect_output_from $local_pubsub "*received: 1"
 
 show_test_passed

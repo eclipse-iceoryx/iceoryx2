@@ -40,7 +40,7 @@ COUNTER = 0
 try:
     while True:
         node.wait(cycle_time)
-        print("send", COUNTER)
+        print("send:", COUNTER)
         publisher.send_copy(ctypes.c_uint64(COUNTER))
         COUNTER += 1
 

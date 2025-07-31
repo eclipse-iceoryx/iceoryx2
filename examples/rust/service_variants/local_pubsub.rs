@@ -22,7 +22,7 @@ fn background_thread() {
     let node = NodeBuilder::new()
         // optionally, provide a name to the node which helps identifying them later during
         // debugging or introspection
-        .name("threadnode".try_into().unwrap())
+        .name(&"threadnode".try_into().unwrap())
         .create::<local::Service>()
         .unwrap();
 
@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new()
         // optionally, provide a name to the node which helps identifying them later during
         // debugging or introspection
-        .name("mainnode".try_into()?)
+        .name(&"mainnode".try_into()?)
         // When choosing `local::Service` the service does not use inter-process mechanisms
         // like shared memory or unix domain sockets but mechanisms like socketpairs and heap.
         //
