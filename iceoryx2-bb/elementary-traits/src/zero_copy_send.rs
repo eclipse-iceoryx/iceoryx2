@@ -30,10 +30,9 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::*;
 ///       * a list must be implemented using indices to structure itself
 ///  * the types must have a uniform memory representation, meaning they are annotated with
 ///    `#[repr(C)]`.
-///  * the types and their members do not implement `Drop` explicitly.
 ///
 pub unsafe trait ZeroCopySend {
-    /// The unique identifier of the type. It shall be used to identify a specific type accross
+    /// The unique identifier of the type. It shall be used to identify a specific type across
     /// processes and languages.
     ///
     /// # Safety
