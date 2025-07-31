@@ -32,11 +32,11 @@ class EntryValue {
     /// Makes new value readable for [`Reader`]s, consumes the
     /// [`EntryValue`] and returns the original [`WriterHandle`].
     template <ServiceType ST, typename KeyT, typename ValueT>
-    auto update(EntryValue<ST, KeyT, ValueT>&& self) -> WriterHandle<S, KeyType, ValueType>;
+    friend auto update(EntryValue<ST, KeyT, ValueT>&& self) -> WriterHandle<S, KeyType, ValueType>;
 
     /// Discard the [`EntryValue`] and returns the original [`WriterHandle`].
     template <ServiceType ST, typename KeyT, typename ValueT>
-    auto discard(EntryValue<ST, KeyT, ValueT>&& self) -> WriterHandle<S, KeyType, ValueType>;
+    friend auto discard(EntryValue<ST, KeyT, ValueT>&& self) -> WriterHandle<S, KeyType, ValueType>;
 
   private:
     // The EntryValue is defaulted since the member is initialized in
