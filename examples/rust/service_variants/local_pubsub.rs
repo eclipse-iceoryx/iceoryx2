@@ -32,7 +32,7 @@ fn background_thread() {
     while KEEP_RUNNING.load(Ordering::Relaxed) {
         std::thread::sleep(CYCLE_TIME);
         while let Some(sample) = subscriber.receive().unwrap() {
-            println!("[thread] received {}", sample.payload());
+            println!("[thread] received: {}", sample.payload());
         }
     }
 }
@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter = 0u64;
     while node.wait(CYCLE_TIME).is_ok() {
-        println!("send {counter}");
+        println!("send: {counter}");
         publisher.send_copy(counter)?;
         counter += 1;
     }

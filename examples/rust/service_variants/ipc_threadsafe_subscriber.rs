@@ -39,20 +39,21 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let subscriber = Arc::new(service.subscriber_builder().create()?);
     let in_thread_subscriber = subscriber.clone();
 
-    // all ports now implement `Send` and `Sync` thanks to `ipc_threadsafe::Service`
-    // so we can share them between multiple threads.
+    // all ports (like Subscriber, Publisher, Client, Server, ...) now implement
+    // `Send` and `Sync` thanks to `ipc_threadsafe::Service` so we can share them
+    // between multiple threads.
     let t = std::thread::spawn(move || {
         while KEEP_RUNNING.load(Ordering::Relaxed) {
             std::thread::sleep(CYCLE_TIME);
             if let Some(sample) = in_thread_subscriber.receive().unwrap() {
-                println!("[thread] received {}", sample.payload());
+                println!("[thread] received: {}", sample.payload());
             }
         }
     });
 
     while node.wait(CYCLE_TIME).is_ok() {
         if let Some(sample) = subscriber.receive()? {
-            println!("[main] received {}", sample.payload());
+            println!("[main] received: {}", sample.payload());
         }
     }
 

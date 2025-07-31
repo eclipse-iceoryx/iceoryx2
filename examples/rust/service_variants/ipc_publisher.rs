@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let mut counter = 0u64;
     while node.wait(CYCLE_TIME).is_ok() {
-        println!("send {counter}");
+        println!("send: {counter}");
         publisher.send_copy(counter)?;
         counter += 1;
     }

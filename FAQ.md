@@ -29,6 +29,7 @@ which demonstrates the use of `FixedSizeByteString` and `FixedSizeVec`.
 
    ```rust
     #[repr(C)]
+    #[derive(ZeroCopySend)]
     struct MyDataType {
         //....
     }
@@ -113,8 +114,12 @@ if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_LOCA
 
 ### Example
 
-Take a look at the
-[local_pubsub file in the service variants example](examples/rust/service_variants)
+Take a look at the local_pubsub file in the
+
+* [C service variants example](examples/c/service_variants)
+* [C++ service variants example](examples/cxx/service_variants)
+* [Python service variants example](examples/python/service_variants)
+* [Rust service variants example](examples/rust/service_variants)
 
 ## How To Make 32-bit and 64-bit iceoryx2 Applications Interoperatable
 

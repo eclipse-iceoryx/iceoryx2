@@ -10,7 +10,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-"""Create a service that is strictly restricted to the local process."""
+"""Open a service that needs to have some predefined attributes."""
 
 import ctypes
 import threading
@@ -20,40 +20,13 @@ import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
 
-class BackgroundThread(threading.Thread):
-    def __init__(self, stop_event):
-        super().__init__()
-        self.stop_event = stop_event
-
-    def run(self):
-        # we create another node inside this thread to communicate to the main thread
-        node = iox2.NodeBuilder.new().create(iox2.ServiceType.Local)
-
-        service = (
-            node.service_builder(iox2.ServiceName.new("Service-Variants-Example"))
-            .publish_subscribe(ctypes.c_uint64)
-            .open_or_create()
-        )
-
-        subscriber = service.subscriber_builder().create()
-
-        while not self.stop_event.is_set():
-            time.sleep(cycle_time.as_secs())
-            while True:
-                sample = subscriber.receive()
-                if sample is not None:
-                    data = sample.payload()
-                    print("received:", data.contents)
-                else:
-                    break
-
-
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
-# When choosing `iox2.ServiceType.Local` the service does not use inter-process mechanisms
-# like shared memory or unix domain sockets but mechanisms like socketpairs and heap.
+# In contrast to Rust, all service variants in python have threadsafe ports.
+# but one has to pay the cost of an additional mutex lock/unlock call.
 #
-# Those services can communicate only within a single process.
-node = iox2.NodeBuilder.new().create(iox2.ServiceType.Local)
+# An `iox2.ServiceType.Ipc` service cannot communicate with an
+# `iox2.ServiceType.Local` service.
+node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 service = (
     node.service_builder(iox2.ServiceName.new("Service-Variants-Example"))
@@ -61,19 +34,40 @@ service = (
     .open_or_create()
 )
 
-publisher = service.publisher_builder().create()
+subscriber = service.subscriber_builder().create()
+
+# All ports (like Subscriber, Publisher, Server, Client) are threadsafe 
+# by default so we can access them from multiple threads.
+class BackgroundThread(threading.Thread):
+    def __init__(self, stop_event):
+        super().__init__()
+        self.stop_event = stop_event
+
+    def run(self):
+        while not self.stop_event.is_set():
+            time.sleep(cycle_time.as_secs())
+            while True:
+                sample = subscriber.receive()
+                if sample is not None:
+                    data = sample.payload()
+                    print("[thread] received:", data.contents)
+                else:
+                    break
 
 stop_event = threading.Event()
 thread = BackgroundThread(stop_event)
 thread.start()
 
-COUNTER = 0
 try:
     while True:
         node.wait(cycle_time)
-        print("send:", COUNTER)
-        publisher.send_copy(ctypes.c_uint64(COUNTER))
-        COUNTER += 1
+        while True:
+            sample = subscriber.receive()
+            if sample is not None:
+                data = sample.payload()
+                print("[main] received:", data.contents)
+            else:
+                break
 
 except iox2.NodeWaitFailure:
     stop_event.set()
