@@ -28,6 +28,7 @@ iceoryx2-bb-memory = { workspace = true }
 iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-pal-concurrency-sync = { workspace = true }
 
+postcard = { workspace = true }
 once_cell = { workspace = true }
 serde = { workspace = true }
 cdr = { workspace = true }
