@@ -68,8 +68,10 @@ class PortFactoryBlackboard {
     auto reader_builder() const -> PortFactoryReader<S, KeyType>;
 
   private:
-    template <ServiceType>
-    friend class ServiceBuilderBlackboard;
+    template <typename, ServiceType>
+    friend class ServiceBuilderBlackboardOpener;
+    template <typename, ServiceType>
+    friend class ServiceBuilderBlackboardCreator;
 
     explicit PortFactoryBlackboard(/*iox2_port_factory_blackboard_h handle*/);
     void drop() noexcept;

@@ -41,7 +41,7 @@ class Writer {
     auto entry(const KeyType& key) -> iox::expected<WriterHandle<S, KeyType, ValueType>, WriterHandleError>;
 
   private:
-    template <ServiceType, KeyType>
+    template <ServiceType, typename>
     friend class PortFactoryWriter;
 
     explicit Writer(/*iox2_writer_h handle*/);

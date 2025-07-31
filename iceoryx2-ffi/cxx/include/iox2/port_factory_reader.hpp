@@ -36,7 +36,7 @@ class PortFactoryReader {
     auto create() && -> iox::expected<Reader<S, KeyType>, ReaderCreateError>;
 
   private:
-    template <ServiceType, KeyType>
+    template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
     explicit PortFactoryReader(/*iox2_port_factory_reader_builder_h handle*/);

@@ -40,7 +40,7 @@ class Reader {
     auto entry(const KeyType& key) -> iox::expected<ReaderHandle<S, KeyType, ValueType>, ReaderHandleError>;
 
   private:
-    template <ServiceType, KeyType>
+    template <ServiceType, typename>
     friend class PortFactoryReader;
 
     explicit Reader(/*iox2_reader_h handle*/);

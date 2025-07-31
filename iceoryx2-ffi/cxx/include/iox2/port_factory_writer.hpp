@@ -36,7 +36,7 @@ class PortFactoryWriter {
     auto create() && -> iox::expected<Writer<S, KeyType>, WriterCreateError>;
 
   private:
-    template <ServiceType, KeyType>
+    template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
     explicit PortFactoryWriter(/*iox2_port_factory_writer_builder_h handle*/);
