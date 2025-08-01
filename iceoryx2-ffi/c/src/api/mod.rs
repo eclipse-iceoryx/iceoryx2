@@ -58,6 +58,7 @@ mod publisher;
 mod publisher_details;
 mod quirks_correction;
 mod reader;
+mod reader_details;
 mod request_header;
 mod request_mut;
 mod response;
@@ -95,6 +96,7 @@ mod waitset_attachment_id;
 mod waitset_builder;
 mod waitset_guard;
 mod writer;
+mod writer_details;
 
 pub use active_request::*;
 pub use attribute::*;
@@ -134,6 +136,7 @@ pub use publisher::*;
 pub use publisher_details::*;
 pub use quirks_correction::*;
 pub use reader::*;
+pub use reader_details::*;
 pub use request_header::*;
 pub use request_mut::*;
 pub use response::*;
@@ -170,7 +173,8 @@ pub use waitset::*;
 pub use waitset_attachment_id::*;
 pub use waitset_builder::*;
 pub use waitset_guard::*;
-pub use writer;
+pub use writer::*;
+pub use writer_details::*;
 
 /// This constant signals an successful function call
 pub const IOX2_OK: c_int = 0;
