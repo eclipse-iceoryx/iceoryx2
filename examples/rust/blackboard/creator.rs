@@ -24,15 +24,17 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let service = node
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .blackboard_creator::<KeyType>()
-        .add::<u64>(0, 0)
-        .add::<FixedSizeByteString<100>>(5, "Groovy".try_into()?)
-        .add::<f32>(9, 0.0)
+        .add_with_default::<u64>(0)
+        .add::<FixedSizeByteString<30>>(5, "Groovy".try_into()?)
+        .add_with_default::<f32>(9)
         .create()?;
+
+    println!("Blackboard created.\n");
 
     let writer = service.writer_builder().create()?;
 
     let writer_handle_0 = writer.entry::<u64>(&0)?;
-    let mut writer_handle_5 = writer.entry::<FixedSizeByteString<100>>(&5)?;
+    let mut writer_handle_5 = writer.entry::<FixedSizeByteString<30>>(&5)?;
     let writer_handle_9 = writer.entry::<f32>(&9)?;
 
     let mut counter = 0;
@@ -46,13 +48,13 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         let entry_value_uninit = writer_handle_5.loan_uninit();
         let value = format!("Funky {}", counter);
         let entry_value =
-            entry_value_uninit.write(FixedSizeByteString::<100>::from_bytes(value.as_bytes())?);
+            entry_value_uninit.write(FixedSizeByteString::<30>::from_bytes(value.as_bytes())?);
         writer_handle_5 = entry_value.update();
         println!("Write new value for key 5: {}", value);
 
         let value = counter as f32 * 7.7;
         writer_handle_9.update_with_copy(value);
-        println!("Write new value for key 9: {value}");
+        println!("Write new value for key 9: {value}\n");
     }
 
     println!("exit");

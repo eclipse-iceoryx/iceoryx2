@@ -31,9 +31,10 @@
 * ReqRes & events implement `Send` + `Sync` in
   `**_threadsafe` service variant
   [#838](https://github.com/eclipse-iceoryx/iceoryx2/issues/838)
+* C example for service attributes
+  [#909](https://github.com/eclipse-iceoryx/iceoryx2/issues/909)
 * Recreate the cmake patch, used in the yocto layer
   [#663](https://github.com/eclipse-iceoryx/iceoryx2/issues/663)
-
 
 ### Bugfixes
 
@@ -70,6 +71,8 @@
     conflicts when merging.
 -->
 
+* Removed `MetaVec::is_initialized` field
+  [#900](https://github.com/eclipse-iceoryx/iceoryx2/issues/900)
 * Implement `ZeroCopySend` for all system types
   [#732](https://github.com/eclipse-iceoryx/iceoryx2/issues/732)
 * Remove trait re-exports from iceoryx2-bb-elementary
@@ -114,6 +117,8 @@
   [#794](https://github.com/eclipse-iceoryx/iceoryx2/issues/794)
 * Enable the usage of semaphore based events in C/C++
   [#795](https://github.com/eclipse-iceoryx/iceoryx2/issues/795)
+* Remove `impl Drop` restriction from `ZeroCopySend` trait
+  [#908](https://github.com/eclipse-iceoryx/iceoryx2/issues/908)
 
 ### Config Breaking Changes
 

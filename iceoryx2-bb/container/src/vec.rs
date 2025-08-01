@@ -89,7 +89,6 @@ use core::{
     marker::PhantomData,
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
-    sync::atomic::Ordering,
 };
 
 use iceoryx2_bb_elementary::{
@@ -105,7 +104,6 @@ use iceoryx2_bb_elementary_traits::{
 use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_ptr::RelocatablePointer};
 
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 /// Vector with run-time fixed size capacity. In contrast to its counterpart the
@@ -122,7 +120,6 @@ pub struct MetaVec<T, Ptr: GenericPointer> {
     data_ptr: Ptr::Type<MaybeUninit<T>>,
     capacity: usize,
     len: usize,
-    is_initialized: IoxAtomicBool,
     _phantom_data: PhantomData<T>,
 }
 
@@ -135,7 +132,7 @@ impl<T: Debug, Ptr: GenericPointer> Debug for MetaVec<T, Ptr> {
             core::any::type_name::<Ptr>(),
             self.capacity,
             self.len,
-            self.is_initialized.load(Ordering::Relaxed)
+            self.data_ptr.is_initialized(),
         )?;
 
         if self.len > 0 {
@@ -154,10 +151,7 @@ unsafe impl<T: Send, Ptr: GenericPointer> Send for MetaVec<T, Ptr> {}
 
 impl<T, Ptr: GenericPointer> Drop for MetaVec<T, Ptr> {
     fn drop(&mut self) {
-        if self
-            .is_initialized
-            .load(core::sync::atomic::Ordering::Relaxed)
-        {
+        if self.data_ptr.is_initialized() {
             unsafe { self.clear_impl() };
         }
     }
@@ -169,7 +163,6 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
             data_ptr: RelocatablePointer::new_uninit(),
             capacity,
             len: 0,
-            is_initialized: IoxAtomicBool::new(false),
             _phantom_data: PhantomData,
         }
     }
@@ -178,7 +171,7 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
         &mut self,
         allocator: &Allocator,
     ) -> Result<(), iceoryx2_bb_elementary_traits::allocator::AllocationError> {
-        if self.is_initialized.load(Ordering::Relaxed) {
+        if self.data_ptr.is_initialized() {
             fatal_panic!(from "Vec::init()", "Memory already initialized, Initializing it twice may lead to undefined behavior.");
         }
 
@@ -188,8 +181,6 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
                  core::mem::align_of::<T>(),
              )), "Failed to initialize vec since the allocation of the data memory failed."
         ));
-        self.is_initialized
-            .store(true, core::sync::atomic::Ordering::Relaxed);
 
         Ok(())
     }
@@ -237,8 +228,7 @@ impl<T, Ptr: GenericPointer> MetaVec<T, Ptr> {
     #[inline(always)]
     fn verify_init(&self, source: &str) {
         debug_assert!(
-                self.is_initialized
-                    .load(core::sync::atomic::Ordering::Relaxed),
+                self.data_ptr.is_initialized(),
                 "From: MetaVec<{}>::{}, Undefined behavior - the object was not initialized with 'init' before.",
                 core::any::type_name::<T>(), source
             );
@@ -367,7 +357,6 @@ impl<T> Vec<T> {
             data_ptr: OwningPointer::<MaybeUninit<T>>::new_with_alloc(capacity),
             capacity,
             len: 0,
-            is_initialized: IoxAtomicBool::new(true),
             _phantom_data: PhantomData,
         }
     }

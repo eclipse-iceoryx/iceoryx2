@@ -32,7 +32,6 @@ use super::request_response;
 #[non_exhaustive]
 #[derive(Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
-#[serde(tag = "messaging_pattern")]
 #[allow(clippy::large_enum_variant)]
 pub enum MessagingPattern {
     /// Stores the static config of the
