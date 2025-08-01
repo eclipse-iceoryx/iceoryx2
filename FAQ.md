@@ -81,36 +81,40 @@ offers the added benefit of making it easy to extract threads into separate
 processes later on, without needing to change anything except switching the
 service variant from `Local` to `Ipc`.
 
-### Rust
-```rust
-let node = NodeBuilder::new()
-     // or local_threadsafe::Service, or ipc::Service, or ipc_threadsafe::Service
-     .create::<local::Service>()?;
-```
+* **Rust**
 
-### Python
-```python
-// or iox2.ServiceType.Ipc
-node = iox2.NodeBuilder.new().create(iox2.ServiceType.Local)
-```
+  ```rust
+  let node = NodeBuilder::new()
+       // or local_threadsafe::Service, or ipc::Service, or ipc_threadsafe::Service
+       .create::<local::Service>()?;
+  ```
 
-### C++
-```cxx
-auto node = NodeBuilder()
-     // or Service::Ipc
-    .create<ServiceType::Local>().expect("successful node creation");
-```
+* **Python**
 
-### C
-```c
-iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
-iox2_node_h node_handle = NULL;
-// or iox2_service_type_e_IPC
-if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_LOCAL, &node_handle) != IOX2_OK) {
-    printf("Could not create node!\n");
-    goto end;
-}
-```
+  ```python
+  // or iox2.ServiceType.Ipc
+  node = iox2.NodeBuilder.new().create(iox2.ServiceType.Local)
+  ```
+
+* **C++**
+
+  ```cxx
+  auto node = NodeBuilder()
+       // or Service::Ipc
+      .create<ServiceType::Local>().expect("successful node creation");
+  ```
+
+* **C**
+
+  ```c
+  iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
+  iox2_node_h node_handle = NULL;
+  // or iox2_service_type_e_IPC
+  if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_LOCAL, &node_handle) != IOX2_OK) {
+      printf("Could not create node!\n");
+      goto end;
+  }
+  ```
 
 ### Example
 

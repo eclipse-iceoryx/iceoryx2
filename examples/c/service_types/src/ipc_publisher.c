@@ -21,7 +21,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#define CYCLE_TIME 750000000
+enum {
+    CycleTime = 750000000
+};
 
 struct res { // NOLINT
     iox2_node_h node;
@@ -115,7 +117,7 @@ int main(void) {
     }
 
     uint64_t counter = 0;
-    while (iox2_node_wait(&example.node, 0, CYCLE_TIME) == IOX2_OK) {
+    while (iox2_node_wait(&example.node, 0, CycleTime) == IOX2_OK) {
         printf("send: %llu\n", (unsigned long long) counter);
         if (iox2_publisher_send_copy(&example.publisher, (void*) &counter, sizeof(counter), NULL) != IOX2_OK) {
             printf("Failed to send sample\n");

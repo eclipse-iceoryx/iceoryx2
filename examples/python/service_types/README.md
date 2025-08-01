@@ -128,6 +128,6 @@ will discover the running service.
 Defined when creating a `Node` and all constructed `Service`s created by that
 `Node` will use the specified service type.
 
-```cxx
+```python
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 ```

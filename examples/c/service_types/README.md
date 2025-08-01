@@ -119,6 +119,6 @@ will discover the running service.
 Defined when creating a `Node` and all constructed `Service`s created by that
 `Node` will use the specified service type.
 
-```cxx
+```c
 iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node);
 ```

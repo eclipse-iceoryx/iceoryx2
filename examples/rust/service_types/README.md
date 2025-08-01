@@ -106,7 +106,7 @@ will discover the running service.
   `Send`+`Sync`, all payloads `Send` at the cost of an additional mutex
 * `local::Service` - inter-thread communication, strictly confined to the process
 * `local_threadsafe::Service` - inter-thread communication, all ports implement
-  `Send`+`Sync`, all payloads `Send`at the cost of an additional mutex
+  `Send`+`Sync`, all payloads `Send` at the cost of an additional mutex
 
 Defined when creating a `Node` and all constructed `Service`s created by that
 `Node` will use the specified service type.
