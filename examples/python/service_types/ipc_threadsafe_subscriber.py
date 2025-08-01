@@ -36,14 +36,19 @@ service = (
 
 subscriber = service.subscriber_builder().create()
 
-# All ports (like Subscriber, Publisher, Server, Client) are threadsafe 
+
+# All ports (like Subscriber, Publisher, Server, Client) are threadsafe
 # by default so we can access them from multiple threads.
 class BackgroundThread(threading.Thread):
+    """Background thread that uses the subscriber to receive cyclically samples."""
+
     def __init__(self, stop_event):
+        """Initializes the background thread."""
         super().__init__()
         self.stop_event = stop_event
 
     def run(self):
+        """Runs the background thread and receives cyclically samples."""
         while not self.stop_event.is_set():
             time.sleep(cycle_time.as_secs())
             while True:
@@ -53,6 +58,7 @@ class BackgroundThread(threading.Thread):
                     print("[thread] received:", data.contents.value)
                 else:
                     break
+
 
 stop_event = threading.Event()
 thread = BackgroundThread(stop_event)

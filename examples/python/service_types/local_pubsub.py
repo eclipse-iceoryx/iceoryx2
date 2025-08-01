@@ -20,23 +20,31 @@ import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
 
+
 class BackgroundThread(threading.Thread):
+    """Background thread with internal node to receive data."""
+
     def __init__(self, stop_event):
+        """Initializes the background thread."""
         super().__init__()
         self.stop_event = stop_event
 
     def run(self):
+        """Runs the background thread and receives cyclically samples."""
         # we create another node inside this thread to communicate to the main thread
         node = (
             iox2.NodeBuilder.new()
             # optionally, provide a name to the node which helps identifying them later during
             # debugging or introspection
-            .name(iox2.NodeName.new("threadnode"))
-            .create(iox2.ServiceType.Local)
+            .name(iox2.NodeName.new("threadnode")).create(
+                iox2.ServiceType.Local
+            )
         )
 
         service = (
-            node.service_builder(iox2.ServiceName.new("Service-Variants-Example"))
+            node.service_builder(
+                iox2.ServiceName.new("Service-Variants-Example")
+            )
             .publish_subscribe(ctypes.c_uint64)
             .open_or_create()
         )
@@ -63,8 +71,7 @@ node = (
     iox2.NodeBuilder.new()
     # optionally, provide a name to the node which helps identifying them later during
     # debugging or introspection
-    .name(iox2.NodeName.new("mainnode"))
-    .create(iox2.ServiceType.Local)
+    .name(iox2.NodeName.new("mainnode")).create(iox2.ServiceType.Local)
 )
 
 service = (
