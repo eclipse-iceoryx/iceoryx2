@@ -75,6 +75,7 @@ mod service_builder_request_response;
 mod service_name;
 mod signal_handling_mode;
 mod static_config;
+mod static_config_blackboard;
 mod static_config_event;
 mod static_config_publish_subscribe;
 mod static_config_request_response;
