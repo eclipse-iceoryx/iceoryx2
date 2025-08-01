@@ -14,7 +14,7 @@
 
 use crate::api::{
     iox2_service_type_e, iox2_writer_h, iox2_writer_t, AssertNonNullHandle, HandleToType, IntoCInt,
-    KeyFFi, WriterUnion, IOX2_OK,
+    KeyFfi, WriterUnion, IOX2_OK,
 };
 
 use iceoryx2::port::writer::WriterCreateError;

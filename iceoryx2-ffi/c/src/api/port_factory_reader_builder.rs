@@ -14,7 +14,7 @@
 
 use crate::api::{
     iox2_reader_h, iox2_reader_t, iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt,
-    KeyFFi, ReaderUnion, IOX2_OK,
+    KeyFfi, ReaderUnion, IOX2_OK,
 };
 
 use iceoryx2::port::reader::ReaderCreateError;
