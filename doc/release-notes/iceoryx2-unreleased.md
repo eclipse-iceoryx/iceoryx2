@@ -33,6 +33,8 @@
   [#838](https://github.com/eclipse-iceoryx/iceoryx2/issues/838)
 * C example for service attributes
   [#909](https://github.com/eclipse-iceoryx/iceoryx2/issues/909)
+* Example explaining the details of service types
+  [#913](https://github.com/eclipse-iceoryx/iceoryx2/issues/913)
 
 ### Bugfixes
 
@@ -69,8 +71,6 @@
     conflicts when merging.
 -->
 
-* Removed `MetaVec::is_initialized` field
-  [#900](https://github.com/eclipse-iceoryx/iceoryx2/issues/900)
 * Implement `ZeroCopySend` for all system types
   [#732](https://github.com/eclipse-iceoryx/iceoryx2/issues/732)
 * Remove trait re-exports from iceoryx2-bb-elementary
@@ -87,6 +87,8 @@
 * Remove the `config/iceoryx2.toml` to reduce effort to keep the
   built in `iceoryx.toml` and `config.rs` in sync
   [#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
+* Removed `MetaVec::is_initialized` field
+  [#900](https://github.com/eclipse-iceoryx/iceoryx2/issues/900)
 
 ### Testing
 
