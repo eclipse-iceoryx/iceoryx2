@@ -1,6 +1,6 @@
-# Service-Variants
+# Service-Types
 
-Service variants allow the specialization of the underlying mechanisms of
+Service types allow the specialization of the underlying mechanisms of
 iceoryx2. It is a powerful tool to customize the behavior of all internal
 aspects. Let's assume you use iceoryx2 in a unit test suite which runs
 concurrently on your CI. In those cases, it would be ideal when iceoryx2 would
@@ -14,26 +14,30 @@ between an ARM A-core to an R-core. In all of those situations, you would need
 special mechanisms to use the underlying memory or to send event trigger
 mechanisms.
 
-With service variants, you have the ability to use iceoryx2 in a different
+With service types, you have the ability to use iceoryx2 in a different
 scenario without changing a single line of code, except the one line that
-defines the service variant. The service variant is set when the `Node` is
+defines the service type. The service type is set when the `Node` is
 created with
 
-```python
-node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
+```rust
+let node = NodeBuilder::new()
+    .create::<ipc::Service>()?;
 ```
 
-By default, all examples are setting it to `iox2.ServiceType.Ipc`. Let's
-assume you would like to use the intra-process specialization. Then you can use
-`iox2.ServiceType.Local`. In this case, all mechanisms are strictly
-contained in the process itself, and all services cannot be used or discovered
-outside of the process.
+By default, all examples are setting it to `ipc::Service`. Let's assume you
+would like to use the intra-process specialization. Then you can use
+`local::Service`. In this case, all mechanisms are strictly contained in the
+process itself, and all services cannot be used or discovered outside of the
+process.
 
-In contrast to Rust, Python does not have the concepts of `Send` or `Sync`, and
-the compiler cannot detect the use of non-thread-safe code in a concurrent
-context. Therefore, we decided to make every port (e.g., `Publisher`,
-`Subscriber`, `Server`, `Client`, etc.) thread-safe by default. This introduces
-the additional overhead of a mutex for the user.
+Thanks to Rust's `Send` and `Sync` traits, we can ensure via the compiler that
+non-threadsafe constructs are not used by accident in a concurrent setup.
+By default, all ports (e.g., `Publisher`, `Subscriber`, `Server`, `Client`,
+...) are not threadsafe and do not even implement `Send`, the same goes for
+the payload (e.g., `Sample`, `Request`, ...). But sometimes you need to use
+them in a multithreaded context and are prepared to pay the additional costs
+of a mutex, in those cases, you can use `ipc_threadsafe::Service` or
+`local_threadsafe::Service`.
 
 ## Local PubSub
 
@@ -43,33 +47,10 @@ background thread and creates a node for every thread (`main` and the
 The advantage is that you no longer have to manually handle your MPMC queue and
 share it between threads.
 
-## How to Build
-
-Before proceeding, all dependencies need to be installed. You can find
-the detailed instructions in the [Python Examples Readme](../README.md).
-
-First you have to create a python environment, install maturin and compile
-iceoryx2 and the language bindings:
-
-```sh
-# create python development environment
-# needs to be called only once
-python -m venv .env
-
-# enter environment
-source .env/bin/activate # or source .env/bin/activate.fish
-
-# install maturin
-pip install maturin
-
-# compile language bindings
-maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml
-```
-
 ### How To Run
 
 ```sh
-python examples/python/service_variants/local_pubsub.py
+cargo run --example service_types_local_pubsub
 ```
 
 All services are strictly confined to the process. Check out the directories
@@ -89,7 +70,7 @@ introductory publish-subscribe example. The one thing you will observe is that,
 even though the publisher publishes on the same service, the `local_pubsub`
 process will not receive any messages since it is confined to the process.
 
-The IPC threadsafe subscriber example uses the service variant
+The IPC threadsafe subscriber example uses the service type
 `ipc_threadsafe::Service`, which makes every port threadsafe and therefore can
 be shared between threads safely. To demonstrate this, we create another thread
 and loop in the main- and the background-thread for messages.
@@ -99,13 +80,13 @@ and loop in the main- and the background-thread for messages.
 #### Terminal 1
 
 ```sh
-python examples/python/service_variants/ipc_publisher.py
+cargo run --example service_types_ipc_publisher
 ```
 
 #### Terminal 2
 
 ```sh
-python examples/python/service_variants/ipc_threadsafe_subscriber.py
+cargo run --example service_types_ipc_threadsafe_subscriber
 ```
 
 If you now check out the directories `/tmp/iceoryx2` or `/dev/shm`, you will
@@ -120,14 +101,17 @@ will discover the running service.
 
 ## Summary
 
-* `iox2.ServiceType.Ipc` - inter-process communication, all ports are
-  thread-safe
-* `iox2.ServiceType.Local` - inter-thread communication, all ports are
-  thread-safe
+* `ipc::Service` - inter-process communication
+* `ipc_threadsafe::Service` - inter-process communication, all ports implement
+  `Send`+`Sync`, all payloads `Send` at the cost of an additional mutex
+* `local::Service` - inter-thread communication, strictly confined to the process
+* `local_threadsafe::Service` - inter-thread communication, all ports implement
+  `Send`+`Sync`, all payloads `Send`at the cost of an additional mutex
 
 Defined when creating a `Node` and all constructed `Service`s created by that
-`Node` will use the specified service variant.
+`Node` will use the specified service type.
 
-```cxx
-node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
+```rust
+let node = NodeBuilder::new()
+    .create::<ipc::Service>()?;
 ```

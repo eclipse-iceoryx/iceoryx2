@@ -15,11 +15,11 @@ project(example_c_service_variants LANGUAGES C)
 
 find_package(iceoryx2-c 0.6.1 REQUIRED)
 
-add_executable(example_c_service_variants_ipc_publisher src/ipc_publisher.c)
-target_link_libraries(example_c_service_variants_ipc_publisher iceoryx2-c::static-lib)
+add_executable(example_c_service_types_ipc_publisher src/ipc_publisher.c)
+target_link_libraries(example_c_service_types_ipc_publisher iceoryx2-c::static-lib)
 
-add_executable(example_c_service_variants_ipc_threadsafe_subscriber src/ipc_threadsafe_subscriber.c)
-target_link_libraries(example_c_service_variants_ipc_threadsafe_subscriber iceoryx2-c::static-lib)
+add_executable(example_c_service_types_ipc_threadsafe_subscriber src/ipc_threadsafe_subscriber.c)
+target_link_libraries(example_c_service_types_ipc_threadsafe_subscriber iceoryx2-c::static-lib)
 
-add_executable(example_c_service_variants_local_pubsub src/local_pubsub.c)
-target_link_libraries(example_c_service_variants_local_pubsub iceoryx2-c::static-lib)
+add_executable(example_c_service_types_local_pubsub src/local_pubsub.c)
+target_link_libraries(example_c_service_types_local_pubsub iceoryx2-c::static-lib)

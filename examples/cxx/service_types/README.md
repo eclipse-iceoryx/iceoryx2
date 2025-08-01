@@ -1,6 +1,6 @@
-# Service-Variants
+# Service-Types
 
-Service variants allow the specialization of the underlying mechanisms of
+Service types allow the specialization of the underlying mechanisms of
 iceoryx2. It is a powerful tool to customize the behavior of all internal
 aspects. Let's assume you use iceoryx2 in a unit test suite which runs
 concurrently on your CI. In those cases, it would be ideal when iceoryx2 would
@@ -14,22 +14,23 @@ between an ARM A-core to an R-core. In all of those situations, you would need
 special mechanisms to use the underlying memory or to send event trigger
 mechanisms.
 
-With service variants, you have the ability to use iceoryx2 in a different
+With service types, you have the ability to use iceoryx2 in a different
 scenario without changing a single line of code, except the one line that
-defines the service variant. The service variant is set when the `Node` is
+defines the service type. The service type is set when the `Node` is
 created with
 
-```c
-iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node);
+```cxx
+auto node = NodeBuilder()
+    .create<ServiceType::Ipc>()
 ```
 
-By default, all examples are setting it to `iox2_service_type_e_IPC`. Let's
-assume you would like to use the intra-process specialization. Then you can use
-`iox2_service_type_e_LOCAL`. In this case, all mechanisms are strictly
-contained in the process itself, and all services cannot be used or discovered
-outside of the process.
+By default, all examples are setting it to `ServiceType::Ipc`. Let's assume you
+would like to use the intra-process specialization. Then you can use
+`ServiceType::Local`. In this case, all mechanisms are strictly contained in
+the process itself, and all services cannot be used or discovered outside of
+the process.
 
-In contrast to Rust, C does not have the concepts of `Send` or `Sync`, and
+In contrast to Rust, C++ does not have the concepts of `Send` or `Sync`, and
 the compiler cannot detect the use of non-thread-safe code in a concurrent
 context. Therefore, we decided to make every port (e.g., `Publisher`,
 `Subscriber`, `Server`, `Client`, etc.) thread-safe by default. This introduces
@@ -48,19 +49,19 @@ share it between threads.
 ### How to Build
 
 Before proceeding, all dependencies need to be installed. You can find
-instructions in the [C Examples Readme](../README.md).
+instructions in the [C++ Examples Readme](../README.md).
 
-First you have to build the C examples:
+First you have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
+cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
 cmake --build target/ffi/build
 ```
 
 ### How To Run
 
 ```sh
-./target/ffi/build/examples/c/service_variants/example_c_service_variants_local_pubsub
+./target/ffi/build/examples/cxx/service_types/example_cxx_service_types_local_pubsub
 ```
 
 All services are strictly confined to the process. Check out the directories
@@ -80,7 +81,7 @@ introductory publish-subscribe example. The one thing you will observe is that,
 even though the publisher publishes on the same service, the `local_pubsub`
 process will not receive any messages since it is confined to the process.
 
-The IPC threadsafe subscriber example uses the service variant
+The IPC threadsafe subscriber example uses the service type
 `ipc_threadsafe::Service`, which makes every port threadsafe and therefore can
 be shared between threads safely. To demonstrate this, we create another thread
 and loop in the main- and the background-thread for messages.
@@ -90,13 +91,13 @@ and loop in the main- and the background-thread for messages.
 #### Terminal 1
 
 ```sh
-./target/ffi/build/examples/c/service_variants/example_c_service_variants_ipc_publisher
+./target/ffi/build/examples/cxx/service_types/example_cxx_service_types_ipc_publisher
 ```
 
 #### Terminal 2
 
 ```sh
-./target/ffi/build/examples/c/service_variants/example_c_service_variants_ipc_threadsafe_subscriber
+./target/ffi/build/examples/cxx/service_types/example_cxx_service_types_ipc_threadsafe_subscriber
 ```
 
 If you now check out the directories `/tmp/iceoryx2` or `/dev/shm`, you will
@@ -111,14 +112,13 @@ will discover the running service.
 
 ## Summary
 
-* `iox2_service_type_e_IPC` - inter-process communication, all ports are
-  thread-safe
-* `iox2_service_type_e_LOCAL` - inter-thread communication, all ports are
-  thread-safe
+* `ipc::Service` - inter-process communication, all ports are thread-safe
+* `local::Service` - inter-thread communication, all ports are thread-safe
 
 Defined when creating a `Node` and all constructed `Service`s created by that
-`Node` will use the specified service variant.
+`Node` will use the specified service type.
 
 ```cxx
-iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &node);
+auto node = NodeBuilder()
+    .create<ServiceType::Ipc>()
 ```

@@ -1,4 +1,4 @@
-# Copyright (c) 2025 Contributors to the Eclipse Foundation
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -13,31 +13,34 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
 cc_binary(
-    name = "example_c_service_variants_ipc_publisher",
+    name = "example_cxx_service_types_ipc_publisher",
     srcs = [
-        "src/ipc_publisher.c",
+        "src/ipc_publisher.cpp",
     ],
     deps = [
-        "//:iceoryx2-c-static",
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
     ],
 )
 
 cc_binary(
-    name = "example_c_service_variants_ipc_threadsafe_subscriber",
+    name = "example_cxx_service_types_ipc_threadsafe_subscriber",
     srcs = [
-        "src/ipc_threadsafe_subscriber.c",
+        "src/ipc_threadsafe_subscriber.cpp",
     ],
     deps = [
-        "//:iceoryx2-c-static",
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
     ],
 )
 
 cc_binary(
-    name = "example_c_service_variants_local_pubsub",
+    name = "example_cxx_service_types_local_pubsub",
     srcs = [
-        "src/local_pubsub.c",
+        "src/local_pubsub.cpp",
     ],
     deps = [
-        "//:iceoryx2-c-static",
+        "@iceoryx//:iceoryx_hoofs",
+        "//:iceoryx2-cxx-static",
     ],
 )

@@ -22,13 +22,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn cargo run --example service_variants_ipc_publisher
+spawn target/ffi/build/examples/cxx/service_types/example_cxx_service_types_ipc_publisher
 set ipc_publisher $spawn_id
 
-spawn cargo run --example service_variants_ipc_threadsafe_subscriber
+spawn target/ffi/build/examples/cxx/service_types/example_cxx_service_types_ipc_threadsafe_subscriber
 set ipc_threadsafe_subscriber $spawn_id
 
-spawn cargo run --example service_variants_local_pubsub
+spawn target/ffi/build/examples/cxx/service_types/example_cxx_service_types_local_pubsub
 set local_pubsub $spawn_id
 
 #### Test Assertion

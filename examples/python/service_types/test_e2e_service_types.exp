@@ -22,13 +22,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/build/examples/cxx/service_variants/example_cxx_service_variants_ipc_publisher
+spawn python examples/python/service_types/ipc_publisher.py
 set ipc_publisher $spawn_id
 
-spawn target/ffi/build/examples/cxx/service_variants/example_cxx_service_variants_ipc_threadsafe_subscriber
+spawn python examples/python/service_types/ipc_threadsafe_subscriber.py
 set ipc_threadsafe_subscriber $spawn_id
 
-spawn target/ffi/build/examples/cxx/service_variants/example_cxx_service_variants_local_pubsub
+spawn python examples/python/service_types/local_pubsub.py
 set local_pubsub $spawn_id
 
 #### Test Assertion
