@@ -10,15 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// BEGIN types definition
+#![allow(non_camel_case_types)]
 
 use super::{iox2_attribute_specifier_h_ref, iox2_attribute_verifier_h_ref, iox2_type_variant_e};
 use crate::api::{
     c_size_t, iox2_port_factory_blackboard_h, iox2_port_factory_blackboard_t,
     iox2_service_builder_blackboard_creator_h, iox2_service_builder_blackboard_creator_h_ref,
     iox2_service_builder_blackboard_opener_h, iox2_service_builder_blackboard_opener_h_ref,
-    iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi, ServiceBuilderUnion,
-    IOX2_OK,
+    iox2_service_type_e, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi,
+    PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
 };
 use crate::create_type_details;
 use core::ffi::{c_char, c_int};
@@ -29,6 +29,8 @@ use iceoryx2::service::builder::blackboard::{
 use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::CStrRepr;
+
+// BEGIN types definition
 
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
@@ -597,7 +599,6 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_create_with_attributes(
     )
 }
 
-// TODO
 unsafe fn iox2_service_builder_blackboard_open_impl<E: IntoCInt>(
     service_builder_handle: iox2_service_builder_blackboard_opener_h,
     port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t,
@@ -609,9 +610,80 @@ unsafe fn iox2_service_builder_blackboard_open_impl<E: IntoCInt>(
         Opener<KeyFfi, crate::LocalService>,
     ) -> Result<PortFactory<crate::LocalService, KeyFfi>, E>,
 ) -> c_int {
+    debug_assert!(!service_builder_handle.is_null());
+    debug_assert!(!port_factory_handle_ptr.is_null());
+
+    let init_port_factory_struct_ptr =
+        |port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t| {
+            let mut port_factory_struct_ptr = port_factory_struct_ptr;
+            fn no_op(_: *mut iox2_port_factory_blackboard_t) {}
+            let mut deleter: fn(*mut iox2_port_factory_blackboard_t) = no_op;
+            if port_factory_struct_ptr.is_null() {
+                port_factory_struct_ptr = iox2_port_factory_blackboard_t::alloc();
+                deleter = iox2_port_factory_blackboard_t::dealloc;
+            }
+            debug_assert!(!port_factory_struct_ptr.is_null());
+
+            (port_factory_struct_ptr, deleter)
+        };
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+    let service_type = service_builder_struct.service_type;
+    let service_builder = service_builder_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| {
+            panic!("Trying to use an invalid 'iox2_service_builder_blackboard_h'!");
+        });
+    (service_builder_struct.deleter)(service_builder_struct);
+
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+
+            match func_ipc(service_builder) {
+                Ok(port_factory) => {
+                    let (port_factory_struct_ptr, deleter) =
+                        init_port_factory_struct_ptr(port_factory_struct_ptr);
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryBlackboardUnion::new_ipc(port_factory),
+                        deleter,
+                    );
+                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder = ManuallyDrop::into_inner(service_builder.local);
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+
+            match func_local(service_builder) {
+                Ok(port_factory) => {
+                    let (port_factory_struct_ptr, deleter) =
+                        init_port_factory_struct_ptr(port_factory_struct_ptr);
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryBlackboardUnion::new_local(port_factory),
+                        deleter,
+                    );
+                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+    }
+
+    IOX2_OK
 }
 
-// TODO
 unsafe fn iox2_service_builder_blackboard_create_impl<E: IntoCInt>(
     service_builder_handle: iox2_service_builder_blackboard_creator_h,
     port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t,
@@ -623,6 +695,78 @@ unsafe fn iox2_service_builder_blackboard_create_impl<E: IntoCInt>(
         Creator<KeyFfi, crate::LocalService>,
     ) -> Result<PortFactory<crate::LocalService, KeyFfi>, E>,
 ) -> c_int {
+    debug_assert!(!service_builder_handle.is_null());
+    debug_assert!(!port_factory_handle_ptr.is_null());
+
+    let init_port_factory_struct_ptr =
+        |port_factory_struct_ptr: *mut iox2_port_factory_blackboard_t| {
+            let mut port_factory_struct_ptr = port_factory_struct_ptr;
+            fn no_op(_: *mut iox2_port_factory_blackboard_t) {}
+            let mut deleter: fn(*mut iox2_port_factory_blackboard_t) = no_op;
+            if port_factory_struct_ptr.is_null() {
+                port_factory_struct_ptr = iox2_port_factory_blackboard_t::alloc();
+                deleter = iox2_port_factory_blackboard_t::dealloc;
+            }
+            debug_assert!(!port_factory_struct_ptr.is_null());
+
+            (port_factory_struct_ptr, deleter)
+        };
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+    let service_type = service_builder_struct.service_type;
+    let service_builder = service_builder_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| {
+            panic!("Trying to use an invalid 'iox2_service_builder_blackboard_h'!");
+        });
+    (service_builder_struct.deleter)(service_builder_struct);
+
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder = ManuallyDrop::into_inner(service_builder.ipc);
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+
+            match func_ipc(service_builder) {
+                Ok(port_factory) => {
+                    let (port_factory_struct_ptr, deleter) =
+                        init_port_factory_struct_ptr(port_factory_struct_ptr);
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryBlackboardUnion::new_ipc(port_factory),
+                        deleter,
+                    );
+                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder = ManuallyDrop::into_inner(service_builder.local);
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
+
+            match func_local(service_builder) {
+                Ok(port_factory) => {
+                    let (port_factory_struct_ptr, deleter) =
+                        init_port_factory_struct_ptr(port_factory_struct_ptr);
+                    (*port_factory_struct_ptr).init(
+                        service_type,
+                        PortFactoryBlackboardUnion::new_local(port_factory),
+                        deleter,
+                    );
+                    *port_factory_handle_ptr = (*port_factory_struct_ptr).as_handle();
+                }
+                Err(error) => {
+                    return error.into_c_int();
+                }
+            }
+        }
+    }
+
+    IOX2_OK
 }
 
 // TODO: check handles in documentation

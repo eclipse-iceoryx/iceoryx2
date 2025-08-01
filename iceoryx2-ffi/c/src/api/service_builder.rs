@@ -38,7 +38,7 @@ use core::mem::MaybeUninit;
 pub(super) type UserHeaderFfi = CustomHeaderMarker;
 pub(super) type PayloadFfi = [CustomPayloadMarker];
 pub(super) type UninitPayloadFfi = [MaybeUninit<CustomPayloadMarker>];
-pub(super) type KeyFfi = CustumKeyMarker;
+pub(super) type KeyFfi = CustomKeyMarker;
 
 pub(super) union ServiceBuilderUnionNested<S: Service> {
     pub(super) base: ManuallyDrop<ServiceBuilderBase<S>>,
