@@ -36,6 +36,11 @@ enum class MessagingPattern : uint8_t {
     /// [`Client`](crate::port::client::Client) sends arbitrary data in form of requests to the
     /// [`Server`](crate::port::server::Server) and receives a stream of responses.
     RequestResponse,
+
+    /// Unidirectional communication pattern where the [`Writer`]
+    /// writes arbitrary data to a key-value store which can be read by many
+    /// [`Reader`]s.
+    Blackboard,
 };
 } // namespace iox2
 

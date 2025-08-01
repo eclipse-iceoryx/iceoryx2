@@ -340,7 +340,8 @@ mod service {
                 any_of([
                     BlackboardCreateError::AlreadyExists,
                     BlackboardCreateError::HangsInCreation,
-                    BlackboardCreateError::IsBeingCreatedByAnotherInstance
+                    BlackboardCreateError::IsBeingCreatedByAnotherInstance,
+                    BlackboardCreateError::ServiceInCorruptedState
                 ])
             );
         }

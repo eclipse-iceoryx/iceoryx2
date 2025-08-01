@@ -14,6 +14,7 @@
 #define IOX2_ENUM_TRANSLATION_HPP
 
 #include "iox/assertions.hpp"
+#include "iox/assertions_addendum.hpp"
 #include "iox/into.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/callback_progression.hpp"
@@ -29,8 +30,11 @@
 #include "iox2/notifier_error.hpp"
 #include "iox2/port_error.hpp"
 #include "iox2/publisher_error.hpp"
+#include "iox2/reader_error.hpp"
+#include "iox2/reader_handle_error.hpp"
 #include "iox2/semantic_string.hpp"
 #include "iox2/server_error.hpp"
+#include "iox2/service_builder_blackboard_error.hpp"
 #include "iox2/service_builder_event_error.hpp"
 #include "iox2/service_builder_publish_subscribe_error.hpp"
 #include "iox2/service_builder_request_response_error.hpp"
@@ -41,6 +45,8 @@
 #include "iox2/type_variant.hpp"
 #include "iox2/unable_to_deliver_strategy.hpp"
 #include "iox2/waitset_enums.hpp"
+#include "iox2/writer_error.hpp"
+#include "iox2/writer_handle_error.hpp"
 
 namespace iox {
 template <>
@@ -238,6 +244,8 @@ constexpr auto from<iox2::MessagingPattern, iox2_messaging_pattern_e>(const iox2
         return iox2_messaging_pattern_e_EVENT;
     case iox2::MessagingPattern::RequestResponse:
         return iox2_messaging_pattern_e_REQUEST_RESPONSE;
+    case iox2::MessagingPattern::Blackboard:
+        IOX_TODO();
     }
 
     IOX_UNREACHABLE();
