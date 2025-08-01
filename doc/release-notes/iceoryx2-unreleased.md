@@ -33,6 +33,8 @@
   [#838](https://github.com/eclipse-iceoryx/iceoryx2/issues/838)
 * C example for service attributes
   [#909](https://github.com/eclipse-iceoryx/iceoryx2/issues/909)
+* Recreate the cmake patch, used in the yocto layer
+  [#663](https://github.com/eclipse-iceoryx/iceoryx2/issues/663)
 
 ### Bugfixes
 

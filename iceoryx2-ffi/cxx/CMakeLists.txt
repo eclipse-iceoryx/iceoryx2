@@ -113,6 +113,7 @@ target_link_libraries(static-lib-cxx
 
 # shared lib
 
+if(BUILD_SHARED_LIBS)
 add_library(shared-lib-cxx SHARED $<TARGET_OBJECTS:iceoryx2-cxx-object-lib>)
 add_library(iceoryx2-cxx::shared-lib-cxx ALIAS shared-lib-cxx)
 
@@ -130,6 +131,7 @@ target_link_libraries(shared-lib-cxx
     iceoryx2-c::shared-lib
     iceoryx2-cxx::includes-only-cxx
 )
+endif()
 
 # include install setup
 
