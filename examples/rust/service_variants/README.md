@@ -30,7 +30,7 @@ would like to use the intra-process specialization. Then you can use
 process itself, and all services cannot be used or discovered outside of the
 process.
 
-Thanks to Rust's Send and Sync traits, we can ensure via the compiler that
+Thanks to Rust's `Send` and `Sync` traits, we can ensure via the compiler that
 non-threadsafe constructs are not used by accident in a concurrent setup.
 By default, all ports (e.g., `Publisher`, `Subscriber`, `Server`, `Client`,
 ...) are not threadsafe and do not even implement `Send`, the same goes for
