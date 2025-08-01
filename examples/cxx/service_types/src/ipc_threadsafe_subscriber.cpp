@@ -49,7 +49,7 @@ auto main() -> int {
             std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.toMilliseconds()));
             auto sample = subscriber.receive().expect("sample received");
             if (sample.has_value()) {
-                std::lock_guard<std::mutex> cout_guard(cout_mtx);
+                const std::lock_guard<std::mutex> cout_guard(cout_mtx);
                 std::cout << "[thread] received: " << sample->payload() << std::endl;
             }
         }
@@ -58,7 +58,7 @@ auto main() -> int {
     while (node.wait(CYCLE_TIME).has_value()) {
         auto sample = subscriber.receive().expect("sample received");
         if (sample.has_value()) {
-            std::lock_guard<std::mutex> cout_guard(cout_mtx);
+            const std::lock_guard<std::mutex> cout_guard(cout_mtx);
             std::cout << "[main] received: " << sample->payload() << std::endl;
         }
     }

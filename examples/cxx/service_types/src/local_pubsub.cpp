@@ -48,7 +48,7 @@ void background_thread_fn() {
         auto sample = subscriber.receive().expect("sample received");
         while (sample.has_value()) {
             {
-                std::lock_guard<std::mutex> cout_guard(cout_mtx);
+                const std::lock_guard<std::mutex> cout_guard(cout_mtx);
                 std::cout << "[thread] received: " << sample->payload() << std::endl;
             }
             sample = subscriber.receive().expect("sample received");
@@ -82,7 +82,7 @@ auto main() -> int {
     uint64_t counter = 0;
     while (node.wait(CYCLE_TIME).has_value()) {
         {
-            std::lock_guard<std::mutex> lock(cout_mtx);
+            const std::lock_guard<std::mutex> lock(cout_mtx);
             std::cout << "send: " << counter << std::endl;
         }
         publisher.send_copy(counter).expect("send data");
