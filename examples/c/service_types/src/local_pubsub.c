@@ -49,6 +49,7 @@ void init_res(struct res* const value) { // NOLINT
 }
 
 void drop_res(struct res* const value) { // NOLINT
+    (void) value;
     // thread cleanup
     if (value->background_thread_started) {
         pthread_join(value->background_thread, NULL);
@@ -93,6 +94,8 @@ void drop_res(struct res* const value) { // NOLINT
 }
 
 void* background_thread(void* unused) {
+    (void) unused;
+
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     // optionally, provide a name to the node which helps identifying them later during

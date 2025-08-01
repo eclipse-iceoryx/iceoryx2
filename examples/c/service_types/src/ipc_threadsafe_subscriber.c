@@ -39,6 +39,7 @@ void init_res(struct res* const value) { // NOLINT
 }
 
 void drop_res(struct res* const value) { // NOLINT
+    (void) value;
     if (value->background_thread_started) {
         pthread_join(value->background_thread, NULL);
     }
@@ -61,6 +62,8 @@ void drop_res(struct res* const value) { // NOLINT
 }
 
 void* background_thread(void* unused) {
+    (void) unused;
+
     while (iox2_node_wait(&example.node, 1, 0) == IOX2_OK) {
         // receive sample
         iox2_sample_h sample = NULL;
