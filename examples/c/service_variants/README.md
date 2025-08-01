@@ -29,7 +29,7 @@ assume you would like to use the intra-process specialization. Then you can use
 contained in the process itself, and all services cannot be used or discovered
 outside of the process.
 
-In contrast to Rust, C++ does not have the concepts of `Send` or `Sync`, and
+In contrast to Rust, C does not have the concepts of `Send` or `Sync`, and
 the compiler cannot detect the use of non-thread-safe code in a concurrent
 context. Therefore, we decided to make every port (e.g., `Publisher`,
 `Subscriber`, `Server`, `Client`, etc.) thread-safe by default. This introduces
