@@ -1,0 +1,102 @@
+# Include the generated global configuration (this will be created by 'doxygen -g')
+@INCLUDE = "./Doxyfile.global"
+
+# ====================================================
+
+# Project Configuration
+PROJECT_NAME                    = "iceoryx2"
+PROJECT_BRIEF                   = "Zero-copy inter-process communication library"
+OUTPUT_DIRECTORY                = "./target"
+
+# HTML Generation
+GENERATE_HTML                   = YES
+HTML_OUTPUT                     = html
+
+# Doxygen Awesome CSS Theme
+HTML_EXTRA_STYLESHEET           = target/deps/doxygen-awesome/doxygen-awesome.css \
+                                  target/deps/doxygen-awesome/doxygen-awesome-sidebar-only.css \
+                                  target/deps/doxygen-awesome/doxygen-awesome-sidebar-only-darkmode-toggle.css
+
+HTML_EXTRA_FILES                = target/deps/doxygen-awesome/doxygen-awesome-darkmode-toggle.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-fragment-copy-button.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-paragraph-link.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-interactive-toc.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-tabs.js
+
+HTML_HEADER                     = header.html
+HTML_COLORSTYLE                 = LIGHT
+HTML_DYNAMIC_MENUS              = YES
+GENERATE_TREEVIEW               = YES
+SEARCHENGINE                    = YES
+TREEVIEW_WIDTH                  = 270
+
+# XML Generation
+GENERATE_XML                    = NO
+XML_PROGRAMLISTING              = NO
+
+# Extraction Settings
+EXTRACT_ALL                     = YES
+EXTRACT_STATIC                  = YES
+
+# Preprocessing
+MACRO_EXPANSION                 = YES
+EXPAND_ONLY_PREDEF              = NO
+ENABLE_PREPROCESSING            = YES
+PREDEFINED                     += DOXYGEN_MACRO_FIX
+
+# Input Configuration
+INPUT                           = "../../../target/debug/iceoryx2-ffi-cbindgen/include/iox2/iceoryx2.h"
+
+RECURSIVE                       = YES
+
+# File patterns for C
+FILE_PATTERNS                   = *.h \
+                                  *.c \
+                                  *.md \
+                                  *.dox
+
+# C API specific settings
+SHOW_INCLUDE_FILES              = YES
+SHOW_USED_FILES                 = YES
+SHOW_FILES                      = YES
+HIDE_UNDOC_MEMBERS              = NO
+HIDE_UNDOC_CLASSES              = NO
+
+# C-specific Optimizations
+OPTIMIZE_OUTPUT_FOR_C           = YES
+TYPEDEF_HIDES_STRUCT            = NO
+EXTRACT_STATIC                  = YES
+EXTRACT_LOCAL_METHODS           = YES
+
+# Enhanced C API Documentation Features
+MARKDOWN_SUPPORT                = YES
+AUTOLINK_SUPPORT                = YES
+SOURCE_BROWSER                  = YES
+INLINE_SOURCES                  = NO
+REFERENCED_BY_RELATION          = YES
+REFERENCES_RELATION             = YES
+ALPHABETICAL_INDEX              = YES
+
+# Macro handling for C APIs
+ENABLE_PREPROCESSING            = YES
+MACRO_EXPANSION                 = YES
+EXPAND_ONLY_PREDEF              = NO
+SEARCH_INCLUDES                 = YES
+SKIP_FUNCTION_MACROS            = YES
+
+# Diagrams
+HAVE_DOT                        = YES
+CALL_GRAPH                      = YES
+CALLER_GRAPH                    = YES
+INCLUDE_GRAPH                   = YES
+INCLUDED_BY_GRAPH               = YES
+DOT_IMAGE_FORMAT                = svg
+INTERACTIVE_SVG                 = YES
+GRAPHICAL_HIERARCHY             = YES
+
+# Function Documentation
+EXTRACT_ALL                     = YES
+EXTRACT_PRIVATE                 = NO
+EXTRACT_STATIC                  = YES
+EXTRACT_LOCAL_CLASSES           = YES
+EXTRACT_LOCAL_METHODS           = YES
