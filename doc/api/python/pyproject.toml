@@ -1,0 +1,20 @@
+[project]
+name = "iceoryx2-api-python"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "ekxide developers",email = "info@ekxide.io"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "sphinx (>=8.2.3,<9.0.0)",
+    "furo (>=2025.7.19,<2026.0.0)"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
