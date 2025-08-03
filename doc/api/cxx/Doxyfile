@@ -1,0 +1,76 @@
+# Include the generated global configuration (this will be created by 'doxygen -g')
+@INCLUDE = "./Doxyfile.global"
+
+# ==============================================
+
+# Project Configuration
+PROJECT_NAME                    = "iceoryx2"
+PROJECT_BRIEF                   = "true zero-copy inter-process communication"
+OUTPUT_DIRECTORY                = "./target"
+
+# HTML Generation
+GENERATE_HTML                   = YES
+HTML_OUTPUT                     = html
+
+# Doxygen Awesome CSS Theme
+HTML_EXTRA_STYLESHEET           = target/deps/doxygen-awesome/doxygen-awesome.css \
+                                  target/deps/doxygen-awesome/doxygen-awesome-sidebar-only.css \
+                                  target/deps/doxygen-awesome/doxygen-awesome-sidebar-only-darkmode-toggle.css
+
+HTML_EXTRA_FILES                = target/deps/doxygen-awesome/doxygen-awesome-darkmode-toggle.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-fragment-copy-button.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-paragraph-link.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-interactive-toc.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-tabs.js
+
+HTML_HEADER                     = header.html
+HTML_COLORSTYLE                 = LIGHT
+HTML_DYNAMIC_MENUS              = YES
+GENERATE_TREEVIEW               = YES
+SEARCHENGINE                    = YES
+TREEVIEW_WIDTH                  = 270
+
+# XML Generation
+GENERATE_XML                    = NO
+XML_PROGRAMLISTING              = NO
+
+# Extraction Settings
+EXTRACT_ALL                     = YES
+EXTRACT_STATIC                  = YES
+
+# Preprocessing
+MACRO_EXPANSION                 = YES
+EXPAND_ONLY_PREDEF              = NO
+ENABLE_PREPROCESSING            = YES
+PREDEFINED                     += DOXYGEN_MACRO_FIX
+
+# Input Configuration
+INPUT                           = mainpage.md \
+                                  "../../../iceoryx2-ffi/cxx/include" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/buffer" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/cli" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/concurrent/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/container/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/design/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/filesystem/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/functional/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/legacy/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/memory/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/posix/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/primitives/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/time/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/utility/" \
+                                  "../../../build/_deps/iceoryx-src/iceoryx_hoofs/vocabulary/"
+
+RECURSIVE                       = YES
+USE_MDFILE_AS_MAINPAGE          = mainpage.md
+
+# Additional Enhancement
+OPTIMIZE_OUTPUT_FOR_C           = NO
+MARKDOWN_SUPPORT                = YES
+AUTOLINK_SUPPORT                = YES
+SOURCE_BROWSER                  = YES
+INLINE_SOURCES                  = NO
+REFERENCED_BY_RELATION          = YES
+REFERENCES_RELATION             = YES
+ALPHABETICAL_INDEX              = YES
