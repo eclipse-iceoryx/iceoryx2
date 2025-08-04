@@ -354,6 +354,16 @@ impl<
         self
     }
 
+    #[doc(hidden)]
+    pub fn __internal_add(
+        mut self,
+        key: KeyType,
+        builder_internals: BuilderInternals<KeyType>,
+    ) -> Self {
+        self.builder.internals.push(builder_internals);
+        self
+    }
+
     /// Adds key-value pairs to the blackboard where value is a default value.
     pub fn add_with_default<ValueType: ZeroCopySend + Copy + 'static + Default>(
         mut self,

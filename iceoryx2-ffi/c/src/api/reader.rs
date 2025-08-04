@@ -153,4 +153,8 @@ pub unsafe extern "C" fn iox2_reader_id(
 }
 
 // TODO: entry method + ReaderHandle
+#[no_mangle]
+pub unsafe extern "C" fn iox2_reader_entry(reader_handle: iox2_reader_h_ref) {
+    reader_handle.assert_non_null();
+}
 // END C API

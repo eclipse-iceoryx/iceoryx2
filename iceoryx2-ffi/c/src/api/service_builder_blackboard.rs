@@ -21,7 +21,7 @@ use crate::api::{
     PortFactoryBlackboardUnion, ServiceBuilderUnion, IOX2_OK,
 };
 use crate::create_type_details;
-use core::ffi::{c_char, c_int};
+use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 use iceoryx2::service::builder::blackboard::{
     BlackboardCreateError, BlackboardOpenError, Creator, Opener,
@@ -171,7 +171,7 @@ pub unsafe extern "C" fn iox2_blackboard_open_or_create_error_string(
     error.as_const_cstr().as_ptr() as *const c_char
 }
 
-/// Sets the key type details for the creator
+/// Sets the key type details for the creator. The key type must be fxied size.
 ///
 /// # Arguments
 ///
@@ -425,10 +425,12 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
 /// # Safety
 ///
 /// * `service_builder_handle` must be valid handles
+/// TODO: describe additional parameters
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
-    key: c_size_t,   // TODO: KeyType
+    key_ptr: *const c_void,
+    key_size: usize,
     value: c_size_t, // TODO: ValueType
 ) {
     service_builder_handle.assert_non_null();
@@ -441,23 +443,25 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.add(key, value),
-            ));
+            //service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+            // TODO: internal method that implements C-style add
+            // Store BuilderInternals equivalent?
+            //service_builder.add(key, value),
+            //));
         }
         iox2_service_type_e::LOCAL => {
             let service_builder =
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.add(key, value),
-            ));
+            //service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+            //service_builder.add(key, value),
+            //));
         }
     }
 }
 
-/// Opens an blackboard service and returns a port factory to create writers and readers.
+/// Opens a blackboard service and returns a port factory to create writers and readers.
 ///
 /// # Arguments
 ///

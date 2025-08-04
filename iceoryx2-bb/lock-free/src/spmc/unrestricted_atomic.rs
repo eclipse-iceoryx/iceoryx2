@@ -58,7 +58,7 @@ impl<T: Copy> Producer<'_, T> {
     //   * the memory position must not be modified after __internal_update_write_cell has been
     //     called
     pub unsafe fn __internal_get_ptr_to_write_cell(&self) -> *mut T {
-        let write_cell = self.atomic.write_cell.load(Ordering::Relaxed);
+        let write_cell = self.atomic.mgmt.write_cell.load(Ordering::Relaxed);
         unsafe { (*self.atomic.data[write_cell as usize % NUMBER_OF_CELLS].get()).as_mut_ptr() }
     }
 
@@ -73,26 +73,31 @@ impl<T: Copy> Producer<'_, T> {
         // After writing the content of the write_cell, the content needs to be synced with the
         // reader.
         /////////////////////////
-        self.atomic.write_cell.fetch_add(1, Ordering::Release);
+        self.atomic.mgmt.write_cell.fetch_add(1, Ordering::Release);
     }
 }
 
 impl<T: Copy> Drop for Producer<'_, T> {
     fn drop(&mut self) {
-        self.atomic.has_producer.store(true, Ordering::Relaxed);
+        self.atomic.mgmt.has_producer.store(true, Ordering::Relaxed);
     }
 }
 
 unsafe impl<T: Copy> Send for Producer<'_, T> {}
 unsafe impl<T: Copy> Sync for Producer<'_, T> {}
 
+#[repr(C)]
+struct UnrestrictedAtomicMgmt {
+    write_cell: IoxAtomicU32,
+    has_producer: IoxAtomicBool,
+}
+
 /// An atomic implementation where the underlying type has to be copyable but is otherwise
 /// unrestricted.
 #[repr(C)]
 pub struct UnrestrictedAtomic<T: Copy> {
-    write_cell: IoxAtomicU32,
+    mgmt: UnrestrictedAtomicMgmt,
     data: [UnsafeCell<MaybeUninit<T>>; NUMBER_OF_CELLS],
-    has_producer: IoxAtomicBool,
 }
 
 impl<T: Copy + Debug> Debug for UnrestrictedAtomic<T> {
@@ -101,9 +106,9 @@ impl<T: Copy + Debug> Debug for UnrestrictedAtomic<T> {
             f,
             "UnrestrictedAtomic<{}> {{ write_cell: {}, data: {:?}, has_producer: {} }}",
             core::any::type_name::<T>(),
-            self.write_cell.load(Ordering::Relaxed),
+            self.mgmt.write_cell.load(Ordering::Relaxed),
             self.load(),
-            self.has_producer.load(Ordering::Relaxed)
+            self.mgmt.has_producer.load(Ordering::Relaxed)
         )
     }
 }
@@ -115,8 +120,10 @@ impl<T: Copy> UnrestrictedAtomic<T> {
     /// Creates a new atomic containing the provided value.
     pub fn new(value: T) -> Self {
         Self {
-            has_producer: IoxAtomicBool::new(true),
-            write_cell: IoxAtomicU32::new(1),
+            mgmt: UnrestrictedAtomicMgmt {
+                has_producer: IoxAtomicBool::new(true),
+                write_cell: IoxAtomicU32::new(1),
+            },
             data: [
                 UnsafeCell::new(MaybeUninit::new(value)),
                 UnsafeCell::new(MaybeUninit::uninit()),
@@ -126,17 +133,19 @@ impl<T: Copy> UnrestrictedAtomic<T> {
 
     /// Returns a producer if one is available otherwise [`None`].
     pub fn acquire_producer(&self) -> Option<Producer<'_, T>> {
-        match self
-            .has_producer
-            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
-        {
+        match self.mgmt.has_producer.compare_exchange(
+            true,
+            false,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        ) {
             Ok(_) => Some(Producer { atomic: self }),
             Err(_) => None,
         }
     }
 
     fn store(&self, new_value: T) {
-        let write_cell = self.write_cell.load(Ordering::Relaxed);
+        let write_cell = self.mgmt.write_cell.load(Ordering::Relaxed);
         unsafe {
             (*self.data[write_cell as usize % NUMBER_OF_CELLS].get())
                 .as_mut_ptr()
@@ -149,7 +158,7 @@ impl<T: Copy> UnrestrictedAtomic<T> {
         // the completion of the store operation and would result in a data race when
         // `data` would be written after the `write_cell` operation
         /////////////////////////
-        self.write_cell.fetch_add(1, Ordering::Release);
+        self.mgmt.write_cell.fetch_add(1, Ordering::Release);
     }
 
     /// Loads the underlying value and returns a copy of it.
@@ -157,7 +166,7 @@ impl<T: Copy> UnrestrictedAtomic<T> {
         /////////////////////////
         // SYNC POINT - read
         /////////////////////////
-        let mut read_cell = self.write_cell.load(Ordering::Acquire) - 1;
+        let mut read_cell = self.mgmt.write_cell.load(Ordering::Acquire) - 1;
 
         let mut return_value;
 
@@ -173,7 +182,7 @@ impl<T: Copy> UnrestrictedAtomic<T> {
             // of the `write_cell` position which would result in a data race
             /////////////////////////
             let expected_write_cell = read_cell + 1;
-            let write_cell_result = self.write_cell.compare_exchange(
+            let write_cell_result = self.mgmt.write_cell.compare_exchange(
                 expected_write_cell,
                 expected_write_cell,
                 Ordering::Release,

@@ -18,7 +18,7 @@ use super::{
 use crate::api::{
     iox2_port_factory_reader_builder_h, iox2_port_factory_reader_builder_t,
     iox2_port_factory_writer_builder_h, iox2_port_factory_writer_builder_t, iox2_service_type_e,
-    iox2_static_config_blackboard_t, AssertNonNullHandle, HandleToType, KeyFfi,
+    iox2_static_config_blackboard_t, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi,
     PortFactoryReaderBuilderUnion, PortFactoryWriterBuilderUnion,
 };
 use crate::{iox2_node_list_impl, IOX2_OK};
