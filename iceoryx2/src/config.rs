@@ -127,6 +127,7 @@ impl core::error::Error for ConfigCreationError {}
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct Service {
     /// The directory in which all service files are stored
     pub directory: Path,
@@ -149,10 +150,27 @@ pub struct Service {
     pub blackboard_data_suffix: FileName,
 }
 
+impl Default for Service {
+    fn default() -> Self {
+        Self {
+            directory: Path::new(b"services").unwrap(),
+            data_segment_suffix: FileName::new(b".data").unwrap(),
+            static_config_storage_suffix: FileName::new(b".service").unwrap(),
+            dynamic_config_storage_suffix: FileName::new(b".dynamic").unwrap(),
+            creation_timeout: Duration::from_millis(500),
+            connection_suffix: FileName::new(b".connection").unwrap(),
+            event_connection_suffix: FileName::new(b".event").unwrap(),
+            blackboard_mgmt_suffix: FileName::new(b".blackboard_mgmt").unwrap(),
+            blackboard_data_suffix: FileName::new(b".blackboard_data").unwrap(),
+        }
+    }
+}
+
 /// All configurable settings of a [`Node`](crate::node::Node).
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct Node {
     /// The directory in which all node files are stored
     pub directory: Path,
@@ -172,10 +190,24 @@ pub struct Node {
     pub cleanup_dead_nodes_on_destruction: bool,
 }
 
+impl Default for Node {
+    fn default() -> Self {
+        Self {
+            directory: Path::new(b"nodes").unwrap(),
+            monitor_suffix: FileName::new(b".node_monitor").unwrap(),
+            static_config_suffix: FileName::new(b".details").unwrap(),
+            service_tag_suffix: FileName::new(b".service_tag").unwrap(),
+            cleanup_dead_nodes_on_creation: true,
+            cleanup_dead_nodes_on_destruction: true,
+        }
+    }
+}
+
 /// The global settings
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct Global {
     root_path: Path,
     /// Prefix used for all files created during runtime
@@ -186,6 +218,16 @@ pub struct Global {
     pub node: Node,
 }
 
+impl Default for Global {
+    fn default() -> Self {
+        Self {
+            root_path: Path::new(ICEORYX2_ROOT_PATH).unwrap(),
+            prefix: FileName::new(b"iox2_").unwrap(),
+            service: Service::default(),
+            node: Node::default(),
+        }
+    }
+}
 impl Global {
     /// The absolute path to the service directory where all static service infos are stored
     pub fn service_dir(&self) -> Path {
@@ -215,8 +257,9 @@ impl Global {
 /// Default settings. These values are used when the user in the code does not specify anything
 /// else.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct Defaults {
     /// Default settings for the messaging pattern publish-subscribe
     pub publish_subscribe: PublishSubscribe,
@@ -233,6 +276,7 @@ pub struct Defaults {
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct PublishSubscribe {
     /// The maximum amount of supported [`Subscriber`](crate::port::subscriber::Subscriber)
     pub max_subscribers: usize,
@@ -268,11 +312,29 @@ pub struct PublishSubscribe {
     pub subscriber_expired_connection_buffer: usize,
 }
 
+impl Default for PublishSubscribe {
+    fn default() -> Self {
+        Self {
+            max_subscribers: 8,
+            max_publishers: 2,
+            max_nodes: 20,
+            publisher_history_size: 0,
+            subscriber_max_buffer_size: 2,
+            subscriber_max_borrowed_samples: 2,
+            publisher_max_loaned_samples: 2,
+            enable_safe_overflow: true,
+            unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+            subscriber_expired_connection_buffer: 128,
+        }
+    }
+}
+
 /// Default settings for the event messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct Event {
     /// The maximum amount of supported [`Listener`](crate::port::listener::Listener)
     pub max_listeners: usize,
@@ -295,11 +357,27 @@ pub struct Event {
     pub notifier_dead_event: Option<usize>,
 }
 
+impl Default for Event {
+    fn default() -> Self {
+        Self {
+            max_listeners: 16,
+            max_notifiers: 16,
+            max_nodes: 36,
+            event_id_max_value: 255,
+            deadline: None,
+            notifier_created_event: None,
+            notifier_dropped_event: None,
+            notifier_dead_event: None,
+        }
+    }
+}
+
 /// Default settings for the request response messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct RequestResonse {
     /// Defines if the request buffer of the [`Service`](crate::service::Service) safely overflows.
     pub enable_safe_overflow_for_requests: bool,
@@ -365,11 +443,34 @@ pub struct RequestResonse {
     pub server_expired_connection_buffer: usize,
 }
 
+impl Default for RequestResonse {
+    fn default() -> Self {
+        Self {
+            enable_safe_overflow_for_requests: true,
+            enable_safe_overflow_for_responses: true,
+            max_active_requests_per_client: 4,
+            max_response_buffer_size: 2,
+            max_servers: 2,
+            max_clients: 8,
+            max_nodes: 20,
+            max_borrowed_responses_per_pending_response: 2,
+            max_loaned_requests: 2,
+            server_max_loaned_responses_per_request: 2,
+            client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+            server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
+            client_expired_connection_buffer: 128,
+            server_expired_connection_buffer: 128,
+            enable_fire_and_forget_requests: true,
+        }
+    }
+}
+
 /// Default settings for the blackboard messaging pattern. These settings are used unless
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct Blackboard {
     /// The maximum amount of supported [`Reader`](crate::port::reader::Reader)s.
     pub max_readers: usize,
@@ -378,13 +479,23 @@ pub struct Blackboard {
     pub max_nodes: usize,
 }
 
+impl Default for Blackboard {
+    fn default() -> Self {
+        Self {
+            max_readers: 8,
+            max_nodes: 20,
+        }
+    }
+}
+
 /// Represents the configuration that iceoryx2 will utilize. It is divided into two sections:
 /// the [`Global`] settings, which must align with the iceoryx2 instance the application intends to
 /// join, and the [`Defaults`] for communication within that iceoryx2 instance. The user has the
 /// flexibility to override both sections.
 #[non_exhaustive]
-#[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, Eq, PartialEq)]
 #[serde(rename_all = "kebab-case")]
+#[serde(default)]
 pub struct Config {
     /// Global settings for the iceoryx2 instance
     pub global: Global,
@@ -393,81 +504,6 @@ pub struct Config {
 }
 
 static ICEORYX2_CONFIG: LazySingleton<Config> = LazySingleton::<Config>::new();
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            global: Global {
-                root_path: Path::new(ICEORYX2_ROOT_PATH).unwrap(),
-                prefix: FileName::new(b"iox2_").unwrap(),
-                service: Service {
-                    directory: Path::new(b"services").unwrap(),
-                    data_segment_suffix: FileName::new(b".data").unwrap(),
-                    static_config_storage_suffix: FileName::new(b".service").unwrap(),
-                    dynamic_config_storage_suffix: FileName::new(b".dynamic").unwrap(),
-                    creation_timeout: Duration::from_millis(500),
-                    connection_suffix: FileName::new(b".connection").unwrap(),
-                    event_connection_suffix: FileName::new(b".event").unwrap(),
-                    blackboard_mgmt_suffix: FileName::new(b".blackboard_mgmt").unwrap(),
-                    blackboard_data_suffix: FileName::new(b".blackboard_data").unwrap(),
-                },
-                node: Node {
-                    directory: Path::new(b"nodes").unwrap(),
-                    monitor_suffix: FileName::new(b".node_monitor").unwrap(),
-                    static_config_suffix: FileName::new(b".details").unwrap(),
-                    service_tag_suffix: FileName::new(b".service_tag").unwrap(),
-                    cleanup_dead_nodes_on_creation: true,
-                    cleanup_dead_nodes_on_destruction: true,
-                },
-            },
-            defaults: Defaults {
-                request_response: RequestResonse {
-                    enable_safe_overflow_for_requests: true,
-                    enable_safe_overflow_for_responses: true,
-                    max_active_requests_per_client: 4,
-                    max_response_buffer_size: 2,
-                    max_servers: 2,
-                    max_clients: 8,
-                    max_nodes: 20,
-                    max_borrowed_responses_per_pending_response: 2,
-                    max_loaned_requests: 2,
-                    server_max_loaned_responses_per_request: 2,
-                    client_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
-                    server_unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
-                    client_expired_connection_buffer: 128,
-                    server_expired_connection_buffer: 128,
-                    enable_fire_and_forget_requests: true,
-                },
-                publish_subscribe: PublishSubscribe {
-                    max_subscribers: 8,
-                    max_publishers: 2,
-                    max_nodes: 20,
-                    publisher_history_size: 0,
-                    subscriber_max_buffer_size: 2,
-                    subscriber_max_borrowed_samples: 2,
-                    publisher_max_loaned_samples: 2,
-                    enable_safe_overflow: true,
-                    unable_to_deliver_strategy: UnableToDeliverStrategy::Block,
-                    subscriber_expired_connection_buffer: 128,
-                },
-                event: Event {
-                    max_listeners: 16,
-                    max_notifiers: 16,
-                    max_nodes: 36,
-                    event_id_max_value: 255,
-                    deadline: None,
-                    notifier_created_event: None,
-                    notifier_dropped_event: None,
-                    notifier_dead_event: None,
-                },
-                blackboard: Blackboard {
-                    max_readers: 8,
-                    max_nodes: 20,
-                },
-            },
-        }
-    }
-}
 
 impl Config {
     fn relative_local_config_path() -> Path {
