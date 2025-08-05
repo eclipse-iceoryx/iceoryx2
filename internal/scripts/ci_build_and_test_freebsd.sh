@@ -106,26 +106,26 @@ echo "###########################"
 rm -rf target/iceoryx/build
 
 # Build examples only in out-of-tree, else we are running out of disk space on the VM
-cmake -S . -B target/ffi/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install"
-cmake --build target/ffi/build
-cmake --install target/ffi/build
+cmake -S . -B target/ffi/c-cxx/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/c-cxx/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install"
+cmake --build target/ffi/c-cxx/build
+cmake --install target/ffi/c-cxx/build
 
 echo "##############################"
 echo "# Run language binding tests #"
 echo "##############################"
 
-target/ffi/build/tests/iceoryx2-c-tests
-target/ffi/build/tests/iceoryx2-cxx-tests
+target/ffi/c-cxx/build/tests/iceoryx2-c-tests
+target/ffi/c-cxx/build/tests/iceoryx2-cxx-tests
 
 echo "################################################################"
 echo "# Build language binding examples in out-of-tree configuration #"
 echo "################################################################"
 
-rm -rf target/ffi/build
-cmake -S examples/c -B target/ffi/out-of-tree-c $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/install"
+rm -rf target/ffi/c-cxx/build
+cmake -S examples/c -B target/ffi/out-of-tree-c $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install"
 cmake --build target/ffi/out-of-tree-c
 rm -rf target/ffi/out-of-tree-c
 
-cmake -S examples/cxx -B target/ffi/out-of-tree-cxx $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/install;$( pwd )/target/iceoryx/install"
+cmake -S examples/c-cxx -B target/ffi/out-of-tree-cxx $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install;$( pwd )/target/iceoryx/install"
 cmake --build target/ffi/out-of-tree-cxx
 rm -rf target/ffi/out-of-tree-cxx

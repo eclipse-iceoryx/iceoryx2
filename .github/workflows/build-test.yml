@@ -366,11 +366,11 @@ jobs:
       - name: Run cargo nextest
         run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
-      - name: Build language bindings
+      - name: Build C language bindings
         run: |
           cmake -S . \
-                -B target/ffi/build \
-                -DCMAKE_INSTALL_PREFIX=target/ffi/install \
+                -B target/ffi/c-cxx/build \
+                -DCMAKE_INSTALL_PREFIX=target/ffi/c-cxx/install \
                 -DBUILD_CXX_BINDING=OFF \
                 -DBUILD_EXAMPLES=ON \
                 -DBUILD_TESTING=ON \
@@ -378,19 +378,19 @@ jobs:
                 -DCMAKE_CXX_FLAGS="-m32" \
                 -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ matrix.mode.name }}" \
                 ${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ffi/build
-          cmake --install target/ffi/build
+          cmake --build target/ffi/c-cxx/build
+          cmake --install target/ffi/c-cxx/build
 
       - name: Run language binding tests
-        run: target/ffi/build/tests/iceoryx2-c-tests
+        run: target/ffi/c-cxx/build/tests/iceoryx2-c-tests
 
       - name: Build C language binding examples in out-of-tree configuration
         if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
         run: |
-          rm -rf target/ffi/build
+          rm -rf target/ffi/c-cxx/build
           cmake -S examples/c \
                 -B target/ffi/out-of-tree-c \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/c-cxx/install \
                 -DCMAKE_C_FLAGS="-m32" \
                 -DCMAKE_CXX_FLAGS="-m32" \
                 -${{ matrix.mode.cmake-build-type }}
@@ -401,7 +401,7 @@ jobs:
         run: |
           cmake -S examples/cxx \
                 -B target/ffi/out-of-tree-cxx \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/install \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/c-cxx/install \
                 -DCMAKE_C_FLAGS="-m32" \
                 -DCMAKE_CXX_FLAGS="-m32" \
                 -${{ matrix.mode.cmake-build-type }}
@@ -501,33 +501,34 @@ jobs:
       - name: Build language bindings
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
-          cmake --build target/ffi/build ${{ matrix.mode.cmake-build-config }}
-          cmake --install target/ffi/build ${{ matrix.mode.cmake-build-config }}
+          cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/c-cxx/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
+          cmake --build target/ffi/c-cxx/build ${{ matrix.mode.cmake-build-config }}
+          cmake --install target/ffi/c-cxx/install ${{ matrix.mode.cmake-build-config }}
 
       - name: Run C language binding tests
-        run: target/ffi/build/tests/iceoryx2-c-tests
+        run: target/ffi/c-cxx/build/tests/iceoryx2-c-tests
 
       - name: Run C++ language binding tests
-        run: target/ffi/build/tests/iceoryx2-cxx-tests
+        run: target/ffi/c-cxx/build/tests/iceoryx2-cxx-tests
 
       - name: Remove language binding build artifacts on Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: rm -r -force target/ffi/build
+        run: rm -r -force target/ffi/c-cxx/build
+
       - name: Remove language binding build artifacts on non-Windows
         if: ${{ matrix.os != 'windows-latest' }}
-        run: rm -rf target/ffi/build
+        run: rm -rf target/ffi/c-cxx/build
 
       - name: Build C language binding examples in out-of-tree configuration
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S examples/c -B target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install"
+          cmake -S examples/c -B target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/c-cxx/install"
           cmake --build target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S examples/cxx -B target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/install;${{ github.workspace }}/target/iceoryx/install"
+          cmake -S examples/cxx -B target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/c-cxx/install;${{ github.workspace }}/target/iceoryx/install"
           cmake --build target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
 
   x86_64_unstable:

@@ -25,9 +25,9 @@ sudo ./internal/scripts/install_dependencies_ubuntu.sh
 
 ## Build
 
-In the repository root folder, execute the following steps.
+In the repository root folder, execute the following steps:
 
 ```bash
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build
+cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/c-cxx/build
 ```
