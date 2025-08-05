@@ -1,13 +1,9 @@
-[build-system]
-requires = ["maturin>=1.8,<2.0"]
-build-backend = "maturin"
-
 [project]
 name = "iceoryx2"
 version = "0.6.1"
 description = "Python bindings for iceoryx2"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9,<4.0"
 license = "Apache-2.0 OR MIT"
 keywords = ["ipc", "inter-process communication", "zero-copy", "shared memory", "publish-subscribe", "request-response", "event"]
 authors = [
@@ -43,8 +39,26 @@ documentation = "https://iceoryx2.readthedocs.org/"
 repository = "https://github.com/eclipse-iceoryx/iceoryx2"
 changelog = "https://github.com/eclipse-iceoryx/iceoryx2/blob/main/CHANGELOG.md"
 
+[build-system]
+requires = ["maturin>=1.8,<2.0"]
+build-backend = "maturin"
+
 [tool.maturin]
 features = ["pyo3/extension-module"]
 python-source = "python-src"
 bindings = "pyo3"
 module-name = "iceoryx2._iceoryx2"
+
+[tool.poetry]
+packages = [{include = "iceoryx2", from = "python-src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.9,<4.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
+prospector = {extras = ["with_mypy"], version = "^1.17.2"}
+black = "^25.1.0"
+isort = "^6.0.1"
+bandit = "^1.8.6"
+maturin = "^1.9.1"

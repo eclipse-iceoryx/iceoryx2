@@ -81,11 +81,8 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
     cmake --build target/ffi/c-cxx/build -j$NUM_JOBS
 
     # Build the Python bindings
-    rm -rf .env
-    python -m venv .env
-    source .env/bin/activate
-    rm -f iceoryx2-ffi/python/python-src/iceoryx2/*.so
-    maturin develop  --manifest-path iceoryx2-ffi/python/Cargo.toml
+    poetry --project iceoryx2-ffi/python install
+    poetry --project iceoryx2-ffi/python build-into-venv
 fi
 
 
@@ -106,7 +103,7 @@ if [[ ${RUN_END_TO_END_TESTS} == true ]]; then
     fi
 
     echo -e "${COLOR_GREEN}Running tests ...${COLOR_OFF}"
-    source .env/bin/activate
+    eval $(poetry --project iceoryx2-ffi/python env activate)
     FILE_COUNTER=1
     for FILE in $FILES; do
         echo -e "${COLOR_GREEN}[${FILE_COUNTER}/${NUMBER_OF_FILES}]${COLOR_OFF} RUN ${FILE}"

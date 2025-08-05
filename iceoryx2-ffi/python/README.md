@@ -1,56 +1,47 @@
 # iceoryx2-ffi-python
 
-## Running Examples
+Quick reference for commands relevant for development of the `iceoryx2` Python bindings.
+
+## Install Poetry
 
 ```sh
-export PYTHONPATH="$(git rev-parse --show-toplevel)/iceoryx2-ffi/python/python-src"
-python examples/python/event/listener.py
+curl -sSL https://install.python-poetry.org | python3 -
+poetry self add poetry-plugin-shell
 ```
 
-## Setup Development Environment
+## Setup Virtual Environment
 
 ```sh
-# install maturin, see
-# https://github.com/PyO3/maturin
-
 cd $(git rev-parse --show-toplevel)
 
-# create python development environment
-python -m venv .env
+# Install dependencies and create virtual environment
+poetry --project iceoryx2-ffi/python install
 
-# enter environment
-source .env/bin/activate # or source .env/bin/activate.fish
-
-# install dependencies
-pip install pytest
-pip install prospector[with_mypy]
-pip install black
-pip install isort
-pip install bandit
+# (OPTIONAL) Enter the virtual environment - skip the 'poetry run' prefix for all commands
+poetry --project iceoryx2-ffi/python shell
 ```
 
 ## Development
 
 ```sh
-# compile PyO3 bindings
-cd iceoryx2-ffi/python
-maturin develop
-
-export PYTHONPATH="$(git rev-parse --show-toplevel)/iceoryx2-ffi/python/python-src"
-# test python bindings
-pytest tests/*
-
 cd $(git rev-parse --show-toplevel)
 
-# static code analysis
-prospector -m -D -T --with-tool mypy -s veryhigh $(pwd)/examples/python
-prospector -m -D -T --with-tool mypy -s veryhigh $(pwd)/iceoryx2-ffi/python/tests
+# Compile PyO3 bindings
+poetry --project iceoryx2-ffi/python build-into-venv
 
-# formatting: import ordering
-isort $(pwd)/examples/python
-isort $(pwd)/iceoryx2-ffi/python/tests
+# Test python bindings
+poetry --project iceoryx2-ffi/python test
 
-# formatting
-black $(pwd)/examples/python
-black $(pwd)/iceoryx2-ffi/python/tests
+# Run static code analysis
+poetry --project iceoryx2-ffi/python check-linting
+poetry --project iceoryx2-ffi/python check-imports
+poetry --project iceoryx2-ffi/python check-formatting
+```
+
+## Run Examples
+
+```sh
+cd $(git rev-parse --show-toplevel)
+
+poetry --project iceoryx2-ffi/python run python examples/python/event/listener.py
 ```
