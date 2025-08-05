@@ -25,7 +25,9 @@ class CustomHeader(ctypes.Structure):
 
     def __str__(self) -> str:
         """Returns human-readable string of the contents."""
-        return f"CustomHeader {{ version: {self.version}, timestamp: {self.timestamp} }}"
+        return (
+            f"CustomHeader {{ version: {self.version}, timestamp: {self.timestamp} }}"
+        )
 
     @staticmethod
     def type_name() -> str:

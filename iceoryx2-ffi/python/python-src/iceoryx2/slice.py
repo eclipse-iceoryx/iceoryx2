@@ -28,9 +28,7 @@ class Slice(Generic[T]):
     T -  The type of elements in the slice. Can be const-qualified for read-only slices.
     """
 
-    def __init__(
-        self, data_ptr: int, number_of_elements: int, t: Type[T]
-    ) -> None:
+    def __init__(self, data_ptr: int, number_of_elements: int, t: Type[T]) -> None:
         """Initializes a slice with a data_ptr, number_of_elements it contains and the type."""
         self.data_ptr = data_ptr
         self.number_of_elements = number_of_elements
@@ -45,9 +43,7 @@ class Slice(Generic[T]):
         if not 0 <= index < self.number_of_elements:
             raise IndexError("Slice index out of range")
 
-        typed_ptr = ctypes.cast(
-            self.data_ptr, ctypes.POINTER(self.contained_type)
-        )
+        typed_ptr = ctypes.cast(self.data_ptr, ctypes.POINTER(self.contained_type))
         return typed_ptr[index]
 
     def __setitem__(self, index: int, value: T) -> None:
@@ -55,9 +51,7 @@ class Slice(Generic[T]):
         if not 0 <= index < self.number_of_elements:
             raise IndexError("Slice index out of range")
 
-        typed_ptr = ctypes.cast(
-            self.data_ptr, ctypes.POINTER(self.contained_type)
-        )
+        typed_ptr = ctypes.cast(self.data_ptr, ctypes.POINTER(self.contained_type))
         typed_ptr[index] = value
 
     def len(self) -> int:

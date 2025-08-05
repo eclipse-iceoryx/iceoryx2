@@ -12,9 +12,8 @@
 
 import ctypes
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
@@ -128,9 +127,7 @@ def test_send_and_receive_request_with_sendcopy_works(
 
     service_name = iox2.testing.generate_service_name()
     service = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .create()
+        node.service_builder(service_name).request_response(Payload, Payload).create()
     )
 
     client = service.client_builder().create()
@@ -165,9 +162,7 @@ def test_send_with_request_user_header_works(
     server = service.server_builder().create()
 
     request_uninit = client.loan_uninit()
-    ctypes.memmove(
-        request_uninit.user_header_ptr, ctypes.byref(ctypes.c_uint64(89)), 8
-    )
+    ctypes.memmove(request_uninit.user_header_ptr, ctypes.byref(ctypes.c_uint64(89)), 8)
     assert request_uninit.user_header().contents.value == 89
 
     request = request_uninit.assume_init()
@@ -223,9 +218,7 @@ def test_send_with_request_system_header_works(
 
     service_name = iox2.testing.generate_service_name()
     service = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .create()
+        node.service_builder(service_name).request_response(Payload, Payload).create()
     )
 
     client = service.client_builder().create()
@@ -258,9 +251,7 @@ def test_send_with_response_system_header_works(
 
     service_name = iox2.testing.generate_service_name()
     service = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .create()
+        node.service_builder(service_name).request_response(Payload, Payload).create()
     )
 
     client = service.client_builder().create()
@@ -299,9 +290,7 @@ def test_client_reallocation_fails_when_allocation_strategy_is_static(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .request_response(
-            iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8]
-        )
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
         .create()
     )
 
@@ -331,9 +320,7 @@ def test_client_reallocation_works_when_allocation_strategy_is_not_static(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .request_response(
-            iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8]
-        )
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
         .create()
     )
 
@@ -425,9 +412,7 @@ def test_slice_type_forbids_use_of_non_slice_api(
     service_name = iox2.testing.generate_service_name()
     service = (
         node.service_builder(service_name)
-        .request_response(
-            iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8]
-        )
+        .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
         .create()
     )
 
@@ -456,9 +441,7 @@ def test_non_slice_type_forbids_use_of_slice_api(
 
     service_name = iox2.testing.generate_service_name()
     service = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .create()
+        node.service_builder(service_name).request_response(Payload, Payload).create()
     )
 
     server = service.server_builder().create()

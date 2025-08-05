@@ -10,9 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
@@ -42,8 +41,7 @@ def test_waitset_builder_set_signal_handling_mode_correctly(
     )
     assert sut_1.signal_handling_mode == iox2.SignalHandlingMode.Disabled
     assert (
-        sut_2.signal_handling_mode
-        == iox2.SignalHandlingMode.HandleTerminationRequests
+        sut_2.signal_handling_mode == iox2.SignalHandlingMode.HandleTerminationRequests
     )
 
 
@@ -125,9 +123,7 @@ def test_wait_and_process_returns_when_timeout_has_passed(
 ) -> None:
     sut = iox2.WaitSetBuilder.new().create(service_type)
     _guard = sut.attach_interval(iox2.Duration.from_secs(123))
-    (triggers, result) = sut.wait_and_process_with_timeout(
-        iox2.Duration.from_millis(1)
-    )
+    (triggers, result) = sut.wait_and_process_with_timeout(iox2.Duration.from_millis(1))
     assert len(triggers) == 0
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
