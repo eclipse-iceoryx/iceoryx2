@@ -1,117 +1,116 @@
-# Service-Types
+# Service Types in iceoryx2
 
-Service types allow the specialization of the underlying mechanisms of
-iceoryx2. It is a powerful tool to customize the behavior of all internal
-aspects. Let's assume you use iceoryx2 in a unit test suite which runs
-concurrently on your CI. In those cases, it would be ideal when iceoryx2 would
-not create actual inter-process resources like shared memory, which would
-interfere with another process, like another concurrently running test suite.
+iceoryx2 allows customizing its internal communication mechanisms through
+_service types_. This feature enables adapting iceoryx2 to different
+environments and use cases without modifying your application logic -
+just change the service type.
 
-Or if you want to share GPU memory between processes and want to enable
-iceoryx2 to handle the zero-copy communication based on them. In embedded
-contexts, you might want to communicate across hypervisor partitions or
-between an ARM A-core to an R-core. In all of those situations, you would need
-special mechanisms to use the underlying memory or to send event trigger
-mechanisms.
+For instance:
 
-With service types, you have the ability to use iceoryx2 in a different
-scenario without changing a single line of code, except the one line that
-defines the service type. The service type is set when the `Node` is
-created with
+* In **unit tests** running in parallel on a CI system, you may want to avoid
+  creating real inter-process resources like shared memory that could interfere
+  with other tests.
+* If you're **sharing GPU memory** across processes, you may want iceoryx2 to
+  handle zero-copy communication using custom memory mechanisms.
+* In **embedded systems**, you might need communication across hypervisor
+  partitions or between heterogeneous cores (e.g., ARM A-core to R-core).
+
+In all these scenarios, service types allow you to plug in the appropriate
+underlying communication mechanism.
+
+## Choosing a Service Type
+
+The service type is specified when creating a `Node`:
 
 ```rust
 let node = NodeBuilder::new()
     .create::<ipc::Service>()?;
 ```
 
-By default, all examples are setting it to `ipc::Service`. Let's assume you
-would like to use the intra-process specialization. Then you can use
-`local::Service`. In this case, all mechanisms are strictly contained in the
-process itself, and all services cannot be used or discovered outside of the
-process.
+By default, all examples use `ipc::Service`. You can swap in a different
+service type depending on your needs:
 
-Thanks to Rust's `Send` and `Sync` traits, we can ensure via the compiler that
-non-threadsafe constructs are not used by accident in a concurrent setup.
-By default, all ports (e.g., `Publisher`, `Subscriber`, `Server`, `Client`,
-...) are not threadsafe and do not even implement `Send`, the same goes for
-the payload (e.g., `Sample`, `Request`, ...). But sometimes you need to use
-them in a multithreaded context and are prepared to pay the additional costs
-of a mutex, in those cases, you can use `ipc_threadsafe::Service` or
-`local_threadsafe::Service`.
+* `ipc::Service` – Default: for inter-process communication.
+* `local::Service` – For intra-process communication; services are limited to
+  the current process.
+* `ipc_threadsafe::Service` – Like `ipc::Service`, but all ports implement
+  `Send` + `Sync` using internal mutexes.
+* `local_threadsafe::Service` – Like `local::Service`, but with thread-safe
+  ports via mutexes.
 
-## Local PubSub
+Thanks to Rust’s `Send` and `Sync` traits, the compiler ensures that
+non-thread-safe objects are not accidentally shared across threads. By default,
+ports like `Publisher`, `Subscriber`, `Server`, and `Client`, as well as payload
+types like `Sample` and `Request`, are **not thread-safe**. If you need thread
+safety, use one of the `*_threadsafe::Service` types.
 
-This example uses iceoryx2 for inter-thread communication. It spawns a
-background thread and creates a node for every thread (`main` and the
-`background_thread`) to enable easy inter-thread communication.
-The advantage is that you no longer have to manually handle your MPMC queue and
-share it between threads.
+## Example: Local PubSub
 
-### How To Run
+This example demonstrates inter-thread communication using `local::Service`. A
+node is created per thread (`main` and a background thread), enabling
+communication between them without manual MPMC queue handling.
+
+### Run It
 
 ```sh
 cargo run --example service_types_local_pubsub
 ```
 
-All services are strictly confined to the process. Check out the directories
-`/tmp/iceoryx2` or `/dev/shm`. As you can see, there are no resources created.
-Also calling
+Since all services are confined to the process:
 
-```sh
-iox2 service list
-```
+* No shared memory or external resources are created (check `/tmp/iceoryx2` or
+  `/dev/shm`).
+* Running `iox2 service list` will show **no discoverable services**.
 
-will show that there are no discoverable services running.
+## Example: IPC Publisher & Threadsafe Subscriber
 
-## IPC Publisher & IPC Threadsafe Subscriber
+These examples use inter-process communication and show how service types affect
+service visibility and thread safety.
 
-The IPC publisher example is the one you are already familiar with from the
-introductory publish-subscribe example. The one thing you will observe is that,
-even though the publisher publishes on the same service, the `local_pubsub`
-process will not receive any messages since it is confined to the process.
+* The **IPC Publisher** (`ipc::Service`) works like the default pub-sub example.
+* The **IPC Threadsafe Subscriber** uses `ipc_threadsafe::Service`, making all
+  ports thread-safe.
 
-The IPC threadsafe subscriber example uses the service type
-`ipc_threadsafe::Service`, which makes every port threadsafe and therefore can
-be shared between threads safely. To demonstrate this, we create another thread
-and loop in the main- and the background-thread for messages.
+To demonstrate thread safety, this subscriber launches an additional thread that
+also listens for messages.
 
-### How To Run
+### Run It
 
-#### Terminal 1
+#### Terminal 1 (Publisher)
 
 ```sh
 cargo run --example service_types_ipc_publisher
 ```
 
-#### Terminal 2
+#### Terminal 2 (Threadsafe Subscriber)
 
 ```sh
 cargo run --example service_types_ipc_threadsafe_subscriber
 ```
 
-If you now check out the directories `/tmp/iceoryx2` or `/dev/shm`, you will
-see the resources both inter-process communicating processes have created.
-Also, a call to
+After starting both:
 
-```sh
-iox2 service list
-```
+* You’ll see shared memory resources in `/tmp/iceoryx2` or `/dev/shm`.
+* Running `iox2 service list` will list the discoverable services.
 
-will discover the running service.
+Note: The local pubsub process will **not receive** messages from the IPC
+publisher, as it's confined to the process.
 
-## Summary
+## Summary of Service Types
 
-* `ipc::Service` - inter-process communication
-* `ipc_threadsafe::Service` - inter-process communication, all ports implement
-  `Send`+`Sync`, all payloads `Send` at the cost of an additional mutex
-* `local::Service` - inter-thread communication, strictly confined to the process
-* `local_threadsafe::Service` - inter-thread communication, all ports implement
-  `Send`+`Sync`, all payloads `Send` at the cost of an additional mutex
+| Service Type                | Scope         | Thread Safety     | Notes                                               |
+| --------------------------- | ------------- | ----------------- | --------------------------------------------------- |
+| `ipc::Service`              | Inter-process | ❌ Not thread-safe | Default for most examples                           |
+| `ipc_threadsafe::Service`   | Inter-process | ✅ Thread-safe     | Adds mutex overhead for safe sharing across threads |
+| `local::Service`            | Intra-process | ❌ Not thread-safe | Confined to the current process                     |
+| `local_threadsafe::Service` | Intra-process | ✅ Thread-safe     | Safe for multi-threaded intra-process communication |
 
-Defined when creating a `Node` and all constructed `Service`s created by that
-`Node` will use the specified service type.
+All ports (`Publisher`, `Subscriber`, etc.) and payloads (`Sample`, `Request`,
+etc.) are affected by the service type defined when the `Node` is created.
+
+### Example
 
 ```rust
 let node = NodeBuilder::new()
-    .create::<ipc::Service>()?;
+    .create::<local_threadsafe::Service>()?;
 ```
