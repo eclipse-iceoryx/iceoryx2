@@ -12,9 +12,8 @@
 
 import ctypes
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
@@ -71,15 +70,11 @@ def test_existing_service_cannot_be_created(
 
     service_name = iox2.testing.generate_service_name()
     _existing_service = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .create()
+        node.service_builder(service_name).request_response(Payload, Payload).create()
     )
 
     with pytest.raises(iox2.RequestResponseCreateError):
-        node.service_builder(service_name).request_response(
-            Payload, Payload
-        ).create()
+        node.service_builder(service_name).request_response(Payload, Payload).create()
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -89,15 +84,11 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
 
     service_name = iox2.testing.generate_service_name()
     _existing_service = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .create()
+        node.service_builder(service_name).request_response(Payload, Payload).create()
     )
     try:
         sut = (
-            node.service_builder(service_name)
-            .request_response(Payload, Payload)
-            .open()
+            node.service_builder(service_name).request_response(Payload, Payload).open()
         )
         assert sut.name == service_name
     except iox2.RequestResponseOpenError:
@@ -113,9 +104,7 @@ def test_non_existing_service_cannot_be_opened(
 
     service_name = iox2.testing.generate_service_name()
     with pytest.raises(iox2.RequestResponseOpenError):
-        node.service_builder(service_name).request_response(
-            Payload, Payload
-        ).open()
+        node.service_builder(service_name).request_response(Payload, Payload).open()
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -146,9 +135,7 @@ def test_existing_service_is_opened_with_open_or_create(
 
     service_name = iox2.testing.generate_service_name()
     _existing_service = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .create()
+        node.service_builder(service_name).request_response(Payload, Payload).create()
     )
 
     try:
@@ -180,9 +167,7 @@ def test_create_service_with_attributes_work(
     )
 
     sut_open = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .open()
+        node.service_builder(service_name).request_response(Payload, Payload).open()
     )
 
     assert sut_create.attributes == attribute_spec.attributes
@@ -211,9 +196,7 @@ def test_open_or_create_service_with_attributes_work(
     )
 
     sut_open = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .open()
+        node.service_builder(service_name).request_response(Payload, Payload).open()
     )
 
     assert sut_create.attributes == attribute_spec.attributes
@@ -257,11 +240,7 @@ def test_node_listing_works(service_type: iox2.ServiceType) -> None:
     node = iox2.NodeBuilder.new().config(config).create(service_type)
 
     service_name = iox2.testing.generate_service_name()
-    sut = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload)
-        .create()
-    )
+    sut = node.service_builder(service_name).request_response(Payload, Payload).create()
 
     nodes = sut.nodes
 
@@ -315,22 +294,15 @@ def test_service_builder_configuration_works(
     )
 
     static_config = sut.static_config
-    assert (
-        static_config.has_safe_overflow_for_requests == safe_overflow_requests
-    )
-    assert (
-        static_config.has_safe_overflow_for_responses == safe_overflow_responses
-    )
-    assert (
-        static_config.does_support_fire_and_forget_requests == fire_and_forget
-    )
+    assert static_config.has_safe_overflow_for_requests == safe_overflow_requests
+    assert static_config.has_safe_overflow_for_responses == safe_overflow_responses
+    assert static_config.does_support_fire_and_forget_requests == fire_and_forget
     assert (
         static_config.max_borrowed_responses_per_pending_response
         == max_borrowed_responses_per_pending_response
     )
     assert (
-        static_config.max_active_requests_per_client
-        == max_active_requests_per_client
+        static_config.max_active_requests_per_client == max_active_requests_per_client
     )
     assert static_config.max_response_buffer_size == max_response_buffer_size
     assert static_config.max_loaned_requests == max_loaned_requests
@@ -353,9 +325,7 @@ def test_custom_request_payload_works(service_type: iox2.ServiceType) -> None:
         .alignment(ctypes.alignment(Payload))
     )
     sut = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload2)
-        .create()
+        node.service_builder(service_name).request_response(Payload, Payload2).create()
     )
 
     assert sut.static_config.request_message_type_details.payload == payload
@@ -381,10 +351,7 @@ def test_custom_request_header_works(service_type: iox2.ServiceType) -> None:
         .create()
     )
 
-    assert (
-        sut.static_config.request_message_type_details.user_header
-        == user_header
-    )
+    assert sut.static_config.request_message_type_details.user_header == user_header
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -401,9 +368,7 @@ def test_custom_response_payload_works(service_type: iox2.ServiceType) -> None:
         .alignment(ctypes.alignment(Payload2))
     )
     sut = (
-        node.service_builder(service_name)
-        .request_response(Payload, Payload2)
-        .create()
+        node.service_builder(service_name).request_response(Payload, Payload2).create()
     )
 
     assert sut.static_config.response_message_type_details.payload == payload
@@ -429,7 +394,4 @@ def test_custom_response_header_works(service_type: iox2.ServiceType) -> None:
         .create()
     )
 
-    assert (
-        sut.static_config.response_message_type_details.user_header
-        == user_header
-    )
+    assert sut.static_config.response_message_type_details.user_header == user_header

@@ -23,9 +23,7 @@ service_name = sys.argv[1]
 event_id = sys.argv[2]
 
 event = (
-    node.service_builder(iox2.ServiceName.new(service_name))
-    .event()
-    .open_or_create()
+    node.service_builder(iox2.ServiceName.new(service_name)).event().open_or_create()
 )
 max_event_id = event.static_config.event_id_max_value
 notifier = event.notifier_builder().create()

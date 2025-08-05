@@ -14,9 +14,8 @@
 
 import ctypes
 
-from transmission_data import TransmissionData
-
 import iceoryx2 as iox2
+from transmission_data import TransmissionData
 
 cycle_time = iox2.Duration.from_secs(1)
 
@@ -44,9 +43,7 @@ try:
                 print("received request:", data.contents.value)
 
                 # send first response by using the slower, non-zero-copy API
-                response = TransmissionData(
-                    x=5 + COUNTER, y=6 * COUNTER, funky=7.77
-                )
+                response = TransmissionData(x=5 + COUNTER, y=6 * COUNTER, funky=7.77)
                 print("  send response:", response)
                 active_request.send_copy(response)
 
