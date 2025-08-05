@@ -155,7 +155,7 @@ use iceoryx2::prelude::*
 set_log_level_from_env_or_default();
 
 // Reads LogLevel from env and sets it with a user-given value
-// if the environment variable is not set or has an unsupported value  
+// if the environment variable is not set or has an unsupported value
 set_log_level_from_env_or(LogLevel::DEBUG);
 
 // sets LogLevel programmatically with a supported user-given value
@@ -279,9 +279,27 @@ soft file descriptor limit up to the hard limit:
 ulimit -n <new_limit>
 ```
 
+## Losing data
+
+When a `Subscriber` or a `Server` does not seem to receive data, it may be
+because the port was never able to connect to its counterpart - typically
+because it went out of scope too quickly. For instance, this can happen when a
+`Publisher` is created, sends some data, and is immediately destroyed
+afterward.
+
+Due to the decentralized nature of iceoryx2, and the fact that it does not use
+any background threads, the user must handle these edge cases explicitly.
+
+To address this, every port provides an `update_connections()` function. After
+creating all ports, make sure to call `update_connections()` on each of them
+before starting communication.
+
+Another solution is to ensure that the sending ports remain alive at least
+until the first piece of data has been successfully received.
+
 ## Losing a sample when sending dynamic data
 
-If you're sendind slices and have defined an allocation strategy, a sample may
+If you're sending slices and have defined an allocation strategy, a sample may
 be lost if the sender shuts down after reallocating its data segment. This is
 because no receiver has yet mapped the reallocated data segment. Therefore, the
 sender closes the data segment when going out of scope.
