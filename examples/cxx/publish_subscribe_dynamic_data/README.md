@@ -42,8 +42,8 @@ instructions in the [C++ Examples Readme](../README.md).
 First you have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON
+cmake --build target/ff/cc/build
 ```
 
 ## How to Run
@@ -54,13 +54,13 @@ execute the following commands:
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_subscriber
+./target/ff/cc/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_publisher
+./target/ff/cc/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_publisher
 ```
 
 Feel free to run multiple instances of publisher or subscriber processes

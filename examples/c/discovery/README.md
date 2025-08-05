@@ -14,8 +14,8 @@ instructions in the [C Examples Readme](../README.md).
 First you have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
-cmake --build target/ffi/build
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
+cmake --build target/ff/cc/build
 ```
 
 ## How to Run
@@ -26,19 +26,19 @@ the following commands:
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/cxx/event/example_c_event_listener
+./target/ff/cc/build/examples/cxx/event/example_c_event_listener
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe/example_c_publish_subscribe_subscriber
+./target/ff/cc/build/examples/cxx/publish_subscribe/example_c_publish_subscribe_subscriber
 ```
 
 Once these services are running, you can call the following command:
 
 ```sh
-./target/ffi/build/examples/cxx/discovery/example_c_discovery
+./target/ff/cc/build/examples/cxx/discovery/example_c_discovery
 ```
 
 This will display the static service details of both the event and the

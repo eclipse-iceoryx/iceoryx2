@@ -13,7 +13,7 @@ but you can compile for your host arch just by simply editing `target`.
 ```c
 const std = @import("std");
 // replace with your own absolute path
-const iox2_root = "/full/path/to/.../iceoryx2/target/ffi/install";
+const iox2_root = "/full/path/to/.../iceoryx2/target/ff/cc/install";
 
 pub fn build(b: *std.Build) void {
 
@@ -34,11 +34,11 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.addIncludePath(
-        b.path("../path/to/iceoryx2/target/ffi/install/include/iceoryx2/v0.6.1/iox2/") // replace with your own relative path, this is where iceoryx2.h lives
+        b.path("../path/to/iceoryx2/target/ff/cc/install/include/iceoryx2/v0.6.1/iox2/") // replace with your own relative path, this is where iceoryx2.h lives
     );
     // This line exe.linkSystemLibrary("gcc_s"); is needed for Rust unwind
     exe.linkSystemLibrary("gcc_s"); // Link to libgcc_s runtime resident on target
-    exe.addObjectFile(b.path("../path/to/iceoryx2/target/ffi/install/lib/libiceoryx2_ffi.a")); // replace with your own relative path to the static ffi lib
+    exe.addObjectFile(b.path("../path/to/iceoryx2/target/ff/cc/install/lib/libiceoryx2_ffi.a")); // replace with your own relative path to the static ffi lib
     exe.linkLibC(); // For HTTP client
     
     // Run step
@@ -61,7 +61,7 @@ This is a port of `subscriber.c`. Place `transmission_data.h` in the same
 directory as `main.zig`.
 
 ```c
-const iox2_root = "/full/path/to/.../iceoryx2/target/ffi/install";
+const iox2_root = "/full/path/to/.../iceoryx2/target/ff/cc/install";
 const zig_proj_root = "/full/path/to/.../src";
 
 const std = @import("std");

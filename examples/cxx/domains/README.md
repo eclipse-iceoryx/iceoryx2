@@ -55,8 +55,8 @@ instructions in the [C++ Examples Readme](../README.md).
 First you have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON
+cmake --build target/ff/cc/build
 ```
 
 ## How to Run
@@ -69,17 +69,17 @@ and the discovery tool will only detect services from within the same domain.
 ### Terminal 1: Subscriber in domain "fuu" subscribing to service "bar"
 
 ```sh
-./target/ffi/build/examples/cxx/domains/example_cxx_domains_subscriber -d "fuu" -s "bar"
+./target/ff/cc/build/examples/cxx/domains/example_cxx_domains_subscriber -d "fuu" -s "bar"
 ```
 
 ### Terminal 2: Publisher in domain "fuu" publishing on service "bar"
 
 ```sh
-./target/ffi/build/examples/cxx/domains/example_cxx_domains_publisher -d "fuu" -s "bar"
+./target/ff/cc/build/examples/cxx/domains/example_cxx_domains_publisher -d "fuu" -s "bar"
 ```
 
 ### Terminal 3: List all services of domain "fuu"
 
 ```sh
-./target/ffi/build/examples/cxx/domains/example_cxx_domains_discovery -d "fuu"
+./target/ff/cc/build/examples/cxx/domains/example_cxx_domains_discovery -d "fuu"
 ```

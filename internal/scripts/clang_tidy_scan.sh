@@ -161,11 +161,11 @@ echo -e "${COLOR_YELLOW}Building iceoryx-ffi and C/C++ bindings as preparation f
 export CXX=clang++
 export CC=clang
 
-rm -rf target/iceoryx
+rm -rf target/ff/iceoryx
 ${WORKSPACE}/internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
 cargo build --package iceoryx2-ffi
 cmake -S . -B target/clang-tidy-scan \
-    -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
+    -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/iceoryx/install" \
     -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
     -DCMAKE_BUILD_TYPE=Debug \
     -DBUILD_CXX_BINDING=ON \

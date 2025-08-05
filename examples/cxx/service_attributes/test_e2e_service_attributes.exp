@@ -22,14 +22,14 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/build/examples/cxx/service_attributes/example_cxx_service_attributes_creator
+spawn target/ff/cc/build/examples/cxx/service_attributes/example_cxx_service_attributes_creator
 # wait until ready
 expect_output "my_funky_service_name"
 
-spawn target/ffi/build/examples/cxx/service_attributes/example_cxx_service_attributes_opener
+spawn target/ff/cc/build/examples/cxx/service_attributes/example_cxx_service_attributes_opener
 set id_opener $spawn_id
 
-spawn target/ffi/build/examples/cxx/service_attributes/example_cxx_service_attributes_incompatible
+spawn target/ff/cc/build/examples/cxx/service_attributes/example_cxx_service_attributes_incompatible
 set id_incompatible $spawn_id
 
 #### Test Assertion

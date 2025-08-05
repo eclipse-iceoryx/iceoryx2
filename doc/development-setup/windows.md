@@ -112,8 +112,8 @@ cargo build --workspace --all-targets
 The simplest way to build the C and C++ bindings is with the following commands.
 
 ```powershell
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build -j 4
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON
+cmake --build target/ff/cc/build -j 4
 ```
 
 This will re-build the Rust crates and automatically download and build
