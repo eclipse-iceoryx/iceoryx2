@@ -12,7 +12,7 @@
 
 #include "iox2/iceoryx2.h"
 
-#ifdef _WIN64
+#if defined(_WIN32) || defined(WIN32) || defined(__WIN32__) || defined(_WIN64)
 #define alignof __alignof
 #else
 #include <stdalign.h>

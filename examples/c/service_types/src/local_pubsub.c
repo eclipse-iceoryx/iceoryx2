@@ -10,9 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/iceoryx2.h"
+#if defined(_WIN32) || defined(WIN32) || defined(__WIN32__) || defined(_WIN64)
+#include <stdio.h>
 
-#ifndef _WIN64
+int main() {
+    printf("This example does not run on windows\n");
+    return -1;
+}
+#else
+#include "iox2/iceoryx2.h"
 #include <pthread.h>
 #include <stdalign.h>
 #include <stdint.h>
@@ -251,10 +257,5 @@ int main(void) {
 end:
     drop_res(&example);
     return 0;
-}
-#else
-int main() {
-    printf("This example does not run on windows\n");
-    return -1;
 }
 #endif

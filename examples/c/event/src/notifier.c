@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN64
+#if defined(_WIN32) || defined(WIN32) || defined(__WIN32__) || defined(_WIN64)
 #include <windows.h>
 #define sleep Sleep
 #else
