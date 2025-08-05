@@ -12,9 +12,8 @@
 
 import ctypes
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 
 def test_type_names_are_translated_correctly() -> None:

@@ -12,9 +12,8 @@
 
 import ctypes
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 

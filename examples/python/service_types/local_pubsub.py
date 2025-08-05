@@ -36,15 +36,11 @@ class BackgroundThread(threading.Thread):
             iox2.NodeBuilder.new()
             # Optionally, a name can be provided to the node which helps identifying them later during
             # debugging or introspection
-            .name(iox2.NodeName.new("threadnode")).create(
-                iox2.ServiceType.Local
-            )
+            .name(iox2.NodeName.new("threadnode")).create(iox2.ServiceType.Local)
         )
 
         service = (
-            node.service_builder(
-                iox2.ServiceName.new("Service-Variants-Example")
-            )
+            node.service_builder(iox2.ServiceName.new("Service-Variants-Example"))
             .publish_subscribe(ctypes.c_uint64)
             .open_or_create()
         )

@@ -12,9 +12,8 @@
 
 """Publisher example."""
 
-from transmission_data import TransmissionData
-
 import iceoryx2 as iox2
+from transmission_data import TransmissionData
 
 cycle_time = iox2.Duration.from_secs(1)
 
