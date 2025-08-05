@@ -68,8 +68,8 @@ int main(void) {
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
     // The third argument defines the service variant. Different variants can use
     // different mechanisms. For instance the upcoming `iox2_service_type_e_CUDA` would use GPU
-    // memory or the already existing `iox2_service_type_e_IPC` would use mechanisms that are
-    // optimized for intra-process communication.
+    // memory or the `iox2_service_type_e_IPC` would use mechanisms that are optimized for
+    // intra-process communication.
     //
     // All services which are created via this `Node` use the same service variant.
     if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &example.node) != IOX2_OK) {

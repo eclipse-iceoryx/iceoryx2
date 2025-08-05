@@ -24,11 +24,11 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     set_log_level_from_env_or(LogLevel::Info);
     let node = NodeBuilder::new()
         // There are the `local_threadsafe::Service` and `ipc_threadsafe::Service`
-        // variants where all ports are threadsafe but one has to pay the cost of an
-        // additional mutex lock/unlock call.
+        // versions where all ports are threadsafe but with the cost of an additional mutex
+        // lock/unlock call.
         //
-        // They can communicate with their corresponding `local::Service` or
-        // `ipc::Service` variant.
+        // The thread-safe version of a particular service variant can also communicate with the
+        // non-thread-safe version.
         .create::<ipc_threadsafe::Service>()?;
 
     let service = node
@@ -39,9 +39,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let subscriber = Arc::new(service.subscriber_builder().create()?);
     let in_thread_subscriber = subscriber.clone();
 
-    // all ports (like Subscriber, Publisher, Client, Server, ...) now implement
-    // `Send` and `Sync` thanks to `ipc_threadsafe::Service` so we can share them
-    // between multiple threads.
+    // The ports created by a thread-safe service implement `Send` and `Sync`, so they can be
+    // be shared between threads.
     let t = std::thread::spawn(move || {
         while KEEP_RUNNING.load(Ordering::Relaxed) {
             std::thread::sleep(CYCLE_TIME);

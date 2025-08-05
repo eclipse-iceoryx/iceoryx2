@@ -22,7 +22,7 @@ cycle_time = iox2.Duration.from_secs(1)
 
 iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 # In contrast to Rust, all service variants in python have threadsafe ports
-# but one has to pay the cost of an additional mutex lock/unlock call.
+# but at the cost of an additional mutex lock/unlock call.
 #
 # An `iox2.ServiceType.Ipc` service cannot communicate with an
 # `iox2.ServiceType.Local` service.
@@ -38,7 +38,7 @@ subscriber = service.subscriber_builder().create()
 
 
 # All ports (like Subscriber, Publisher, Server, Client) are threadsafe
-# by default so we can access them from multiple threads.
+# by default so they can be shared between threads.
 class BackgroundThread(threading.Thread):
     """Background thread that uses the subscriber to receive cyclically samples."""
 

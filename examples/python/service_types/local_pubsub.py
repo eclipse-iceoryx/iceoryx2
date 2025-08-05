@@ -31,10 +31,10 @@ class BackgroundThread(threading.Thread):
 
     def run(self):
         """Runs the background thread and receives cyclically samples."""
-        # we create another node inside this thread to communicate to the main thread
+        # Another node is created inside this thread to communicate with the main thread
         node = (
             iox2.NodeBuilder.new()
-            # optionally, provide a name to the node which helps identifying them later during
+            # Optionally, a name can be provided to the node which helps identifying them later during
             # debugging or introspection
             .name(iox2.NodeName.new("threadnode")).create(
                 iox2.ServiceType.Local
@@ -69,7 +69,7 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 # Those services can communicate only within a single process.
 node = (
     iox2.NodeBuilder.new()
-    # optionally, provide a name to the node which helps identifying them later during
+    # Optionally, a name can be provided to the node which helps identifying them later during
     # debugging or introspection
     .name(iox2.NodeName.new("mainnode")).create(iox2.ServiceType.Local)
 )

@@ -22,7 +22,7 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 
 # The create argument defines the service variant. Different variants can use
 # different mechanisms. For instance the upcoming `iox2.ServiceType.Cuda` would use GPU memory
-# or the already existing `iox2.ServiceType.Local` would use mechanisms that are optimized
+# or the `iox2.ServiceType.Local` would use mechanisms that are optimized
 # for intra-process communication.
 #
 # All services which are created via this `Node` use the same service variant.

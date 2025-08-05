@@ -91,11 +91,8 @@ int main(void) {
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
-    // In contrast to Rust, all service variants in C have threadsafe ports
-    // but one has to pay the cost of an additional mutex lock/unlock call.
-    //
-    // An `iox2_service_type_e_IPC` service cannot communicate with an
-    // `iox2_service_type_e_LOCAL` service.
+    // In contrast to Rust, all service variants in C have threadsafe ports but at the cost of
+    // an additional mutex lock/unlock call.
     if (iox2_node_builder_create(node_builder_handle, NULL, iox2_service_type_e_IPC, &example.node) != IOX2_OK) {
         printf("Could not create node!\n");
         goto end;
@@ -141,7 +138,7 @@ int main(void) {
     }
 
     // All ports (like Subscriber, Publisher, Server, Client) are threadsafe
-    // by default so we can access them from multiple threads.
+    // by default so they can be shared between threads.
     if (pthread_create(&example.background_thread, NULL, background_thread, NULL) != 0) {
         printf("unable to start background thread\n");
         goto end;

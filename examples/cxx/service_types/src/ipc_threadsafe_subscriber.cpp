@@ -26,10 +26,7 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder()
                     // In contrast to Rust, all service variants in C++ have threadsafe ports
-                    // but one has to pay the cost of an additional mutex lock/unlock call.
-                    //
-                    // An `ServiceType::Ipc` service cannot communicate with an
-                    // `ServiceType::Local` service.
+                    // but at the cost of an additional mutex lock/unlock call.
                     .create<ServiceType::Ipc>()
                     .expect("successful node creation");
 
@@ -42,8 +39,8 @@ auto main() -> int {
     auto keep_running = std::atomic<bool>(true);
     auto subscriber = service.subscriber_builder().create().expect("subscriber created");
 
-    // all ports (like Subscriber, Publisher, Client, Server, ...) are threadsafe
-    // so we can share them between multiple threads.
+    // All ports (like Subscriber, Publisher, Client, Server, ...) are threadsafe
+    // so they can be shared between threads.
     auto background_thread = std::thread([&] {
         while (keep_running.load()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(CYCLE_TIME.toMilliseconds()));

@@ -96,9 +96,9 @@ void drop_res(struct res* const value) { // NOLINT
 void* background_thread(void* unused) {
     (void) unused;
 
-    // create new node
+    // Another node is created inside this thread to communicate with the main thread
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
-    // optionally, provide a name to the node which helps identifying them later during
+    // Optionally, a name can be provided to the node which helps identifying them later during
     // debugging or introspection
     const char* node_name_value = "threadnode";
     if (iox2_node_name_new(NULL, node_name_value, strlen(node_name_value), &example.thread_node_name)) {
@@ -173,7 +173,7 @@ int main(void) {
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
-    // optionally, provide a name to the node which helps identifying them later during
+    // Optionally, a name can be provided to the node which helps identifying them later during
     // debugging or introspection
     const char* node_name_value = "mainnode";
     if (iox2_node_name_new(NULL, node_name_value, strlen(node_name_value), &example.node_name)) {

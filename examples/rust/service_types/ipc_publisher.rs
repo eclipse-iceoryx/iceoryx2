@@ -21,8 +21,8 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new()
         // The generic argument defines the service variant. Different variants can use
         // different mechanisms. For instance the upcoming `cuda::Service` would use GPU memory
-        // or the already existing `local::Service` would use mechanisms that are optimized
-        // for intra-process communication.
+        // or the `local::Service` would use mechanisms that are optimized for intra-process
+        // communication.
         //
         // All services which are created via this `Node` use the same service variant.
         .create::<ipc::Service>()?;

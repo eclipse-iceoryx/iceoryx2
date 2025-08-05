@@ -28,8 +28,8 @@ auto main() -> int {
     auto node = NodeBuilder()
                     // The generic argument defines the service variant. Different variants can use
                     // different mechanisms. For instance the upcoming `ServiceType::Cuda` would use GPU
-                    // memory or the already existing `local::Service` would use mechanisms that are
-                    // optimized for intra-process communication.
+                    // memory or the `local::Service` would use mechanisms that are optimized for
+                    // intra-process communication.
                     //
                     // All services which are created via this `Node` use the same service variant.
                     .create<ServiceType::Ipc>()

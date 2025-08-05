@@ -29,10 +29,10 @@ std::mutex cout_mtx;                   // NOLINT
 
 void background_thread_fn() {
     using namespace iox2;
-    // we create another node inside this thread to communicate to the main thread
+    // Another node is created inside this thread to communicate with the main thread
     auto node = NodeBuilder()
-                    // optionally, provide a name to the node which helps identifying them later during
-                    // debugging or introspection
+                    // Optionally, a name can be provided to the node which helps identifying them
+                    // later during debugging or introspection
                     .name(NodeName::create("threadnode").expect("valid node name"))
                     .create<ServiceType::Local>()
                     .expect("successful node creation");
@@ -65,8 +65,8 @@ auto main() -> int {
     //
     // Those services can communicate only within a single process.
     auto node = NodeBuilder()
-                    // optionally, provide a name to the node which helps identifying them later during
-                    // debugging or introspection
+                    // Optionally, a name can be provided to the node which helps identifying them
+                    // later during debugging or introspection
                     .name(NodeName::create("mainnode").expect("valid node name"))
                     .create<ServiceType::Local>()
                     .expect("successful node creation");
