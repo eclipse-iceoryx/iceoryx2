@@ -49,6 +49,7 @@ use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 
+use crate::port::update_connections::UpdateConnections;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
@@ -327,7 +328,14 @@ impl<
             .receiver
             .receive(ChannelId::new(0))
     }
+}
 
+impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend + ?Sized,
+        UserHeader: Debug + ZeroCopySend,
+    > UpdateConnections for Subscriber<Service, Payload, UserHeader>
+{
     fn update_connections(&self) -> Result<(), ConnectionFailure> {
         let subscriber_shared_state = self.subscriber_shared_state.lock();
         if unsafe {

@@ -61,6 +61,8 @@
     [#814](https://github.com/eclipse-iceoryx/iceoryx2/issues/814)
 * Miri complains about byte_string as_bytes* operations
     [#875](https://github.com/eclipse-iceoryx/iceoryx2/issues/875)
+* Make `update_connections` public for all ports
+    [#923](https://github.com/eclipse-iceoryx/iceoryx2/issues/923)
 
 ### Refactoring
 

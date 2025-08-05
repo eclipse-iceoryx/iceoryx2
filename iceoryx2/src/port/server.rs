@@ -89,6 +89,7 @@ use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
 use iceoryx2_cal::arc_sync_policy::ArcSyncPolicy;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 
+use crate::port::update_connections::UpdateConnections;
 use crate::prelude::UnableToDeliverStrategy;
 use crate::service::builder::CustomPayloadMarker;
 use crate::service::naming_scheme::data_segment_name;
@@ -251,6 +252,20 @@ unsafe impl<
 where
     Service::ArcThreadSafetyPolicy<SharedServerState<Service>>: Send + Sync,
 {
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > UpdateConnections
+    for Server<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn update_connections(&self) -> Result<(), ConnectionFailure> {
+        self.shared_state.lock().update_connections()
+    }
 }
 
 impl<

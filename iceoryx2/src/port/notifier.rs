@@ -38,7 +38,7 @@
 use super::{event_id::EventId, port_identifiers::UniqueListenerId};
 use crate::{
     node::NodeId,
-    port::port_identifiers::UniqueNotifierId,
+    port::{port_identifiers::UniqueNotifierId, update_connections::UpdateConnections},
     service::{
         self,
         config_scheme::event_config,
@@ -282,6 +282,13 @@ impl<Service: service::Service> Drop for Notifier<Service> {
                 .event()
                 .release_notifier_handle(handle)
         }
+    }
+}
+
+impl<Service: service::Service> UpdateConnections for Notifier<Service> {
+    fn update_connections(&self) -> Result<(), super::update_connections::ConnectionFailure> {
+        self.listener_connections.lock().update_connections();
+        Ok(())
     }
 }
 

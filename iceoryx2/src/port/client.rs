@@ -92,7 +92,9 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64, Iox
 
 use crate::{
     pending_response::PendingResponse,
-    port::{details::data_segment::DataSegment, UniqueClientId},
+    port::{
+        details::data_segment::DataSegment, update_connections::UpdateConnections, UniqueClientId,
+    },
     prelude::{PortFactory, UnableToDeliverStrategy},
     raw_sample::RawSampleMut,
     request_mut::RequestMut,
@@ -543,6 +545,20 @@ impl<
             .lock()
             .request_sender
             .unable_to_deliver_strategy
+    }
+}
+
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + ?Sized,
+        RequestHeader: Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > UpdateConnections
+    for Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
+{
+    fn update_connections(&self) -> Result<(), ConnectionFailure> {
+        self.client_shared_state.lock().update_connections()
     }
 }
 
