@@ -25,7 +25,7 @@ set timeout 10
 spawn cargo run --example request_response_server
 set id_server $spawn_id
 
-spawn target/ffi/build/examples/cxx/request_response/example_cxx_request_response_client
+spawn target/ffi/c-cxx/build/examples/cxx/request_response/example_cxx_request_response_client
 
 #### Test Assertion
 

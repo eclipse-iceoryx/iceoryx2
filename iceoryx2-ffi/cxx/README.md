@@ -5,13 +5,16 @@
 In the repository root folder, execute this steps:
 
 ```bash
-cmake -S . -B target/ffi/build
-cmake --build target/ffi/build
+cmake -S . -B target/ffi/c-cxx/build
+cmake --build target/ffi/c-cxx/build
 ```
 
 This is the most simple way to build the C++ bindings for `iceoryx2`, which rely
 on the `iceorx_hoofs` C++ base library and utilizes cargo to build the Rust part
 of iceoryx2.
+
+Note that since the C++ bindings are implemented with the C bindings, both
+libraries are built.
 
 ## Build instructions for integrator
 
@@ -57,15 +60,15 @@ The C++ bindings can use the existing Rust artifacts via
 projects. This are the steps:
 
 ```bash
-cmake -S . -B target/ffi/build -DCMAKE_INSTALL_PREFIX=target/ffi/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
-cmake --build target/ffi/build
-cmake --install target/ffi/build
+cmake -S . -B target/ffi/c-cxx/build -DCMAKE_INSTALL_PREFIX=target/ffi/cxx/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
+cmake --build target/ffi/c-cxx/build
+cmake --install target/ffi/c-cxx/build
 ```
 
 The installed libraries can the be used for out-of-tree builds of the example or
 custom C++ projects. This are the required steps:
 
 ```bash
-cmake -S examples/cxx -B target/out-of-tree/examples/cxx -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/install;$( pwd )/target/iceoryx/install"
+cmake -S examples/cxx -B target/out-of-tree/examples/cxx -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install;$( pwd )/target/iceoryx/install"
 cmake --build target/out-of-tree/examples/cxx
 ```

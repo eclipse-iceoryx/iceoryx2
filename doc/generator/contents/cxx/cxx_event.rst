@@ -15,13 +15,13 @@ You can execute it by opening two terminals and calling:
 
 .. code-block:: sh
 
-   ./target/ffi/build/examples/cxx/event/example_cxx_event_listener
+   ./target/ffi/c-cxx/build/examples/cxx/event/example_cxx_event_listener
 
 **Terminal 2:**
 
 .. code-block:: sh
 
-   ./target/ffi/build/examples/cxx/event/example_cxx_event_notifier
+   ./target/ffi/c-cxx/build/examples/cxx/event/example_cxx_event_notifier
 
 
 Listener

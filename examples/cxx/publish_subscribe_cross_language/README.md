@@ -33,8 +33,8 @@ When you want to run the C++ publisher and subscriber applications, you first
 have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build
+cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/c-cxx/build
 ```
 
 ## How to Run
@@ -47,7 +47,7 @@ execute the following commands:
 Run the C++ subscriber application:
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_cross_language/example_cxx_publish_subscribe_cross_language_subscriber
+./target/ffi/c-cxx/build/examples/cxx/publish_subscribe_cross_language/example_cxx_publish_subscribe_cross_language_subscriber
 ```
 
 ### Terminal 2
@@ -55,7 +55,7 @@ Run the C++ subscriber application:
 Run the C++ publisher application:
 
 ```sh
-./target/ffi/build/examples/cxx/publish_subscribe_cross_language/example_cxx_publish_subscribe_cross_language_publisher
+./target/ffi/c-cxx/build/examples/cxx/publish_subscribe_cross_language/example_cxx_publish_subscribe_cross_language_publisher
 ```
 
 Feel free to also run the subscriber and publisher applications from other

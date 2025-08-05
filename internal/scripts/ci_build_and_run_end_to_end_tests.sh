@@ -71,14 +71,14 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
 
     # Build the C and C++ bindings
     cargo build --package iceoryx2-ffi
-    cmake -S . -B target/ffi/build \
+    cmake -S . -B target/ffi/c-cxx/build \
         -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
         -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
         -DCMAKE_BUILD_TYPE=Debug \
         -DBUILD_CXX_BINDING=ON \
         -DBUILD_EXAMPLES=ON \
         -DBUILD_TESTING=OFF
-    cmake --build target/ffi/build -j$NUM_JOBS
+    cmake --build target/ffi/c-cxx/build -j$NUM_JOBS
 
     # Build the Python bindings
     rm -rf .env

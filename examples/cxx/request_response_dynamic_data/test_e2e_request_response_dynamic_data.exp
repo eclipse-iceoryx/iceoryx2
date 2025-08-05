@@ -22,10 +22,10 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/build/examples/cxx/request_response_dynamic_data/example_cxx_request_response_dyn_server
+spawn target/ffi/c-cxx/build/examples/cxx/request_response_dynamic_data/example_cxx_request_response_dyn_server
 set id_server $spawn_id
 
-spawn target/ffi/build/examples/cxx/request_response_dynamic_data/example_cxx_request_response_dyn_client
+spawn target/ffi/c-cxx/build/examples/cxx/request_response_dynamic_data/example_cxx_request_response_dyn_client
 
 #### Test Assertion
 
