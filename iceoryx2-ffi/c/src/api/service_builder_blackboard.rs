@@ -24,17 +24,24 @@ use crate::create_type_details;
 use core::ffi::{c_char, c_int, c_void};
 use core::mem::ManuallyDrop;
 use iceoryx2::service::builder::blackboard::{
-    BlackboardCreateError, BlackboardOpenError, Creator, Opener,
+    BlackboardCreateError, BlackboardOpenError, BuilderInternals, Creator, Opener,
 };
 use iceoryx2::service::port_factory::blackboard::PortFactory;
+use iceoryx2::service::static_config::message_type_details::{
+    TypeDetail, TypeNameString, TypeVariant,
+};
+use iceoryx2_bb_elementary::math::{align, max};
 use iceoryx2_bb_elementary_traits::AsCStr;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomicMgmt;
 use iceoryx2_ffi_macros::CStrRepr;
 
 // BEGIN types definition
 
+pub type iox2_service_blackboard_creator_add_release_callback = extern "C" fn(*mut c_void);
+
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
-pub enum iox2_blackboard_open_or_create_error_e {
+pub enum iox2_blackboard_open_error_e {
     #[CStr = "does not exist"]
     O_DOES_NOT_EXIST = IOX2_OK as isize + 1,
     #[CStr = "service in corrupted state"]
@@ -59,8 +66,13 @@ pub enum iox2_blackboard_open_or_create_error_e {
     O_EXCEEDS_MAX_NUMBER_OF_NODES,
     #[CStr = "does not support requested amount of nodes"]
     O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, CStrRepr)]
+pub enum iox2_blackboard_create_error_e {
     #[CStr = "already exists"]
-    C_ALREADY_EXISTS,
+    C_ALREADY_EXISTS = IOX2_OK as isize + 1,
     #[CStr = "is being created by another instance"]
     C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE,
     #[CStr = "internal failure"]
@@ -78,41 +90,39 @@ pub enum iox2_blackboard_open_or_create_error_e {
 impl IntoCInt for BlackboardOpenError {
     fn into_c_int(self) -> c_int {
         (match self {
-            BlackboardOpenError::DoesNotExist => {
-                iox2_blackboard_open_or_create_error_e::O_DOES_NOT_EXIST
-            }
+            BlackboardOpenError::DoesNotExist => iox2_blackboard_open_error_e::O_DOES_NOT_EXIST,
             BlackboardOpenError::ServiceInCorruptedState => {
-                iox2_blackboard_open_or_create_error_e::O_SERVICE_IN_CORRUPTED_STATE
+                iox2_blackboard_open_error_e::O_SERVICE_IN_CORRUPTED_STATE
             }
             BlackboardOpenError::IncompatibleKeys => {
-                iox2_blackboard_open_or_create_error_e::O_INCOMPATIBLE_KEYS
+                iox2_blackboard_open_error_e::O_INCOMPATIBLE_KEYS
             }
             BlackboardOpenError::InternalFailure => {
-                iox2_blackboard_open_or_create_error_e::O_INTERNAL_FAILURE
+                iox2_blackboard_open_error_e::O_INTERNAL_FAILURE
             }
             BlackboardOpenError::IncompatibleAttributes => {
-                iox2_blackboard_open_or_create_error_e::O_INCOMPATIBLE_ATTRIBUTES
+                iox2_blackboard_open_error_e::O_INCOMPATIBLE_ATTRIBUTES
             }
             BlackboardOpenError::IncompatibleMessagingPattern => {
-                iox2_blackboard_open_or_create_error_e::O_INCOMPATIBLE_MESSAGING_PATTERN
+                iox2_blackboard_open_error_e::O_INCOMPATIBLE_MESSAGING_PATTERN
             }
             BlackboardOpenError::DoesNotSupportRequestedAmountOfReaders => {
-                iox2_blackboard_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_READERS
+                iox2_blackboard_open_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_READERS
             }
             BlackboardOpenError::InsufficientPermissions => {
-                iox2_blackboard_open_or_create_error_e::O_INSUFFICIENT_PERMISSIONS
+                iox2_blackboard_open_error_e::O_INSUFFICIENT_PERMISSIONS
             }
             BlackboardOpenError::HangsInCreation => {
-                iox2_blackboard_open_or_create_error_e::O_HANGS_IN_CREATION
+                iox2_blackboard_open_error_e::O_HANGS_IN_CREATION
             }
             BlackboardOpenError::IsMarkedForDestruction => {
-                iox2_blackboard_open_or_create_error_e::O_IS_MARKED_FOR_DESTRUCTION
+                iox2_blackboard_open_error_e::O_IS_MARKED_FOR_DESTRUCTION
             }
             BlackboardOpenError::ExceedsMaxNumberOfNodes => {
-                iox2_blackboard_open_or_create_error_e::O_EXCEEDS_MAX_NUMBER_OF_NODES
+                iox2_blackboard_open_error_e::O_EXCEEDS_MAX_NUMBER_OF_NODES
             }
             BlackboardOpenError::DoesNotSupportRequestedAmountOfNodes => {
-                iox2_blackboard_open_or_create_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES
+                iox2_blackboard_open_error_e::O_DOES_NOT_SUPPORT_REQUESTED_AMOUNT_OF_NODES
             }
         }) as c_int
     }
@@ -122,25 +132,25 @@ impl IntoCInt for BlackboardCreateError {
     fn into_c_int(self) -> c_int {
         (match self {
             BlackboardCreateError::AlreadyExists => {
-                iox2_blackboard_open_or_create_error_e::C_ALREADY_EXISTS
+                iox2_blackboard_create_error_e::C_ALREADY_EXISTS
             }
             BlackboardCreateError::IsBeingCreatedByAnotherInstance => {
-                iox2_blackboard_open_or_create_error_e::C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE
+                iox2_blackboard_create_error_e::C_IS_BEING_CREATED_BY_ANOTHER_INSTANCE
             }
             BlackboardCreateError::InternalFailure => {
-                iox2_blackboard_open_or_create_error_e::C_INTERNAL_FAILURE
+                iox2_blackboard_create_error_e::C_INTERNAL_FAILURE
             }
             BlackboardCreateError::InsufficientPermissions => {
-                iox2_blackboard_open_or_create_error_e::C_INSUFFICIENT_PERMISSIONS
+                iox2_blackboard_create_error_e::C_INSUFFICIENT_PERMISSIONS
             }
             BlackboardCreateError::ServiceInCorruptedState => {
-                iox2_blackboard_open_or_create_error_e::C_SERVICE_IN_CORRUPTED_STATE
+                iox2_blackboard_create_error_e::C_SERVICE_IN_CORRUPTED_STATE
             }
             BlackboardCreateError::HangsInCreation => {
-                iox2_blackboard_open_or_create_error_e::C_HANGS_IN_CREATION
+                iox2_blackboard_create_error_e::C_HANGS_IN_CREATION
             }
             BlackboardCreateError::NoEntriesProvided => {
-                iox2_blackboard_open_or_create_error_e::C_NO_ENTRIES_PROVIDED
+                iox2_blackboard_create_error_e::C_NO_ENTRIES_PROVIDED
             }
         }) as c_int
     }
@@ -150,7 +160,7 @@ impl IntoCInt for BlackboardCreateError {
 
 // BEGIN C API
 
-/// Returns a string literal describing the provided [`iox2_blackboard_open_or_create_error_e`].
+/// Returns a string literal describing the provided [`iox2_blackboard_open_error_e`].
 ///
 /// # Arguments
 ///
@@ -165,8 +175,29 @@ impl IntoCInt for BlackboardCreateError {
 ///
 /// The returned pointer must not be modified or freed and is valid as long as the program runs.
 #[no_mangle]
-pub unsafe extern "C" fn iox2_blackboard_open_or_create_error_string(
-    error: iox2_blackboard_open_or_create_error_e,
+pub unsafe extern "C" fn iox2_blackboard_open_error_string(
+    error: iox2_blackboard_open_error_e,
+) -> *const c_char {
+    error.as_const_cstr().as_ptr() as *const c_char
+}
+
+/// Returns a string literal describing the provided [`iox2_blackboard_create_error_e`].
+///
+/// # Arguments
+///
+/// * `error` - The error value for which a description should be returned
+///
+/// # Returns
+///
+/// A pointer to a null-terminated string containing the error message.
+/// The string is stored in the .rodata section of the binary.
+///
+/// # Safety
+///
+/// The returned pointer must not be modified or freed and is valid as long as the program runs.
+#[no_mangle]
+pub unsafe extern "C" fn iox2_blackboard_create_error_string(
+    error: iox2_blackboard_create_error_e,
 ) -> *const c_char {
     error.as_const_cstr().as_ptr() as *const c_char
 }
@@ -192,7 +223,7 @@ pub unsafe extern "C" fn iox2_blackboard_open_or_create_error_string(
 /// * `type_name_str` must be a valid pointer to an utf8 string
 /// * `size` and `alignment` must satisfy the Rust `Layout` type requirements
 #[no_mangle]
-pub unsafe extern "C" fn iox2_service_builder_blackboard_set_key_type_details(
+pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_set_key_type_details(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     type_name_str: *const c_char,
     type_name_len: c_size_t,
@@ -230,6 +261,54 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_set_key_type_details(
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
             service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                service_builder.__internal_set_key_type_details(&value),
+            ));
+        }
+    }
+
+    IOX2_OK
+}
+
+// TODO: documentation
+#[no_mangle]
+pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_key_type_details(
+    service_builder_handle: iox2_service_builder_blackboard_opener_h_ref,
+    type_name_str: *const c_char,
+    type_name_len: c_size_t,
+    size: c_size_t,
+    alignment: c_size_t,
+) -> c_int {
+    service_builder_handle.assert_non_null();
+
+    let value = match create_type_details(
+        iox2_type_variant_e::FIXED_SIZE,
+        type_name_str,
+        type_name_len,
+        size,
+        alignment,
+    ) {
+        Ok(v) => v,
+        Err(e) => return e,
+    };
+
+    let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
+
+    match service_builder_struct.service_type {
+        iox2_service_type_e::IPC => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
+                service_builder.__internal_set_key_type_details(&value),
+            ));
+        }
+        iox2_service_type_e::LOCAL => {
+            let service_builder =
+                ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
+
+            let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_opener);
+            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
                 service_builder.__internal_set_key_type_details(&value),
             ));
         }
@@ -429,11 +508,47 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
-    key_ptr: *const c_void,
-    key_size: usize,
-    value: c_size_t, // TODO: ValueType
+    key: u64,
+    value_ptr: *mut c_void,
+    release_callback: iox2_service_blackboard_creator_add_release_callback,
+    type_name: *const c_char,
+    type_name_len: usize,
+    type_size: usize,
+    type_align: usize,
 ) {
     service_builder_handle.assert_non_null();
+    let type_details = TypeDetail {
+        variant: TypeVariant::FixedSize,
+        size: type_size,
+        alignment: type_align,
+        type_name: TypeNameString::from_bytes_truncated(core::slice::from_raw_parts(
+            type_name.cast(),
+            type_name_len,
+        )),
+    };
+
+    let internals = BuilderInternals {
+        key,
+        value_type_details: type_details.clone(),
+        value_writer: Box::new(move |mem: *mut u8| {
+            let mem_atomic: *mut UnrestrictedAtomicMgmt = mem.cast();
+            mem_atomic.write(UnrestrictedAtomicMgmt::new());
+            let addr = mem as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
+            let addr = align(addr, type_details.alignment);
+            // TODO: how to realize add_with_default? -> only be solvable on C++ side
+            core::ptr::copy_nonoverlapping(value_ptr, addr as *mut c_void, type_details.size);
+            release_callback(value_ptr);
+            // TODO: what happens on failure, who releases it?
+        }),
+        internal_value_size: align(
+            core::mem::size_of::<UnrestrictedAtomicMgmt>(),
+            type_details.alignment,
+        ) + type_details.size,
+        internal_value_alignment: max(
+            core::mem::align_of::<UnrestrictedAtomicMgmt>(),
+            type_details.alignment,
+        ),
+    };
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };
 
@@ -443,20 +558,18 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().ipc);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            //service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-            // TODO: internal method that implements C-style add
-            // Store BuilderInternals equivalent?
-            //service_builder.add(key, value),
-            //));
+            service_builder_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
+                service_builder.__internal_add(internals),
+            ));
         }
         iox2_service_type_e::LOCAL => {
             let service_builder =
                 ManuallyDrop::take(&mut service_builder_struct.value.as_mut().local);
 
             let service_builder = ManuallyDrop::into_inner(service_builder.blackboard_creator);
-            //service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-            //service_builder.add(key, value),
-            //));
+            service_builder_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
+                service_builder.__internal_add(internals),
+            ));
         }
     }
 }

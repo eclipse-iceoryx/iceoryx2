@@ -27,11 +27,13 @@ iceoryx2-bb-container = { workspace = true }
 iceoryx2-bb-derive-macros = { workspace = true }
 iceoryx2-bb-elementary = { workspace = true }
 iceoryx2-bb-elementary-traits = { workspace = true }
+iceoryx2-bb-lock-free = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-bb-system-types = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 iceoryx2-cal = { workspace = true }
 iceoryx2-ffi-macros = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }
 
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }

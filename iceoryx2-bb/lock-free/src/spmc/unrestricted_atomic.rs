@@ -86,10 +86,20 @@ impl<T: Copy> Drop for Producer<'_, T> {
 unsafe impl<T: Copy> Send for Producer<'_, T> {}
 unsafe impl<T: Copy> Sync for Producer<'_, T> {}
 
+#[doc(hidden)]
 #[repr(C)]
-struct UnrestrictedAtomicMgmt {
+pub struct UnrestrictedAtomicMgmt {
     write_cell: IoxAtomicU32,
     has_producer: IoxAtomicBool,
+}
+
+impl UnrestrictedAtomicMgmt {
+    pub fn new() -> Self {
+        Self {
+            write_cell: IoxAtomicU32::new(1),
+            has_producer: IoxAtomicBool::new(true),
+        }
+    }
 }
 
 /// An atomic implementation where the underlying type has to be copyable but is otherwise

@@ -15,7 +15,7 @@
 //! See [`crate::service`]
 //!
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
-use super::CustomKeyMarker;
+//use super::CustomKeyMarker;
 use super::{OpenDynamicStorageFailure, ServiceState};
 use crate::service;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
@@ -155,12 +155,14 @@ impl From<ServiceAvailabilityState> for BlackboardCreateError {
     }
 }
 
-struct BuilderInternals<KeyType> {
-    key: KeyType,
-    value_type_details: TypeDetail,
-    value_writer: Box<dyn FnMut(*mut u8)>,
-    internal_value_size: usize,
-    internal_value_alignment: usize,
+// TODO: can this be private? at least the members?
+#[doc(hidden)]
+pub struct BuilderInternals<KeyType> {
+    pub key: KeyType,
+    pub value_type_details: TypeDetail,
+    pub value_writer: Box<dyn FnMut(*mut u8)>,
+    pub internal_value_size: usize,
+    pub internal_value_alignment: usize,
 }
 
 impl<KeyType> Debug for BuilderInternals<KeyType> {
@@ -334,11 +336,11 @@ impl<
 
     /// Adds key-value pairs to the blackboard.
     pub fn add<ValueType: ZeroCopySend + Copy + 'static>(
-        mut self,
+        self,
         key: KeyType,
         value: ValueType,
     ) -> Self {
-        self.builder.internals.push(BuilderInternals {
+        let internals = BuilderInternals {
             key,
             value_type_details: TypeDetail::new::<ValueType>(
                 message_type_details::TypeVariant::FixedSize,
@@ -350,16 +352,12 @@ impl<
             }),
             internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
-        });
-        self
+        };
+        self.__internal_add(internals)
     }
 
     #[doc(hidden)]
-    pub fn __internal_add(
-        mut self,
-        key: KeyType,
-        builder_internals: BuilderInternals<KeyType>,
-    ) -> Self {
+    pub fn __internal_add(mut self, builder_internals: BuilderInternals<KeyType>) -> Self {
         self.builder.internals.push(builder_internals);
         self
     }
@@ -612,7 +610,8 @@ impl<
     }
 }
 
-impl<ServiceType: service::Service> Creator<CustomKeyMarker, ServiceType> {
+// TODO: replace u64 with CustomKeyMarker
+impl<ServiceType: service::Service> Creator<u64, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
         self.builder.override_key_type = Some(value.clone());
@@ -848,5 +847,14 @@ impl<
                 }
             }
         }
+    }
+}
+
+// TODO: replace u64 with CustomKeyMarker
+impl<ServiceType: service::Service> Opener<u64, ServiceType> {
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
+        self.builder.override_key_type = Some(value.clone());
+        self
     }
 }
