@@ -22,8 +22,8 @@ mod hex_conversion_tests {
         let sut = "don't stop me now";
         let hex_sut = bytes_to_hex_string(sut.as_bytes());
 
-        let original_sut = hex_string_to_bytes(&hex_sut).unwrap();
-        assert_that!(sut.as_bytes(), eq original_sut);
+        let roundtrip_sut = hex_string_to_bytes(&hex_sut).unwrap();
+        assert_that!(sut.as_bytes(), eq roundtrip_sut);
     }
 
     #[test]
@@ -38,8 +38,8 @@ mod hex_conversion_tests {
         let sut = "";
         let hex_sut = bytes_to_hex_string(sut.as_bytes());
 
-        let original_sut = hex_string_to_bytes(&hex_sut).unwrap();
-        assert_that!(sut.as_bytes(), eq original_sut);
+        let roundtrip_sut = hex_string_to_bytes(&hex_sut).unwrap();
+        assert_that!(sut.as_bytes(), eq roundtrip_sut);
     }
 
     #[test]

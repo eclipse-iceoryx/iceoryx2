@@ -117,108 +117,119 @@ impl RecordReader {
         Ok(())
     }
 
-    pub(crate) fn read(self, file: &File) -> Result<Option<Record>, ReplayerOpenError> {
+    fn verify_record(&self, record: &Record, error_msg: &str) -> Result<(), ReplayerOpenError> {
+        self.verify_payload(&record.payload, error_msg)?;
+        self.verify_user_header(&record.user_header, error_msg)?;
+        self.verify_system_header(&record.system_header, error_msg)?;
+        Ok(())
+    }
+
+    fn read_human_readable_from_file(
+        &self,
+        file: &File,
+    ) -> Result<Option<Record>, ReplayerOpenError> {
         let msg = "Unable to read next record";
-        match self.data_representation {
-            DataRepresentation::HumanReadable => {
-                let mut timestamp = None;
-                let mut system_header = None;
-                let mut header = None;
-                loop {
-                    let mut line = String::new();
-                    match file.read_line_to_string(&mut line) {
-                        Ok(FileReadLineState::EndOfFile(_)) => break,
-                        Ok(FileReadLineState::LineLen(0)) => continue,
-                        Ok(FileReadLineState::LineLen(n)) => {
-                            if n < READABLE_PREFIX_LEN {
-                                fail!(from self, with ReplayerOpenError::CorruptedContent,
-                                    "{msg} since the content seems to be corrupted.");
-                            }
-                        }
-                        Err(e) => {
-                            fail!(from self, with ReplayerOpenError::FailedToReadFile,
-                                "{msg} since the file could not be read ({e:?}).");
-                        }
-                    }
-
-                    const READABLE_PREFIX_LEN: usize = 10;
-                    if timestamp.is_none() {
-                        timestamp = Some(Duration::from_millis(fail!(from self,
-                                when line.as_str()[READABLE_PREFIX_LEN..].parse::<u64>(),
-                                with ReplayerOpenError::CorruptedTimeStamp,
-                                "{msg} since the timestamp entry is corrupted.")));
-                    } else if system_header.is_none() {
-                        system_header =
-                            Some(hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?);
-                    } else if header.is_none() {
-                        header = Some(hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?);
-                    } else {
-                        let payload = hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?;
-                        self.verify_payload(&payload, msg)?;
-                        self.verify_user_header(header.as_ref().unwrap(), msg)?;
-                        self.verify_system_header(system_header.as_ref().unwrap(), msg)?;
-
-                        return Ok(Some(Record {
-                            timestamp: timestamp.take().unwrap(),
-                            system_header: system_header.take().unwrap(),
-                            user_header: header.take().unwrap(),
-                            payload: hex_string_to_bytes(&line.as_str()[9..])?,
-                        }));
+        let mut timestamp = None;
+        let mut system_header = None;
+        let mut header = None;
+        loop {
+            let mut line = String::new();
+            match file.read_line_to_string(&mut line) {
+                Ok(FileReadLineState::EndOfFile(_)) => break,
+                Ok(FileReadLineState::LineLen(0)) => continue,
+                Ok(FileReadLineState::LineLen(n)) => {
+                    if n < READABLE_PREFIX_LEN {
+                        fail!(from self, with ReplayerOpenError::CorruptedContent,
+                            "{msg} since the content seems to be corrupted.");
                     }
                 }
-
-                Ok(None)
+                Err(e) => {
+                    fail!(from self, with ReplayerOpenError::FailedToReadFile,
+                        "{msg} since the file could not be read ({e:?}).");
+                }
             }
-            DataRepresentation::Iox2Dump => {
-                let read = |buffer: &mut [u8]| {
-                    let len = fail!(from self, when file.read(buffer),
-                        with ReplayerOpenError::FailedToReadFile,
-                        "{msg} since the underlying file could not be read.");
 
-                    if len == 0 {
-                        return Ok(false);
-                    }
-
-                    if len != buffer.len() as u64 {
-                        fail!(from self, with ReplayerOpenError::FailedToReadFile,
-                            "{msg} since the record has a size of {len} and {} bytes are expected.",
-                            buffer.len());
-                    }
-
-                    Ok(true)
+            const READABLE_PREFIX_LEN: usize = 10;
+            if timestamp.is_none() {
+                timestamp = Some(Duration::from_millis(fail!(from self,
+                        when line.as_str()[READABLE_PREFIX_LEN..].parse::<u64>(),
+                        with ReplayerOpenError::CorruptedTimeStamp,
+                        "{msg} since the timestamp entry is corrupted.")));
+            } else if system_header.is_none() {
+                system_header = Some(hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?);
+            } else if header.is_none() {
+                header = Some(hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?);
+            } else {
+                let record = Record {
+                    timestamp: timestamp.take().unwrap(),
+                    system_header: system_header.take().unwrap(),
+                    user_header: header.take().unwrap(),
+                    payload: hex_string_to_bytes(&line.as_str()[READABLE_PREFIX_LEN..])?,
                 };
-                let mut buffer = [0u8; 8];
-                if !read(&mut buffer)? {
-                    return Ok(None);
-                }
-                let timestamp = u64::from_le_bytes(buffer);
+                self.verify_record(&record, msg)?;
 
-                read(&mut buffer)?;
-                let system_header_len = u64::from_le_bytes(buffer);
-                let mut system_header = vec![0u8; system_header_len as usize];
-                read(&mut system_header)?;
-
-                read(&mut buffer)?;
-                let user_header_len = u64::from_le_bytes(buffer);
-                let mut user_header = vec![0u8; user_header_len as usize];
-                read(&mut user_header)?;
-
-                read(&mut buffer)?;
-                let payload_len = u64::from_le_bytes(buffer);
-                let mut payload = vec![0u8; payload_len as usize];
-                read(&mut payload)?;
-
-                self.verify_payload(&payload, msg)?;
-                self.verify_user_header(&user_header, msg)?;
-                self.verify_system_header(&system_header, msg)?;
-
-                Ok(Some(Record {
-                    timestamp: Duration::from_millis(timestamp),
-                    system_header,
-                    user_header,
-                    payload,
-                }))
+                return Ok(Some(record));
             }
+        }
+
+        Ok(None)
+    }
+
+    fn read_iox2dump_from_file(&self, file: &File) -> Result<Option<Record>, ReplayerOpenError> {
+        let msg = "Unable to read next record";
+        let read = |buffer: &mut [u8]| {
+            let len = fail!(from self, when file.read(buffer),
+                with ReplayerOpenError::FailedToReadFile,
+                "{msg} since the underlying file could not be read.");
+
+            if len == 0 {
+                return Ok(false);
+            }
+
+            if len != buffer.len() as u64 {
+                fail!(from self, with ReplayerOpenError::FailedToReadFile,
+                    "{msg} since the record has a size of {len} and {} bytes are expected.",
+                    buffer.len());
+            }
+
+            Ok(true)
+        };
+        let mut buffer = [0u8; 8];
+        if !read(&mut buffer)? {
+            return Ok(None);
+        }
+        let timestamp = u64::from_le_bytes(buffer);
+
+        read(&mut buffer)?;
+        let system_header_len = u64::from_le_bytes(buffer);
+        let mut system_header = vec![0u8; system_header_len as usize];
+        read(&mut system_header)?;
+
+        read(&mut buffer)?;
+        let user_header_len = u64::from_le_bytes(buffer);
+        let mut user_header = vec![0u8; user_header_len as usize];
+        read(&mut user_header)?;
+
+        read(&mut buffer)?;
+        let payload_len = u64::from_le_bytes(buffer);
+        let mut payload = vec![0u8; payload_len as usize];
+        read(&mut payload)?;
+
+        let record = Record {
+            timestamp: Duration::from_millis(timestamp),
+            system_header,
+            user_header,
+            payload,
+        };
+        self.verify_record(&record, msg)?;
+
+        Ok(Some(record))
+    }
+
+    pub(crate) fn read(self, file: &File) -> Result<Option<Record>, ReplayerOpenError> {
+        match self.data_representation {
+            DataRepresentation::HumanReadable => self.read_human_readable_from_file(file),
+            DataRepresentation::Iox2Dump => self.read_iox2dump_from_file(file),
         }
     }
 }

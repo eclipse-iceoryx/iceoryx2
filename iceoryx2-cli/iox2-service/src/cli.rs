@@ -97,7 +97,7 @@ pub struct NotifyOptions {
     #[clap(
         short,
         long,
-        default_value = "shell_node",
+        default_value = "iox2-cli-service-notifier",
         help = "Defines the node name of the notification endpoint."
     )]
     pub node_name: String,
@@ -124,7 +124,7 @@ pub struct ListenOptions {
     #[clap(
         short,
         long,
-        default_value = "shell_node",
+        default_value = "iox2-cli-service-listener",
         help = "Defines the node name of the listening endpoint."
     )]
     pub node_name: String,
@@ -195,7 +195,7 @@ pub struct PublishOptions {
     #[clap(
         short,
         long,
-        default_value = "shell_node",
+        default_value = "iox2-cli-service-publisher",
         help = "Defines the node name of the publish endpoint."
     )]
     pub node_name: String,
@@ -285,7 +285,7 @@ pub struct SubscribeOptions {
     #[clap(
         short,
         long,
-        default_value = "shell_node",
+        default_value = "iox2-cli-service-subscriber",
         help = "Defines the node name of the subscriber endpoint."
     )]
     pub node_name: String,
@@ -293,7 +293,7 @@ pub struct SubscribeOptions {
     #[clap(
         short,
         long,
-        default_value = "HEX",
+        default_value = "HUMANREADABLE",
         help = "Defines how the data shall be displayed."
     )]
     pub data_representation: DataRepresentation,
@@ -321,7 +321,7 @@ pub struct RecordOptions {
     #[clap(
         short,
         long,
-        default_value = "shell_node",
+        default_value = "iox2-cli-service-recorder",
         help = "Defines the node name of the recorder endpoint."
     )]
     pub node_name: String,
@@ -379,7 +379,7 @@ pub struct ReplayOptions {
     #[clap(
         short,
         long,
-        default_value = "shell_node",
+        default_value = "iox2-cli-service-replayer",
         help = "Defines the node name of the replayer endpoint."
     )]
     pub node_name: String,
