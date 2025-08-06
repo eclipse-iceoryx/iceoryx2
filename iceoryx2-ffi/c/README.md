@@ -6,8 +6,8 @@
 In the repository root folder, execute this steps.
 
 ```bash
-cmake -S . -B target/ffi/c-cxx/build
-cmake --build target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON
+cmake --build target/ffi/c/build
 ```
 
 This is the most simple way to build the C bindings for `iceoryx2`, which
@@ -24,9 +24,9 @@ In the repository root folder, execute this steps:
 
 ```bash
 cargo build --release --package iceoryx2-ffi
-cmake -S . -B target/ffi/c-cxx/build -DCMAKE_INSTALL_PREFIX=target/ffi/c-cxx/install -DBUILD_CXX_BINDING=OFF -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
-cmake --build target/ffi/c-cxx/build
-cmake --install target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
+cmake --build target/ffi/c/build
+cmake --install target/ffi/c/build --prefix target/ffi/c/install
 ```
 
 > [!NOTE]
@@ -37,6 +37,6 @@ The installed libraries can the be used for out-of-tree builds of the example or
 custom C projects. This are the required steps:
 
 ```bash
-cmake -S examples/c -B target/out-of-tree/examples/c -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install"
+cmake -S examples/c -B target/out-of-tree/examples/c -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c/install"
 cmake --build target/out-of-tree/examples/c
 ```

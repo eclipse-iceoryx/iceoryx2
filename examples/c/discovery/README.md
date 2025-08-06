@@ -11,11 +11,11 @@ action.
 Before proceeding, all dependencies need to be installed. You can find
 instructions in the [C Examples Readme](../README.md).
 
-First you have to build the C++ examples:
+First you have to build the C examples:
 
 ```sh
-cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
-cmake --build target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/c/build
 ```
 
 ## How to Run
@@ -26,19 +26,19 @@ the following commands:
 ### Terminal 1
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/event/example_c_event_listener
+./target/ffi/c/build/examples/event/example_c_event_listener
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/publish_subscribe/example_c_publish_subscribe_subscriber
+./target/ffi/c/build/examples/publish_subscribe/example_c_subscriber
 ```
 
 Once these services are running, you can call the following command:
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/discovery/example_c_discovery
+./target/ffi/c/build/examples/discovery/example_c_discovery
 ```
 
 This will display the static service details of both the event and the

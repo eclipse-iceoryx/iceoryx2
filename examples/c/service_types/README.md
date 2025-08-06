@@ -55,14 +55,14 @@ instructions in the [C Examples Readme](../README.md).
 First you have to build the C examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
-cmake --build target/ffi/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/c/build
 ```
 
 ### How To Run
 
 ```sh
-./target/ffi/build/examples/c/service_types/example_c_service_types_local_pubsub
+./target/ffi/c/build/examples/service_types/example_c_service_types_local_pubsub
 ```
 
 Since all services are confined to the process:
@@ -89,13 +89,13 @@ also listens for messages.
 #### Terminal 1
 
 ```sh
-./target/ffi/build/examples/c/service_types/example_c_service_types_ipc_publisher
+./target/ffi/c/build/examples/service_types/example_c_service_types_ipc_publisher
 ```
 
 #### Terminal 2
 
 ```sh
-./target/ffi/build/examples/c/service_types/example_c_service_types_ipc_threadsafe_subscriber
+./target/ffi/c/build/examples/service_types/example_c_service_types_ipc_threadsafe_subscriber
 ```
 
 After starting both:

@@ -22,17 +22,17 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 20
 
-spawn target/ffi/c-cxx/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_central_daemon
+spawn target/ffi/cxx/build/examples/health_monitoring/example_cxx_health_monitoring_central_daemon
 set id_daemon $spawn_id
 expect_output "Central daemon up and running."
 
-spawn target/ffi/c-cxx/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_publisher_1
+spawn target/ffi/cxx/build/examples/health_monitoring/example_cxx_health_monitoring_publisher_1
 set id_publisher_1 $spawn_id
 
-spawn target/ffi/c-cxx/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_publisher_2
+spawn target/ffi/cxx/build/examples/health_monitoring/example_cxx_health_monitoring_publisher_2
 set id_publisher_2 $spawn_id
 
-spawn target/ffi/c-cxx/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_subscriber
+spawn target/ffi/cxx/build/examples/health_monitoring/example_cxx_health_monitoring_subscriber
 set id_subscriber $spawn_id
 
 expect_output_from $id_publisher_1 "service_1: Send sample*"

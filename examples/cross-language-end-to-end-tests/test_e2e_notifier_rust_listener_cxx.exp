@@ -25,7 +25,7 @@ set timeout 10
 spawn cargo run --example event_notifier
 set id_notifier $spawn_id
 
-spawn target/ffi/c-cxx/build/examples/cxx/event/example_cxx_event_listener
+spawn target/ffi/cxx/build/examples/event/example_cxx_event_listener
 
 #### Test Assertion
 

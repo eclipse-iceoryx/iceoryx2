@@ -14,7 +14,7 @@
 ########## dummyConfig.cmake to be able to use find_package with a specific version with the source tree ##########
 #
 
-set(IOX2_VERSION_STRING "0.6.1")
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/common.cmake)
 set(PACKAGE_VERSION ${IOX2_VERSION_STRING})
 
 if(PACKAGE_VERSION VERSION_LESS PACKAGE_FIND_VERSION)
