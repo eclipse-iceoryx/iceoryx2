@@ -97,6 +97,9 @@
   [#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
 * Removed `MetaVec::is_initialized` field
   [#900](https://github.com/eclipse-iceoryx/iceoryx2/issues/900)
+* Remove root CMakeLists.txt for C and C++ bindings so they must
+  be built using their own separate CMakeLists.txt
+  [#920](https://github.com/eclipse-iceoryx/iceoryx2/issues/920)
 
 ### Testing
 
