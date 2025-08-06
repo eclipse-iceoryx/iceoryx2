@@ -65,6 +65,8 @@
     [#921](https://github.com/eclipse-iceoryx/iceoryx2/issues/921)
 * Make `update_connections` public for all ports
     [#923](https://github.com/eclipse-iceoryx/iceoryx2/issues/923)
+* Fix linker error on linux
+    [#855](https://github.com/eclipse-iceoryx/iceoryx2/issues/855)
 
 ### Refactoring
 

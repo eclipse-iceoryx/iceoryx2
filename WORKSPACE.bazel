@@ -141,12 +141,12 @@ bazel_skylib_workspace()
 
 
 # Load iceoryx rules
-ICEORYX_VERSION = "2.95.5"
+ICEORYX_VERSION = "2.95.6"
 
 maybe(
     name = "iceoryx",
     repo_rule = http_archive,
-    sha256 = "b68d0603ca39a852db5d12d8e83b0c7b560acdbe8d4cbcdfca1a07ada433bdd5",
+    sha256 = "745927c5e5e034cd840c1a18dff217818c042507b814d7bf001bcc61bcf5281b",
     strip_prefix = "iceoryx-{}".format(ICEORYX_VERSION),
     url = "https://github.com/eclipse-iceoryx/iceoryx/archive/v{}.tar.gz".format(ICEORYX_VERSION),
 )

@@ -147,6 +147,7 @@ target_link_libraries(static-lib INTERFACE
     $<$<AND:$<PLATFORM_ID:Windows>,$<OR:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>>:bcrypt synchronization>
     $<$<PLATFORM_ID:Darwin>:stdc++>
     $<$<PLATFORM_ID:FreeBSD>:rt util>
+    $<$<PLATFORM_ID:Linux>:dl rt>
 )
 target_link_libraries(shared-lib INTERFACE
     iceoryx2-c::includes-only
