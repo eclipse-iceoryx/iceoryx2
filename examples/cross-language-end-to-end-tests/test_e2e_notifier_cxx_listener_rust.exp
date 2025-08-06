@@ -22,7 +22,7 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/c-cxx/build/examples/cxx/event/example_cxx_event_notifier
+spawn target/ffi/cxx/build/examples/event/example_cxx_event_notifier
 set id_notifier $spawn_id
 
 spawn cargo run --example event_listener

@@ -22,7 +22,7 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/c-cxx/build/examples/cxx/request_response/example_cxx_request_response_server
+spawn target/ffi/cxx/build/examples/request_response/example_cxx_request_response_server
 set id_server $spawn_id
 
 spawn cargo run --example request_response_client

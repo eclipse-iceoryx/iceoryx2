@@ -55,8 +55,14 @@ instructions in the [C++ Examples Readme](../README.md).
 First you have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build
+cmake --build target/ffi/c/build
+cmake --install target/ffi/c/build --prefix target/ffi/c/install
+
+cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build \
+      -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/c/install \
+      -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/cxx/build
 ```
 
 ## How to Run
@@ -69,17 +75,17 @@ and the discovery tool will only detect services from within the same domain.
 ### Terminal 1: Subscriber in domain "fuu" subscribing to service "bar"
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/domains/example_cxx_domains_subscriber -d "fuu" -s "bar"
+./target/ffi/cxx/build/examples/domains/example_cxx_domains_subscriber -d "fuu" -s "bar"
 ```
 
 ### Terminal 2: Publisher in domain "fuu" publishing on service "bar"
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/domains/example_cxx_domains_publisher -d "fuu" -s "bar"
+./target/ffi/cxx/build/examples/domains/example_cxx_domains_publisher -d "fuu" -s "bar"
 ```
 
 ### Terminal 3: List all services of domain "fuu"
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/domains/example_cxx_domains_discovery -d "fuu"
+./target/ffi/cxx/build/examples/domains/example_cxx_domains_discovery -d "fuu"
 ```

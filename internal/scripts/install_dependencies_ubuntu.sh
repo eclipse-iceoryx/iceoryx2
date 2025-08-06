@@ -13,6 +13,7 @@
 
 set -e
 
+dpkg --add-architecture i386
 apt-get update
 apt-get install -y \
      binutils-dev \
@@ -29,6 +30,7 @@ apt-get install -y \
      g++-multilib \
      git \
      libacl1-dev \
+     libacl1-dev:i386 \
      libc6-dev \
      libc6-dev-i386 \
      libc6-dev-i386-cross \

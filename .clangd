@@ -1,2 +1,2 @@
 CompileFlags:
-  CompilationDatabase: target/ffi/c-cxx/build
+  CompilationDatabase: target/ffi/cxx/build

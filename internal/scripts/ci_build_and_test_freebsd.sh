@@ -105,27 +105,41 @@ echo "###########################"
 ./internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
 rm -rf target/iceoryx/build
 
-# Build examples only in out-of-tree, else we are running out of disk space on the VM
-cmake -S . -B target/ffi/c-cxx/build $CMAKE_BUILD_TYPE_FLAG -DBUILD_EXAMPLES=OFF -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/c-cxx/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install"
-cmake --build target/ffi/c-cxx/build
-cmake --install target/ffi/c-cxx/build
+cargo build $CMAKE_BUILD_TYPE_FLAG --package iceoryx2-ffi
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build \
+       $CMAKE_BUILD_TYPE_FLAG \
+      -DCMAKE_INSTALL_PREFIX=target/ffi/c/install \
+      -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release" \
+      -DBUILD_EXAMPLES=OFF \
+      -DBUILD_TESTING=ON
+cmake --build target/ffi/c/build
+cmake --install target/ffi/c/build
+
+cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build \
+       $CMAKE_BUILD_TYPE_FLAG \
+      -DCMAKE_INSTALL_PREFIX=target/ffi/cxx/install \
+      -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install;$( pwd )/target/ffi/c/install" \
+      -DBUILD_EXAMPLES=OFF \
+      -DBUILD_TESTING=ON
+cmake --build target/ffi/cxx/build
+cmake --install target/ffi/cxx/build
 
 echo "##############################"
 echo "# Run language binding tests #"
 echo "##############################"
 
-target/ffi/c-cxx/build/tests/iceoryx2-c-tests
-target/ffi/c-cxx/build/tests/iceoryx2-cxx-tests
+target/ffi/c/build/tests/iceoryx2-c-tests
+target/ffi/cxx/build/tests/iceoryx2-cxx-tests
 
 echo "################################################################"
 echo "# Build language binding examples in out-of-tree configuration #"
 echo "################################################################"
 
-rm -rf target/ffi/c-cxx/build
-cmake -S examples/c -B target/ffi/out-of-tree-c $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install"
+rm -rf target/ffi/c/build
+cmake -S examples/c -B target/ffi/out-of-tree-c $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c/install"
 cmake --build target/ffi/out-of-tree-c
 rm -rf target/ffi/out-of-tree-c
 
-cmake -S examples/c-cxx -B target/ffi/out-of-tree-cxx $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install;$( pwd )/target/iceoryx/install"
+cmake -S examples/cxx -B target/ffi/out-of-tree-cxx $CMAKE_BUILD_TYPE_FLAG -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/cxx/install;$( pwd )/target/iceoryx/install"
 cmake --build target/ffi/out-of-tree-cxx
 rm -rf target/ffi/out-of-tree-cxx

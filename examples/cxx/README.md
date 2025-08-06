@@ -25,9 +25,20 @@ sudo ./internal/scripts/install_dependencies_ubuntu.sh
 
 ## Build
 
-In the repository root folder, execute the following steps:
+From the repository root folder, first build the C bindings:
 
 ```bash
-cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build  \
+      -DCMAKE_INSTALL_PREFIX=target/ffi/c/install
+cmake --build target/ffi/c/build
+cmake --install target/ffi/c/build
+```
+
+Then, the C++ bindings and examples with:
+
+```bash
+cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build \
+      -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/c/install \
+      -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/cxx/build
 ```

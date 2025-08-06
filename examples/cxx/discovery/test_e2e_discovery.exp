@@ -22,16 +22,16 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/c-cxx/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_subscriber
+spawn target/ffi/cxx/build/examples/publish_subscribe/example_cxx_publish_subscribe_subscriber
 expect_output "Subscriber ready to receive data!"
 
-spawn target/ffi/c-cxx/build/examples/cxx/discovery/example_cxx_discovery
+spawn target/ffi/cxx/build/examples/discovery/example_cxx_discovery
 expect_output "messaging_pattern: iox2::MessagingPattern::PublishSubscribe"
 
-spawn target/ffi/c-cxx/build/examples/cxx/event/example_cxx_event_listener
+spawn target/ffi/cxx/build/examples/event/example_cxx_event_listener
 expect_output "Listener ready to receive events!"
 
-spawn target/ffi/c-cxx/build/examples/cxx/discovery/example_cxx_discovery
+spawn target/ffi/cxx/build/examples/discovery/example_cxx_discovery
 expect_output "messaging_pattern: iox2::MessagingPattern::Event"
 
 show_test_passed

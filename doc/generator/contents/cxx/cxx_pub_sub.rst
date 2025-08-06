@@ -14,13 +14,13 @@ You can execute it by opening two terminals and calling:
 
 .. code-block:: sh
 
-   ./target/ffi/c-cxx/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_subscriber
+   ./target/ffi/cxx/build/examples/publish_subscribe/example_cxx_publish_subscribe_subscriber
 
 **Terminal 2:**
 
 .. code-block:: sh
 
-   ./target/ffi/c-cxx/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_publisher
+   ./target/ffi/cxx/build/examples/publish_subscribe/example_cxx_publish_subscribe_publisher
 
 
 Publisher

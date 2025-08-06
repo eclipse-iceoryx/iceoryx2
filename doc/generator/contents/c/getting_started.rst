@@ -15,12 +15,12 @@ Start in terminal 1:
 
 .. code-block:: sh
 
-   ./target/ffi/c-cxx/build/examples/c/publish_subscribe/example_c_publish_subscribe_subscriber
+   ./target/ffi/c/build/examples/publish_subscribe/example_c_subscriber
 
 And in terminal 2:
 
 .. code-block:: sh
 
-   ./target/ffi/c-cxx/build/examples/c/publish_subscribe/example_c_publish_subscribe_publisher
+   ./target/ffi/c/build/examples/publish_subscribe/example_c_publisher
 
 You should observe how the publisher application sends data to the subscriber application.

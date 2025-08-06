@@ -17,8 +17,8 @@ instructions in the [C Examples Readme](../README.md).
 First you have to build the C examples:
 
 ```sh
-cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
-cmake --build target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/c/build
 ```
 
 ## How to Run
@@ -29,13 +29,13 @@ commands:
 ### Terminal 1
 
 ```sh
-./target/ffi/c-cxx/build/examples/c/event/example_c_event_listener
+./target/ffi/c/build/examples/event/example_c_event_listener
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/c-cxx/build/examples/c/event/example_c_event_notifier
+./target/ffi/c/build/examples/event/example_c_event_notifier
 ```
 
 Feel free to run multiple listeners or notifiers concurrently to observe how

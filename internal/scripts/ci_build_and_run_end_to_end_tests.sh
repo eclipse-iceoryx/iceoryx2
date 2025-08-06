@@ -71,14 +71,21 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
 
     # Build the C and C++ bindings
     cargo build --package iceoryx2-ffi
-    cmake -S . -B target/ffi/c-cxx/build \
-        -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
-        -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
-        -DCMAKE_BUILD_TYPE=Debug \
-        -DBUILD_CXX_BINDING=ON \
-        -DBUILD_EXAMPLES=ON \
-        -DBUILD_TESTING=OFF
-    cmake --build target/ffi/c-cxx/build -j$NUM_JOBS
+    cmake -S iceoryx2-ffi/c -B target/ffi/c/build \
+          -DCMAKE_INSTALL_PREFIX=target/ffi/c/install \
+          -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
+          -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DBUILD_EXAMPLES=ON \
+          -DBUILD_TESTING=OFF
+    cmake --build target/ffi/c/build -j$NUM_JOBS
+    cmake --install target/ffi/c/build
+
+    cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build \
+          -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install;$( pwd )/target/ffi/c/install" \
+          -DBUILD_EXAMPLES=ON \
+          -DBUILD_TESTING=OFF
+    cmake --build target/ffi/cxx/build -j$NUM_JOBS
 
     # Build the Python bindings
     poetry --project iceoryx2-ffi/python install

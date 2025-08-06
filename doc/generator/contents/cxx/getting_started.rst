@@ -19,13 +19,13 @@ Start in terminal 1:
 
 .. code-block:: sh
 
-   ./target/ffi/c-cxx/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_subscriber
+   ./target/ffi/cxx/build/examples/publish_subscribe/example_cxx_publish_subscribe_subscriber
 
 And in terminal 2:
 
 .. code-block:: sh
 
-   ./target/ffi/c-cxx/build/examples/cxx/publish_subscribe/example_cxx_publish_subscribe_publisher
+   ./target/ffi/cxx/build/examples/publish_subscribe/example_cxx_publish_subscribe_publisher
 
 You should observe how the publisher application sends data to the subscriber application.
 

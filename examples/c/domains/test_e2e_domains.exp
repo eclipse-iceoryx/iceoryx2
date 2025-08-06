@@ -22,16 +22,16 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/c-cxx/build/examples/c/domains/example_c_domains_publisher "fuu" "bar"
+spawn target/ffi/c/build/examples/domains/example_c_domains_publisher "fuu" "bar"
 set id_publisher $spawn_id
 
-spawn target/ffi/c-cxx/build/examples/c/domains/example_c_domains_subscriber "fuu" "bar"
+spawn target/ffi/c/build/examples/domains/example_c_domains_subscriber "fuu" "bar"
 set id_subscriber $spawn_id
 
 expect_output_from $id_publisher "*fuu*bar*Send sample*"
 expect_output_from $id_subscriber "received: TransmissionData { .x: 3, .y: 9, .funky: 2436.36 }"
 
-spawn target/ffi/c-cxx/build/examples/c/domains/example_c_domains_discovery "fuu"
+spawn target/ffi/c/build/examples/domains/example_c_domains_discovery "fuu"
 
 expect_output "Services running in domain \"fuu\":"
 expect_output "Found Service: bar"

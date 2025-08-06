@@ -93,8 +93,8 @@ instructions in the [C Examples Readme](../README.md).
 First you have to build the C examples:
 
 ```sh
-cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
-cmake --build target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/c/build
 ```
 
 ## How to Run
@@ -102,19 +102,19 @@ cmake --build target/ffi/c-cxx/build
 ### Terminal 1
 
 ```sh
-./target/ffi/c-cxx/build/examples/c/service_attributes/example_c_service_attributes_creator
+./target/ffi/c/build/examples/service_attributes/example_c_service_attributes_creator
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/c-cxx/build/examples/c/service_attributes/example_c_service_attributes_opener
+./target/ffi/c/build/examples/service_attributes/example_c_service_attributes_opener
 ```
 
 ### Terminal 3
 
 ```sh
-./target/ffi/c-cxx/build/examples/c/service_attributes/example_c_service_attributes_incompatible
+./target/ffi/c/build/examples/service_attributes/example_c_service_attributes_incompatible
 ```
 
 The application in Terminal 3 will fail since it requires incompatible service
