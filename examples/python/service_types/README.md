@@ -1,47 +1,50 @@
-# Service-Types
+# Service Types in iceoryx2
 
-Service types allow the specialization of the underlying mechanisms of
-iceoryx2. It is a powerful tool to customize the behavior of all internal
-aspects. Let's assume you use iceoryx2 in a unit test suite which runs
-concurrently on your CI. In those cases, it would be ideal when iceoryx2 would
-not create actual inter-process resources like shared memory, which would
-interfere with another process, like another concurrently running test suite.
+iceoryx2 allows customizing its internal communication mechanisms through
+_service types_. This feature enables adapting iceoryx2 to different
+environments and use cases without modifying your application logic -
+just change the service type.
 
-Or if you want to share GPU memory between processes and want to enable
-iceoryx2 to handle the zero-copy communication based on them. In embedded
-contexts, you might want to communicate across hypervisor partitions or
-between an ARM A-core to an R-core. In all of those situations, you would need
-special mechanisms to use the underlying memory or to send event trigger
-mechanisms.
+For instance:
 
-With service types, you have the ability to use iceoryx2 in a different
-scenario without changing a single line of code, except the one line that
-defines the service type. The service type is set when the `Node` is
-created with
+* In **unit tests** running in parallel on a CI system, you may want to avoid
+  creating real inter-process resources like shared memory that could interfere
+  with other tests.
+* If you're **sharing GPU memory** across processes, you may want iceoryx2 to
+  handle zero-copy communication using custom memory mechanisms.
+* In **embedded systems**, you might need communication across hypervisor
+  partitions or between heterogeneous cores (e.g., ARM A-core to R-core).
+
+In all these scenarios, service types allow you to plug in the appropriate
+underlying communication mechanism.
+
+## Choosing a Service Type
+
+The service type is specified when creating a `Node`:
 
 ```python
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 ```
 
-By default, all examples are setting it to `iox2.ServiceType.Ipc`. Let's
-assume you would like to use the intra-process specialization. Then you can use
-`iox2.ServiceType.Local`. In this case, all mechanisms are strictly
-contained in the process itself, and all services cannot be used or discovered
-outside of the process.
+By default, all examples use `iox2.ServiceType.Ipc`. You can swap in a different
+service type depending on your needs:
 
-In contrast to Rust, Python does not have the concepts of `Send` or `Sync`, and
-the compiler cannot detect the use of non-thread-safe code in a concurrent
-context. Therefore, we decided to make every port (e.g., `Publisher`,
-`Subscriber`, `Server`, `Client`, etc.) thread-safe by default. This introduces
-the additional overhead of a mutex for the user.
+* `iox2.ServiceType.Ipc` – Default; for inter-process communication. All ports
+  are thread-safe.
+* `iox2.ServiceType.Local` – For intra-process communication; services are
+  limited to the current process. All ports are thread-safe.
 
-## Local PubSub
+In contrast to Rust, Python does not have terminology that corresponds
+to `Send` and `Sync` traits, and cannot ensure that
+non-thread-safe objects are not accidentally shared across threads. Therefore,
+by default, all ports like `Publisher`, `Subscriber`, `Server`, and `Client`
+are **thread-safe**.
 
-This example uses iceoryx2 for inter-thread communication. It spawns a
-background thread and creates a node for every thread (`main` and the
-`background_thread`) to enable easy inter-thread communication.
-The advantage is that you no longer have to manually handle your MPMC queue and
-share it between threads.
+## Example: Local PubSub
+
+This example demonstrates inter-thread communication using
+`iox2.ServiceType.Local`. A node is created per thread (`main` and a background
+thread), enabling communication between them without manual MPMC queue handling.
 
 ## How to Build
 
@@ -72,27 +75,24 @@ maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml
 python examples/python/service_types/local_pubsub.py
 ```
 
-All services are strictly confined to the process. Check out the directories
-`/tmp/iceoryx2` or `/dev/shm`. As you can see, there are no resources created.
-Also calling
+Since all services are confined to the process:
 
-```sh
-iox2 service list
-```
-
-will show that there are no discoverable services running.
+* No shared memory or external resources are created (check `/tmp/iceoryx2` or
+  `/dev/shm`).
+* Running `iox2 service list` will show **no discoverable services**.
 
 ## IPC Publisher & IPC Threadsafe Subscriber
 
-The IPC publisher example is the one you are already familiar with from the
-introductory publish-subscribe example. The one thing you will observe is that,
-even though the publisher publishes on the same service, the `local_pubsub`
-process will not receive any messages since it is confined to the process.
+These examples use inter-process communication and show how service types affect
+service visibility and thread safety.
 
-The IPC threadsafe subscriber example uses the service type
-`ipc_threadsafe::Service`, which makes every port threadsafe and therefore can
-be shared between threads safely. To demonstrate this, we create another thread
-and loop in the main- and the background-thread for messages.
+* The **IPC Publisher** (`iox2.ServiceType.Ipc`) works like the default pub-sub
+  example.
+* The **IPC Threadsafe Subscriber** uses `iox2.ServiceType.Ipc`, and
+  demonstrates the ports thread safety.
+
+To demonstrate thread safety, this subscriber launches an additional thread that
+also listens for messages.
 
 ### How To Run
 
@@ -108,25 +108,23 @@ python examples/python/service_types/ipc_publisher.py
 python examples/python/service_types/ipc_threadsafe_subscriber.py
 ```
 
-If you now check out the directories `/tmp/iceoryx2` or `/dev/shm`, you will
-see the resources both inter-process communicating processes have created.
-Also, a call to
+After starting both:
 
-```sh
-iox2 service list
-```
+* You’ll see shared memory resources in `/tmp/iceoryx2` or `/dev/shm`.
+* Running `iox2 service list` will list the discoverable services.
 
-will discover the running service.
+Note: The local pubsub process will **not receive** messages from the IPC
+publisher, as it's confined to the process.
 
 ## Summary
 
-* `iox2.ServiceType.Ipc` - inter-process communication, all ports are
-  thread-safe
-* `iox2.ServiceType.Local` - inter-thread communication, all ports are
-  thread-safe
+| Service Type             | Scope         | Thread Safety     | Notes                                               |
+| ------------------------ | ------------- | ----------------- | --------------------------------------------------- |
+| `iox2.ServiceType.Ipc`   | Inter-process | ✅ Thread-safe     | Adds mutex overhead for safe sharing across threads |
+| `iox2.ServiceType.Local` | Intra-process | ✅ Thread-safe     | Safe for multi-threaded intra-process communication |
 
-Defined when creating a `Node` and all constructed `Service`s created by that
-`Node` will use the specified service type.
+All ports (`Publisher`, `Subscriber`, etc.) and payloads (`Sample`, `Request`,
+etc.) are affected by the service type defined when the `Node` is created.
 
 ```python
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)

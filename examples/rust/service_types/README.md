@@ -30,7 +30,7 @@ let node = NodeBuilder::new()
 By default, all examples use `ipc::Service`. You can swap in a different
 service type depending on your needs:
 
-* `ipc::Service` – Default: for inter-process communication.
+* `ipc::Service` – Default; for inter-process communication.
 * `local::Service` – For intra-process communication; services are limited to
   the current process.
 * `ipc_threadsafe::Service` – Like `ipc::Service`, but all ports implement
