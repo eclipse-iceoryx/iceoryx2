@@ -23,8 +23,14 @@ instructions in the [C++ Examples Readme](../README.md).
 First you have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build
+cmake --build target/ffi/c/build
+cmake --install target/ffi/c/build --prefix target/ffi/c/install
+
+cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build \
+      -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/c/install \
+      -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/cxx/build
 ```
 
 ## How to Run
@@ -32,7 +38,7 @@ cmake --build target/ffi/c-cxx/build
 To see the example in action, open a terminal and enter:
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/complex_data_types/example_cxx_complex_data_types
+./target/ffi/cxx/build/examples/complex_data_types/example_cxx_complex_data_types
 ```
 
 **Note:** The example can be started up to 16 times in parallel. The subscriber

@@ -260,7 +260,6 @@ jobs:
         uses: snok/install-poetry@v1
         with:
           version: 2.1.3
-          plugins: poetry-plugin-shell
 
       - name: Prepare Linux
         run: |
@@ -332,6 +331,7 @@ jobs:
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '3.31.x'
+
       - name: Use cmake
         run: cmake --version
 
@@ -351,6 +351,7 @@ jobs:
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
         run: internal\scripts\ci_prepare_windows.ps1
+
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -365,43 +366,60 @@ jobs:
 
       - name: Build C language bindings
         run: |
-          cmake -S . \
-                -B target/ffi/c-cxx/build \
-                -DCMAKE_INSTALL_PREFIX=target/ffi/c-cxx/install \
-                -DBUILD_CXX_BINDING=OFF \
+          cmake -S iceoryx2-ffi/c \
+                -B target/ffi/c/build \
+                -DCMAKE_INSTALL_PREFIX=target/ffi/c/install \
                 -DBUILD_EXAMPLES=ON \
                 -DBUILD_TESTING=ON \
                 -DCMAKE_C_FLAGS="-m32" \
                 -DCMAKE_CXX_FLAGS="-m32" \
                 -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ matrix.mode.name }}" \
                 ${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ffi/c-cxx/build
-          cmake --install target/ffi/c-cxx/build
+          cmake --build target/ffi/c/build
+          cmake --install target/ffi/c/build
 
-      - name: Run language binding tests
-        run: target/ffi/c-cxx/build/tests/iceoryx2-c-tests
+      - name: Run C language binding tests
+        run: target/ffi/c/build/tests/iceoryx2-c-tests
 
       - name: Build C language binding examples in out-of-tree configuration
-        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
         run: |
-          rm -rf target/ffi/c-cxx/build
+          rm -rf target/ffi/c/build
           cmake -S examples/c \
                 -B target/ffi/out-of-tree-c \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/c-cxx/install \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/c/install \
                 -DCMAKE_C_FLAGS="-m32" \
                 -DCMAKE_CXX_FLAGS="-m32" \
-                -${{ matrix.mode.cmake-build-type }}
+                ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ffi/out-of-tree-c
 
+      - name: Build C++ language bindings
+        if: false # TODO: [#262] Fix build errors in iceoryx_hoofs dependency
+        run: |
+          cmake -S iceoryx2-ffi/cxx \
+                -B target/ffi/cxx/build \
+                -DCMAKE_INSTALL_PREFIX=target/ffi/cxx/install \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install;${{ github.workspace }}/target/ffi/c/install" \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DCMAKE_C_FLAGS="-m32" \
+                -DCMAKE_CXX_FLAGS="-m32" \
+                ${{ matrix.mode.cmake-build-type }}
+          cmake --build target/ffi/cxx/build
+          cmake --install target/ffi/cxx/build
+
+      - name: Run C++ language binding tests
+        if: false # TODO: [#262] Fix build errors in iceoryx_hoofs dependency
+        run: target/ffi/cxx/build/tests/iceoryx2-cxx-tests
+
       - name: Build C++ language binding examples in out-of-tree configuration
-        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
+        if: false # TODO: [#262] Fix build errors in iceoryx_hoofs dependency
         run: |
           cmake -S examples/cxx \
                 -B target/ffi/out-of-tree-cxx \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/c-cxx/install \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ffi/cxx/install \
                 -DCMAKE_C_FLAGS="-m32" \
                 -DCMAKE_CXX_FLAGS="-m32" \
-                -${{ matrix.mode.cmake-build-type }}
+                ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ffi/out-of-tree-cxx
 
   x86_64:
@@ -485,6 +503,7 @@ jobs:
       - name: Build iceoryx_hoofs on Windows
         if: ${{ matrix.os == 'windows-latest' }}
         run: internal\scripts\ci_build_and_install_iceoryx_hoofs.ps1 -mode ${{ matrix.mode.name }} -toolchain ${{ matrix.toolchain }}
+
       - name: Build iceoryx_hoofs on non-Windows
         if: ${{ matrix.os != 'windows-latest' }}
         run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
@@ -495,37 +514,48 @@ jobs:
           cd iceoryx2-ffi/ffi
           cargo rustc -q -- --print=native-static-libs
 
-      - name: Build language bindings
+      - name: Build C language bindings
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ffi/c-cxx/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
-          cmake --build target/ffi/c-cxx/build ${{ matrix.mode.cmake-build-config }}
-          cmake --install target/ffi/c-cxx/install ${{ matrix.mode.cmake-build-config }}
+          cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DCMAKE_INSTALL_PREFIX=target/ffi/c/install -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.cmake-build-system-generator }} -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
+          cmake --build target/ffi/c/build ${{ matrix.mode.cmake-build-config }}
+          cmake --install target/ffi/c/build ${{ matrix.mode.cmake-build-config }}
 
       - name: Run C language binding tests
-        run: target/ffi/c-cxx/build/tests/iceoryx2-c-tests
+        run: target/ffi/c/build/tests/iceoryx2-c-tests
+
+      - name: Build C++ language bindings
+        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        run: |
+          cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build -DCMAKE_INSTALL_PREFIX=target/ffi/cxx/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/iceoryx/install;${{ github.workspace }}/target/ffi/c/install" -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }}
+          cmake --build target/ffi/cxx/build ${{ matrix.mode.cmake-build-config }}
+          cmake --install target/ffi/cxx/build ${{ matrix.mode.cmake-build-config }}
 
       - name: Run C++ language binding tests
-        run: target/ffi/c-cxx/build/tests/iceoryx2-cxx-tests
+        run: target/ffi/cxx/build/tests/iceoryx2-cxx-tests
 
       - name: Remove language binding build artifacts on Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: rm -r -force target/ffi/c-cxx/build
+        run: |
+          rm -r -force target/ffi/c/build
+          rm -r -force target/ffi/cxx/build
 
       - name: Remove language binding build artifacts on non-Windows
         if: ${{ matrix.os != 'windows-latest' }}
-        run: rm -rf target/ffi/c-cxx/build
+        run: |
+          rm -rf target/ffi/c/build
+          rm -rf target/ffi/cxx/build
 
       - name: Build C language binding examples in out-of-tree configuration
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S examples/c -B target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/c-cxx/install"
+          cmake -S examples/c -B target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/c/install"
           cmake --build target/ffi/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
 
       - name: Build C++ language binding examples in out-of-tree configuration
         # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
         run: |
-          cmake -S examples/cxx -B target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/c-cxx/install;${{ github.workspace }}/target/iceoryx/install"
+          cmake -S examples/cxx -B target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ffi/c/install;${{ github.workspace }}/target/ffi/cxx/install;${{ github.workspace }}/target/iceoryx/install"
           cmake --build target/ffi/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
 
   x86_64_unstable:

@@ -22,16 +22,16 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/c-cxx/build/examples/c/publish_subscribe/example_c_subscriber
+spawn target/ffi/c/build/examples/publish_subscribe/example_c_subscriber
 expect_output "Subscriber ready to receive data!"
 
-spawn target/ffi/c-cxx/build/examples/c/discovery/example_c_discovery
+spawn target/ffi/c/build/examples/discovery/example_c_discovery
 expect_output "Found Service: My/Funk/ServiceName*"
 
-spawn target/ffi/c-cxx/build/examples/c/event/example_c_event_listener
+spawn target/ffi/c/build/examples/event/example_c_event_listener
 expect_output "Listener ready to receive events!"
 
-spawn target/ffi/c-cxx/build/examples/c/discovery/example_c_discovery
+spawn target/ffi/c/build/examples/discovery/example_c_discovery
 expect_output "Found Service: MyEventName*"
 
 show_test_passed

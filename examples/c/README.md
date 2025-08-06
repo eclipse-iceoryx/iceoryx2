@@ -25,9 +25,9 @@ sudo ./internal/scripts/install_dependencies_ubuntu.sh
 
 ## Build
 
-In the repository root folder, execute the following steps.
+From the repository root folder, execute the following steps.
 
 ```bash
-cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
-cmake --build target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/c/build
 ```

@@ -108,27 +108,43 @@ iox2_common_build_and_test_no_doc_tests_release_template: &IOX2_COMMON_BUILD_AND
 iox2_ffi_common_debug_template: &IOX2_FFI_COMMON_DEBUG
   ffi_script:
     - ./internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-    - cmake -S . -B target/ffi/c-cxx/build -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/c-cxx/install -DCMAKE_INSTALL_PREFIX="$( pwd )/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/debug"
-    - cmake --build target/ffi/c-cxx/build
-    - cmake --install target/ffi/c-cxx/build
-    - target/ffi/c-cxx/build/tests/iceoryx2-c-tests
-    - rm -rf target/ffi/c-cxx/build
-    - cmake -S examples/c -B target/ffi/out-of-tree-c -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install;$( pwd )/target/iceoryx/install"
+    - cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/c/install -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/debug"
+    - cmake --build target/ffi/c/build
+    - cmake --install target/ffi/c/build
+    - target/ffi/c/build/tests/iceoryx2-c-tests
+    - cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build -DCMAKE_BUILD_TYPE=Debug -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/c/install -DCMAKE_INSTALL_PREFIX=target/ffi/cxx/install
+    - cmake --build target/ffi/cxx/build
+    - cmake --install target/ffi/cxx/build
+    - cmake -S examples/c -B target/ffi/out-of-tree-c -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c/install"
     - cmake --build target/ffi/out-of-tree-c
-    - cmake -S examples/cxx -B target/ffi/out-of-tree-cxx -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install;$( pwd )/target/iceoryx/install"
+    - git clone --depth 1 --branch v2.95.5 https://github.com/eclipse-iceoryx/iceoryx.git target/iceoryx/src
+    - cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_BUILD_TYPE=Release
+    - cmake --install target/iceoryx/build/platform
+    - cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install" -DCMAKE_BUILD_TYPE=Release
+    - cmake --build target/iceoryx/build/hoofs
+    - cmake --install target/iceoryx/build/hoofs
+    - cmake -S examples/cxx -B target/ffi/out-of-tree-cxx -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/cxx/install;$( pwd )/target/iceoryx/install"
     - cmake --build target/ffi/out-of-tree-cxx
 
 iox2_ffi_common_release_template: &IOX2_FFI_COMMON_RELEASE
   ffi_script:
     - ./internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-    - cmake -S . -B target/ffi/c-cxx/build -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/c-cxx/install -DCMAKE_INSTALL_PREFIX="$( pwd )/target/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
-    - cmake --build target/ffi/c-cxx/build
-    - cmake --install target/ffi/c-cxx/build
-    - target/ffi/c-cxx/build/tests/iceoryx2-c-tests
-    - rm -rf target/ffi/c-cxx/build
-    - cmake -S examples/c -B target/ffi/out-of-tree-c -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install;$( pwd )/target/iceoryx/install"
+    - cmake -S iceoryx2-ffi/c -B target/ffi/c/build -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_INSTALL_PREFIX=target/ffi/c/install -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/debug"
+    - cmake --build target/ffi/c/build
+    - cmake --install target/ffi/c/build
+    - target/ffi/c/build/tests/iceoryx2-c-tests
+    - cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build -DCMAKE_BUILD_TYPE=Release -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/c/install -DCMAKE_INSTALL_PREFIX=target/ffi/cxx/install
+    - cmake --build target/ffi/cxx/build
+    - cmake --install target/ffi/cxx/build
+    - cmake -S examples/c -B target/ffi/out-of-tree-c -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c/install"
     - cmake --build target/ffi/out-of-tree-c
-    - cmake -S examples/cxx -B target/ffi/out-of-tree-cxx -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/c-cxx/install;$( pwd )/target/iceoryx/install"
+    - git clone --depth 1 --branch v2.95.5 https://github.com/eclipse-iceoryx/iceoryx.git target/iceoryx/src
+    - cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_BUILD_TYPE=Release
+    - cmake --install target/iceoryx/build/platform
+    - cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install" -DCMAKE_BUILD_TYPE=Release
+    - cmake --build target/iceoryx/build/hoofs
+    - cmake --install target/iceoryx/build/hoofs
+    - cmake -S examples/cxx -B target/ffi/out-of-tree-cxx -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$( pwd )/target/ffi/cxx/install;$( pwd )/target/iceoryx/install"
     - cmake --build target/ffi/out-of-tree-cxx
 
 iox2_freebsd_setup_template: &IOX2_FREEBSD_SETUP

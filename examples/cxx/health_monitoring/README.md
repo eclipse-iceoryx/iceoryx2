@@ -63,8 +63,14 @@ instructions in the [C++ Examples Readme](../README.md).
 First you have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/c-cxx/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/c-cxx/build
+cmake -S iceoryx2-ffi/c -B target/ffi/c/build
+cmake --build target/ffi/c/build
+cmake --install target/ffi/c/build --prefix target/ffi/c/install
+
+cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build \
+      -DCMAKE_PREFIX_PATH=$( pwd )/target/ffi/c/install \
+      -DBUILD_EXAMPLES=ON
+cmake --build target/ffi/cxx/build
 ```
 
 ## How to Run
@@ -77,7 +83,7 @@ Run the central daemon, which sets up all communication resources and monitors
 processes.
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_central_daemon
+./target/ffi/cxx/build/examples/health_monitoring/example_cxx_health_monitoring_central_daemon
 ```
 
 ### Terminal 2: Publisher 1
@@ -85,7 +91,7 @@ processes.
 Run the first publisher, which sends data on `service_1`.
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_publisher_1
+./target/ffi/cxx/build/examples/health_monitoring/example_cxx_health_monitoring_publisher_1
 ```
 
 ### Terminal 3: Publisher 2
@@ -93,7 +99,7 @@ Run the first publisher, which sends data on `service_1`.
 Run the second publisher, which sends data on `service_2`.
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_publisher_2
+./target/ffi/cxx/build/examples/health_monitoring/example_cxx_health_monitoring_publisher_2
 ```
 
 ### Terminal 4: Subscriber
@@ -101,7 +107,7 @@ Run the second publisher, which sends data on `service_2`.
 Run the subscriber, which listens to both `service_1` and `service_2`.
 
 ```sh
-./target/ffi/c-cxx/build/examples/cxx/health_monitoring/example_cxx_health_monitoring_subscriber
+./target/ffi/cxx/build/examples/health_monitoring/example_cxx_health_monitoring_subscriber
 ```
 
 ### Terminal 5: Simulate Process Crashes
@@ -116,13 +122,16 @@ killall -9 example_cxx_health_monitoring_publisher_1
 After running this command:
 
 1. The `central_daemon` will detect that the process has crashed and print:
+
    ```ascii
    detected dead node: Some(NodeName { value: "publisher 1" })
    ```
+
    The event service is configured to emit a `PubSub::ProcessDied` event when a
    process is identified as dead.
 
 2. On the `subscriber` side, you will see the message:
+
    ```ascii
    ServiceName { value: "service_1" }: process died!
    ```
