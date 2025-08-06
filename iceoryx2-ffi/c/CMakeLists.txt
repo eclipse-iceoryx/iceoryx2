@@ -11,12 +11,108 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
+
+include(${CMAKE_CURRENT_LIST_DIR}/../cmake/common.cmake)
+if(NOT DEFINED IOX2_VERSION_STRING OR IOX2_VERSION_STRING STREQUAL "")
+    message(FATAL_ERROR 
+        "IOX2_VERSION_STRING is not defined!\n"
+    )
+endif()
+
 project(iceoryx2-c VERSION ${IOX2_VERSION_STRING} LANGUAGES C)
 
 set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
 
+message(STATUS "Building iceoryx2 C binding")
+message(STATUS "iceoryx2 options:")
+
 #
-########## Rust target ##########
+########## CMake Options ##########
+#
+
+add_option(
+    NAME BUILD_TESTING
+    DESCRIPTION "Build tests"
+    DEFAULT_VALUE OFF
+)
+
+add_option(
+    NAME SANITIZERS
+    DESCRIPTION "Build with undefined-behavior- and address-sanitizer"
+    DEFAULT_VALUE OFF
+)
+
+add_option(
+    NAME WARNING_AS_ERROR
+    DESCRIPTION "Fails if the compiler emits a warning"
+    DEFAULT_VALUE OFF
+)
+
+##### Rust Params #####
+add_param(
+    NAME RUST_BUILD_ARTIFACT_PATH
+    DESCRIPTION "The path to the folder with the Rust build artifacts"
+    DEFAULT_VALUE ""
+)
+
+add_param(
+    NAME RUST_TARGET_TRIPLET
+    DESCRIPTION "The target triplet for cross compilation"
+    DEFAULT_VALUE ""
+)
+
+message(STATUS "iceoryx2 Rust feature flags:")
+
+#
+########## Rust Feature Flags ##########
+#
+
+add_rust_feature(
+    NAME IOX2_FEATURE_DEV_PERMISSIONS
+    DESCRIPTION "Set permissions to read, write, execute for everyone"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2/dev_permissions"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LIBC_PLATFORM
+    DESCRIPTION "A platform abstraction based on the libc crate"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2/libc_platform"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_LOG
+    DESCRIPTION "Enables https://crates.io/crates/log as default logger"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2/logger_log"
+)
+
+add_rust_feature(
+    NAME IOX2_FEATURE_LOGGER_TRACING
+    DESCRIPTION "Enables https://crates.io/crates/tracing as default logger"
+    DEFAULT_VALUE OFF
+    RUST_FEATURE "iceoryx2/logger_tracing"
+)
+
+#
+########## Apply Compiler Flags ##########
+#
+
+if(WARNING_AS_ERROR)
+    if(WIN32)
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    else()
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -Wpedantic")
+    endif()
+endif()
+
+if(SANITIZERS)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=undefined")
+endif()
+
+#
+########## Rust Target ##########
 #
 
 set(USE_CARGO FALSE)
@@ -157,6 +253,7 @@ target_link_libraries(shared-lib INTERFACE
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
-if(${BUILD_TESTING})
+# Tests
+if(BUILD_TESTING)
     add_subdirectory(tests)
 endif()
