@@ -35,7 +35,7 @@
 //! let mut recorder = RecorderBuilder::new(&service_types)
 //!     .data_representation(DataRepresentation::HumanReadable)
 //!     .messaging_pattern(MessagingPattern::PublishSubscribe)
-//!     .create(&FilePath::new(b"recorded_data.iox2")?)?;
+//!     .create(&FilePath::new(b"recorded_data.iox2")?, &ServiceName::new("my-service")?)?;
 //!
 //! # iceoryx2_bb_posix::file::File::remove(&FilePath::new(b"recorded_data.iox2")?)?;
 //!

@@ -24,9 +24,11 @@
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //!
-//! let (buffer, record_header) = ReplayerOpener::new(&FilePath::new(b"recorded_data.iox2")?)
+//! let replay = ReplayerOpener::new(&FilePath::new(b"recorded_data.iox2")?)
 //!     .data_representation(DataRepresentation::HumanReadable)
-//!     .read_into_buffer()?;
+//!     .open()?;
+//!  let record_header = replay.header().clone();
+//!  let buffer = replay.read_into_buffer().unwrap();
 //!
 //! println!("record header of service types {record_header:?}");
 //!
