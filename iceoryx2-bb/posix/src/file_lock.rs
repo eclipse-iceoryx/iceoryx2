@@ -192,7 +192,7 @@ impl FileLockBuilder {
         self,
         value: T,
         handle: &ReadWriteMutexHandle<T>,
-    ) -> Result<FileLock<T>, ReadWriteMutexCreationError> {
+    ) -> Result<FileLock<'_, T>, ReadWriteMutexCreationError> {
         FileLock::new(value, self, handle)
     }
 }

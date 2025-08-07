@@ -181,7 +181,7 @@ impl DeadlineQueue {
     pub fn add_deadline_interval(
         &self,
         deadline: Duration,
-    ) -> Result<DeadlineQueueGuard, TimeError> {
+    ) -> Result<DeadlineQueueGuard<'_>, TimeError> {
         let current_idx = self.id_count.load(Ordering::Relaxed);
         self.attachments.borrow_mut().push(Attachment::new(
             current_idx,

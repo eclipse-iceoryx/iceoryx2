@@ -141,7 +141,7 @@ impl BarrierBuilder {
     }
 
     /// Creates a new [`Barrier`]
-    pub fn create(self, handle: &BarrierHandle) -> Result<Barrier, BarrierCreationError> {
+    pub fn create(self, handle: &BarrierHandle) -> Result<Barrier<'_>, BarrierCreationError> {
         unsafe {
             handle
                 .handle
@@ -213,7 +213,7 @@ impl Barrier<'_> {
 }
 
 impl<'a> IpcConstructible<'a, BarrierHandle> for Barrier<'a> {
-    fn new(handle: &BarrierHandle) -> Barrier {
+    fn new(handle: &BarrierHandle) -> Barrier<'_> {
         Barrier { handle }
     }
 }

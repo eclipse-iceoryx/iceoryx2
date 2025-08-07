@@ -64,7 +64,10 @@ use iceoryx2_cal::serialize::Serialize;
 use crate::record::RecordWriter;
 use crate::record::HEX_START_RECORD_MARKER;
 use crate::record::{DataRepresentation, RawRecord};
-use crate::record_header::{RecordHeader, RecordHeaderDetails};
+use crate::record_header::{
+    RecordHeader, RecordHeaderDetails, FILE_FORMAT_HUMAN_READABLE_VERSION,
+    FILE_FORMAT_IOX2_DUMP_VERSION,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// Errors that can occur when a new [`Recorder`] is created with
@@ -179,8 +182,12 @@ impl RecorderBuilder {
 
         let header = RecordHeader {
             service_name: service_name.clone(),
+            iceoryx2_version: PackageVersion::get().into(),
             details: RecordHeaderDetails {
-                version: PackageVersion::get().into(),
+                file_format_version: match self.data_representation {
+                    DataRepresentation::HumanReadable => FILE_FORMAT_HUMAN_READABLE_VERSION,
+                    DataRepresentation::Iox2Dump => FILE_FORMAT_IOX2_DUMP_VERSION,
+                },
                 types: self.types.clone(),
                 messaging_pattern: self.messaging_pattern,
             },

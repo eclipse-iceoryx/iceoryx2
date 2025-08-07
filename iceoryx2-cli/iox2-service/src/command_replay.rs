@@ -20,10 +20,11 @@ use anyhow::Result;
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
-use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_cli::Format;
 use iceoryx2_userland_record_and_replay::prelude::*;
-use iceoryx2_userland_record_and_replay::record_header::RecordHeaderDetails;
+use iceoryx2_userland_record_and_replay::record_header::{
+    RecordHeaderDetails, FILE_FORMAT_HUMAN_READABLE_VERSION, FILE_FORMAT_IOX2_DUMP_VERSION,
+};
 
 pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
     let node = NodeBuilder::new()
@@ -40,7 +41,10 @@ pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
     };
 
     let required_header = RecordHeaderDetails {
-        version: PackageVersion::get().into(),
+        file_format_version: match options.data_representation {
+            crate::cli::DataRepresentation::HumanReadable => FILE_FORMAT_HUMAN_READABLE_VERSION,
+            crate::cli::DataRepresentation::Iox2Dump => FILE_FORMAT_IOX2_DUMP_VERSION,
+        },
         types: get_pubsub_service_types(&service_name, &node)?,
         messaging_pattern: options.messaging_pattern.into(),
     };
@@ -72,6 +76,7 @@ pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
             .create()?,
     };
 
+    println!("Start replaying data on \"{service_name}\".");
     for n in 0..u64::MAX {
         let start = Instant::now();
         for data in &buffer {

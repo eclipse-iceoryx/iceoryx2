@@ -641,7 +641,7 @@ impl UnnamedSemaphoreBuilder {
     pub fn create(
         self,
         handle: &UnnamedSemaphoreHandle,
-    ) -> Result<UnnamedSemaphore, UnnamedSemaphoreCreationError> {
+    ) -> Result<UnnamedSemaphore<'_>, UnnamedSemaphoreCreationError> {
         unsafe {
             handle
                 .handle

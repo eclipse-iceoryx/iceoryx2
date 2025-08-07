@@ -44,7 +44,7 @@ pub fn record(options: RecordOptions, _format: Format) -> Result<()> {
         .messaging_pattern(options.messaging_pattern.into())
         .create(&FilePath::new(options.output.as_bytes())?, &service_name)?;
 
-    println!("start recording data on \"{}\".", options.service);
+    println!("Start recording data on \"{}\".", options.service);
 
     let start = Instant::now();
     let mut msg_counter = 0u64;
