@@ -27,7 +27,7 @@ pub fn record(options: RecordOptions, _format: Format) -> Result<()> {
         .create::<ipc::Service>()?;
 
     let service_name = ServiceName::new(&options.service)?;
-    let service_types = get_pubsub_service_types(ServiceName::new(&options.service)?, &node)?;
+    let service_types = get_pubsub_service_types(&service_name, &node)?;
 
     let service = unsafe {
         node.service_builder(&service_name)

@@ -30,19 +30,32 @@ pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;
 
+    let replay = ReplayerOpener::new(&FilePath::new(options.input.as_bytes())?)
+        .data_representation(options.data_representation.into())
+        .open()?;
+
+    let service_name = match options.service {
+        Some(v) => ServiceName::new(&v)?,
+        None => replay.header().service_name.clone(),
+    };
+
     let required_header = RecordHeaderDetails {
         version: PackageVersion::get().into(),
-        types: get_pubsub_service_types(ServiceName::new(&options.service)?, &node)?,
+        types: get_pubsub_service_types(&service_name, &node)?,
         messaging_pattern: options.messaging_pattern.into(),
     };
 
-    let (buffer, _) = ReplayerOpener::new(&FilePath::new(options.input.as_bytes())?)
-        .data_representation(options.data_representation.into())
-        .require_header_details(&required_header)
-        .read_into_buffer()?;
+    if required_header != replay.header().details {
+        return Err(anyhow::anyhow!(
+            "The expected header {required_header:?} does not match the actual header {:?}.",
+            replay.header().details
+        ));
+    }
+
+    let buffer = replay.read_into_buffer()?;
 
     let service = unsafe {
-        node.service_builder(&ServiceName::new(&options.service)?)
+        node.service_builder(&service_name)
             .publish_subscribe::<[CustomPayloadMarker]>()
             .user_header::<CustomHeaderMarker>()
             .__internal_set_payload_type_details(&required_header.types.payload)

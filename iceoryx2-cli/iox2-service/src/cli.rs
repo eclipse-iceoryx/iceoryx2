@@ -373,8 +373,8 @@ pub struct RecordOptions {
 
 #[derive(Parser)]
 pub struct ReplayOptions {
-    #[clap(help = "Name of the service where the recorded data shall be replayed.")]
-    pub service: String,
+    #[clap(help = "When provided, it overrides the service name of the record file.")]
+    pub service: Option<String>,
 
     #[clap(
         short,

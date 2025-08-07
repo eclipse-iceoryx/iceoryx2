@@ -23,11 +23,11 @@ use iceoryx2::{
 use iceoryx2_userland_record_and_replay::prelude::ServiceTypes;
 
 pub fn get_pubsub_service_types(
-    service_name: ServiceName,
+    service_name: &ServiceName,
     node: &Node<ipc::Service>,
 ) -> Result<ServiceTypes> {
     let service_details = match ipc::Service::details(
-        &service_name,
+        service_name,
         node.config(),
         MessagingPattern::PublishSubscribe,
     )? {

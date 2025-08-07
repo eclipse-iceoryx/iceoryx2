@@ -105,10 +105,12 @@ mod recorder_replayer {
             );
         }
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len dataset.len());
@@ -221,10 +223,12 @@ mod recorder_replayer {
             );
         }
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len dataset.len());
@@ -337,10 +341,12 @@ mod recorder_replayer {
             eq Err(RecorderWriteError::CorruptedPayloadRecord)
         );
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len 0);
@@ -395,10 +401,12 @@ mod recorder_replayer {
             eq Err(RecorderWriteError::CorruptedPayloadRecord)
         );
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len 0);
@@ -454,10 +462,12 @@ mod recorder_replayer {
             eq Err(RecorderWriteError::CorruptedUserHeaderRecord)
         );
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len 0);
@@ -532,10 +542,13 @@ mod recorder_replayer {
             eq Err(RecorderWriteError::CorruptedSystemHeaderRecord)
         );
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len 0);
@@ -667,7 +680,7 @@ mod recorder_replayer {
 
         let result = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer();
+            .open();
 
         assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedPayloadRecord));
 
@@ -728,7 +741,7 @@ mod recorder_replayer {
 
         let result = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer();
+            .open();
 
         assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedUserHeaderRecord));
 
@@ -789,7 +802,7 @@ mod recorder_replayer {
 
         let result = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer();
+            .open();
 
         assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedSystemHeaderRecord));
 
@@ -849,6 +862,8 @@ mod recorder_replayer {
 
         let result = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
+            .open()
+            .unwrap()
             .read_into_buffer();
 
         assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedTimeline));

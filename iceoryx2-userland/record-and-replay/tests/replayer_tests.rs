@@ -20,7 +20,6 @@ mod replayer_tests {
     };
     use iceoryx2_pal_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{
-        record_header::Version,
         recorder::{RecorderBuilder, ServiceTypes},
         replayer::{ReplayerOpenError, ReplayerOpener},
     };
@@ -50,7 +49,7 @@ mod replayer_tests {
     }
 
     #[test]
-    fn open_succeeds_when_required_header_matches() {
+    fn open_parses_header_correctly() {
         let service_name = testing::generate_service_name();
         let file_name = generate_file_name();
 
@@ -65,37 +64,11 @@ mod replayer_tests {
 
         assert_that!(
             ReplayerOpener::new(&file_name)
-                .require_header_details(&recorder.header().details)
-                .open(),
-            is_ok
-        );
-    }
-
-    #[test]
-    fn open_fails_when_required_header_does_not_match() {
-        let service_name = testing::generate_service_name();
-        let file_name = generate_file_name();
-
-        let types = ServiceTypes {
-            payload: TypeDetail::new::<u64>(TypeVariant::FixedSize),
-            user_header: TypeDetail::new::<u64>(TypeVariant::FixedSize),
-            system_header: TypeDetail::new::<u64>(TypeVariant::FixedSize),
-        };
-        let recorder = RecorderBuilder::new(&types)
-            .create(&file_name, &service_name)
-            .unwrap();
-        let mut header = recorder.header().clone();
-        header.details.version = Version {
-            major: 0,
-            minor: 0,
-            patch: 0,
-        };
-
-        assert_that!(
-            ReplayerOpener::new(&file_name)
-                .require_header_details(&header.details)
-                .open().err(),
-            eq Some(ReplayerOpenError::ActualHeaderDoesNotMatchRequiredHeader)
+                .open()
+                .unwrap()
+                .header()
+                .clone(),
+            eq * recorder.header()
         );
     }
 }
