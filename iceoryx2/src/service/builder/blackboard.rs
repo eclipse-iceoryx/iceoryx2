@@ -19,6 +19,7 @@ use super::{OpenDynamicStorageFailure, ServiceState};
 use crate::service;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
+use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::naming_scheme::blackboard_name;
 use crate::service::port_factory::blackboard;
 use crate::service::static_config::message_type_details::TypeDetail;
@@ -453,9 +454,7 @@ impl<
                 };
 
                 let dynamic_config = match self.builder.base.create_dynamic_config_storage(
-                    dynamic_config::MessagingPattern::Blackboard(
-                        dynamic_config::blackboard::DynamicConfig::new(&dynamic_config_setting),
-                    ),
+                    &MessagingPatternSettings::Blackboard(dynamic_config_setting),
                     dynamic_config::blackboard::DynamicConfig::memory_size(&dynamic_config_setting),
                     blackboard_config.max_nodes,
                 ) {

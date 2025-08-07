@@ -16,12 +16,12 @@
 //!
 use core::marker::PhantomData;
 
-use crate::service;
 use crate::service::dynamic_config::publish_subscribe::DynamicConfigSettings;
 use crate::service::header::publish_subscribe::Header;
 use crate::service::port_factory::publish_subscribe;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
+use crate::service::{self, dynamic_config::MessagingPatternSettings};
 use builder::RETRY_LIMIT;
 use iceoryx2_bb_elementary::alignment::Alignment;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -576,11 +576,7 @@ impl<
                 };
 
                 let dynamic_config = match self.base.create_dynamic_config_storage(
-                    dynamic_config::MessagingPattern::PublishSubscribe(
-                        dynamic_config::publish_subscribe::DynamicConfig::new(
-                            &dynamic_config_setting,
-                        ),
-                    ),
+                    &MessagingPatternSettings::PublishSubscribe(dynamic_config_setting),
                     dynamic_config::publish_subscribe::DynamicConfig::memory_size(
                         &dynamic_config_setting,
                     ),

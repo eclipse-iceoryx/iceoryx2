@@ -65,11 +65,38 @@ pub(crate) enum RemoveDeadNodeResult {
 }
 
 #[derive(Debug)]
+pub(crate) enum MessagingPatternSettings {
+    RequestResponse(request_response::DynamicConfigSettings),
+    PublishSubscribe(publish_subscribe::DynamicConfigSettings),
+    Event(event::DynamicConfigSettings),
+    Blackboard(blackboard::DynamicConfigSettings),
+}
+
+#[derive(Debug)]
 pub(crate) enum MessagingPattern {
     RequestResponse(request_response::DynamicConfig),
     PublishSubscribe(publish_subscribe::DynamicConfig),
     Event(event::DynamicConfig),
     Blackboard(blackboard::DynamicConfig),
+}
+
+impl MessagingPattern {
+    pub(crate) fn new(settings: &MessagingPatternSettings) -> Self {
+        match settings {
+            MessagingPatternSettings::RequestResponse(v) => {
+                MessagingPattern::RequestResponse(request_response::DynamicConfig::new(v))
+            }
+            MessagingPatternSettings::PublishSubscribe(v) => {
+                MessagingPattern::PublishSubscribe(publish_subscribe::DynamicConfig::new(v))
+            }
+            MessagingPatternSettings::Event(v) => {
+                MessagingPattern::Event(event::DynamicConfig::new(v))
+            }
+            MessagingPatternSettings::Blackboard(v) => {
+                MessagingPattern::Blackboard(blackboard::DynamicConfig::new(v))
+            }
+        }
+    }
 }
 
 #[doc(hidden)]

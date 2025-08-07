@@ -369,11 +369,19 @@ pub struct ServiceDetails<S: Service> {
 /// Represents the [`Service`]s state.
 #[derive(Debug)]
 pub struct ServiceState<S: Service, R: ServiceResource> {
+    // For this struct it is important to know that Rust drops fields of a struct in declaration
+    // order - not in memory order!
+
+    // must be destructed first, to prevent services to open it
+    pub(crate) dynamic_storage: S::DynamicStorage,
+    // must be destructed after the dynamic resources
+    pub(crate) additional_resource: R,
     pub(crate) static_config: StaticConfig,
     pub(crate) shared_node: Arc<SharedNode<S>>,
-    pub(crate) dynamic_storage: S::DynamicStorage,
+    // must be destructed last, otherwise other processes might create a new service with the same
+    // name and their resources are then removed by another process while they are creating them
+    // which would end up in a completely corrupted service
     pub(crate) static_storage: S::StaticStorage,
-    pub(crate) additional_resource: R,
 }
 
 impl<S: Service, R: ServiceResource> ServiceState<S, R> {
