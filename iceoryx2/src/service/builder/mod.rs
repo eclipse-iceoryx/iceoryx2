@@ -40,6 +40,7 @@ use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_log::warn;
 use iceoryx2_bb_memory::bump_allocator::BumpAllocator;
 use iceoryx2_cal::dynamic_storage::DynamicStorageCreateError;
 use iceoryx2_cal::dynamic_storage::DynamicStorageOpenError;
@@ -47,6 +48,7 @@ use iceoryx2_cal::dynamic_storage::{DynamicStorage, DynamicStorageBuilder};
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::named_concept::NamedConceptDoesExistError;
 use iceoryx2_cal::named_concept::NamedConceptMgmt;
+use iceoryx2_cal::named_concept::NamedConceptRemoveError;
 use iceoryx2_cal::serialize::Serialize;
 use iceoryx2_cal::static_storage::*;
 
@@ -337,9 +339,9 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
         true
     }
 
-    fn create_dynamic_config_storage(
+    fn create_dynamic_config_storage_resource(
         &self,
-        messaging_pattern: super::dynamic_config::MessagingPattern,
+        messaging_pattern_settings: &super::dynamic_config::MessagingPatternSettings,
         additional_size: usize,
         max_number_of_nodes: usize,
     ) -> Result<ServiceType::DynamicStorage, DynamicStorageCreateError> {
@@ -354,7 +356,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             .supplementary_size(additional_size + required_memory_size)
             .has_ownership(false)
             .initializer(Self::config_init_call)
-            .create(DynamicConfig::new_uninit(messaging_pattern, max_number_of_nodes) ) {
+            .create(DynamicConfig::new_uninit(super::dynamic_config::MessagingPattern::new(messaging_pattern_settings), max_number_of_nodes) ) {
                 Ok(dynamic_storage) => {
                     let node_id = self.shared_node.id();
                     let node_handle = fatal_panic!(from self,
@@ -367,6 +369,54 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
                     fail!(from self, with e, "Failed to create dynamic storage for service.");
                 }
             }
+    }
+
+    fn create_dynamic_config_storage(
+        &self,
+        messaging_pattern_settings: &super::dynamic_config::MessagingPatternSettings,
+        additional_size: usize,
+        max_number_of_nodes: usize,
+    ) -> Result<ServiceType::DynamicStorage, DynamicStorageCreateError> {
+        let msg = "Failed to create dynamic storage for service";
+        match self.create_dynamic_config_storage_resource(
+            messaging_pattern_settings,
+            additional_size,
+            max_number_of_nodes,
+        ) {
+            Ok(storage) => Ok(storage),
+            Err(DynamicStorageCreateError::AlreadyExists) => {
+                warn!(from self, "Old dynamic config from previous instance discovered - trying to remove it.");
+                // Safe since a service is removes the resources always in the order of:
+                //   1. dynamic config
+                //   2. additional resources
+                //   3. static config
+                // When a dynamic config still exists it means that the service is corrupted and
+                // can be safely cleaned up.
+                match unsafe {
+                    <ServiceType::DynamicStorage as NamedConceptMgmt>::remove_cfg(
+                        &self.service_config.service_id().0.clone().into(),
+                        &dynamic_config_storage_config::<ServiceType>(self.shared_node.config()),
+                    )
+                } {
+                    Ok(_) => (),
+                    Err(NamedConceptRemoveError::InsufficientPermissions) => {
+                        fail!(from self, with DynamicStorageCreateError::InsufficientPermissions,
+                            "{msg} since the old instance still exists and cannot be removed due to a lack of permissions.");
+                    }
+                    Err(e) => {
+                        fail!(from self, with DynamicStorageCreateError::InternalError,
+                            "{msg} since the old instance still exists and cannot be removed ({e:?}).");
+                    }
+                }
+
+                self.create_dynamic_config_storage(
+                    messaging_pattern_settings,
+                    additional_size,
+                    max_number_of_nodes,
+                )
+            }
+            Err(e) => Err(e),
+        }
     }
 
     fn open_dynamic_config_storage(

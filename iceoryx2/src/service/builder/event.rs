@@ -16,6 +16,7 @@
 //!
 pub use crate::port::event_id::EventId;
 use crate::service::builder::OpenDynamicStorageFailure;
+use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::port_factory::event;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
 use crate::service::*;
@@ -512,9 +513,7 @@ impl<ServiceType: service::Service> Builder<ServiceType> {
                 };
 
                 let dynamic_config = match self.base.create_dynamic_config_storage(
-                    dynamic_config::MessagingPattern::Event(
-                        dynamic_config::event::DynamicConfig::new(&dynamic_config_setting),
-                    ),
+                    &MessagingPatternSettings::Event(dynamic_config_setting),
                     dynamic_config::event::DynamicConfig::memory_size(&dynamic_config_setting),
                     event_config.max_nodes,
                 ) {

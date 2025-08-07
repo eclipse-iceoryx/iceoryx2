@@ -16,6 +16,7 @@ use core::marker::PhantomData;
 use crate::prelude::{AttributeSpecifier, AttributeVerifier};
 use crate::service::builder::OpenDynamicStorageFailure;
 use crate::service::dynamic_config::request_response::DynamicConfigSettings;
+use crate::service::dynamic_config::MessagingPatternSettings;
 use crate::service::port_factory::request_response;
 use crate::service::static_config::message_type_details::TypeDetail;
 use crate::service::static_config::messaging_pattern::MessagingPattern;
@@ -722,11 +723,7 @@ impl<
                 };
 
                 let dynamic_config = match self.base.create_dynamic_config_storage(
-                    dynamic_config::MessagingPattern::RequestResponse(
-                        dynamic_config::request_response::DynamicConfig::new(
-                            &dynamic_config_setting,
-                        ),
-                    ),
+                    &MessagingPatternSettings::RequestResponse(dynamic_config_setting),
                     dynamic_config::request_response::DynamicConfig::memory_size(
                         &dynamic_config_setting,
                     ),
