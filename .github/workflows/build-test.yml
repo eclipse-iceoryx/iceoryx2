@@ -208,42 +208,22 @@ jobs:
          version: 2.1.3
          plugins: poetry-plugin-shell
 
-     - name: Install Dependencies
-       run: poetry --project iceoryx2-ffi/python install
-
      - name: Prepare Linux
        run: |
          internal/scripts/ci_prepare_ubuntu.sh
          uname -a
 
-     - name: Run Linters
-       run: |
-         # Import Ordering
-         poetry --project iceoryx2-ffi/python run isort --check-only $(pwd)/examples/python
-         poetry --project iceoryx2-ffi/python run isort --check-only $(pwd)/iceoryx2-ffi/python/python-src/iceoryx2
-         poetry --project iceoryx2-ffi/python run isort --check-only $(pwd)/iceoryx2-ffi/python/tests
-
-         # Formatting
-         poetry --project iceoryx2-ffi/python run black --check $(pwd)/examples/python
-         poetry --project iceoryx2-ffi/python run black --check $(pwd)/iceoryx2-ffi/python/python-src/iceoryx2
-         poetry --project iceoryx2-ffi/python run black --check $(pwd)/iceoryx2-ffi/python/tests
+     - name: Install Python Dependencies
+       run: poetry --project iceoryx2-ffi/python install
 
      - name: Build Python Bindings
-       run: |
-         poetry --project iceoryx2-ffi/python run maturin develop \
-                --manifest-path iceoryx2-ffi/python/Cargo.toml \
-                --target-dir target/ffi/python
+       run: poetry --project iceoryx2-ffi/python build-into-venv
 
      - name: Test Python Bindings
-       run: |
-         poetry --project iceoryx2-ffi/python run pytest iceoryx2-ffi/python/tests/*
+       run: poetry --project iceoryx2-ffi/python test
 
-     # NOTE: Bindings need to be built before running analysis
      - name: Run Static Analysis
-       run: |
-         poetry --project iceoryx2-ffi/python run prospector -m -D -T -s veryhigh -F --profile .prospector-iceoryx2.yaml iceoryx2-ffi/python/python-src/iceoryx2
-         poetry --project iceoryx2-ffi/python run prospector -m -D -T -s veryhigh -F --profile .prospector-tests.yaml iceoryx2-ffi/python/tests
-         poetry --project iceoryx2-ffi/python run prospector -m -D -T -s veryhigh -F --profile .prospector.yaml examples/python
+       run: poetry --project iceoryx2-ffi/python static-analysis
 
   end-to-end-tests:
     needs: [preflight-check, static-code-analysis]
