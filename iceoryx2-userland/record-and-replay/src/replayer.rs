@@ -24,9 +24,11 @@
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //!
-//! let (buffer, record_header) = ReplayerOpener::new(&FilePath::new(b"recorded_data.iox2")?)
+//! let replay = ReplayerOpener::new(&FilePath::new(b"recorded_data.iox2")?)
 //!     .data_representation(DataRepresentation::HumanReadable)
-//!     .read_into_buffer()?;
+//!     .open()?;
+//!  let record_header = replay.header().clone();
+//!  let buffer = replay.read_into_buffer().unwrap();
 //!
 //! println!("record header of service types {record_header:?}");
 //!
@@ -89,7 +91,7 @@ use crate::record_header::RecordHeader;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 /// Failures that can occur when a recorded file is opened with [`ReplayerOpener::open()`]
-/// or [`ReplayerOpener::read_into_buffer()`].
+/// or [`Replayer::read_into_buffer()`].
 pub enum ReplayerOpenError {
     /// The files payload contains invalid hex symbols
     InvalidHexCode,
@@ -97,8 +99,6 @@ pub enum ReplayerOpenError {
     FailedToOpenFile,
     /// The file could be opened but reading failed.
     FailedToReadFile,
-    /// The user provided header does not match the [`RecordHeader`].
-    ActualHeaderDoesNotMatchRequiredHeader,
     /// The record header could not be serialized.
     UnableToDeserializeRecordHeader,
     /// The system header record does not satisfy the type requirements from the [`RecordHeader`]
@@ -131,12 +131,11 @@ impl core::error::Error for ReplayerOpenError {}
 
 #[derive(Debug)]
 /// Builder to open a recorded file. It returns either a in memory buffer and [`RecordHeader`]
-/// with [`ReplayerOpener::read_into_buffer()`] (suggested for small payloads) or the
+/// with [`Replayer::read_into_buffer()`] (suggested for small payloads) or the
 /// [`Replayer`] which can read the file entry by entry.
 pub struct ReplayerOpener {
     file_path: FilePath,
     data_representation: DataRepresentation,
-    required_header: Option<RecordHeader>,
 }
 
 impl ReplayerOpener {
@@ -145,7 +144,6 @@ impl ReplayerOpener {
         Self {
             file_path: file_path.clone(),
             data_representation: DataRepresentation::default(),
-            required_header: None,
         }
     }
 
@@ -155,31 +153,10 @@ impl ReplayerOpener {
         self
     }
 
-    /// Optional parameter. When set it checks if the contained [`RecordHeader`]
-    /// matches the user given [`RecordHeader`], otherwise it fails.
-    pub fn require_header(mut self, header: &RecordHeader) -> Self {
-        self.required_header = Some(header.clone());
-        self
-    }
-
-    /// Reads the recorded file content into a buffer and returns it together with the
-    /// contained [`RecordHeader`].
-    pub fn read_into_buffer(self) -> Result<(Vec<Record>, RecordHeader), ReplayerOpenError> {
-        let mut replay = self.open()?;
-
-        let mut buffer = vec![];
-        while let Some(record) = replay.next_record()? {
-            buffer.push(record);
-        }
-
-        Ok((buffer, replay.header().clone()))
-    }
-
     /// Opens the recorded file and returns the [`Replayer`] which allows the user to
     /// read one entry at a time.
     pub fn open(self) -> Result<Replayer, ReplayerOpenError> {
         let msg = "Unable to read recorded data";
-        let origin = format!("{self:?}");
         let mut file = match FileBuilder::new(&self.file_path)
             .has_ownership(false)
             .open_existing(AccessMode::Read)
@@ -192,13 +169,6 @@ impl ReplayerOpener {
         };
 
         let actual_header = Self::read_header(&mut file, self.data_representation)?;
-
-        if let Some(required_header) = self.required_header {
-            if required_header != actual_header {
-                fail!(from origin, with ReplayerOpenError::ActualHeaderDoesNotMatchRequiredHeader,
-                    "{msg} since the required header: {required_header:?} does not match the actual header {actual_header:?}.");
-            }
-        }
 
         Ok(Replayer {
             file,
@@ -280,10 +250,21 @@ pub struct Replayer {
 }
 
 impl Replayer {
+    /// Reads the recorded file content into a buffer and returns it together with the
+    /// contained [`RecordHeader`].
+    pub fn read_into_buffer(mut self) -> Result<Vec<Record>, ReplayerOpenError> {
+        let mut buffer = vec![];
+        while let Some(record) = self.next_record()? {
+            buffer.push(record);
+        }
+
+        Ok(buffer)
+    }
+
     /// Returns the next contained [`Record`]. If it reached the end of the file it
     /// returns [`None`].
     pub fn next_record(&mut self) -> Result<Option<Record>, ReplayerOpenError> {
-        if let Some(record) = RecordReader::new(&self.header)
+        if let Some(record) = RecordReader::new(&self.header.details)
             .data_representation(self.data_representation)
             .read(&self.file)?
         {

@@ -163,7 +163,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn subscriber_builder(&self) -> PortFactorySubscriber<Service, Payload, UserHeader> {
+    pub fn subscriber_builder(&self) -> PortFactorySubscriber<'_, Service, Payload, UserHeader> {
         PortFactorySubscriber::new(self)
     }
 
@@ -189,7 +189,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn publisher_builder(&self) -> PortFactoryPublisher<Service, Payload, UserHeader> {
+    pub fn publisher_builder(&self) -> PortFactoryPublisher<'_, Service, Payload, UserHeader> {
         PortFactoryPublisher::new(self)
     }
 }

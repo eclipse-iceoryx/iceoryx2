@@ -123,7 +123,7 @@ impl<Service: service::Service> PortFactory<Service> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn notifier_builder(&self) -> PortFactoryNotifier<Service> {
+    pub fn notifier_builder(&self) -> PortFactoryNotifier<'_, Service> {
         PortFactoryNotifier::new(self)
     }
 
@@ -144,7 +144,7 @@ impl<Service: service::Service> PortFactory<Service> {
     /// # Ok(())
     /// # }
     /// ```
-    pub fn listener_builder(&self) -> PortFactoryListener<Service> {
+    pub fn listener_builder(&self) -> PortFactoryListener<'_, Service> {
         PortFactoryListener { factory: self }
     }
 }

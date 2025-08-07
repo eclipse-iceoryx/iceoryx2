@@ -18,7 +18,7 @@ use iceoryx2_bb_posix::file::{File, FileReadLineState};
 
 use crate::{
     hex_conversion::{bytes_to_hex_string, hex_string_to_bytes},
-    record_header::RecordHeader,
+    record_header::RecordHeaderDetails,
     recorder::RecorderWriteError,
     replayer::ReplayerOpenError,
 };
@@ -62,12 +62,12 @@ pub struct Record {
 
 #[derive(Debug)]
 pub(crate) struct RecordReader {
-    header: RecordHeader,
+    header: RecordHeaderDetails,
     data_representation: DataRepresentation,
 }
 
 impl RecordReader {
-    pub(crate) fn new(header: &RecordHeader) -> Self {
+    pub(crate) fn new(header: &RecordHeaderDetails) -> Self {
         Self {
             header: header.clone(),
             data_representation: DataRepresentation::default(),

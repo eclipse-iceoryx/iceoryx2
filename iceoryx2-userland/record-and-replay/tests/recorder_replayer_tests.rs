@@ -74,6 +74,7 @@ mod recorder_replayer {
         user_header_type: TypeDetail,
         number_of_data: usize,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -84,7 +85,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];
@@ -104,10 +105,12 @@ mod recorder_replayer {
             );
         }
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len dataset.len());
@@ -187,6 +190,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         const NUMBER_OF_DATA: usize = 15;
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 256, 8),
@@ -197,7 +201,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];
@@ -219,10 +223,12 @@ mod recorder_replayer {
             );
         }
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len dataset.len());
@@ -254,6 +260,7 @@ mod recorder_replayer {
     }
 
     fn writing_decreasing_timestamps_fails(data_representation: DataRepresentation) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -263,7 +270,7 @@ mod recorder_replayer {
 
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];
@@ -307,6 +314,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 32, 4),
@@ -317,7 +325,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -333,10 +341,12 @@ mod recorder_replayer {
             eq Err(RecorderWriteError::CorruptedPayloadRecord)
         );
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len 0);
@@ -364,6 +374,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
@@ -374,7 +385,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -390,10 +401,12 @@ mod recorder_replayer {
             eq Err(RecorderWriteError::CorruptedPayloadRecord)
         );
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len 0);
@@ -422,6 +435,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
         user_header_type: TypeDetail,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
@@ -432,7 +446,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -448,10 +462,12 @@ mod recorder_replayer {
             eq Err(RecorderWriteError::CorruptedUserHeaderRecord)
         );
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len 0);
@@ -499,6 +515,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
@@ -509,7 +526,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -525,10 +542,13 @@ mod recorder_replayer {
             eq Err(RecorderWriteError::CorruptedSystemHeaderRecord)
         );
 
-        let (buffer, record_header) = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer()
+            .open()
             .unwrap();
+
+        let record_header = replay.header().clone();
+        let buffer = replay.read_into_buffer().unwrap();
 
         assert_that!(record_header, eq * recorder.header());
         assert_that!(buffer, len 0);
@@ -557,6 +577,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         const NUMBER_OF_DATA: usize = 129;
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -567,7 +588,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];
@@ -625,6 +646,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -635,7 +657,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -656,9 +678,11 @@ mod recorder_replayer {
             is_ok
         );
 
-        let result = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer();
+            .open()
+            .unwrap();
+        let result = replay.read_into_buffer();
 
         assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedPayloadRecord));
 
@@ -685,6 +709,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -695,7 +720,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -716,9 +741,11 @@ mod recorder_replayer {
             is_ok
         );
 
-        let result = ReplayerOpener::new(&file_name)
+        let replayer = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer();
+            .open()
+            .unwrap();
+        let result = replayer.read_into_buffer();
 
         assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedUserHeaderRecord));
 
@@ -745,6 +772,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -755,7 +783,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -776,9 +804,11 @@ mod recorder_replayer {
             is_ok
         );
 
-        let result = ReplayerOpener::new(&file_name)
+        let replay = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
-            .read_into_buffer();
+            .open()
+            .unwrap();
+        let result = replay.read_into_buffer();
 
         assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedSystemHeaderRecord));
 
@@ -802,6 +832,7 @@ mod recorder_replayer {
     }
 
     fn reading_decreasing_timestamps_fails(data_representation: DataRepresentation) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -811,7 +842,7 @@ mod recorder_replayer {
 
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];
@@ -837,6 +868,8 @@ mod recorder_replayer {
 
         let result = ReplayerOpener::new(&file_name)
             .data_representation(data_representation)
+            .open()
+            .unwrap()
             .read_into_buffer();
 
         assert_that!(result.err(), eq Some(ReplayerOpenError::CorruptedTimeline));

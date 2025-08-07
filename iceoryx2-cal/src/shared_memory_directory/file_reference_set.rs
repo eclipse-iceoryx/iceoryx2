@@ -162,7 +162,7 @@ impl FileReferenceSet {
         false
     }
 
-    pub(crate) fn borrow(&self, name: &FileName, base_address: usize) -> Option<File> {
+    pub(crate) fn borrow(&self, name: &FileName, base_address: usize) -> Option<File<'_>> {
         self.find_entry(name).map(|id| File {
             set: self,
             id,
@@ -180,7 +180,7 @@ impl FileReferenceSet {
         self.counter[id.0].is_persistent()
     }
 
-    pub(crate) fn list(&self, base_address: usize) -> Vec<File> {
+    pub(crate) fn list(&self, base_address: usize) -> Vec<File<'_>> {
         let mut ret_val = vec![];
         for id in 0..self.ids.capacity() as usize {
             if self.counter[id].increment_ref_counter_when_initialized() {

@@ -206,8 +206,14 @@ impl<
     /// ```
     pub fn client_builder(
         &self,
-    ) -> PortFactoryClient<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
-    {
+    ) -> PortFactoryClient<
+        '_,
+        Service,
+        RequestPayload,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    > {
         PortFactoryClient::new(self)
     }
 
@@ -234,8 +240,14 @@ impl<
     /// ```
     pub fn server_builder(
         &self,
-    ) -> PortFactoryServer<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
-    {
+    ) -> PortFactoryServer<
+        '_,
+        Service,
+        RequestPayload,
+        RequestHeader,
+        ResponsePayload,
+        ResponseHeader,
+    > {
         PortFactoryServer::new(self)
     }
 }

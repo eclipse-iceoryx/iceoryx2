@@ -687,7 +687,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     pub fn attach_interval(
         &self,
         interval: Duration,
-    ) -> Result<WaitSetGuard<Service>, WaitSetAttachmentError> {
+    ) -> Result<WaitSetGuard<'_, '_, Service>, WaitSetAttachmentError> {
         let deadline_queue_guard = self.attach_to_deadline_queue(interval)?;
         self.attach()?;
 
@@ -966,7 +966,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
     fn attach_to_deadline_queue(
         &self,
         timeout: Duration,
-    ) -> Result<DeadlineQueueGuard, WaitSetAttachmentError> {
+    ) -> Result<DeadlineQueueGuard<'_>, WaitSetAttachmentError> {
         let msg = "Unable to attach timeout to underlying Timer";
 
         match self.deadline_queue.add_deadline_interval(timeout) {

@@ -37,6 +37,8 @@
   [#909](https://github.com/eclipse-iceoryx/iceoryx2/issues/909)
 * Example explaining the details of service types
   [#913](https://github.com/eclipse-iceoryx/iceoryx2/issues/913)
+* CLI Record replay, service name is stored in record file
+  [#929](https://github.com/eclipse-iceoryx/iceoryx2/issues/929)
 
 ### Bugfixes
 
@@ -63,7 +65,7 @@
     [#799](https://github.com/eclipse-iceoryx/iceoryx2/issues/799)
 * CMake no longer installs unusable binaries when FetchContent is used
     [#814](https://github.com/eclipse-iceoryx/iceoryx2/issues/814)
-* Fix linker error on linux
+* Fix build and linker error on gcc 8 and 9
     [#855](https://github.com/eclipse-iceoryx/iceoryx2/issues/855)
 * Miri complains about byte_string as_bytes* operations
     [#875](https://github.com/eclipse-iceoryx/iceoryx2/issues/875)

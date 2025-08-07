@@ -173,7 +173,7 @@ impl<
         DataShm: SharedMemory<Allocator>,
     > SharedMemoryDirectory<MgmtShm, Allocator, DataShm>
 {
-    pub fn new_file(&self, layout: Layout) -> Result<FileCreator, ShmAllocationError> {
+    pub fn new_file(&self, layout: Layout) -> Result<FileCreator<'_>, ShmAllocationError> {
         let memory = fail!(from self, when self.data_shm.allocate(layout),
             "Unable to create file since the allocation of {:?} failed.", layout);
 
@@ -185,12 +185,12 @@ impl<
         ))
     }
 
-    pub fn open_file(&self, name: &FileName) -> Option<File> {
+    pub fn open_file(&self, name: &FileName) -> Option<File<'_>> {
         self.files()
             .borrow(name, self.data_shm.payload_start_address())
     }
 
-    pub fn list_files(&self) -> Vec<File> {
+    pub fn list_files(&self) -> Vec<File<'_>> {
         self.files().list(self.data_shm.payload_start_address())
     }
 

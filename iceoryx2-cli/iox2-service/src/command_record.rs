@@ -27,7 +27,7 @@ pub fn record(options: RecordOptions, _format: Format) -> Result<()> {
         .create::<ipc::Service>()?;
 
     let service_name = ServiceName::new(&options.service)?;
-    let service_types = get_pubsub_service_types(ServiceName::new(&options.service)?, &node)?;
+    let service_types = get_pubsub_service_types(&service_name, &node)?;
 
     let service = unsafe {
         node.service_builder(&service_name)
@@ -42,9 +42,9 @@ pub fn record(options: RecordOptions, _format: Format) -> Result<()> {
     let mut recorder = RecorderBuilder::new(&service_types)
         .data_representation(options.data_representation.into())
         .messaging_pattern(options.messaging_pattern.into())
-        .create(&FilePath::new(options.output.as_bytes())?)?;
+        .create(&FilePath::new(options.output.as_bytes())?, &service_name)?;
 
-    println!("start recording data on \"{}\".", options.service);
+    println!("Start recording data on \"{}\".", options.service);
 
     let start = Instant::now();
     let mut msg_counter = 0u64;

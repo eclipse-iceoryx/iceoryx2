@@ -35,7 +35,7 @@
 //! let mut recorder = RecorderBuilder::new(&service_types)
 //!     .data_representation(DataRepresentation::HumanReadable)
 //!     .messaging_pattern(MessagingPattern::PublishSubscribe)
-//!     .create(&FilePath::new(b"recorded_data.iox2")?)?;
+//!     .create(&FilePath::new(b"recorded_data.iox2")?, &ServiceName::new("my-service")?)?;
 //!
 //! # iceoryx2_bb_posix::file::File::remove(&FilePath::new(b"recorded_data.iox2")?)?;
 //!
@@ -51,7 +51,7 @@
 //! # }
 //! ```
 
-use iceoryx2::prelude::MessagingPattern;
+use iceoryx2::prelude::{MessagingPattern, ServiceName};
 use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_bb_log::fail;
@@ -64,7 +64,10 @@ use iceoryx2_cal::serialize::Serialize;
 use crate::record::RecordWriter;
 use crate::record::HEX_START_RECORD_MARKER;
 use crate::record::{DataRepresentation, RawRecord};
-use crate::record_header::RecordHeader;
+use crate::record_header::{
+    RecordHeader, RecordHeaderDetails, FILE_FORMAT_HUMAN_READABLE_VERSION,
+    FILE_FORMAT_IOX2_DUMP_VERSION,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 /// Errors that can occur when a new [`Recorder`] is created with
@@ -155,7 +158,11 @@ impl RecorderBuilder {
 
     /// Creates a new file with and writes the record header into it. On failure
     /// [`RecorderCreateError`] is returned describing the error.
-    pub fn create(self, file_name: &FilePath) -> Result<Recorder, RecorderCreateError> {
+    pub fn create(
+        self,
+        file_name: &FilePath,
+        service_name: &ServiceName,
+    ) -> Result<Recorder, RecorderCreateError> {
         let msg = format!("Unable to create file recorder for \"{file_name}\"");
         let mut file = match FileBuilder::new(file_name)
             .has_ownership(false)
@@ -174,9 +181,16 @@ impl RecorderBuilder {
         };
 
         let header = RecordHeader {
-            version: PackageVersion::get().to_u64(),
-            types: self.types.clone(),
-            messaging_pattern: self.messaging_pattern,
+            service_name: service_name.clone(),
+            iceoryx2_version: PackageVersion::get().into(),
+            details: RecordHeaderDetails {
+                file_format_version: match self.data_representation {
+                    DataRepresentation::HumanReadable => FILE_FORMAT_HUMAN_READABLE_VERSION,
+                    DataRepresentation::Iox2Dump => FILE_FORMAT_IOX2_DUMP_VERSION,
+                },
+                types: self.types.clone(),
+                messaging_pattern: self.messaging_pattern,
+            },
         };
         self.write_header(&mut file, &header, self.data_representation)?;
 
@@ -270,32 +284,32 @@ impl Recorder {
     pub fn write(&mut self, record: RawRecord) -> Result<(), RecorderWriteError> {
         let msg = "Unable to write new record";
 
-        if record.system_header.len() != self.header.types.system_header.size() {
+        if record.system_header.len() != self.header.details.types.system_header.size() {
             fail!(from self, with RecorderWriteError::CorruptedSystemHeaderRecord,
                 "{msg} since the system header entry is corrupted. Expected a size of {} but provided a size of {}.",
-                self.header.types.system_header.size(), record.system_header.len());
+                self.header.details.types.system_header.size(), record.system_header.len());
         }
 
-        if record.user_header.len() != self.header.types.user_header.size() {
+        if record.user_header.len() != self.header.details.types.user_header.size() {
             fail!(from self, with RecorderWriteError::CorruptedUserHeaderRecord,
                 "{msg} since the user header entry is corrupted. Expected a size of {} but provided a size of {}.",
-                self.header.types.user_header.size(), record.user_header.len());
+                self.header.details.types.user_header.size(), record.user_header.len());
         }
 
-        if self.header.types.payload.variant() == TypeVariant::FixedSize
-            && record.payload.len() != self.header.types.payload.size()
+        if self.header.details.types.payload.variant() == TypeVariant::FixedSize
+            && record.payload.len() != self.header.details.types.payload.size()
         {
             fail!(from self, with RecorderWriteError::CorruptedPayloadRecord,
                 "{msg} since the payload entry is corrupted. Expected a size of {} but provided a size of {}.",
-                self.header.types.payload.size(), record.payload.len());
+                self.header.details.types.payload.size(), record.payload.len());
         }
 
-        if self.header.types.payload.variant() == TypeVariant::Dynamic
-            && record.payload.len() % self.header.types.payload.size() != 0
+        if self.header.details.types.payload.variant() == TypeVariant::Dynamic
+            && record.payload.len() % self.header.details.types.payload.size() != 0
         {
             fail!(from self, with RecorderWriteError::CorruptedPayloadRecord,
                 "{msg} since the payload entry is corrupted. Expected a size which is a multiple of {} but provided a size of {}.",
-                self.header.types.payload.size(), record.payload.len());
+                self.header.details.types.payload.size(), record.payload.len());
         }
 
         let new_timestamp = record.timestamp.as_millis() as u64;

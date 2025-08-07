@@ -141,7 +141,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn writer_builder(&self) -> PortFactoryWriter<Service, KeyType> {
+    pub fn writer_builder(&self) -> PortFactoryWriter<'_, Service, KeyType> {
         PortFactoryWriter::new(self)
     }
 
@@ -165,7 +165,7 @@ impl<
     /// # Ok(())
     /// # }
     /// ```
-    pub fn reader_builder(&self) -> PortFactoryReader<Service, KeyType> {
+    pub fn reader_builder(&self) -> PortFactoryReader<'_, Service, KeyType> {
         PortFactoryReader::new(self)
     }
 }

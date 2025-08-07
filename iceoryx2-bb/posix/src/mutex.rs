@@ -404,7 +404,7 @@ impl MutexBuilder {
         self,
         t: T,
         handle: &MutexHandle<T>,
-    ) -> Result<Mutex<T>, MutexCreationError> {
+    ) -> Result<Mutex<'_, '_, T>, MutexCreationError> {
         unsafe {
             handle
                 .handle

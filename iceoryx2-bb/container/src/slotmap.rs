@@ -173,7 +173,7 @@ impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
         }
     }
 
-    pub(crate) unsafe fn iter_impl(&self) -> Iter<T, Ptr> {
+    pub(crate) unsafe fn iter_impl(&self) -> Iter<'_, T, Ptr> {
         self.verify_init("iter()");
         Iter {
             slotmap: self,
@@ -397,7 +397,7 @@ impl<T> SlotMap<T> {
     }
 
     /// Returns the [`Iter`]ator to iterate over all entries.
-    pub fn iter(&self) -> OwningIter<T> {
+    pub fn iter(&self) -> OwningIter<'_, T> {
         unsafe { self.iter_impl() }
     }
 
@@ -482,7 +482,7 @@ impl<T> RelocatableSlotMap<T> {
     ///
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
-    pub unsafe fn iter(&self) -> RelocatableIter<T> {
+    pub unsafe fn iter(&self) -> RelocatableIter<'_, T> {
         self.iter_impl()
     }
 
@@ -638,7 +638,7 @@ impl<T, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
     }
 
     /// Returns the [`RelocatableIter`]ator to iterate over all entries.
-    pub fn iter(&self) -> RelocatableIter<T> {
+    pub fn iter(&self) -> RelocatableIter<'_, T> {
         unsafe { self.state.iter_impl() }
     }
 
