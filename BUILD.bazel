@@ -204,6 +204,7 @@ filegroup(
         "//iceoryx2-pal/configuration:all_srcs",
         "//iceoryx2-pal/posix:all_srcs",
         "//iceoryx2-pal/testing:all_srcs",
+        "//iceoryx2-userland/record-and-replay:all_srcs",
     ],
     visibility = ["//visibility:public"],
 )

@@ -1,0 +1,27 @@
+[package]
+name = "iceoryx2-userland-record-and-replay"
+description = "iceoryx2: [internal] userland libraries on top of iceoryx2"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2 = { workspace = true }
+iceoryx2-cal = { workspace = true }
+iceoryx2-bb-elementary = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+iceoryx2-bb-system-types = { workspace = true }
+iceoryx2-bb-log = { workspace = true }
+iceoryx2-bb-container = { workspace = true }
+
+anyhow = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-pal-testing = { workspace = true }
+iceoryx2-pal-concurrency-sync = { workspace = true }

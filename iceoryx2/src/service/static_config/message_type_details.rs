@@ -57,20 +57,16 @@ pub type TypeNameString = FixedSizeByteString<MAX_TYPE_NAME_LENGTH>;
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]
 #[repr(C)]
 pub struct TypeDetail {
-    /// The [`TypeVariant`] of the type
-    pub variant: TypeVariant,
-    /// Contains the name of the underlying type.
-    pub type_name: TypeNameString,
-    /// The size of the underlying type calculated by [`core::mem::size_of`].
-    pub size: usize,
-    /// The ABI-required minimum alignment of the underlying type calculated by [`core::mem::align_of`].
-    /// It may be set by users with a larger alignment, e.g. the memory provided by allocator used by SIMD.
-    pub alignment: usize,
+    pub(crate) variant: TypeVariant,
+    pub(crate) type_name: TypeNameString,
+    pub(crate) size: usize,
+    pub(crate) alignment: usize,
 }
 
 impl TypeDetail {
-    #[doc(hidden)]
-    pub fn __internal_new<T: ZeroCopySend>(variant: TypeVariant) -> Self {
+    /// Creates a new [`TypeDetail`] from the provided `T`. The [`TypeVariant`] defines if
+    /// the type is part of a slice or directly contained.
+    pub fn new<T: ZeroCopySend>(variant: TypeVariant) -> Self {
         Self {
             variant,
             type_name: unsafe {
@@ -83,6 +79,27 @@ impl TypeDetail {
             size: core::mem::size_of::<T>(),
             alignment: core::mem::align_of::<T>(),
         }
+    }
+
+    /// The [`TypeVariant`] of the type
+    pub fn variant(&self) -> TypeVariant {
+        self.variant
+    }
+
+    /// Contains the name of the underlying type.
+    pub fn type_name(&self) -> &TypeNameString {
+        &self.type_name
+    }
+
+    /// The size of the underlying type calculated by [`core::mem::size_of`].
+    pub fn size(&self) -> usize {
+        self.size
+    }
+
+    /// The ABI-required minimum alignment of the underlying type calculated by [`core::mem::align_of`].
+    /// It may be set by users with a larger alignment, e.g. the memory provided by allocator used by SIMD.
+    pub fn alignment(&self) -> usize {
+        self.alignment
     }
 }
 
@@ -104,9 +121,9 @@ impl MessageTypeDetails {
         payload_variant: TypeVariant,
     ) -> Self {
         Self {
-            header: TypeDetail::__internal_new::<Header>(TypeVariant::FixedSize),
-            user_header: TypeDetail::__internal_new::<UserHeader>(TypeVariant::FixedSize),
-            payload: TypeDetail::__internal_new::<Payload>(payload_variant),
+            header: TypeDetail::new::<Header>(TypeVariant::FixedSize),
+            user_header: TypeDetail::new::<UserHeader>(TypeVariant::FixedSize),
+            payload: TypeDetail::new::<Payload>(payload_variant),
         }
     }
 

@@ -325,6 +325,7 @@ fn file_lock_read_write_works() {
     drop(guard);
 
     let guard = test.sut.write_lock().expect("");
+    assert_that!(guard.seek(0), is_ok);
 
     let mut content = vec![];
     assert_that!(guard.read_to_vector(&mut content).unwrap(), eq 5);
@@ -333,6 +334,7 @@ fn file_lock_read_write_works() {
     drop(guard);
 
     let guard = test.sut.read_lock().expect("");
+    assert_that!(guard.seek(0), is_ok);
 
     let mut content = vec![];
     assert_that!(guard.read_to_vector(&mut content).unwrap(), eq 5);

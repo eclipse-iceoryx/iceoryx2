@@ -14,7 +14,11 @@ use crate::config::test_directory;
 use crate::directory::{Directory, DirectoryCreateError};
 use crate::permission::Permission;
 use crate::process_state::ProcessGuard;
+use crate::unique_system_id::UniqueSystemId;
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::fatal_panic;
+use iceoryx2_bb_system_types::file_name::FileName;
+use iceoryx2_bb_system_types::file_path::FilePath;
 
 pub fn __internal_process_guard_staged_death(state: ProcessGuard) {
     state.staged_death();
@@ -29,4 +33,19 @@ pub fn create_test_directory() {
             e
         ),
     };
+}
+
+pub fn generate_file_name() -> FilePath {
+    create_test_directory();
+    let mut file = FileName::new(b"test_").unwrap();
+    file.push_bytes(
+        UniqueSystemId::new()
+            .unwrap()
+            .value()
+            .to_string()
+            .as_bytes(),
+    )
+    .unwrap();
+
+    FilePath::from_path_and_file(&test_directory(), &file).unwrap()
 }

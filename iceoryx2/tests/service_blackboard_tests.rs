@@ -442,10 +442,10 @@ mod service_blackboard {
             .unwrap();
 
         let d = sut.static_config().type_details();
-        assert_that!(d.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.type_name, eq core::any::type_name::<KeyType>());
-        assert_that!(d.size, eq core::mem::size_of::<KeyType>());
-        assert_that!(d.alignment, eq core::mem::align_of::<KeyType>());
+        assert_that!(d.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.type_name(), eq core::any::type_name::<KeyType>());
+        assert_that!(d.size(), eq core::mem::size_of::<KeyType>());
+        assert_that!(d.alignment(), eq core::mem::align_of::<KeyType>());
     }
 
     #[test]

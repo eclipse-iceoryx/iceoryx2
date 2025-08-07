@@ -28,7 +28,7 @@ mod service_publish_subscribe {
     use iceoryx2::service::messaging_pattern::MessagingPattern;
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{Service, ServiceDetails};
-    use iceoryx2::testing::*;
+    use iceoryx2::testing;
     use iceoryx2_bb_derive_macros::ZeroCopySend;
     use iceoryx2_bb_elementary::alignment::Alignment;
     use iceoryx2_bb_elementary::CallbackProgression;
@@ -54,7 +54,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_or_create_with_attributes_succeeds_when_service_does_exist<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let attr = AttributeVerifier::new();
         let sut = node
@@ -74,7 +74,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_or_create_with_attributes_succeeds_when_attribute_is_satisfied<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let attr = AttributeVerifier::new()
             .require(&"hello".try_into().unwrap(), &"world".try_into().unwrap());
@@ -96,7 +96,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_or_create_with_attributes_failed_when_service_payload_types_differ<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let attr = AttributeVerifier::new();
         let sut = node
@@ -116,7 +116,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_or_create_with_attributes_failed_when_attribute_isnt_satisfied<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let attr = AttributeVerifier::new()
             .require(&"hello".try_into().unwrap(), &"world".try_into().unwrap());
@@ -138,7 +138,7 @@ mod service_publish_subscribe {
     #[test]
     fn creating_non_existing_service_works<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -153,7 +153,7 @@ mod service_publish_subscribe {
     #[test]
     fn creating_same_service_twice_fails<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -175,7 +175,7 @@ mod service_publish_subscribe {
     #[test]
     fn recreate_after_drop_works<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -195,7 +195,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_exist<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -208,7 +208,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_succeeds_when_service_does_exist<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -226,7 +226,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_has_wrong_type<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -245,7 +245,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_has_wrong_slice_base_type<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -264,7 +264,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_is_slice_based_and_typed_is_requested<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -283,7 +283,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_is_type_based_and_slice_is_requested<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -302,7 +302,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_max_nodes_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -335,7 +335,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_max_publishers_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -368,7 +368,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_max_subscribers_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -401,7 +401,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_safe_overflow_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -426,7 +426,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_history_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -459,7 +459,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_subscriber_max_borrow_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -494,7 +494,7 @@ mod service_publish_subscribe {
         Sut: Service,
     >() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -527,7 +527,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_service_does_not_satisfy_alignment_requirement<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -560,7 +560,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_does_not_fail_when_service_owner_is_dropped<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -586,7 +586,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_fails_when_all_previous_owners_have_been_dropped<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -614,7 +614,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_or_create_creates_service_if_it_does_not_exist<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -627,7 +627,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_or_create_opens_service_if_it_does_exist<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let _sut = node
             .service_builder(&service_name)
@@ -668,7 +668,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_uses_predefined_settings_when_nothing_is_specified<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -709,7 +709,7 @@ mod service_publish_subscribe {
     #[test]
     fn settings_can_be_modified_via_custom_config<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let mut custom_config = config.clone();
         custom_config.defaults.publish_subscribe.max_nodes = 2;
         custom_config.defaults.publish_subscribe.max_publishers = 9;
@@ -770,7 +770,7 @@ mod service_publish_subscribe {
     #[test]
     fn number_of_publishers_works<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_PUBLISHERS: usize = 8;
 
@@ -814,7 +814,7 @@ mod service_publish_subscribe {
     fn type_informations_are_correct<Sut: Service>() {
         type Header = iceoryx2::service::header::publish_subscribe::Header;
         type PayloadType = u64;
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let service_name = generate_name();
@@ -827,18 +827,18 @@ mod service_publish_subscribe {
             .unwrap();
 
         let d = sut.static_config().message_type_details();
-        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
-        assert_that!(d.header.size, eq core::mem::size_of::<Header>());
-        assert_that!(d.header.alignment, eq core::mem::align_of::<Header>());
-        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.user_header.type_name, eq core::any::type_name::<SomeUserHeader>());
-        assert_that!(d.user_header.size, eq core::mem::size_of::<SomeUserHeader>());
-        assert_that!(d.user_header.alignment, eq core::mem::align_of::<SomeUserHeader>());
-        assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
-        assert_that!(d.payload.size, eq core::mem::size_of::<PayloadType>());
-        assert_that!(d.payload.alignment, eq core::mem::align_of::<PayloadType>());
+        assert_that!(d.header.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.header.type_name(), eq core::any::type_name::<Header>());
+        assert_that!(d.header.size(), eq core::mem::size_of::<Header>());
+        assert_that!(d.header.alignment(), eq core::mem::align_of::<Header>());
+        assert_that!(d.user_header.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.user_header.type_name(), eq core::any::type_name::<SomeUserHeader>());
+        assert_that!(d.user_header.size(), eq core::mem::size_of::<SomeUserHeader>());
+        assert_that!(d.user_header.alignment(), eq core::mem::align_of::<SomeUserHeader>());
+        assert_that!(d.payload.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.payload.type_name(), eq core::any::type_name::<PayloadType>());
+        assert_that!(d.payload.size(), eq core::mem::size_of::<PayloadType>());
+        assert_that!(d.payload.alignment(), eq core::mem::align_of::<PayloadType>());
     }
 
     #[test]
@@ -847,7 +847,7 @@ mod service_publish_subscribe {
         type PayloadType = u64;
 
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -857,24 +857,24 @@ mod service_publish_subscribe {
             .unwrap();
 
         let d = sut.static_config().message_type_details();
-        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.header.type_name, eq core::any::type_name::<Header>());
-        assert_that!(d.header.size, eq core::mem::size_of::<Header>());
-        assert_that!(d.header.alignment, eq core::mem::align_of::<Header>());
-        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.user_header.type_name, eq core::any::type_name::<()>());
-        assert_that!(d.user_header.size, eq core::mem::size_of::<()>());
-        assert_that!(d.user_header.alignment, eq core::mem::align_of::<()>());
-        assert_that!(d.payload.variant, eq TypeVariant::Dynamic);
-        assert_that!(d.payload.type_name, eq core::any::type_name::<PayloadType>());
-        assert_that!(d.payload.size, eq core::mem::size_of::<PayloadType>());
-        assert_that!(d.payload.alignment, eq core::mem::align_of::<PayloadType>());
+        assert_that!(d.header.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.header.type_name(), eq core::any::type_name::<Header>());
+        assert_that!(d.header.size(), eq core::mem::size_of::<Header>());
+        assert_that!(d.header.alignment(), eq core::mem::align_of::<Header>());
+        assert_that!(d.user_header.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.user_header.type_name(), eq core::any::type_name::<()>());
+        assert_that!(d.user_header.size(), eq core::mem::size_of::<()>());
+        assert_that!(d.user_header.alignment(), eq core::mem::align_of::<()>());
+        assert_that!(d.payload.variant(), eq TypeVariant::Dynamic);
+        assert_that!(*d.payload.type_name(), eq core::any::type_name::<PayloadType>());
+        assert_that!(d.payload.size(), eq core::mem::size_of::<PayloadType>());
+        assert_that!(d.payload.alignment(), eq core::mem::align_of::<PayloadType>());
     }
 
     #[test]
     fn number_of_subscribers_works<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const MAX_SUBSCRIBERS: usize = 8;
 
@@ -919,7 +919,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         const MAX_NODES: usize = 8;
 
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -970,7 +970,7 @@ mod service_publish_subscribe {
     #[test]
     fn simple_communication_works_subscriber_created_first<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -1007,7 +1007,7 @@ mod service_publish_subscribe {
     #[test]
     fn simple_communication_works_publisher_created_first<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -1041,7 +1041,7 @@ mod service_publish_subscribe {
     #[test]
     fn custom_payload_alignment_cannot_be_smaller_than_payload_type_alignment<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -1051,7 +1051,7 @@ mod service_publish_subscribe {
             .create()
             .unwrap();
 
-        assert_that!(sut.static_config().message_type_details().payload.alignment, eq core::mem::align_of::<u64>());
+        assert_that!(sut.static_config().message_type_details().payload.alignment(), eq core::mem::align_of::<u64>());
     }
 
     #[test]
@@ -1059,7 +1059,7 @@ mod service_publish_subscribe {
         const BUFFER_SIZE: usize = 100;
         const ALIGNMENT: usize = 512;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let service_pub = node
@@ -1101,7 +1101,7 @@ mod service_publish_subscribe {
     #[test]
     fn publisher_reclaims_all_samples_after_disconnect<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const RECONNECTIONS: usize = 20;
         const MAX_SUBSCRIBERS: usize = 10;
@@ -1139,7 +1139,7 @@ mod service_publish_subscribe {
     #[test]
     fn publisher_updates_connections_after_reconnect<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const RECONNECTIONS: usize = 20;
         const MAX_SUBSCRIBERS: usize = 10;
@@ -1175,7 +1175,7 @@ mod service_publish_subscribe {
     #[test]
     fn subscriber_updates_connections_after_reconnect<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const RECONNECTIONS: usize = 20;
         const MAX_PUBLISHERS: usize = 10;
@@ -1220,7 +1220,7 @@ mod service_publish_subscribe {
         let create_service_barrier = Barrier::new(2);
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
 
         thread::scope(|s| {
@@ -1288,7 +1288,7 @@ mod service_publish_subscribe {
         let service_name = generate_name();
         let keep_running = AtomicBool::new(true);
         let reconnection_cycle = AtomicUsize::new(0);
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = Mutex::new(NodeBuilder::new().config(&config).create::<Sut>().unwrap());
 
         thread::scope(|s| {
@@ -1352,7 +1352,7 @@ mod service_publish_subscribe {
         const MAX_SUB: usize = 6;
         const NUMBER_OF_ITERATIONS: u64 = 128;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -1398,7 +1398,7 @@ mod service_publish_subscribe {
         const MAX_SUB: usize = 7;
         const NUMBER_OF_ITERATIONS: u64 = 128;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let _sut = node
@@ -1453,7 +1453,7 @@ mod service_publish_subscribe {
     #[test]
     fn publish_safely_overflows_when_enabled<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const BUFFER_SIZE: usize = 2;
 
@@ -1485,7 +1485,7 @@ mod service_publish_subscribe {
     #[test]
     fn publish_does_not_overflow_when_deactivated<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const BUFFER_SIZE: usize = 5;
 
@@ -1521,7 +1521,7 @@ mod service_publish_subscribe {
     #[test]
     fn publish_non_overflow_with_greater_history_than_buffer_fails<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -1543,7 +1543,7 @@ mod service_publish_subscribe {
     fn publish_history_is_delivered_on_subscription<Sut: Service>() {
         const BUFFER_SIZE: usize = 2;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -1573,7 +1573,7 @@ mod service_publish_subscribe {
     fn publish_history_of_zero_works<Sut: Service>() {
         const BUFFER_SIZE: usize = 2;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -1597,7 +1597,7 @@ mod service_publish_subscribe {
     #[test]
     fn publish_send_copy_with_huge_overflow_works<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const BUFFER_SIZE: usize = 5;
 
@@ -1638,7 +1638,7 @@ mod service_publish_subscribe {
     ) {
         const ITERATIONS: usize = 16;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -1820,7 +1820,7 @@ mod service_publish_subscribe {
     ) {
         const ITERATIONS: usize = 16;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -1944,7 +1944,7 @@ mod service_publish_subscribe {
         const MAX_SUBSCRIBERS: usize = 8;
 
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2000,7 +2000,7 @@ mod service_publish_subscribe {
     #[test]
     fn set_max_nodes_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2015,7 +2015,7 @@ mod service_publish_subscribe {
     #[test]
     fn set_max_publishers_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2030,7 +2030,7 @@ mod service_publish_subscribe {
     #[test]
     fn set_max_subscribers_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2045,7 +2045,7 @@ mod service_publish_subscribe {
     #[test]
     fn set_subscriber_max_borrowed_samples_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2060,7 +2060,7 @@ mod service_publish_subscribe {
     #[test]
     fn set_buffer_size_to_zero_adjusts_it_to_one<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2075,7 +2075,7 @@ mod service_publish_subscribe {
     #[test]
     fn does_exist_works_single<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         assert_that!(Sut::does_exist(&service_name, &config, MessagingPattern::PublishSubscribe).unwrap(), eq false);
 
@@ -2097,7 +2097,7 @@ mod service_publish_subscribe {
     fn does_exist_works_many<Sut: Service>() {
         const NUMBER_OF_SERVICES: usize = 8;
 
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let mut services = vec![];
         let mut service_names = vec![];
@@ -2140,7 +2140,7 @@ mod service_publish_subscribe {
     fn list_works<Sut: Service>() {
         const NUMBER_OF_SERVICES: usize = 8;
 
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let mut services = vec![];
         let mut service_names = vec![];
@@ -2203,7 +2203,7 @@ mod service_publish_subscribe {
     #[test]
     fn dropping_service_keeps_established_communication<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2225,7 +2225,7 @@ mod service_publish_subscribe {
     #[test]
     fn ports_of_dropped_service_block_new_service_creation<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2264,7 +2264,7 @@ mod service_publish_subscribe {
     fn service_can_be_opened_when_there_is_a_publisher<Sut: Service>() {
         let payload = 1809723987;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2319,7 +2319,7 @@ mod service_publish_subscribe {
     fn service_can_be_opened_when_there_is_a_subscriber<Sut: Service>() {
         let payload = 59123544;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2374,7 +2374,7 @@ mod service_publish_subscribe {
     fn subscriber_can_decrease_buffer_size<Sut: Service>() {
         const BUFFER_SIZE: usize = 16;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -2427,7 +2427,7 @@ mod service_publish_subscribe {
     fn subscriber_creation_fails_when_buffer_size_exceeds_service_max<Sut: Service>() {
         const BUFFER_SIZE: usize = 16;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let _sut = node
@@ -2454,7 +2454,7 @@ mod service_publish_subscribe {
     #[test]
     fn subscriber_buffer_size_is_at_least_one<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2470,7 +2470,7 @@ mod service_publish_subscribe {
     fn sliced_service_works<Sut: Service>() {
         const MAX_ELEMENTS: usize = 91;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         let sut = node
             .service_builder(&service_name)
@@ -2503,7 +2503,7 @@ mod service_publish_subscribe {
         const MAX_ELEMENTS: usize = 91;
         const ALIGNMENT: usize = 64;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let service_pub = node
@@ -2548,7 +2548,7 @@ mod service_publish_subscribe {
     #[test]
     fn simple_communication_with_user_header_works<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -2589,7 +2589,7 @@ mod service_publish_subscribe {
     #[test]
     fn same_payload_type_but_different_user_header_does_not_connect<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let _sut = node
@@ -2611,13 +2611,13 @@ mod service_publish_subscribe {
     #[test]
     fn create_with_custom_payload_type_works<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let _sut = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
-                .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
+                .__internal_set_payload_type_details(&TypeDetail::new::<u64>(
                     TypeVariant::FixedSize,
                 ))
                 .create()
@@ -2643,7 +2643,7 @@ mod service_publish_subscribe {
     #[test]
     fn create_with_custom_user_header_type_works<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
         const HEADER_SIZE: usize = 1024;
 
@@ -2651,9 +2651,9 @@ mod service_publish_subscribe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
                 .user_header::<CustomHeaderMarker>()
-                .__internal_set_user_header_type_details(&TypeDetail::__internal_new::<
-                    [u64; HEADER_SIZE],
-                >(TypeVariant::FixedSize))
+                .__internal_set_user_header_type_details(&TypeDetail::new::<[u64; HEADER_SIZE]>(
+                    TypeVariant::FixedSize,
+                ))
                 .create()
                 .unwrap()
         };
@@ -2662,9 +2662,9 @@ mod service_publish_subscribe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[u8]>()
                 .user_header::<CustomHeaderMarker>()
-                .__internal_set_user_header_type_details(&TypeDetail::__internal_new::<
-                    [u64; HEADER_SIZE],
-                >(TypeVariant::FixedSize))
+                .__internal_set_user_header_type_details(&TypeDetail::new::<[u64; HEADER_SIZE]>(
+                    TypeVariant::FixedSize,
+                ))
                 .open()
                 .unwrap()
         };
@@ -2698,7 +2698,7 @@ mod service_publish_subscribe {
     #[test]
     fn open_with_custom_payload_type_works<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let _sut = node
@@ -2710,7 +2710,7 @@ mod service_publish_subscribe {
         let sut2 = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
-                .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u128>(
+                .__internal_set_payload_type_details(&TypeDetail::new::<u128>(
                     TypeVariant::FixedSize,
                 ))
                 .open()
@@ -2721,7 +2721,7 @@ mod service_publish_subscribe {
         let sut3 = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
-                .__internal_set_payload_type_details(&TypeDetail::__internal_new::<u64>(
+                .__internal_set_payload_type_details(&TypeDetail::new::<u64>(
                     TypeVariant::FixedSize,
                 ))
                 .open()
@@ -2788,7 +2788,7 @@ mod service_publish_subscribe {
     #[test]
     fn has_samples_tracks_receivable_samples_in_subscriber<Sut: Service>() {
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -2813,7 +2813,7 @@ mod service_publish_subscribe {
     fn subscriber_can_still_receive_sample_when_publisher_was_disconnected<Sut: Service>() {
         const NUMBER_OF_SAMPLES: usize = 4;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -2846,7 +2846,7 @@ mod service_publish_subscribe {
         set_log_level(LogLevel::Error);
         const NUMBER_OF_SAMPLES: usize = 4;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -2880,7 +2880,7 @@ mod service_publish_subscribe {
     fn subscriber_acquires_samples_of_disconnected_publisher_first<Sut: Service>() {
         set_log_level(LogLevel::Error);
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
@@ -2912,11 +2912,11 @@ mod service_publish_subscribe {
         set_log_level(LogLevel::Error);
         const NUMBER_OF_ELEMENTS: usize = 1;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
-        type_details.size = 1024;
-        type_details.alignment = 1024;
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
+        testing::type_detail_set_size(&mut type_details, 1024);
+        testing::type_detail_set_alignment(&mut type_details, 1024);
 
         let sut = unsafe {
             node.service_builder(&service_name)
@@ -2930,15 +2930,15 @@ mod service_publish_subscribe {
         let subscriber = sut.subscriber_builder().create().unwrap();
 
         let sample = unsafe { publisher.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
-        assert_that!(sample.payload(), len type_details.size);
-        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(sample.payload(), len type_details.size());
+        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
         assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
 
         unsafe { sample.assume_init().send().unwrap() };
 
         let sample = unsafe { subscriber.receive_custom_payload().unwrap().unwrap() };
-        assert_that!(sample.payload(), len type_details.size);
-        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(sample.payload(), len type_details.size());
+        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
         assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
     }
 
@@ -2947,11 +2947,11 @@ mod service_publish_subscribe {
         set_log_level(LogLevel::Error);
         const NUMBER_OF_ELEMENTS: usize = 7;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
-        let mut type_details = TypeDetail::__internal_new::<u8>(TypeVariant::Dynamic);
-        type_details.size = 2048;
-        type_details.alignment = 2048;
+        let mut type_details = TypeDetail::new::<u8>(TypeVariant::Dynamic);
+        testing::type_detail_set_size(&mut type_details, 2048);
+        testing::type_detail_set_alignment(&mut type_details, 2048);
 
         let sut = unsafe {
             node.service_builder(&service_name)
@@ -2969,15 +2969,15 @@ mod service_publish_subscribe {
         let subscriber = sut.subscriber_builder().create().unwrap();
 
         let sample = unsafe { publisher.loan_custom_payload(NUMBER_OF_ELEMENTS).unwrap() };
-        assert_that!(sample.payload(), len type_details.size * NUMBER_OF_ELEMENTS);
-        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(sample.payload(), len type_details.size() * NUMBER_OF_ELEMENTS);
+        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
         assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
 
         unsafe { sample.assume_init().send().unwrap() };
 
         let sample = unsafe { subscriber.receive_custom_payload().unwrap().unwrap() };
-        assert_that!(sample.payload(), len type_details.size * NUMBER_OF_ELEMENTS);
-        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment), eq 0);
+        assert_that!(sample.payload(), len type_details.size() * NUMBER_OF_ELEMENTS);
+        assert_that!((sample.payload().as_ptr() as usize % type_details.alignment()), eq 0);
         assert_that!(sample.header().number_of_elements(), eq NUMBER_OF_ELEMENTS as u64);
     }
 
@@ -2985,7 +2985,7 @@ mod service_publish_subscribe {
     fn send_increasing_samples_with_static_allocation_strategy_fails<Sut: Service>() {
         const SLICE_SIZE: usize = 1024;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let service_pub = node
@@ -3017,7 +3017,7 @@ mod service_publish_subscribe {
     ) {
         const ITERATIONS: usize = 128;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let service_pub = node
@@ -3077,7 +3077,7 @@ mod service_publish_subscribe {
         const ITERATIONS: usize = 128;
         const REPETITIONS: usize = 13;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let service_pub = node
@@ -3144,7 +3144,7 @@ mod service_publish_subscribe {
     ) {
         const SUBSCRIBER_MAX_BUFFER_SIZE: usize = 12;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let service_pub = node
@@ -3211,7 +3211,7 @@ mod service_publish_subscribe {
         const HISTORY_SIZE: usize = 1000;
         const REPETITIONS: usize = 10;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let finish_setup = Barrier::new(2);
@@ -3291,7 +3291,7 @@ mod service_publish_subscribe {
     fn listing_all_publishers_works<S: Service>() {
         const NUMBER_OF_PUBLISHERS: usize = 18;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         let sut = node
@@ -3323,7 +3323,7 @@ mod service_publish_subscribe {
     fn listing_all_publishers_stops_on_request<S: Service>() {
         const NUMBER_OF_PUBLISHERS: usize = 16;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         let sut = node
@@ -3352,7 +3352,7 @@ mod service_publish_subscribe {
     fn listing_all_subscribers_works<S: Service>() {
         const NUMBER_OF_SUBSCRIBERS: usize = 18;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         let sut = node
@@ -3384,7 +3384,7 @@ mod service_publish_subscribe {
     fn listing_all_subscribers_stops_on_request<S: Service>() {
         const NUMBER_OF_SUBSCRIBERS: usize = 16;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         let sut = node
@@ -3413,7 +3413,7 @@ mod service_publish_subscribe {
     fn receive_does_not_return_error_when_pub_goes_out_of_scope_after_reallocation<S: Service>() {
         const SLICE_MAX_LEN: usize = 1;
         let service_name = generate_name();
-        let config = generate_isolated_config();
+        let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
 
         let service = node

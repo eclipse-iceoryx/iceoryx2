@@ -1086,32 +1086,32 @@ mod service_request_response {
             .unwrap();
 
         let d = sut.static_config().request_message_type_details();
-        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.header.type_name, eq core::any::type_name::<iceoryx2::service::header::request_response::RequestHeader>());
-        assert_that!(d.header.size, eq core::mem::size_of::<iceoryx2::service::header::request_response::RequestHeader>());
-        assert_that!(d.header.alignment, eq core::mem::align_of::<iceoryx2::service::header::request_response::RequestHeader>());
-        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.user_header.type_name, eq core::any::type_name::<RequestHeader>());
-        assert_that!(d.user_header.size, eq core::mem::size_of::<RequestHeader>());
-        assert_that!(d.user_header.alignment, eq core::mem::align_of::<RequestHeader>());
-        assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.payload.type_name, eq core::any::type_name::<RequestPayload>());
-        assert_that!(d.payload.size, eq core::mem::size_of::<RequestPayload>());
-        assert_that!(d.payload.alignment, eq core::mem::align_of::<RequestPayload>());
+        assert_that!(d.header.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.header.type_name(), eq core::any::type_name::<iceoryx2::service::header::request_response::RequestHeader>());
+        assert_that!(d.header.size(), eq core::mem::size_of::<iceoryx2::service::header::request_response::RequestHeader>());
+        assert_that!(d.header.alignment(), eq core::mem::align_of::<iceoryx2::service::header::request_response::RequestHeader>());
+        assert_that!(d.user_header.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.user_header.type_name(), eq core::any::type_name::<RequestHeader>());
+        assert_that!(d.user_header.size(), eq core::mem::size_of::<RequestHeader>());
+        assert_that!(d.user_header.alignment(), eq core::mem::align_of::<RequestHeader>());
+        assert_that!(d.payload.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.payload.type_name(), eq core::any::type_name::<RequestPayload>());
+        assert_that!(d.payload.size(), eq core::mem::size_of::<RequestPayload>());
+        assert_that!(d.payload.alignment(), eq core::mem::align_of::<RequestPayload>());
 
         let d = sut.static_config().response_message_type_details();
-        assert_that!(d.header.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.header.type_name, eq core::any::type_name::<iceoryx2::service::header::request_response::ResponseHeader>());
-        assert_that!(d.header.size, eq core::mem::size_of::<iceoryx2::service::header::request_response::ResponseHeader>());
-        assert_that!(d.header.alignment, eq core::mem::align_of::<iceoryx2::service::header::request_response::ResponseHeader>());
-        assert_that!(d.user_header.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.user_header.type_name, eq core::any::type_name::<ResponseHeader>());
-        assert_that!(d.user_header.size, eq core::mem::size_of::<ResponseHeader>());
-        assert_that!(d.user_header.alignment, eq core::mem::align_of::<ResponseHeader>());
-        assert_that!(d.payload.variant, eq TypeVariant::FixedSize);
-        assert_that!(d.payload.type_name, eq core::any::type_name::<ResponsePayload>());
-        assert_that!(d.payload.size, eq core::mem::size_of::<ResponsePayload>());
-        assert_that!(d.payload.alignment, eq core::mem::align_of::<ResponsePayload>());
+        assert_that!(d.header.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.header.type_name(), eq core::any::type_name::<iceoryx2::service::header::request_response::ResponseHeader>());
+        assert_that!(d.header.size(), eq core::mem::size_of::<iceoryx2::service::header::request_response::ResponseHeader>());
+        assert_that!(d.header.alignment(), eq core::mem::align_of::<iceoryx2::service::header::request_response::ResponseHeader>());
+        assert_that!(d.user_header.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.user_header.type_name(), eq core::any::type_name::<ResponseHeader>());
+        assert_that!(d.user_header.size(), eq core::mem::size_of::<ResponseHeader>());
+        assert_that!(d.user_header.alignment(), eq core::mem::align_of::<ResponseHeader>());
+        assert_that!(d.payload.variant(), eq TypeVariant::FixedSize);
+        assert_that!(*d.payload.type_name(), eq core::any::type_name::<ResponsePayload>());
+        assert_that!(d.payload.size(), eq core::mem::size_of::<ResponsePayload>());
+        assert_that!(d.payload.alignment(), eq core::mem::align_of::<ResponsePayload>());
     }
 
     #[test]
@@ -1129,7 +1129,7 @@ mod service_request_response {
             .create()
             .unwrap();
 
-        assert_that!(sut.static_config().request_message_type_details().payload.alignment, eq core::mem::align_of::<RequestPayload>());
+        assert_that!(sut.static_config().request_message_type_details().payload.alignment(), eq core::mem::align_of::<RequestPayload>());
     }
 
     #[test]
@@ -1147,7 +1147,7 @@ mod service_request_response {
             .create()
             .unwrap();
 
-        assert_that!(sut.static_config().response_message_type_details().payload.alignment, eq core::mem::align_of::<ResponsePayload>());
+        assert_that!(sut.static_config().response_message_type_details().payload.alignment(), eq core::mem::align_of::<ResponsePayload>());
     }
 
     #[test]
