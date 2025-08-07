@@ -174,7 +174,7 @@ impl RecorderBuilder {
         };
 
         let header = RecordHeader {
-            version: PackageVersion::get().to_u64(),
+            version: PackageVersion::get().into(),
             types: self.types.clone(),
             messaging_pattern: self.messaging_pattern,
         };

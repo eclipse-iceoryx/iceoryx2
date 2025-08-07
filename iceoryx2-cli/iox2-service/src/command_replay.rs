@@ -30,7 +30,7 @@ pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
         .create::<ipc::Service>()?;
 
     let required_header = RecordHeader {
-        version: PackageVersion::get().to_u64(),
+        version: PackageVersion::get().into(),
         types: get_pubsub_service_types(ServiceName::new(&options.service)?, &node)?,
         messaging_pattern: options.messaging_pattern.into(),
     };

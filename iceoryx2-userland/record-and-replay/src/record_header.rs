@@ -11,8 +11,31 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use iceoryx2::prelude::MessagingPattern;
+use iceoryx2_bb_elementary::package_version::PackageVersion;
 
 use crate::recorder::ServiceTypes;
+
+#[repr(C)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
+/// Represents a semver version
+pub struct Version {
+    /// Major version part
+    pub major: u16,
+    /// Minor version part
+    pub minor: u16,
+    /// Patch version part
+    pub patch: u16,
+}
+
+impl From<PackageVersion> for Version {
+    fn from(value: PackageVersion) -> Self {
+        Version {
+            major: value.major(),
+            minor: value.minor(),
+            patch: value.patch(),
+        }
+    }
+}
 
 #[repr(C)]
 #[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
@@ -20,7 +43,7 @@ use crate::recorder::ServiceTypes;
 /// version used when the data was captured.
 pub struct RecordHeader {
     /// The version of iceoryx2 used when the data was captured.
-    pub version: u64,
+    pub version: Version,
     /// The types to which the stored payload corresponds.
     pub types: ServiceTypes,
     /// The messaging pattern of the recorded service.

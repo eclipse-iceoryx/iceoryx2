@@ -19,6 +19,7 @@ mod replayer_tests {
     };
     use iceoryx2_pal_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{
+        record_header::Version,
         recorder::{RecorderBuilder, ServiceTypes},
         replayer::{ReplayerOpenError, ReplayerOpener},
     };
@@ -77,7 +78,11 @@ mod replayer_tests {
         };
         let recorder = RecorderBuilder::new(&types).create(&file_name).unwrap();
         let mut header = recorder.header().clone();
-        header.version = 0;
+        header.version = Version {
+            major: 0,
+            minor: 0,
+            patch: 0,
+        };
 
         assert_that!(
             ReplayerOpener::new(&file_name)
