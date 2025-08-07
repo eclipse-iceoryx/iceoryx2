@@ -61,14 +61,16 @@
     [#799](https://github.com/eclipse-iceoryx/iceoryx2/issues/799)
 * CMake no longer installs unusable binaries when FetchContent is used
     [#814](https://github.com/eclipse-iceoryx/iceoryx2/issues/814)
+* Fix linker error on linux
+    [#855](https://github.com/eclipse-iceoryx/iceoryx2/issues/855)
 * Miri complains about byte_string as_bytes* operations
     [#875](https://github.com/eclipse-iceoryx/iceoryx2/issues/875)
 * Make changes to the config file backward compatible
     [#921](https://github.com/eclipse-iceoryx/iceoryx2/issues/921)
 * Make `update_connections` public for all ports
     [#923](https://github.com/eclipse-iceoryx/iceoryx2/issues/923)
-* Fix linker error on linux
-    [#855](https://github.com/eclipse-iceoryx/iceoryx2/issues/855)
+* Fix cleanup issue of stale dynamic configs
+    [#927](https://github.com/eclipse-iceoryx/iceoryx2/issues/927)
 
 ### Refactoring
 

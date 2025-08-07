@@ -386,7 +386,7 @@ impl<ServiceType: service::Service> BuilderWithServiceType<ServiceType> {
             Ok(storage) => Ok(storage),
             Err(DynamicStorageCreateError::AlreadyExists) => {
                 warn!(from self, "Old dynamic config from previous instance discovered - trying to remove it.");
-                // Safe since a service is removes the resources always in the order of:
+                // Safe since a service removes the resources always in the order of:
                 //   1. dynamic config
                 //   2. additional resources
                 //   3. static config
