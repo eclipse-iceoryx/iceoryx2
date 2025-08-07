@@ -91,7 +91,7 @@ use crate::record_header::RecordHeader;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 /// Failures that can occur when a recorded file is opened with [`ReplayerOpener::open()`]
-/// or [`ReplayerOpener::read_into_buffer()`].
+/// or [`Replayer::read_into_buffer()`].
 pub enum ReplayerOpenError {
     /// The files payload contains invalid hex symbols
     InvalidHexCode,
@@ -131,7 +131,7 @@ impl core::error::Error for ReplayerOpenError {}
 
 #[derive(Debug)]
 /// Builder to open a recorded file. It returns either a in memory buffer and [`RecordHeader`]
-/// with [`ReplayerOpener::read_into_buffer()`] (suggested for small payloads) or the
+/// with [`Replayer::read_into_buffer()`] (suggested for small payloads) or the
 /// [`Replayer`] which can read the file entry by entry.
 pub struct ReplayerOpener {
     file_path: FilePath,
