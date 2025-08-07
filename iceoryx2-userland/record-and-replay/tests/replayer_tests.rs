@@ -13,6 +13,7 @@
 #[cfg(test)]
 mod replayer_tests {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
+    use iceoryx2::testing;
     use iceoryx2_bb_posix::{
         file::{CreationMode, FileBuilder},
         testing::generate_file_name,
@@ -50,6 +51,7 @@ mod replayer_tests {
 
     #[test]
     fn open_succeeds_when_required_header_matches() {
+        let service_name = testing::generate_service_name();
         let file_name = generate_file_name();
 
         let types = ServiceTypes {
@@ -57,11 +59,13 @@ mod replayer_tests {
             user_header: TypeDetail::new::<u64>(TypeVariant::FixedSize),
             system_header: TypeDetail::new::<u64>(TypeVariant::FixedSize),
         };
-        let recorder = RecorderBuilder::new(&types).create(&file_name).unwrap();
+        let recorder = RecorderBuilder::new(&types)
+            .create(&file_name, &service_name)
+            .unwrap();
 
         assert_that!(
             ReplayerOpener::new(&file_name)
-                .require_header(recorder.header())
+                .require_header_details(&recorder.header().details)
                 .open(),
             is_ok
         );
@@ -69,6 +73,7 @@ mod replayer_tests {
 
     #[test]
     fn open_fails_when_required_header_does_not_match() {
+        let service_name = testing::generate_service_name();
         let file_name = generate_file_name();
 
         let types = ServiceTypes {
@@ -76,9 +81,11 @@ mod replayer_tests {
             user_header: TypeDetail::new::<u64>(TypeVariant::FixedSize),
             system_header: TypeDetail::new::<u64>(TypeVariant::FixedSize),
         };
-        let recorder = RecorderBuilder::new(&types).create(&file_name).unwrap();
+        let recorder = RecorderBuilder::new(&types)
+            .create(&file_name, &service_name)
+            .unwrap();
         let mut header = recorder.header().clone();
-        header.version = Version {
+        header.details.version = Version {
             major: 0,
             minor: 0,
             patch: 0,
@@ -86,7 +93,7 @@ mod replayer_tests {
 
         assert_that!(
             ReplayerOpener::new(&file_name)
-                .require_header(&header)
+                .require_header_details(&header.details)
                 .open().err(),
             eq Some(ReplayerOpenError::ActualHeaderDoesNotMatchRequiredHeader)
         );

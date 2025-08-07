@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::prelude::MessagingPattern;
+use iceoryx2::prelude::{MessagingPattern, ServiceName};
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 
 use crate::recorder::ServiceTypes;
@@ -39,13 +39,23 @@ impl From<PackageVersion> for Version {
 
 #[repr(C)]
 #[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
-/// Represents the header of a recorded file which identifies the type details and iceoryx2
-/// version used when the data was captured.
-pub struct RecordHeader {
+/// Contains the version, message and type details
+pub struct RecordHeaderDetails {
     /// The version of iceoryx2 used when the data was captured.
     pub version: Version,
     /// The types to which the stored payload corresponds.
     pub types: ServiceTypes,
     /// The messaging pattern of the recorded service.
     pub messaging_pattern: MessagingPattern,
+}
+
+#[repr(C)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, PartialEq, Clone)]
+/// Represents the header of a recorded file which identifies the type details and iceoryx2
+/// version used when the data was captured.
+pub struct RecordHeader {
+    /// The name of the service that was recorded.
+    pub service_name: ServiceName,
+    /// The version, message and type details
+    pub details: RecordHeaderDetails,
 }

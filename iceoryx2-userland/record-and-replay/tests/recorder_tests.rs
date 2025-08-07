@@ -18,8 +18,8 @@ mod recorder_tests {
     use iceoryx2::{
         prelude::MessagingPattern,
         service::static_config::message_type_details::{TypeDetail, TypeVariant},
+        testing,
     };
-    use iceoryx2_bb_log::set_log_level;
     use iceoryx2_pal_testing::assert_that;
     use iceoryx2_userland_record_and_replay::{
         record::{DataRepresentation, RawRecord},
@@ -34,6 +34,7 @@ mod recorder_tests {
     #[test]
     fn fails_when_file_already_exists() {
         let file_name = generate_file_name();
+        let service_name = testing::generate_service_name();
 
         let types = ServiceTypes {
             payload: TypeDetail::new::<u64>(TypeVariant::FixedSize),
@@ -47,13 +48,13 @@ mod recorder_tests {
             .create()
             .unwrap();
 
-        let recorder = RecorderBuilder::new(&types).create(&file_name);
+        let recorder = RecorderBuilder::new(&types).create(&file_name, &service_name);
         assert_that!(recorder.err(), eq Some(RecorderCreateError::FileAlreadyExists));
     }
 
     #[test]
     fn simple_recording_works() {
-        set_log_level(iceoryx2_bb_log::LogLevel::Trace);
+        let service_name = testing::generate_service_name();
         let file_name = generate_file_name();
         let service_types = ServiceTypes {
             payload: TypeDetail::new::<u64>(TypeVariant::FixedSize),
@@ -64,7 +65,7 @@ mod recorder_tests {
         let mut recorder = RecorderBuilder::new(&service_types)
             .data_representation(DataRepresentation::HumanReadable)
             .messaging_pattern(MessagingPattern::PublishSubscribe)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let result = recorder.write(RawRecord {

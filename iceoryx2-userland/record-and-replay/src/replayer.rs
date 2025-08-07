@@ -86,6 +86,7 @@ use crate::record::Record;
 use crate::record::RecordReader;
 use crate::record::HEX_START_RECORD_MARKER;
 use crate::record_header::RecordHeader;
+use crate::record_header::RecordHeaderDetails;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 /// Failures that can occur when a recorded file is opened with [`ReplayerOpener::open()`]
@@ -136,7 +137,7 @@ impl core::error::Error for ReplayerOpenError {}
 pub struct ReplayerOpener {
     file_path: FilePath,
     data_representation: DataRepresentation,
-    required_header: Option<RecordHeader>,
+    required_header: Option<RecordHeaderDetails>,
 }
 
 impl ReplayerOpener {
@@ -157,7 +158,7 @@ impl ReplayerOpener {
 
     /// Optional parameter. When set it checks if the contained [`RecordHeader`]
     /// matches the user given [`RecordHeader`], otherwise it fails.
-    pub fn require_header(mut self, header: &RecordHeader) -> Self {
+    pub fn require_header_details(mut self, header: &RecordHeaderDetails) -> Self {
         self.required_header = Some(header.clone());
         self
     }
@@ -194,9 +195,10 @@ impl ReplayerOpener {
         let actual_header = Self::read_header(&mut file, self.data_representation)?;
 
         if let Some(required_header) = self.required_header {
-            if required_header != actual_header {
+            if required_header != actual_header.details {
                 fail!(from origin, with ReplayerOpenError::ActualHeaderDoesNotMatchRequiredHeader,
-                    "{msg} since the required header: {required_header:?} does not match the actual header {actual_header:?}.");
+                    "{msg} since the required header: {required_header:?} does not match the actual header {:?}.",
+                    actual_header.details);
             }
         }
 
@@ -283,7 +285,7 @@ impl Replayer {
     /// Returns the next contained [`Record`]. If it reached the end of the file it
     /// returns [`None`].
     pub fn next_record(&mut self) -> Result<Option<Record>, ReplayerOpenError> {
-        if let Some(record) = RecordReader::new(&self.header)
+        if let Some(record) = RecordReader::new(&self.header.details)
             .data_representation(self.data_representation)
             .read(&self.file)?
         {

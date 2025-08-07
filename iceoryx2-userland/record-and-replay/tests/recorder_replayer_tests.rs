@@ -74,6 +74,7 @@ mod recorder_replayer {
         user_header_type: TypeDetail,
         number_of_data: usize,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -84,7 +85,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];
@@ -187,6 +188,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         const NUMBER_OF_DATA: usize = 15;
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 256, 8),
@@ -197,7 +199,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];
@@ -254,6 +256,7 @@ mod recorder_replayer {
     }
 
     fn writing_decreasing_timestamps_fails(data_representation: DataRepresentation) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -263,7 +266,7 @@ mod recorder_replayer {
 
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];
@@ -307,6 +310,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 32, 4),
@@ -317,7 +321,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -364,6 +368,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
@@ -374,7 +379,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -422,6 +427,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
         user_header_type: TypeDetail,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
@@ -432,7 +438,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -499,6 +505,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::Dynamic, 32, 4),
@@ -509,7 +516,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -557,6 +564,7 @@ mod recorder_replayer {
         messaging_pattern: MessagingPattern,
     ) {
         const NUMBER_OF_DATA: usize = 129;
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -567,7 +575,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];
@@ -625,6 +633,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -635,7 +644,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -685,6 +694,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -695,7 +705,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -745,6 +755,7 @@ mod recorder_replayer {
         data_representation: DataRepresentation,
         messaging_pattern: MessagingPattern,
     ) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -755,7 +766,7 @@ mod recorder_replayer {
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
             .messaging_pattern(messaging_pattern)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut data = generate_service_data(&types, Duration::ZERO);
@@ -802,6 +813,7 @@ mod recorder_replayer {
     }
 
     fn reading_decreasing_timestamps_fails(data_representation: DataRepresentation) {
+        let service_name = iceoryx2::testing::generate_service_name();
         let file_name = generate_file_name();
         let types = ServiceTypes {
             payload: generate_type_detail(TypeVariant::FixedSize, 8, 4),
@@ -811,7 +823,7 @@ mod recorder_replayer {
 
         let mut recorder = RecorderBuilder::new(&types)
             .data_representation(data_representation)
-            .create(&file_name)
+            .create(&file_name, &service_name)
             .unwrap();
 
         let mut dataset = vec![];

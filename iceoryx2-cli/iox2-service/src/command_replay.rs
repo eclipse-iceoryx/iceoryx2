@@ -22,14 +22,15 @@ use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::service::static_config::message_type_details::TypeVariant;
 use iceoryx2_bb_elementary::package_version::PackageVersion;
 use iceoryx2_cli::Format;
-use iceoryx2_userland_record_and_replay::{prelude::*, record_header::RecordHeader};
+use iceoryx2_userland_record_and_replay::prelude::*;
+use iceoryx2_userland_record_and_replay::record_header::RecordHeaderDetails;
 
 pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
     let node = NodeBuilder::new()
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;
 
-    let required_header = RecordHeader {
+    let required_header = RecordHeaderDetails {
         version: PackageVersion::get().into(),
         types: get_pubsub_service_types(ServiceName::new(&options.service)?, &node)?,
         messaging_pattern: options.messaging_pattern.into(),
@@ -37,7 +38,7 @@ pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
 
     let (buffer, _) = ReplayerOpener::new(&FilePath::new(options.input.as_bytes())?)
         .data_representation(options.data_representation.into())
-        .require_header(&required_header)
+        .require_header_details(&required_header)
         .read_into_buffer()?;
 
     let service = unsafe {

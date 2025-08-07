@@ -42,7 +42,7 @@ pub fn record(options: RecordOptions, _format: Format) -> Result<()> {
     let mut recorder = RecorderBuilder::new(&service_types)
         .data_representation(options.data_representation.into())
         .messaging_pattern(options.messaging_pattern.into())
-        .create(&FilePath::new(options.output.as_bytes())?)?;
+        .create(&FilePath::new(options.output.as_bytes())?, &service_name)?;
 
     println!("start recording data on \"{}\".", options.service);
 
