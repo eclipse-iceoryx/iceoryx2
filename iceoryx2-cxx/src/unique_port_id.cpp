@@ -86,7 +86,6 @@ auto operator<(const UniqueSubscriberId& lhs, const UniqueSubscriberId& rhs) -> 
 }
 
 UniqueSubscriberId::UniqueSubscriberId(iox2_unique_subscriber_id_h handle)
-
     : m_handle { handle } {
 }
 
@@ -294,24 +293,30 @@ UniqueReaderId::UniqueReaderId(UniqueReaderId&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
-auto UniqueReaderId::operator=([[maybe_unused]] UniqueReaderId&& rhs) noexcept -> UniqueReaderId& {
-    IOX_TODO();
+auto UniqueReaderId::operator=(UniqueReaderId&& rhs) noexcept -> UniqueReaderId& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 UniqueReaderId::~UniqueReaderId() {
     drop();
 }
 
-auto operator==([[maybe_unused]] const UniqueReaderId& lhs, [[maybe_unused]] const UniqueReaderId& rhs) -> bool {
-    IOX_TODO();
+auto operator==(const UniqueReaderId& lhs, const UniqueReaderId& rhs) -> bool {
+    return iox2_unique_reader_id_eq(&lhs.m_handle, &rhs.m_handle);
 }
 
 auto operator<([[maybe_unused]] const UniqueReaderId& lhs, [[maybe_unused]] const UniqueReaderId& rhs) -> bool {
     IOX_TODO();
 }
 
-UniqueReaderId::UniqueReaderId(/*iox2_unique_reader_id_h handle*/) {
-    IOX_TODO();
+UniqueReaderId::UniqueReaderId(iox2_unique_reader_id_h handle)
+    : m_handle { handle } {
 }
 
 auto UniqueReaderId::bytes() const -> const iox::optional<RawIdType>& {
@@ -319,7 +324,10 @@ auto UniqueReaderId::bytes() const -> const iox::optional<RawIdType>& {
 };
 
 void UniqueReaderId::drop() {
-    IOX_TODO();
+    if (m_handle != nullptr) {
+        iox2_unique_reader_id_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 UniqueWriterId::UniqueWriterId(UniqueWriterId&& rhs) noexcept {

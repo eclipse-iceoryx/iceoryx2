@@ -508,7 +508,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
-    key: u64,
+    key: KeyFfi,
     value_ptr: *mut c_void,
     release_callback: iox2_service_blackboard_creator_add_release_callback,
     type_name: *const c_char,
@@ -517,37 +517,38 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
     type_align: usize,
 ) {
     service_builder_handle.assert_non_null();
-    let type_details = TypeDetail {
-        variant: TypeVariant::FixedSize,
-        size: type_size,
-        alignment: type_align,
-        type_name: TypeNameString::from_bytes_truncated(core::slice::from_raw_parts(
+
+    let mut type_details = TypeDetail::new::<()>(TypeVariant::FixedSize);
+    iceoryx2::testing::type_detail_set_name(
+        &mut type_details,
+        TypeNameString::from_bytes_truncated(core::slice::from_raw_parts(
             type_name.cast(),
             type_name_len,
         )),
-    };
+    );
+    iceoryx2::testing::type_detail_set_size(&mut type_details, type_size);
+    iceoryx2::testing::type_detail_set_alignment(&mut type_details, type_align);
 
     let internals = BuilderInternals {
         key,
         value_type_details: type_details.clone(),
-        value_writer: Box::new(move |mem: *mut u8| {
-            let mem_atomic: *mut UnrestrictedAtomicMgmt = mem.cast();
-            mem_atomic.write(UnrestrictedAtomicMgmt::new());
-            let addr = mem as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
-            let addr = align(addr, type_details.alignment);
+        value_writer: Box::new(move |raw_memory_ptr: *mut u8| {
+            let atomic_mgmt_alignment_offset =
+                raw_memory_ptr.align_offset(align_of::<UnrestrictedAtomicMgmt>());
+            let atomic_mgmt_ptr: *mut UnrestrictedAtomicMgmt =
+                raw_memory_ptr.add(atomic_mgmt_alignment_offset).cast();
+            atomic_mgmt_ptr.write(UnrestrictedAtomicMgmt::new());
+            let payload_ptr =
+                atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
+            let payload_ptr = align(payload_ptr, type_align);
             // TODO: how to realize add_with_default? -> only be solvable on C++ side
-            core::ptr::copy_nonoverlapping(value_ptr, addr as *mut c_void, type_details.size);
+            core::ptr::copy_nonoverlapping(value_ptr, payload_ptr as *mut c_void, type_size);
             release_callback(value_ptr);
             // TODO: what happens on failure, who releases it?
         }),
-        internal_value_size: align(
-            core::mem::size_of::<UnrestrictedAtomicMgmt>(),
-            type_details.alignment,
-        ) + type_details.size,
-        internal_value_alignment: max(
-            core::mem::align_of::<UnrestrictedAtomicMgmt>(),
-            type_details.alignment,
-        ),
+        internal_value_size: align(core::mem::size_of::<UnrestrictedAtomicMgmt>(), type_align)
+            + type_size,
+        internal_value_alignment: max(core::mem::align_of::<UnrestrictedAtomicMgmt>(), type_align),
     };
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };

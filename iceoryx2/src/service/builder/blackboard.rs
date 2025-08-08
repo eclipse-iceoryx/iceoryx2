@@ -15,8 +15,7 @@
 //! See [`crate::service`]
 //!
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
-//use super::CustomKeyMarker;
-use super::{OpenDynamicStorageFailure, ServiceState};
+use super::{CustomKeyMarker, OpenDynamicStorageFailure, ServiceState};
 use crate::service;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;

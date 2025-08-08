@@ -37,15 +37,19 @@
 
 use crate::prelude::EventId;
 use crate::service::builder::blackboard::BlackboardResources;
+use crate::service::builder::{CustomKeyMarker, CustomValueMarker};
 use crate::service::dynamic_config::blackboard::ReaderDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::sync::atomic::Ordering;
+use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
+    UnrestrictedAtomic, UnrestrictedAtomicMgmt,
+};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
@@ -185,7 +189,29 @@ impl<
         key: &KeyType,
     ) -> Result<ReaderHandle<Service, KeyType, ValueType>, ReaderHandleError> {
         let msg = "Unable to create reader handle";
+        let offset = self.get_entry_offset(
+            key,
+            &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+            msg,
+        )?;
 
+        let atomic = (self
+            .shared_state
+            .service_state
+            .additional_resource
+            .data
+            .payload_start_address() as u64
+            + offset) as *const UnrestrictedAtomic<ValueType>;
+
+        Ok(ReaderHandle::new(self.shared_state.clone(), atomic, offset))
+    }
+
+    fn get_entry_offset(
+        &self,
+        key: &KeyType,
+        type_details: &TypeDetail,
+        msg: &str,
+    ) -> Result<u64, ReaderHandleError> {
         // check if key exists
         let index = match unsafe {
             self.shared_state
@@ -212,21 +238,46 @@ impl<
             .entries[index];
 
         // check if ValueType matches
-        if TypeDetail::new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
+        if *type_details != entry.type_details {
             fail!(from self, with ReaderHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key and value type exists.", msg);
         }
 
         let offset = entry.offset.load(core::sync::atomic::Ordering::Relaxed);
-        let atomic = (self
+
+        Ok(offset)
+    }
+}
+
+// TODO: move Creator::add to impl with CustomKeyMarker?
+// TODO: replace u64 with CustomKeyMarker
+impl<Service: service::Service> Reader<Service, u64> {
+    #[doc(hidden)]
+    pub fn __internal_entry(
+        &self,
+        key: &u64,
+        type_details: &TypeDetail,
+    ) -> Result<__InternalReaderHandle<Service>, ReaderHandleError> {
+        let msg = "Unable to create reader handle";
+        let offset = self.get_entry_offset(key, type_details, msg)?;
+
+        let atomic_mgmt_ptr = (self
             .shared_state
             .service_state
             .additional_resource
             .data
             .payload_start_address() as u64
-            + offset) as *const UnrestrictedAtomic<ValueType>;
+            + offset) as *const UnrestrictedAtomicMgmt;
 
-        Ok(ReaderHandle::new(self.shared_state.clone(), atomic, offset))
+        let data_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
+        let data_ptr = align(data_ptr, type_details.alignment);
+
+        Ok(__InternalReaderHandle {
+            atomic_mgmt_ptr,
+            data_ptr: data_ptr as *const u8,
+            entry_id: EventId::new(offset as _),
+            _shared_state: self.shared_state.clone(),
+        })
     }
 }
 
@@ -254,6 +305,30 @@ pub struct ReaderHandle<
     atomic: *const UnrestrictedAtomic<ValueType>,
     entry_id: EventId,
     _shared_state: Arc<ReaderSharedState<Service, KeyType>>,
+}
+
+// TODO: documentation
+#[doc(hidden)]
+pub struct __InternalReaderHandle<Service: service::Service> {
+    atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
+    data_ptr: *const u8,
+    entry_id: EventId,
+    _shared_state: Arc<ReaderSharedState<Service, u64>>,
+}
+
+impl<Service: service::Service> __InternalReaderHandle<Service> {
+    pub fn get(&self, value_ptr: *mut u8, value_size: usize, vlaue_alignment: usize) {
+        unsafe { &*self.atomic_mgmt_ptr }.load(
+            value_ptr,
+            value_size,
+            vlaue_alignment,
+            self.data_ptr,
+        );
+    }
+
+    pub fn entry_id(&self) -> EventId {
+        self.entry_id
+    }
 }
 
 // Safe since the pointer to the UnrestrictedAtomic doesn't change and the UnrestrictedAtomic

@@ -21,6 +21,7 @@
 #include "iox2/client_error.hpp"
 #include "iox2/config_creation_error.hpp"
 #include "iox2/connection_failure.hpp"
+#include "iox2/entry_handle_error.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/listener_error.hpp"
 #include "iox2/log_level.hpp"
@@ -31,7 +32,6 @@
 #include "iox2/port_error.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/reader_error.hpp"
-#include "iox2/reader_handle_error.hpp"
 #include "iox2/semantic_string.hpp"
 #include "iox2/server_error.hpp"
 #include "iox2/service_builder_blackboard_error.hpp"
@@ -1311,61 +1311,59 @@ inline auto from<iox2::BlackboardOpenError, const char*>(const iox2::BlackboardO
 // return iox2_writer_handle_error_string(iox::into<iox2_writer_handle_error_e>(value));
 //}
 
-// template <>
-// constexpr auto from<int, iox2::ReaderCreateError>(const int value) noexcept -> iox2::ReaderCreateError {
-// const auto error = static_cast<iox2_reader_create_error_e>(value);
-// switch (error) {
-// case iox2_reader_create_error_e_C_EXCEEDS_MAX_SUPPORTED_READERS:
-// return iox2::ReaderCreateError::ExceedsMaxSupportedReaders;
-// default:
-// IOX_UNREACHABLE();
-//}
-//}
+template <>
+constexpr auto from<int, iox2::ReaderCreateError>(const int value) noexcept -> iox2::ReaderCreateError {
+    const auto error = static_cast<iox2_reader_create_error_e>(value);
+    switch (error) {
+    case iox2_reader_create_error_e_EXCEEDS_MAX_SUPPORTED_READERS:
+        return iox2::ReaderCreateError::ExceedsMaxSupportedReaders;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
 
-// template <>
-// constexpr auto from<iox2::ReaderCreateError, iox2_reader_create_error_e>(const iox2::ReaderCreateError value)
-// noexcept
-//-> iox2_reader_create_error_e {
-// switch (value) {
-// case iox2::ReaderCreateError::ExceedsMaxSupportedReaders:
-// return iox2_reader_create_error_e_C_EXCEEDS_MAX_SUPPORTED_READERS;
-// default:
-// IOX_UNREACHABLE();
-//}
-//}
+template <>
+constexpr auto from<iox2::ReaderCreateError, iox2_reader_create_error_e>(const iox2::ReaderCreateError value) noexcept
+    -> iox2_reader_create_error_e {
+    switch (value) {
+    case iox2::ReaderCreateError::ExceedsMaxSupportedReaders:
+        return iox2_reader_create_error_e_EXCEEDS_MAX_SUPPORTED_READERS;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
 
-// template <>
-// inline auto from<iox2::ReaderCreateError, const char*>(const iox2::ReaderCreateError value) noexcept -> const char* {
-// return iox2_reader_create_error_string(iox::into<iox2_reader_create_error_e>(value));
-//}
+template <>
+inline auto from<iox2::ReaderCreateError, const char*>(const iox2::ReaderCreateError value) noexcept -> const char* {
+    return iox2_reader_create_error_string(iox::into<iox2_reader_create_error_e>(value));
+}
 
-// template <>
-// constexpr auto from<int, iox2::ReaderHandleError>(const int value) noexcept -> iox2::ReaderHandleError {
-// const auto error = static_cast<iox2_reader_handle_error_e>(value);
-// switch (error) {
-// case iox2_reader_handle_error_e_C_ENTRY_DOES_NOT_EXIST:
-// return iox2::ReaderHandleError::EntryDoesNotExist;
-// default:
-// IOX_UNREACHABLE();
-//}
-//}
+template <>
+constexpr auto from<int, iox2::EntryHandleError>(const int value) noexcept -> iox2::EntryHandleError {
+    const auto error = static_cast<iox2_entry_handle_error_e>(value);
+    switch (error) {
+    case iox2_entry_handle_error_e_ENTRY_DOES_NOT_EXIST:
+        return iox2::EntryHandleError::EntryDoesNotExist;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
 
-// template <>
-// constexpr auto from<iox2::ReaderHandleError, iox2_reader_handle_error_e>(const iox2::ReaderHandleError value)
-// noexcept
-//-> iox2_reader_handle_error_e {
-// switch (value) {
-// case iox2::ReaderHandleError::EntryDoesNotExist:
-// return iox2_reader_handle_error_e_C_ENTRY_DOES_NOT_EXIST;
-// default:
-// IOX_UNREACHABLE();
-//}
-//}
+template <>
+constexpr auto from<iox2::EntryHandleError, iox2_entry_handle_error_e>(const iox2::EntryHandleError value) noexcept
+    -> iox2_entry_handle_error_e {
+    switch (value) {
+    case iox2::EntryHandleError::EntryDoesNotExist:
+        return iox2_entry_handle_error_e_ENTRY_DOES_NOT_EXIST;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
 
-// template <>
-// inline auto from<iox2::ReaderHandleError, const char*>(const iox2::ReaderHandleError value) noexcept -> const char* {
-// return iox2_reader_handle_error_string(iox::into<iox2_reader_handle_error_e>(value));
-//}
+template <>
+inline auto from<iox2::EntryHandleError, const char*>(const iox2::EntryHandleError value) noexcept -> const char* {
+    return iox2_entry_handle_error_string(iox::into<iox2_entry_handle_error_e>(value));
+}
 
 template <>
 constexpr auto from<int, iox2::ClientCreateError>(const int value) noexcept -> iox2::ClientCreateError {

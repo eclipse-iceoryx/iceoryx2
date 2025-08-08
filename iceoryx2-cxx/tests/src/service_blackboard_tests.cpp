@@ -463,32 +463,50 @@ TYPED_TEST(ServiceBlackboardTest, setting_service_properties_works) {
 // assert_that!(d.alignment, eq core::mem::align_of::<KeyType>());
 //}
 
-// TYPED_TEST(ServiceBlackboardTest, number_of_readers_works) {
-// constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+TYPED_TEST(ServiceBlackboardTest, number_of_readers_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-// const auto service_name = iox2_testing::generate_service_name();
+    const auto service_name = iox2_testing::generate_service_name();
 
-// auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-// auto service = node.service_builder(service_name)
-//.template blackboard_creator<uint64_t>()
-//.template add_with_default<uint64_t>(0)
-//.create()
-//.expect("");
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
 
-// ASSERT_THAT(service.dynamic_config().number_of_readers(), Eq(0));
+    ASSERT_THAT(service.dynamic_config().number_of_readers(), Eq(0));
 
-//{
-// auto sut_reader = service.reader_builder().create().expect("");
-// ASSERT_THAT(service.dynamic_config().number_of_readers(), Eq(1));
-//}
+    {
+        auto sut_reader = service.reader_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_readers(), Eq(1));
+    }
 
-// ASSERT_THAT(service.dynamic_config().number_of_readers(), Eq(0));
-//}
-
-// TODO
-TYPED_TEST(ServiceBlackboardTest, add_with_default_stores_default_value) {
+    ASSERT_THAT(service.dynamic_config().number_of_readers(), Eq(0));
 }
 
+TYPED_TEST(ServiceBlackboardTest, add_with_default_stores_default_value) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    constexpr uint16_t DEFAULT = 27;
+    struct TestDefault {
+        uint16_t t { DEFAULT };
+    };
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<TestDefault>(0)
+                       .create()
+                       .expect("");
+    auto reader = service.reader_builder().create().expect("");
+    auto entry_handle = reader.template entry<TestDefault>(0).expect("");
+    ASSERT_THAT(entry_handle.get().t, Eq(DEFAULT));
+}
+
+// TODO
 TYPED_TEST(ServiceBlackboardTest, simple_communication_works_reader_created_first) {
 }
 
@@ -583,9 +601,65 @@ TYPED_TEST(ServiceBlackboardTest, handle_can_still_be_used_after_every_prvious_s
 }
 
 TYPED_TEST(ServiceBlackboardTest, listing_all_readers_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_READERS = 18;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .max_readers(NUMBER_OF_READERS)
+                       .create()
+                       .expect("");
+
+    std::vector<Reader<SERVICE_TYPE, uint64_t>> readers;
+    readers.reserve(NUMBER_OF_READERS);
+    for (uint64_t i = 0; i < NUMBER_OF_READERS; ++i) {
+        readers.push_back(service.reader_builder().create().expect(""));
+    }
+
+    std::vector<UniqueReaderId> reader_ids;
+    reader_ids.reserve(NUMBER_OF_READERS);
+    service.dynamic_config().list_readers([&](auto reader_details_view) {
+        reader_ids.push_back(reader_details_view.reader_id());
+        return CallbackProgression::Continue;
+    });
+
+    ASSERT_THAT(reader_ids.size(), Eq(NUMBER_OF_READERS));
+    for (auto& reader : readers) {
+        auto iter = std::find(reader_ids.begin(), reader_ids.end(), reader.id());
+        ASSERT_THAT(iter, Ne(reader_ids.end()));
+    }
 }
 
 TYPED_TEST(ServiceBlackboardTest, listing_all_readers_stops_on_request) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t NUMBER_OF_READERS = 13;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template blackboard_creator<uint64_t>()
+                   .template add_with_default<uint64_t>(0)
+                   .max_readers(NUMBER_OF_READERS)
+                   .create()
+                   .expect("");
+
+    std::vector<iox2::Reader<SERVICE_TYPE, uint64_t>> readers;
+    readers.reserve(NUMBER_OF_READERS);
+    for (uint64_t i = 0; i < NUMBER_OF_READERS; ++i) {
+        readers.push_back(sut.reader_builder().create().expect(""));
+    }
+
+    auto counter = 0;
+    sut.dynamic_config().list_readers([&](auto) {
+        counter++;
+        return CallbackProgression::Stop;
+    });
+
+    ASSERT_THAT(counter, Eq(1));
 }
 
 TYPED_TEST(ServiceBlackboardTest, create_with_attributes_sets_attributes) {
@@ -662,25 +736,28 @@ TYPED_TEST(ServiceBlackboardTest, service_id_is_unique_per_service) {
     ASSERT_THAT(service_1_create.service_id().c_str(), Not(StrEq(service_2.service_id().c_str())));
 }
 
-// TYPED_TEST(ServiceBlackboardTest, subscriber_details_are_correct) {
-// constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+TYPED_TEST(ServiceBlackboardTest, reader_details_are_correct) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-// const auto service_name = iox2_testing::generate_service_name();
-// auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-// auto sut = node.service_builder(service_name).template publish_subscribe<uint64_t>().create().expect("");
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto sut = node.service_builder(service_name)
+                   .template blackboard_creator<uint64_t>()
+                   .template add_with_default<uint64_t>(0)
+                   .create()
+                   .expect("");
 
-// iox2::Subscriber<SERVICE_TYPE, uint64_t, void> subscriber = sut.subscriber_builder().create().expect("");
+    iox2::Reader<SERVICE_TYPE, uint64_t> reader = sut.reader_builder().create().expect("");
 
-// auto counter = 0;
-// sut.dynamic_config().list_subscribers([&](auto subscriber_details_view) {
-// counter++;
-// EXPECT_TRUE(subscriber_details_view.subscriber_id() == subscriber.id());
-// EXPECT_TRUE(subscriber_details_view.node_id() == node.id());
-// EXPECT_TRUE(subscriber_details_view.buffer_size() == subscriber.buffer_size());
-// return CallbackProgression::Stop;
-//});
+    auto counter = 0;
+    sut.dynamic_config().list_readers([&](auto reader_details_view) {
+        counter++;
+        EXPECT_TRUE(reader_details_view.reader_id() == reader.id());
+        EXPECT_TRUE(reader_details_view.node_id() == node.id());
+        return CallbackProgression::Stop;
+    });
 
-// ASSERT_THAT(counter, Eq(1));
-//}
+    ASSERT_THAT(counter, Eq(1));
+}
 
 } // namespace

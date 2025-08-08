@@ -67,7 +67,7 @@ class PortFactoryBlackboard {
     // auto writer_builder() const -> PortFactoryWriter<S, KeyType>;
 
     /// Returns a [`PortFactoryReader`] to create a new [`Reader`] port
-    // auto reader_builder() const -> PortFactoryReader<S, KeyType>;
+    auto reader_builder() const -> PortFactoryReader<S, KeyType>;
 
   private:
     template <typename, ServiceType>
@@ -145,7 +145,7 @@ inline auto PortFactoryBlackboard<S, KeyType>::static_config() const -> StaticCo
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::dynamic_config() const -> DynamicConfigBlackboard {
-    IOX_TODO();
+    return DynamicConfigBlackboard(m_handle);
 }
 
 template <ServiceType S, typename KeyType>
@@ -169,10 +169,10 @@ inline auto PortFactoryBlackboard<S, KeyType>::nodes(
 // IOX_TODO();
 //}
 
-// template <ServiceType S, typename KeyType>
-// inline auto PortFactoryBlackboard<S, KeyType>::reader_builder() const -> PortFactoryReader<S, KeyType> {
-// IOX_TODO();
-//}
+template <ServiceType S, typename KeyType>
+inline auto PortFactoryBlackboard<S, KeyType>::reader_builder() const -> PortFactoryReader<S, KeyType> {
+    return PortFactoryReader<S, KeyType>(iox2_port_factory_blackboard_reader_builder(&m_handle, nullptr));
+}
 } // namespace iox2
 
 #endif

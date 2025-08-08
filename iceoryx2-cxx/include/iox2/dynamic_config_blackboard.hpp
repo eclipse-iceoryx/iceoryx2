@@ -15,7 +15,7 @@
 
 #include "iox/function.hpp"
 #include "iox2/internal/iceoryx2.hpp"
-// #include "iox2/reader_details.hpp"
+#include "iox2/reader_details.hpp"
 // #include "iox2/writer_details.hpp"
 
 #include <cstdint>
@@ -41,7 +41,7 @@ class DynamicConfigBlackboard {
     /// corresponding [`ReaderDetailsView`].
     /// The callback shall return [`CallbackProgression::Continue`] when the iteration shall
     /// continue otherwise [`CallbackProgression::Stop`].
-    // void list_readers(const iox::function<CallbackProgression(ReaderDetailsView)>& callback) const;
+    void list_readers(const iox::function<CallbackProgression(ReaderDetailsView)>& callback) const;
 
     /// Iterates over all [`Writer`]s and calls the callback with the
     /// corresponding [`WriterDetailsView`].
@@ -53,9 +53,9 @@ class DynamicConfigBlackboard {
     template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
-    explicit DynamicConfigBlackboard(/*iox2_port_factory_blackboard_h handle*/);
+    explicit DynamicConfigBlackboard(iox2_port_factory_blackboard_h handle);
 
-    // iox2_port_factory_blackboard_h m_handle = nullptr;
+    iox2_port_factory_blackboard_h m_handle = nullptr;
 };
 } // namespace iox2
 
