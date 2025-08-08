@@ -33,6 +33,7 @@
 
 use core::{cell::UnsafeCell, fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 
+use iceoryx2_bb_elementary::math::align;
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32};
 
 // ATTENTION: To ensure the functionality also in the case of an overflow with the 'write_cell'
@@ -98,6 +99,48 @@ impl UnrestrictedAtomicMgmt {
         Self {
             write_cell: IoxAtomicU32::new(1),
             has_producer: IoxAtomicBool::new(true),
+        }
+    }
+
+    pub fn load(
+        &self,
+        value_ptr: *mut u8,
+        value_size: usize,
+        value_alignment: usize,
+        data_ptr: *const u8,
+    ) {
+        /////////////////////////
+        // SYNC POINT - read
+        /////////////////////////
+        let mut read_cell = self.write_cell.load(Ordering::Acquire) - 1;
+
+        loop {
+            let data_cell_ptr = align(
+                unsafe { data_ptr.add(value_size * (read_cell as usize % NUMBER_OF_CELLS)) }
+                    as usize,
+                value_alignment,
+            );
+            unsafe {
+                core::ptr::copy_nonoverlapping(data_cell_ptr as *const u8, value_ptr, value_size);
+            }
+
+            /////////////////////////
+            // SYNC POINT - read (for write while reading)
+            // prevent reordering of reading from `data` after checking for a change
+            // of the `write_cell` position which would result in a data race
+            /////////////////////////
+            let expected_write_cell = read_cell + 1;
+            let write_cell_result = self.write_cell.compare_exchange(
+                expected_write_cell,
+                expected_write_cell,
+                Ordering::Release,
+                Ordering::Acquire,
+            );
+            if let Err(write_cell) = write_cell_result {
+                read_cell = write_cell - 1;
+            } else {
+                break;
+            }
         }
     }
 }
@@ -173,38 +216,13 @@ impl<T: Copy> UnrestrictedAtomic<T> {
 
     /// Loads the underlying value and returns a copy of it.
     pub fn load(&self) -> T {
-        /////////////////////////
-        // SYNC POINT - read
-        /////////////////////////
-        let mut read_cell = self.mgmt.write_cell.load(Ordering::Acquire) - 1;
-
-        let mut return_value;
-
-        loop {
-            unsafe {
-                return_value =
-                    *(*self.data[read_cell as usize % NUMBER_OF_CELLS].get()).assume_init_ref()
-            };
-
-            /////////////////////////
-            // SYNC POINT - read (for write while reading)
-            // prevent reordering of reading from `data` after checking for a change
-            // of the `write_cell` position which would result in a data race
-            /////////////////////////
-            let expected_write_cell = read_cell + 1;
-            let write_cell_result = self.mgmt.write_cell.compare_exchange(
-                expected_write_cell,
-                expected_write_cell,
-                Ordering::Release,
-                Ordering::Acquire,
-            );
-            if let Err(write_cell) = write_cell_result {
-                read_cell = write_cell - 1;
-            } else {
-                break;
-            }
-        }
-
-        return_value
+        let mut return_value: MaybeUninit<T> = MaybeUninit::uninit();
+        self.mgmt.load(
+            return_value.as_mut_ptr().cast(),
+            core::mem::size_of::<T>(),
+            core::mem::align_of::<T>(),
+            self.data.as_ptr().cast(),
+        );
+        unsafe { return_value.assume_init() }
     }
 }
