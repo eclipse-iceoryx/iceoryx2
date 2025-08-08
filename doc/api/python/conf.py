@@ -12,17 +12,16 @@
 
 import os, sys
 
+sys.path.insert(0, os.path.abspath('../../../iceoryx2-ffi/python/python-src/'))
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'iceoryx2'
-copyright = '2025, ekxide.io'
-author = 'ekxide developers'
+author = 'Contributors of eclipse-iceoryx'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
-sys.path.insert(0, os.path.abspath('../../../iceoryx2-ffi/python/python-src/'))
 
 extensions = [
     'sphinx.ext.autodoc',
@@ -34,6 +33,6 @@ extensions = [
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "furo"
-html_title = "iceoryx2-python"
+html_title = "iceoryx2"
 html_theme_options = {
 }
