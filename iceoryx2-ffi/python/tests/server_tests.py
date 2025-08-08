@@ -12,9 +12,8 @@
 
 import ctypes
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
@@ -49,12 +48,9 @@ def test_unable_to_deliver_strategy_can_be_configured(
         .create()
     )
 
+    assert sut_1.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.Block
     assert (
-        sut_1.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.Block
-    )
-    assert (
-        sut_2.unable_to_deliver_strategy
-        == iox2.UnableToDeliverStrategy.DiscardSample
+        sut_2.unable_to_deliver_strategy == iox2.UnableToDeliverStrategy.DiscardSample
     )
 
 

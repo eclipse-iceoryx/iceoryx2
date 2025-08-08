@@ -22,9 +22,7 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 service = (
-    node.service_builder(
-        iox2.ServiceName.new("example//dynamic_request_response")
-    )
+    node.service_builder(iox2.ServiceName.new("example//dynamic_request_response"))
     .request_response(iox2.Slice[ctypes.c_uint8], iox2.Slice[ctypes.c_uint8])
     .open_or_create()
 )
@@ -52,9 +50,7 @@ try:
         request = request.assume_init()
         pending_response = request.send()
 
-        print(
-            "send request", COUNTER, "with", required_memory_size, "bytes ..."
-        )
+        print("send request", COUNTER, "with", required_memory_size, "bytes ...")
 
         node.wait(cycle_time)
 
@@ -62,9 +58,7 @@ try:
             response = pending_response.receive()
             if response is not None:
                 data = response.payload()
-                print(
-                    "received response with", response.payload().len(), "bytes"
-                )
+                print("received response with", response.payload().len(), "bytes")
             else:
                 break
 

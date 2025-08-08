@@ -10,9 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
@@ -62,9 +61,7 @@ def test_deadline_can_be_acquired_via_ports(
     deadline = iox2.Duration.from_secs(123)
 
     service_name = iox2.testing.generate_service_name()
-    service = (
-        node.service_builder(service_name).event().deadline(deadline).create()
-    )
+    service = node.service_builder(service_name).event().deadline(deadline).create()
 
     notifier = service.notifier_builder().create()
     listener = service.listener_builder().create()

@@ -22,9 +22,7 @@ node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 listeners = []
 for i in range(1, len(sys.argv)):
     event = (
-        node.service_builder(iox2.ServiceName.new(sys.argv[i]))
-        .event()
-        .open_or_create()
+        node.service_builder(iox2.ServiceName.new(sys.argv[i])).event().open_or_create()
     )
 
     listener = event.listener_builder().create()

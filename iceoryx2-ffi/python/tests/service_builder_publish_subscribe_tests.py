@@ -12,9 +12,8 @@
 
 import ctypes
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 service_types = [iox2.ServiceType.Ipc, iox2.ServiceType.Local]
 
@@ -35,11 +34,7 @@ def test_non_existing_service_can_be_created(
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     try:
         service_name = iox2.testing.generate_service_name()
-        sut = (
-            node.service_builder(service_name)
-            .publish_subscribe(Payload)
-            .create()
-        )
+        sut = node.service_builder(service_name).publish_subscribe(Payload).create()
         assert sut.name == service_name
     except iox2.PublishSubscribeCreateError:
         assert False
@@ -71,9 +66,7 @@ def test_existing_service_can_be_opened(service_type: iox2.ServiceType) -> None:
         node.service_builder(service_name).publish_subscribe(Payload).create()
     )
     try:
-        sut = (
-            node.service_builder(service_name).publish_subscribe(Payload).open()
-        )
+        sut = node.service_builder(service_name).publish_subscribe(Payload).open()
         assert sut.name == service_name
     except iox2.PublishSubscribeOpenError:
         assert False
@@ -150,9 +143,7 @@ def test_create_service_with_attributes_work(
         .create_with_attributes(attribute_spec)
     )
 
-    sut_open = (
-        node.service_builder(service_name).publish_subscribe(Payload).open()
-    )
+    sut_open = node.service_builder(service_name).publish_subscribe(Payload).open()
 
     assert sut_create.attributes == attribute_spec.attributes
     assert sut_create.attributes == sut_open.attributes
@@ -179,9 +170,7 @@ def test_open_or_create_service_with_attributes_work(
         .open_or_create_with_attributes(attribute_verifier)
     )
 
-    sut_open = (
-        node.service_builder(service_name).publish_subscribe(Payload).open()
-    )
+    sut_open = node.service_builder(service_name).publish_subscribe(Payload).open()
 
     assert sut_create.attributes == attribute_spec.attributes
     assert sut_create.attributes == sut_open.attributes
@@ -274,12 +263,9 @@ def test_service_builder_configuration_works(
     assert static_config.max_publishers == max_publishers
     assert static_config.max_subscribers == max_subscribers
     assert static_config.history_size == history_size
+    assert static_config.subscriber_max_buffer_size == subscriber_max_buffer_size
     assert (
-        static_config.subscriber_max_buffer_size == subscriber_max_buffer_size
-    )
-    assert (
-        static_config.subscriber_max_borrowed_samples
-        == subscriber_max_borrowed_samples
+        static_config.subscriber_max_borrowed_samples == subscriber_max_borrowed_samples
     )
     assert static_config.has_safe_overflow == safe_overflow
 

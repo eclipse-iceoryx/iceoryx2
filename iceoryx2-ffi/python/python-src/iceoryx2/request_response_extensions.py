@@ -176,28 +176,18 @@ def response_header(self: Any) -> Any:
 def write_request_payload(self: RequestMutUninit, t: Type[ReqT]) -> RequestMut:
     """Writes the provided payload into the request."""
     assert self.__request_payload_type_details is not None
-    assert ctypes.sizeof(t) == ctypes.sizeof(
-        self.__request_payload_type_details
-    )
-    assert ctypes.alignment(t) == ctypes.alignment(
-        self.__request_payload_type_details
-    )
+    assert ctypes.sizeof(t) == ctypes.sizeof(self.__request_payload_type_details)
+    assert ctypes.alignment(t) == ctypes.alignment(self.__request_payload_type_details)
 
     ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
     return self.assume_init()
 
 
-def write_response_payload(
-    self: ResponseMutUninit, t: Type[ReqT]
-) -> ResponseMut:
+def write_response_payload(self: ResponseMutUninit, t: Type[ReqT]) -> ResponseMut:
     """Writes the provided payload into the response."""
     assert self.__response_payload_type_details is not None
-    assert ctypes.sizeof(t) == ctypes.sizeof(
-        self.__response_payload_type_details
-    )
-    assert ctypes.alignment(t) == ctypes.alignment(
-        self.__response_payload_type_details
-    )
+    assert ctypes.sizeof(t) == ctypes.sizeof(self.__response_payload_type_details)
+    assert ctypes.alignment(t) == ctypes.alignment(self.__response_payload_type_details)
 
     ctypes.memmove(self.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
     return self.assume_init()
@@ -305,9 +295,7 @@ def send_request_copy(self: Client, t: Type[ReqT]) -> PendingResponse:
         request_uninit.__request_payload_type_details
     )
 
-    ctypes.memmove(
-        request_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t)
-    )
+    ctypes.memmove(request_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
     request = request_uninit.assume_init()
     return request.send()
 
@@ -324,9 +312,7 @@ def send_response_copy(self: ActiveRequest, t: Type[ResT]) -> Any:
         response_uninit.__response_payload_type_details
     )
 
-    ctypes.memmove(
-        response_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t)
-    )
+    ctypes.memmove(response_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
     response = response_uninit.assume_init()
     return response.send()
 

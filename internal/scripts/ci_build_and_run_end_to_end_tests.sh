@@ -71,21 +71,25 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
 
     # Build the C and C++ bindings
     cargo build --package iceoryx2-ffi
-    cmake -S . -B target/ffi/build \
-        -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
-        -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
-        -DCMAKE_BUILD_TYPE=Debug \
-        -DBUILD_CXX_BINDING=ON \
-        -DBUILD_EXAMPLES=ON \
-        -DBUILD_TESTING=OFF
-    cmake --build target/ffi/build -j$NUM_JOBS
+    cmake -S iceoryx2-ffi/c -B target/ffi/c/build \
+          -DCMAKE_INSTALL_PREFIX=target/ffi/c/install \
+          -DCMAKE_PREFIX_PATH="$(pwd)/target/iceoryx/install" \
+          -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
+          -DCMAKE_BUILD_TYPE=Debug \
+          -DBUILD_EXAMPLES=ON \
+          -DBUILD_TESTING=OFF
+    cmake --build target/ffi/c/build -j$NUM_JOBS
+    cmake --install target/ffi/c/build
+
+    cmake -S iceoryx2-ffi/cxx -B target/ffi/cxx/build \
+          -DCMAKE_PREFIX_PATH="$( pwd )/target/iceoryx/install;$( pwd )/target/ffi/c/install" \
+          -DBUILD_EXAMPLES=ON \
+          -DBUILD_TESTING=OFF
+    cmake --build target/ffi/cxx/build -j$NUM_JOBS
 
     # Build the Python bindings
-    rm -rf .env
-    python -m venv .env
-    source .env/bin/activate
-    rm -f iceoryx2-ffi/python/python-src/iceoryx2/*.so
-    maturin develop  --manifest-path iceoryx2-ffi/python/Cargo.toml
+    poetry --project iceoryx2-ffi/python install
+    poetry --project iceoryx2-ffi/python build-into-venv
 fi
 
 
@@ -106,7 +110,7 @@ if [[ ${RUN_END_TO_END_TESTS} == true ]]; then
     fi
 
     echo -e "${COLOR_GREEN}Running tests ...${COLOR_OFF}"
-    source .env/bin/activate
+    eval $(poetry --project iceoryx2-ffi/python env activate)
     FILE_COUNTER=1
     for FILE in $FILES; do
         echo -e "${COLOR_GREEN}[${FILE_COUNTER}/${NUMBER_OF_FILES}]${COLOR_OFF} RUN ${FILE}"
