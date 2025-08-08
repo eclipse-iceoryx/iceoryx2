@@ -39,6 +39,8 @@
   [#913](https://github.com/eclipse-iceoryx/iceoryx2/issues/913)
 * CLI Record replay, service name is stored in record file
   [#929](https://github.com/eclipse-iceoryx/iceoryx2/issues/929)
+* Add script to list dependencies of multiple packages
+  [#933](https://github.com/eclipse-iceoryx/iceoryx2/issues/933)
 
 ### Bugfixes
 
