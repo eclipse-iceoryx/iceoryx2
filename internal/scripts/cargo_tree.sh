@@ -13,6 +13,12 @@
 
 set -e
 
+COLOR_OFF='\033[0m'
+COLOR_RED='\033[1;31m'
+COLOR_GREEN='\033[1;32m'
+COLOR_YELLOW='\033[1;33m'
+COLOR_BLUE='\033[1;34m'
+
 PACKAGE_LIST=""
 
 PACKAGE_LIST_CORE="
@@ -119,39 +125,41 @@ case "$1" in
         shift 1
         ;;
     "help")
-        echo "Script to run 'cargo tree' on multiple packages"
-        echo ""
-        echo "The first argument selects the package list and"
-        echo "all other arguments are forwarded to 'cargo tree'"
-        echo ""
-        echo ""
-        echo "Args:"
-        echo "    core              All workspace packages"
-        echo "                      iceoryx2 depends on and the"
-        echo "                      iceoryx2-ffi package"
-        echo "    core-macros       The macros from core"
-        echo "    bindings          All bindings"
-        echo "    binding-macros    The macros from bindings"
-        echo "    services          All services"
-        echo "    tunnels           All tunnels"
-        echo "    userland          All of userland"
-        echo "    cli               All CLI tools"
-        echo "    examples          All examples"
-        echo "    benchmarks        All benchmarks"
-        echo ""
-        echo ""
-        echo "Example usage:"
-        echo ""
-        echo "cargo_tree.sh core --depth 1 --edges all"
-        echo ""
-        echo "To get only selected dependencies, use 'normal', 'build' or 'dev' for '--edges'"
-        echo "To get a plain list of the dependencies, use'--prefix none'"
-        echo ""
-        echo "To filter out all duplicates, add: \"| grep -v '(\*)'\""
-        echo "To filter out iceoryx2 packages, add: \"| grep -v ' iceoryx2'\""
-        echo ""
-        echo "This command shows the minimal 'normal' dependencies of 'core' without duplicates"
-        echo "cargo_tree.sh core --depth 1 --edges normal --prefix none --no-default-features | grep -v '(\*)' | grep -v iceoryx2 | sort | uniq"
+        echo -e "Script to run ${COLOR_GREEN}cargo tree${COLOR_OFF} on multiple packages"
+        echo -e ""
+        echo -e "Usage: ${COLOR_GREEN}$(basename $0)${COLOR_OFF} ${COLOR_BLUE}SCRIPT-OPTION${COLOR_OFF} [${COLOR_BLUE}CARGO-TREE-OPTIONS${COLOR_OFF}]"
+        echo -e ""
+        echo -e "The first argument selects the package list and"
+        echo -e "all other arguments are forwarded to ${COLOR_GREEN}cargo tree${COLOR_OFF}"
+        echo -e ""
+        echo -e ""
+        echo -e "Options:"
+        echo -e "    ${COLOR_BLUE}core${COLOR_OFF}              All workspace packages"
+        echo -e "                      iceoryx2 depends on and the"
+        echo -e "                      iceoryx2-ffi package"
+        echo -e "    ${COLOR_BLUE}core-macros${COLOR_OFF}       The macros from core"
+        echo -e "    ${COLOR_BLUE}bindings${COLOR_OFF}          All bindings"
+        echo -e "    ${COLOR_BLUE}binding-macros${COLOR_OFF}    The macros from bindings"
+        echo -e "    ${COLOR_BLUE}services${COLOR_OFF}          All services"
+        echo -e "    ${COLOR_BLUE}tunnels${COLOR_OFF}           All tunnels"
+        echo -e "    ${COLOR_BLUE}userland${COLOR_OFF}          All of userland"
+        echo -e "    ${COLOR_BLUE}cli${COLOR_OFF}               All CLI tools"
+        echo -e "    ${COLOR_BLUE}examples${COLOR_OFF}          All examples"
+        echo -e "    ${COLOR_BLUE}benchmarks${COLOR_OFF}        All benchmarks"
+        echo -e ""
+        echo -e ""
+        echo -e "Example usage:"
+        echo -e ""
+        echo -e "${COLOR_GREEN}cargo_tree.sh core --depth 1 --edges all${COLOR_OFF}"
+        echo -e ""
+        echo -e "To get only selected dependencies, use ${COLOR_BLUE}normal${COLOR_OFF}, ${COLOR_BLUE}build${COLOR_OFF} or ${COLOR_BLUE}dev${COLOR_OFF} for ${COLOR_BLUE}--edges${COLOR_OFF}"
+        echo -e "To get a plain list of the dependencies, use ${COLOR_BLUE}--prefix none${COLOR_OFF}"
+        echo -e ""
+        echo -e "To filter out all duplicates, add: ${COLOR_GREEN}| grep -v '(\*)'${COLOR_OFF}"
+        echo -e "To filter out iceoryx2 packages, add: ${COLOR_GREEN}| grep -v ' iceoryx2'${COLOR_OFF}"
+        echo -e ""
+        echo -e "This command shows the minimal 'normal' dependencies of 'core' without duplicates"
+        echo -e "${COLOR_GREEN}cargo_tree.sh core --depth 1 --edges normal --prefix none --no-default-features | grep -v '(\*)' | grep -v iceoryx2 | sort | uniq${COLOR_OFF}"
         exit 0
         ;;
     *)
