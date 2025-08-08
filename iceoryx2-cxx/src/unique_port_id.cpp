@@ -311,8 +311,8 @@ auto operator==(const UniqueReaderId& lhs, const UniqueReaderId& rhs) -> bool {
     return iox2_unique_reader_id_eq(&lhs.m_handle, &rhs.m_handle);
 }
 
-auto operator<([[maybe_unused]] const UniqueReaderId& lhs, [[maybe_unused]] const UniqueReaderId& rhs) -> bool {
-    IOX_TODO();
+auto operator<(const UniqueReaderId& lhs, const UniqueReaderId& rhs) -> bool {
+    return iox2_unique_reader_id_less(&lhs.m_handle, &rhs.m_handle);
 }
 
 UniqueReaderId::UniqueReaderId(iox2_unique_reader_id_h handle)
@@ -320,7 +320,12 @@ UniqueReaderId::UniqueReaderId(iox2_unique_reader_id_h handle)
 }
 
 auto UniqueReaderId::bytes() const -> const iox::optional<RawIdType>& {
-    IOX_TODO();
+    if (!m_raw_id.has_value() && m_handle != nullptr) {
+        RawIdType bytes { UNIQUE_PORT_ID_LENGTH, 0 };
+        iox2_unique_reader_id_value(m_handle, bytes.data(), bytes.size());
+        m_raw_id.emplace(std::move(bytes));
+    }
+    return m_raw_id;
 };
 
 void UniqueReaderId::drop() {
