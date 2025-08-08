@@ -83,6 +83,49 @@ benchmarks-event
 benchmarks-queue
 "
 
+print_help() {
+    echo -e "Script to run ${COLOR_GREEN}cargo tree${COLOR_OFF} on multiple packages"
+    echo -e ""
+    echo -e "Usage: ${COLOR_GREEN}$(basename $0)${COLOR_OFF} ${COLOR_BLUE}SCRIPT-OPTION${COLOR_OFF} [${COLOR_BLUE}CARGO-TREE-OPTIONS${COLOR_OFF}]"
+    echo -e ""
+    echo -e "The first argument selects the package list and"
+    echo -e "all other arguments are forwarded to ${COLOR_GREEN}cargo tree${COLOR_OFF}"
+    echo -e ""
+    echo -e ""
+    echo -e "Options:"
+    echo -e "    ${COLOR_BLUE}core${COLOR_OFF}              All workspace packages"
+    echo -e "                      iceoryx2 depends on and the"
+    echo -e "                      iceoryx2-ffi package"
+    echo -e "    ${COLOR_BLUE}core-macros${COLOR_OFF}       The macros from core"
+    echo -e "    ${COLOR_BLUE}bindings${COLOR_OFF}          All bindings"
+    echo -e "    ${COLOR_BLUE}binding-macros${COLOR_OFF}    The macros from bindings"
+    echo -e "    ${COLOR_BLUE}services${COLOR_OFF}          All services"
+    echo -e "    ${COLOR_BLUE}tunnels${COLOR_OFF}           All tunnels"
+    echo -e "    ${COLOR_BLUE}userland${COLOR_OFF}          All of userland"
+    echo -e "    ${COLOR_BLUE}cli${COLOR_OFF}               All CLI tools"
+    echo -e "    ${COLOR_BLUE}examples${COLOR_OFF}          All examples"
+    echo -e "    ${COLOR_BLUE}benchmarks${COLOR_OFF}        All benchmarks"
+    echo -e ""
+    echo -e ""
+    echo -e "Example usage:"
+    echo -e ""
+    echo -e "${COLOR_GREEN}cargo_tree.sh core --depth 1 --edges all${COLOR_OFF}"
+    echo -e ""
+    echo -e "To get only selected dependencies, use ${COLOR_BLUE}normal${COLOR_OFF}, ${COLOR_BLUE}build${COLOR_OFF} or ${COLOR_BLUE}dev${COLOR_OFF} for ${COLOR_BLUE}--edges${COLOR_OFF}"
+    echo -e "To get a plain list of the dependencies, use ${COLOR_BLUE}--prefix none${COLOR_OFF}"
+    echo -e ""
+    echo -e "To filter out all duplicates, add: ${COLOR_GREEN}| grep -v '(\*)'${COLOR_OFF}"
+    echo -e "To filter out iceoryx2 packages, add: ${COLOR_GREEN}| grep -v ' iceoryx2'${COLOR_OFF}"
+    echo -e ""
+    echo -e "This command shows the minimal 'normal' dependencies of 'core' without duplicates"
+    echo -e "${COLOR_GREEN}cargo_tree.sh core --depth 1 --edges normal --prefix none --no-default-features | grep -v '(\*)' | grep -v iceoryx2 | sort | uniq${COLOR_OFF}"
+}
+
+if [ $# -eq 0 ]; then
+    print_help
+    exit 0
+fi
+
 case "$1" in
     core)
         PACKAGE_LIST=${PACKAGE_LIST_CORE}
@@ -125,41 +168,7 @@ case "$1" in
         shift 1
         ;;
     "help")
-        echo -e "Script to run ${COLOR_GREEN}cargo tree${COLOR_OFF} on multiple packages"
-        echo -e ""
-        echo -e "Usage: ${COLOR_GREEN}$(basename $0)${COLOR_OFF} ${COLOR_BLUE}SCRIPT-OPTION${COLOR_OFF} [${COLOR_BLUE}CARGO-TREE-OPTIONS${COLOR_OFF}]"
-        echo -e ""
-        echo -e "The first argument selects the package list and"
-        echo -e "all other arguments are forwarded to ${COLOR_GREEN}cargo tree${COLOR_OFF}"
-        echo -e ""
-        echo -e ""
-        echo -e "Options:"
-        echo -e "    ${COLOR_BLUE}core${COLOR_OFF}              All workspace packages"
-        echo -e "                      iceoryx2 depends on and the"
-        echo -e "                      iceoryx2-ffi package"
-        echo -e "    ${COLOR_BLUE}core-macros${COLOR_OFF}       The macros from core"
-        echo -e "    ${COLOR_BLUE}bindings${COLOR_OFF}          All bindings"
-        echo -e "    ${COLOR_BLUE}binding-macros${COLOR_OFF}    The macros from bindings"
-        echo -e "    ${COLOR_BLUE}services${COLOR_OFF}          All services"
-        echo -e "    ${COLOR_BLUE}tunnels${COLOR_OFF}           All tunnels"
-        echo -e "    ${COLOR_BLUE}userland${COLOR_OFF}          All of userland"
-        echo -e "    ${COLOR_BLUE}cli${COLOR_OFF}               All CLI tools"
-        echo -e "    ${COLOR_BLUE}examples${COLOR_OFF}          All examples"
-        echo -e "    ${COLOR_BLUE}benchmarks${COLOR_OFF}        All benchmarks"
-        echo -e ""
-        echo -e ""
-        echo -e "Example usage:"
-        echo -e ""
-        echo -e "${COLOR_GREEN}cargo_tree.sh core --depth 1 --edges all${COLOR_OFF}"
-        echo -e ""
-        echo -e "To get only selected dependencies, use ${COLOR_BLUE}normal${COLOR_OFF}, ${COLOR_BLUE}build${COLOR_OFF} or ${COLOR_BLUE}dev${COLOR_OFF} for ${COLOR_BLUE}--edges${COLOR_OFF}"
-        echo -e "To get a plain list of the dependencies, use ${COLOR_BLUE}--prefix none${COLOR_OFF}"
-        echo -e ""
-        echo -e "To filter out all duplicates, add: ${COLOR_GREEN}| grep -v '(\*)'${COLOR_OFF}"
-        echo -e "To filter out iceoryx2 packages, add: ${COLOR_GREEN}| grep -v ' iceoryx2'${COLOR_OFF}"
-        echo -e ""
-        echo -e "This command shows the minimal 'normal' dependencies of 'core' without duplicates"
-        echo -e "${COLOR_GREEN}cargo_tree.sh core --depth 1 --edges normal --prefix none --no-default-features | grep -v '(\*)' | grep -v iceoryx2 | sort | uniq${COLOR_OFF}"
+        print_help
         exit 0
         ;;
     *)
