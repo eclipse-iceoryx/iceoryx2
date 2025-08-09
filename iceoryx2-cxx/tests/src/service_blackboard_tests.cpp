@@ -16,6 +16,8 @@
 
 #include "test.hpp"
 
+#include <unordered_set>
+
 namespace {
 using namespace iox2;
 
@@ -485,6 +487,56 @@ TYPED_TEST(ServiceBlackboardTest, number_of_readers_works) {
     ASSERT_THAT(service.dynamic_config().number_of_readers(), Eq(0));
 }
 
+TYPED_TEST(ServiceBlackboardTest, reader_handle_can_be_acquired_for_existing_key_value_pair) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+    auto reader = service.reader_builder().create().expect("");
+    auto entry_handle = reader.template entry<uint64_t>(0);
+    ASSERT_FALSE(entry_handle.has_error());
+}
+
+TYPED_TEST(ServiceBlackboardTest, reader_handle_cannot_be_acquired_for_non_existing_key) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+    auto reader = service.reader_builder().create().expect("");
+    auto entry_handle = reader.template entry<uint64_t>(1);
+    ASSERT_TRUE(entry_handle.has_error());
+    ASSERT_THAT(entry_handle.error(), Eq(EntryHandleError::EntryDoesNotExist));
+}
+
+TYPED_TEST(ServiceBlackboardTest, reader_handle_cannot_be_acquired_for_wrong_value_type) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+    auto reader = service.reader_builder().create().expect("");
+    auto entry_handle = reader.template entry<uint16_t>(0);
+    ASSERT_TRUE(entry_handle.has_error());
+    ASSERT_THAT(entry_handle.error(), Eq(EntryHandleError::EntryDoesNotExist));
+}
+
 TYPED_TEST(ServiceBlackboardTest, add_with_default_stores_default_value) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -759,5 +811,8 @@ TYPED_TEST(ServiceBlackboardTest, reader_details_are_correct) {
 
     ASSERT_THAT(counter, Eq(1));
 }
+
+// TODO: entry id test: check if entry id for reader/writer handle of same key is equal
+// TODO: check writer_tests.rs
 
 } // namespace
