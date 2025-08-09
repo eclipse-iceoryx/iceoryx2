@@ -22,6 +22,7 @@
 #include "iox2/config_creation_error.hpp"
 #include "iox2/connection_failure.hpp"
 #include "iox2/entry_handle_error.hpp"
+#include "iox2/entry_handle_mut_error.hpp"
 #include "iox2/iceoryx2.h"
 #include "iox2/listener_error.hpp"
 #include "iox2/log_level.hpp"
@@ -46,7 +47,6 @@
 #include "iox2/unable_to_deliver_strategy.hpp"
 #include "iox2/waitset_enums.hpp"
 #include "iox2/writer_error.hpp"
-#include "iox2/writer_handle_error.hpp"
 
 namespace iox {
 template <>
@@ -1247,69 +1247,69 @@ inline auto from<iox2::BlackboardOpenError, const char*>(const iox2::BlackboardO
     return iox2_blackboard_open_error_string(iox::into<iox2_blackboard_open_error_e>(value));
 }
 
-// template <>
-// constexpr auto from<int, iox2::WriterCreateError>(const int value) noexcept -> iox2::WriterCreateError {
-// const auto error = static_cast<iox2_writer_create_error_e>(value);
-// switch (error) {
-// case iox2_writer_create_error_e_C_EXCEEDS_MAX_SUPPORTED_WRITERS:
-// return iox2::WriterCreateError::ExceedsMaxSupportedWriters;
-// case iox2_writer_create_error_e_C_INTERNAL_FAILURE:
-// return iox2::WriterCreateError::InternalFailure;
-// default:
-// IOX_UNREACHABLE();
-//}
-//}
+template <>
+constexpr auto from<int, iox2::WriterCreateError>(const int value) noexcept -> iox2::WriterCreateError {
+    const auto error = static_cast<iox2_writer_create_error_e>(value);
+    switch (error) {
+    case iox2_writer_create_error_e_EXCEEDS_MAX_SUPPORTED_WRITERS:
+        return iox2::WriterCreateError::ExceedsMaxSupportedWriters;
+    case iox2_writer_create_error_e_INTERNAL_FAILURE:
+        return iox2::WriterCreateError::InternalFailure;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
 
-// template <>
-// constexpr auto from<iox2::WriterCreateError, iox2_writer_create_error_e>(const iox2::WriterCreateError value)
-// noexcept
-//-> iox2_writer_create_error_e {
-// switch (value) {
-// case iox2::WriterCreateError::ExceedsMaxSupportedWriters:
-// return iox2_writer_create_error_e_C_EXCEEDS_MAX_SUPPORTED_WRITERS;
-// case iox2::WriterCreateError::InternalFailure:
-// return iox2_writer_create_error_e_C_INTERNAL_FAILURE;
-// default:
-// IOX_UNREACHABLE();
-//}
-//}
+template <>
+constexpr auto from<iox2::WriterCreateError, iox2_writer_create_error_e>(const iox2::WriterCreateError value) noexcept
+    -> iox2_writer_create_error_e {
+    switch (value) {
+    case iox2::WriterCreateError::ExceedsMaxSupportedWriters:
+        return iox2_writer_create_error_e_EXCEEDS_MAX_SUPPORTED_WRITERS;
+    case iox2::WriterCreateError::InternalFailure:
+        return iox2_writer_create_error_e_INTERNAL_FAILURE;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
 
-// template <>
-// inline auto from<iox2::WriterCreateError, const char*>(const iox2::WriterCreateError value) noexcept -> const char* {
-// return iox2_writer_create_error_string(iox::into<iox2_writer_create_error_e>(value));
-//}
+template <>
+inline auto from<iox2::WriterCreateError, const char*>(const iox2::WriterCreateError value) noexcept -> const char* {
+    return iox2_writer_create_error_string(iox::into<iox2_writer_create_error_e>(value));
+}
 
-// template <>
-// constexpr auto from<int, iox2::WriterHandleError>(const int value) noexcept -> iox2::WriterHandleError {
-// const auto error = static_cast<iox2_writer_handle_error_e>(value);
-// switch (error) {
-// case iox2_writer_handle_error_e_C_ENTRY_DOES_NOT_EXIST:
-// return iox2::WriterHandleError::EntryDoesNotExist;
-// case iox2_writer_handle_error_e_C_HANDLE_ALREADY_EXISTS:
-// return iox2::WriterHandleError::HandleAlreadyExists;
-// default:
-// IOX_UNREACHABLE();
-//}
-//}
+template <>
+constexpr auto from<int, iox2::EntryHandleMutError>(const int value) noexcept -> iox2::EntryHandleMutError {
+    const auto error = static_cast<iox2_entry_handle_mut_error_e>(value);
+    switch (error) {
+    case iox2_entry_handle_mut_error_e_ENTRY_DOES_NOT_EXIST:
+        return iox2::EntryHandleMutError::EntryDoesNotExist;
+    case iox2_entry_handle_mut_error_e_HANDLE_ALREADY_EXISTS:
+        return iox2::EntryHandleMutError::HandleAlreadyExists;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
 
-// template <>
-// constexpr auto from<iox2::WriterHandleError, iox2_writer_handle_error_e>(const iox2::WriterHandleError value)
-// noexcept
-//-> iox2_writer_handle_error_e {
-// switch (value) {
-// case iox2::WriterHandleError::EntryDoesNotExist:
-// return iox2_writer_handle_error_e_C_ENTRY_DOES_NOT_EXIST;
-// case iox2::WriterHandleError::HandleAlreadyExists:
-// return iox2_writer_handle_error_e_C_HANDLE_ALREADY_EXISTS;
-// default:
-// IOX_UNREACHABLE();
-//}
-//}
+template <>
+constexpr auto
+from<iox2::EntryHandleMutError, iox2_entry_handle_mut_error_e>(const iox2::EntryHandleMutError value) noexcept
+    -> iox2_entry_handle_mut_error_e {
+    switch (value) {
+    case iox2::EntryHandleMutError::EntryDoesNotExist:
+        return iox2_entry_handle_mut_error_e_ENTRY_DOES_NOT_EXIST;
+    case iox2::EntryHandleMutError::HandleAlreadyExists:
+        return iox2_entry_handle_mut_error_e_HANDLE_ALREADY_EXISTS;
+    default:
+        IOX_UNREACHABLE();
+    }
+}
 
-// template <>
-// inline auto from<iox2::WriterHandleError, const char*>(const iox2::WriterHandleError value) noexcept -> const char* {
-// return iox2_writer_handle_error_string(iox::into<iox2_writer_handle_error_e>(value));
-//}
+template <>
+inline auto from<iox2::EntryHandleMutError, const char*>(const iox2::EntryHandleMutError value) noexcept -> const
+    char* {
+    return iox2_entry_handle_mut_error_string(iox::into<iox2_entry_handle_mut_error_e>(value));
+}
 
 template <>
 constexpr auto from<int, iox2::ReaderCreateError>(const int value) noexcept -> iox2::ReaderCreateError {

@@ -13,7 +13,6 @@
 #ifndef IOX2_READER_HPP
 #define IOX2_READER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox2/entry_handle.hpp"
 #include "iox2/entry_handle_error.hpp"

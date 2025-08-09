@@ -64,7 +64,7 @@ class PortFactoryBlackboard {
         -> iox::expected<void, NodeListFailure>;
 
     /// Returns a [`PortFactoryWriter`] to create a new [`Writer`] port
-    // auto writer_builder() const -> PortFactoryWriter<S, KeyType>;
+    auto writer_builder() const -> PortFactoryWriter<S, KeyType>;
 
     /// Returns a [`PortFactoryReader`] to create a new [`Reader`] port
     auto reader_builder() const -> PortFactoryReader<S, KeyType>;
@@ -164,10 +164,10 @@ inline auto PortFactoryBlackboard<S, KeyType>::nodes(
     return iox::err(iox::into<NodeListFailure>(ret_val));
 }
 
-// template <ServiceType S, typename KeyType>
-// inline auto PortFactoryBlackboard<S, KeyType>::writer_builder() const -> PortFactoryWriter<S, KeyType> {
-// IOX_TODO();
-//}
+template <ServiceType S, typename KeyType>
+inline auto PortFactoryBlackboard<S, KeyType>::writer_builder() const -> PortFactoryWriter<S, KeyType> {
+    return PortFactoryWriter<S, KeyType>(iox2_port_factory_blackboard_writer_builder(&m_handle, nullptr));
+}
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryBlackboard<S, KeyType>::reader_builder() const -> PortFactoryReader<S, KeyType> {

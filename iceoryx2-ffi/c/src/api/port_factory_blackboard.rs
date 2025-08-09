@@ -11,28 +11,24 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use super::{
-    iox2_attribute_set_ptr, iox2_callback_context, iox2_callback_progression_e,
-    iox2_node_list_callback, iox2_reader_details_ptr,
+    iox2_attribute_set_ptr,
+    iox2_callback_context,
+    iox2_callback_progression_e,
+    iox2_node_list_callback,
+    iox2_reader_details_ptr,
     iox2_service_name_ptr,
-    /*iox2_writer_details_ptr,*/
+    //iox2_writer_details_ptr,
 };
 use crate::api::{
-    iox2_port_factory_reader_builder_h,
-    iox2_port_factory_reader_builder_t,
-    //iox2_port_factory_writer_builder_h,
-    //iox2_port_factory_writer_builder_t,
-    iox2_service_type_e,
-    iox2_static_config_blackboard_t,
-    AssertNonNullHandle,
-    HandleToType,
-    IntoCInt,
-    KeyFfi,
-    PortFactoryReaderBuilderUnion, // PortFactoryWriterBuilderUnion,
+    iox2_port_factory_reader_builder_h, iox2_port_factory_reader_builder_t,
+    iox2_port_factory_writer_builder_h, iox2_port_factory_writer_builder_t, iox2_service_type_e,
+    iox2_static_config_blackboard_t, AssertNonNullHandle, HandleToType, IntoCInt, KeyFfi,
+    PortFactoryReaderBuilderUnion, PortFactoryWriterBuilderUnion,
 };
 use crate::{iox2_node_list_impl, IOX2_OK};
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
-use iceoryx2::service::dynamic_config::blackboard::{ReaderDetails /*, WriterDetails*/};
+use iceoryx2::service::dynamic_config::blackboard::{ReaderDetails, WriterDetails};
 use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
@@ -161,44 +157,44 @@ pub type iox2_list_readers_callback =
 /// # Safety
 ///
 /// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
-//#[no_mangle]
-//pub unsafe extern "C" fn iox2_port_factory_blackboard_writer_builder(
-//port_factory_handle: iox2_port_factory_blackboard_h_ref,
-//writer_builder_struct_ptr: *mut iox2_port_factory_writer_builder_t,
-//) -> iox2_port_factory_writer_builder_h {
-//port_factory_handle.assert_non_null();
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_blackboard_writer_builder(
+    port_factory_handle: iox2_port_factory_blackboard_h_ref,
+    writer_builder_struct_ptr: *mut iox2_port_factory_writer_builder_t,
+) -> iox2_port_factory_writer_builder_h {
+    port_factory_handle.assert_non_null();
 
-//let mut writer_builder_struct_ptr = writer_builder_struct_ptr;
-//fn no_op(_: *mut iox2_port_factory_writer_builder_t) {}
-//let mut deleter: fn(*mut iox2_port_factory_writer_builder_t) = no_op;
-//if writer_builder_struct_ptr.is_null() {
-//writer_builder_struct_ptr = iox2_port_factory_writer_builder_t::alloc();
-//deleter = iox2_port_factory_writer_builder_t::dealloc;
-//}
-//debug_assert!(!writer_builder_struct_ptr.is_null());
+    let mut writer_builder_struct_ptr = writer_builder_struct_ptr;
+    fn no_op(_: *mut iox2_port_factory_writer_builder_t) {}
+    let mut deleter: fn(*mut iox2_port_factory_writer_builder_t) = no_op;
+    if writer_builder_struct_ptr.is_null() {
+        writer_builder_struct_ptr = iox2_port_factory_writer_builder_t::alloc();
+        deleter = iox2_port_factory_writer_builder_t::dealloc;
+    }
+    debug_assert!(!writer_builder_struct_ptr.is_null());
 
-//let port_factory = &mut *port_factory_handle.as_type();
-//match port_factory.service_type {
-//iox2_service_type_e::IPC => {
-//let writer_builder = port_factory.value.as_ref().ipc.writer_builder();
-//(*writer_builder_struct_ptr).init(
-//port_factory.service_type,
-//PortFactoryWriterBuilderUnion::new_ipc(writer_builder),
-//deleter,
-//);
-//}
-//iox2_service_type_e::LOCAL => {
-//let writer_builder = port_factory.value.as_ref().local.writer_builder();
-//(*writer_builder_struct_ptr).init(
-//port_factory.service_type,
-//PortFactoryWriterBuilderUnion::new_local(writer_builder),
-//deleter,
-//);
-//}
-//};
+    let port_factory = &mut *port_factory_handle.as_type();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => {
+            let writer_builder = port_factory.value.as_ref().ipc.writer_builder();
+            (*writer_builder_struct_ptr).init(
+                port_factory.service_type,
+                PortFactoryWriterBuilderUnion::new_ipc(writer_builder),
+                deleter,
+            );
+        }
+        iox2_service_type_e::LOCAL => {
+            let writer_builder = port_factory.value.as_ref().local.writer_builder();
+            (*writer_builder_struct_ptr).init(
+                port_factory.service_type,
+                PortFactoryWriterBuilderUnion::new_local(writer_builder),
+                deleter,
+            );
+        }
+    };
 
-//(*writer_builder_struct_ptr).as_handle()
-//}
+    (*writer_builder_struct_ptr).as_handle()
+}
 
 /// Instantiates a [`iox2_port_factory_reader_builder_h`] to build a reader.
 ///

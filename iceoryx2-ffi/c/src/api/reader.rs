@@ -24,8 +24,7 @@ use crate::{
 };
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
-use iceoryx2::port::reader::Reader;
-use iceoryx2::port::reader::ReaderHandleError;
+use iceoryx2::port::reader::{Reader, ReaderHandleError};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
@@ -243,7 +242,6 @@ pub unsafe extern "C" fn iox2_reader_entry(
             .ipc
             .__internal_entry(&key, &value_type_details)
         {
-            //iox2_service_type_e::IPC => match reader.value.as_ref().ipc.entry::<u64>(&key) {
             Ok(handle) => {
                 let (entry_handle_struct_ptr, deleter) =
                     init_entry_handle_struct_ptr(entry_handle_struct_ptr);
@@ -256,7 +254,6 @@ pub unsafe extern "C" fn iox2_reader_entry(
             }
             Err(error) => return error.into_c_int(),
         },
-        //iox2_service_type_e::LOCAL => match reader.value.as_ref().local.entry::<u64>(&key) {
         iox2_service_type_e::LOCAL => match reader
             .value
             .as_ref()

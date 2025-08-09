@@ -189,6 +189,7 @@ impl<
         key: &KeyType,
     ) -> Result<ReaderHandle<Service, KeyType, ValueType>, ReaderHandleError> {
         let msg = "Unable to create reader handle";
+
         let offset = self.get_entry_offset(
             key,
             &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
@@ -307,30 +308,6 @@ pub struct ReaderHandle<
     _shared_state: Arc<ReaderSharedState<Service, KeyType>>,
 }
 
-// TODO: documentation
-#[doc(hidden)]
-pub struct __InternalReaderHandle<Service: service::Service> {
-    atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
-    data_ptr: *const u8,
-    entry_id: EventId,
-    _shared_state: Arc<ReaderSharedState<Service, u64>>,
-}
-
-impl<Service: service::Service> __InternalReaderHandle<Service> {
-    pub fn get(&self, value_ptr: *mut u8, value_size: usize, vlaue_alignment: usize) {
-        unsafe { &*self.atomic_mgmt_ptr }.load(
-            value_ptr,
-            value_size,
-            vlaue_alignment,
-            self.data_ptr,
-        );
-    }
-
-    pub fn entry_id(&self) -> EventId {
-        self.entry_id
-    }
-}
-
 // Safe since the pointer to the UnrestrictedAtomic doesn't change and the UnrestrictedAtomic
 // implements Send + Sync, and shared_state ensures the lifetime of the UnrestrictedAtomic (struct
 // fields are dropped in the same order as declared)
@@ -392,6 +369,30 @@ impl<
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
     /// setup.
+    pub fn entry_id(&self) -> EventId {
+        self.entry_id
+    }
+}
+
+// TODO: documentation
+#[doc(hidden)]
+pub struct __InternalReaderHandle<Service: service::Service> {
+    atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
+    data_ptr: *const u8,
+    entry_id: EventId,
+    _shared_state: Arc<ReaderSharedState<Service, u64>>,
+}
+
+impl<Service: service::Service> __InternalReaderHandle<Service> {
+    pub fn get(&self, value_ptr: *mut u8, value_size: usize, vlaue_alignment: usize) {
+        unsafe { &*self.atomic_mgmt_ptr }.load(
+            value_ptr,
+            value_size,
+            vlaue_alignment,
+            self.data_ptr,
+        );
+    }
+
     pub fn entry_id(&self) -> EventId {
         self.entry_id
     }

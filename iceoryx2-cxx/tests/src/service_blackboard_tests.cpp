@@ -16,8 +16,6 @@
 
 #include "test.hpp"
 
-#include <unordered_set>
-
 namespace {
 using namespace iox2;
 
@@ -487,7 +485,7 @@ TYPED_TEST(ServiceBlackboardTest, number_of_readers_works) {
     ASSERT_THAT(service.dynamic_config().number_of_readers(), Eq(0));
 }
 
-TYPED_TEST(ServiceBlackboardTest, reader_handle_can_be_acquired_for_existing_key_value_pair) {
+TYPED_TEST(ServiceBlackboardTest, entry_handle_can_be_acquired_for_existing_key_value_pair) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -503,7 +501,7 @@ TYPED_TEST(ServiceBlackboardTest, reader_handle_can_be_acquired_for_existing_key
     ASSERT_FALSE(entry_handle.has_error());
 }
 
-TYPED_TEST(ServiceBlackboardTest, reader_handle_cannot_be_acquired_for_non_existing_key) {
+TYPED_TEST(ServiceBlackboardTest, entry_handle_cannot_be_acquired_for_non_existing_key) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -520,7 +518,7 @@ TYPED_TEST(ServiceBlackboardTest, reader_handle_cannot_be_acquired_for_non_exist
     ASSERT_THAT(entry_handle.error(), Eq(EntryHandleError::EntryDoesNotExist));
 }
 
-TYPED_TEST(ServiceBlackboardTest, reader_handle_cannot_be_acquired_for_wrong_value_type) {
+TYPED_TEST(ServiceBlackboardTest, entry_handle_cannot_be_acquired_for_wrong_value_type) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -556,6 +554,102 @@ TYPED_TEST(ServiceBlackboardTest, add_with_default_stores_default_value) {
     auto reader = service.reader_builder().create().expect("");
     auto entry_handle = reader.template entry<TestDefault>(0).expect("");
     ASSERT_THAT(entry_handle.get().t, Eq(DEFAULT));
+}
+
+TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_can_be_acquired_for_existing_key_value_pair) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+    auto writer = service.writer_builder().create().expect("");
+    auto entry_handle = writer.template entry<uint64_t>(0);
+    ASSERT_FALSE(entry_handle.has_error());
+}
+
+TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_cannot_be_acquired_for_non_existing_key) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+    auto writer = service.writer_builder().create().expect("");
+    auto entry_handle_mut = writer.template entry<uint64_t>(1);
+    ASSERT_TRUE(entry_handle_mut.has_error());
+    ASSERT_THAT(entry_handle_mut.error(), Eq(EntryHandleMutError::EntryDoesNotExist));
+}
+
+TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_cannot_be_acquired_for_wrong_value_type) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+    auto writer = service.writer_builder().create().expect("");
+    auto entry_handle_mut = writer.template entry<uint16_t>(0);
+    ASSERT_TRUE(entry_handle_mut.has_error());
+    ASSERT_THAT(entry_handle_mut.error(), Eq(EntryHandleMutError::EntryDoesNotExist));
+}
+
+TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_cannot_be_acquired_twice) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+    auto writer = service.writer_builder().create().expect("");
+    auto entry_handle_mut =
+        iox::optional<EntryHandleMut<SERVICE_TYPE, uint64_t, uint64_t>>(writer.template entry<uint64_t>(0).expect(""));
+
+    auto sut_1 = writer.template entry<uint64_t>(0);
+    ASSERT_TRUE(sut_1.has_error());
+    ASSERT_THAT(sut_1.error(), Eq(EntryHandleMutError::HandleAlreadyExists));
+
+    entry_handle_mut.reset();
+
+    auto sut_2 = writer.template entry<uint64_t>(0);
+    ASSERT_FALSE(sut_2.has_error());
+}
+
+TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_prevents_another_writer) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+    auto writer = iox::optional<Writer<SERVICE_TYPE, uint64_t>>(service.writer_builder().create().expect(""));
+    auto entry_handle_mut = writer->template entry<uint64_t>(0).expect("");
+
+    writer.reset();
+
+    auto sut = service.writer_builder().create();
+    ASSERT_TRUE(sut.has_error());
+    ASSERT_THAT(sut.error(), Eq(WriterCreateError::ExceedsMaxSupportedWriters));
 }
 
 // TODO

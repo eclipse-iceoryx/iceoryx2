@@ -10,22 +10,18 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_WRITER_ERROR_HPP
-#define IOX2_WRITER_ERROR_HPP
+#ifndef IOX2_ENTRY_HANDLE_MUT_ERROR_HPP
+#define IOX2_ENTRY_HANDLE_MUT_ERROR_HPP
 
 #include <cstdint>
 
 namespace iox2 {
-/// Defines a failure that can occur when a [`Writer`] is created with
-/// [`PortFactoryWriter`].
-enum class WriterCreateError : uint8_t {
-    /// The maximum amount of [`Writer`]s that can connect to a [`Service`] is
-    /// defined in [`Config`]. When this is exceeded no more [`Writer`]s can be
-    /// created for a specific [`Service`].
-    ExceedsMaxSupportedWriters,
-    /// Errors that indicate either an implementation issue or a wrongly
-    /// configured system.
-    InternalFailure,
+/// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`].
+enum class EntryHandleMutError : uint8_t {
+    /// The entry with the given key and value type does not exist.
+    EntryDoesNotExist,
+    /// The [`WriterHandle`] already exists.
+    HandleAlreadyExists,
 };
 } // namespace iox2
 

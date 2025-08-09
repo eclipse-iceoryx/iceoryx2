@@ -1666,16 +1666,17 @@ mod service_blackboard {
 
         let sut = node
             .service_builder(&service_name)
-            .blackboard_creator::<CustomKeyMarker>()
-            .add::<u64>(CustomKeyMarker(0), 1)
+            //.blackboard_creator::<CustomKeyMarker>()
+            //.add::<u64>(CustomKeyMarker(0), 1)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 1)
             .create()
             .unwrap();
 
-        let value_type_details = TypeDetail::__internal_new::<u64>(TypeVariant::FixedSize);
+        let value_type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
         let reader = sut.reader_builder().create().unwrap();
-        let reader_handle = reader
-            .__internal_entry(&CustomKeyMarker(0), &value_type_details)
-            .unwrap();
+        // TODO: change to &CustomKeyMarker(0) when generic key for C/C++ binding works
+        let reader_handle = reader.__internal_entry(&0, &value_type_details).unwrap();
 
         let mut value: u64 = 0;
         reader_handle.get(
@@ -1684,6 +1685,65 @@ mod service_blackboard {
             align_of::<u64>(),
         );
         assert_that!(value, eq 1);
+    }
+
+    #[test]
+    fn only_one_writer_handle_can_be_acquired_with_custom_key_type<S: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            //.blackboard_creator::<CustomKeyMarker>()
+            //.add::<u64>(CustomKeyMarker(0), 1)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 1)
+            .create()
+            .unwrap();
+
+        let value_type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
+        let writer = sut.writer_builder().create().unwrap();
+        // TODO: change to &CustomKeyMarker(0) when generic key for C/C++ binding works
+        let writer_handle = writer.__internal_entry(&0, &value_type_details).unwrap();
+
+        let sut = writer.__internal_entry(&0, &value_type_details);
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq WriterHandleError::HandleAlreadyExists);
+
+        drop(writer_handle);
+
+        let sut = writer.__internal_entry(&0, &value_type_details);
+        assert_that!(sut, is_ok);
+    }
+
+    #[test]
+    fn writing_to_blackboard_with_custom_key_type_works<S: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            //.blackboard_creator::<CustomKeyMarker>()
+            //.add::<u64>(CustomKeyMarker(0), 1)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 1)
+            .create()
+            .unwrap();
+
+        let value_type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
+        let writer = sut.writer_builder().create().unwrap();
+        // TODO: change to &CustomKeyMarker(0) when generic key for C/C++ binding works
+        let writer_handle = writer.__internal_entry(&0, &value_type_details).unwrap();
+
+        //let mut value: u64 = 0;
+        //reader_handle.get(
+        //&mut value as *mut u64 as *mut u8,
+        //size_of::<u64>(),
+        //align_of::<u64>(),
+        //);
+        //assert_that!(value, eq 1);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

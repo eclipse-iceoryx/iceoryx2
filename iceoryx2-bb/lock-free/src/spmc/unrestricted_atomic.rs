@@ -102,6 +102,15 @@ impl UnrestrictedAtomicMgmt {
         }
     }
 
+    pub fn acquire_producer(&self) -> Result<bool, bool> {
+        self.has_producer
+            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+    }
+
+    pub fn release_producer(&self) {
+        self.has_producer.store(true, Ordering::Relaxed);
+    }
+
     pub fn load(
         &self,
         value_ptr: *mut u8,
@@ -186,12 +195,7 @@ impl<T: Copy> UnrestrictedAtomic<T> {
 
     /// Returns a producer if one is available otherwise [`None`].
     pub fn acquire_producer(&self) -> Option<Producer<'_, T>> {
-        match self.mgmt.has_producer.compare_exchange(
-            true,
-            false,
-            Ordering::Relaxed,
-            Ordering::Relaxed,
-        ) {
+        match self.mgmt.acquire_producer() {
             Ok(_) => Some(Producer { atomic: self }),
             Err(_) => None,
         }

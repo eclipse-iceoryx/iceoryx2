@@ -50,7 +50,9 @@ use core::hash::Hash;
 use core::sync::atomic::Ordering;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{Producer, UnrestrictedAtomic};
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
+    Producer, UnrestrictedAtomic, UnrestrictedAtomicMgmt,
+};
 use iceoryx2_bb_log::fail;
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
@@ -194,6 +196,27 @@ impl<
     ) -> Result<WriterHandle<Service, KeyType, ValueType>, WriterHandleError> {
         let msg = "Unable to create writer handle";
 
+        let offset = self.get_entry_offset(
+            key,
+            &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+            msg,
+        )?;
+
+        match WriterHandle::new(self.shared_state.clone(), offset) {
+            Ok(handle) => Ok(handle),
+            Err(e) => {
+                fail!(from self, with e,
+                    "{} since a handle for the passed key and value type already exists.", msg);
+            }
+        }
+    }
+
+    fn get_entry_offset(
+        &self,
+        key: &KeyType,
+        type_details: &TypeDetail,
+        msg: &str,
+    ) -> Result<u64, WriterHandleError> {
         // check if key exists
         let index = match unsafe {
             self.shared_state
@@ -220,13 +243,41 @@ impl<
             .entries[index];
 
         // check if ValueType matches
-        if TypeDetail::new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
+        if *type_details != entry.type_details {
             fail!(from self, with WriterHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key and value type exists.", msg);
         }
 
         let offset = entry.offset.load(core::sync::atomic::Ordering::Relaxed);
-        match WriterHandle::new(self.shared_state.clone(), offset) {
+
+        Ok(offset)
+    }
+}
+
+// TODO: replace u64 with CustomKeyMarker
+impl<Service: service::Service> Writer<Service, u64> {
+    #[doc(hidden)]
+    pub fn __internal_entry(
+        &self,
+        key: &u64,
+        type_details: &TypeDetail,
+    ) -> Result<__InternalWriterHandle<Service>, WriterHandleError> {
+        let msg = "Unable to create writer handle";
+        let offset = self.get_entry_offset(key, type_details, msg)?;
+
+        let atomic_mgmt_ptr = (self
+            .shared_state
+            .service_state
+            .additional_resource
+            .data
+            .payload_start_address() as u64
+            + offset) as *const UnrestrictedAtomicMgmt;
+
+        match __InternalWriterHandle::new(
+            atomic_mgmt_ptr,
+            EventId::new(offset as _),
+            self.shared_state.clone(),
+        ) {
             Ok(handle) => Ok(handle),
             Err(e) => {
                 fail!(from self, with e,
@@ -367,6 +418,39 @@ impl<
     pub fn entry_id(&self) -> EventId {
         self.entry_id
     }
+}
+
+// TODO: documentation
+#[doc(hidden)]
+pub struct __InternalWriterHandle<Service: service::Service> {
+    atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
+    entry_id: EventId,
+    _shared_state: Arc<WriterSharedState<Service, u64>>,
+}
+
+impl<Service: service::Service> Drop for __InternalWriterHandle<Service> {
+    fn drop(&mut self) {
+        unsafe { (*self.atomic_mgmt_ptr).release_producer() };
+    }
+}
+
+impl<Service: service::Service> __InternalWriterHandle<Service> {
+    pub fn new(
+        atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
+        entry_id: EventId,
+        writer_state: Arc<WriterSharedState<Service, u64>>,
+    ) -> Result<Self, WriterHandleError> {
+        match unsafe { (*atomic_mgmt_ptr).acquire_producer() } {
+            Ok(_) => Ok(Self {
+                atomic_mgmt_ptr,
+                entry_id,
+                _shared_state: writer_state.clone(),
+            }),
+            Err(_) => Err(WriterHandleError::HandleAlreadyExists),
+        }
+    }
+
+    // TODO: release producer in drop
 }
 
 /// Wrapper around an uninitiaized entry value that can be used for a zero-copy update.
