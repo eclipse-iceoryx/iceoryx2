@@ -112,7 +112,6 @@ mod service_blackboard {
 
     #[test]
     fn create_fails_when_the_same_key_is_provided_twice<Sut: Service>() {
-        set_log_level_from_env_or(LogLevel::Trace);
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -128,7 +127,6 @@ mod service_blackboard {
 
     #[test]
     fn create_works_with_mixed_add_methods<Sut: Service>() {
-        set_log_level_from_env_or(LogLevel::Trace);
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -143,7 +141,6 @@ mod service_blackboard {
 
     #[test]
     fn create_fails_when_the_same_key_is_provided_twice_with_mixed_add_methods<Sut: Service>() {
-        set_log_level_from_env_or(LogLevel::Trace);
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();

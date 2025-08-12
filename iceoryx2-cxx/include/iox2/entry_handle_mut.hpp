@@ -14,12 +14,13 @@
 #define IOX2_ENTRY_HANDLE_MUT_HPP
 
 #include "iox/assertions_addendum.hpp"
+#include "iox2/entry_value_uninit.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
-template <ServiceType, typename, typename>
-class EntryValueUninit;
+// template <ServiceType, typename, typename>
+// class EntryValueUninit;
 
 /// A handle for direct write access to a specific blackboard value.
 template <ServiceType S, typename KeyType, typename ValueType>
@@ -27,7 +28,7 @@ class EntryHandleMut {
   public:
     EntryHandleMut(EntryHandleMut&& rhs) noexcept;
     auto operator=(EntryHandleMut&& rhs) noexcept -> EntryHandleMut&;
-    ~EntryHandleMut();
+    ~EntryHandleMut() noexcept;
 
     EntryHandleMut(const EntryHandleMut&) = delete;
     auto operator=(const EntryHandleMut&) -> EntryHandleMut& = delete;
@@ -36,37 +37,32 @@ class EntryHandleMut {
     void update_with_copy(ValueType value);
 
     /// Consumes the [`EntryHandleMut`] and loans an uninitialized entry value that can be used to update without copy.
-    auto loan_uninit() -> EntryValueUninit<S, KeyType, ValueType>;
+    template <ServiceType ST, typename KeyT, typename ValueT>
+    friend auto loan_uninit(EntryHandleMut<ST, KeyT, ValueT>&& self) -> EntryValueUninit<ST, KeyT, ValueT>;
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication
     /// setup.
     auto entry_id() const -> EventId;
 
   private:
-    template <ServiceType, typename, typename>
-    friend class EntryValueUninit;
-    template <ServiceType, typename, typename>
-    friend class EntryValue;
+    // template <ServiceType, typename, typename>
+    // friend class EntryValueUninit;
+    //  template <ServiceType, typename, typename>
+    //  friend class EntryValue;
     template <ServiceType, typename>
     friend class Writer;
 
+    // TODO: explain default
     explicit EntryHandleMut(iox2_entry_handle_mut_h handle);
     void drop();
 
     iox2_entry_handle_mut_h m_handle = nullptr;
+    // EntryValueUninit<S, KeyType, ValueType> m_entry_value_uninit;
 };
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline EntryHandleMut<S, KeyType, ValueType>::EntryHandleMut(iox2_entry_handle_mut_h handle)
     : m_handle { handle } {
-}
-
-template <ServiceType S, typename KeyType, typename ValueType>
-inline void EntryHandleMut<S, KeyType, ValueType>::drop() {
-    if (m_handle != nullptr) {
-        iox2_entry_handle_mut_drop(m_handle);
-        m_handle = nullptr;
-    }
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
@@ -86,23 +82,41 @@ inline auto EntryHandleMut<S, KeyType, ValueType>::operator=(EntryHandleMut&& rh
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline EntryHandleMut<S, KeyType, ValueType>::~EntryHandleMut() {
+inline EntryHandleMut<S, KeyType, ValueType>::~EntryHandleMut() noexcept {
     drop();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline void EntryHandleMut<S, KeyType, ValueType>::update_with_copy([[maybe_unused]] ValueType value) {
     IOX_TODO();
+    // only C++, not C
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto EntryHandleMut<S, KeyType, ValueType>::loan_uninit() -> EntryValueUninit<S, KeyType, ValueType> {
-    IOX_TODO();
+inline auto loan_uninit(EntryHandleMut<S, KeyType, ValueType>&& self) -> EntryValueUninit<S, KeyType, ValueType> {
+    // C++ and C
+    EntryValueUninit<S, KeyType, ValueType> entry_value_uninit;
+
+    iox2_entry_handle_mut_loan_uninit(self.m_handle,
+                                      &entry_value_uninit.m_entry_value.m_entry_value,
+                                      &entry_value_uninit.m_entry_value.m_handle,
+                                      sizeof(ValueType),
+                                      alignof(ValueType));
+
+    return std::move(entry_value_uninit);
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto EntryHandleMut<S, KeyType, ValueType>::entry_id() const -> EventId {
     IOX_TODO();
+}
+
+template <ServiceType S, typename KeyType, typename ValueType>
+inline void EntryHandleMut<S, KeyType, ValueType>::drop() {
+    if (m_handle != nullptr) {
+        iox2_entry_handle_mut_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 } // namespace iox2
 

@@ -48,6 +48,7 @@ use crate::service::{self, ServiceState};
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::sync::atomic::Ordering;
+use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
@@ -273,8 +274,12 @@ impl<Service: service::Service> Writer<Service, u64> {
             .payload_start_address() as u64
             + offset) as *const UnrestrictedAtomicMgmt;
 
+        let data_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
+        let data_ptr = align(data_ptr, type_details.alignment);
+
         match __InternalWriterHandle::new(
             atomic_mgmt_ptr,
+            data_ptr as *mut u8,
             EventId::new(offset as _),
             self.shared_state.clone(),
         ) {
@@ -424,25 +429,28 @@ impl<
 #[doc(hidden)]
 pub struct __InternalWriterHandle<Service: service::Service> {
     atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
+    data_ptr: *mut u8,
     entry_id: EventId,
     _shared_state: Arc<WriterSharedState<Service, u64>>,
 }
 
 impl<Service: service::Service> Drop for __InternalWriterHandle<Service> {
     fn drop(&mut self) {
-        unsafe { (*self.atomic_mgmt_ptr).release_producer() };
+        unsafe { (*self.atomic_mgmt_ptr).__internal_release_producer() };
     }
 }
 
 impl<Service: service::Service> __InternalWriterHandle<Service> {
     pub fn new(
         atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
+        data_ptr: *mut u8,
         entry_id: EventId,
         writer_state: Arc<WriterSharedState<Service, u64>>,
     ) -> Result<Self, WriterHandleError> {
         match unsafe { (*atomic_mgmt_ptr).acquire_producer() } {
             Ok(_) => Ok(Self {
                 atomic_mgmt_ptr,
+                data_ptr,
                 entry_id,
                 _shared_state: writer_state.clone(),
             }),
@@ -450,7 +458,17 @@ impl<Service: service::Service> __InternalWriterHandle<Service> {
         }
     }
 
-    // TODO: release producer in drop
+    pub fn update_with_copy(&self) {}
+
+    pub fn loan_uninit(
+        self,
+        value_size: usize,
+        value_alignment: usize,
+    ) -> __InternalEntryValueUninit<Service> {
+        __InternalEntryValueUninit::new(self, value_size, value_alignment)
+    }
+
+    // TODO: entry_id
 }
 
 /// Wrapper around an uninitiaized entry value that can be used for a zero-copy update.
@@ -544,6 +562,44 @@ impl<
     }
 }
 
+// TODO: test on Rust side
+#[doc(hidden)]
+pub struct __InternalEntryValueUninit<Service: service::Service> {
+    ptr: *mut u8,
+    writer_handle: __InternalWriterHandle<Service>,
+}
+
+impl<Service: service::Service> __InternalEntryValueUninit<Service> {
+    pub fn new(
+        writer_handle: __InternalWriterHandle<Service>,
+        value_size: usize,
+        value_alignment: usize,
+    ) -> Self {
+        let ptr = unsafe {
+            (*writer_handle.atomic_mgmt_ptr).__internal_get_ptr_to_write_cell(
+                value_size,
+                value_alignment,
+                writer_handle.data_ptr,
+            )
+        };
+        Self { ptr, writer_handle }
+    }
+
+    pub fn write_cell(&self) -> *mut u8 {
+        self.ptr
+    }
+
+    pub fn update(self) {
+        unsafe {
+            (*self.writer_handle.atomic_mgmt_ptr).__internal_update_write_cell();
+        }
+    }
+
+    // cleanup
+    // update call
+    // __InternalEntryValueUninit can probably be renamed to __InternalEntryValue
+}
+
 /// Wrapper around an initialized entry value that can be used for a zero-copy update.
 pub struct EntryValue<
     Service: service::Service,
@@ -609,7 +665,7 @@ impl<
         self.writer_handle
     }
 
-    /// Discard the [`EntryValue`] and returns the original [`WriterHandle`].
+    /// Discards the [`EntryValue`] and returns the original [`WriterHandle`].
     ///
     /// # Example
     ///

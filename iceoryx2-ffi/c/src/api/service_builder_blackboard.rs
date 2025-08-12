@@ -507,6 +507,7 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener_set_max_nodes(
 /// TODO: describe additional parameters
 #[no_mangle]
 pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
+    // TODO: check if ref is correct
     service_builder_handle: iox2_service_builder_blackboard_creator_h_ref,
     key: KeyFfi,
     value_ptr: *mut c_void,
@@ -752,7 +753,7 @@ unsafe fn iox2_service_builder_blackboard_open_impl<E: IntoCInt>(
         .as_option_mut()
         .take()
         .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_service_builder_blackboard_h'!");
+            panic!("Trying to use an invalid 'iox2_service_builder_blackboard_opener_h'!");
         });
     (service_builder_struct.deleter)(service_builder_struct);
 
@@ -837,7 +838,7 @@ unsafe fn iox2_service_builder_blackboard_create_impl<E: IntoCInt>(
         .as_option_mut()
         .take()
         .unwrap_or_else(|| {
-            panic!("Trying to use an invalid 'iox2_service_builder_blackboard_h'!");
+            panic!("Trying to use an invalid 'iox2_service_builder_blackboard_creator_h'!");
         });
     (service_builder_struct.deleter)(service_builder_struct);
 

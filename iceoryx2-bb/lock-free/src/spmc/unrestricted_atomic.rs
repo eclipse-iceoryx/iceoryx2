@@ -102,13 +102,39 @@ impl UnrestrictedAtomicMgmt {
         }
     }
 
+    // release_producer must be called
     pub fn acquire_producer(&self) -> Result<bool, bool> {
         self.has_producer
             .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
     }
 
-    pub fn release_producer(&self) {
+    pub fn __internal_release_producer(&self) {
         self.has_producer.store(true, Ordering::Relaxed);
+    }
+
+    // TODO: test on Rust side
+    pub unsafe fn __internal_get_ptr_to_write_cell(
+        &self,
+        value_size: usize,
+        value_alignment: usize,
+        data_ptr: *mut u8,
+    ) -> *mut u8 {
+        // TODO: loop to check has_producer?
+        let write_cell = self.write_cell.load(Ordering::Relaxed);
+        let data_cell_ptr = align(
+            unsafe { data_ptr.add(value_size * (write_cell as usize % NUMBER_OF_CELLS)) } as usize,
+            value_alignment,
+        );
+        data_cell_ptr as *mut u8
+    }
+
+    pub unsafe fn __internal_update_write_cell(&self) {
+        /////////////////////////
+        // SYNC POINT - write
+        // After writing the content of the write_cell, the content needs to be synced with the
+        // reader.
+        /////////////////////////
+        self.write_cell.fetch_add(1, Ordering::Release);
     }
 
     pub fn load(
@@ -152,6 +178,8 @@ impl UnrestrictedAtomicMgmt {
             }
         }
     }
+
+    pub fn store() {}
 }
 
 /// An atomic implementation where the underlying type has to be copyable but is otherwise

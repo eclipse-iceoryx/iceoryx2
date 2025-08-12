@@ -13,7 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType, KeyFfi, ValueFfi,
+    c_size_t, iox2_entry_value_h, iox2_entry_value_t, iox2_service_type_e, AssertNonNullHandle,
+    EntryValueUninitUnion, HandleToType, KeyFfi, ValueFfi,
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
@@ -109,9 +110,73 @@ impl HandleToType for iox2_entry_handle_mut_h_ref {
 
 // BEGIN C API
 
+#[no_mangle]
+pub unsafe extern "C" fn iox2_entry_handle_mut_loan_uninit(
+    entry_handle_mut_handle: iox2_entry_handle_mut_h,
+    entry_value_struct_ptr: *mut iox2_entry_value_t,
+    entry_value_handle_ptr: *mut iox2_entry_value_h,
+    value_size: usize,
+    value_alignment: usize,
+) {
+    entry_handle_mut_handle.assert_non_null();
+    debug_assert!(!entry_value_handle_ptr.is_null());
+
+    let init_entry_value_struct_ptr = |entry_value_struct_ptr: *mut iox2_entry_value_t| {
+        let mut entry_value_struct_ptr = entry_value_struct_ptr;
+        fn no_op(_: *mut iox2_entry_value_t) {}
+        let mut deleter: fn(*mut iox2_entry_value_t) = no_op;
+        if entry_value_struct_ptr.is_null() {
+            entry_value_struct_ptr = iox2_entry_value_t::alloc();
+            deleter = iox2_entry_value_t::dealloc;
+        }
+        debug_assert!(!entry_value_struct_ptr.is_null());
+
+        (entry_value_struct_ptr, deleter)
+    };
+
+    let entry_handle_mut_struct = &mut *entry_handle_mut_handle.as_type();
+    let service_type = entry_handle_mut_struct.service_type;
+    let entry_handle_mut = entry_handle_mut_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| {
+            panic!("Trying to use an invalid 'iox2_entry_handle_mut_h'!");
+        });
+    (entry_handle_mut_struct.deleter)(entry_handle_mut_struct);
+
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let entry_handle_mut = ManuallyDrop::into_inner(entry_handle_mut.ipc);
+            let entry_value_uninit = entry_handle_mut.loan_uninit(value_size, value_alignment);
+            let (entry_value_struct_ptr, deleter) =
+                init_entry_value_struct_ptr(entry_value_struct_ptr);
+            (*entry_value_struct_ptr).init(
+                service_type,
+                EntryValueUninitUnion::new_ipc(entry_value_uninit),
+                deleter,
+            );
+            *entry_value_handle_ptr = (*entry_value_struct_ptr).as_handle();
+        }
+        iox2_service_type_e::LOCAL => {
+            let entry_handle_mut = ManuallyDrop::into_inner(entry_handle_mut.ipc);
+            let entry_value_uninit = entry_handle_mut.loan_uninit(value_size, value_alignment);
+            let (entry_value_struct_ptr, deleter) =
+                init_entry_value_struct_ptr(entry_value_struct_ptr);
+            (*entry_value_struct_ptr).init(
+                service_type,
+                EntryValueUninitUnion::new_local(entry_value_uninit),
+                deleter,
+            );
+            *entry_value_handle_ptr = (*entry_value_struct_ptr).as_handle();
+        }
+    }
+}
+
 // TODO: entry_id
 
-// TODO: documentation
+// TODO: loan_uninit consumes entry_handle_mut, so no drop? what happens when loan_uninit was never
+// called?
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_mut_drop(
     entry_handle_mut_handle: iox2_entry_handle_mut_h,
@@ -122,12 +187,20 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_drop(
 
     match entry_handle_mut.service_type {
         iox2_service_type_e::IPC => {
-            ManuallyDrop::drop(&mut entry_handle_mut.value.as_mut().ipc);
+            if let Some(mut handle) = entry_handle_mut.take() {
+                ManuallyDrop::drop(&mut handle.ipc);
+                (entry_handle_mut.deleter)(entry_handle_mut);
+            }
+            //ManuallyDrop::drop(&mut entry_handle_mut.value.as_mut().ipc);
         }
         iox2_service_type_e::LOCAL => {
-            ManuallyDrop::drop(&mut entry_handle_mut.value.as_mut().local);
+            //ManuallyDrop::drop(&mut entry_handle_mut.value.as_mut().local);
+            if let Some(mut handle) = entry_handle_mut.take() {
+                ManuallyDrop::drop(&mut handle.local);
+                (entry_handle_mut.deleter)(entry_handle_mut);
+            }
         }
     }
-    (entry_handle_mut.deleter)(entry_handle_mut);
+    //(entry_handle_mut.deleter)(entry_handle_mut);
 }
 // END C API

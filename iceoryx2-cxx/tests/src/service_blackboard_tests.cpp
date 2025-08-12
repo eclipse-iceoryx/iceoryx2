@@ -15,6 +15,7 @@
 #include "iox2/service.hpp"
 
 #include "test.hpp"
+#include <cstdint>
 
 namespace {
 using namespace iox2;
@@ -729,8 +730,31 @@ TYPED_TEST(ServiceBlackboardTest, reader_handle_can_still_read_after_reader_was_
 }
 
 TYPED_TEST(ServiceBlackboardTest, loan_and_write_entry_value_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+    constexpr uint64_t VALUE = 333;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+    auto writer = service.writer_builder().create().expect("");
+    auto entry_handle_mut = writer.template entry<uint64_t>(0).expect("");
+    auto reader = service.reader_builder().create().expect("");
+    auto entry_handle = reader.template entry<uint64_t>(0).expect("");
+
+   auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut));
+   auto entry_value = write(std::move(entry_value_uninit), static_cast<uint64_t>(VALUE));
+   // TODO: return entry_handle?
+   update(std::move(entry_value));
+
+   ASSERT_THAT(entry_handle.get(), Eq(VALUE));
 }
 
+// TODO
 TYPED_TEST(ServiceBlackboardTest, writer_handle_can_be_reused_after_entry_value_was_updated) {
 }
 

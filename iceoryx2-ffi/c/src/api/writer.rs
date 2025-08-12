@@ -200,6 +200,7 @@ pub unsafe extern "C" fn iox2_writer_id(
 //// TODO: documentation
 #[no_mangle]
 pub unsafe extern "C" fn iox2_writer_entry(
+    // TODO: check if ref is correct
     writer_handle: iox2_writer_h_ref,
     entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t,
     entry_handle_mut_handle_ptr: *mut iox2_entry_handle_mut_h,
