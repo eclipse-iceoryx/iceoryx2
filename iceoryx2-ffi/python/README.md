@@ -29,13 +29,17 @@ cd $(git rev-parse --show-toplevel)
 # Compile PyO3 bindings
 poetry --project iceoryx2-ffi/python build-into-venv
 
-# Test python bindings
+# Test Python bindings
 poetry --project iceoryx2-ffi/python test
 
 # Run static code analysis
 poetry --project iceoryx2-ffi/python check-linting
 poetry --project iceoryx2-ffi/python check-imports
 poetry --project iceoryx2-ffi/python check-formatting
+
+# Fix some issues automatically
+poetry --project iceoryx2-ffi/python fix-imports
+poetry --project iceoryx2-ffi/python fix-formatting
 ```
 
 ## Run Examples
