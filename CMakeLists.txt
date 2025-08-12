@@ -133,10 +133,17 @@ if(WARNING_AS_ERROR)
     endif()
 endif()
 
+if(BUILD_TESTING)
+    enable_testing()
+endif()
+
 if(SANITIZERS)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=undefined")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined")
 endif()
+
+# C++ containers
+add_subdirectory(iceoryx2-bb/cxx)
 
 # C binding
 add_subdirectory(iceoryx2-ffi/c)

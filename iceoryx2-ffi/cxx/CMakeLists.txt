@@ -100,10 +100,9 @@ target_link_libraries(iceoryx2-cxx-object-lib
 add_library(static-lib-cxx STATIC $<TARGET_OBJECTS:iceoryx2-cxx-object-lib>)
 add_library(iceoryx2-cxx::static-lib-cxx ALIAS static-lib-cxx)
 
+target_compile_features(static-lib-cxx PUBLIC cxx_std_17)
 set_target_properties(static-lib-cxx
     PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
     OUTPUT_NAME "iceoryx2_cxx"
 )
@@ -120,10 +119,9 @@ target_link_libraries(static-lib-cxx
 add_library(shared-lib-cxx SHARED $<TARGET_OBJECTS:iceoryx2-cxx-object-lib>)
 add_library(iceoryx2-cxx::shared-lib-cxx ALIAS shared-lib-cxx)
 
+target_compile_features(shared-lib-cxx PUBLIC cxx_std_17)
 set_target_properties(shared-lib-cxx
     PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
     OUTPUT_NAME "iceoryx2_cxx"
 )
@@ -141,6 +139,7 @@ include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
 # add tests
 
-if(${BUILD_TESTING})
+if(BUILD_TESTING)
+    enable_testing()
     add_subdirectory(tests)
 endif()
