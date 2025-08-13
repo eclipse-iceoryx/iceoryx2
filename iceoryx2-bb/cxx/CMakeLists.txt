@@ -12,25 +12,29 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-project(iceoryx2-bb VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
+project(iceoryx2-bb-cxx VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
 
 set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
 
-# include only lib -> includes are installed only once despite being used in static lib as well as shared lib
+add_library(iceoryx2-bb-containers-cxx INTERFACE)
+add_library(iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx ALIAS iceoryx2-bb-containers-cxx)
 
-add_library(iceoryx2-bb-containers INTERFACE)
-add_library(iceoryx2-cxx::iceoryx2-bb-containers ALIAS iceoryx2-bb-containers)
-
-target_include_directories(iceoryx2-bb-containers
+target_include_directories(iceoryx2-bb-containers-cxx
     INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 
-target_compile_features(iceoryx2-bb-containers INTERFACE cxx_std_14)
+target_compile_features(iceoryx2-bb-containers-cxx INTERFACE cxx_std_14)
 
 # include install setup
-# @todo
+# find_package from source tree
+set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
+    CACHE FILEPATH
+    "${PROJECT_NAME}Config.cmake to make find_package(${PROJECT_NAME}) work in source tree!"
+    FORCE
+)
+# @todo - install, export and packaging
 
 # add tests
 

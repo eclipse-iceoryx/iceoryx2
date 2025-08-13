@@ -16,7 +16,7 @@ project(iceoryx2-bb-cxx-tests VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
 
 include(cmake/googletest.cmake)
 
-find_package(iceoryx2-cxx REQUIRED)
+find_package(iceoryx2-bb-cxx REQUIRED)
 
 add_executable(iceoryx2-bb-containers-tests ${TEST_FILES})
 target_sources(iceoryx2-bb-containers-tests
@@ -24,7 +24,7 @@ target_sources(iceoryx2-bb-containers-tests
     ${PROJECT_SOURCE_DIR}/src/main.cpp
 )
 
-target_link_libraries(iceoryx2-bb-containers-tests iceoryx2-cxx::iceoryx2-bb-containers GTest::gtest GTest::gmock)
+target_link_libraries(iceoryx2-bb-containers-tests iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx GTest::gtest GTest::gmock)
 target_compile_options(iceoryx2-bb-containers-tests PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
 target_compile_features(iceoryx2-bb-containers-tests PRIVATE cxx_std_14)
 
