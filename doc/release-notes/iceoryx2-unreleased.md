@@ -77,6 +77,8 @@
     [#923](https://github.com/eclipse-iceoryx/iceoryx2/issues/923)
 * Fix cleanup issue of stale dynamic configs
     [#927](https://github.com/eclipse-iceoryx/iceoryx2/issues/927)
+* Fix memory leaks when port creation fails
+    [#947](https://github.com/eclipse-iceoryx/iceoryx2/issues/947)
 
 ### Refactoring
 
