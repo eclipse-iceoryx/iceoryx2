@@ -28,6 +28,7 @@ add_executable(iceoryx2-bb-containers-tests ${TEST_FILES})
 target_sources(iceoryx2-bb-containers-tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
+    ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
 )
 
 target_link_libraries(
