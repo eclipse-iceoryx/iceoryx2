@@ -212,6 +212,7 @@ pub unsafe extern "C" fn iox2_port_factory_writer_builder_create(
                     (*writer_struct_ptr).init(service_type, WriterUnion::new_ipc(writer), deleter);
                 }
                 Err(error) => {
+                    deleter(writer_struct_ptr);
                     return error.into_c_int();
                 }
             }
@@ -228,6 +229,7 @@ pub unsafe extern "C" fn iox2_port_factory_writer_builder_create(
                     );
                 }
                 Err(error) => {
+                    deleter(writer_struct_ptr);
                     return error.into_c_int();
                 }
             }
