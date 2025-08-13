@@ -549,6 +549,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_list_reader
 pub unsafe extern "C" fn iox2_port_factory_blackboard_drop(
     port_factory_handle: iox2_port_factory_blackboard_h,
 ) {
+    println!("iox2_port_factory_blackboard_drop");
     debug_assert!(!port_factory_handle.is_null());
 
     let port_factory = &mut *port_factory_handle.as_type();

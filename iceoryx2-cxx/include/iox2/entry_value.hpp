@@ -15,6 +15,7 @@
 
 #include "iox/assertions_addendum.hpp"
 // #include "iox2/entry_handle_mut.hpp"
+#include "iox2/iceoryx2.h"
 #include "iox2/service_type.hpp"
 #include <iostream>
 
@@ -36,15 +37,14 @@ class EntryValue {
     auto operator=(const EntryValue&) -> EntryValue& = delete;
 
     /// Makes new value readable for [`Reader`]s, consumes the
-    /// [`EntryValue`] and returns the original [`WriterHandle`].
+    /// [`EntryValue`] and returns the original [`EntryHandleMut`].
     template <ServiceType ST, typename KeyT, typename ValueT>
-    // friend auto update(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<S, KeyType, ValueType>;
-    friend auto update(EntryValue<ST, KeyT, ValueT>&& self);
+    friend auto update(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
+    // friend auto update(EntryValue<ST, KeyT, ValueT>&& self);
 
-    /// Discard the [`EntryValue`] and returns the original [`WriterHandle`].
+    /// Discard the [`EntryValue`] and returns the original [`EntryHandleMut`].
     template <ServiceType ST, typename KeyT, typename ValueT>
-    // friend auto discard(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<S, KeyType, ValueType>;
-    friend auto discard(EntryValue<ST, KeyT, ValueT>&& self);
+    friend auto discard(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
 
     // TODO: make private
     auto value_mut() -> ValueType&;
@@ -56,8 +56,8 @@ class EntryValue {
     friend class EntryValueUninit;
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto loan_uninit(EntryHandleMut<ST, KeyT, ValueT>&&) -> EntryValueUninit<ST, KeyT, ValueT>;
-    // template <ServiceType ST, typename KeyT, typename ValueT>
-    // friend auto write(EntryValueUninit<ST, KeyT, ValueT>&&, ValueT) -> EntryValue<ST, KeyT, ValueT>;
+    template <ServiceType ST, typename KeyT, typename ValueT>
+    friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&&) -> EntryHandleMut<ST, KeyT, ValueT>;
 
     // The EntryValue is defaulted since the member is initialized in
     // EntryHandleMut::loan_uninit()
@@ -99,13 +99,23 @@ inline EntryValue<S, KeyType, ValueType>::~EntryValue() noexcept {
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto update(EntryValue<S, KeyType, ValueType>&& self) {
-    iox2_entry_value_update(self.m_handle);
+inline auto update(EntryValue<S, KeyType, ValueType>&& self) -> EntryHandleMut<S, KeyType, ValueType> {
+    iox2_entry_handle_mut_h entry_handle_mut_handle = nullptr;
+
+    iox2_entry_value_update(self.m_handle, nullptr, &entry_handle_mut_handle);
+
+    EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
+    return std::move(entry_handle_mut);
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto discard([[maybe_unused]] EntryValue<S, KeyType, ValueType>&& self) {
-    IOX_TODO();
+inline auto discard(EntryValue<S, KeyType, ValueType>&& self) -> EntryHandleMut<S, KeyType, ValueType> {
+    iox2_entry_handle_mut_h entry_handle_mut_handle = nullptr;
+
+    iox2_entry_value_discard(self.m_handle, nullptr, &entry_handle_mut_handle);
+
+    EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
+    return std::move(entry_handle_mut);
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>

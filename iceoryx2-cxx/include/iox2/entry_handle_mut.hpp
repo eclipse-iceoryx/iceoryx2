@@ -47,10 +47,16 @@ class EntryHandleMut {
   private:
     // template <ServiceType, typename, typename>
     // friend class EntryValueUninit;
-    //  template <ServiceType, typename, typename>
-    //  friend class EntryValue;
+    // template <ServiceType, typename, typename>
+    // friend class EntryValue;
     template <ServiceType, typename>
     friend class Writer;
+    template <ServiceType ST, typename KeyT, typename ValueT>
+    friend auto update(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
+    template <ServiceType ST, typename KeyT, typename ValueT>
+    friend auto discard(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
+    template <ServiceType ST, typename KeyT, typename ValueT>
+    friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
 
     // TODO: explain default
     explicit EntryHandleMut(iox2_entry_handle_mut_h handle);
@@ -83,6 +89,7 @@ inline auto EntryHandleMut<S, KeyType, ValueType>::operator=(EntryHandleMut&& rh
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline EntryHandleMut<S, KeyType, ValueType>::~EntryHandleMut() noexcept {
+    std::cout << "~EntryHandleMut" << std::endl;
     drop();
 }
 
@@ -113,6 +120,11 @@ inline auto EntryHandleMut<S, KeyType, ValueType>::entry_id() const -> EventId {
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline void EntryHandleMut<S, KeyType, ValueType>::drop() {
+    if (m_handle == nullptr) {
+        std::cout << "EntryHandleMut::drop(), m_handle == nullptr" << std::endl;
+    } else {
+        std::cout << "EntryHandleMut::drop(), m_handle != nullptr" << std::endl;
+    }
     if (m_handle != nullptr) {
         iox2_entry_handle_mut_drop(m_handle);
         m_handle = nullptr;

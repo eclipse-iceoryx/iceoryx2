@@ -13,7 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType, KeyFfi, ValueFfi,
+    c_size_t, iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_service_type_e,
+    AssertNonNullHandle, EntryHandleMutUnion, HandleToType, KeyFfi, ValueFfi,
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
@@ -166,8 +167,27 @@ pub unsafe extern "C" fn iox2_entry_value_mut(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn iox2_entry_value_update(entry_value_handle: iox2_entry_value_h) {
+pub unsafe extern "C" fn iox2_entry_value_update(
+    entry_value_handle: iox2_entry_value_h,
+    entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t,
+    entry_handle_mut_handle_ptr: *mut iox2_entry_handle_mut_h,
+) {
     entry_value_handle.assert_non_null();
+    debug_assert!(!entry_handle_mut_handle_ptr.is_null());
+
+    let init_entry_handle_mut_struct_ptr =
+        |entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t| {
+            let mut entry_handle_mut_struct_ptr = entry_handle_mut_struct_ptr;
+            fn no_op(_: *mut iox2_entry_handle_mut_t) {}
+            let mut deleter: fn(*mut iox2_entry_handle_mut_t) = no_op;
+            if entry_handle_mut_struct_ptr.is_null() {
+                entry_handle_mut_struct_ptr = iox2_entry_handle_mut_t::alloc();
+                deleter = iox2_entry_handle_mut_t::dealloc;
+            }
+            debug_assert!(!entry_handle_mut_struct_ptr.is_null());
+
+            (entry_handle_mut_struct_ptr, deleter)
+        };
 
     let entry_value_struct = &mut *entry_value_handle.as_type();
     let service_type = entry_value_struct.service_type;
@@ -183,11 +203,89 @@ pub unsafe extern "C" fn iox2_entry_value_update(entry_value_handle: iox2_entry_
     match service_type {
         iox2_service_type_e::IPC => {
             let entry_value = ManuallyDrop::into_inner(entry_value.ipc);
-            entry_value.update();
+            let entry_handle_mut = entry_value.update();
+            let (entry_handle_mut_struct_ptr, deleter) =
+                init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
+            (*entry_handle_mut_struct_ptr).init(
+                service_type,
+                EntryHandleMutUnion::new_ipc(entry_handle_mut),
+                deleter,
+            );
+            *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
         }
         iox2_service_type_e::LOCAL => {
             let entry_value = ManuallyDrop::into_inner(entry_value.local);
-            entry_value.update();
+            let entry_handle_mut = entry_value.update();
+            let (entry_handle_mut_struct_ptr, deleter) =
+                init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
+            (*entry_handle_mut_struct_ptr).init(
+                service_type,
+                EntryHandleMutUnion::new_local(entry_handle_mut),
+                deleter,
+            );
+            *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+        }
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn iox2_entry_value_discard(
+    entry_value_handle: iox2_entry_value_h,
+    entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t,
+    entry_handle_mut_handle_ptr: *mut iox2_entry_handle_mut_h,
+) {
+    entry_value_handle.assert_non_null();
+    debug_assert!(!entry_handle_mut_handle_ptr.is_null());
+
+    let init_entry_handle_mut_struct_ptr =
+        |entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t| {
+            let mut entry_handle_mut_struct_ptr = entry_handle_mut_struct_ptr;
+            fn no_op(_: *mut iox2_entry_handle_mut_t) {}
+            let mut deleter: fn(*mut iox2_entry_handle_mut_t) = no_op;
+            if entry_handle_mut_struct_ptr.is_null() {
+                entry_handle_mut_struct_ptr = iox2_entry_handle_mut_t::alloc();
+                deleter = iox2_entry_handle_mut_t::dealloc;
+            }
+            debug_assert!(!entry_handle_mut_struct_ptr.is_null());
+
+            (entry_handle_mut_struct_ptr, deleter)
+        };
+
+    let entry_value_struct = &mut *entry_value_handle.as_type();
+    let service_type = entry_value_struct.service_type;
+    let entry_value = entry_value_struct
+        .value
+        .as_option_mut()
+        .take()
+        .unwrap_or_else(|| {
+            panic!("Trying to use an invalid 'iox2_entry_value_h'!");
+        });
+    (entry_value_struct.deleter)(entry_value_struct);
+
+    match service_type {
+        iox2_service_type_e::IPC => {
+            let entry_value = ManuallyDrop::into_inner(entry_value.ipc);
+            let entry_handle_mut = entry_value.discard();
+            let (entry_handle_mut_struct_ptr, deleter) =
+                init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
+            (*entry_handle_mut_struct_ptr).init(
+                service_type,
+                EntryHandleMutUnion::new_ipc(entry_handle_mut),
+                deleter,
+            );
+            *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
+        }
+        iox2_service_type_e::LOCAL => {
+            let entry_value = ManuallyDrop::into_inner(entry_value.local);
+            let entry_handle_mut = entry_value.discard();
+            let (entry_handle_mut_struct_ptr, deleter) =
+                init_entry_handle_mut_struct_ptr(entry_handle_mut_struct_ptr);
+            (*entry_handle_mut_struct_ptr).init(
+                service_type,
+                EntryHandleMutUnion::new_local(entry_handle_mut),
+                deleter,
+            );
+            *entry_handle_mut_handle_ptr = (*entry_handle_mut_struct_ptr).as_handle();
         }
     }
 }
@@ -195,6 +293,7 @@ pub unsafe extern "C" fn iox2_entry_value_update(entry_value_handle: iox2_entry_
 // TODO: documentation
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_value_drop(entry_value_handle: iox2_entry_value_h) {
+    println!("iox2_entry_value_drop");
     entry_value_handle.assert_non_null();
 
     let entry_value = &mut *entry_value_handle.as_type();

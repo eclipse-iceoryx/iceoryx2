@@ -200,7 +200,6 @@ pub unsafe extern "C" fn iox2_writer_id(
 //// TODO: documentation
 #[no_mangle]
 pub unsafe extern "C" fn iox2_writer_entry(
-    // TODO: check if ref is correct
     writer_handle: iox2_writer_h_ref,
     entry_handle_mut_struct_ptr: *mut iox2_entry_handle_mut_t,
     entry_handle_mut_handle_ptr: *mut iox2_entry_handle_mut_h,
@@ -212,6 +211,8 @@ pub unsafe extern "C" fn iox2_writer_entry(
 ) -> c_int {
     writer_handle.assert_non_null();
     debug_assert!(!entry_handle_mut_handle_ptr.is_null());
+
+    *entry_handle_mut_handle_ptr = core::ptr::null_mut();
 
     let init_entry_handle_mut_struct_ptr = |entry_struct_ptr: *mut iox2_entry_handle_mut_t| {
         let mut entry_handle_mut_struct_ptr = entry_struct_ptr;
@@ -293,6 +294,7 @@ pub unsafe extern "C" fn iox2_writer_entry(
 ///   [`iox2_port_factory_writer_builder_create`](crate::iox2_port_factory_writer_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_writer_drop(writer_handle: iox2_writer_h) {
+    println!("iox2_writer_drop");
     writer_handle.assert_non_null();
 
     let writer = &mut *writer_handle.as_type();

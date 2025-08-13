@@ -35,14 +35,13 @@ class EntryValueUninit {
     /// Consumes the [`EntryValueUninit`], writes value to the entry value and returns the
     /// initialized [`EntryValue`].
     // TODO: check ValueType with enable_if?
-    // template <typename E, typename ValueT>
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto write(EntryValueUninit<ST, KeyT, ValueT>&& self, ValueT value) -> EntryValue<ST, KeyT, ValueT>;
-    // friend auto write(E&& self, ValueType value);
 
-    /// Discard the [`EntryValueUninit`] and returns the original [`WriterHandle`].
-    // template <ServiceType ST, typename KeyT, typename ValueT>
-    // friend auto discard() -> WriterHandle<S, KeyType, ValueType>;
+    /// Discard the [`EntryValueUninit`] and returns the original [`EntryHandleMut`].
+    template <ServiceType ST, typename KeyT, typename ValueT>
+    // friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&& self);
+    friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
 
   private:
     template <ServiceType, typename, typename>
@@ -52,7 +51,7 @@ class EntryValueUninit {
     friend auto loan_uninit(EntryHandleMut<ST, KeyT, ValueT>&&) -> EntryValueUninit<ST, KeyT, ValueT>;
 
     // The EntryValueUninit is defaulted since the member is initialized in
-    // WriterHandle::loan_uninit().
+    // EntryHandleMut::loan_uninit().
     explicit EntryValueUninit() = default;
 
     EntryValue<S, KeyType, ValueType> m_entry_value;
@@ -62,15 +61,20 @@ class EntryValueUninit {
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto write(EntryValueUninit<S, KeyType, ValueType>&& self, ValueType value)
     -> EntryValue<S, KeyType, ValueType> {
+    std::cout << "write" << std::endl;
     new (&self.m_entry_value.value_mut()) ValueType(std::forward<ValueType>(value));
     return std::move(self.m_entry_value);
 }
 
-// template <ServiceType S, typename KeyType, typename ValueType>
-// inline auto discard([[maybe_unused]] EntryValueUninit<S, KeyType, ValueType>&& self)
-//-> WriterHandle<S, KeyType, ValueType> {
-// IOX_TODO();
-//}
+template <ServiceType S, typename KeyType, typename ValueType>
+inline auto discard(EntryValueUninit<S, KeyType, ValueType>&& self) -> EntryHandleMut<S, KeyType, ValueType> {
+    iox2_entry_handle_mut_h entry_handle_mut_handle = nullptr;
+
+    iox2_entry_value_discard(self.m_entry_value.m_handle, nullptr, &entry_handle_mut_handle);
+
+    EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
+    return std::move(entry_handle_mut);
+}
 } // namespace iox2
 
 #endif

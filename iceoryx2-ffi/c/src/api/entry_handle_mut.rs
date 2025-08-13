@@ -181,6 +181,7 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_loan_uninit(
 pub unsafe extern "C" fn iox2_entry_handle_mut_drop(
     entry_handle_mut_handle: iox2_entry_handle_mut_h,
 ) {
+    println!("iox2_entry_handle_mut_drop");
     entry_handle_mut_handle.assert_non_null();
 
     let entry_handle_mut = &mut *entry_handle_mut_handle.as_type();

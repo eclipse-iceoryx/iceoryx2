@@ -589,10 +589,15 @@ impl<Service: service::Service> __InternalEntryValueUninit<Service> {
         self.ptr
     }
 
-    pub fn update(self) {
+    pub fn update(self) -> __InternalWriterHandle<Service> {
         unsafe {
             (*self.writer_handle.atomic_mgmt_ptr).__internal_update_write_cell();
         }
+        self.writer_handle
+    }
+
+    pub fn discard(self) -> __InternalWriterHandle<Service> {
+        self.writer_handle
     }
 
     // cleanup
