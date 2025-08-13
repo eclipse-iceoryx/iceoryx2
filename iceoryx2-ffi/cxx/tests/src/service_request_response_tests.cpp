@@ -1073,6 +1073,8 @@ TYPED_TEST(ServiceRequestResponseTest, server_reallocates_memory_when_allocation
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
     auto service = node.service_builder(service_name)
                        .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                       .max_clients(1)
+                       .max_servers(1)
                        .create()
                        .expect("");
 

@@ -327,11 +327,12 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
- 
+
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
         with:
           cmake-version: '3.31.x'
+
       - name: Use cmake
         run: cmake --version
 
@@ -351,6 +352,7 @@ jobs:
       - name: Prepare Windows
         if: ${{ matrix.os == 'windows-latest' }}
         run: internal\scripts\ci_prepare_windows.ps1
+
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -363,45 +365,50 @@ jobs:
       - name: Run cargo nextest
         run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
 
-      - name: Build C language bindings
+      - name: Build iceoryx_hoofs
+        run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh 32-bit-x86
+
+      - name: Build language bindings
         run: |
           cmake -S . \
                 -B target/ff/cc/build \
                 -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
-                -DBUILD_CXX_BINDING=OFF \
                 -DBUILD_EXAMPLES=ON \
                 -DBUILD_TESTING=ON \
-                -DCMAKE_C_FLAGS="-m32" \
-                -DCMAKE_CXX_FLAGS="-m32" \
+                -DCMAKE_C_FLAGS="-m32 -malign-double" \
+                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" \
                 -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ matrix.mode.name }}" \
                 ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ff/cc/build
           cmake --install target/ff/cc/build
 
-      - name: Run language binding tests
+      - name: Run C language binding tests
         run: target/ff/cc/build/tests/iceoryx2-c-tests
 
+      - name: Run C++ language binding tests
+        # TODO: [#262] the skipped tests trigger an unaligned pointer access
+        run: target/ff/cc/build/tests/iceoryx2-cxx-tests --gtest_filter="-ServiceTest/*.list_works:ServiceTest/*.list_works_with_attributes:ServiceTest/*.details_works"
+
       - name: Build C language binding examples in out-of-tree configuration
-        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
         run: |
           rm -rf target/ff/cc/build
           cmake -S examples/c \
                 -B target/ff/out-of-tree-c \
                 -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
-                -DCMAKE_C_FLAGS="-m32" \
-                -DCMAKE_CXX_FLAGS="-m32" \
-                -${{ matrix.mode.cmake-build-type }}
+                -DCMAKE_C_FLAGS="-m32 -malign-double" \
+                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ff/out-of-tree-c
 
       - name: Build C++ language binding examples in out-of-tree configuration
-        if: false # TODO: [#262] out-of-tree cross-compilation is currently not supported
         run: |
           cmake -S examples/cxx \
                 -B target/ff/out-of-tree-cxx \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
-                -DCMAKE_C_FLAGS="-m32" \
-                -DCMAKE_CXX_FLAGS="-m32" \
-                -${{ matrix.mode.cmake-build-type }}
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install;${{ github.workspace }}/target/ff/iceoryx/install" \
+                -DCMAKE_C_FLAGS="-m32 -malign-double" \
+                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                ${{ matrix.mode.cmake-build-type }}
           cmake --build target/ff/out-of-tree-cxx
 
   x86_64:
