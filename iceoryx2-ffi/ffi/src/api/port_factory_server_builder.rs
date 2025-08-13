@@ -397,6 +397,7 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_create(
                     (*struct_ptr).init(service_type, ServerUnion::new_ipc(server), deleter);
                 }
                 Err(error) => {
+                    deleter(struct_ptr);
                     return error.into_c_int();
                 }
             }
@@ -409,6 +410,7 @@ pub unsafe extern "C" fn iox2_port_factory_server_builder_create(
                     (*struct_ptr).init(service_type, ServerUnion::new_local(publisher), deleter);
                 }
                 Err(error) => {
+                    deleter(struct_ptr);
                     return error.into_c_int();
                 }
             }

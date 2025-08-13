@@ -1855,4 +1855,50 @@ TYPED_TEST(ServiceRequestResponseTest, server_details_are_correct) {
 
     ASSERT_THAT(counter, Eq(1));
 }
+
+TYPED_TEST(ServiceRequestResponseTest, only_max_clients_can_be_created) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .max_clients(1)
+                       .create()
+                       .expect("");
+    auto client = iox::optional<Client<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+        service.client_builder().create().expect(""));
+
+    auto failing_sut = service.client_builder().create();
+    ASSERT_TRUE(failing_sut.has_error());
+
+    client.reset();
+
+    auto sut = service.client_builder().create();
+    ASSERT_FALSE(sut.has_error());
+}
+
+TYPED_TEST(ServiceRequestResponseTest, only_max_servers_can_be_created) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .max_servers(1)
+                       .create()
+                       .expect("");
+    auto server = iox::optional<Server<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+        service.server_builder().create().expect(""));
+
+    auto failing_sut = service.server_builder().create();
+    ASSERT_TRUE(failing_sut.has_error());
+
+    server.reset();
+
+    auto sut = service.server_builder().create();
+    ASSERT_FALSE(sut.has_error());
+}
 } // namespace

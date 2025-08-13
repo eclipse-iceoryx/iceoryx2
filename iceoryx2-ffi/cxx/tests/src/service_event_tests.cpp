@@ -793,4 +793,40 @@ TYPED_TEST(ServiceEventTest, listener_details_are_correct) {
 
     ASSERT_THAT(counter, Eq(1));
 }
+
+TYPED_TEST(ServiceEventTest, only_max_notifiers_can_be_created) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).event().max_notifiers(1).create().expect("");
+    auto notifier = iox::optional<Notifier<SERVICE_TYPE>>(service.notifier_builder().create().expect(""));
+
+    auto failing_sut = service.notifier_builder().create();
+    ASSERT_TRUE(failing_sut.has_error());
+
+    notifier.reset();
+
+    auto sut = service.notifier_builder().create();
+    ASSERT_FALSE(sut.has_error());
+}
+
+TYPED_TEST(ServiceEventTest, only_max_listeners_can_be_created) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name).event().max_listeners(1).create().expect("");
+    auto listener = iox::optional<Listener<SERVICE_TYPE>>(service.listener_builder().create().expect(""));
+
+    auto failing_sut = service.listener_builder().create();
+    ASSERT_TRUE(failing_sut.has_error());
+
+    listener.reset();
+
+    auto sut = service.listener_builder().create();
+    ASSERT_FALSE(sut.has_error());
+}
 } // namespace

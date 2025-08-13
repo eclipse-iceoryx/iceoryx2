@@ -290,6 +290,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
                 (*node_struct_ptr).init(service_type, NodeUnion::new_ipc(node), deleter);
             },
             Err(error) => {
+                deleter(node_struct_ptr);
                 return error.into_c_int();
             }
         },
@@ -298,6 +299,7 @@ pub unsafe extern "C" fn iox2_node_builder_create(
                 (*node_struct_ptr).init(service_type, NodeUnion::new_local(node), deleter);
             },
             Err(error) => {
+                deleter(node_struct_ptr);
                 return error.into_c_int();
             }
         },
