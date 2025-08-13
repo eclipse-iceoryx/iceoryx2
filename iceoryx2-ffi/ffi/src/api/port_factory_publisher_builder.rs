@@ -433,6 +433,7 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_create(
                     );
                 }
                 Err(error) => {
+                    deleter(publisher_struct_ptr);
                     return error.into_c_int();
                 }
             }
@@ -449,6 +450,7 @@ pub unsafe extern "C" fn iox2_port_factory_publisher_builder_create(
                     );
                 }
                 Err(error) => {
+                    deleter(publisher_struct_ptr);
                     return error.into_c_int();
                 }
             }

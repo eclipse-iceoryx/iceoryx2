@@ -221,6 +221,7 @@ pub unsafe extern "C" fn iox2_port_factory_listener_builder_create(
                     );
                 }
                 Err(error) => {
+                    deleter(listener_struct_ptr);
                     return error.into_c_int();
                 }
             }
@@ -237,6 +238,7 @@ pub unsafe extern "C" fn iox2_port_factory_listener_builder_create(
                     );
                 }
                 Err(error) => {
+                    deleter(listener_struct_ptr);
                     return error.into_c_int();
                 }
             }
