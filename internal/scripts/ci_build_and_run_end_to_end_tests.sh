@@ -20,11 +20,16 @@ COLOR_YELLOW='\033[1;33m'
 
 BUILD_END_TO_END_TESTS=true
 RUN_END_TO_END_TESTS=true
+PYTHON_END_TO_END_TESTS=true
 
 while (( "$#" )); do
     case "$1" in
         no-build)
             BUILD_END_TO_END_TESTS=false
+            shift 1
+            ;;
+        no-python)
+            PYTHON_END_TO_END_TESTS=false
             shift 1
             ;;
         no-run)
@@ -36,6 +41,7 @@ while (( "$#" )); do
             echo ""
             echo "Args:"
             echo "    no-build              Skips the build step"
+            echo "    no-python             Skips the Python tests"
             echo "    no-run                Skips the run step"
             echo ""
             exit 0
@@ -81,8 +87,10 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
     cmake --build target/ff/cc/build -j$NUM_JOBS
 
     # Build the Python bindings
-    poetry --project iceoryx2-ffi/python install
-    poetry --project iceoryx2-ffi/python build-into-venv
+    if [[ ${PYTHON_END_TO_END_TESTS} == true ]]; then
+        poetry --project iceoryx2-ffi/python install
+        poetry --project iceoryx2-ffi/python build-into-venv
+    fi
 fi
 
 
@@ -110,6 +118,10 @@ if [[ ${RUN_END_TO_END_TESTS} == true ]]; then
         FILE_COUNTER=$((FILE_COUNTER + 1))
 
         if test -f "$FILE"; then
+            if [[ ${PYTHON_END_TO_END_TESTS} == false ]] && grep -q python "${FILE}"; then
+                echo -e "${COLOR_YELLOW}Skipping Python end-to-end test!${COLOR_OFF}"
+                continue
+            fi
             bash -c ${FILE}
         else
             echo -e "${COLOR_RED}File does not exist! Aborting!${COLOR_OFF}"
