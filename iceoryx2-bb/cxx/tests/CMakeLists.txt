@@ -12,21 +12,23 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-project(iceoryx2-cxx-tests VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
+project(iceoryx2-bb-cxx-tests VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
 
 include(cmake/googletest.cmake)
 
-find_package(iceoryx2-cxx REQUIRED)
+find_package(iceoryx2-bb-cxx REQUIRED)
 
-file(GLOB TEST_FILES src/*.cpp)
+add_executable(iceoryx2-bb-containers-tests ${TEST_FILES})
+target_sources(iceoryx2-bb-containers-tests
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/main.cpp
+)
 
-add_executable(${PROJECT_NAME} ${TEST_FILES})
+target_link_libraries(iceoryx2-bb-containers-tests iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx GTest::gtest GTest::gmock)
+target_compile_options(iceoryx2-bb-containers-tests PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
+target_compile_features(iceoryx2-bb-containers-tests PRIVATE cxx_std_14)
 
-target_link_libraries(${PROJECT_NAME} iceoryx2-cxx::static-lib-cxx GTest::gtest GTest::gmock)
-target_compile_options(${PROJECT_NAME} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
-target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set_target_properties(iceoryx2-bb-containers-tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"
     RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/tests"
     RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/tests"
@@ -34,4 +36,4 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/tests"
 )
 
-add_test(NAME "iceoryx2 C++ FFI Tests" COMMAND ${PROJECT_NAME})
+add_test(NAME "iceoryx2 C++ BB Container Tests" COMMAND iceoryx2-bb-containers-tests)
