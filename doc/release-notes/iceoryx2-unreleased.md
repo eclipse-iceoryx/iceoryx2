@@ -119,6 +119,7 @@
 -->
 
 * Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Added brief cross-compile documentation [#70](https://github.com/eclipse-iceoryx/iceoryx2/issues/70)
 
 ### New API features
 
