@@ -27,10 +27,8 @@ while (( "$#" )); do
     "32-bit-x86")
         echo " [i] Build as 32 bit x86 library"
         # NOTE: "-malign-double" would only be needed 32-64-bit cross architecture communication,
-        #       but relative_pointer_data.cpp contains a sanity check to be aligned to 8 bytes;
-        #       the reason for the check is to prevent to be placed on a 4 byte boundary, which
-        #       could result in a torn read under certain circumstances; since the relative_pointer
-        #       is still part of the iceoryx_hoofs subset, the "-malign-double" flag must still be set
+        #       but at least for the cross compilation setup, there are issues with the C++ tests
+        #       when the "-malign-double" flag is not set
         CMAKE_C_FLAGS="${CMAKE_C_FLAGS} -m32 -malign-double"
         CMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS} -m32 -malign-double"
         shift 1
@@ -66,7 +64,7 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
     NUM_JOBS=$(sysctl -n hw.ncpu)
 fi
 
-git clone --depth 1 --branch v2.95.6 https://github.com/eclipse-iceoryx/iceoryx.git target/ff/iceoryx/src
+git clone --depth 1 --branch v2.95.7 https://github.com/eclipse-iceoryx/iceoryx.git target/ff/iceoryx/src
 
 cmake -S target/ff/iceoryx/src/iceoryx_platform \
       -B target/ff/iceoryx/build/platform \
