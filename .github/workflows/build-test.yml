@@ -190,51 +190,43 @@ jobs:
         artifact-bin-name: cargo-nextest
         artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
-  maturin:
-    needs: preflight-check
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-    - name: Build and cache maturin
-      uses: ./.github/actions/build-and-cache-rust-tool
-      with:
-        rust-toolchain: stable
-        check-and-install-cmd: maturin --version > /dev/null || cargo install maturin --locked
-        print-version-cmd: maturin --version
-        # increment cache-N-${{}} if a new maturin version is required
-        cache-key: cache-0-${{ runner.os }}-maturin
-        artifact-bin-name: maturin
-        artifact-upload-name: ${{ runner.os }}-maturin
-
   python-bindings:
-    needs: [preflight-check, static-code-analysis, cargo-nextest, maturin]
+    needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     runs-on: ubuntu-latest
     steps:
      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-     - name: Download artifact maturin
-       uses: ./.github/actions/download-cached-rust-tool
+
+     - name: Set up Python
+       uses: actions/setup-python@v5
        with:
-         artifact-bin-name: maturin
-         artifact-upload-name: ${{ runner.os }}-maturin
+         python-version: "3.12"
+
+     - name: Install Poetry
+       uses: snok/install-poetry@v1
+       with:
+         version: 2.1.3
+         plugins: poetry-plugin-shell
 
      - name: Prepare Linux
        run: |
          internal/scripts/ci_prepare_ubuntu.sh
          uname -a
 
-     - uses: actions/setup-python@v5
-       with:
-         python-version: 3.x
+     - name: Install Python Dependencies
+       run: poetry --project iceoryx2-ffi/python install
 
-     - name: Language Binding Tests
-       run: internal/scripts/ci_check_python.sh check
+     - name: Build Python Bindings
+       run: poetry --project iceoryx2-ffi/python build-into-venv
+
+     - name: Test Python Bindings
+       run: poetry --project iceoryx2-ffi/python test
+
+     - name: Run Static Analysis
+       run: poetry --project iceoryx2-ffi/python static-analysis
 
   end-to-end-tests:
-    needs: [preflight-check, static-code-analysis, maturin]
+    needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
@@ -245,12 +237,6 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-
-      - name: Download artifact maturin
-        uses: ./.github/actions/download-cached-rust-tool
-        with:
-          artifact-bin-name: maturin
-          artifact-upload-name: ${{ runner.os }}-maturin
 
       - name: Setup cmake
         uses: jwlawson/actions-setup-cmake@v2
@@ -264,6 +250,17 @@ jobs:
         with:
           toolchain: ${{ matrix.toolchain }}
           targets: i686-unknown-linux-gnu
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.1.3
+          plugins: poetry-plugin-shell
 
       - name: Prepare Linux
         run: |

@@ -18,9 +18,7 @@ iox2.set_log_level_from_env_or(iox2.LogLevel.Info)
 node = iox2.NodeBuilder.new().create(iox2.ServiceType.Ipc)
 
 event = (
-    node.service_builder(iox2.ServiceName.new("MyEventName"))
-    .event()
-    .open_or_create()
+    node.service_builder(iox2.ServiceName.new("MyEventName")).event().open_or_create()
 )
 max_event_id = event.static_config.event_id_max_value
 notifier = event.notifier_builder().create()
@@ -32,9 +30,7 @@ try:
     while True:
         node.wait(cycle_time)
         COUNTER += 1
-        notifier.notify_with_custom_event_id(
-            iox2.EventId.new(COUNTER % max_event_id)
-        )
+        notifier.notify_with_custom_event_id(iox2.EventId.new(COUNTER % max_event_id))
 
         print("Trigger event with id ", COUNTER, " ...")
 except iox2.NodeWaitFailure:

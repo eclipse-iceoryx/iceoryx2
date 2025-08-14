@@ -29,9 +29,7 @@ def payload(self: Any) -> Any:
         (contained_type,) = get_args(self.__payload_type_details)
         return Slice(self.payload_ptr, self.__slice_len, contained_type)
 
-    return ctypes.cast(
-        self.payload_ptr, ctypes.POINTER(self.__payload_type_details)
-    )
+    return ctypes.cast(self.payload_ptr, ctypes.POINTER(self.__payload_type_details))
 
 
 def user_header(self: Any) -> Any:
@@ -102,12 +100,8 @@ def send_copy(self: Publisher, t: Type[T]) -> Any:
     assert self.__payload_type_details is not None
     sample_uninit = self.loan_uninit()
 
-    assert ctypes.sizeof(t) == ctypes.sizeof(
-        sample_uninit.__payload_type_details
-    )
-    assert ctypes.alignment(t) == ctypes.alignment(
-        sample_uninit.__payload_type_details
-    )
+    assert ctypes.sizeof(t) == ctypes.sizeof(sample_uninit.__payload_type_details)
+    assert ctypes.alignment(t) == ctypes.alignment(sample_uninit.__payload_type_details)
 
     ctypes.memmove(sample_uninit.payload_ptr, ctypes.byref(t), ctypes.sizeof(t))
     sample = sample_uninit.assume_init()
@@ -136,9 +130,7 @@ def loan_uninit(self: Publisher) -> SampleMutUninit:
     return self.__loan_uninit()
 
 
-def loan_slice_uninit(
-    self: Publisher, number_of_elements: int
-) -> SampleMutUninit:
+def loan_slice_uninit(self: Publisher, number_of_elements: int) -> SampleMutUninit:
     """
     Loans/allocates a `SampleMutUninit` from the underlying data segment of the `Publisher`.
 

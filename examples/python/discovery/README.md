@@ -8,25 +8,19 @@ action.
 
 ## How to Build
 
-Before proceeding, all dependencies need to be installed. You can find
-the detailed instructions in the [Python Examples Readme](../README.md).
-
-First you have to create a python environment, install maturin and compile
-iceoryx2 and the language bindings:
+Before proceeding, a virtual environment with all dependencies needs to be
+created. You can find the detailed instructions in the
+[Python Examples Readme](../README.md).
 
 ```sh
-# create python development environment
-# needs to be called only once
-python -m venv .env
+poetry --project iceoryx2-ffi/python install
+```
 
-# enter environment
-source .env/bin/activate # or source .env/bin/activate.fish
+Then, the iceoryx2 python bindings can be built and installed into the virtual
+environment:
 
-# install maturin
-pip install maturin
-
-# compile language bindings
-maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml
+```sh
+poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml --target-dir target/ffi/python
 ```
 
 ## How to Run
@@ -37,19 +31,19 @@ the following commands:
 ### Terminal 1
 
 ```sh
-python examples/python/event/listener.py
+poetry --project iceoryx2-ffi/python run python examples/python/event/listener.py
 ```
 
 ### Terminal 2
 
 ```sh
-python examples/python/publish_subscribe/publisher.py
+poetry --project iceoryx2-ffi/python run python examples/python/publish_subscribe/publisher.py
 ```
 
 Once these services are running, you can call the following command:
 
 ```sh
-python examples/python/discovery/discovery.py
+poetry --project iceoryx2-ffi/python run python examples/python/discovery/discovery.py
 ```
 
 This will display the static service details of both the event and the

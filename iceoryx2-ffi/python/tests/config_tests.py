@@ -10,9 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 
 def test_global_root_path_can_be_set() -> None:
@@ -122,9 +121,7 @@ def test_global_node_cleanup_dead_nodes_on_creation_can_be_set() -> None:
     assert not sut.global_cfg.node.cleanup_dead_nodes_on_creation
 
 
-def test_defaults_request_response_safe_overflow_for_requests_can_be_set() -> (
-    None
-):
+def test_defaults_request_response_safe_overflow_for_requests_can_be_set() -> None:
     sut = iox2.config.default()
     sut.defaults.request_response.enable_safe_overflow_for_requests = False
     assert not sut.defaults.request_response.enable_safe_overflow_for_requests
@@ -132,9 +129,7 @@ def test_defaults_request_response_safe_overflow_for_requests_can_be_set() -> (
     assert sut.defaults.request_response.enable_safe_overflow_for_requests
 
 
-def test_defaults_request_response_safe_overflow_for_responses_can_be_set() -> (
-    None
-):
+def test_defaults_request_response_safe_overflow_for_responses_can_be_set() -> None:
     sut = iox2.config.default()
     sut.defaults.request_response.enable_safe_overflow_for_responses = False
     assert not sut.defaults.request_response.enable_safe_overflow_for_responses
@@ -142,18 +137,14 @@ def test_defaults_request_response_safe_overflow_for_responses_can_be_set() -> (
     assert sut.defaults.request_response.enable_safe_overflow_for_responses
 
 
-def test_defaults_request_response_max_active_requests_per_client_can_be_set() -> (
-    None
-):
+def test_defaults_request_response_max_active_requests_per_client_can_be_set() -> None:
     sut = iox2.config.default()
     value = 912
     sut.defaults.request_response.max_active_requests_per_client = value
     assert sut.defaults.request_response.max_active_requests_per_client == value
 
 
-def test_defaults_request_response_max_response_buffer_size_can_be_set() -> (
-    None
-):
+def test_defaults_request_response_max_response_buffer_size_can_be_set() -> None:
     sut = iox2.config.default()
     value = 281
     sut.defaults.request_response.max_response_buffer_size = value
@@ -186,9 +177,7 @@ def test_defaults_request_response_max_borrowed_responses_per_pending_response_c
 ):
     sut = iox2.config.default()
     value = 23
-    sut.defaults.request_response.max_borrowed_responses_per_pending_response = (
-        value
-    )
+    sut.defaults.request_response.max_borrowed_responses_per_pending_response = value
     assert (
         sut.defaults.request_response.max_borrowed_responses_per_pending_response
         == value
@@ -207,12 +196,9 @@ def test_defaults_request_response_server_max_loaned_responses_per_request_can_b
 ):
     sut = iox2.config.default()
     value = 56
-    sut.defaults.request_response.server_max_loaned_responses_per_request = (
-        value
-    )
+    sut.defaults.request_response.server_max_loaned_responses_per_request = value
     assert (
-        sut.defaults.request_response.server_max_loaned_responses_per_request
-        == value
+        sut.defaults.request_response.server_max_loaned_responses_per_request == value
     )
 
 
@@ -262,9 +248,7 @@ def test_defaults_request_response_client_expired_connection_buffer_can_be_set()
     sut = iox2.config.default()
     value = 78
     sut.defaults.request_response.client_expired_connection_buffer = value
-    assert (
-        sut.defaults.request_response.client_expired_connection_buffer == value
-    )
+    assert sut.defaults.request_response.client_expired_connection_buffer == value
 
 
 def test_defaults_request_response_server_expired_connection_buffer_can_be_set() -> (
@@ -273,14 +257,10 @@ def test_defaults_request_response_server_expired_connection_buffer_can_be_set()
     sut = iox2.config.default()
     value = 213
     sut.defaults.request_response.server_expired_connection_buffer = value
-    assert (
-        sut.defaults.request_response.server_expired_connection_buffer == value
-    )
+    assert sut.defaults.request_response.server_expired_connection_buffer == value
 
 
-def test_defaults_request_response_enable_fire_and_forget_requests_can_be_set() -> (
-    None
-):
+def test_defaults_request_response_enable_fire_and_forget_requests_can_be_set() -> None:
     sut = iox2.config.default()
     sut.defaults.request_response.enable_fire_and_forget_requests = True
     assert sut.defaults.request_response.enable_fire_and_forget_requests
@@ -374,9 +354,7 @@ def test_defaults_publish_subscribe_max_nodes_can_be_set() -> None:
     assert sut.defaults.publish_subscribe.max_nodes == value
 
 
-def test_defaults_publish_subscribe_subscriber_max_buffer_size_can_be_set() -> (
-    None
-):
+def test_defaults_publish_subscribe_subscriber_max_buffer_size_can_be_set() -> None:
     sut = iox2.config.default()
     value = 9918
     sut.defaults.publish_subscribe.subscriber_max_buffer_size = value
@@ -389,14 +367,10 @@ def test_defaults_publish_subscribe_subscriber_max_borrowed_samples_can_be_set()
     sut = iox2.config.default()
     value = 23786
     sut.defaults.publish_subscribe.subscriber_max_borrowed_samples = value
-    assert (
-        sut.defaults.publish_subscribe.subscriber_max_borrowed_samples == value
-    )
+    assert sut.defaults.publish_subscribe.subscriber_max_borrowed_samples == value
 
 
-def test_defaults_publish_subscribe_publisher_max_loaned_samples_can_be_set() -> (
-    None
-):
+def test_defaults_publish_subscribe_publisher_max_loaned_samples_can_be_set() -> None:
     sut = iox2.config.default()
     value = 182
     sut.defaults.publish_subscribe.publisher_max_loaned_samples = value
@@ -418,9 +392,7 @@ def test_defaults_publish_subscribe_enable_safe_overflow_can_be_set() -> None:
     assert not sut.defaults.publish_subscribe.enable_safe_overflow
 
 
-def test_defaults_publish_subscribe_unable_to_deliver_strategy_can_be_set() -> (
-    None
-):
+def test_defaults_publish_subscribe_unable_to_deliver_strategy_can_be_set() -> None:
     sut = iox2.config.default()
     sut.defaults.publish_subscribe.unable_to_deliver_strategy = (
         iox2.UnableToDeliverStrategy.Block
@@ -444,7 +416,4 @@ def test_defaults_publish_subscribe_subscriber_expired_connection_buffer_can_be_
     sut = iox2.config.default()
     value = 56273
     sut.defaults.publish_subscribe.subscriber_expired_connection_buffer = value
-    assert (
-        sut.defaults.publish_subscribe.subscriber_expired_connection_buffer
-        == value
-    )
+    assert sut.defaults.publish_subscribe.subscriber_expired_connection_buffer == value

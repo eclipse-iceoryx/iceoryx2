@@ -12,10 +12,9 @@
 
 """Publisher example."""
 
+import iceoryx2 as iox2
 from custom_header import CustomHeader
 from transmission_data import TransmissionData
-
-import iceoryx2 as iox2
 
 cycle_time = iox2.Duration.from_secs(1)
 

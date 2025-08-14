@@ -10,9 +10,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-import pytest
-
 import iceoryx2 as iox2
+import pytest
 
 
 def test_file_path_can_be_constructed() -> None:

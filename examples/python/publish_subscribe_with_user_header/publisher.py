@@ -14,9 +14,8 @@
 
 import ctypes
 
-from custom_header import CustomHeader
-
 import iceoryx2 as iox2
+from custom_header import CustomHeader
 
 cycle_time = iox2.Duration.from_secs(1)
 
