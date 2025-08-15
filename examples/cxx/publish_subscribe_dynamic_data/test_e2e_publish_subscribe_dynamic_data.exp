@@ -22,10 +22,10 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_publisher
+spawn target/ff/cc/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_publisher
 set id_publisher $spawn_id
 
-spawn target/ffi/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_subscriber
+spawn target/ff/cc/build/examples/cxx/publish_subscribe_dynamic_data/example_cxx_publish_subscribe_dyn_subscriber
 
 #### Test Assertion
 

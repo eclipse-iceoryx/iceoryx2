@@ -12,7 +12,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-set(ICEORYX_HOOFS_VERSION 2.95.6)
+set(ICEORYX_HOOFS_VERSION 2.95.7)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/fetch-iceoryx-hoofs.cmake)
 
 project(iceoryx2-cxx VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)

@@ -55,14 +55,14 @@ instructions in the [C++ Examples Readme](../README.md).
 First you have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON
+cmake --build target/ff/cc/build
 ```
 
 ### How To Run
 
 ```sh
-./target/ffi/build/examples/cxx/service_types/example_cxx_service_types_local_pubsub
+./target/ff/cc/build/examples/cxx/service_types/example_cxx_service_types_local_pubsub
 ```
 
 Since all services are confined to the process:
@@ -88,13 +88,13 @@ also listens for messages.
 #### Terminal 1
 
 ```sh
-./target/ffi/build/examples/cxx/service_types/example_cxx_service_types_ipc_publisher
+./target/ff/cc/build/examples/cxx/service_types/example_cxx_service_types_ipc_publisher
 ```
 
 #### Terminal 2
 
 ```sh
-./target/ffi/build/examples/cxx/service_types/example_cxx_service_types_ipc_threadsafe_subscriber
+./target/ff/cc/build/examples/cxx/service_types/example_cxx_service_types_ipc_threadsafe_subscriber
 ```
 
 After starting both:

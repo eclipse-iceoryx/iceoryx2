@@ -22,7 +22,7 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/build/examples/cxx/complex_data_types/example_cxx_complex_data_types
+spawn target/ff/cc/build/examples/cxx/complex_data_types/example_cxx_complex_data_types
 
 #### Test Assertion
 

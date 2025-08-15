@@ -21,7 +21,7 @@ $ErrorActionPreference = "Stop"
 
 $NUM_JOBS = (Get-WmiObject Win32_processor).NumberOfLogicalProcessors
 
-git clone --depth 1 --branch v2.95.6 https://github.com/eclipse-iceoryx/iceoryx.git target/iceoryx/src
+git clone --depth 1 --branch v2.95.7 https://github.com/eclipse-iceoryx/iceoryx.git target/ff/iceoryx/src
 
 switch ($mode) {
     "release" {
@@ -37,27 +37,27 @@ switch ($mode) {
 switch ($toolchain) {
     "stable-gnu" {
         if ($?) { Write-Host "## Using the MinGW toolchain" }
-        if ($?) { cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -G "MinGW Makefiles" }
+        if ($?) { cmake -S target/ff/iceoryx/src/iceoryx_platform -B target/ff/iceoryx/build/platform -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install -G "MinGW Makefiles" }
     }
     default {
         if ($?) { Write-Host "## Using the MSVC toolchain" }
-        if ($?) { cmake -S target/iceoryx/src/iceoryx_platform -B target/iceoryx/build/platform -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_CXX_FLAGS="/MP" }
+        if ($?) { cmake -S target/ff/iceoryx/src/iceoryx_platform -B target/ff/iceoryx/build/platform -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install -DCMAKE_CXX_FLAGS="/MP" }
     }
 }
 
 if ($?) { Write-Host "## Building and installing iceoryx_platform with $NUM_JOBS cores" }
-if ($?) { cmake --build target/iceoryx/build/platform $CMAKE_BUILD_CONFIG -j $NUM_JOBS }
-if ($?) { cmake --install target/iceoryx/build/platform $CMAKE_BUILD_CONFIG }
+if ($?) { cmake --build target/ff/iceoryx/build/platform $CMAKE_BUILD_CONFIG -j $NUM_JOBS }
+if ($?) { cmake --install target/ff/iceoryx/build/platform $CMAKE_BUILD_CONFIG }
 
 switch ($toolchain) {
     "stable-gnu" {
-        if ($?) { cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$pwd/target/iceoryx/install" -G "MinGW Makefiles" -DIOX_USE_HOOFS_SUBSET_ONLY=ON }
+        if ($?) { cmake -S target/ff/iceoryx/src/iceoryx_hoofs -B target/ff/iceoryx/build/hoofs -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install -DCMAKE_PREFIX_PATH="$pwd/target/ff/iceoryx/install" -G "MinGW Makefiles" -DIOX_USE_HOOFS_SUBSET_ONLY=ON }
     }
     default {
-        if ($?) { cmake -S target/iceoryx/src/iceoryx_hoofs -B target/iceoryx/build/hoofs -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/iceoryx/install -DCMAKE_PREFIX_PATH="$pwd/target/iceoryx/install" -DCMAKE_CXX_FLAGS="/MP" -DIOX_USE_HOOFS_SUBSET_ONLY=ON }
+        if ($?) { cmake -S target/ff/iceoryx/src/iceoryx_hoofs -B target/ff/iceoryx/build/hoofs -DBUILD_SHARED_LIBS=OFF $CMAKE_BUILD_TYPE -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install -DCMAKE_PREFIX_PATH="$pwd/target/ff/iceoryx/install" -DCMAKE_CXX_FLAGS="/MP" -DIOX_USE_HOOFS_SUBSET_ONLY=ON }
     }
 }
 
 if ($?) { Write-Host "## Building and installing iceoryx_hoofs with $NUM_JOBS cores" }
-if ($?) { cmake --build target/iceoryx/build/hoofs $CMAKE_BUILD_CONFIG -j $NUM_JOBS }
-if ($?) { cmake --install target/iceoryx/build/hoofs $CMAKE_BUILD_CONFIG }
+if ($?) { cmake --build target/ff/iceoryx/build/hoofs $CMAKE_BUILD_CONFIG -j $NUM_JOBS }
+if ($?) { cmake --install target/ff/iceoryx/build/hoofs $CMAKE_BUILD_CONFIG }

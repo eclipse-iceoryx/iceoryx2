@@ -16,7 +16,7 @@ cross build --target aarch64-unknown-linux-gnu --release --package iceoryx2-ffi
 Run the following at the repo root:
 
 ```bash
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=target/ffi/install -DBUILD_CXX_BINDING=OFF -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/aarch64-unknown-linux-gnu/release"
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DBUILD_CXX_BINDING=OFF -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/aarch64-unknown-linux-gnu/release"
 ```
 
 ## Build C examples
@@ -59,7 +59,7 @@ The following directories vary depending on your system:
 `CMAKE_TOOLCHAIN_FILE` - Point to where `cross-example.cmake` is
 located in your system
 
-`CMAKE_PREFIX_PATH` - Point to where the `target/ffi/install` is
+`CMAKE_PREFIX_PATH` - Point to where the `target/ff/cc/install` is
 located within the cloned repo, just use an absolute path for your system
 
 `iceoryx2-c_DIR` - Forces cmake to look for the iceoryx2-C headers
@@ -68,8 +68,8 @@ located within the cloned repo, just use an absolute path for your system
 cmake -S examples/c/publish_subscribe \
   -B target/out-of-tree/examples/c/publish_subscribe \
   -DCMAKE_TOOLCHAIN_FILE="/full/path/to/.../cross-example.cmake" \
-  -DCMAKE_PREFIX_PATH="/full/path/to/.../iceoryx2/target/ffi/install" \
-  -Diceoryx2-c_DIR="/full/path/to/.../iceoryx2/target/ffi/install/lib/cmake/iceoryx2-c" \
+  -DCMAKE_PREFIX_PATH="/full/path/to/.../iceoryx2/target/ff/cc/install" \
+  -Diceoryx2-c_DIR="/full/path/to/.../iceoryx2/target/ff/cc/install/lib/cmake/iceoryx2-c" \
   -DCMAKE_FIND_DEBUG_MODE=ON
 ```
 

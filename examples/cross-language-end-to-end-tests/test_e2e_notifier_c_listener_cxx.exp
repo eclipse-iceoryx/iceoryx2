@@ -22,10 +22,10 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/build/examples/c/event/example_c_event_notifier
+spawn target/ff/cc/build/examples/c/event/example_c_event_notifier
 set id_notifier $spawn_id
 
-spawn target/ffi/build/examples/cxx/event/example_cxx_event_listener
+spawn target/ff/cc/build/examples/cxx/event/example_cxx_event_listener
 
 #### Test Assertion
 

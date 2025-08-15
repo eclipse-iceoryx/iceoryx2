@@ -49,7 +49,7 @@ python-source = "python-src"
 bindings = "pyo3"
 module-name = "iceoryx2._iceoryx2"
 manifest-path = "Cargo.toml"
-target-dir = "../../target/ffi/python"
+target-dir = "../../target/ff/python"
 
 [tool.poetry]
 packages = [{include = "iceoryx2", from = "python-src"}]
@@ -72,7 +72,7 @@ poethepoet = { version = "~0.35.0", extras = ["poetry_plugin"]}
 poetry_command = ""
 
 [tool.poe.tasks.build-into-venv]
-shell = "maturin develop --manifest-path Cargo.toml --target-dir ../../target/ffi/python"
+shell = "maturin develop --manifest-path Cargo.toml --target-dir ../../target/ff/python"
 
 [tool.poe.tasks.check-imports]
 sequence = [

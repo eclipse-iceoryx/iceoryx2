@@ -25,8 +25,8 @@ instructions in the [C Examples Readme](../README.md).
 First you have to build the C examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
-cmake --build target/ffi/build
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
+cmake --build target/ff/cc/build
 ```
 
 ## How to Run
@@ -38,19 +38,19 @@ notified with event ID `456`.
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/c/event_multiplexing/example_c_event_multiplexing_wait fuu bar
+./target/ff/cc/build/examples/c/event_multiplexing/example_c_event_multiplexing_wait fuu bar
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 123 fuu
+./target/ff/cc/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 123 fuu
 ```
 
 ### Terminal 3
 
 ```sh
-./target/ffi/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 456 bar
+./target/ff/cc/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 456 bar
 ```
 
 Feel free to instantiate multiple notifiers for the same service with the same

@@ -17,8 +17,8 @@ instructions in the [C++ Examples Readme](../README.md).
 First you have to build the C++ examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON
-cmake --build target/ffi/build
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON
+cmake --build target/ff/cc/build
 ```
 
 ## How to Run
@@ -29,13 +29,13 @@ commands:
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/cxx/event/example_cxx_event_listener
+./target/ff/cc/build/examples/cxx/event/example_cxx_event_listener
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/cxx/event/example_cxx_event_notifier
+./target/ff/cc/build/examples/cxx/event/example_cxx_event_notifier
 ```
 
 Feel free to run multiple listeners or notifiers concurrently to observe how

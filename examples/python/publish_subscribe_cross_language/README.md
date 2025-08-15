@@ -37,7 +37,7 @@ Then, the iceoryx2 python bindings can be built and installed into the virtual
 environment:
 
 ```sh
-poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml --target-dir target/ffi/python
+poetry --project iceoryx2-ffi/python run maturin develop --manifest-path iceoryx2-ffi/python/Cargo.toml --target-dir target/ff/python
 ```
 
 ## How to Run

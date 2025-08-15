@@ -24,8 +24,8 @@ instructions in the [C Examples Readme](../README.md).
 First you have to build the C examples:
 
 ```sh
-cmake -S . -B target/ffi/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
-cmake --build target/ffi/build
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
+cmake --build target/ff/cc/build
 ```
 
 ## How to Run
@@ -36,13 +36,13 @@ execute the following commands:
 ### Terminal 1
 
 ```sh
-./target/ffi/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_subscriber
+./target/ff/cc/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_subscriber
 ```
 
 ### Terminal 2
 
 ```sh
-./target/ffi/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_publisher
+./target/ff/cc/build/examples/c/publish_subscribe_with_user_header/example_c_with_user_header_publisher
 ```
 
 Feel free to run multiple instances of the publisher or subscriber processes

@@ -22,13 +22,13 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ffi/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 42 hypnotoad
+spawn target/ff/cc/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 42 hypnotoad
 set id_notifier_1 $spawn_id
 
-spawn target/ffi/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 13 brainslug
+spawn target/ff/cc/build/examples/c/event_multiplexing/example_c_event_multiplexing_notifier 13 brainslug
 set id_notifier_2 $spawn_id
 
-spawn target/ffi/build/examples/c/event_multiplexing/example_c_event_multiplexing_wait hypnotoad brainslug
+spawn target/ff/cc/build/examples/c/event_multiplexing/example_c_event_multiplexing_wait hypnotoad brainslug
 
 #### Test Assertion
 
