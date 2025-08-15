@@ -48,7 +48,7 @@ set(DESTINATION_DATAROOTDIR ${CMAKE_INSTALL_DATAROOTDIR})
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     ${PACKAGE_VERSION_FILE}
-    VERSION ${IOX2_VERSION_STRING}
+    VERSION ${IOX2_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
 configure_package_config_file(

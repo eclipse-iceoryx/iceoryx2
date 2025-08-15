@@ -14,3 +14,5 @@ if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED)
     message(STATUS "The package '${CMAKE_FIND_PACKAGE_NAME}' is used in source code version.")
     set(${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED true CACHE INTERNAL "")
 endif()
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})

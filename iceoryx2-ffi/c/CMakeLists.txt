@@ -12,141 +12,23 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/common.cmake)
-if(NOT DEFINED IOX2_VERSION_STRING OR IOX2_VERSION_STRING STREQUAL "")
-    message(FATAL_ERROR 
-        "IOX2_VERSION_STRING is not defined!\n"
-    )
-endif()
-
-project(iceoryx2-c VERSION ${IOX2_VERSION_STRING} LANGUAGES C)
+set(IOX2_VERSION 0.6.1)
+project(iceoryx2-c VERSION ${IOX2_VERSION} LANGUAGES C)
 
 set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-message(STATUS "Building iceoryx2 C binding")
-message(STATUS "iceoryx2 options:")
+find_package(iceoryx2-cmake-modules REQUIRED)
+include(Iceoryx2OptionAndParamMacros)
 
-#
-########## CMake Options ##########
-#
+include(Iceoryx2CommonOptionsAndParams)
+include(cmake/options.cmake)
 
-add_option(
-    NAME BUILD_TESTING
-    DESCRIPTION "Build tests"
-    DEFAULT_VALUE OFF
-)
-
-add_option(
-    NAME SANITIZERS
-    DESCRIPTION "Build with undefined-behavior- and address-sanitizer"
-    DEFAULT_VALUE OFF
-)
-
-add_option(
-    NAME WARNING_AS_ERROR
-    DESCRIPTION "Fails if the compiler emits a warning"
-    DEFAULT_VALUE OFF
-)
-
-##### Rust Params #####
-add_param(
-    NAME RUST_BUILD_ARTIFACT_PATH
-    DESCRIPTION "The path to the folder with the Rust build artifacts"
-    DEFAULT_VALUE ""
-)
-
-add_param(
-    NAME RUST_TARGET_TRIPLET
-    DESCRIPTION "The target triplet for cross compilation"
-    DEFAULT_VALUE ""
-)
-
-message(STATUS "iceoryx2 Rust feature flags:")
+include(Iceoryx2PlatformSettings)
 
 #
-########## Rust Feature Flags ##########
+########## Rust Target and Artifacts ##########
 #
-
-add_rust_feature(
-    NAME IOX2_FEATURE_DEV_PERMISSIONS
-    DESCRIPTION "Set permissions to read, write, execute for everyone"
-    DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2/dev_permissions"
-)
-
-add_rust_feature(
-    NAME IOX2_FEATURE_LIBC_PLATFORM
-    DESCRIPTION "A platform abstraction based on the libc crate"
-    DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2/libc_platform"
-)
-
-add_rust_feature(
-    NAME IOX2_FEATURE_LOGGER_LOG
-    DESCRIPTION "Enables https://crates.io/crates/log as default logger"
-    DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2/logger_log"
-)
-
-add_rust_feature(
-    NAME IOX2_FEATURE_LOGGER_TRACING
-    DESCRIPTION "Enables https://crates.io/crates/tracing as default logger"
-    DEFAULT_VALUE OFF
-    RUST_FEATURE "iceoryx2/logger_tracing"
-)
-
-#
-########## Apply Compiler Flags ##########
-#
-
-if(WARNING_AS_ERROR)
-    if(WIN32)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-    else()
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -Wpedantic")
-    endif()
-endif()
-
-if(SANITIZERS)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=undefined")
-endif()
-
-#
-########## Rust Target ##########
-#
-
-set(USE_CARGO FALSE)
-if("${RUST_BUILD_ARTIFACT_PATH}" STREQUAL "")
-    set(USE_CARGO TRUE)
-endif()
-
-if(${USE_CARGO})
-    message(WARNING "\
-#############################################################
-Using cargo to build the Rust part of iceoryx2.
-This is fine for development but for production, it is
-recommended to use an existing installation with
-'-DRUST_BUILD_ARTIFACT_PATH=/full/path/to/iceoryx2/target/release'!
-#############################################################
-")
-
-    set(RUST_BUILD_TYPE "release")
-    set(RUST_BUILD_TYPE_FLAG "--${RUST_BUILD_TYPE}")
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(RUST_BUILD_TYPE "debug")
-        set(RUST_BUILD_TYPE_FLAG "")
-    endif()
-
-    if("${RUST_TARGET_TRIPLET}" STREQUAL "")
-        set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust/native)
-        set(RUST_BUILD_ARTIFACT_PATH ${CMAKE_BINARY_DIR}/rust/native/${RUST_BUILD_TYPE})
-        set(RUST_TARGET_TRIPLET_FLAG "")
-    else()
-        set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
-        set(RUST_BUILD_ARTIFACT_PATH ${CMAKE_BINARY_DIR}/rust/${RUST_TARGET_TRIPLET}/${RUST_BUILD_TYPE})
-        set(RUST_TARGET_TRIPLET_FLAG "--target=${RUST_TARGET_TRIPLET}")
-    endif()
-endif()
 
 set(ICEORYX2_C_INCLUDE_DIR ${RUST_BUILD_ARTIFACT_PATH}/iceoryx2-ffi-cbindgen/include)
 
@@ -176,14 +58,7 @@ if(WIN32)
     list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_SHARED_LIB_DLL_FILE})
 endif()
 
-set(RUST_FEATURE_FLAGS "")
-list(LENGTH IOX2_RUST_FEATURES IOX2_RUST_FEATURES_COUNT)
-if(IOX2_RUST_FEATURES_COUNT GREATER 0)
-    list(JOIN IOX2_RUST_FEATURES "," RUST_FEATURE_FLAGS_STRING)
-    set(RUST_FEATURE_FLAGS "--features=${RUST_FEATURE_FLAGS_STRING}")
-endif()
-
-if(${USE_CARGO})
+if(${IOX2_INTERNAL_USE_CARGO})
     # run cargo
     add_custom_target(
         iceoryx2-build-step ALL
@@ -254,6 +129,6 @@ target_link_libraries(shared-lib INTERFACE
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
 # Tests
-if(BUILD_TESTING)
+if(${BUILD_TESTING})
     add_subdirectory(tests)
 endif()
