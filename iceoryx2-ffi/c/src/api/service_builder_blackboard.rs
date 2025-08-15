@@ -534,21 +534,23 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
         key,
         value_type_details: type_details.clone(),
         value_writer: Box::new(move |raw_memory_ptr: *mut u8| {
-            let atomic_mgmt_alignment_offset =
-                raw_memory_ptr.align_offset(align_of::<UnrestrictedAtomicMgmt>());
-            let atomic_mgmt_ptr: *mut UnrestrictedAtomicMgmt =
-                raw_memory_ptr.add(atomic_mgmt_alignment_offset).cast();
-            atomic_mgmt_ptr.write(UnrestrictedAtomicMgmt::new());
-            let payload_ptr =
-                atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
-            let payload_ptr = align(payload_ptr, type_align);
+            let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(raw_memory_ptr, type_align);
             // TODO: how to realize add_with_default? -> only be solvable on C++ side
-            core::ptr::copy_nonoverlapping(value_ptr, payload_ptr as *mut c_void, type_size);
+            core::ptr::copy_nonoverlapping(value_ptr, ptrs.1 as *mut c_void, type_size);
             release_callback(value_ptr);
             // TODO: what happens on failure, who releases it?
         }),
-        internal_value_size: align(core::mem::size_of::<UnrestrictedAtomicMgmt>(), type_align)
-            + type_size,
+        // TODO: *2? it's 2 write cells...
+        // internal_value_size: align(
+        //     core::mem::size_of::<UnrestrictedAtomicMgmt>(),
+        //     type_details.alignment,
+        // ) + type_details.size,
+        // internal_value_alignment: max(
+        //     core::mem::align_of::<UnrestrictedAtomicMgmt>(),
+        //     type_details.alignment,
+        // ),
+        internal_value_size: 2 * (align(type_size, type_align))
+            + align(core::mem::size_of::<UnrestrictedAtomicMgmt>(), type_align),
         internal_value_alignment: max(core::mem::align_of::<UnrestrictedAtomicMgmt>(), type_align),
     };
 
@@ -886,6 +888,23 @@ unsafe fn iox2_service_builder_blackboard_create_impl<E: IntoCInt>(
     }
 
     IOX2_OK
+}
+
+#[doc(hidden)]
+pub(crate) fn __internal_calculate_atomic_mgmt_and_payload_ptr(
+    raw_memory_ptr: *mut u8,
+    value_alignment: usize,
+) -> (*mut u8, *mut u8) {
+    let atomic_mgmt_alignment_offset =
+        raw_memory_ptr.align_offset(align_of::<UnrestrictedAtomicMgmt>().max(value_alignment));
+    let atomic_mgmt_ptr: *mut UnrestrictedAtomicMgmt =
+        unsafe { raw_memory_ptr.add(atomic_mgmt_alignment_offset).cast() };
+    unsafe { atomic_mgmt_ptr.write(UnrestrictedAtomicMgmt::new()) };
+
+    let payload_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
+    let payload_ptr = align(payload_ptr, value_alignment);
+
+    (atomic_mgmt_ptr as *mut u8, payload_ptr as *mut u8)
 }
 
 // TODO: check handles in documentation

@@ -40,7 +40,6 @@ class EntryValueUninit {
 
     /// Discard the [`EntryValueUninit`] and returns the original [`EntryHandleMut`].
     template <ServiceType ST, typename KeyT, typename ValueT>
-    // friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&& self);
     friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
 
   private:

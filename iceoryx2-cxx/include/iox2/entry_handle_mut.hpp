@@ -94,9 +94,11 @@ inline EntryHandleMut<S, KeyType, ValueType>::~EntryHandleMut() noexcept {
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline void EntryHandleMut<S, KeyType, ValueType>::update_with_copy([[maybe_unused]] ValueType value) {
-    IOX_TODO();
+inline void EntryHandleMut<S, KeyType, ValueType>::update_with_copy(ValueType value) {
     // only C++, not C
+    auto value_ptr = new ValueType(value);
+    iox2_entry_handle_mut_update_with_copy(&m_handle, value_ptr, sizeof(ValueType), alignof(ValueType));
+    delete value_ptr;
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>

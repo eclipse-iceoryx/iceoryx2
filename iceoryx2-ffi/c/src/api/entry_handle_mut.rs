@@ -173,6 +173,49 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_loan_uninit(
     }
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn iox2_entry_handle_mut_update_with_copy(
+    entry_handle_mut_handle: iox2_entry_handle_mut_h_ref,
+    value_ptr: *mut c_void,
+    value_size: usize,
+    value_alignment: usize,
+) {
+    entry_handle_mut_handle.assert_non_null();
+    debug_assert!(!value_ptr.is_null());
+
+    let entry_handle_mut = &mut *entry_handle_mut_handle.as_type();
+
+    let data_cell_ptr = match entry_handle_mut.service_type {
+        iox2_service_type_e::IPC => entry_handle_mut
+            .value
+            .as_ref()
+            .ipc
+            .__internal_get_ptr_to_write_cell(value_size, value_alignment),
+        iox2_service_type_e::LOCAL => entry_handle_mut
+            .value
+            .as_ref()
+            .local
+            .__internal_get_ptr_to_write_cell(value_size, value_alignment),
+    };
+    let v = *(value_ptr as *mut u8);
+    println!("value_ptr C = {}", v);
+    println!("entry handle mut, *data_cell_ptr = {}", *data_cell_ptr);
+    core::ptr::copy_nonoverlapping(value_ptr.cast(), data_cell_ptr, value_size);
+    println!("entry handle mut, *data_cell_ptr = {}", *data_cell_ptr);
+    match entry_handle_mut.service_type {
+        iox2_service_type_e::IPC => entry_handle_mut
+            .value
+            .as_ref()
+            .ipc
+            .__internal_update_write_cell(),
+        iox2_service_type_e::LOCAL => entry_handle_mut
+            .value
+            .as_ref()
+            .local
+            .__internal_update_write_cell(),
+    }
+}
+
 // TODO: entry_id
 
 // TODO: loan_uninit consumes entry_handle_mut, so no drop? what happens when loan_uninit was never

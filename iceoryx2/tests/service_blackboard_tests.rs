@@ -651,15 +651,13 @@ mod service_blackboard {
             readers.push(sut.reader_builder().create().unwrap());
         }
 
-        let mut counter = 0;
-        for _ in 0..NUMBER_OF_ITERATIONS {
+        for counter in 0..NUMBER_OF_ITERATIONS {
             writer_handle.update_with_copy(counter);
 
             for reader in &readers {
                 let reader_handle = reader.entry::<u64>(&0).unwrap();
                 assert_that!(reader_handle.get(), eq counter);
             }
-            counter += 1;
         }
     }
 
@@ -807,7 +805,7 @@ mod service_blackboard {
             ReaderCreateError::ExceedsMaxSupportedReaders
         );
 
-        // remove a reader and the writer
+        // remove one reader and the writer
         drop(writer);
         assert_that!(readers.remove(0), is_ok);
 

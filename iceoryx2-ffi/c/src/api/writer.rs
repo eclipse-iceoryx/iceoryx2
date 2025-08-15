@@ -261,7 +261,7 @@ pub unsafe extern "C" fn iox2_writer_entry(
         iox2_service_type_e::LOCAL => match writer
             .value
             .as_ref()
-            .ipc
+            .local
             .__internal_entry(&key, &value_type_details)
         {
             Ok(handle) => {

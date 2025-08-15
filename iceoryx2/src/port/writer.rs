@@ -458,8 +458,6 @@ impl<Service: service::Service> __InternalWriterHandle<Service> {
         }
     }
 
-    pub fn update_with_copy(&self) {}
-
     pub fn loan_uninit(
         self,
         value_size: usize,
@@ -468,6 +466,23 @@ impl<Service: service::Service> __InternalWriterHandle<Service> {
         __InternalEntryValueUninit::new(self, value_size, value_alignment)
     }
 
+    pub unsafe fn __internal_get_ptr_to_write_cell(
+        &self,
+        value_size: usize,
+        value_alignment: usize,
+    ) -> *mut u8 {
+        unsafe {
+            (*self.atomic_mgmt_ptr).__internal_get_ptr_to_write_cell(
+                value_size,
+                value_alignment,
+                self.data_ptr,
+            )
+        }
+    }
+
+    pub unsafe fn __internal_update_write_cell(&self) {
+        unsafe { (*self.atomic_mgmt_ptr).__internal_update_write_cell() };
+    }
     // TODO: entry_id
 }
 
@@ -565,7 +580,7 @@ impl<
 // TODO: test on Rust side
 #[doc(hidden)]
 pub struct __InternalEntryValueUninit<Service: service::Service> {
-    ptr: *mut u8,
+    write_cell_ptr: *mut u8,
     writer_handle: __InternalWriterHandle<Service>,
 }
 
@@ -575,18 +590,21 @@ impl<Service: service::Service> __InternalEntryValueUninit<Service> {
         value_size: usize,
         value_alignment: usize,
     ) -> Self {
-        let ptr = unsafe {
+        let write_cell_ptr = unsafe {
             (*writer_handle.atomic_mgmt_ptr).__internal_get_ptr_to_write_cell(
                 value_size,
                 value_alignment,
                 writer_handle.data_ptr,
             )
         };
-        Self { ptr, writer_handle }
+        Self {
+            write_cell_ptr,
+            writer_handle,
+        }
     }
 
     pub fn write_cell(&self) -> *mut u8 {
-        self.ptr
+        self.write_cell_ptr
     }
 
     pub fn update(self) -> __InternalWriterHandle<Service> {
