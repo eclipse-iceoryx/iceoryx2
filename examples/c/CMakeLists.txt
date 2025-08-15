@@ -13,6 +13,15 @@
 cmake_minimum_required(VERSION 3.22)
 project(examples_c LANGUAGES C)
 
+find_package(iceoryx2-cmake-modules REQUIRED)
+
+include(Iceoryx2PlatformSettings)
+
+string(JOIN " " ICEORYX2_C_FLAGS_STRING ${ICEORYX2_C_FLAGS})
+string(JOIN " " ICEORYX2_C_WARNINGS_STRING ${ICEORYX2_C_WARNINGS})
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ICEORYX2_C_FLAGS_STRING} ${ICEORYX2_C_WARNINGS_STRING}")
+
 add_subdirectory(discovery)
 add_subdirectory(domains)
 add_subdirectory(event)

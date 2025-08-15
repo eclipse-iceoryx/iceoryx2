@@ -12,80 +12,23 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/common.cmake)
-if(NOT DEFINED IOX2_VERSION_STRING OR IOX2_VERSION_STRING STREQUAL "")
-    message(FATAL_ERROR 
-        "IOX2_VERSION_STRING is not defined!\n"
-    )
-endif()
-
-project(iceoryx2-cxx VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
+set(ICEORYX_HOOFS_VERSION 2.95.7)
+set(IOX2_VERSION 0.6.1)
+project(iceoryx2-cxx VERSION ${IOX2_VERSION} LANGUAGES CXX)
 
 set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(ICEORYX_HOOFS_VERSION 2.95.7)
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/fetch-iceoryx-hoofs.cmake)
-
-message(STATUS "Building iceoryx2 C++ binding")
-message(STATUS "iceoryx2 options:")
-
-#
-########## CMake Options ##########
-#
-
-add_option(
-    NAME BUILD_TESTING
-    DESCRIPTION "Build tests"
-    DEFAULT_VALUE OFF
-)
-
-add_option(
-    NAME SANITIZERS
-    DESCRIPTION "Build with undefined-behavior- and address-sanitizer"
-    DEFAULT_VALUE OFF
-)
-
-add_option(
-    NAME WARNING_AS_ERROR
-    DESCRIPTION "Fails if the compiler emits a warning"
-    DEFAULT_VALUE OFF
-)
-
-if(WARNING_AS_ERROR)
-    if(WIN32)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -Wpedantic")
-    endif()
-endif()
-
-if(SANITIZERS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined")
-endif()
-
 find_package(iceoryx_hoofs ${ICEORYX_HOOFS_VERSION} REQUIRED)
 find_package(iceoryx2-c REQUIRED)
 
-if(NOT iceoryx2-c_FOUND)
-    message(FATAL_ERROR 
-        "iceoryx2-c binding not found!\n"
-        "\n"
-        "The C++ binding requires the C binding to be installed first.\n"
-        "Please build and install the C binding:\n"
-        "\n"
-        "  cmake -B build-c iceoryx2-ffi/c [options...]\n"
-        "  cmake --build build-c\n"
-        "  cmake --install build-c --prefix /path/to/install\n"
-        "\n"
-        "Then add the install location to CMAKE_PREFIX_PATH:\n"
-        "  cmake -B build-cxx iceoryx2-ffi/cxx -DCMAKE_PREFIX_PATH=/path/to/install\n"
-        "\n"
-        "Or set CMAKE_PREFIX_PATH environment variable before running cmake."
-    )
-endif()
+find_package(iceoryx2-cmake-modules REQUIRED)
+include(Iceoryx2OptionAndParamMacros)
 
-message(STATUS "Found iceoryx2-c: ${iceoryx2-c_DIR}")
+include(Iceoryx2CommonOptionsAndParams)
+include(cmake/options.cmake)
+
+include(Iceoryx2PlatformSettings)
 
 # include only lib -> includes are installed only once despite being used in static lib as well as shared lib
 
@@ -146,10 +89,11 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/writer_details.cpp
 )
 
+target_compile_options(iceoryx2-cxx-object-lib PRIVATE ${ICEORYX2_CXX_FLAGS} ${ICEORYX2_CXX_WARNINGS})
+target_compile_features(iceoryx2-cxx-object-lib PRIVATE ${ICEORYX2_CXX_STD})
+
 set_target_properties(iceoryx2-cxx-object-lib
     PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
 )
 

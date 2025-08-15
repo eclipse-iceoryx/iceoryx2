@@ -37,11 +37,14 @@ cargo build --release --package iceoryx2-ffi
 Then install the CMake package a discoverable location:
 
 ```bash
+cmake -S iceoryx2-cmake-modules -B target/ff/cmake-modules/build
+cmake --install target/ff/cmake-modules/build --prefix target/ff/cc/install
+
 cmake -S iceoryx2-ffi/c -B target/ff/c/build \
-      -DCMAKE_INSTALL_PREFIX=target/ff/c/install \
-      -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
+      -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release" \
+      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/c/build
-cmake --install target/ff/c/build
+cmake --install target/ff/c/build --prefix target/ff/cc/install
 ```
 
 ### Build and install `iceoryx_hoofs`
@@ -53,17 +56,15 @@ the CMake packages at a discoverable location:
 git clone --depth 1 --branch v2.95.7 https://github.com/eclipse-iceoryx/iceoryx.git target/ff/iceoryx/src
 
 cmake -S target/ff/iceoryx/src/iceoryx_platform -B target/ff/iceoryx/build/platform \
-      -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install \
       -DCMAKE_BUILD_TYPE=Release
 cmake --build target/ff/iceoryx/build/platform
-cmake --install target/ff/iceoryx/build/platform
+cmake --install target/ff/iceoryx/build/platform --prefix target/ff/cc/install
 
 cmake -S target/ff/iceoryx/src/iceoryx_hoofs -B target/ff/iceoryx/build/hoofs \
-      -DCMAKE_INSTALL_PREFIX=target/ff/iceoryx/install \
-      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/iceoryx/install" \
+      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install" \
       -DCMAKE_BUILD_TYPE=Release
 cmake --build target/ff/iceoryx/build/hoofs
-cmake --install target/ff/iceoryx/build/hoofs
+cmake --install target/ff/iceoryx/build/hoofs --prefix target/ff/cc/install
 ```
 
 ### Putting it together
@@ -74,10 +75,9 @@ custom projects.
 
 ```bash
 cmake -S iceoryx2-ffi/cxx -B target/ff/cxx/build \
-      -DCMAKE_INSTALL_PREFIX=target/ff/cxx/install \
-      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/iceoryx/install;$( pwd )/target/ff/c/install"
+      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/cxx/build
-cmake --install target/ff/cxx/build
+cmake --install target/ff/cxx/build --prefix target/ff/cc/install
 ```
 
 The installed libraries can the be used for out-of-tree builds of the example or
@@ -85,6 +85,6 @@ custom C++ projects. This are the required steps:
 
 ```bash
 cmake -S examples/cxx -B target/ff/out-of-tree/examples/cxx \
-      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/iceoryx/install;$( pwd )/target/ff/c/install;$( pwd )/target/ff/cxx/install"
+      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/out-of-tree/examples/cxx
 ```

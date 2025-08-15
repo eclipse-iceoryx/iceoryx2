@@ -12,11 +12,17 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-project(iceoryx2-bb-cxx-tests VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
-
-include(cmake/googletest.cmake)
+project(iceoryx2-bb-cxx-tests VERSION ${IOX2_VERSION} LANGUAGES CXX)
 
 find_package(iceoryx2-bb-cxx REQUIRED)
+
+find_package(iceoryx2-cmake-modules REQUIRED)
+
+include(Iceoryx2TestOptionsAndParams)
+
+include(Iceoryx2PlatformSettings)
+
+include(Iceoryx2GTest)
 
 add_executable(iceoryx2-bb-containers-tests ${TEST_FILES})
 target_sources(iceoryx2-bb-containers-tests
@@ -25,8 +31,8 @@ target_sources(iceoryx2-bb-containers-tests
 )
 
 target_link_libraries(iceoryx2-bb-containers-tests iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx GTest::gtest GTest::gmock)
-target_compile_options(iceoryx2-bb-containers-tests PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
-target_compile_features(iceoryx2-bb-containers-tests PRIVATE cxx_std_14)
+target_compile_options(iceoryx2-bb-containers-tests PRIVATE ${ICEORYX2_TEST_CXX_FLAGS} ${ICEORYX2_CXX_WARNINGS})
+target_compile_features(iceoryx2-bb-containers-tests PRIVATE ${ICEORYX2_CXX_STD})
 
 set_target_properties(iceoryx2-bb-containers-tests PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests"

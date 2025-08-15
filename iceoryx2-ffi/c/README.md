@@ -14,7 +14,7 @@ This is the most simple way to build the C bindings for `iceoryx2`, which
 utilizes cargo to build the Rust part of iceoryx2.
 
 If only the C bindings should be build, without the C++ bindings, the
-`-DBUILD_CXX_BINDING=OFF` cmake parameter can be used.
+`-DBUILD_CXX=OFF` cmake parameter can be used.
 
 ## Build instructions for integrator
 
@@ -24,9 +24,15 @@ In the repository root folder, execute this steps:
 
 ```bash
 cargo build --release --package iceoryx2-ffi
-cmake -S iceoryx2-ffi/c -B target/ff/c/build -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release"
+
+cmake -S iceoryx2-cmake-modules -B target/ff/cmake-modules/build
+cmake --install target/ff/cmake-modules/build --prefix target/ff/cc/install
+
+cmake -S iceoryx2-ffi/c -B target/ff/c/build \
+      -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release" \
+      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/c/build
-cmake --install target/ff/c/build --prefix target/ff/c/install
+cmake --install target/ff/c/build --prefix target/ff/cc/install
 ```
 
 > [!NOTE]
@@ -37,6 +43,7 @@ The installed libraries can the be used for out-of-tree builds of the example or
 custom C projects. This are the required steps:
 
 ```bash
-cmake -S examples/c -B target/ff/out-of-tree/examples/c -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/c/install"
+cmake -S examples/c -B target/ff/out-of-tree/examples/c \
+      -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/out-of-tree/examples/c
 ```
