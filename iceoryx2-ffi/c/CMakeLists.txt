@@ -11,46 +11,24 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
-project(iceoryx2-c VERSION ${IOX2_VERSION_STRING} LANGUAGES C)
+
+set(IOX2_VERSION 0.6.1)
+project(iceoryx2-c VERSION ${IOX2_VERSION} LANGUAGES C)
 
 set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+find_package(iceoryx2-cmake-modules REQUIRED)
+include(Iceoryx2OptionAndParamMacros)
+
+include(Iceoryx2CommonOptionsAndParams)
+include(cmake/options.cmake)
+
+include(Iceoryx2PlatformSettings)
 
 #
-########## Rust target ##########
+########## Rust Target and Artifacts ##########
 #
-
-set(USE_CARGO FALSE)
-if("${RUST_BUILD_ARTIFACT_PATH}" STREQUAL "")
-    set(USE_CARGO TRUE)
-endif()
-
-if(${USE_CARGO})
-    message(WARNING "\
-#############################################################
-Using cargo to build the Rust part of iceoryx2.
-This is fine for development but for production, it is
-recommended to use an existing installation with
-'-DRUST_BUILD_ARTIFACT_PATH=/full/path/to/iceoryx2/target/release'!
-#############################################################
-")
-
-    set(RUST_BUILD_TYPE "release")
-    set(RUST_BUILD_TYPE_FLAG "--${RUST_BUILD_TYPE}")
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(RUST_BUILD_TYPE "debug")
-        set(RUST_BUILD_TYPE_FLAG "")
-    endif()
-
-    if("${RUST_TARGET_TRIPLET}" STREQUAL "")
-        set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust/native)
-        set(RUST_BUILD_ARTIFACT_PATH ${CMAKE_BINARY_DIR}/rust/native/${RUST_BUILD_TYPE})
-        set(RUST_TARGET_TRIPLET_FLAG "")
-    else()
-        set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
-        set(RUST_BUILD_ARTIFACT_PATH ${CMAKE_BINARY_DIR}/rust/${RUST_TARGET_TRIPLET}/${RUST_BUILD_TYPE})
-        set(RUST_TARGET_TRIPLET_FLAG "--target=${RUST_TARGET_TRIPLET}")
-    endif()
-endif()
 
 set(ICEORYX2_C_INCLUDE_DIR ${RUST_BUILD_ARTIFACT_PATH}/iceoryx2-ffi-cbindgen/include)
 
@@ -80,14 +58,7 @@ if(WIN32)
     list(APPEND ICEORYX2_C_LIB_ARTIFACTS ${ICEORYX2_C_SHARED_LIB_DLL_FILE})
 endif()
 
-set(RUST_FEATURE_FLAGS "")
-list(LENGTH IOX2_RUST_FEATURES IOX2_RUST_FEATURES_COUNT)
-if(IOX2_RUST_FEATURES_COUNT GREATER 0)
-    list(JOIN IOX2_RUST_FEATURES "," RUST_FEATURE_FLAGS_STRING)
-    set(RUST_FEATURE_FLAGS "--features=${RUST_FEATURE_FLAGS_STRING}")
-endif()
-
-if(${USE_CARGO})
+if(${IOX2_INTERNAL_USE_CARGO})
     # run cargo
     add_custom_target(
         iceoryx2-build-step ALL
@@ -157,6 +128,7 @@ target_link_libraries(shared-lib INTERFACE
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
+# Tests
 if(${BUILD_TESTING})
     add_subdirectory(tests)
 endif()

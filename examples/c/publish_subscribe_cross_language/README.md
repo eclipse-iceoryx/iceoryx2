@@ -26,7 +26,7 @@ When you want to run the C publisher and subscriber applications, you first have
 to build the C examples:
 
 ```sh
-cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_CXX_BINDING=OFF
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_CXX=OFF
 cmake --build target/ff/cc/build
 ```
 

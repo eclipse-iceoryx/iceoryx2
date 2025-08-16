@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -10,9 +10,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED)
-    message(STATUS "The package '${CMAKE_FIND_PACKAGE_NAME}' is used in source code version.")
-    set(${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED true CACHE INTERNAL "")
-endif()
+if(NOT ICEORYX2_CXX_OPTIONS_AND_PARAMS_LISTED)
+    set(ICEORYX2_CXX_OPTIONS_AND_PARAMS_LISTED true)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+    # NOTE: uncomment the lines below to add C++ binding specific options
+
+    # message(STATUS "[i] iceoryx2-cxx options:")
+    #
+    # add_option(
+    #     NAME HYPNOTOAD
+    #     DESCRIPTION "Enables hypnotoad"
+    #     DEFAULT_VALUE ON
+    # )
+
+endif()

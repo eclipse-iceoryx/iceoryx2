@@ -13,14 +13,22 @@
 cmake_minimum_required(VERSION 3.22)
 
 set(ICEORYX_HOOFS_VERSION 2.95.7)
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/fetch-iceoryx-hoofs.cmake)
-
-project(iceoryx2-cxx VERSION ${IOX2_VERSION_STRING} LANGUAGES CXX)
+set(IOX2_VERSION 0.6.1)
+project(iceoryx2-cxx VERSION ${IOX2_VERSION} LANGUAGES CXX)
 
 set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(iceoryx_hoofs ${ICEORYX_HOOFS_VERSION} REQUIRED)
 find_package(iceoryx2-c REQUIRED)
+
+find_package(iceoryx2-cmake-modules REQUIRED)
+include(Iceoryx2OptionAndParamMacros)
+
+include(Iceoryx2CommonOptionsAndParams)
+include(cmake/options.cmake)
+
+include(Iceoryx2PlatformSettings)
 
 # include only lib -> includes are installed only once despite being used in static lib as well as shared lib
 
@@ -29,7 +37,7 @@ add_library(iceoryx2-cxx::includes-only-cxx ALIAS includes-only-cxx)
 
 target_include_directories(includes-only-cxx
     INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include/${PREFIX}>
 )
 
@@ -81,10 +89,11 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/writer_details.cpp
 )
 
+target_compile_options(iceoryx2-cxx-object-lib PRIVATE ${ICEORYX2_CXX_FLAGS} ${ICEORYX2_CXX_WARNINGS})
+target_compile_features(iceoryx2-cxx-object-lib PRIVATE ${ICEORYX2_CXX_STD})
+
 set_target_properties(iceoryx2-cxx-object-lib
     PROPERTIES
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
 )
 
@@ -137,9 +146,8 @@ target_link_libraries(shared-lib-cxx
 
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
-# add tests
-
-if(BUILD_TESTING)
+# Tests
+if(${BUILD_TESTING})
     enable_testing()
     add_subdirectory(tests)
 endif()
