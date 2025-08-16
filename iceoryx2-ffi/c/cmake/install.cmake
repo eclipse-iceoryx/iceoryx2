@@ -10,8 +10,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-# NOTE the file is included in '../CMakeLists.txt' and therefore all paths based on 'CMAKE_CURRENT_SOURCE_DIR' must be relative to '../'
-
 #
 ########## find_package in source tree ##########
 #
@@ -87,7 +85,7 @@ install(
 
 # license
 install(
-    FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSE-APACHE  ${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSE-MIT
+    FILES ${PROJECT_SOURCE_DIR}/../../LICENSE-APACHE  ${PROJECT_SOURCE_DIR}/../../LICENSE-MIT
     DESTINATION ${DESTINATION_DATAROOTDIR}/doc/${PROJECT_NAME}
     COMPONENT dev
 )
