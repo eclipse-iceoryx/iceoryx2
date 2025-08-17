@@ -22,9 +22,7 @@ add_subdirectory(iceoryx2-cmake-modules)
 find_package(iceoryx2-cmake-modules REQUIRED)
 include(Iceoryx2OptionAndParamMacros)
 
-#
-########## Helper macro to define Rust feature flags when iceoryx2 is build via cmake ##########
-#
+# BEGIN Helper macro to define Rust feature flags when iceoryx2 is build via cmake
 
 set(IOX2_RUST_FEATURES "")
 macro(add_rust_feature)
@@ -38,6 +36,11 @@ macro(add_rust_feature)
         list(APPEND IOX2_RUST_FEATURES ${ADD_RUST_FEATURE_RUST_FEATURE})
     endif()
 endmacro()
+
+# END Helper macro to define Rust feature flags when iceoryx2 is build via cmake
+
+
+# BEGIN Options, Params and Feature Flags
 
 message(STATUS "[i] iceoryx2 dev setup options and params:")
 
@@ -89,6 +92,9 @@ add_rust_feature(
     RUST_FEATURE "iceoryx2/logger_tracing"
 )
 
+# END Options, Params and Feature Flags
+
+
 include(Iceoryx2CommonOptionsAndParams)
 include(iceoryx2-bb/cxx/cmake/options.cmake)
 include(iceoryx2-ffi/c/cmake/options.cmake)
@@ -99,11 +105,12 @@ if(BUILD_TESTING)
     enable_testing()
 endif()
 
-if(RUST_BUILD_ARTIFACT_PATH AND NOT "${RUST_BUILD_ARTIFACT_PATH}" STREQUAL "" )
-    set(IOX2_INTERNAL_USE_CARGO FALSE)
-else()
-    set(IOX2_INTERNAL_USE_CARGO TRUE)
 
+# BEGIN C binding
+
+if(RUST_BUILD_ARTIFACT_PATH AND NOT "${RUST_BUILD_ARTIFACT_PATH}" STREQUAL "" )
+    add_subdirectory(iceoryx2-ffi/c)
+else()
     message(WARNING
         "Using cargo to build the Rust part of iceoryx2. "
         "This is fine for development but for production, it is "
@@ -134,14 +141,35 @@ else()
         list(JOIN IOX2_RUST_FEATURES "," RUST_FEATURE_FLAGS_STRING)
         set(RUST_FEATURE_FLAGS "--features=${RUST_FEATURE_FLAGS_STRING}")
     endif()
+
+    include(iceoryx2-ffi/c/cmake/rust-ffi-c-byproduct-definitions.cmake)
+
+    # run cargo
+    add_custom_target(
+        iceoryx2-ffi-build-step ALL
+        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
+        BYPRODUCTS
+            ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
+            ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
+            ${ICEORYX2_C_SHARED_LIB_LINK_FILE}
+            ${ICEORYX2_C_SHARED_LIB_DLL_FILE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        VERBATIM
+        USES_TERMINAL
+    )
+
+    add_subdirectory(iceoryx2-ffi/c)
+
+    add_dependencies(includes-only iceoryx2-ffi-build-step)
 endif()
 
-# C binding
-add_subdirectory(iceoryx2-ffi/c)
+# END C binding
+
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples/c)
 endif()
+
 
 if(BUILD_CXX)
     # C++ containers
