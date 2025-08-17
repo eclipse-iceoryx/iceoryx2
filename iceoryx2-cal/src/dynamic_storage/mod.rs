@@ -64,7 +64,8 @@ use tiny_fn::tiny_fn;
 use crate::static_storage::file::{NamedConcept, NamedConceptBuilder, NamedConceptMgmt};
 
 tiny_fn! {
-    pub(crate) struct Initializer<T> = FnMut(value: &mut T, allocator: &mut BumpAllocator) -> bool;
+    /// The callback called to initialize the data inside the [`DynamicStorage`]
+    pub struct Initializer<T> = FnMut(value: &mut T, allocator: &mut BumpAllocator) -> bool;
 }
 
 impl<T> Debug for Initializer<'_, T> {

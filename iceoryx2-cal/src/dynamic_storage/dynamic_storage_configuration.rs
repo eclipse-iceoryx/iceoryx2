@@ -17,7 +17,7 @@ use crate::{
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_system_types::{file_name::*, file_path::FilePath, path::Path};
 
-pub(crate) trait DynamicStorageConfiguration: NamedConceptConfiguration {
+pub trait DynamicStorageConfiguration: NamedConceptConfiguration {
     fn type_name(&self) -> &str;
 
     fn path_for_with_type(&self, value: &FileName) -> FilePath {
