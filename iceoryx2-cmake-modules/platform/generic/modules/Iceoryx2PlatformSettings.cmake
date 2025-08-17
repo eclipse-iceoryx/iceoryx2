@@ -35,8 +35,9 @@ if(WARNING_AS_ERROR)
     set(ICEORYX2_CXX_WARNINGS   ${ICEORYX2_CXX_WARNINGS} -Werror CACHE INTERNAL "")
 endif()
 
-# TODO: differentiate between address and thread sanitizer
 if(SANITIZERS)
-    set(ICEORYX2_CXX_FLAGS      "${ICEORYX2_CXX_FLAGS} -fsanitize=address -fsanitize=undefined" CACHE INTERNAL "")
-    set(ICEORYX2_TEST_CXX_FLAGS "${ICEORYX2_TEST_CXX_FLAGS} -fsanitize=address -fsanitize=undefined" CACHE INTERNAL "")
+    include(Iceoryx2Sanitizer)
+
+    set(ICEORYX2_CXX_FLAGS      "${ICEORYX2_CXX_FLAGS} ${ICEORYX2_SANITZER_FLAGS}" CACHE INTERNAL "")
+    set(ICEORYX2_TEST_CXX_FLAGS "${ICEORYX2_TEST_CXX_FLAGS} ${ICEORYX2_SANITZER_FLAGS}" CACHE INTERNAL "")
 endif()
