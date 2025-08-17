@@ -16,6 +16,6 @@ if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
-# relative paths are fine here, since this file is used for in source tree builds
+# NOTE: leaving the list dir is fine here, since this file is used for in source tree builds
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../modules)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../platform/${IOX2_INTERNAL_MODULE_PLATFORM_ID}/modules)

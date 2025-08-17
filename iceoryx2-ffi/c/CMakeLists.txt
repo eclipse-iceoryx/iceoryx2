@@ -68,6 +68,7 @@ if(${IOX2_INTERNAL_USE_CARGO})
             ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
             ${ICEORYX2_C_SHARED_LIB_LINK_FILE}
             ${ICEORYX2_C_SHARED_LIB_DLL_FILE}
+        # NOTE: leaving the list dir is fine here, since the is only used in combination with the main CMakeLists.txt
         WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/../..
         VERBATIM
         USES_TERMINAL
