@@ -209,6 +209,7 @@ pub unsafe extern "C" fn iox2_port_factory_reader_builder_create(
                     (*reader_struct_ptr).init(service_type, ReaderUnion::new_ipc(reader), deleter);
                 }
                 Err(error) => {
+                    deleter(reader_struct_ptr);
                     return error.into_c_int();
                 }
             }
@@ -225,6 +226,7 @@ pub unsafe extern "C" fn iox2_port_factory_reader_builder_create(
                     );
                 }
                 Err(error) => {
+                    deleter(reader_struct_ptr);
                     return error.into_c_int();
                 }
             }

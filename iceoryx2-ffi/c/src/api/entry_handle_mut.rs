@@ -198,10 +198,7 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_update_with_copy(
             .__internal_get_ptr_to_write_cell(value_size, value_alignment),
     };
     let v = *(value_ptr as *mut u8);
-    println!("value_ptr C = {}", v);
-    println!("entry handle mut, *data_cell_ptr = {}", *data_cell_ptr);
     core::ptr::copy_nonoverlapping(value_ptr.cast(), data_cell_ptr, value_size);
-    println!("entry handle mut, *data_cell_ptr = {}", *data_cell_ptr);
     match entry_handle_mut.service_type {
         iox2_service_type_e::IPC => entry_handle_mut
             .value
@@ -218,13 +215,10 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_update_with_copy(
 
 // TODO: entry_id
 
-// TODO: loan_uninit consumes entry_handle_mut, so no drop? what happens when loan_uninit was never
-// called?
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_mut_drop(
     entry_handle_mut_handle: iox2_entry_handle_mut_h,
 ) {
-    println!("iox2_entry_handle_mut_drop");
     entry_handle_mut_handle.assert_non_null();
 
     let entry_handle_mut = &mut *entry_handle_mut_handle.as_type();
@@ -235,16 +229,13 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_drop(
                 ManuallyDrop::drop(&mut handle.ipc);
                 (entry_handle_mut.deleter)(entry_handle_mut);
             }
-            //ManuallyDrop::drop(&mut entry_handle_mut.value.as_mut().ipc);
         }
         iox2_service_type_e::LOCAL => {
-            //ManuallyDrop::drop(&mut entry_handle_mut.value.as_mut().local);
             if let Some(mut handle) = entry_handle_mut.take() {
                 ManuallyDrop::drop(&mut handle.local);
                 (entry_handle_mut.deleter)(entry_handle_mut);
             }
         }
     }
-    //(entry_handle_mut.deleter)(entry_handle_mut);
 }
 // END C API

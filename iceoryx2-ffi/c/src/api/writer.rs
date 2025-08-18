@@ -294,7 +294,6 @@ pub unsafe extern "C" fn iox2_writer_entry(
 ///   [`iox2_port_factory_writer_builder_create`](crate::iox2_port_factory_writer_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_writer_drop(writer_handle: iox2_writer_h) {
-    println!("iox2_writer_drop");
     writer_handle.assert_non_null();
 
     let writer = &mut *writer_handle.as_type();

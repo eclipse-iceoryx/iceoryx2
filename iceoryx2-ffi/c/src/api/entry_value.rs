@@ -159,11 +159,6 @@ pub unsafe extern "C" fn iox2_entry_value_mut(
         iox2_service_type_e::IPC => entry_value.value.as_ref().ipc.write_cell().cast(),
         iox2_service_type_e::LOCAL => entry_value.value.as_ref().local.write_cell().cast(),
     };
-    if value_ptr.is_null() {
-        println!("value_ptr = nullptr");
-    } else {
-        println!("value_ptr != nullptr");
-    }
 }
 
 #[no_mangle]
@@ -293,7 +288,6 @@ pub unsafe extern "C" fn iox2_entry_value_discard(
 // TODO: documentation
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_value_drop(entry_value_handle: iox2_entry_value_h) {
-    println!("iox2_entry_value_drop");
     entry_value_handle.assert_non_null();
 
     let entry_value = &mut *entry_value_handle.as_type();

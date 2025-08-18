@@ -65,6 +65,12 @@ class EntryValue {
 
     void drop();
 
+    auto take_handle_ownership() -> iox2_entry_value_h {
+        auto* result = m_handle;
+        m_handle = nullptr;
+        return result;
+    }
+
     iox2_entry_value_t m_entry_value;
     iox2_entry_value_h m_handle = nullptr;
 };
@@ -102,7 +108,7 @@ template <ServiceType S, typename KeyType, typename ValueType>
 inline auto update(EntryValue<S, KeyType, ValueType>&& self) -> EntryHandleMut<S, KeyType, ValueType> {
     iox2_entry_handle_mut_h entry_handle_mut_handle = nullptr;
 
-    iox2_entry_value_update(self.m_handle, nullptr, &entry_handle_mut_handle);
+    iox2_entry_value_update(self.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
 
     EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
     return std::move(entry_handle_mut);
@@ -112,7 +118,7 @@ template <ServiceType S, typename KeyType, typename ValueType>
 inline auto discard(EntryValue<S, KeyType, ValueType>&& self) -> EntryHandleMut<S, KeyType, ValueType> {
     iox2_entry_handle_mut_h entry_handle_mut_handle = nullptr;
 
-    iox2_entry_value_discard(self.m_handle, nullptr, &entry_handle_mut_handle);
+    iox2_entry_value_discard(self.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
 
     EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
     return std::move(entry_handle_mut);
@@ -122,10 +128,6 @@ template <ServiceType S, typename KeyType, typename ValueType>
 inline auto EntryValue<S, KeyType, ValueType>::value_mut() -> ValueType& {
     void* value_ptr = nullptr;
     iox2_entry_value_mut(&m_handle, &value_ptr);
-    if (value_ptr == nullptr) {
-        std::cout << "OHA" << std::endl;
-    }
-    std::cout << "C++ value_ptr = " << value_ptr << std::endl;
     return *static_cast<ValueType*>(value_ptr);
 }
 

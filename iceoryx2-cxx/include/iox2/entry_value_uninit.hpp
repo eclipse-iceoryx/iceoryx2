@@ -60,7 +60,6 @@ class EntryValueUninit {
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto write(EntryValueUninit<S, KeyType, ValueType>&& self, ValueType value)
     -> EntryValue<S, KeyType, ValueType> {
-    std::cout << "write" << std::endl;
     new (&self.m_entry_value.value_mut()) ValueType(std::forward<ValueType>(value));
     return std::move(self.m_entry_value);
 }
@@ -69,7 +68,7 @@ template <ServiceType S, typename KeyType, typename ValueType>
 inline auto discard(EntryValueUninit<S, KeyType, ValueType>&& self) -> EntryHandleMut<S, KeyType, ValueType> {
     iox2_entry_handle_mut_h entry_handle_mut_handle = nullptr;
 
-    iox2_entry_value_discard(self.m_entry_value.m_handle, nullptr, &entry_handle_mut_handle);
+    iox2_entry_value_discard(self.m_entry_value.take_handle_ownership(), nullptr, &entry_handle_mut_handle);
 
     EntryHandleMut<S, KeyType, ValueType> entry_handle_mut(entry_handle_mut_handle);
     return std::move(entry_handle_mut);

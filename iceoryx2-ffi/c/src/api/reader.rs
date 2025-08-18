@@ -290,7 +290,6 @@ pub unsafe extern "C" fn iox2_reader_entry(
 ///   [`iox2_port_factory_reader_builder_create`](crate::iox2_port_factory_reader_builder_create)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_reader_drop(reader_handle: iox2_reader_h) {
-    println!("iox2_reader_drop");
     reader_handle.assert_non_null();
 
     let reader = &mut *reader_handle.as_type();

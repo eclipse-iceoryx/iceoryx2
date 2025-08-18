@@ -1199,7 +1199,7 @@ TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_can_still_write_after_writer_
     ASSERT_THAT(reader.template entry<uint8_t>(0).expect("").get(), Eq(1));
 }
 
-TYPED_TEST(ServiceBlackboardTest, reader_handle_can_still_read_after_reader_was_dropped) {
+TYPED_TEST(ServiceBlackboardTest, entry_handle_can_still_read_after_reader_was_dropped) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();

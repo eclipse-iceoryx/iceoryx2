@@ -145,7 +145,6 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
 // TODO: documentation
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_drop(entry_handle_handle: iox2_entry_handle_h) {
-    println!("iox2_entry_handle_drop");
     entry_handle_handle.assert_non_null();
 
     let entry_handle = &mut *entry_handle_handle.as_type();

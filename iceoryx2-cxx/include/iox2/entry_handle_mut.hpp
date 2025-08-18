@@ -14,6 +14,7 @@
 #define IOX2_ENTRY_HANDLE_MUT_HPP
 
 #include "iox/assertions_addendum.hpp"
+#include "iox2/entry_value.hpp"
 #include "iox2/entry_value_uninit.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/service_type.hpp"
@@ -62,6 +63,12 @@ class EntryHandleMut {
     explicit EntryHandleMut(iox2_entry_handle_mut_h handle);
     void drop();
 
+    auto take_handle_ownership() -> iox2_entry_handle_mut_h {
+        auto* result = m_handle;
+        m_handle = nullptr;
+        return result;
+    }
+
     iox2_entry_handle_mut_h m_handle = nullptr;
     // EntryValueUninit<S, KeyType, ValueType> m_entry_value_uninit;
 };
@@ -89,7 +96,6 @@ inline auto EntryHandleMut<S, KeyType, ValueType>::operator=(EntryHandleMut&& rh
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline EntryHandleMut<S, KeyType, ValueType>::~EntryHandleMut() noexcept {
-    std::cout << "~EntryHandleMut" << std::endl;
     drop();
 }
 
@@ -106,7 +112,7 @@ inline auto loan_uninit(EntryHandleMut<S, KeyType, ValueType>&& self) -> EntryVa
     // C++ and C
     EntryValueUninit<S, KeyType, ValueType> entry_value_uninit;
 
-    iox2_entry_handle_mut_loan_uninit(self.m_handle,
+    iox2_entry_handle_mut_loan_uninit(self.take_handle_ownership(),
                                       &entry_value_uninit.m_entry_value.m_entry_value,
                                       &entry_value_uninit.m_entry_value.m_handle,
                                       sizeof(ValueType),
@@ -122,11 +128,6 @@ inline auto EntryHandleMut<S, KeyType, ValueType>::entry_id() const -> EventId {
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline void EntryHandleMut<S, KeyType, ValueType>::drop() {
-    if (m_handle == nullptr) {
-        std::cout << "EntryHandleMut::drop(), m_handle == nullptr" << std::endl;
-    } else {
-        std::cout << "EntryHandleMut::drop(), m_handle != nullptr" << std::endl;
-    }
     if (m_handle != nullptr) {
         iox2_entry_handle_mut_drop(m_handle);
         m_handle = nullptr;
