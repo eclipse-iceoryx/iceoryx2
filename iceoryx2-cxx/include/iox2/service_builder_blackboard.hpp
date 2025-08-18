@@ -143,8 +143,11 @@ inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueT
         value_ptr,
         [](void* value) {
             auto* value_ptr = static_cast<ValueType*>(value);
-            // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
-            delete value_ptr;
+            if (value_ptr != nullptr) {
+                // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
+                delete value_ptr;
+                value_ptr = nullptr;
+            }
         },
         type_name,
         strlen(type_name),

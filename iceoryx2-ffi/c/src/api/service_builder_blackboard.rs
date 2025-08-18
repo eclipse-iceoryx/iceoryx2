@@ -537,8 +537,6 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
             let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(raw_memory_ptr, type_align);
             // TODO: how to realize add_with_default? -> only be solvable on C++ side
             core::ptr::copy_nonoverlapping(value_ptr, ptrs.1 as *mut c_void, type_size);
-            release_callback(value_ptr);
-            // TODO: what happens on failure, who releases it?
         }),
         // TODO: *2? it's 2 write cells...
         // internal_value_size: align(
@@ -552,6 +550,9 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
         internal_value_size: 2 * (align(type_size, type_align))
             + align(core::mem::size_of::<UnrestrictedAtomicMgmt>(), type_align),
         internal_value_alignment: max(core::mem::align_of::<UnrestrictedAtomicMgmt>(), type_align),
+        internal_value_cleanup_callback: Box::new(move || {
+            release_callback(value_ptr);
+        }),
     };
 
     let service_builder_struct = unsafe { &mut *service_builder_handle.as_type() };

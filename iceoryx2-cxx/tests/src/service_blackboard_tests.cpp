@@ -131,14 +131,14 @@ TYPED_TEST(ServiceBlackboardTest, creating_existing_service_fails) {
                    .template add_with_default<uint64_t>(0)
                    .create()
                    .expect("");
-    // TODO: see TODO in iox2_service_builder_blackboard_creator_add
-    // auto sut_2 = node.service_builder(service_name)
-    //.template blackboard_creator<uint64_t>()
-    //.template add_with_default<uint64_t>(0)
-    //.create();
 
-    // ASSERT_TRUE(sut_2.has_error());
-    // ASSERT_THAT(sut_2.error(), Eq(BlackboardCreateError::AlreadyExists));
+    auto sut_2 = node.service_builder(service_name)
+                     .template blackboard_creator<uint64_t>()
+                     .template add_with_default<uint64_t>(0)
+                     .create();
+
+    ASSERT_TRUE(sut_2.has_error());
+    ASSERT_THAT(sut_2.error(), Eq(BlackboardCreateError::AlreadyExists));
 }
 
 TYPED_TEST(ServiceBlackboardTest, creating_fails_when_no_key_value_pairs_are_provided) {
@@ -980,22 +980,21 @@ TYPED_TEST(ServiceBlackboardTest, ports_of_dropped_service_block_new_service_cre
 
     service.reset();
 
-    // TODO: enable after cleanup in create is done
-    // auto sut1 = node.service_builder(service_name)
-    //                 .template blackboard_creator<uint64_t>()
-    //                 .template add_with_default<uint8_t>(0)
-    //                 .create();
-    // ASSERT_TRUE(sut1.has_error());
-    // ASSERT_THAT(sut1.error(), Eq(BlackboardCreateError::AlreadyExists));
+    auto sut1 = node.service_builder(service_name)
+                    .template blackboard_creator<uint64_t>()
+                    .template add_with_default<uint8_t>(0)
+                    .create();
+    ASSERT_TRUE(sut1.has_error());
+    ASSERT_THAT(sut1.error(), Eq(BlackboardCreateError::AlreadyExists));
 
     reader.reset();
 
-    // auto sut2 = node.service_builder(service_name)
-    //                 .template blackboard_creator<uint64_t>()
-    //                 .template add_with_default<uint8_t>(0)
-    //                 .create();
-    // ASSERT_TRUE(sut2.has_error());
-    // ASSERT_THAT(sut2.error(), Eq(BlackboardCreateError::AlreadyExists));
+    auto sut2 = node.service_builder(service_name)
+                    .template blackboard_creator<uint64_t>()
+                    .template add_with_default<uint8_t>(0)
+                    .create();
+    ASSERT_TRUE(sut2.has_error());
+    ASSERT_THAT(sut2.error(), Eq(BlackboardCreateError::AlreadyExists));
 
     writer.reset();
 
@@ -1030,13 +1029,12 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_writer) 
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().expect(""));
     opener1.reset();
 
-    // TODO: enable after cleanup in create is done
-    // auto failing_creator = node.service_builder(service_name)
-    //                            .template blackboard_creator<uint64_t>()
-    //                            .template add_with_default<uint64_t>(0)
-    //                            .create();
-    // ASSERT_TRUE(failing_creator.has_error());
-    // ASSERT_THAT(failing_creator.error(), Eq(BlackboardCreateError::AlreadyExists));
+    auto failing_creator = node.service_builder(service_name)
+                               .template blackboard_creator<uint64_t>()
+                               .template add_with_default<uint64_t>(0)
+                               .create();
+    ASSERT_TRUE(failing_creator.has_error());
+    ASSERT_THAT(failing_creator.error(), Eq(BlackboardCreateError::AlreadyExists));
     reader.reset();
 
     auto opener2 = iox::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
@@ -1087,13 +1085,12 @@ TYPED_TEST(ServiceBlackboardTest, service_can_be_opened_when_there_is_a_reader) 
         node.service_builder(service_name).template blackboard_opener<uint64_t>().open().expect(""));
     opener1.reset();
 
-    // TODO: enable after cleanup in create is done
-    // auto failing_creator = node.service_builder(service_name)
-    //                            .template blackboard_creator<uint64_t>()
-    //                            .template add_with_default<uint64_t>(0)
-    //                            .create();
-    // ASSERT_TRUE(failing_creator.has_error());
-    // ASSERT_THAT(failing_creator.error(), Eq(BlackboardCreateError::AlreadyExists));
+    auto failing_creator = node.service_builder(service_name)
+                               .template blackboard_creator<uint64_t>()
+                               .template add_with_default<uint64_t>(0)
+                               .create();
+    ASSERT_TRUE(failing_creator.has_error());
+    ASSERT_THAT(failing_creator.error(), Eq(BlackboardCreateError::AlreadyExists));
     writer.reset();
 
     auto opener2 = iox::optional<PortFactoryBlackboard<SERVICE_TYPE, uint64_t>>(
@@ -1145,8 +1142,6 @@ TYPED_TEST(ServiceBlackboardTest, reader_can_stil_read_value_when_writer_was_dis
     ASSERT_THAT(entry_handle.get(), Eq(VALUE));
 }
 
-// TODO: entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped fails sporadically when this
-// test runs
 TYPED_TEST(ServiceBlackboardTest, reconnected_reader_sees_current_blackboard_status) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 

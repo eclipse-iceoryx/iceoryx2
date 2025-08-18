@@ -162,11 +162,18 @@ pub struct BuilderInternals<KeyType> {
     pub value_writer: Box<dyn FnMut(*mut u8)>,
     pub internal_value_size: usize,
     pub internal_value_alignment: usize,
+    pub internal_value_cleanup_callback: Box<dyn FnMut()>,
 }
 
 impl<KeyType> Debug for BuilderInternals<KeyType> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
+    }
+}
+
+impl<KeyType> Drop for BuilderInternals<KeyType> {
+    fn drop(&mut self) {
+        (self.internal_value_cleanup_callback)();
     }
 }
 
@@ -351,6 +358,7 @@ impl<
             }),
             internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
+            internal_value_cleanup_callback: Box::new(|| {}),
         };
         self.__internal_add(internals)
     }
@@ -378,6 +386,7 @@ impl<
             }),
             internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
+            internal_value_cleanup_callback: Box::new(|| {}),
         });
         self
     }
