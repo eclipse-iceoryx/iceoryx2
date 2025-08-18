@@ -13,8 +13,8 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_entry_value_h, iox2_entry_value_t, iox2_service_type_e, AssertNonNullHandle,
-    EntryValueUninitUnion, HandleToType, KeyFfi, ValueFfi,
+    c_size_t, iox2_entry_value_h, iox2_entry_value_t, iox2_event_id_t, iox2_service_type_e,
+    AssertNonNullHandle, EntryValueUninitUnion, HandleToType, KeyFfi, ValueFfi,
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
@@ -213,7 +213,24 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_update_with_copy(
     }
 }
 
-// TODO: entry_id
+// TODO: documentation
+#[no_mangle]
+pub unsafe extern "C" fn iox2_entry_handle_mut_entry_id(
+    entry_handle_mut_handle: iox2_entry_handle_mut_h_ref,
+    entry_id: *mut iox2_event_id_t,
+) {
+    entry_handle_mut_handle.assert_non_null();
+    debug_assert!(!entry_id.is_null());
+
+    let entry_handle_mut = &mut *entry_handle_mut_handle.as_type();
+
+    let result = match entry_handle_mut.service_type {
+        iox2_service_type_e::IPC => entry_handle_mut.value.as_ref().ipc.entry_id(),
+        iox2_service_type_e::LOCAL => entry_handle_mut.value.as_ref().local.entry_id(),
+    };
+
+    *entry_id = result.into();
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_mut_drop(

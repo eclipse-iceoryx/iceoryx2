@@ -483,7 +483,10 @@ impl<Service: service::Service> __InternalWriterHandle<Service> {
     pub unsafe fn __internal_update_write_cell(&self) {
         unsafe { (*self.atomic_mgmt_ptr).__internal_update_write_cell() };
     }
-    // TODO: entry_id
+
+    pub fn entry_id(&self) -> EventId {
+        self.entry_id
+    }
 }
 
 /// Wrapper around an uninitiaized entry value that can be used for a zero-copy update.

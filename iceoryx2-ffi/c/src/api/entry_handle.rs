@@ -12,8 +12,9 @@
 
 #![allow(non_camel_case_types)]
 
-use crate::api::{
-    c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType, KeyFfi, ValueFfi,
+use crate::{
+    api::{c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType, KeyFfi, ValueFfi},
+    iox2_event_id_t,
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
@@ -140,7 +141,24 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
     };
 }
 
-// TODO: entry_id
+// TODO: documentation
+#[no_mangle]
+pub unsafe extern "C" fn iox2_entry_handle_entry_id(
+    entry_handle_handle: iox2_entry_handle_h_ref,
+    entry_id: *mut iox2_event_id_t,
+) {
+    entry_handle_handle.assert_non_null();
+    debug_assert!(!entry_id.is_null());
+
+    let entry_handle = &mut *entry_handle_handle.as_type();
+
+    let result = match entry_handle.service_type {
+        iox2_service_type_e::IPC => entry_handle.value.as_ref().ipc.entry_id(),
+        iox2_service_type_e::LOCAL => entry_handle.value.as_ref().local.entry_id(),
+    };
+
+    *entry_id = result.into();
+}
 
 // TODO: documentation
 #[no_mangle]

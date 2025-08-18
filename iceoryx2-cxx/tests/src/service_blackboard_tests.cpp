@@ -1554,7 +1554,7 @@ TYPED_TEST(ServiceBlackboardTest, reader_details_are_correct) {
                    .create()
                    .expect("");
 
-    iox2::Reader<SERVICE_TYPE, uint64_t> reader = sut.reader_builder().create().expect("");
+    auto reader = sut.reader_builder().create().expect("");
 
     auto counter = 0;
     sut.dynamic_config().list_readers([&](auto reader_details_view) {
@@ -1567,6 +1567,26 @@ TYPED_TEST(ServiceBlackboardTest, reader_details_are_correct) {
     ASSERT_THAT(counter, Eq(1));
 }
 
-// TODO: entry id test: check if entry id for reader/writer handle of same key is equal
+TYPED_TEST(ServiceBlackboardTest, same_entry_id_for_same_key) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .template add_with_default<uint64_t>(1)
+                       .create()
+                       .expect("");
+
+    auto writer = service.writer_builder().create().expect("");
+    auto entry_handle_mut = writer.template entry<uint64_t>(0).expect("");
+    auto reader = service.reader_builder().create().expect("");
+    auto entry_handle_0 = reader.template entry<uint64_t>(0).expect("");
+    auto entry_handle_1 = reader.template entry<uint64_t>(1).expect("");
+
+    ASSERT_EQ(entry_handle_mut.entry_id(), entry_handle_0.entry_id());
+    ASSERT_NE(entry_handle_0.entry_id(), entry_handle_1.entry_id());
+}
 
 } // namespace

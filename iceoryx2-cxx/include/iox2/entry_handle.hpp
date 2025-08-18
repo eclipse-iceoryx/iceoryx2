@@ -82,7 +82,11 @@ inline EntryHandle<S, KeyType, ValueType>::~EntryHandle() {
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto EntryHandle<S, KeyType, ValueType>::entry_id() const -> EventId {
-    IOX_TODO();
+    iox2_event_id_t entry_id {};
+
+    iox2_entry_handle_entry_id(&m_handle, &entry_id);
+
+    return EventId { entry_id };
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
