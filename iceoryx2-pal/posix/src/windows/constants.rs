@@ -25,6 +25,7 @@ pub const GROUP_NAME_LENGTH: usize = 31;
 pub const O_RDONLY: int = 1;
 pub const O_WRONLY: int = 2;
 pub const O_RDWR: int = 4;
+pub const O_SYNC: int = 8;
 
 pub const O_CREAT: int = 8;
 pub const O_EXCL: int = 16;

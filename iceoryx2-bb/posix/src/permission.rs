@@ -203,9 +203,6 @@ impl Display for Permission {
             bits.truncate(bits.len() - 2);
         }
 
-        write!(
-            f,
-            "Permission {{ Owner: {owner}, Group: {group}, Others: {others}, Bits: {bits} }}"
-        )
+        write!(f, "{owner}{group}{others}")
     }
 }

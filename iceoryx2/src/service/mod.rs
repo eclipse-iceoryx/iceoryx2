@@ -290,9 +290,15 @@ use self::messaging_pattern::MessagingPattern;
 use self::service_name::ServiceName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ServiceRemoveNodeError {
+/// Error that can be reported when removing a [`Node`](crate::node::Node).
+pub enum ServiceRemoveNodeError {
+    /// The iceoryx2 version that created the [`Node`](crate::node::Node) does
+    /// not match this iceoryx2 version.
     VersionMismatch,
+    /// Errors that indicate either an implementation issue or a wrongly configured system.
     InternalError,
+    /// The [`Node`](crate::node::Node) has opened a [`Service`] that is in a
+    /// corrupted state and therefore it cannot be remove from it.
     ServiceInCorruptedState,
 }
 
@@ -433,7 +439,8 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
     }
 }
 
-pub(crate) mod internal {
+#[doc(hidden)]
+pub mod internal {
     use builder::event::EventOpenError;
     use dynamic_config::{PortCleanupAction, RemoveDeadNodeResult};
     use iceoryx2_bb_container::byte_string::FixedSizeByteString;
@@ -628,7 +635,7 @@ pub(crate) mod internal {
         }
     }
 
-    pub(crate) trait ServiceInternal<S: Service> {
+    pub trait ServiceInternal<S: Service> {
         fn __internal_remove_node_from_service(
             node_id: &NodeId,
             service_id: &ServiceId,

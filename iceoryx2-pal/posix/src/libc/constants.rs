@@ -29,6 +29,7 @@ pub const GROUP_NAME_LENGTH: usize = 31;
 pub const O_RDONLY: int = libc::O_RDONLY as _;
 pub const O_WRONLY: int = libc::O_WRONLY as _;
 pub const O_RDWR: int = libc::O_RDWR as _;
+pub const O_SYNC: int = libc::O_SYNC as _;
 
 pub const O_CREAT: int = libc::O_CREAT as _;
 pub const O_EXCL: int = libc::O_EXCL as _;
