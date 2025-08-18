@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -10,9 +10,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED)
-    message(STATUS "The package '${CMAKE_FIND_PACKAGE_NAME}' is used in source code version.")
-    set(${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED true CACHE INTERNAL "")
-endif()
+include(Iceoryx2OptionAndParamMacros)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+if(NOT ICEORYX2_TEST_OPTIONS_AND_PARAMS_LISTED)
+    set(ICEORYX2_TEST_OPTIONS_AND_PARAMS_LISTED true)
+
+    message(STATUS "[i] iceoryx2 test options and params:")
+
+    add_option(
+        NAME USE_SYSTEM_GTEST
+        DESCRIPTION "Uses gTest from the system and fails if it is not found"
+        DEFAULT_VALUE OFF
+    )
+
+endif()

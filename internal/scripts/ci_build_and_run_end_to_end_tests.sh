@@ -81,7 +81,7 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
         -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/iceoryx/install" \
         -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
         -DCMAKE_BUILD_TYPE=Debug \
-        -DBUILD_CXX_BINDING=ON \
+        -DBUILD_CXX=ON \
         -DBUILD_EXAMPLES=ON \
         -DBUILD_TESTING=OFF
     cmake --build target/ff/cc/build -j$NUM_JOBS

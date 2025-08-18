@@ -10,8 +10,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-# NOTE the file is included in '../CMakeLists.txt' and therefore all paths based on 'CMAKE_CURRENT_SOURCE_DIR' must be relative to '../'
-
 #
 ########## find_package in source tree ##########
 #
@@ -48,7 +46,7 @@ set(DESTINATION_DATAROOTDIR ${CMAKE_INSTALL_DATAROOTDIR})
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     ${PACKAGE_VERSION_FILE}
-    VERSION ${IOX2_VERSION_STRING}
+    VERSION ${IOX2_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
 configure_package_config_file(
@@ -73,14 +71,14 @@ install(
 # header
 install(
     # the '/' at the end is important in order to not have the 'include' folder installed but only the content
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
+    DIRECTORY ${PROJECT_SOURCE_DIR}/include/
     DESTINATION ${DESTINATION_INCLUDEDIR}
     COMPONENT dev
 )
 
 # license
 install(
-    FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSE-APACHE  ${CMAKE_CURRENT_SOURCE_DIR}/../../LICENSE-MIT
+    FILES ${PROJECT_SOURCE_DIR}/LICENSE-APACHE  ${PROJECT_SOURCE_DIR}/LICENSE-MIT
     DESTINATION ${DESTINATION_DATAROOTDIR}/doc/${PROJECT_NAME}
     COMPONENT dev
 )

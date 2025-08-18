@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -16,3 +16,6 @@ if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+# NOTE: leaving the list dir is fine here, since this file is used for in source tree builds
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../modules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/../platform/${IOX2_INTERNAL_MODULE_PLATFORM_ID}/modules)

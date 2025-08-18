@@ -168,7 +168,7 @@ cmake -S . -B target/clang-tidy-scan \
     -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/iceoryx/install" \
     -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \
     -DCMAKE_BUILD_TYPE=Debug \
-    -DBUILD_CXX_BINDING=ON \
+    -DBUILD_CXX=ON \
     -DBUILD_EXAMPLES=ON \
     -DBUILD_TESTING=ON
 cmake --build target/clang-tidy-scan -j$NUM_JOBS

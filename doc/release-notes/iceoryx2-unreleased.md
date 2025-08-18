@@ -105,6 +105,8 @@
   [#831](https://github.com/eclipse-iceoryx/iceoryx2/issues/831)
 * Removed `MetaVec::is_initialized` field
   [#900](https://github.com/eclipse-iceoryx/iceoryx2/issues/900)
+* Enable standalone build of the C and C++ bindings
+  [#942](https://github.com/eclipse-iceoryx/iceoryx2/issues/942)
 * Adjust visibility to `Service` constructs to allow customization
   [#954](https://github.com/eclipse-iceoryx/iceoryx2/issues/954)
 

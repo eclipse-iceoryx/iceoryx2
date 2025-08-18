@@ -10,8 +10,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-# NOTE the file is included in '../CMakeLists.txt' and therefore all relative paths must be relative to '../'
-
 # check if iceoryx is in CMAKE_PREFIX_PATH
 find_package(iceoryx_platform ${ICEORYX_HOOFS_VERSION} QUIET)
 find_package(iceoryx_hoofs ${ICEORYX_HOOFS_VERSION} QUIET)
@@ -57,14 +55,12 @@ if(ICEORYX_WITH_FETCH_CONTENT)
 endif()
 
 if(ICEORYX_WITH_FETCH_CONTENT)
-message(WARNING "\
-#############################################################
-The project was built by obtaining iceoryx with FetchContent.
-Language bindings produced by this build are not relocatable,
-so they have been removed from the install target.
-This is fine for development, but for production it is
-recommended to use an existing installation with
-'-DCMAKE_PREFIX_PATH=/full/path/to/installed/iceoryx'!
-#############################################################
-")
+message(WARNING
+    "The project was built by obtaining iceoryx with FetchContent. "
+    "Language bindings produced by this build are not relocatable, "
+    "so they have been removed from the install target. "
+    "This is fine for development, but for production it is "
+    "recommended to use an existing installation with\n"
+    "'-DCMAKE_PREFIX_PATH=/full/path/to/installed/iceoryx'! "
+)
 endif()

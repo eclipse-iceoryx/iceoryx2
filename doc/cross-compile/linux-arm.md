@@ -16,7 +16,7 @@ cross build --target aarch64-unknown-linux-gnu --release --package iceoryx2-ffi
 Run the following at the repo root:
 
 ```bash
-cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DBUILD_CXX_BINDING=OFF -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/aarch64-unknown-linux-gnu/release"
+cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DBUILD_CXX=OFF -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/aarch64-unknown-linux-gnu/release"
 ```
 
 ## Build C examples
@@ -66,7 +66,7 @@ located within the cloned repo, just use an absolute path for your system
 
 ```bash
 cmake -S examples/c/publish_subscribe \
-  -B target/out-of-tree/examples/c/publish_subscribe \
+  -B target/ff/out-of-tree/examples/c/publish_subscribe \
   -DCMAKE_TOOLCHAIN_FILE="/full/path/to/.../cross-example.cmake" \
   -DCMAKE_PREFIX_PATH="/full/path/to/.../iceoryx2/target/ff/cc/install" \
   -Diceoryx2-c_DIR="/full/path/to/.../iceoryx2/target/ff/cc/install/lib/cmake/iceoryx2-c" \
@@ -74,7 +74,7 @@ cmake -S examples/c/publish_subscribe \
 ```
 
 ```bash
-cmake --build target/out-of-tree/examples/c/publish_subscribe
+cmake --build target/ff/out-of-tree/examples/c/publish_subscribe
 ```
 
-Your example binaries should be in `...target/out-of-tree/examples/c/publish_subscribe`
+Your example binaries should be in `...target/ff/out-of-tree/examples/c/publish_subscribe`

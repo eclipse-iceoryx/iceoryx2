@@ -11,30 +11,18 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 cmake_minimum_required(VERSION 3.22)
-set(IOX2_VERSION_STRING "0.6.1")
-project(iceoryx2 VERSION ${IOX2_VERSION_STRING})
 
-#TODO how to handle feature flags
+set(IOX2_VERSION 0.6.1)
+project(iceoryx2-workspace VERSION ${IOX2_VERSION})
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # "Create compile_commands.json file"
 
-macro(add_option)
-    set(ONE_VALUE_ARGS NAME DESCRIPTION DEFAULT_VALUE)
-    cmake_parse_arguments(ADD_OPTION "" "${ONE_VALUE_ARGS}" "" ${ARGN})
+add_subdirectory(iceoryx2-cmake-modules)
 
-    option(${ADD_OPTION_NAME} ${ADD_OPTION_DESCRIPTION} ${ADD_OPTION_DEFAULT_VALUE})
-    message(STATUS "  ${ADD_OPTION_NAME}: ${${ADD_OPTION_NAME}} (Description: ${ADD_OPTION_DESCRIPTION})")
-endmacro()
+find_package(iceoryx2-cmake-modules REQUIRED)
+include(Iceoryx2OptionAndParamMacros)
 
-macro(add_param)
-    set(ONE_VALUE_ARGS NAME DESCRIPTION DEFAULT_VALUE)
-    cmake_parse_arguments(ADD_PARAM "" "${ONE_VALUE_ARGS}" "" ${ARGN})
-
-    if(NOT ${ADD_PARAM_NAME})
-        set(${ADD_PARAM_NAME} ${ADD_PARAM_DEFAULT_VALUE})
-    endif()
-    message(STATUS "  ${ADD_PARAM_NAME}: ${${ADD_PARAM_NAME}} (Description: ${ADD_PARAM_DESCRIPTION})")
-endmacro()
+# BEGIN Helper macro to define Rust feature flags when iceoryx2 is build via cmake
 
 set(IOX2_RUST_FEATURES "")
 macro(add_rust_feature)
@@ -49,11 +37,16 @@ macro(add_rust_feature)
     endif()
 endmacro()
 
-message(STATUS "iceoryx2 options:")
+# END Helper macro to define Rust feature flags when iceoryx2 is build via cmake
+
+
+# BEGIN Options, Params and Feature Flags
+
+message(STATUS "[i] iceoryx2 dev setup options and params:")
 
 add_option(
-    NAME BUILD_CXX_BINDING
-    DESCRIPTION "Build C++ binding"
+    NAME BUILD_CXX
+    DESCRIPTION "Build C++ components, e.g. container and bindings"
     DEFAULT_VALUE ON
 )
 
@@ -63,37 +56,13 @@ add_option(
     DEFAULT_VALUE OFF
 )
 
-add_option(
-    NAME BUILD_TESTING
-    DESCRIPTION "Build tests"
-    DEFAULT_VALUE OFF
-)
-
-add_option(
-    NAME SANITIZERS
-    DESCRIPTION "Build with undefined-behavior- and address-sanitizer"
-    DEFAULT_VALUE OFF
-)
-
-add_option(
-    NAME WARNING_AS_ERROR
-    DESCRIPTION "Fails if the compiler emits a warning"
-    DEFAULT_VALUE OFF
-)
-
-add_param(
-    NAME RUST_BUILD_ARTIFACT_PATH
-    DESCRIPTION "The path to the folder with the Rust build artifacts, e.g. '/full/path/to/iceoryx2/target/release'"
-    DEFAULT_VALUE ""
-)
-
 add_param(
     NAME RUST_TARGET_TRIPLET
     DESCRIPTION "The target triplet for cross compilation when 'RUST_BUILD_ARTIFACT_PATH' is not set, e.g. 'aarch64-unknown-linux-gnu'"
     DEFAULT_VALUE ""
 )
 
-message(STATUS "iceoryx2 Rust feature flags (only used when 'RUST_BUILD_ARTIFACT_PATH' is not set):")
+message(STATUS "[i] iceoryx2 dev setup Rust feature flags (only used when 'RUST_BUILD_ARTIFACT_PATH' is not set):")
 
 add_rust_feature(
     NAME IOX2_FEATURE_DEV_PERMISSIONS
@@ -123,37 +92,93 @@ add_rust_feature(
     RUST_FEATURE "iceoryx2/logger_tracing"
 )
 
-if(WARNING_AS_ERROR)
-    if(WIN32)
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    else()
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -Wpedantic")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wall -Wextra -Wpedantic")
-    endif()
-endif()
+# END Options, Params and Feature Flags
+
+
+include(Iceoryx2CommonOptionsAndParams)
+include(iceoryx2-bb/cxx/cmake/options.cmake)
+include(iceoryx2-ffi/c/cmake/options.cmake)
+include(iceoryx2-ffi/cxx/cmake/options.cmake)
+include(Iceoryx2TestOptionsAndParams)
 
 if(BUILD_TESTING)
     enable_testing()
 endif()
 
-if(SANITIZERS)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fsanitize=undefined")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize=undefined")
+
+# BEGIN C binding
+
+if(RUST_BUILD_ARTIFACT_PATH AND NOT "${RUST_BUILD_ARTIFACT_PATH}" STREQUAL "" )
+    add_subdirectory(iceoryx2-ffi/c)
+else()
+    message(WARNING
+        "Using cargo to build the Rust part of iceoryx2. "
+        "This is fine for development but for production, it is "
+        "recommended to use an existing installation with\n"
+        "'-DRUST_BUILD_ARTIFACT_PATH=/full/path/to/iceoryx2/target/release'!"
+    )
+
+    set(RUST_BUILD_TYPE "release")
+    set(RUST_BUILD_TYPE_FLAG "--${RUST_BUILD_TYPE}")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(RUST_BUILD_TYPE "debug")
+        set(RUST_BUILD_TYPE_FLAG "")
+    endif()
+
+    if("${RUST_TARGET_TRIPLET}" STREQUAL "")
+        set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust/native)
+        set(RUST_BUILD_ARTIFACT_PATH ${CMAKE_BINARY_DIR}/rust/native/${RUST_BUILD_TYPE})
+        set(RUST_TARGET_TRIPLET_FLAG "")
+    else()
+        set(RUST_TARGET_DIR ${CMAKE_BINARY_DIR}/rust)
+        set(RUST_BUILD_ARTIFACT_PATH ${CMAKE_BINARY_DIR}/rust/${RUST_TARGET_TRIPLET}/${RUST_BUILD_TYPE})
+        set(RUST_TARGET_TRIPLET_FLAG "--target=${RUST_TARGET_TRIPLET}")
+    endif()
+
+    set(RUST_FEATURE_FLAGS "")
+    list(LENGTH IOX2_RUST_FEATURES IOX2_RUST_FEATURES_COUNT)
+    if(IOX2_RUST_FEATURES_COUNT GREATER 0)
+        list(JOIN IOX2_RUST_FEATURES "," RUST_FEATURE_FLAGS_STRING)
+        set(RUST_FEATURE_FLAGS "--features=${RUST_FEATURE_FLAGS_STRING}")
+    endif()
+
+    include(iceoryx2-ffi/c/cmake/rust-ffi-c-byproduct-definitions.cmake)
+
+    # run cargo
+    add_custom_target(
+        iceoryx2-ffi-build-step ALL
+        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
+        BYPRODUCTS
+            ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
+            ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
+            ${ICEORYX2_C_SHARED_LIB_LINK_FILE}
+            ${ICEORYX2_C_SHARED_LIB_DLL_FILE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+        VERBATIM
+        USES_TERMINAL
+    )
+
+    add_subdirectory(iceoryx2-ffi/c)
+
+    add_dependencies(includes-only iceoryx2-ffi-build-step)
 endif()
 
-# C++ containers
-add_subdirectory(iceoryx2-bb/cxx)
+# END C binding
 
-# C binding
-add_subdirectory(iceoryx2-ffi/c)
 
 if(BUILD_EXAMPLES)
     add_subdirectory(examples/c)
 endif()
 
-# C++ binding
-if(BUILD_CXX_BINDING)
+
+if(BUILD_CXX)
+    # C++ containers
+    add_subdirectory(iceoryx2-bb/cxx)
+
+    # C++ binding
+    set(ICEORYX_HOOFS_VERSION 2.95.7)
+    include(${CMAKE_CURRENT_LIST_DIR}/iceoryx2-ffi/cxx/cmake/fetch-iceoryx-hoofs.cmake)
+
     add_subdirectory(iceoryx2-ffi/cxx)
 
     if(BUILD_EXAMPLES)

@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -10,6 +10,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
+cmake_minimum_required(VERSION 3.22)
+
+set(IOX2_VERSION 0.6.1)
+project(iceoryx2-cmake-modules VERSION ${IOX2_VERSION} LANGUAGES NONE)
+
+#
+########## select correct platform ##########
+#
+
+if (CMAKE_SYSTEM_NAME MATCHES Windows)
+    set(IOX2_INTERNAL_MODULE_PLATFORM_ID win CACHE INTERNAL "")
+elseif (CMAKE_SYSTEM_NAME MATCHES Darwin)
+    set(IOX2_INTERNAL_MODULE_PLATFORM_ID mac CACHE INTERNAL "")
+else()
+    set(IOX2_INTERNAL_MODULE_PLATFORM_ID generic CACHE INTERNAL "")
+endif()
+
 #
 ########## find_package in source tree ##########
 #
@@ -20,25 +37,16 @@ set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
     FORCE
 )
 
-if(ICEORYX_WITH_FETCH_CONTENT)
-    return()
-endif()
-
 #
 ########## set variables for export ##########
 #
-
+set(CMAKE_INSTALL_LIBDIR "lib" CACHE PATH "Library install directory")
 include(GNUInstallDirs)
 
 # set variables for library export
 set(PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake" )
 set(PACKAGE_CONFIG_FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake" )
-set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets" )
-set(PROJECT_NAMESPACE "iceoryx2-c" )
 
-set(DESTINATION_BINDIR ${CMAKE_INSTALL_BINDIR})
-set(DESTINATION_LIBDIR ${CMAKE_INSTALL_LIBDIR})
-set(DESTINATION_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/${PREFIX})
 set(DESTINATION_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME})
 set(DESTINATION_DATAROOTDIR ${CMAKE_INSTALL_DATAROOTDIR})
 
@@ -55,32 +63,16 @@ configure_package_config_file(
     INSTALL_DESTINATION ${DESTINATION_CONFIGDIR}
 )
 
-#
-########## export library ##########
-#
-
-# target directories
+# module files
 install(
-    TARGETS includes-only static-lib shared-lib
-    EXPORT ${TARGETS_EXPORT_NAME}
-    RUNTIME DESTINATION ${DESTINATION_BINDIR} COMPONENT bin
-    LIBRARY DESTINATION ${DESTINATION_LIBDIR} COMPONENT lib
-    ARCHIVE DESTINATION ${DESTINATION_LIBDIR} COMPONENT lib
-)
-
-# header
-install(
-    # the '/' at the end is important in order to not have the 'include' folder installed but only the content
-    DIRECTORY ${ICEORYX2_C_INCLUDE_DIR}/
-    DESTINATION ${DESTINATION_INCLUDEDIR}
+    DIRECTORY ${PROJECT_SOURCE_DIR}/modules/
+    DESTINATION ${DESTINATION_CONFIGDIR}/modules
     COMPONENT dev
 )
-
-# lib
 install(
-    FILES ${ICEORYX2_C_LIB_ARTIFACTS}
-    DESTINATION ${DESTINATION_LIBDIR}
-    COMPONENT lib
+    DIRECTORY "${PROJECT_SOURCE_DIR}/platform/${IOX2_INTERNAL_MODULE_PLATFORM_ID}/modules/"
+    DESTINATION ${DESTINATION_CONFIGDIR}/modules
+    COMPONENT dev
 )
 
 # license
@@ -95,11 +87,4 @@ install(
     FILES ${PACKAGE_VERSION_FILE} ${PACKAGE_CONFIG_FILE}
     DESTINATION ${DESTINATION_CONFIGDIR}
     COMPONENT dev
-)
-
-# package export
-install(
-    EXPORT ${TARGETS_EXPORT_NAME}
-    NAMESPACE ${PROJECT_NAMESPACE}::
-    DESTINATION ${DESTINATION_CONFIGDIR}
 )

@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Contributors to the Eclipse Foundation
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
 # See the NOTICE file(s) distributed with this work for additional
 # information regarding copyright ownership.
@@ -10,9 +10,5 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED)
-    message(STATUS "The package '${CMAKE_FIND_PACKAGE_NAME}' is used in source code version.")
-    set(${CMAKE_FIND_PACKAGE_NAME}_FOUND_PRINTED true CACHE INTERNAL "")
-endif()
-
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
+# TODO #957: differentiate between address and thread sanitizer
+set(ICEORYX2_SANITZER_FLAGS      "-fsanitize=address -fsanitize=undefined" CACHE INTERNAL "")
