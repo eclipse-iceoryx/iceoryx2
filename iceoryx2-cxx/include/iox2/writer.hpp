@@ -13,7 +13,6 @@
 #ifndef IOX2_WRITER_HPP
 #define IOX2_WRITER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox2/entry_handle_mut.hpp"
 #include "iox2/entry_handle_mut_error.hpp"
@@ -87,7 +86,10 @@ inline Writer<S, KeyType>::~Writer() {
 
 template <ServiceType S, typename KeyType>
 inline auto Writer<S, KeyType>::id() const -> UniqueWriterId {
-    IOX_TODO();
+    iox2_unique_writer_id_h id_handle = nullptr;
+
+    iox2_writer_id(&m_handle, nullptr, &id_handle);
+    return UniqueWriterId { id_handle };
 }
 
 template <ServiceType S, typename KeyType>

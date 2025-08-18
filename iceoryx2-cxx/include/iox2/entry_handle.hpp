@@ -87,12 +87,10 @@ inline auto EntryHandle<S, KeyType, ValueType>::entry_id() const -> EventId {
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto EntryHandle<S, KeyType, ValueType>::get() const -> ValueType {
-    //ValueType value;
+    ValueType value;
 
-    auto value_ptr = new ValueType();
-    iox2_entry_handle_get(&m_handle, value_ptr, sizeof(ValueType), alignof(ValueType));
-    ValueType value{*value_ptr};
-    delete value_ptr;
+    iox2_entry_handle_get(&m_handle, &value, sizeof(ValueType), alignof(ValueType));
+
     return value;
 }
 } // namespace iox2

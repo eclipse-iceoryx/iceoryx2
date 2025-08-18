@@ -19,10 +19,10 @@
 #include "iox2/service_name.hpp"
 #include "iox2/subscriber.hpp"
 #include "iox2/unique_port_id.hpp"
+#include "iox2/writer.hpp"
 
 #include "test.hpp"
 
-#include <atomic>
 #include <gtest/gtest.h>
 
 namespace {
@@ -51,7 +51,8 @@ struct UniquePortIdTest : public ::testing::Test {
         , subscriber_1 { pubsub.subscriber_builder().create().expect("") }
         , subscriber_2 { pubsub.subscriber_builder().create().expect("") }
         , reader_1 { blackboard.reader_builder().create().expect("") }
-        , reader_2 { blackboard.reader_builder().create().expect("") } {
+        , reader_2 { blackboard.reader_builder().create().expect("") }
+        , writer_1 { blackboard.writer_builder().create().expect("") } {
     }
 
     // NOLINTBEGIN(misc-non-private-member-variables-in-classes), come on, its a test
@@ -71,7 +72,8 @@ struct UniquePortIdTest : public ::testing::Test {
     Subscriber<TYPE, uint64_t, void> subscriber_2;
     Reader<TYPE, uint64_t> reader_1;
     Reader<TYPE, uint64_t> reader_2;
-    // NOLINTEND(misc-non-private-member-variables-in-classes)
+    Writer<TYPE, uint64_t> writer_1;
+    //  NOLINTEND(misc-non-private-member-variables-in-classes)
 };
 
 TYPED_TEST_SUITE(UniquePortIdTest, iox2_testing::ServiceTypes, );
@@ -98,6 +100,10 @@ TYPED_TEST(UniquePortIdTest, unique_port_id_value) {
     auto unique_reader_id = this->reader_1.id();
     ASSERT_TRUE(unique_reader_id.bytes().has_value());
     ASSERT_NE(unique_reader_id.bytes().value(), null_id);
+
+    auto unique_writer_id = this->writer_1.id();
+    ASSERT_TRUE(unique_writer_id.bytes().has_value());
+    ASSERT_NE(unique_writer_id.bytes().value(), null_id);
 }
 
 TYPED_TEST(UniquePortIdTest, unique_port_id_from_same_port_is_equal) {
@@ -106,12 +112,14 @@ TYPED_TEST(UniquePortIdTest, unique_port_id_from_same_port_is_equal) {
     ASSERT_TRUE(this->publisher_1.id() == this->publisher_1.id());
     ASSERT_TRUE(this->subscriber_1.id() == this->subscriber_1.id());
     ASSERT_TRUE(this->reader_1.id() == this->reader_1.id());
+    ASSERT_TRUE(this->writer_1.id() == this->writer_1.id());
 
     ASSERT_FALSE(this->listener_1.id() < this->listener_1.id());
     ASSERT_FALSE(this->notifier_1.id() < this->notifier_1.id());
     ASSERT_FALSE(this->publisher_1.id() < this->publisher_1.id());
     ASSERT_FALSE(this->subscriber_1.id() < this->subscriber_1.id());
     ASSERT_FALSE(this->reader_1.id() < this->reader_1.id());
+    ASSERT_FALSE(this->writer_1.id() < this->writer_1.id());
 }
 
 TYPED_TEST(UniquePortIdTest, unique_port_id_from_different_ports_is_not_equal) {

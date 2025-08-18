@@ -218,10 +218,10 @@ class UniqueWriterId {
     friend auto operator<(const UniqueWriterId&, const UniqueWriterId&) -> bool;
     friend class WriterDetailsView;
 
-    explicit UniqueWriterId(/*iox2_unique_writer_id_h handle*/);
+    explicit UniqueWriterId(iox2_unique_writer_id_h handle);
     void drop();
 
-    // iox2_unique_writer_id_h m_handle = nullptr;
+    iox2_unique_writer_id_h m_handle = nullptr;
     mutable iox::optional<RawIdType> m_raw_id;
 };
 
