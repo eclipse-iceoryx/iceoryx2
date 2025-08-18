@@ -16,7 +16,7 @@ use super::iox2_type_variant_e;
 use crate::create_type_details;
 use crate::{
     api::{
-        c_size_t, iox2_entry_handle_h, iox2_entry_handle_t, iox2_service_type_e,
+        c_size_t, iox2_entry_handle_h, iox2_entry_handle_t, iox2_event_id_t, iox2_service_type_e,
         iox2_unique_reader_id_h, iox2_unique_reader_id_t, AssertNonNullHandle, EntryHandleUnion,
         HandleToType, IntoCInt, KeyFfi,
     },

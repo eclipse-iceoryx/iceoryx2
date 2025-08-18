@@ -11,13 +11,9 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use super::{
-    iox2_attribute_set_ptr,
-    iox2_callback_context,
-    iox2_callback_progression_e,
-    iox2_node_list_callback,
-    iox2_reader_details_ptr,
-    iox2_service_name_ptr,
-    //iox2_writer_details_ptr,
+    iox2_attribute_set_ptr, iox2_callback_context, iox2_callback_progression_e,
+    iox2_node_list_callback, iox2_reader_details_ptr, iox2_service_name_ptr,
+    iox2_writer_details_ptr,
 };
 use crate::api::{
     iox2_port_factory_reader_builder_h, iox2_port_factory_reader_builder_t,
@@ -136,8 +132,8 @@ pub type iox2_list_readers_callback =
 /// * [`iox2_writer_details_ptr`] -> a pointer to the details struct of the port
 ///
 /// Returns a [`iox2_callback_progression_e`](crate::iox2_callback_progression_e)
-//pub type iox2_list_writers_callback =
-//extern "C" fn(iox2_callback_context, iox2_writer_details_ptr) -> iox2_callback_progression_e;
+pub type iox2_list_writers_callback =
+    extern "C" fn(iox2_callback_context, iox2_writer_details_ptr) -> iox2_callback_progression_e;
 
 // END types definition
 
@@ -302,30 +298,30 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_static_config(
 ///
 /// * The `handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
-//#[no_mangle]
-//pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_number_of_writers(
-//handle: iox2_port_factory_blackboard_h_ref,
-//) -> usize {
-//handle.assert_non_null();
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_number_of_writers(
+    handle: iox2_port_factory_blackboard_h_ref,
+) -> usize {
+    handle.assert_non_null();
 
-//let port_factory = &mut *handle.as_type();
+    let port_factory = &mut *handle.as_type();
 
-//use iceoryx2::prelude::PortFactory;
-//match port_factory.service_type {
-//iox2_service_type_e::IPC => port_factory
-//.value
-//.as_ref()
-//.ipc
-//.dynamic_config()
-//.number_of_writers(),
-//iox2_service_type_e::LOCAL => port_factory
-//.value
-//.as_ref()
-//.local
-//.dynamic_config()
-//.number_of_writers(),
-//}
-//}
+    use iceoryx2::prelude::PortFactory;
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .number_of_writers(),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .number_of_writers(),
+    }
+}
 
 /// Calls the callback repeatedly with an [`iox2_node_state_e`](crate::api::iox2_node_state_e),
 /// [`iox2_node_id_ptr`](crate::api::iox2_node_id_ptr),
@@ -506,32 +502,32 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_list_reader
 /// * `callback_ctx` - An optional callback context [`iox2_callback_context`] to e.g. store
 ///   information across callback iterations. Must be either `NULL` or point to a valid memory
 ///   location
-//#[no_mangle]
-//pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_list_writers(
-//handle: iox2_port_factory_blackboard_h_ref,
-//callback: iox2_list_writers_callback,
-//callback_ctx: iox2_callback_context,
-//) {
-//handle.assert_non_null();
-//use iceoryx2::prelude::PortFactory;
+#[no_mangle]
+pub unsafe extern "C" fn iox2_port_factory_blackboard_dynamic_config_list_writers(
+    handle: iox2_port_factory_blackboard_h_ref,
+    callback: iox2_list_writers_callback,
+    callback_ctx: iox2_callback_context,
+) {
+    handle.assert_non_null();
+    use iceoryx2::prelude::PortFactory;
 
-//let port_factory = &mut *handle.as_type();
-//let callback_tr = |writer: &WriterDetails| callback(callback_ctx, writer).into();
-//match port_factory.service_type {
-//iox2_service_type_e::IPC => port_factory
-//.value
-//.as_ref()
-//.ipc
-//.dynamic_config()
-//.list_writers(callback_tr),
-//iox2_service_type_e::LOCAL => port_factory
-//.value
-//.as_ref()
-//.local
-//.dynamic_config()
-//.list_writers(callback_tr),
-//};
-//}
+    let port_factory = &mut *handle.as_type();
+    let callback_tr = |writer: &WriterDetails| callback(callback_ctx, writer).into();
+    match port_factory.service_type {
+        iox2_service_type_e::IPC => port_factory
+            .value
+            .as_ref()
+            .ipc
+            .dynamic_config()
+            .list_writers(callback_tr),
+        iox2_service_type_e::LOCAL => port_factory
+            .value
+            .as_ref()
+            .local
+            .dynamic_config()
+            .list_writers(callback_tr),
+    };
+}
 
 /// This function needs to be called to destroy the port factory!
 ///

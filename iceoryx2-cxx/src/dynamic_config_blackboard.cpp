@@ -17,9 +17,9 @@ auto DynamicConfigBlackboard::number_of_readers() const -> uint64_t {
     return iox2_port_factory_blackboard_dynamic_config_number_of_readers(&m_handle);
 }
 
-// auto DynamicConfigBlackboard::number_of_writers() const -> uint64_t {
-// IOX_TODO();
-//}
+auto DynamicConfigBlackboard::number_of_writers() const -> uint64_t {
+    return iox2_port_factory_blackboard_dynamic_config_number_of_writers(&m_handle);
+}
 
 DynamicConfigBlackboard::DynamicConfigBlackboard(iox2_port_factory_blackboard_h handle)
     : m_handle { handle } {
@@ -32,8 +32,10 @@ void DynamicConfigBlackboard::list_readers(
         &m_handle, internal::list_ports_callback<iox2_reader_details_ptr, ReaderDetailsView>, static_cast<void*>(&ctx));
 }
 
-// void DynamicConfigBlackboard::list_writers(
-//[[maybe_unused]] const iox::function<CallbackProgression(WriterDetailsView)>& callback) const {
-// IOX_TODO();
-//}
+void DynamicConfigBlackboard::list_writers(
+    const iox::function<CallbackProgression(WriterDetailsView)>& callback) const {
+    auto ctx = internal::ctx(callback);
+    iox2_port_factory_blackboard_dynamic_config_list_writers(
+        &m_handle, internal::list_ports_callback<iox2_writer_details_ptr, WriterDetailsView>, static_cast<void*>(&ctx));
+}
 } // namespace iox2

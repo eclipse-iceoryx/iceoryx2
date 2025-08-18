@@ -11,7 +11,6 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "iox2/entry_value.hpp"
-#include "iox2/log.hpp"
 #include "iox2/node.hpp"
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/reader_error.hpp"
@@ -490,6 +489,28 @@ TYPED_TEST(ServiceBlackboardTest, number_of_readers_works) {
     }
 
     ASSERT_THAT(service.dynamic_config().number_of_readers(), Eq(0));
+}
+
+TYPED_TEST(ServiceBlackboardTest, number_of_writers_works) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<uint64_t>()
+                       .template add_with_default<uint64_t>(0)
+                       .create()
+                       .expect("");
+
+    ASSERT_THAT(service.dynamic_config().number_of_writers(), Eq(0));
+
+    {
+        auto sut_writer = service.writer_builder().create().expect("");
+        ASSERT_THAT(service.dynamic_config().number_of_writers(), Eq(1));
+    }
+
+    ASSERT_THAT(service.dynamic_config().number_of_writers(), Eq(0));
 }
 
 TYPED_TEST(ServiceBlackboardTest, entry_handle_can_be_acquired_for_existing_key_value_pair) {

@@ -93,6 +93,7 @@ typedef struct iox2_reader_details_ptr_t iox2_reader_details_ptr_t;
 typedef struct iox2_server_details_ptr_t iox2_server_details_ptr_t;
 typedef struct iox2_service_name_ptr_t iox2_service_name_ptr_t;
 typedef struct iox2_subscriber_details_ptr_t iox2_subscriber_details_ptr_t;
+typedef struct iox2_writer_details_ptr_t iox2_writer_details_ptr_t;
 """
 
 
@@ -168,6 +169,7 @@ renaming_overrides_prefixing = false
 "ServerDetails" = "iox2_server_details_ptr_t"
 "ServiceName" = "iox2_service_name_ptr_t"
 "SubscriberDetails" = "iox2_subscriber_details_ptr_t"
+"WriterDetails" = "iox2_writer_details_ptr_t"
 
 [export.pre_body]
 
