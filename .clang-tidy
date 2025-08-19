@@ -21,6 +21,7 @@ readability-*,
 -bugprone-easily-swappable-parameters,
 -misc-include-cleaner,
 -cppcoreguidelines-rvalue-reference-param-not-moved,
+-modernize-concat-nested-namespaces,
 '
 
 # TODO: remove the following rule surpressions as soon as the C++ stubs are implemented

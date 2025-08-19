@@ -20,7 +20,7 @@ namespace testing {
 
 Observable::Counters Observable::s_counter = {};
 
-void Observable::resetAllCounters() {
+void Observable::reset_all_counters() {
     s_counter = Observable::Counters {};
 }
 
@@ -30,9 +30,9 @@ Observable::Observable()
     ++s_counter.totalInstances;
 }
 
-Observable::Observable(int id)
+Observable::Observable(int object_id)
     : Observable() {
-    this->id = id;
+    id = object_id;
 }
 
 Observable::~Observable() {
@@ -52,41 +52,43 @@ Observable::Observable(Observable&& rhs) noexcept
     ++s_counter.totalInstances;
 }
 
-Observable& Observable::operator=(Observable const& rhs) {
-    id = rhs.id;
+auto Observable::operator=(Observable const& rhs) -> Observable& {
+    if (this != &rhs) {
+        id = rhs.id;
+    }
     ++s_counter.wasCopyAssigned;
     return *this;
 }
 
-Observable& Observable::operator=(Observable&& rhs) noexcept {
+auto Observable::operator=(Observable&& rhs) noexcept -> Observable& {
     id = rhs.id;
     ++s_counter.wasMoveAssigned;
     return *this;
 }
 
 DetectLeakedObservablesFixture::DetectLeakedObservablesFixture()
-    : m_isArmed(false) {
+    : m_is_armed(false) {
 }
 
 DetectLeakedObservablesFixture::~DetectLeakedObservablesFixture() = default;
 
 void DetectLeakedObservablesFixture::SetUp() {
-    Observable::resetAllCounters();
-    m_isArmed = true;
+    Observable::reset_all_counters();
+    m_is_armed = true;
 }
 
 void DetectLeakedObservablesFixture::TearDown() {
-    if (m_isArmed) {
+    if (m_is_armed) {
         ASSERT_EQ(Observable::s_counter.totalInstances, 0) << "Some Observable objects were not destructed properly";
     }
 }
 
-bool DetectLeakedObservablesFixture::hasLeakedObservables() const {
+auto DetectLeakedObservablesFixture::has_leaked_observables() const -> bool {
     return Observable::s_counter.totalInstances != 0;
 }
 
-void DetectLeakedObservablesFixture::defuseLeakCheck() {
-    m_isArmed = false;
+void DetectLeakedObservablesFixture::defuse_leak_check() {
+    m_is_armed = false;
 }
 
 } // namespace testing

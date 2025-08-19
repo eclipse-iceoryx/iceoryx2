@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef INCLUDE_GUARD_IOX2_CONTAINER_OPTIONAL_HPP
-#define INCLUDE_GUARD_IOX2_CONTAINER_OPTIONAL_HPP
+#ifndef IOX2_INCLUDE_GUARD_CONTAINER_OPTIONAL_HPP
+#define IOX2_INCLUDE_GUARD_CONTAINER_OPTIONAL_HPP
 
 #include "iox2/container/config.hpp"
 
@@ -55,35 +55,40 @@ namespace detail {
 /// Internal union implementation for Optional.
 /// @todo Proper handling of cond. explicit, cond. noexcept and triviality of special member functions.
 template <typename T>
-struct OptionalValueHolder {
+class OptionalValueHolder {
+  private:
     union {
-        char null;
-        typename std::remove_cv<T>::type value;
+        char m_null;
+        std::remove_cv_t<T> m_value;
     };
-    bool isEmpty;
+    bool m_is_empty;
 
+  public:
     constexpr OptionalValueHolder() noexcept
-        : null()
-        , isEmpty(true) {
+        : m_null()
+        , m_is_empty(true) {
     }
-    constexpr OptionalValueHolder(T const& v)
-        : value(v)
-        , isEmpty(false) {
+    constexpr explicit OptionalValueHolder(T const& value)
+        : m_value(value)
+        , m_is_empty(false) {
     }
-    constexpr OptionalValueHolder(T&& v)
-        : value(std::move(v))
-        , isEmpty(false) {
+    constexpr explicit OptionalValueHolder(T&& value)
+        : m_value(std::move(value))
+        , m_is_empty(false) {
     }
     constexpr OptionalValueHolder(OptionalValueHolder const& rhs)
         : OptionalValueHolder() {
-        if (!rhs.isEmpty) {
-            set(rhs.value);
+        if (!rhs.m_is_empty) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
+            set(rhs.m_value);
         }
     }
-    constexpr OptionalValueHolder(OptionalValueHolder&& rhs)
+    // NOLINTNEXTLINE(modernize-type-traits), requires C++17
+    constexpr OptionalValueHolder(OptionalValueHolder&& rhs) noexcept(std::is_nothrow_move_constructible<T>::value)
         : OptionalValueHolder() {
-        if (!rhs.isEmpty) {
-            set(std::move(rhs.value));
+        if (!rhs.m_is_empty) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
+            set(std::move(rhs.m_value));
         }
     }
 
@@ -94,50 +99,83 @@ struct OptionalValueHolder {
         reset();
     }
 
-    constexpr OptionalValueHolder& operator=(OptionalValueHolder const& rhs) {
+    constexpr auto operator=(OptionalValueHolder const& rhs) -> OptionalValueHolder& {
         if (this != &rhs) {
-            if (rhs.isEmpty) {
+            if (rhs.m_is_empty) {
                 reset();
             } else {
-                set(rhs.value);
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
+                set(rhs.m_value);
             }
         }
         return *this;
     }
 
-    constexpr OptionalValueHolder& operator=(OptionalValueHolder&& rhs) {
+    // NOLINTNEXTLINE(modernize-type-traits), requires C++17
+    constexpr auto operator=(OptionalValueHolder&& rhs) noexcept(std::is_nothrow_move_assignable<T>::value)
+        -> OptionalValueHolder& {
         if (this != &rhs) {
-            if (rhs.isEmpty) {
+            if (rhs.m_is_empty) {
                 reset();
             } else {
-                set(std::move(rhs.value));
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
+                set(std::move(rhs.m_value));
             }
         }
         return *this;
     }
 
-    constexpr void set(T const& v) {
-        if (isEmpty) {
-            isEmpty = false;
-            new (&value) T { v };
+    constexpr auto is_empty() const -> bool {
+        return m_is_empty;
+    }
+
+    constexpr auto set(T const& value) -> void {
+        if (m_is_empty) {
+            m_is_empty = false;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
+            new (&m_value) T { value };
         } else {
-            value = v;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
+            m_value = value;
         }
     }
 
-    constexpr void set(T&& v) {
-        if (isEmpty) {
-            isEmpty = false;
-            new (&value) T { std::move(v) };
+    constexpr auto set(T&& value) -> void {
+        if (m_is_empty) {
+            m_is_empty = false;
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
+            new (&m_value) T { std::move(value) };
         } else {
-            value = std::move(v);
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
+            m_value = std::move(value);
         }
     }
 
-    constexpr void reset() {
-        if (!isEmpty) {
-            value.~T();
-            isEmpty = true;
+    constexpr auto unchecked_get() & -> T& {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), unchecked access guarded by caller
+        return m_value;
+    }
+
+    constexpr auto unchecked_get() const& -> T const& {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), unchecked access guarded by caller
+        return m_value;
+    }
+
+    constexpr auto unchecked_get() && -> T&& {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), unchecked access guarded by caller
+        return std::move(m_value);
+    }
+
+    constexpr auto unchecked_get() const&& -> T const&& {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), unchecked access guarded by caller
+        return std::move(m_value);
+    }
+
+    constexpr auto reset() -> void {
+        if (!m_is_empty) {
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
+            m_value.~T();
+            m_is_empty = true;
         }
     }
 };
@@ -150,6 +188,7 @@ class Optional {
     detail::OptionalValueHolder<T> m_value;
 
   public:
+    // NOLINTNEXTLINE(readability-identifier-naming), as specified in ISO14882:2017 [optional]
     using value_type = T;
 
     // constructors
@@ -158,15 +197,20 @@ class Optional {
     constexpr Optional(const Optional& rhs) = default;
     constexpr Optional(Optional&& rhs) = default;
 
-    constexpr Optional(NulloptT) noexcept
+    // NOLINTNEXTLINE(hicpp-explicit-conversions), as specified in ISO14882:2017 [optional]
+    constexpr Optional(NulloptT /* unused */) noexcept
         : Optional() {
     }
 
-    template <typename U = typename std::remove_cv<T>::type,
-              typename std::enable_if<std::is_constructible<T, U>::value
-                                          && !std::is_same<typename std::decay<U>::type, Optional<T>>::value
-                                          && !std::is_same<typename std::decay<U>::type, NulloptT>::value,
-                                      bool>::type = true>
+    template <typename U = std::remove_cv_t<T>,
+              // NOLINTNEXTLINE(modernize-type-traits), requires C++17
+              std::enable_if_t<std::is_constructible<T, U>::value
+                                   // NOLINTNEXTLINE(modernize-type-traits), requires C++17
+                                   && !std::is_same<typename std::decay<U>::type, Optional<T>>::value
+                                   // NOLINTNEXTLINE(modernize-type-traits), requires C++17
+                                   && !std::is_same<typename std::decay<U>::type, NulloptT>::value,
+                               bool> = true>
+    // NOLINTNEXTLINE(hicpp-explicit-conversions), as specified in ISO14882:2017 [optional]
     constexpr Optional(U&& value)
         : m_value(std::forward<U>(value)) {
     }
@@ -178,103 +222,87 @@ class Optional {
         ~Optional() = default;
 
     // assignment
-    constexpr Optional& operator=(NulloptT) noexcept {
+    constexpr auto operator=(NulloptT /* unused */) noexcept -> Optional& {
         reset();
         return *this;
     }
 
-    constexpr Optional& operator=(const Optional& rhs) = default;
-    constexpr Optional& operator=(Optional&& rhs) = default;
+    constexpr auto operator=(const Optional& rhs) -> Optional& = default;
+    constexpr auto operator=(Optional&& rhs) -> Optional& = default;
 
     // observers
-    constexpr const T* operator->() const noexcept {
-        if (m_value.isEmpty) {
-            return nullptr;
-        } else {
-            return &m_value.value;
-        }
+    constexpr auto operator->() const noexcept -> const T* {
+        return m_value.is_empty() ? nullptr : &(m_value.unchecked_get());
     }
 
-    constexpr T* operator->() noexcept {
-        if (m_value.isEmpty) {
-            return nullptr;
-        } else {
-            return &m_value.value;
-        }
+    constexpr auto operator->() noexcept -> T* {
+        return m_value.is_empty() ? nullptr : &(m_value.unchecked_get());
     }
 
-    constexpr const T& operator*() const& noexcept {
-        if (m_value.isEmpty) {
+    constexpr auto operator*() const& noexcept -> const T& {
+        if (m_value.is_empty()) {
             std::abort();
         }
-        return m_value.value;
+        return m_value.unchecked_get();
     }
 
-    constexpr T& operator*() & noexcept {
-        if (m_value.isEmpty) {
+    constexpr auto operator*() & noexcept -> T& {
+        if (m_value.is_empty()) {
             std::abort();
         }
-        return m_value.value;
+        return m_value.unchecked_get();
     }
 
-    constexpr T&& operator*() && noexcept {
-        if (m_value.isEmpty) {
+    constexpr auto operator*() && noexcept -> T&& {
+        if (m_value.is_empty()) {
             std::abort();
         }
-        return std::move(m_value.value);
+        return std::move(m_value).unchecked_get();
     }
 
-    constexpr const T&& operator*() const&& noexcept {
-        if (m_value.isEmpty) {
+    constexpr auto operator*() const&& noexcept -> const T&& {
+        if (m_value.is_empty()) {
             std::abort();
         }
-        return std::move(m_value.value);
+        return std::move(m_value).unchecked_get();
     }
 
     constexpr explicit operator bool() const noexcept {
-        return !m_value.isEmpty;
+        return !m_value.is_empty();
     }
 
-    constexpr bool has_value() const noexcept {
-        return !m_value.isEmpty;
+    constexpr auto has_value() const noexcept -> bool {
+        return !m_value.is_empty();
     }
 
-    constexpr const T& value() const& {
+    constexpr auto value() const& -> const T& {
         return **this;
     }
 
-    constexpr T& value() & {
+    constexpr auto value() & -> T& {
         return **this;
     }
 
-    constexpr T&& value() && {
+    constexpr auto value() && -> T&& {
         return std::move(**this);
     }
 
-    constexpr const T&& value() const&& {
+    constexpr auto value() const&& -> const T&& {
         return std::move(**this);
     }
 
-    template <class U = typename std::remove_cv<T>::type>
-    constexpr T value_or(U&& v) const& {
-        if (m_value.isEmpty) {
-            return std::forward<U>(v);
-        } else {
-            return m_value.value;
-        }
+    template <class U = std::remove_cv_t<T>>
+    constexpr auto value_or(U&& fallback) const& -> T {
+        return m_value.is_empty() ? std::forward<U>(fallback) : m_value.unchecked_get();
     }
 
-    template <class U = typename std::remove_cv<T>::type>
-    constexpr T value_or(U&& v) && {
-        if (m_value.isEmpty) {
-            return std::forward<U>(v);
-        } else {
-            return std::move(m_value.value);
-        }
+    template <class U = std::remove_cv_t<T>>
+    constexpr auto value_or(U&& fallback) && -> T {
+        return m_value.is_empty() ? std::forward<U>(fallback) : std::move(m_value).unchecked_get();
     }
 
     // modifiers
-    constexpr void reset() noexcept {
+    constexpr auto reset() noexcept -> void {
         m_value.reset();
     }
 };
@@ -287,6 +315,7 @@ Optional(T) -> Optional<T>;
 #endif
 
 #if __cplusplus >= 201703L
+// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
 inline constexpr NulloptT nullopt;
 #endif
 

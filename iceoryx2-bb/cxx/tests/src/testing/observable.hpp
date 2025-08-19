@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef INCLUDE_GUARD_IOX2_CONTAINER_TESTING_OBSERVABLE_HPP
-#define INCLUDE_GUARD_IOX2_CONTAINER_TESTING_OBSERVABLE_HPP
+#ifndef IOX2_INCLUDE_GUARD_CONTAINER_TESTING_OBSERVABLE_HPP
+#define IOX2_INCLUDE_GUARD_CONTAINER_TESTING_OBSERVABLE_HPP
 
 #include <gtest/gtest.h>
 
@@ -32,37 +32,43 @@ class Observable {
         int wasDestructed;      ///< Incremented for each invocation of the destructor.
         int totalInstances;     ///< Incremented for each constructor, decremented for each destructor invocation.
     } s_counter;                ///< Static counters for Observable.
-  public:
+
+    // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes), exposed for testability
     int id; ///< Id of this object. Ids propagate on copy/move construction and assignment.
-  public:
+
     /// Sets all counters in s_counter to 0.
-    static void resetAllCounters();
+    static void reset_all_counters();
 
     Observable();
-    explicit Observable(int id);
+    explicit Observable(int object_id);
     ~Observable();
     Observable(Observable const& rhs);
     Observable(Observable&& rhs) noexcept;
-    Observable& operator=(Observable const& rhs);
-    Observable& operator=(Observable&& rhs) noexcept;
+    auto operator=(Observable const& rhs) -> Observable&;
+    auto operator=(Observable&& rhs) noexcept -> Observable&;
 };
 
 /// A fixture that asserts that no instances of Observable were leaked after the completion of a test.
 class DetectLeakedObservablesFixture : public ::testing::Test {
   private:
-    bool m_isArmed;
+    bool m_is_armed;
 
   public:
     DetectLeakedObservablesFixture();
     ~DetectLeakedObservablesFixture() override;
 
+    DetectLeakedObservablesFixture(DetectLeakedObservablesFixture const&) = delete;
+    DetectLeakedObservablesFixture(DetectLeakedObservablesFixture&&) = delete;
+    auto operator=(DetectLeakedObservablesFixture const&) -> DetectLeakedObservablesFixture& = delete;
+    auto operator=(DetectLeakedObservablesFixture&&) -> DetectLeakedObservablesFixture& = delete;
+
     void SetUp() override;
     void TearDown() override;
 
     /// Checks whether there are currently any active instances of Observable that await destruction.
-    bool hasLeakedObservables() const;
+    auto has_leaked_observables() const -> bool;
     /// Do not perform the check for leaks after this test.
-    void defuseLeakCheck();
+    void defuse_leak_check();
 };
 
 } // namespace testing
