@@ -35,7 +35,7 @@ class Writer {
     /// Returns the [`UniqueWriterId`] of the [`Writer`]
     auto id() const -> UniqueWriterId;
 
-    /// Creates a [`EntryHandleMut`] for direct write access to the value. There can be only one
+    /// Creates an [`EntryHandleMut`] for direct write access to the value. There can be only one
     /// [`EntryHandleMut`] per value.
     template <typename ValueType>
     auto entry(const KeyType& key) -> iox::expected<EntryHandleMut<S, KeyType, ValueType>, EntryHandleMutError>;

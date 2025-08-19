@@ -187,48 +187,49 @@ fn spmc_unrestricted_atomic_mgmt_release_producer_allows_new_acquire() {
     assert_that!(p2, is_ok);
 }
 
-#[test]
-fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
-    let _test_lock = TEST_LOCK.lock().unwrap();
-
-    let value: u64 = 3;
-    let value_ptr: *const u64 = &value;
-    let value_size = core::mem::size_of::<u64>();
-    let value_alignment = core::mem::align_of::<u64>();
-
-    let mut read_value: u64 = 0;
-    let read_value_ptr: *mut u64 = &mut read_value;
-
-    let atomic = UnrestrictedAtomic::<u64>::new(0);
-    let data_ptr = atomic.data.as_ptr();
-    let mgmt = atomic.mgmt;
-
-    unsafe {
-        assert_that!(mgmt.__internal_acquire_producer(), is_ok);
-        let write_cell_ptr =
-            mgmt.__internal_get_ptr_to_write_cell(value_size, value_alignment, data_ptr as *mut u8);
-        core::ptr::copy_nonoverlapping(value_ptr as *const u8, write_cell_ptr, value_size);
-
-        // new value not read before update
-        mgmt.load(
-            read_value_ptr as *mut u8,
-            value_size,
-            value_alignment,
-            data_ptr as *mut u8,
-        );
-        assert_that!(read_value, eq 0);
-
-        mgmt.__internal_update_write_cell();
-
-        // new value can be read
-        mgmt.load(
-            read_value_ptr as *mut u8,
-            value_size,
-            value_alignment,
-            data_ptr as *mut u8,
-        );
-        assert_that!(read_value, eq value);
-
-        mgmt.__internal_release_producer();
-    }
-}
+// TODO: enable test when test access to private members is implemented
+//#[test]
+//fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
+//    let _test_lock = TEST_LOCK.lock().unwrap();
+//
+//    let value: u64 = 3;
+//    let value_ptr: *const u64 = &value;
+//    let value_size = core::mem::size_of::<u64>();
+//    let value_alignment = core::mem::align_of::<u64>();
+//
+//    let mut read_value: u64 = 0;
+//    let read_value_ptr: *mut u64 = &mut read_value;
+//
+//    let atomic = UnrestrictedAtomic::<u64>::new(0);
+//    let data_ptr = atomic.data.as_ptr();
+//    let mgmt = atomic.mgmt;
+//
+//    unsafe {
+//        assert_that!(mgmt.__internal_acquire_producer(), is_ok);
+//        let write_cell_ptr =
+//            mgmt.__internal_get_ptr_to_write_cell(value_size, value_alignment, data_ptr as *mut u8);
+//        core::ptr::copy_nonoverlapping(value_ptr as *const u8, write_cell_ptr, value_size);
+//
+//        // new value not read before update
+//        mgmt.load(
+//            read_value_ptr as *mut u8,
+//            value_size,
+//            value_alignment,
+//            data_ptr as *mut u8,
+//        );
+//        assert_that!(read_value, eq 0);
+//
+//        mgmt.__internal_update_write_cell();
+//
+//        // new value can be read
+//        mgmt.load(
+//            read_value_ptr as *mut u8,
+//            value_size,
+//            value_alignment,
+//            data_ptr as *mut u8,
+//        );
+//        assert_that!(read_value, eq value);
+//
+//        mgmt.__internal_release_producer();
+//    }
+//}

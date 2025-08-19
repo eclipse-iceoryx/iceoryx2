@@ -13,11 +13,10 @@
 #ifndef IOX2_ENTRY_VALUE_HPP
 #define IOX2_ENTRY_VALUE_HPP
 
-#include "iox/assertions_addendum.hpp"
-// #include "iox2/entry_handle_mut.hpp"
+#include <utility>
+
 #include "iox2/iceoryx2.h"
 #include "iox2/service_type.hpp"
-#include <iostream>
 
 namespace iox2 {
 template <ServiceType, typename, typename>
@@ -27,6 +26,7 @@ class EntryValueUninit;
 
 /// Wrapper around an initialized entry value that can be used for a zero-copy update.
 template <ServiceType S, typename KeyType, typename ValueType>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
 class EntryValue {
   public:
     EntryValue(EntryValue&& rhs) noexcept;
@@ -40,14 +40,10 @@ class EntryValue {
     /// [`EntryValue`] and returns the original [`EntryHandleMut`].
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto update(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
-    // friend auto update(EntryValue<ST, KeyT, ValueT>&& self);
 
     /// Discard the [`EntryValue`] and returns the original [`EntryHandleMut`].
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto discard(EntryValue<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
-
-    // TODO: make private
-    auto value_mut() -> ValueType&;
 
   private:
     template <ServiceType, typename, typename>
@@ -57,6 +53,8 @@ class EntryValue {
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto loan_uninit(EntryHandleMut<ST, KeyT, ValueT>&&) -> EntryValueUninit<ST, KeyT, ValueT>;
     template <ServiceType ST, typename KeyT, typename ValueT>
+    friend auto write(EntryValueUninit<ST, KeyT, ValueT>&&, ValueT) -> EntryValue<ST, KeyT, ValueT>;
+    template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&&) -> EntryHandleMut<ST, KeyT, ValueT>;
 
     // The EntryValue is defaulted since the member is initialized in
@@ -65,12 +63,11 @@ class EntryValue {
 
     void drop();
 
-    auto take_handle_ownership() -> iox2_entry_value_h {
-        auto* result = m_handle;
-        m_handle = nullptr;
-        return result;
-    }
+    auto value_mut() -> ValueType&;
 
+    auto take_handle_ownership() -> iox2_entry_value_h;
+
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value will be initialized in the move assignment operator
     iox2_entry_value_t m_entry_value;
     iox2_entry_value_h m_handle = nullptr;
 };
@@ -137,6 +134,13 @@ inline void EntryValue<S, KeyType, ValueType>::drop() {
         iox2_entry_value_drop(m_handle);
         m_handle = nullptr;
     }
+}
+
+template <ServiceType S, typename KeyType, typename ValueType>
+inline auto EntryValue<S, KeyType, ValueType>::take_handle_ownership() -> iox2_entry_value_h {
+    auto* result = m_handle;
+    m_handle = nullptr;
+    return result;
 }
 } // namespace iox2
 

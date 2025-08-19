@@ -16,11 +16,11 @@
 #include <cstdint>
 
 namespace iox2 {
-/// Defines a failure that can occur when a [`WriterHandle`] is created with [`Writer::entry()`].
+/// Defines a failure that can occur when a [`EntryHandleMut`] is created with [`Writer::entry()`].
 enum class EntryHandleMutError : uint8_t {
     /// The entry with the given key and value type does not exist.
     EntryDoesNotExist,
-    /// The [`WriterHandle`] already exists.
+    /// The [`EntryHandleMut`] already exists.
     HandleAlreadyExists,
 };
 } // namespace iox2

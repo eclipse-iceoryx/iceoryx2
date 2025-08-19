@@ -15,8 +15,8 @@
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/reader_error.hpp"
 #include "iox2/service.hpp"
-
 #include "iox2/service_builder_blackboard_error.hpp"
+#include "iox2/type_variant.hpp"
 #include "iox2/writer_error.hpp"
 #include "test.hpp"
 #include <cstdint>
@@ -264,19 +264,19 @@ TYPED_TEST(ServiceBlackboardTest, opening_existing_service_works) {
 
 // TODO: enable when key type is generic
 // TYPED_TEST(ServiceBlackboardTest, opening_existing_service_with_wrong_key_type_fails) {
-// constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
-
-// const auto service_name = iox2_testing::generate_service_name();
-
-// auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
-// auto sut_create = node.service_builder(service_name)
-//.template blackboard_creator<uint64_t>()
-//.template add_with_default<uint64_t>(0)
-//.create()
-//.expect("");
-// auto sut = node.service_builder(service_name).template blackboard_opener<double>().open();
-// ASSERT_TRUE(sut.has_error());
-// ASSERT_THAT(sut.error(), Eq(BlackboardOpenError::IncompatibleKeys));
+//    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+//
+//    const auto service_name = iox2_testing::generate_service_name();
+//
+//    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+//    auto sut_create = node.service_builder(service_name)
+//                          .template blackboard_creator<uint64_t>()
+//                          .template add_with_default<uint64_t>(0)
+//                          .create()
+//                          .expect("");
+//    auto sut = node.service_builder(service_name).template blackboard_opener<double>().open();
+//    ASSERT_TRUE(sut.has_error());
+//    ASSERT_THAT(sut.error(), Eq(BlackboardOpenError::IncompatibleKeys));
 //}
 
 TYPED_TEST(ServiceBlackboardTest, open_fails_when_service_does_not_satisfy_max_nodes_requirement) {
@@ -446,28 +446,26 @@ TYPED_TEST(ServiceBlackboardTest, setting_service_properties_works) {
     ASSERT_THAT(static_config.type_details().type_name(), StrEq("u64"));
 }
 
-// TODO: adapt the test below when key type is generic
-// #[test]
-// fn type_information_are_correct<Sut: Service>() {
-// type KeyType = u64;
-// let config = generate_isolated_config();
-// let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+TYPED_TEST(ServiceBlackboardTest, type_information_are_correct) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
-// let service_name = generate_name();
+    using KeyType = uint64_t;
 
-// let sut = node
-//.service_builder(&service_name)
-//.blackboard_creator::<KeyType>()
-//.add::<u8>(0, 0)
-//.create()
-//.unwrap();
+    const auto service_name = iox2_testing::generate_service_name();
 
-// let d = sut.static_config().type_details();
-// assert_that!(d.variant, eq TypeVariant::FixedSize);
-// assert_that!(d.type_name, eq core::any::type_name::<KeyType>());
-// assert_that!(d.size, eq core::mem::size_of::<KeyType>());
-// assert_that!(d.alignment, eq core::mem::align_of::<KeyType>());
-//}
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template blackboard_creator<KeyType>()
+                       .template add_with_default<uint8_t>(0)
+                       .create()
+                       .expect("");
+
+    auto details = service.static_config().type_details();
+    ASSERT_THAT(details.variant(), Eq(TypeVariant::FixedSize));
+    ASSERT_THAT(details.type_name(), StrEq("u64"));
+    ASSERT_THAT(details.size(), Eq(sizeof(KeyType)));
+    ASSERT_THAT(details.alignment(), Eq(alignof(KeyType)));
+}
 
 TYPED_TEST(ServiceBlackboardTest, number_of_readers_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -792,6 +790,7 @@ TYPED_TEST(ServiceBlackboardTest, communication_with_max_readers) {
     }
 }
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers) only for testing purposes
 TYPED_TEST(ServiceBlackboardTest, communication_with_max_reader_and_writer_handles) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
     constexpr uint64_t MAX_HANDLES = 6;
@@ -836,7 +835,9 @@ TYPED_TEST(ServiceBlackboardTest, communication_with_max_reader_and_writer_handl
         }
     }
 }
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers, readability-identifier-length) only for testing purposes
 TYPED_TEST(ServiceBlackboardTest, write_and_read_different_value_types_works) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -845,18 +846,19 @@ TYPED_TEST(ServiceBlackboardTest, write_and_read_different_value_types_works) {
     struct Groovy {
         Groovy() = default;
         Groovy(bool a, uint32_t b, int64_t c)
-            : a { a }
-            , b { b }
-            , c { c } {
+            : m_a { a }
+            , m_b { b }
+            , m_c { c } {
         }
 
         auto operator==(const Groovy& rhs) -> bool {
-            return a == rhs.a && b == rhs.b && c == rhs.c;
+            return m_a == rhs.m_a && m_b == rhs.m_b && m_c == rhs.m_c;
         }
 
-        bool a { false };
-        uint32_t b { 0 };
-        int64_t c { 0 };
+      private:
+        bool m_a { false };
+        uint32_t m_b { 0 };
+        int64_t m_c { 0 };
     };
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
@@ -881,6 +883,7 @@ TYPED_TEST(ServiceBlackboardTest, write_and_read_different_value_types_works) {
     ASSERT_THAT(reader.template entry<bool>(100).expect("").get(), Eq(true));
     ASSERT_TRUE(reader.template entry<Groovy>(13).expect("").get() == Groovy(false, 888, 906));
 }
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers, readability-identifier-length)
 
 TYPED_TEST(ServiceBlackboardTest, creating_max_supported_amount_of_ports_work) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
@@ -1163,6 +1166,7 @@ TYPED_TEST(ServiceBlackboardTest, reader_can_stil_read_value_when_writer_was_dis
     ASSERT_THAT(entry_handle.get(), Eq(VALUE));
 }
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
 TYPED_TEST(ServiceBlackboardTest, reconnected_reader_sees_current_blackboard_status) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
@@ -1193,6 +1197,7 @@ TYPED_TEST(ServiceBlackboardTest, reconnected_reader_sees_current_blackboard_sta
     ASSERT_THAT(reader_2.template entry<uint8_t>(0).expect("").get(), Eq(5));
     ASSERT_THAT(reader_2.template entry<int32_t>(6).expect("").get(), Eq(-567));
 }
+// NOLINTEND(cppcoreguidelines-avoid-magic-numbers, readability-magic-numbers)
 
 TYPED_TEST(ServiceBlackboardTest, entry_handle_mut_can_still_write_after_writer_was_dropped) {
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;

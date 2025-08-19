@@ -447,7 +447,7 @@ impl<Service: service::Service> __InternalWriterHandle<Service> {
         entry_id: EventId,
         writer_state: Arc<WriterSharedState<Service, u64>>,
     ) -> Result<Self, WriterHandleError> {
-        match unsafe { (*atomic_mgmt_ptr).acquire_producer() } {
+        match unsafe { (*atomic_mgmt_ptr).__internal_acquire_producer() } {
             Ok(_) => Ok(Self {
                 atomic_mgmt_ptr,
                 data_ptr,

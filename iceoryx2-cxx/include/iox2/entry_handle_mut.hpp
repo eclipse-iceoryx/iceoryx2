@@ -13,16 +13,12 @@
 #ifndef IOX2_ENTRY_HANDLE_MUT_HPP
 #define IOX2_ENTRY_HANDLE_MUT_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox2/entry_value.hpp"
 #include "iox2/entry_value_uninit.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
-// template <ServiceType, typename, typename>
-// class EntryValueUninit;
-
 /// A handle for direct write access to a specific blackboard value.
 template <ServiceType S, typename KeyType, typename ValueType>
 class EntryHandleMut {
@@ -46,10 +42,6 @@ class EntryHandleMut {
     auto entry_id() const -> EventId;
 
   private:
-    // template <ServiceType, typename, typename>
-    // friend class EntryValueUninit;
-    // template <ServiceType, typename, typename>
-    // friend class EntryValue;
     template <ServiceType, typename>
     friend class Writer;
     template <ServiceType ST, typename KeyT, typename ValueT>
@@ -59,18 +51,13 @@ class EntryHandleMut {
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&& self) -> EntryHandleMut<ST, KeyT, ValueT>;
 
-    // TODO: explain default
     explicit EntryHandleMut(iox2_entry_handle_mut_h handle);
+
     void drop();
 
-    auto take_handle_ownership() -> iox2_entry_handle_mut_h {
-        auto* result = m_handle;
-        m_handle = nullptr;
-        return result;
-    }
+    auto take_handle_ownership() -> iox2_entry_handle_mut_h;
 
     iox2_entry_handle_mut_h m_handle = nullptr;
-    // EntryValueUninit<S, KeyType, ValueType> m_entry_value_uninit;
 };
 
 template <ServiceType S, typename KeyType, typename ValueType>
@@ -101,15 +88,15 @@ inline EntryHandleMut<S, KeyType, ValueType>::~EntryHandleMut() noexcept {
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline void EntryHandleMut<S, KeyType, ValueType>::update_with_copy(ValueType value) {
-    // only C++, not C
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
     auto value_ptr = new ValueType(value);
     iox2_entry_handle_mut_update_with_copy(&m_handle, value_ptr, sizeof(ValueType), alignof(ValueType));
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
     delete value_ptr;
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto loan_uninit(EntryHandleMut<S, KeyType, ValueType>&& self) -> EntryValueUninit<S, KeyType, ValueType> {
-    // C++ and C
     EntryValueUninit<S, KeyType, ValueType> entry_value_uninit;
 
     iox2_entry_handle_mut_loan_uninit(self.take_handle_ownership(),
@@ -136,6 +123,13 @@ inline void EntryHandleMut<S, KeyType, ValueType>::drop() {
         iox2_entry_handle_mut_drop(m_handle);
         m_handle = nullptr;
     }
+}
+
+template <ServiceType S, typename KeyType, typename ValueType>
+inline auto EntryHandleMut<S, KeyType, ValueType>::take_handle_ownership() -> iox2_entry_handle_mut_h {
+    auto* result = m_handle;
+    m_handle = nullptr;
+    return result;
 }
 } // namespace iox2
 

@@ -198,8 +198,8 @@ impl UnrestrictedAtomicMgmt {
 /// unrestricted.
 #[repr(C)]
 pub struct UnrestrictedAtomic<T: Copy> {
-    pub mgmt: UnrestrictedAtomicMgmt,
-    pub data: [UnsafeCell<MaybeUninit<T>>; NUMBER_OF_CELLS],
+    mgmt: UnrestrictedAtomicMgmt,
+    data: [UnsafeCell<MaybeUninit<T>>; NUMBER_OF_CELLS],
 }
 
 impl<T: Copy + Debug> Debug for UnrestrictedAtomic<T> {

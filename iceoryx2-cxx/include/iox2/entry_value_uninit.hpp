@@ -13,7 +13,6 @@
 #ifndef IOX2_ENTRY_VALUE_UNINIT_HPP
 #define IOX2_ENTRY_VALUE_UNINIT_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox2/entry_value.hpp"
 #include "iox2/service_type.hpp"
 
@@ -21,7 +20,7 @@ namespace iox2 {
 template <ServiceType, typename, typename>
 class EntryHandleMut;
 
-/// Wrapper around an uninitiaized entry value that can be used for a zero-copy update.
+/// Wrapper around an uninitialized entry value that can be used for a zero-copy update.
 template <ServiceType S, typename KeyType, typename ValueType>
 class EntryValueUninit {
   public:
@@ -34,7 +33,6 @@ class EntryValueUninit {
 
     /// Consumes the [`EntryValueUninit`], writes value to the entry value and returns the
     /// initialized [`EntryValue`].
-    // TODO: check ValueType with enable_if?
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto write(EntryValueUninit<ST, KeyT, ValueT>&& self, ValueT value) -> EntryValue<ST, KeyT, ValueT>;
 
@@ -54,7 +52,6 @@ class EntryValueUninit {
     explicit EntryValueUninit() = default;
 
     EntryValue<S, KeyType, ValueType> m_entry_value;
-    // iox2_entry_value_uninit_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType, typename ValueType>

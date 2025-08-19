@@ -14,7 +14,6 @@
 #define IOX2_ENUM_TRANSLATION_HPP
 
 #include "iox/assertions.hpp"
-#include "iox/assertions_addendum.hpp"
 #include "iox/into.hpp"
 #include "iox2/allocation_strategy.hpp"
 #include "iox2/callback_progression.hpp"

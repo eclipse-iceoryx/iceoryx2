@@ -32,10 +32,10 @@ class Reader {
     Reader(const Reader&) = delete;
     auto operator=(const Reader&) -> Reader& = delete;
 
-    /// Returns the [`UniqueReaderId`] of the [`Reader`]
+    /// Returns the [`UniqueReaderId`] of the [`Reader`].
     auto id() const -> UniqueReaderId;
 
-    /// Creates a [`EntryHandle`] for direct read access to the value.
+    /// Creates an [`EntryHandle`] for direct read access to the value.
     template <typename ValueType>
     auto entry(const KeyType& key) -> iox::expected<EntryHandle<S, KeyType, ValueType>, EntryHandleError>;
 

@@ -197,7 +197,6 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_update_with_copy(
             .local
             .__internal_get_ptr_to_write_cell(value_size, value_alignment),
     };
-    let v = *(value_ptr as *mut u8);
     core::ptr::copy_nonoverlapping(value_ptr.cast(), data_cell_ptr, value_size);
     match entry_handle_mut.service_type {
         iox2_service_type_e::IPC => entry_handle_mut
