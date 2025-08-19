@@ -13,12 +13,12 @@
 #![allow(non_camel_case_types)]
 
 use crate::{
-    api::{c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType, KeyFfi, ValueFfi},
+    api::{c_size_t, iox2_service_type_e, AssertNonNullHandle, HandleToType},
     iox2_event_id_t,
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
-use iceoryx2::port::reader::{ReaderHandle, __InternalReaderHandle};
+use iceoryx2::port::reader::__InternalReaderHandle;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -43,10 +43,9 @@ impl EntryHandleUnion {
 }
 
 #[repr(C)]
-#[repr(align(16))] // alignment of Option<EntryHandleUnion>
+#[repr(align(8))] // alignment of Option<EntryHandleUnion>
 pub struct iox2_entry_handle_storage_t {
-    // TODO: adapt size and alignment
-    internal: [u8; 1232], // magic number obtained with size_of::<Option<EntryHandleUnion>>()
+    internal: [u8; 40], // magic number obtained with size_of::<Option<EntryHandleUnion>>()
 }
 
 #[repr(C)]
@@ -110,7 +109,14 @@ impl HandleToType for iox2_entry_handle_h_ref {
 
 // BEGIN C API
 
-// TODO: documentation
+/// Copies the value to `value_ptr`.
+///
+/// # Safety
+///
+/// * `entry_handle_handle` obtained by [`iox2_reader_entry()`](crate::iox2_reader_entry())
+/// * `value_ptr` a valid, non-null [`*mut c_void`] pointer
+/// * `value_size` the size of the value type
+/// * `value_alignment` the alignment of the value type
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_get(
     entry_handle_handle: iox2_entry_handle_h_ref,
@@ -141,7 +147,12 @@ pub unsafe extern "C" fn iox2_entry_handle_get(
     };
 }
 
-// TODO: documentation
+/// Returns an id corresponding to the entry which can be used in an event based communication setup.
+///
+/// # Safety
+///
+/// * `entry_handle_handle` obtained by [`iox2_reader_entry()`](crate::iox2_reader_entry())
+/// * `entry_id` a valid, non-null pointer pointing to a [`iox2_event_id_t`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_entry_id(
     entry_handle_handle: iox2_entry_handle_h_ref,
@@ -160,7 +171,17 @@ pub unsafe extern "C" fn iox2_entry_handle_entry_id(
     *entry_id = result.into();
 }
 
-// TODO: documentation
+/// This function needs to be called to destroy the entry handle!
+///
+/// # Arguments
+///
+/// * `entry_handle_handle` - A valid [`iox2_entry_handle_h`]
+///
+/// # Safety
+///
+/// * The `entry_handle_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_entry_handle_t`] can be re-used with a call to
+///   [`iox2_reader_entry`](crate::iox2_reader_entry)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_drop(entry_handle_handle: iox2_entry_handle_h) {
     entry_handle_handle.assert_non_null();

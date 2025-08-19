@@ -13,12 +13,12 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_service_type_e,
-    AssertNonNullHandle, EntryHandleMutUnion, HandleToType, KeyFfi, ValueFfi,
+    iox2_entry_handle_mut_h, iox2_entry_handle_mut_t, iox2_service_type_e, AssertNonNullHandle,
+    EntryHandleMutUnion, HandleToType,
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
-use iceoryx2::port::writer::{__InternalEntryValueUninit, __InternalWriterHandle};
+use iceoryx2::port::writer::__InternalEntryValueUninit;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -43,10 +43,9 @@ impl EntryValueUninitUnion {
 }
 
 #[repr(C)]
-#[repr(align(16))] // alignment of Option<EntryValueUninitUnion>
+#[repr(align(8))] // alignment of Option<EntryValueUninitUnion>
 pub struct iox2_entry_value_storage_t {
-    // TODO: adapt size and alignment
-    internal: [u8; 1232], // magic number obtained with size_of::<Option<EntryValueUninitUnion>>()
+    internal: [u8; 48], // magic number obtained with size_of::<Option<EntryValueUninitUnion>>()
 }
 
 #[repr(C)]
@@ -71,9 +70,9 @@ impl iox2_entry_value_t {
 }
 
 pub struct iox2_entry_value_h_t;
-/// The owning handle for `iox2_entry_value_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_entry_value_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_entry_value_h = *mut iox2_entry_value_h_t;
-/// The non-owning handle for `iox2_entry_value_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_entry_value_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_entry_value_h_ref = *const iox2_entry_value_h;
 
 impl AssertNonNullHandle for iox2_entry_value_h {
@@ -144,7 +143,12 @@ pub unsafe extern "C" fn iox2_entry_value_move(
     *dest_handle_ptr = (*dest_struct_ptr).as_handle();
 }
 
-// TODO: better name? it's something like iox2_entry_value_value_mut
+/// Acquires the entrie's mutable value.
+///
+/// # Safety
+///
+/// * `entry_value_handle` obtained by [`iox2_entry_handle_mut_loan_uninit()`](crate::iox2_entry_handle_mut_loan_uninit())
+/// * `value_ptr` a valid, non-null pointer pointing to a [`*mut c_void`] pointer.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_value_mut(
     entry_value_handle: iox2_entry_value_h_ref,
@@ -161,6 +165,13 @@ pub unsafe extern "C" fn iox2_entry_value_mut(
     };
 }
 
+/// Consumes the entry value, makes the new value readable for [`iox2_reader_t`](crate::iox2_reader_t) and returns the original entry handle mut.
+///
+/// # Safety
+///
+/// * `entry_value_handle` obtained by [`iox2_entry_handle_mut_loan_uninit()`](crate::iox2_entry_handle_mut_loan_uninit()), it's invalid after the return of this function
+/// * `entry_handle_mut_struct_ptr` must be either a NULL pointer or a pointer to a valid [`iox2_entry_handle_mut_t`](crate::iox2_entry_handle_mut_t)
+/// * `entry_handle_mut_handle_ptr` a valid, non-null [`*mut iox2_entry_handle_mut_h`] pointer which will be initialized by this function call
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_value_update(
     entry_value_handle: iox2_entry_value_h,
@@ -223,6 +234,13 @@ pub unsafe extern "C" fn iox2_entry_value_update(
     }
 }
 
+/// Consumes and discards the entry value and returns the original entry handle mut.
+///
+/// # Safety
+///
+/// * `entry_value_handle` obtained by [`iox2_entry_handle_mut_loan_uninit()`](crate::iox2_entry_handle_mut_loan_uninit()), it's invalid after the return of this function
+/// * `entry_handle_mut_struct_ptr` must be either a NULL pointer or a pointer to a valid [`iox2_entry_handle_mut_t`]
+/// * `entry_handle_mut_handle_ptr` a valid, non-null [`*mut iox2_entry_handle_mut_h`] pointer which will be initialized by this function call
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_value_discard(
     entry_value_handle: iox2_entry_value_h,
@@ -285,7 +303,17 @@ pub unsafe extern "C" fn iox2_entry_value_discard(
     }
 }
 
-// TODO: documentation
+/// This function needs to be called to destroy the entry value!
+///
+/// # Arguments
+///
+/// * `entry_value_handle` - A valid [`iox2_entry_value_h`]
+///
+/// # Safety
+///
+/// * The `entry_value_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_entry_value_t`] can be re-used with a call to
+///   [`iox2_entry_handle_mut_loan_uninit()`](crate::iox2_entry_handle_mut_loan_uninit())!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_value_drop(entry_value_handle: iox2_entry_value_h) {
     entry_value_handle.assert_non_null();

@@ -66,10 +66,9 @@ impl WriterUnion {
 }
 
 #[repr(C)]
-#[repr(align(16))] // alignment of Option<WriterUnion>
+#[repr(align(8))] // alignment of Option<WriterUnion>
 pub struct iox2_writer_storage_t {
-    // TODO: adapt size and alignment
-    internal: [u8; 1232], // magic number obtained with size_of::<Option<WriterUnion>>()
+    internal: [u8; 32], // magic number obtained with size_of::<Option<WriterUnion>>()
 }
 
 #[repr(C)]
@@ -94,9 +93,9 @@ impl iox2_writer_t {
 }
 
 pub struct iox2_writer_h_t;
-/// The owning handle for `iox2_writer_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_writer_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_writer_h = *mut iox2_writer_h_t;
-/// The non-owning handle for `iox2_writer_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_writer_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_writer_h_ref = *const iox2_writer_h;
 
 impl AssertNonNullHandle for iox2_writer_h {
@@ -197,7 +196,23 @@ pub unsafe extern "C" fn iox2_writer_id(
     *id_handle_ptr = (*storage_ptr).as_handle();
 }
 
-//// TODO: documentation
+/// Acquires an entry handle mut for direct write access to the stored value.
+///
+/// # Arguments
+///
+/// * `writer_handle` obtained by [`iox2_port_factory_writer_builder_create`](crate::iox2_port_factory_writer_builder_create)
+/// * `entry_handle_mut_struct_ptr` must be either a NULL pointer or a pointer to a valid [`iox2_entry_handle_mut_t`]. If it is a NULL pointer, the storage will be allocated on the heap.
+/// * `entry_handle_mut_handle_ptr` valid pointer to a [`iox2_entry_handle_mut_h`]
+/// * `key` the key of the key-value pair for which the entry handle shall be acquired
+/// * `value_type_name_str` the type name of the value type of the key-value-pair for which the entry handle shall be acquired
+/// * `value_type_name_len` the length of `value_type_name_str`
+/// * `value_size` the size of the value type of the key-value-pair for which the entry handle shall be acquired
+/// * `value_alignment` the alignment of the value type of the key-value-pair for which the entry handle shall be acquired
+///
+/// # Safety
+///
+/// * `writer_handle` must be non-null and valid
+/// * `entry_handle_mut_handle_ptr` must be non-null and valid
 #[no_mangle]
 pub unsafe extern "C" fn iox2_writer_entry(
     writer_handle: iox2_writer_h_ref,

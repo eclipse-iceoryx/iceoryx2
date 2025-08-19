@@ -13,12 +13,12 @@
 #![allow(non_camel_case_types)]
 
 use crate::api::{
-    c_size_t, iox2_entry_value_h, iox2_entry_value_t, iox2_event_id_t, iox2_service_type_e,
-    AssertNonNullHandle, EntryValueUninitUnion, HandleToType, KeyFfi, ValueFfi,
+    iox2_entry_value_h, iox2_entry_value_t, iox2_event_id_t, iox2_service_type_e,
+    AssertNonNullHandle, EntryValueUninitUnion, HandleToType,
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
-use iceoryx2::port::writer::{WriterHandle, __InternalWriterHandle};
+use iceoryx2::port::writer::__InternalWriterHandle;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -43,10 +43,9 @@ impl EntryHandleMutUnion {
 }
 
 #[repr(C)]
-#[repr(align(16))] // alignment of Option<EntryHandleMutUnion>
+#[repr(align(8))] // alignment of Option<EntryHandleMutUnion>
 pub struct iox2_entry_handle_mut_storage_t {
-    // TODO: adapt size and alignment
-    internal: [u8; 1232], // magic number obtained with size_of::<Option<EntryHandleMutUnion>>()
+    internal: [u8; 40], // magic number obtained with size_of::<Option<EntryHandleMutUnion>>()
 }
 
 #[repr(C)]
@@ -71,9 +70,9 @@ impl iox2_entry_handle_mut_t {
 }
 
 pub struct iox2_entry_handle_mut_h_t;
-/// The owning handle for `iox2_entry_handle_mut_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_entry_handle_mut_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_entry_handle_mut_h = *mut iox2_entry_handle_mut_h_t;
-/// The non-owning handle for `iox2_entry_handle_mut_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_entry_handle_mut_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_entry_handle_mut_h_ref = *const iox2_entry_handle_mut_h;
 
 impl AssertNonNullHandle for iox2_entry_handle_mut_h {
@@ -110,6 +109,15 @@ impl HandleToType for iox2_entry_handle_mut_h_ref {
 
 // BEGIN C API
 
+/// Consumes the `iox2_entry_handle_mut` and loans an uninitialized entry value that can be used to update without copy.
+///
+/// # Safety
+///
+/// * `entry_handle_mut_handle` obtained by [`iox2_writer_entry()`](crate::iox2_writer_entry()), is invalid after the return of this function
+/// * `entry_value_struct_ptr` must be either a NULL pointer or a pointer to a valid [`iox2_entry_value_t`]
+/// * `entry_value_handle_ptr` a valid, non-null [`*mut iox2_entry_value_h`] pointer which will be initialized by this function call
+/// * `value_size` the size of the value type that shall be stored in the entry value
+/// * `value_alignment` the alignment of the value type that shall be stored in the entry value
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_mut_loan_uninit(
     entry_handle_mut_handle: iox2_entry_handle_mut_h,
@@ -173,6 +181,14 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_loan_uninit(
     }
 }
 
+/// Updates the entry value by copying the value pointed to by `value_ptr`
+///
+/// # Safety
+///
+/// * `entry_handle_mut_handle` obtained by [`iox2_writer_entry()`](crate::iox2_writer_entry())
+/// * `value_ptr` a valid, non-null [`*mut c_void`] pointer which points to the value to be stored
+/// * `value_size` the size of the value type that shall be stored in the entry value
+/// * `value_alignment` the alignment of the value type that shall be stored in the entry value
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_mut_update_with_copy(
     entry_handle_mut_handle: iox2_entry_handle_mut_h_ref,
@@ -212,7 +228,12 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_update_with_copy(
     }
 }
 
-// TODO: documentation
+/// Returns an id corresponding to the entry which can be used in an event based communication setup.
+///
+/// # Safety
+///
+/// * `entry_handle_mut_handle` obtained by [`iox2_writer_entry()`](crate::iox2_writer_entry())
+/// * `entry_id` a valid, non-null pointer pointing to a [`iox2_event_id_t`]
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_mut_entry_id(
     entry_handle_mut_handle: iox2_entry_handle_mut_h_ref,
@@ -231,6 +252,17 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_entry_id(
     *entry_id = result.into();
 }
 
+/// This function needs to be called to destroy the entry handle mut!
+///
+/// # Arguments
+///
+/// * `entry_handle_mut_handle` - A valid [`iox2_entry_handle_mut_h`]
+///
+/// # Safety
+///
+/// * The `entry_handle_mut_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
+/// * The corresponding [`iox2_entry_handle_mut_t`] can be re-used with a call to
+///   [`iox2_writer_entry`](crate::iox2_writer_entry)!
 #[no_mangle]
 pub unsafe extern "C" fn iox2_entry_handle_mut_drop(
     entry_handle_mut_handle: iox2_entry_handle_mut_h,

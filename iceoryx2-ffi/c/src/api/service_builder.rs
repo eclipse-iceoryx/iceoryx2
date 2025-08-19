@@ -26,9 +26,7 @@ use iceoryx2::service::builder::{
     publish_subscribe::Builder as ServiceBuilderPubSub,
     request_response::Builder as ServiceBuilderRequestResponse, Builder as ServiceBuilderBase,
 };
-use iceoryx2::service::builder::{
-    CustomHeaderMarker, CustomKeyMarker, CustomPayloadMarker, CustomValueMarker,
-};
+use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
@@ -40,9 +38,7 @@ use core::mem::MaybeUninit;
 pub(super) type UserHeaderFfi = CustomHeaderMarker;
 pub(super) type PayloadFfi = [CustomPayloadMarker];
 pub(super) type UninitPayloadFfi = [MaybeUninit<CustomPayloadMarker>];
-//pub(super) type KeyFfi = CustomKeyMarker;
 pub(super) type KeyFfi = u64;
-pub(super) type ValueFfi = CustomValueMarker;
 
 pub(super) union ServiceBuilderUnionNested<S: Service> {
     pub(super) base: ManuallyDrop<ServiceBuilderBase<S>>,
@@ -241,16 +237,16 @@ pub type iox2_service_builder_request_response_h_ref =
     *const iox2_service_builder_request_response_h;
 
 pub struct iox2_service_builder_blackboard_creator_h_t;
-/// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to a function transfers the ownership.
 pub type iox2_service_builder_blackboard_creator_h =
     *mut iox2_service_builder_blackboard_creator_h_t;
-/// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to a function does not transfer the ownership.
 pub type iox2_service_builder_blackboard_creator_h_ref =
     *const iox2_service_builder_blackboard_creator_h;
 pub struct iox2_service_builder_blackboard_opener_h_t;
-/// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to a function transfers the ownership.
 pub type iox2_service_builder_blackboard_opener_h = *mut iox2_service_builder_blackboard_opener_h_t;
-/// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to a function does not transfer the ownership.
 pub type iox2_service_builder_blackboard_opener_h_ref =
     *const iox2_service_builder_blackboard_opener_h;
 
@@ -599,11 +595,11 @@ pub unsafe extern "C" fn iox2_service_builder_request_response(
     service_builder_handle as *mut _ as _
 }
 
-/// This function transform the [`iox2_service_builder_h`] to a blackboard service creator.
+/// This function transforms the [`iox2_service_builder_h`] to a blackboard service creator.
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_blackboard_creator_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
 ///
 /// Returns a [`iox2_service_builder_blackboard_creator_h`] for the blackboard service creator
 ///
@@ -642,11 +638,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator(
     service_builder_handle as *mut _ as _
 }
 
-/// This function transform the [`iox2_service_builder_h`] to a blackboard service opener.
+/// This function transforms the [`iox2_service_builder_h`] to a blackboard service opener.
 ///
 /// # Arguments
 ///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_blackboard_opener_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
+/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
 ///
 /// Returns a [`iox2_service_builder_blackboard_opener_h`] for the blackboard service opener
 ///
@@ -681,8 +677,6 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_opener(
             ));
         }
     }
-
-    // TODO: KeyType
 
     service_builder_handle as *mut _ as _
 }

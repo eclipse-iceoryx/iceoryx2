@@ -177,6 +177,26 @@ impl<KeyType> Drop for BuilderInternals<KeyType> {
     }
 }
 
+impl<KeyType> BuilderInternals<KeyType> {
+    pub fn new(
+        key: KeyType,
+        value_type_details: TypeDetail,
+        value_writer: Box<dyn FnMut(*mut u8)>,
+        value_size: usize,
+        value_alignment: usize,
+        vale_cleanup_callback: Box<dyn FnMut()>,
+    ) -> Self {
+        Self {
+            key,
+            value_type_details,
+            value_writer,
+            internal_value_size: value_size,
+            internal_value_alignment: value_alignment,
+            internal_value_cleanup_callback: vale_cleanup_callback,
+        }
+    }
+}
+
 #[repr(C)]
 #[derive(Debug, ZeroCopySend)]
 pub(crate) struct Entry {

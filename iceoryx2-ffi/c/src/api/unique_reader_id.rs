@@ -46,9 +46,9 @@ impl iox2_unique_reader_id_t {
 }
 
 pub struct iox2_unique_reader_id_h_t;
-/// The owning handle for [`iox2_unique_reader_id_t`]. Passing the handle to an function transfers the ownership.
+/// The owning handle for [`iox2_unique_reader_id_t`]. Passing the handle to a function transfers the ownership.
 pub type iox2_unique_reader_id_h = *mut iox2_unique_reader_id_h_t;
-/// The non-owning handle for [`iox2_unique_reader_id_t`]. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for [`iox2_unique_reader_id_t`]. Passing the handle to a function does not transfer the ownership.
 pub type iox2_unique_reader_id_h_ref = *const iox2_unique_reader_id_h;
 
 impl AssertNonNullHandle for iox2_unique_reader_id_h {
@@ -181,5 +181,4 @@ pub unsafe extern "C" fn iox2_unique_reader_id_less(
 
     lhs.value.as_ref() < rhs.value.as_ref()
 }
-
 // END C API

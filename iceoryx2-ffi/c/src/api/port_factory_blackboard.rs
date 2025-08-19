@@ -77,9 +77,9 @@ impl iox2_port_factory_blackboard_t {
 }
 
 pub struct iox2_port_factory_blackboard_h_t;
-/// The owning handle for `iox2_port_factory_blackboard_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_port_factory_blackboard_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_port_factory_blackboard_h = *mut iox2_port_factory_blackboard_h_t;
-/// The non-owning handle for `iox2_port_factory_blackboard_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_port_factory_blackboard_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_port_factory_blackboard_h_ref = *const iox2_port_factory_blackboard_h;
 
 impl AssertNonNullHandle for iox2_port_factory_blackboard_h {
@@ -152,7 +152,7 @@ pub type iox2_list_writers_callback =
 ///
 /// # Safety
 ///
-/// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
+/// * The `port_factory_handle` is still valid after the return of this function and can be used in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_writer_builder(
     port_factory_handle: iox2_port_factory_blackboard_h_ref,
@@ -205,7 +205,7 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_writer_builder(
 ///
 /// # Safety
 ///
-/// * The `port_factory_handle` is still valid after the return of this function and can be use in another function call.
+/// * The `port_factory_handle` is still valid after the return of this function and can be used in another function call.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_reader_builder(
     port_factory_handle: iox2_port_factory_blackboard_h_ref,
@@ -245,12 +245,11 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_reader_builder(
     (*reader_builder_struct_ptr).as_handle()
 }
 
-/// Returnes the services attributes.
+/// Returns the service attributes.
 ///
 /// # Safety
 ///
-/// * The `port_factory_handle` is invalid after the return of this function and leads to undefined behavior if used in another function call!
-/// * The `port_factory_handle` must live longer than the returned `iox2_attribute_set_h_ref`.
+/// * The `port_factory_handle` must live longer than the returned `iox2_attribute_set_ptr`.
 #[no_mangle]
 pub unsafe extern "C" fn iox2_port_factory_blackboard_attributes(
     port_factory_handle: iox2_port_factory_blackboard_h_ref,
@@ -266,11 +265,11 @@ pub unsafe extern "C" fn iox2_port_factory_blackboard_attributes(
     }
 }
 
-/// Set the values in the provided [`iox2_static_config_blackboard_t`] pointer.
+/// Sets the values in the provided [`iox2_static_config_blackboard_t`] pointer.
 ///
 /// # Safety
 ///
-/// * The `_handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
+/// * The `port_factory_handle` must be valid and obtained by [`iox2_service_builder_blackboard_open`](crate::iox2_service_builder_blackboard_open) or
 ///   [`iox2_service_builder_blackboard_create`](crate::iox2_service_builder_blackboard_create)!
 /// * The `static_config` must be a valid pointer and non-null.
 #[no_mangle]

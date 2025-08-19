@@ -70,10 +70,9 @@ impl PortFactoryWriterBuilderUnion {
 }
 
 #[repr(C)]
-#[repr(align(16))] // alignment of Option<PortFactoryWriterBuilderUnion>
+#[repr(align(8))] // alignment of Option<PortFactoryWriterBuilderUnion>
 pub struct iox2_port_factory_writer_builder_storage_t {
-    // TODO: adapt size and alignment
-    internal: [u8; 112], // magic number obtained with size_of::<Option<PortFactoryWriterBuilderUnion>>()
+    internal: [u8; 16], // magic number obtained with size_of::<Option<PortFactoryWriterBuilderUnion>>()
 }
 
 #[repr(C)]
@@ -98,9 +97,9 @@ impl iox2_port_factory_writer_builder_t {
 }
 
 pub struct iox2_port_factory_writer_builder_h_t;
-/// The owning handle for `iox2_port_factory_writer_builder_t`. Passing the handle to an function transfers the ownership.
+/// The owning handle for `iox2_port_factory_writer_builder_t`. Passing the handle to a function transfers the ownership.
 pub type iox2_port_factory_writer_builder_h = *mut iox2_port_factory_writer_builder_h_t;
-/// The non-owning handle for `iox2_port_factory_writer_builder_t`. Passing the handle to an function does not transfers the ownership.
+/// The non-owning handle for `iox2_port_factory_writer_builder_t`. Passing the handle to a function does not transfer the ownership.
 pub type iox2_port_factory_writer_builder_h_ref = *const iox2_port_factory_writer_builder_h;
 
 impl AssertNonNullHandle for iox2_port_factory_writer_builder_h {
