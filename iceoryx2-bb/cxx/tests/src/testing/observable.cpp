@@ -32,7 +32,7 @@ Observable::Observable()
 
 Observable::Observable(int id)
     : Observable() {
-    id = id;
+    this->id = id;
 }
 
 Observable::~Observable() {
