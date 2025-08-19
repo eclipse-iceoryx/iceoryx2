@@ -286,23 +286,23 @@ impl<T, Ptr: GenericPointer> MetaSlotMap<T, Ptr> {
         true
     }
 
-    pub(crate) unsafe fn remove_impl(&mut self, key: SlotMapKey) -> bool {
+    pub(crate) unsafe fn remove_impl(&mut self, key: SlotMapKey) -> Option<T> {
         self.verify_init("remove()");
         if key.0 > self.idx_to_data.len() {
-            return false;
+            return None;
         }
 
         let data_idx = self.idx_to_data[key.0];
         if data_idx != INVALID {
-            self.data[data_idx].take();
+            let ret = self.data[data_idx].take();
             let push_result = self.data_next_free_index.push_impl(data_idx);
             debug_assert!(push_result);
             self.release_free_index(key.0);
             self.idx_to_data[key.0] = INVALID;
             self.len -= 1;
-            true
+            ret
         } else {
-            false
+            None
         }
     }
 
@@ -432,8 +432,8 @@ impl<T> SlotMap<T> {
     }
 
     /// Removes a value at the specified [`SlotMapKey`]. If there was no value corresponding
-    /// to the [`SlotMapKey`] it returns false, otherwise true.
-    pub fn remove(&mut self, key: SlotMapKey) -> bool {
+    /// to the [`SlotMapKey`] it returns None, otherwise Some(value).
+    pub fn remove(&mut self, key: SlotMapKey) -> Option<T> {
         unsafe { self.remove_impl(key) }
     }
 
@@ -542,13 +542,13 @@ impl<T> RelocatableSlotMap<T> {
     }
 
     /// Removes a value at the specified [`SlotMapKey`]. If there was no value corresponding
-    /// to the [`SlotMapKey`] it returns false, otherwise true.
+    /// to the [`SlotMapKey`] it returns None, otherwise Some(value).
     ///
     /// # Safety
     ///
     ///  * [`RelocatableSlotMap::init()`] must be called once before
     ///
-    pub unsafe fn remove(&mut self, key: SlotMapKey) -> bool {
+    pub unsafe fn remove(&mut self, key: SlotMapKey) -> Option<T> {
         self.remove_impl(key)
     }
 
@@ -673,8 +673,8 @@ impl<T, const CAPACITY: usize> FixedSizeSlotMap<T, CAPACITY> {
     }
 
     /// Removes a value at the specified [`SlotMapKey`]. If there was no value corresponding
-    /// to the [`SlotMapKey`] it returns false, otherwise true.
-    pub fn remove(&mut self, key: SlotMapKey) -> bool {
+    /// to the [`SlotMapKey`] it returns None, otherwise Some(value).
+    pub fn remove(&mut self, key: SlotMapKey) -> Option<T> {
         unsafe { self.state.remove_impl(key) }
     }
 

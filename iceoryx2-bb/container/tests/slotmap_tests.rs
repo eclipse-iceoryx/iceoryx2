@@ -84,8 +84,8 @@ mod slot_map {
             assert_that!(sut.len(), eq sut.capacity() - n);
             assert_that!(sut.is_empty(), eq false);
             assert_that!(sut.contains(*key), eq true);
-            assert_that!(sut.remove(*key), eq true);
-            assert_that!(sut.remove(*key), eq false);
+            assert_that!(sut.remove(*key), eq Some(n));
+            assert_that!(sut.remove(*key), eq None);
             assert_that!(sut.contains(*key), eq false);
             assert_that!(sut.is_full(), eq false);
 
@@ -100,7 +100,7 @@ mod slot_map {
     fn removing_out_of_bounds_key_returns_false() {
         let mut sut = FixedSizeSut::new();
 
-        assert_that!(sut.remove(SlotMapKey::new(SUT_CAPACITY + 1)), eq false);
+        assert_that!(sut.remove(SlotMapKey::new(SUT_CAPACITY + 1)), eq None);
     }
 
     #[test]
@@ -128,8 +128,8 @@ mod slot_map {
 
         for n in (0..SUT_CAPACITY).rev() {
             let key = SlotMapKey::new(n);
-            assert_that!(sut.remove(key), eq true);
-            assert_that!(sut.remove(key), eq false);
+            assert_that!(sut.remove(key), eq Some(0));
+            assert_that!(sut.remove(key), eq None);
             assert_that!(sut.len(), eq n);
         }
         assert_that!(sut.len(), eq 0);
@@ -183,7 +183,7 @@ mod slot_map {
         }
 
         for n in 0..SUT_CAPACITY / 2 {
-            assert_that!(sut.remove(SlotMapKey::new(2 * n)), eq true);
+            assert_that!(sut.remove(SlotMapKey::new(2 * n)), eq Some(3));
         }
 
         for _ in 0..SUT_CAPACITY / 2 {
