@@ -102,24 +102,34 @@ impl UnrestrictedAtomicMgmt {
         }
     }
 
-    // release_producer must be called
-    pub fn acquire_producer(&self) -> Result<bool, bool> {
+    // # Safety
+    //
+    //   * store operations are only allowed when this method returns Ok
+    //   * __internal_release_producer must be called when the UnrestrictedAtomicMgmt (used without UnrestrictedAtomic) is dropped
+    pub unsafe fn __internal_acquire_producer(&self) -> Result<bool, bool> {
         self.has_producer
             .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
     }
 
-    pub fn __internal_release_producer(&self) {
+    // # Safety
+    //
+    //   * store operations are not allowed after this method was called
+    //   * __internal_acquire_producer must have been successfully called before
+    pub unsafe fn __internal_release_producer(&self) {
         self.has_producer.store(true, Ordering::Relaxed);
     }
 
-    // TODO: test on Rust side
+    // # Safety
+    //
+    //   * __internal_acquire_producer must have been successfully called before
+    //   * the memory position must not be modified after __internal_update_write_cell has been
+    //     called
     pub unsafe fn __internal_get_ptr_to_write_cell(
         &self,
         value_size: usize,
         value_alignment: usize,
         data_ptr: *mut u8,
     ) -> *mut u8 {
-        // TODO: loop to check has_producer?
         let write_cell = self.write_cell.load(Ordering::Relaxed);
         let data_cell_ptr = align(
             unsafe { data_ptr.add(value_size * (write_cell as usize % NUMBER_OF_CELLS)) } as usize,
@@ -128,6 +138,10 @@ impl UnrestrictedAtomicMgmt {
         data_cell_ptr as *mut u8
     }
 
+    // # Safety
+    //
+    //   * the method must not be called without first writing to the memory position returned by
+    //     __internal_get_ptr_to_write_cell
     pub unsafe fn __internal_update_write_cell(&self) {
         /////////////////////////
         // SYNC POINT - write
@@ -178,16 +192,14 @@ impl UnrestrictedAtomicMgmt {
             }
         }
     }
-
-    pub fn store() {}
 }
 
 /// An atomic implementation where the underlying type has to be copyable but is otherwise
 /// unrestricted.
 #[repr(C)]
 pub struct UnrestrictedAtomic<T: Copy> {
-    mgmt: UnrestrictedAtomicMgmt,
-    data: [UnsafeCell<MaybeUninit<T>>; NUMBER_OF_CELLS],
+    pub mgmt: UnrestrictedAtomicMgmt,
+    pub data: [UnsafeCell<MaybeUninit<T>>; NUMBER_OF_CELLS],
 }
 
 impl<T: Copy + Debug> Debug for UnrestrictedAtomic<T> {
@@ -223,7 +235,7 @@ impl<T: Copy> UnrestrictedAtomic<T> {
 
     /// Returns a producer if one is available otherwise [`None`].
     pub fn acquire_producer(&self) -> Option<Producer<'_, T>> {
-        match self.mgmt.acquire_producer() {
+        match unsafe { self.mgmt.__internal_acquire_producer() } {
             Ok(_) => Some(Producer { atomic: self }),
             Err(_) => None,
         }
