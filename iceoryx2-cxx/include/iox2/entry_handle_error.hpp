@@ -16,7 +16,7 @@
 #include <cstdint>
 
 namespace iox2 {
-/// Defines a failure that can occur when a [`ReaderHandle`] is created with [`Reader::entry()`].
+/// Defines a failure that can occur when a [`EntryHandle`] is created with [`Reader::entry()`].
 enum class EntryHandleError : uint8_t {
     /// The entry with the given key and value type does not exist.
     EntryDoesNotExist,

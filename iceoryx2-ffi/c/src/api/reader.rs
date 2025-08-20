@@ -24,7 +24,7 @@ use crate::{
 };
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
-use iceoryx2::port::reader::{Reader, ReaderHandleError};
+use iceoryx2::port::reader::{EntryHandleError, Reader};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
@@ -37,10 +37,10 @@ pub enum iox2_entry_handle_error_e {
     ENTRY_DOES_NOT_EXIST = IOX2_OK as isize + 1,
 }
 
-impl IntoCInt for ReaderHandleError {
+impl IntoCInt for EntryHandleError {
     fn into_c_int(self) -> c_int {
         (match self {
-            ReaderHandleError::EntryDoesNotExist => iox2_entry_handle_error_e::ENTRY_DOES_NOT_EXIST,
+            EntryHandleError::EntryDoesNotExist => iox2_entry_handle_error_e::ENTRY_DOES_NOT_EXIST,
         }) as c_int
     }
 }

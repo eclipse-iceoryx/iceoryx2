@@ -18,24 +18,24 @@ use crate::api::{
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
-use iceoryx2::port::writer::__InternalWriterHandle;
+use iceoryx2::port::writer::__InternalEntryHandleMut;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
 
 pub(super) union EntryHandleMutUnion {
-    ipc: ManuallyDrop<__InternalWriterHandle<crate::IpcService>>,
-    local: ManuallyDrop<__InternalWriterHandle<crate::LocalService>>,
+    ipc: ManuallyDrop<__InternalEntryHandleMut<crate::IpcService>>,
+    local: ManuallyDrop<__InternalEntryHandleMut<crate::LocalService>>,
 }
 
 impl EntryHandleMutUnion {
-    pub(super) fn new_ipc(entry_handle: __InternalWriterHandle<crate::IpcService>) -> Self {
+    pub(super) fn new_ipc(entry_handle: __InternalEntryHandleMut<crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(entry_handle),
         }
     }
-    pub(super) fn new_local(entry_handle: __InternalWriterHandle<crate::LocalService>) -> Self {
+    pub(super) fn new_local(entry_handle: __InternalEntryHandleMut<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(entry_handle),
         }

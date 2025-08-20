@@ -18,24 +18,24 @@ use crate::{
 };
 use core::ffi::c_void;
 use core::mem::ManuallyDrop;
-use iceoryx2::port::reader::__InternalReaderHandle;
+use iceoryx2::port::reader::__InternalEntryHandle;
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_ffi_macros::iceoryx2_ffi;
 
 // BEGIN types definition
 
 pub(super) union EntryHandleUnion {
-    ipc: ManuallyDrop<__InternalReaderHandle<crate::IpcService>>,
-    local: ManuallyDrop<__InternalReaderHandle<crate::LocalService>>,
+    ipc: ManuallyDrop<__InternalEntryHandle<crate::IpcService>>,
+    local: ManuallyDrop<__InternalEntryHandle<crate::LocalService>>,
 }
 
 impl EntryHandleUnion {
-    pub(super) fn new_ipc(entry_handle: __InternalReaderHandle<crate::IpcService>) -> Self {
+    pub(super) fn new_ipc(entry_handle: __InternalEntryHandle<crate::IpcService>) -> Self {
         Self {
             ipc: ManuallyDrop::new(entry_handle),
         }
     }
-    pub(super) fn new_local(entry_handle: __InternalReaderHandle<crate::LocalService>) -> Self {
+    pub(super) fn new_local(entry_handle: __InternalEntryHandle<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(entry_handle),
         }

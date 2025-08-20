@@ -20,7 +20,7 @@ use crate::api::{
 use crate::create_type_details;
 use core::ffi::{c_char, c_int};
 use core::mem::ManuallyDrop;
-use iceoryx2::port::writer::{Writer, WriterHandleError};
+use iceoryx2::port::writer::{EntryHandleMutError, Writer};
 use iceoryx2_bb_elementary::static_assert::*;
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_ffi_macros::{iceoryx2_ffi, CStrRepr};
@@ -34,13 +34,13 @@ pub enum iox2_entry_handle_mut_error_e {
     HANDLE_ALREADY_EXISTS,
 }
 
-impl IntoCInt for WriterHandleError {
+impl IntoCInt for EntryHandleMutError {
     fn into_c_int(self) -> c_int {
         (match self {
-            WriterHandleError::EntryDoesNotExist => {
+            EntryHandleMutError::EntryDoesNotExist => {
                 iox2_entry_handle_mut_error_e::ENTRY_DOES_NOT_EXIST
             }
-            WriterHandleError::HandleAlreadyExists => {
+            EntryHandleMutError::HandleAlreadyExists => {
                 iox2_entry_handle_mut_error_e::HANDLE_ALREADY_EXISTS
             }
         }) as c_int

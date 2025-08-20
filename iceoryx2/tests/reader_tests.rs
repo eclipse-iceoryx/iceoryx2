@@ -69,9 +69,9 @@ mod reader {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let reader_handle = reader.entry::<ValueType>(&0);
-        assert_that!(reader_handle, is_ok);
-        assert_that!(reader_handle.unwrap().get(), eq 0);
+        let entry_handle = reader.entry::<ValueType>(&0);
+        assert_that!(entry_handle, is_ok);
+        assert_that!(entry_handle.unwrap().get(), eq 0);
     }
 
     #[test]
@@ -88,11 +88,11 @@ mod reader {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let reader_handle = reader.entry::<u64>(&9);
-        assert_that!(reader_handle, is_err);
+        let entry_handle = reader.entry::<u64>(&9);
+        assert_that!(entry_handle, is_err);
         assert_that!(
-            reader_handle.err().unwrap(),
-            eq ReaderHandleError::EntryDoesNotExist
+            entry_handle.err().unwrap(),
+            eq EntryHandleError::EntryDoesNotExist
         );
     }
 
@@ -110,11 +110,11 @@ mod reader {
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let reader_handle = reader.entry::<i64>(&0);
-        assert_that!(reader_handle, is_err);
+        let entry_handle = reader.entry::<i64>(&0);
+        assert_that!(entry_handle, is_err);
         assert_that!(
-            reader_handle.err().unwrap(),
-            eq ReaderHandleError::EntryDoesNotExist
+            entry_handle.err().unwrap(),
+            eq EntryHandleError::EntryDoesNotExist
         );
     }
 
@@ -135,11 +135,11 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize);
-        let reader_handle = reader.__internal_entry(&0, &type_details);
-        assert_that!(reader_handle, is_ok);
+        let entry_handle = reader.__internal_entry(&0, &type_details);
+        assert_that!(entry_handle, is_ok);
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
-        reader_handle.unwrap().get(
+        entry_handle.unwrap().get(
             read_value_ptr as *mut u8,
             size_of::<ValueType>(),
             align_of::<ValueType>(),
@@ -163,11 +163,11 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::__internal_new::<u64>(TypeVariant::FixedSize);
-        let reader_handle = reader.__internal_entry(&9, &type_details);
-        assert_that!(reader_handle, is_err);
+        let entry_handle = reader.__internal_entry(&9, &type_details);
+        assert_that!(entry_handle, is_err);
         assert_that!(
-            reader_handle.err().unwrap(),
-            eq ReaderHandleError::EntryDoesNotExist
+            entry_handle.err().unwrap(),
+            eq EntryHandleError::EntryDoesNotExist
         );
     }
 
@@ -187,11 +187,11 @@ mod reader {
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::__internal_new::<i64>(TypeVariant::FixedSize);
-        let reader_handle = reader.__internal_entry(&0, &type_details);
-        assert_that!(reader_handle, is_err);
+        let entry_handle = reader.__internal_entry(&0, &type_details);
+        assert_that!(entry_handle, is_err);
         assert_that!(
-            reader_handle.err().unwrap(),
-            eq ReaderHandleError::EntryDoesNotExist
+            entry_handle.err().unwrap(),
+            eq EntryHandleError::EntryDoesNotExist
         );
     }
 

@@ -280,10 +280,10 @@
 //!     .create()?;
 //!
 //! let reader = service.reader_builder().create()?;
-//! let reader_handle = reader.entry::<u64>(&0)?;
+//! let entry_handle = reader.entry::<u64>(&0)?;
 //!
 //! while node.wait(CYCLE_TIME).is_ok() {
-//!     println!("read: {}", reader_handle.get());
+//!     println!("read: {}", entry_handle.get());
 //! }
 //! # Ok(())
 //! # }
@@ -308,12 +308,12 @@
 //!     .open()?;
 //!
 //! let writer = service.writer_builder().create()?;
-//! let writer_handle = writer.entry::<u64>(&0)?;
+//! let entry_handle_mut = writer.entry::<u64>(&0)?;
 //!
 //! let mut counter = 0;
 //! while node.wait(CYCLE_TIME).is_ok() {
 //!     counter += 1;
-//!     writer_handle.update_with_copy(counter);
+//!     entry_handle_mut.update_with_copy(counter);
 //! }
 //!
 //! # Ok(())
