@@ -64,7 +64,8 @@ mod config_descriptions_tests {
 
         let missing_in_config = cli_keys.difference(&ron_keys).collect::<Vec<_>>();
         let extra_in_config = ron_keys.difference(&cli_keys).collect::<Vec<_>>();
-        println!("Missing in config: {:?}", extra_in_config);
+        println!("Missing in config: {:?}", missing_in_config);
+        println!("Extra in config: {:?}", extra_in_config);
         assert_that!(missing_in_config.len(), eq 0);
         assert_that!(extra_in_config.len(), eq 0);
     }
