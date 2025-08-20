@@ -26,10 +26,10 @@
 //! let reader = service.reader_builder().create()?;
 //!
 //! // create a handle for direct read access to a value
-//! let reader_handle = reader.entry::<i32>(&1)?;
+//! let entry_handle = reader.entry::<i32>(&1)?;
 //!
 //! // get a copy of the value
-//! let value = reader_handle.get();
+//! let value = entry_handle.get();
 //!
 //! # Ok(())
 //! # }
@@ -37,7 +37,6 @@
 
 use crate::prelude::EventId;
 use crate::service::builder::blackboard::BlackboardResources;
-use crate::service::builder::{CustomKeyMarker, CustomValueMarker};
 use crate::service::dynamic_config::blackboard::ReaderDetails;
 use crate::service::static_config::message_type_details::{TypeDetail, TypeVariant};
 use crate::service::{self, ServiceState};
@@ -180,7 +179,7 @@ impl<
     /// #     .create()?;
     /// #
     /// # let reader = service.reader_builder().create()?;
-    /// let reader_handle = reader.entry::<i32>(&1)?;
+    /// let entry_handle = reader.entry::<i32>(&1)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -188,7 +187,7 @@ impl<
         &self,
         key: &KeyType,
     ) -> Result<ReaderHandle<Service, KeyType, ValueType>, ReaderHandleError> {
-        let msg = "Unable to create reader handle";
+        let msg = "Unable to create entry handle";
 
         let offset = self.get_entry_offset(
             key,
@@ -250,7 +249,6 @@ impl<
     }
 }
 
-// TODO: move Creator::add to impl with CustomKeyMarker?
 // TODO: replace u64 with CustomKeyMarker
 impl<Service: service::Service> Reader<Service, u64> {
     #[doc(hidden)]
@@ -374,7 +372,8 @@ impl<
     }
 }
 
-// TODO: documentation
+/// A handle for direct read access to a specific blackboard value. Used for the language bindings
+/// where key and value type cannot be passed as generic.
 #[doc(hidden)]
 pub struct __InternalReaderHandle<Service: service::Service> {
     atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
@@ -384,15 +383,18 @@ pub struct __InternalReaderHandle<Service: service::Service> {
 }
 
 impl<Service: service::Service> __InternalReaderHandle<Service> {
-    pub fn get(&self, value_ptr: *mut u8, value_size: usize, vlaue_alignment: usize) {
+    /// Stores a copy of the value in `value_ptr`.
+    pub fn get(&self, value_ptr: *mut u8, value_size: usize, value_alignment: usize) {
         unsafe { &*self.atomic_mgmt_ptr }.load(
             value_ptr,
             value_size,
-            vlaue_alignment,
+            value_alignment,
             self.data_ptr,
         );
     }
 
+    /// Returns an ID corresponding to the entry which can be used in an event based communication
+    /// setup.
     pub fn entry_id(&self) -> EventId {
         self.entry_id
     }

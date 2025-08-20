@@ -26,15 +26,15 @@
 //! let writer = service.writer_builder().create()?;
 //!
 //! // create a handle for direct write access to a value
-//! let writer_handle = writer.entry::<i32>(&1)?;
+//! let entry_handle_mut = writer.entry::<i32>(&1)?;
 //!
 //! // update the value with a copy
-//! writer_handle.update_with_copy(8);
+//! entry_handle_mut.update_with_copy(8);
 //!
 //! // loan an uninitialized entry value and write to it without copying
-//! let entry_value_uninit = writer_handle.loan_uninit();
+//! let entry_value_uninit = entry_handle_mut.loan_uninit();
 //! let entry_value = entry_value_uninit.write(-8);
-//! let writer_handle = entry_value.update();
+//! let entry_handle_mut = entry_value.update();
 //!
 //! # Ok(())
 //! # }
@@ -187,7 +187,7 @@ impl<
     /// #     .create()?;
     /// #
     /// # let writer = service.writer_builder().create()?;
-    /// let writer_handle = writer.entry::<i32>(&1)?;
+    /// let entry_handle_mut = writer.entry::<i32>(&1)?;
     /// # Ok(())
     /// # }
     /// ```
@@ -195,7 +195,7 @@ impl<
         &self,
         key: &KeyType,
     ) -> Result<WriterHandle<Service, KeyType, ValueType>, WriterHandleError> {
-        let msg = "Unable to create writer handle";
+        let msg = "Unable to create entry handle";
 
         let offset = self.get_entry_offset(
             key,
@@ -263,7 +263,7 @@ impl<Service: service::Service> Writer<Service, u64> {
         key: &u64,
         type_details: &TypeDetail,
     ) -> Result<__InternalWriterHandle<Service>, WriterHandleError> {
-        let msg = "Unable to create writer handle";
+        let msg = "Unable to create entry handle";
         let offset = self.get_entry_offset(key, type_details, msg)?;
 
         let atomic_mgmt_ptr = (self
@@ -425,7 +425,8 @@ impl<
     }
 }
 
-// TODO: documentation
+/// A handle for direct write access to a specific blackboard value. Used for the language bindings
+/// where key and value type cannot be passed as generic.
 #[doc(hidden)]
 pub struct __InternalWriterHandle<Service: service::Service> {
     atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
@@ -441,7 +442,7 @@ impl<Service: service::Service> Drop for __InternalWriterHandle<Service> {
 }
 
 impl<Service: service::Service> __InternalWriterHandle<Service> {
-    pub fn new(
+    fn new(
         atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
         data_ptr: *mut u8,
         entry_id: EventId,
@@ -458,6 +459,8 @@ impl<Service: service::Service> __InternalWriterHandle<Service> {
         }
     }
 
+    /// Consumes the [`__InternalWriterHandle`] and loans an uninitialized entry value that can be
+    /// used to update without copy.
     pub fn loan_uninit(
         self,
         value_size: usize,
@@ -466,6 +469,20 @@ impl<Service: service::Service> __InternalWriterHandle<Service> {
         __InternalEntryValueUninit::new(self, value_size, value_alignment)
     }
 
+    /// Returns an ID corresponding to the entry which can be used in an event based communication
+    /// setup.
+    pub fn entry_id(&self) -> EventId {
+        self.entry_id
+    }
+
+    /// Returns a pointer to the current write cell of the underlying UnrestrictedAtomicMgmt that
+    /// can be used to update the entry value with copy.
+    ///
+    /// # Safety
+    ///
+    /// * after writing, __internal_update_write_cell must be called to make the value accessible
+    /// * the memory position must not be modified after __internal_update_write_cell has been
+    ///   called
     pub unsafe fn __internal_get_ptr_to_write_cell(
         &self,
         value_size: usize,
@@ -480,12 +497,14 @@ impl<Service: service::Service> __InternalWriterHandle<Service> {
         }
     }
 
+    /// Updates the write cell of the underlying UnrestrictedAtomicMgmt.
+    ///
+    /// # Safety
+    ///
+    /// * the method must not be called without first writing to the memory position returned by
+    ///   __internal_get_ptr_to_write_cell
     pub unsafe fn __internal_update_write_cell(&self) {
         unsafe { (*self.atomic_mgmt_ptr).__internal_update_write_cell() };
-    }
-
-    pub fn entry_id(&self) -> EventId {
-        self.entry_id
     }
 }
 
@@ -580,7 +599,10 @@ impl<
     }
 }
 
-// TODO: test on Rust side
+// TODO: test all internal classes/methods for reader/writer/blackboard on Rust side
+
+/// Wrapper around an uninitiaized entry value that can be used for a zero-copy update. Used
+/// for the language bindings where key and value type cannot be passed as generics.
 #[doc(hidden)]
 pub struct __InternalEntryValueUninit<Service: service::Service> {
     write_cell_ptr: *mut u8,
@@ -606,10 +628,13 @@ impl<Service: service::Service> __InternalEntryValueUninit<Service> {
         }
     }
 
+    /// Acquire pointer to write cell of the underlying UnrestrictedAtomicMgmt.
     pub fn write_cell(&self) -> *mut u8 {
         self.write_cell_ptr
     }
 
+    /// Makes new value accessible, consumes the __InternalEntryValueUninit and returns the original
+    /// __InternalWriterHandle.
     pub fn update(self) -> __InternalWriterHandle<Service> {
         unsafe {
             (*self.writer_handle.atomic_mgmt_ptr).__internal_update_write_cell();
@@ -617,13 +642,10 @@ impl<Service: service::Service> __InternalEntryValueUninit<Service> {
         self.writer_handle
     }
 
+    /// Discards the __InternalEntryValueUninit and returns the original __InternalWriterHandle.
     pub fn discard(self) -> __InternalWriterHandle<Service> {
         self.writer_handle
     }
-
-    // cleanup
-    // update call
-    // __InternalEntryValueUninit can probably be renamed to __InternalEntryValue
 }
 
 /// Wrapper around an initialized entry value that can be used for a zero-copy update.

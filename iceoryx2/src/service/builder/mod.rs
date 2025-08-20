@@ -81,8 +81,7 @@ pub struct CustomPayloadMarker(u8);
 #[repr(C)]
 #[derive(ZeroCopySend, Debug, Clone, PartialEq, Eq, Hash)]
 #[doc(hidden)]
-// TODO: remove pub (and rust test) when C/C++ is implemented and tested
-pub struct CustomKeyMarker(pub u64);
+pub struct CustomKeyMarker(u64);
 
 #[repr(C)]
 #[derive(ZeroCopySend, Clone, Copy)]

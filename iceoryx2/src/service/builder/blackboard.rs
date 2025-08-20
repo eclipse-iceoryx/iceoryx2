@@ -15,7 +15,7 @@
 //! See [`crate::service`]
 //!
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
-use super::{CustomKeyMarker, OpenDynamicStorageFailure, ServiceState};
+use super::{OpenDynamicStorageFailure, ServiceState};
 use crate::service;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
@@ -154,15 +154,14 @@ impl From<ServiceAvailabilityState> for BlackboardCreateError {
     }
 }
 
-// TODO: can this be private? at least the members?
 #[doc(hidden)]
 pub struct BuilderInternals<KeyType> {
-    pub key: KeyType,
-    pub value_type_details: TypeDetail,
-    pub value_writer: Box<dyn FnMut(*mut u8)>,
-    pub internal_value_size: usize,
-    pub internal_value_alignment: usize,
-    pub internal_value_cleanup_callback: Box<dyn FnMut()>,
+    key: KeyType,
+    value_type_details: TypeDetail,
+    value_writer: Box<dyn FnMut(*mut u8)>,
+    internal_value_size: usize,
+    internal_value_alignment: usize,
+    internal_value_cleanup_callback: Box<dyn FnMut()>,
 }
 
 impl<KeyType> Debug for BuilderInternals<KeyType> {
