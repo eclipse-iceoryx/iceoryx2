@@ -475,8 +475,7 @@ impl<Service: service::Service> __InternalWriterHandle<Service> {
         self.entry_id
     }
 
-    /// Returns a pointer to the current write cell of the underlying UnrestrictedAtomicMgmt that
-    /// can be used to update the entry value with copy.
+    /// Returns a pointer to the current write cell of the underlying UnrestrictedAtomicMgmt.
     ///
     /// # Safety
     ///
@@ -598,8 +597,6 @@ impl<
         self.writer_handle
     }
 }
-
-// TODO: test all internal classes/methods for reader/writer/blackboard on Rust side
 
 /// Wrapper around an uninitiaized entry value that can be used for a zero-copy update. Used
 /// for the language bindings where key and value type cannot be passed as generics.

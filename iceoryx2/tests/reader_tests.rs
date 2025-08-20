@@ -14,6 +14,7 @@
 mod reader {
     use iceoryx2::port::reader::*;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -55,6 +56,7 @@ mod reader {
 
     #[test]
     fn handle_can_be_acquired_for_existing_key_value_pair<Sut: Service>() {
+        type ValueType = u64;
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -62,13 +64,14 @@ mod reader {
         let sut = node
             .service_builder(&service_name)
             .blackboard_creator::<u64>()
-            .add::<u64>(0, 0)
+            .add::<ValueType>(0, 0)
             .create()
             .unwrap();
 
         let reader = sut.reader_builder().create().unwrap();
-        let reader_handle = reader.entry::<u64>(&0);
+        let reader_handle = reader.entry::<ValueType>(&0);
         assert_that!(reader_handle, is_ok);
+        assert_that!(reader_handle.unwrap().get(), eq 0);
     }
 
     #[test]
@@ -108,6 +111,83 @@ mod reader {
 
         let reader = sut.reader_builder().create().unwrap();
         let reader_handle = reader.entry::<i64>(&0);
+        assert_that!(reader_handle, is_err);
+        assert_that!(
+            reader_handle.err().unwrap(),
+            eq ReaderHandleError::EntryDoesNotExist
+        );
+    }
+
+    // TODO: replace u64 with CustomKeyMarker
+    #[test]
+    fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
+        type ValueType = u64;
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<ValueType>(0, 0)
+            .create()
+            .unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+
+        let type_details = TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize);
+        let reader_handle = reader.__internal_entry(&0, &type_details);
+        assert_that!(reader_handle, is_ok);
+        let mut read_value: ValueType = 9;
+        let read_value_ptr: *mut ValueType = &mut read_value;
+        reader_handle.unwrap().get(
+            read_value_ptr as *mut u8,
+            size_of::<ValueType>(),
+            align_of::<ValueType>(),
+        );
+        assert_that!(read_value, eq 0);
+    }
+
+    // TODO: replace u64 with CustomKeyMarker
+    #[test]
+    fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()
+            .unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+
+        let type_details = TypeDetail::__internal_new::<u64>(TypeVariant::FixedSize);
+        let reader_handle = reader.__internal_entry(&9, &type_details);
+        assert_that!(reader_handle, is_err);
+        assert_that!(
+            reader_handle.err().unwrap(),
+            eq ReaderHandleError::EntryDoesNotExist
+        );
+    }
+
+    // TODO: replace u64 with CustomKeyMarker
+    #[test]
+    fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()
+            .unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+
+        let type_details = TypeDetail::__internal_new::<i64>(TypeVariant::FixedSize);
+        let reader_handle = reader.__internal_entry(&0, &type_details);
         assert_that!(reader_handle, is_err);
         assert_that!(
             reader_handle.err().unwrap(),

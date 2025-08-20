@@ -17,7 +17,7 @@ mod service_blackboard {
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::blackboard::{BlackboardCreateError, BlackboardOpenError};
-    use iceoryx2::service::static_config::message_type_details::TypeVariant;
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
     use iceoryx2_bb_container::byte_string::FixedSizeByteString;
@@ -25,6 +25,7 @@ mod service_blackboard {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
+    use std::ptr::copy_nonoverlapping;
     use std::sync::Arc;
     use std::sync::Barrier;
 
@@ -1649,6 +1650,153 @@ mod service_blackboard {
         for i in 0..number_of_writer_handles {
             assert_that!(reader.entry::<u64>(&i).unwrap().get(), eq i);
         }
+    }
+
+    // TODO: move the following tests to testing.rs and replace u64 with CustomKeyMarker
+    #[test]
+    fn loan_uninit_and_write_works_with_custom_key_type<S: Service>() {
+        type ValueType = u64;
+
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<ValueType>(0)
+            .create()
+            .unwrap();
+        let writer = service.writer_builder().create().unwrap();
+        let reader = service.reader_builder().create().unwrap();
+
+        let type_details = TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize);
+
+        let reader_handle = reader.__internal_entry(&0, &type_details).unwrap();
+        let mut read_value: ValueType = 9;
+        let read_value_ptr: *mut ValueType = &mut read_value;
+
+        let writer_handle = writer.__internal_entry(&0, &type_details).unwrap();
+        let entry_value_uninit =
+            writer_handle.loan_uninit(type_details.size, type_details.alignment);
+        let write_ptr = entry_value_uninit.write_cell();
+        unsafe {
+            *write_ptr = 8;
+        }
+
+        // before calling update, the reader still reads the old value
+        reader_handle.get(
+            read_value_ptr as *mut u8,
+            size_of::<ValueType>(),
+            align_of::<ValueType>(),
+        );
+        assert_that!(read_value, eq 0);
+
+        // after calling update, the new value is accessible
+        let _writer_handle = entry_value_uninit.update();
+        reader_handle.get(
+            read_value_ptr as *mut u8,
+            size_of::<ValueType>(),
+            align_of::<ValueType>(),
+        );
+        assert_that!(read_value, eq 8);
+    }
+
+    #[test]
+    fn write_and_update_internal_cell_works_with_custom_key_type<S: Service>() {
+        type ValueType = u64;
+
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add_with_default::<ValueType>(0)
+            .create()
+            .unwrap();
+        let writer = service.writer_builder().create().unwrap();
+        let reader = service.reader_builder().create().unwrap();
+
+        let type_details = TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize);
+
+        let reader_handle = reader.__internal_entry(&0, &type_details).unwrap();
+        let mut read_value: ValueType = 9;
+        let read_value_ptr: *mut ValueType = &mut read_value;
+
+        let writer_handle = writer.__internal_entry(&0, &type_details).unwrap();
+        let write_value: ValueType = 5;
+        let write_value_ptr: *const ValueType = &write_value;
+
+        unsafe {
+            let write_cell_ptr = writer_handle
+                .__internal_get_ptr_to_write_cell(type_details.size, type_details.alignment);
+            copy_nonoverlapping(
+                write_value_ptr as *const u8,
+                write_cell_ptr,
+                type_details.size,
+            );
+        }
+
+        // before calling update, the reader still reads the old value
+        reader_handle.get(
+            read_value_ptr as *mut u8,
+            size_of::<ValueType>(),
+            align_of::<ValueType>(),
+        );
+        assert_that!(read_value, eq 0);
+
+        // after calling update, the new value is accessible
+        unsafe {
+            writer_handle.__internal_update_write_cell();
+        }
+        reader_handle.get(
+            read_value_ptr as *mut u8,
+            size_of::<ValueType>(),
+            align_of::<ValueType>(),
+        );
+        assert_that!(read_value, eq 5);
+    }
+
+    #[test]
+    fn writer_handle_can_be_reused_after_entry_value_uninit_was_discarded_with_custom_key_type<
+        Sut: Service,
+    >() {
+        type ValueType = u32;
+
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<ValueType>(0, 0)
+            .create()
+            .unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+        let reader = sut.reader_builder().create().unwrap();
+        let reader_handle = reader.entry::<ValueType>(&0).unwrap();
+
+        let type_details = TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize);
+        let writer_handle = writer.__internal_entry(&0, &type_details).unwrap();
+        let entry_value_uninit =
+            writer_handle.loan_uninit(type_details.size, type_details.alignment);
+        let writer_handle = entry_value_uninit.discard();
+
+        let write_value: ValueType = 333;
+        let write_value_ptr: *const ValueType = &write_value;
+        unsafe {
+            let write_cell_ptr = writer_handle
+                .__internal_get_ptr_to_write_cell(type_details.size, type_details.alignment);
+            copy_nonoverlapping(
+                write_value_ptr as *const u8,
+                write_cell_ptr,
+                type_details.size,
+            );
+            writer_handle.__internal_update_write_cell();
+        }
+
+        assert_that!(reader_handle.get(), eq write_value);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
