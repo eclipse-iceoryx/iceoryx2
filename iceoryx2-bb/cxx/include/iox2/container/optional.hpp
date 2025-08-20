@@ -61,12 +61,11 @@ class OptionalValueHolder {
         char m_null;
         std::remove_cv_t<T> m_value;
     };
-    bool m_is_empty;
+    bool m_is_empty = true;
 
   public:
     constexpr OptionalValueHolder() noexcept
-        : m_null()
-        , m_is_empty(true) {
+        : m_null() {
     }
     constexpr explicit OptionalValueHolder(T const& value)
         : m_value(value)
