@@ -22,6 +22,8 @@ readability-*,
 -misc-include-cleaner,
 -cppcoreguidelines-rvalue-reference-param-not-moved,
 -modernize-concat-nested-namespaces,
+# The following check is deactivated because of unwanted interaction with MISRA C++:2023 Rule 9.4.1
+-readability-else-after-return,
 '
 
 # TODO: remove the following rule surpressions as soon as the C++ stubs are implemented
