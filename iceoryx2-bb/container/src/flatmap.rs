@@ -141,13 +141,15 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
             .map(|flat_map_entry| &mut flat_map_entry.value)
     }
 
-    pub(crate) unsafe fn remove_impl(&mut self, id: &K) {
+    pub(crate) unsafe fn remove_impl(&mut self, id: &K) -> Option<V> {
         self.verify_init("remove()");
 
         let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != *id);
         if let Some(kv) = iter.next() {
             let key = kv.0;
-            self.map.remove_impl(key);
+            self.map.remove_impl(key).map(|e| e.value)
+        } else {
+            None
         }
     }
 
@@ -203,11 +205,10 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
         unsafe { self.get_mut_ref_impl(id) }
     }
 
-    /// Removes the given key and the corresponding value from the [`FlatMap`].
-    pub fn remove(&mut self, id: &K) {
-        unsafe {
-            self.remove_impl(id);
-        }
+    /// Removes a key (`id`) from the [`FlatMap`], returning the Some(value) at the key if the key
+    /// was previously in the map or [`None`] otherwise.
+    pub fn remove(&mut self, id: &K) -> Option<V> {
+        unsafe { self.remove_impl(id) }
     }
 
     /// Returns true if the [`FlatMap`] is empty, otherwise false.
@@ -317,14 +318,14 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
         self.get_mut_ref_impl(id)
     }
 
-    /// Removes the given key and the corresponding value from the map.
-    ///
+    /// Removes a key (`id`) from the map, returning the Some(value) at the key if the key
+    /// was previously in the map or [`None`] otherwise.
     /// # Safety
     ///
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
-    pub unsafe fn remove(&mut self, id: &K) {
-        self.remove_impl(id);
+    pub unsafe fn remove(&mut self, id: &K) -> Option<V> {
+        self.remove_impl(id)
     }
 
     /// Returns true if the map is empty, otherwise false.
@@ -445,11 +446,10 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         unsafe { self.map.get_mut_ref(id) }
     }
 
-    /// Removes the given key and the corresponding value from the [`FixedSizeFlatMap`].
-    pub fn remove(&mut self, id: &K) {
-        unsafe {
-            self.map.remove(id);
-        }
+    /// Removes a key (`id`) from the [`FixedSizeFlatMap`], returning the Some(value) at the key
+    /// if the key was previously in the map or [`None`] otherwise.
+    pub fn remove(&mut self, id: &K) -> Option<V> {
+        unsafe { self.map.remove(id) }
     }
 
     /// Returns true if the [`FixedSizeFlatMap`] is empty, otherwise false.

@@ -170,15 +170,15 @@ mod flat_map {
         let mut map = FixedSizeFlatMap::<u8, u8, CAPACITY>::new();
         assert_that!(map, is_empty);
 
-        map.remove(&0);
+        assert_eq!(map.remove(&0), None);
         assert_that!(map, is_empty);
 
         assert_that!(map.insert(1, 1), is_ok);
         assert_that!(map.contains(&1), eq true);
 
-        map.remove(&0);
+        assert_eq!(map.remove(&0), None);
         assert_that!(map, is_not_empty);
-        map.remove(&1);
+        assert_eq!(map.remove(&1), Some(1));
         assert_that!(map, is_empty);
         assert_that!(map.contains(&1), eq false);
     }
@@ -194,7 +194,7 @@ mod flat_map {
 
         // remove until empty
         for i in 0..CAPACITY as u32 {
-            map.remove(&i);
+            assert_eq!(map.remove(&i), Some(i));
         }
         assert_that!(map, is_empty);
 
