@@ -146,8 +146,8 @@ else()
 
     # run cargo
     add_custom_target(
-        iceoryx2-ffi-build-step ALL
-        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
+        iceoryx2-ffi-c-build-step ALL
+        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi-c --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
         BYPRODUCTS
             ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
             ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
@@ -160,7 +160,7 @@ else()
 
     add_subdirectory(iceoryx2-c)
 
-    add_dependencies(includes-only iceoryx2-ffi-build-step)
+    add_dependencies(includes-only iceoryx2-ffi-c-build-step)
 endif()
 
 # END C binding

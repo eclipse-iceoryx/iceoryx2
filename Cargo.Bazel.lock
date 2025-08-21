@@ -1,5 +1,5 @@
 {
-  "checksum": "5278f056ed3f91a14abf9e2185b3d2577251710db3fa9081d2942d8d1de39119",
+  "checksum": "26010205f6d143694b9195a26d19bd2d7ef83d2a2c53261fc851ed5ce218ada9",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8494,15 +8494,15 @@
       ],
       "license_file": null
     },
-    "iceoryx2-ffi 0.6.1": {
-      "name": "iceoryx2-ffi",
+    "iceoryx2-ffi-c 0.6.1": {
+      "name": "iceoryx2-ffi-c",
       "version": "0.6.1",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
         {
           "Library": {
-            "crate_name": "iceoryx2_ffi",
+            "crate_name": "iceoryx2_ffi_c",
             "crate_root": "src/lib.rs",
             "srcs": {
               "allow_empty": true,
@@ -8525,7 +8525,7 @@
           }
         }
       ],
-      "library_target_name": "iceoryx2_ffi",
+      "library_target_name": "iceoryx2_ffi_c",
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -8533,7 +8533,7 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-ffi 0.6.1",
+              "id": "iceoryx2-ffi-c 0.6.1",
               "target": "build_script_build"
             }
           ],
@@ -30200,7 +30200,7 @@
     "iceoryx2-bb-trait-tests 0.6.1": "iceoryx2-bb/trait-tests",
     "iceoryx2-cal 0.6.1": "iceoryx2-cal",
     "iceoryx2-cli 0.6.1": "iceoryx2-cli",
-    "iceoryx2-ffi 0.6.1": "iceoryx2-ffi/ffi",
+    "iceoryx2-ffi-c 0.6.1": "iceoryx2-ffi/c",
     "iceoryx2-ffi-macros 0.6.1": "iceoryx2-ffi/ffi-macros",
     "iceoryx2-ffi-python 0.6.1": "iceoryx2-ffi/python",
     "iceoryx2-pal-concurrency-sync 0.6.1": "iceoryx2-pal/concurrency-sync",

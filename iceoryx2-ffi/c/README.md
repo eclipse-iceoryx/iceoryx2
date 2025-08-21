@@ -1,4 +1,6 @@
-# iceoryx2-ffi
+<!-- markdownlint-disable MD044 'c' needs to be lower-case -->
+# iceoryx2-ffi-c
+<!-- markdownlint-enable MD044 -->
 
 ## Naming Convention
 
@@ -91,9 +93,11 @@ The opaque types additionally need to be manually forward-declared in
 * forward declaration is done in the `after_includes` section with
   `typedef struct iox2_foo_ptr_t iox2_foo_ptr_t;`
 
-## Passing feature flags to the iceoryx2-ffi crate
+<!-- markdownlint-disable MD044 'c' needs to be lower-case -->
+## Passing feature flags to the iceoryx2-ffi-c crate
+<!-- markdownlint-enable MD044 -->
 
-To pass `iceoryx2` feature flags to the `iceoryx2-ffi` crate, one needs to
+To pass `iceoryx2` feature flags to the `iceoryx2-ffi-c` crate, one needs to
 prefix the feature with `iceoryx2/`, e.g. `--features iceoryx2/libc_platform.`.
 
 ## Why the folder structure with 'api' and 'test'
@@ -106,10 +110,10 @@ the following warning and eventually to build failures.
 <!-- markdownlint-disable -->
 
 > warning: output filename collision.
-> The lib target `iceoryx2_ffi` in package `iceoryx2-ffi vX.Y.Z (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`
-> has the same output filename as the lib target `iceoryx2_ffi` in package
-> `iceoryx2-ffi vX.Y.Z (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\ffi)`.
-> Colliding filename is: C:\Users\ekxide\iceoryx2\target\release\deps\iceoryx2_ffi.lib
+> The lib target `iceoryx2_ffi-c` in package `iceoryx2-ffi-c vX.Y.Z (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\c)`
+> has the same output filename as the lib target `iceoryx2_ffi-c` in package
+> `iceoryx2-ffi-c vX.Y.Z (C:\Users\ekxide\iceoryx2\iceoryx2-ffi\c)`.
+> Colliding filename is: C:\Users\ekxide\iceoryx2\target\release\deps\iceoryx2_ffi_c.lib
 > The targets should have unique names.
 > Consider changing their names to be unique or compiling them separately.
 > This may become a hard error in the future; see <https://github.com/rust-lang/cargo/issues/6313>.

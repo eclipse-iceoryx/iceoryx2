@@ -19,10 +19,10 @@ filegroup(
 
 alias(
     name = "iceoryx2-c-shared",
-    actual = "//iceoryx2-ffi/ffi:iceoryx2-ffi-shared",
+    actual = "//iceoryx2-ffi/c:iceoryx2-ffi-c-shared",
 )
 
 alias(
     name = "iceoryx2-c-static",
-    actual = "//iceoryx2-ffi/ffi:iceoryx2-ffi-static",
+    actual = "//iceoryx2-ffi/c:iceoryx2-ffi-c-static",
 )

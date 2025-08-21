@@ -200,7 +200,7 @@ impl IntoCInt for SemanticStringError {
 ///
 /// ```no_run
 /// use core::ffi::c_int;
-/// use iceoryx2_ffi::IOX2_OK;
+/// use iceoryx2_ffi_c::IOX2_OK;
 ///
 /// trait IntoCInt {
 ///     fn into_c_int(self) -> c_int;

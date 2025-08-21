@@ -19,19 +19,19 @@ libraries are built.
 ## Build instructions for integrator
 
 For production, it is recommended to separately build and install
-`iceoryx2-ffi` and `iceoryx_hoofs`, and specify the path to the install
+`iceoryx2-ffi-c` and `iceoryx_hoofs`, and specify the path to the install
 directory with `-DCMAKE_PREFIX_PATH`.
 
 ### Build and install `iceoryx2_ffi`
 
 > [!NOTE]
-> To pass `iceoryx2` feature flags to the `iceoryx2-ffi` crate, one needs to
+> To pass `iceoryx2` feature flags to the `iceoryx2-ffi-c` crate, one needs to
 > prefix the feature with `iceoryx2/`, e.g. `--features iceoryx2/libc_platform.`.
 
 First, build the C bindings generated from Rust:
 
 ```bash
-cargo build --release --package iceoryx2-ffi
+cargo build --release --package iceoryx2-ffi-c
 ```
 
 Then install the CMake package a discoverable location:

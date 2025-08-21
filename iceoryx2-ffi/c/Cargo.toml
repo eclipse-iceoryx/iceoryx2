@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-ffi"
-description = "iceoryx2 ffi bindings"
+name = "iceoryx2-ffi-c"
+description = "iceoryx2 ffi C bindings"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }

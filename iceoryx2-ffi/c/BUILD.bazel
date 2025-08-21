@@ -26,7 +26,7 @@ filegroup(
 )
 
 genrule(
-    name = "iceoryx2-ffi-cbindgen",
+    name = "iceoryx2-ffi-c-cbindgen",
     srcs = glob(["src/**/*.rs"]) + [
         "//:all_srcs",
         "Cargo.toml",
@@ -34,12 +34,12 @@ genrule(
         ":cbindgen-cli",
     ],
     outs = ["include/iox2/iceoryx2.h"],
-    # this is actually just 'cbindgen iceoryx2-ffi/ffi --quiet --config iceoryx2-ffi/ffi/cbindgen.toml --output include/iox2/iceoryx2.h'
+    # this is actually just 'cbindgen iceoryx2-ffi/c --quiet --config iceoryx2-ffi/c/cbindgen.toml --output include/iox2/iceoryx2.h'
     cmd = "$(execpath :cbindgen-cli) $$(dirname $(location Cargo.toml)) --quiet --config $(location cbindgen.toml) --output $(OUTS)",
 )
 
 rust_shared_library(
-    name = "iceoryx2-ffi-shared-rust",
+    name = "iceoryx2-ffi-c-shared-rust",
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",
@@ -60,7 +60,7 @@ rust_shared_library(
 )
 
 rust_static_library(
-    name = "iceoryx2-ffi-static-rust",
+    name = "iceoryx2-ffi-c-static-rust",
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",
@@ -82,29 +82,29 @@ rust_static_library(
 # Combined library with header file
 
 cc_library(
-    name = "iceoryx2-ffi-shared",
+    name = "iceoryx2-ffi-c-shared",
     hdrs = [ "include/iox2/iceoryx2.h" ],
     includes = [ "include" ],
     deps = [
-        ":iceoryx2-ffi-cbindgen",
-        ":iceoryx2-ffi-shared-rust",
+        ":iceoryx2-ffi-c-cbindgen",
+        ":iceoryx2-ffi-c-shared-rust",
     ],
     linkstatic = False,
 )
 
 cc_library(
-    name = "iceoryx2-ffi-static",
+    name = "iceoryx2-ffi-c-static",
     hdrs = [ "include/iox2/iceoryx2.h" ],
     includes = [ "include" ],
     deps = [
-        ":iceoryx2-ffi-cbindgen",
-        ":iceoryx2-ffi-static-rust",
+        ":iceoryx2-ffi-c-cbindgen",
+        ":iceoryx2-ffi-c-static-rust",
     ],
     linkstatic = True,
 )
 
 rust_test(
-    name = "iceoryx2-ffi-tests",
+    name = "iceoryx2-ffi-c-tests",
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "//iceoryx2:iceoryx2",

@@ -24,7 +24,7 @@ fn main() {
         .join("../../../")
         .canonicalize()
         .expect("Path to iceoryx2 base dir for header generation");
-    header_path.push("iceoryx2-ffi-cbindgen/include/iox2/iceoryx2.h");
+    header_path.push("iceoryx2-ffi-c-cbindgen/include/iox2/iceoryx2.h");
 
     let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("Cargo manifest dir");
 

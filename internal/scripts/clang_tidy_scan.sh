@@ -163,7 +163,7 @@ export CC=clang
 
 rm -rf target/ff/iceoryx
 ${WORKSPACE}/internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-cargo build --package iceoryx2-ffi
+cargo build --package iceoryx2-ffi-c
 cmake -S . -B target/clang-tidy-scan \
     -DCMAKE_PREFIX_PATH="$(pwd)/target/ff/iceoryx/install" \
     -DRUST_BUILD_ARTIFACT_PATH="$(pwd)/target/debug" \

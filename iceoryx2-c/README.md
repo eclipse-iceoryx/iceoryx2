@@ -18,12 +18,12 @@ If only the C bindings should be build, without the C++ bindings, the
 
 ## Build instructions for integrator
 
-For production, it is recommended to separately build `iceoryx2-ffi`.
+For production, it is recommended to separately build `iceoryx2-ffi-c`.
 
 In the repository root folder, execute this steps:
 
 ```bash
-cargo build --release --package iceoryx2-ffi
+cargo build --release --package iceoryx2-ffi-c
 
 cmake -S iceoryx2-cmake-modules -B target/ff/cmake-modules/build
 cmake --install target/ff/cmake-modules/build --prefix target/ff/cc/install
@@ -36,7 +36,7 @@ cmake --install target/ff/c/build --prefix target/ff/cc/install
 ```
 
 > [!NOTE]
-> To pass `iceoryx2` feature flags to the `iceoryx2-ffi` crate, one needs to
+> To pass `iceoryx2` feature flags to the `iceoryx2-ffi-c` crate, one needs to
 > prefix the feature with `iceoryx2/`, e.g. `--features iceoryx2/libc_platform.`.
 
 The installed libraries can the be used for out-of-tree builds of the example or
