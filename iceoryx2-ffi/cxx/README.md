@@ -40,7 +40,7 @@ Then install the CMake package a discoverable location:
 cmake -S iceoryx2-cmake-modules -B target/ff/cmake-modules/build
 cmake --install target/ff/cmake-modules/build --prefix target/ff/cc/install
 
-cmake -S iceoryx2-ffi/c -B target/ff/c/build \
+cmake -S iceoryx2-c -B target/ff/c/build \
       -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release" \
       -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/c/build

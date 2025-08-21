@@ -97,7 +97,7 @@ add_rust_feature(
 
 include(Iceoryx2CommonOptionsAndParams)
 include(iceoryx2-bb/cxx/cmake/options.cmake)
-include(iceoryx2-ffi/c/cmake/options.cmake)
+include(iceoryx2-c/cmake/options.cmake)
 include(iceoryx2-ffi/cxx/cmake/options.cmake)
 include(Iceoryx2TestOptionsAndParams)
 
@@ -109,7 +109,7 @@ endif()
 # BEGIN C binding
 
 if(RUST_BUILD_ARTIFACT_PATH AND NOT "${RUST_BUILD_ARTIFACT_PATH}" STREQUAL "" )
-    add_subdirectory(iceoryx2-ffi/c)
+    add_subdirectory(iceoryx2-c)
 else()
     message(WARNING
         "Using cargo to build the Rust part of iceoryx2. "
@@ -142,7 +142,7 @@ else()
         set(RUST_FEATURE_FLAGS "--features=${RUST_FEATURE_FLAGS_STRING}")
     endif()
 
-    include(iceoryx2-ffi/c/cmake/rust-ffi-c-byproduct-definitions.cmake)
+    include(iceoryx2-c/cmake/rust-ffi-c-byproduct-definitions.cmake)
 
     # run cargo
     add_custom_target(
@@ -158,7 +158,7 @@ else()
         USES_TERMINAL
     )
 
-    add_subdirectory(iceoryx2-ffi/c)
+    add_subdirectory(iceoryx2-c)
 
     add_dependencies(includes-only iceoryx2-ffi-build-step)
 endif()
