@@ -111,6 +111,8 @@
   [#942](https://github.com/eclipse-iceoryx/iceoryx2/issues/942)
 * Adjust visibility to `Service` constructs to allow customization
   [#954](https://github.com/eclipse-iceoryx/iceoryx2/issues/954)
+* Move C and C++ language bindings to the top level directory
+  [#963](https://github.com/eclipse-iceoryx/iceoryx2/issues/963)
 
 ### Testing
 
