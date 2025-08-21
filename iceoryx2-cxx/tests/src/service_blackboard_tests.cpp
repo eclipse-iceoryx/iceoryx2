@@ -262,7 +262,7 @@ TYPED_TEST(ServiceBlackboardTest, opening_existing_service_works) {
     ASSERT_TRUE(sut.has_value());
 }
 
-// TODO: enable when key type is generic
+// TODO [#817] enable when key type is generic
 // TYPED_TEST(ServiceBlackboardTest, opening_existing_service_with_wrong_key_type_fails) {
 //    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 //

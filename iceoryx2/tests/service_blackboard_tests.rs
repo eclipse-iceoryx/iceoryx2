@@ -1652,7 +1652,7 @@ mod service_blackboard {
         }
     }
 
-    // TODO: move the following tests to testing.rs and replace u64 with CustomKeyMarker
+    // TODO [#817] move the following tests to testing.rs and replace u64 with CustomKeyMarker
     #[test]
     fn loan_uninit_and_write_works_with_custom_key_type<S: Service>() {
         type ValueType = u64;
@@ -1684,20 +1684,24 @@ mod service_blackboard {
         }
 
         // before calling update, the reader still reads the old value
-        entry_handle.get(
-            read_value_ptr as *mut u8,
-            size_of::<ValueType>(),
-            align_of::<ValueType>(),
-        );
+        unsafe {
+            entry_handle.get(
+                read_value_ptr as *mut u8,
+                size_of::<ValueType>(),
+                align_of::<ValueType>(),
+            );
+        }
         assert_that!(read_value, eq 0);
 
         // after calling update, the new value is accessible
         let _entry_handle_mut = entry_value_uninit.update();
-        entry_handle.get(
-            read_value_ptr as *mut u8,
-            size_of::<ValueType>(),
-            align_of::<ValueType>(),
-        );
+        unsafe {
+            entry_handle.get(
+                read_value_ptr as *mut u8,
+                size_of::<ValueType>(),
+                align_of::<ValueType>(),
+            );
+        }
         assert_that!(read_value, eq 8);
     }
 
@@ -1738,22 +1742,26 @@ mod service_blackboard {
         }
 
         // before calling update, the reader still reads the old value
-        entry_handle.get(
-            read_value_ptr as *mut u8,
-            size_of::<ValueType>(),
-            align_of::<ValueType>(),
-        );
+        unsafe {
+            entry_handle.get(
+                read_value_ptr as *mut u8,
+                size_of::<ValueType>(),
+                align_of::<ValueType>(),
+            );
+        }
         assert_that!(read_value, eq 0);
 
         // after calling update, the new value is accessible
         unsafe {
             entry_handle_mut.__internal_update_write_cell();
         }
-        entry_handle.get(
-            read_value_ptr as *mut u8,
-            size_of::<ValueType>(),
-            align_of::<ValueType>(),
-        );
+        unsafe {
+            entry_handle.get(
+                read_value_ptr as *mut u8,
+                size_of::<ValueType>(),
+                align_of::<ValueType>(),
+            );
+        }
         assert_that!(read_value, eq 5);
     }
 

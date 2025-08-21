@@ -63,7 +63,7 @@ struct ReaderSharedState<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
-    dynamic_entry_handle: Option<ContainerHandle>,
+    dynamic_reader_handle: Option<ContainerHandle>,
     service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
@@ -73,7 +73,7 @@ impl<
     > Drop for ReaderSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_entry_handle {
+        if let Some(handle) = self.dynamic_reader_handle {
             self.service_state
                 .dynamic_storage
                 .get()
@@ -126,7 +126,7 @@ impl<
         let reader_id = UniqueReaderId::new();
         let mut new_self = Self {
             shared_state: Arc::new(ReaderSharedState {
-                dynamic_entry_handle: None,
+                dynamic_reader_handle: None,
                 service_state: service.clone(),
             }),
             reader_id,
@@ -136,7 +136,7 @@ impl<
 
         // !MUST! be the last task otherwise a reader is added to the dynamic config without the
         // creation of all required resources
-        let dynamic_entry_handle = match service.dynamic_storage.get().blackboard().add_reader_id(
+        let dynamic_reader_handle = match service.dynamic_storage.get().blackboard().add_reader_id(
             ReaderDetails {
                 reader_id,
                 node_id: *service.shared_node.id(),
@@ -155,7 +155,7 @@ impl<
                 fatal_panic!(from origin,
                     "This should never happen! Member has already multiple references while Reader creation is not yet completed.");
             }
-            Some(reader_state) => reader_state.dynamic_entry_handle = Some(dynamic_entry_handle),
+            Some(reader_state) => reader_state.dynamic_reader_handle = Some(dynamic_reader_handle),
         }
         Ok(new_self)
     }
@@ -341,7 +341,7 @@ impl<
     }
 }
 
-// TODO: replace u64 with CustomKeyMarker
+// TODO [#817] replace u64 with CustomKeyMarker
 impl<Service: service::Service> Reader<Service, u64> {
     #[doc(hidden)]
     pub fn __internal_entry(
@@ -384,13 +384,12 @@ pub struct __InternalEntryHandle<Service: service::Service> {
 
 impl<Service: service::Service> __InternalEntryHandle<Service> {
     /// Stores a copy of the value in `value_ptr`.
-    pub fn get(&self, value_ptr: *mut u8, value_size: usize, value_alignment: usize) {
-        unsafe { &*self.atomic_mgmt_ptr }.load(
-            value_ptr,
-            value_size,
-            value_alignment,
-            self.data_ptr,
-        );
+    ///
+    /// # Safety
+    ///
+    ///   * see Safety section of core::ptr::copy_nonoverlapping
+    pub unsafe fn get(&self, value_ptr: *mut u8, value_size: usize, value_alignment: usize) {
+        (&*self.atomic_mgmt_ptr).load(value_ptr, value_size, value_alignment, self.data_ptr);
     }
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication

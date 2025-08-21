@@ -217,7 +217,7 @@ mod writer {
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
     }
 
-    // TODO: replace u64 with CustomKeyMarker
+    // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
         let service_name = generate_name();
@@ -237,7 +237,7 @@ mod writer {
         assert_that!(entry_handle_mut, is_ok);
     }
 
-    // TODO: replace u64 with CustomKeyMarker
+    // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
         let service_name = generate_name();
@@ -261,7 +261,7 @@ mod writer {
         );
     }
 
-    // TODO: replace u64 with CustomKeyMarker
+    // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
         let service_name = generate_name();
@@ -285,7 +285,7 @@ mod writer {
         );
     }
 
-    // TODO: replace u64 with CustomKeyMarker
+    // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn entry_handle_mut_cannot_be_acquired_twice_with_custom_key_type<Sut: Service>() {
         let service_name = generate_name();
@@ -315,7 +315,7 @@ mod writer {
         assert_that!(entry_handle_mut2, is_ok);
     }
 
-    // TODO: replace u64 with CustomKeyMarker
+    // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn entry_handle_mut_prevents_another_writer_with_custom_key_type<Sut: Service>() {
         let service_name = generate_name();
@@ -340,7 +340,7 @@ mod writer {
         assert_that!(res.err().unwrap(), eq WriterCreateError::ExceedsMaxSupportedWriters);
     }
 
-    // TODO: replace u64 with CustomKeyMarker
+    // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped_with_custom_key_type<
         Sut: Service,

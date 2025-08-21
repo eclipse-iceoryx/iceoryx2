@@ -94,36 +94,43 @@ pub struct UnrestrictedAtomicMgmt {
     has_producer: IoxAtomicBool,
 }
 
-impl UnrestrictedAtomicMgmt {
-    pub fn new() -> Self {
+impl Default for UnrestrictedAtomicMgmt {
+    fn default() -> Self {
         Self {
             write_cell: IoxAtomicU32::new(1),
             has_producer: IoxAtomicBool::new(true),
         }
     }
+}
 
-    // # Safety
-    //
-    //   * store operations are only allowed when this method returns Ok
-    //   * __internal_release_producer must be called when the UnrestrictedAtomicMgmt (used without UnrestrictedAtomic) is dropped
+impl UnrestrictedAtomicMgmt {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// # Safety
+    ///
+    ///   * store operations are only allowed when this method returns Ok
+    ///   * __internal_release_producer must be called when the UnrestrictedAtomicMgmt (used
+    ///     without UnrestrictedAtomic) is dropped
     pub unsafe fn __internal_acquire_producer(&self) -> Result<bool, bool> {
         self.has_producer
             .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
     }
 
-    // # Safety
-    //
-    //   * store operations are not allowed after this method was called
-    //   * __internal_acquire_producer must have been successfully called before
+    /// # Safety
+    ///
+    ///   * store operations are not allowed after this method was called
+    ///   * __internal_acquire_producer must have been successfully called before
     pub unsafe fn __internal_release_producer(&self) {
         self.has_producer.store(true, Ordering::Relaxed);
     }
 
-    // # Safety
-    //
-    //   * __internal_acquire_producer must have been successfully called before
-    //   * the memory position must not be modified after __internal_update_write_cell has been
-    //     called
+    /// # Safety
+    ///
+    ///   * __internal_acquire_producer must have been successfully called before
+    ///   * the memory position must not be modified after __internal_update_write_cell has been
+    ///     called
     pub unsafe fn __internal_get_ptr_to_write_cell(
         &self,
         value_size: usize,
@@ -138,10 +145,10 @@ impl UnrestrictedAtomicMgmt {
         data_cell_ptr as *mut u8
     }
 
-    // # Safety
-    //
-    //   * the method must not be called without first writing to the memory position returned by
-    //     __internal_get_ptr_to_write_cell
+    /// # Safety
+    ///
+    ///   * the method must not be called without first writing to the memory position returned by
+    ///     __internal_get_ptr_to_write_cell
     pub unsafe fn __internal_update_write_cell(&self) {
         /////////////////////////
         // SYNC POINT - write
@@ -151,7 +158,10 @@ impl UnrestrictedAtomicMgmt {
         self.write_cell.fetch_add(1, Ordering::Release);
     }
 
-    pub fn load(
+    /// # Safety
+    ///
+    ///   * see Safety section of core::ptr::copy_nonoverlapping
+    pub unsafe fn load(
         &self,
         value_ptr: *mut u8,
         value_size: usize,
@@ -261,13 +271,15 @@ impl<T: Copy> UnrestrictedAtomic<T> {
     /// Loads the underlying value and returns a copy of it.
     pub fn load(&self) -> T {
         let mut return_value: MaybeUninit<T> = MaybeUninit::uninit();
-        self.mgmt.load(
-            return_value.as_mut_ptr().cast(),
-            core::mem::size_of::<T>(),
-            core::mem::align_of::<T>(),
-            self.data.as_ptr().cast(),
-        );
-        unsafe { return_value.assume_init() }
+        unsafe {
+            self.mgmt.load(
+                return_value.as_mut_ptr().cast(),
+                core::mem::size_of::<T>(),
+                core::mem::align_of::<T>(),
+                self.data.as_ptr().cast(),
+            );
+            return_value.assume_init()
+        }
     }
 
     #[doc(hidden)]
@@ -281,14 +293,18 @@ impl<T: Copy> UnrestrictedAtomic<T> {
     }
 }
 
+/// Used for the language bindings where the type to store in the UnrestrictedAtomic cannot be
+/// passed as generic.
 #[doc(hidden)]
 pub struct __InternalPtrs {
     pub atomic_mgmt_ptr: *mut u8,
     pub atomic_payload_ptr: *mut u8,
 }
 
+/// Used for the language bindings where the type to store in the UnrestrictedAtomic cannot be
+/// passed as generic.
 #[doc(hidden)]
-pub fn __internal_calculate_atomic_mgmt_and_payload_ptr(
+pub unsafe fn __internal_calculate_atomic_mgmt_and_payload_ptr(
     raw_memory_ptr: *mut u8,
     value_alignment: usize,
 ) -> __InternalPtrs {

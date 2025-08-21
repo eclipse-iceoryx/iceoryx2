@@ -637,7 +637,7 @@ impl<
     }
 }
 
-// TODO: replace u64 with CustomKeyMarker
+// TODO [#817] replace u64 with CustomKeyMarker
 impl<ServiceType: service::Service> Creator<u64, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
@@ -877,7 +877,7 @@ impl<
     }
 }
 
-// TODO: replace u64 with CustomKeyMarker
+// TODO [#817] replace u64 with CustomKeyMarker
 impl<ServiceType: service::Service> Opener<u64, ServiceType> {
     #[doc(hidden)]
     pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {

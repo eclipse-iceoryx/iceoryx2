@@ -118,7 +118,7 @@ mod reader {
         );
     }
 
-    // TODO: replace u64 with CustomKeyMarker
+    // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
         type ValueType = u64;
@@ -139,15 +139,17 @@ mod reader {
         assert_that!(entry_handle, is_ok);
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
-        entry_handle.unwrap().get(
-            read_value_ptr as *mut u8,
-            size_of::<ValueType>(),
-            align_of::<ValueType>(),
-        );
+        unsafe {
+            entry_handle.unwrap().get(
+                read_value_ptr as *mut u8,
+                size_of::<ValueType>(),
+                align_of::<ValueType>(),
+            );
+        }
         assert_that!(read_value, eq 0);
     }
 
-    // TODO: replace u64 with CustomKeyMarker
+    // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
         let service_name = generate_name();
@@ -171,7 +173,7 @@ mod reader {
         );
     }
 
-    // TODO: replace u64 with CustomKeyMarker
+    // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
         let service_name = generate_name();

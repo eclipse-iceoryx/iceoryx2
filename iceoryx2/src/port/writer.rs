@@ -68,7 +68,7 @@ struct WriterSharedState<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
 > {
-    dynamic_entry_handle_mut: Option<ContainerHandle>,
+    dynamic_writer_handle: Option<ContainerHandle>,
     service_state: Arc<ServiceState<Service, BlackboardResources<Service, KeyType>>>,
 }
 
@@ -78,7 +78,7 @@ impl<
     > Drop for WriterSharedState<Service, KeyType>
 {
     fn drop(&mut self) {
-        if let Some(handle) = self.dynamic_entry_handle_mut {
+        if let Some(handle) = self.dynamic_writer_handle {
             self.service_state
                 .dynamic_storage
                 .get()
@@ -134,7 +134,7 @@ impl<
         let mut new_self = Self {
             shared_state: Arc::new(WriterSharedState {
                 service_state: service.clone(),
-                dynamic_entry_handle_mut: None,
+                dynamic_writer_handle: None,
             }),
             writer_id,
         };
@@ -143,14 +143,12 @@ impl<
 
         // !MUST! be the last task otherwise a writer is added to the dynamic config without the
         // creation of all required resources
-        let dynamic_entry_handle_mut = match service
-            .dynamic_storage
-            .get()
-            .blackboard()
-            .add_writer_id(WriterDetails {
+        let dynamic_writer_handle = match service.dynamic_storage.get().blackboard().add_writer_id(
+            WriterDetails {
                 writer_id,
                 node_id: *service.shared_node.id(),
-            }) {
+            },
+        ) {
             Some(unique_index) => unique_index,
             None => {
                 fail!(from origin, with WriterCreateError::ExceedsMaxSupportedWriters,
@@ -164,9 +162,7 @@ impl<
                 fail!(from origin, with WriterCreateError::InternalFailure,
                     "{} due to an internal failure.", msg);
             }
-            Some(writer_state) => {
-                writer_state.dynamic_entry_handle_mut = Some(dynamic_entry_handle_mut)
-            }
+            Some(writer_state) => writer_state.dynamic_writer_handle = Some(dynamic_writer_handle),
         }
         Ok(new_self)
     }
@@ -581,7 +577,7 @@ impl<
     }
 }
 
-// TODO: replace u64 with CustomKeyMarker
+// TODO [#817] replace u64 with CustomKeyMarker
 impl<Service: service::Service> Writer<Service, u64> {
     #[doc(hidden)]
     pub fn __internal_entry(
@@ -709,6 +705,7 @@ pub struct __InternalEntryValueUninit<Service: service::Service> {
 }
 
 impl<Service: service::Service> __InternalEntryValueUninit<Service> {
+    /// Creates a new __InternalEntryValueUninit
     pub fn new(
         entry_handle_mut: __InternalEntryHandleMut<Service>,
         value_size: usize,

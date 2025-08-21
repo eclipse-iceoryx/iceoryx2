@@ -25,7 +25,7 @@ void release_callback(void* value_ptr) {
     free(value_ptr);
 }
 
-// TODO: see "RAII" in service_types example
+// TODO [#817] see "RAII" in service_types example
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_TRACE);
