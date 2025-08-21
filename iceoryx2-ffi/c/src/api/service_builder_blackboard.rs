@@ -32,7 +32,7 @@ use iceoryx2::service::static_config::message_type_details::{
 };
 use iceoryx2_bb_elementary::math::{align, max};
 use iceoryx2_bb_elementary_traits::AsCStr;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomicMgmt;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_ffi_macros::CStrRepr;
 
 // BEGIN types definition
@@ -554,7 +554,11 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
 
     let value_writer = Box::new(move |raw_memory_ptr: *mut u8| {
         let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(raw_memory_ptr, type_align);
-        core::ptr::copy_nonoverlapping(value_ptr, ptrs.1 as *mut c_void, type_size);
+        core::ptr::copy_nonoverlapping(
+            value_ptr,
+            ptrs.atomic_payload_ptr as *mut c_void,
+            type_size,
+        );
     });
     let value_size = 2 * (align(type_size, type_align))
         + align(core::mem::size_of::<UnrestrictedAtomicMgmt>(), type_align);
@@ -902,22 +906,5 @@ unsafe fn iox2_service_builder_blackboard_create_impl<E: IntoCInt>(
     }
 
     IOX2_OK
-}
-
-#[doc(hidden)]
-pub(crate) fn __internal_calculate_atomic_mgmt_and_payload_ptr(
-    raw_memory_ptr: *mut u8,
-    value_alignment: usize,
-) -> (*mut u8, *mut u8) {
-    let atomic_mgmt_alignment_offset =
-        raw_memory_ptr.align_offset(align_of::<UnrestrictedAtomicMgmt>().max(value_alignment));
-    let atomic_mgmt_ptr: *mut UnrestrictedAtomicMgmt =
-        unsafe { raw_memory_ptr.add(atomic_mgmt_alignment_offset).cast() };
-    unsafe { atomic_mgmt_ptr.write(UnrestrictedAtomicMgmt::new()) };
-
-    let payload_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
-    let payload_ptr = align(payload_ptr, value_alignment);
-
-    (atomic_mgmt_ptr as *mut u8, payload_ptr as *mut u8)
 }
 // END C API

@@ -134,7 +134,7 @@ mod reader {
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let entry_handle = reader.__internal_entry(&0, &type_details);
         assert_that!(entry_handle, is_ok);
         let mut read_value: ValueType = 9;
@@ -162,7 +162,7 @@ mod reader {
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<u64>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
         let entry_handle = reader.__internal_entry(&9, &type_details);
         assert_that!(entry_handle, is_err);
         assert_that!(
@@ -186,7 +186,7 @@ mod reader {
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<i64>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
         let entry_handle = reader.__internal_entry(&0, &type_details);
         assert_that!(entry_handle, is_err);
         assert_that!(

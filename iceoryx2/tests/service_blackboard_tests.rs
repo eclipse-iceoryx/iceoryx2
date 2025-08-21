@@ -1669,7 +1669,7 @@ mod service_blackboard {
         let writer = service.writer_builder().create().unwrap();
         let reader = service.reader_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
         let entry_handle = reader.__internal_entry(&0, &type_details).unwrap();
         let mut read_value: ValueType = 9;
@@ -1677,7 +1677,7 @@ mod service_blackboard {
 
         let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
         let entry_value_uninit =
-            entry_handle_mut.loan_uninit(type_details.size, type_details.alignment);
+            entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
         let write_ptr = entry_value_uninit.write_cell();
         unsafe {
             *write_ptr = 8;
@@ -1717,7 +1717,7 @@ mod service_blackboard {
         let writer = service.writer_builder().create().unwrap();
         let reader = service.reader_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
         let entry_handle = reader.__internal_entry(&0, &type_details).unwrap();
         let mut read_value: ValueType = 9;
@@ -1729,11 +1729,11 @@ mod service_blackboard {
 
         unsafe {
             let write_cell_ptr = entry_handle_mut
-                .__internal_get_ptr_to_write_cell(type_details.size, type_details.alignment);
+                .__internal_get_ptr_to_write_cell(type_details.size(), type_details.alignment());
             copy_nonoverlapping(
                 write_value_ptr as *const u8,
                 write_cell_ptr,
-                type_details.size,
+                type_details.size(),
             );
         }
 
@@ -1777,21 +1777,21 @@ mod service_blackboard {
         let reader = sut.reader_builder().create().unwrap();
         let entry_handle = reader.entry::<ValueType>(&0).unwrap();
 
-        let type_details = TypeDetail::__internal_new::<ValueType>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
         let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
         let entry_value_uninit =
-            entry_handle_mut.loan_uninit(type_details.size, type_details.alignment);
+            entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
         let entry_handle_mut = entry_value_uninit.discard();
 
         let write_value: ValueType = 333;
         let write_value_ptr: *const ValueType = &write_value;
         unsafe {
             let write_cell_ptr = entry_handle_mut
-                .__internal_get_ptr_to_write_cell(type_details.size, type_details.alignment);
+                .__internal_get_ptr_to_write_cell(type_details.size(), type_details.alignment());
             copy_nonoverlapping(
                 write_value_ptr as *const u8,
                 write_cell_ptr,
-                type_details.size,
+                type_details.size(),
             );
             entry_handle_mut.__internal_update_write_cell();
         }

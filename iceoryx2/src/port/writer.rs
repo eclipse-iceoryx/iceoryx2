@@ -259,43 +259,6 @@ impl<
     }
 }
 
-// TODO: replace u64 with CustomKeyMarker
-impl<Service: service::Service> Writer<Service, u64> {
-    #[doc(hidden)]
-    pub fn __internal_entry(
-        &self,
-        key: &u64,
-        type_details: &TypeDetail,
-    ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
-        let msg = "Unable to create entry handle";
-        let offset = self.get_entry_offset(key, type_details, msg)?;
-
-        let atomic_mgmt_ptr = (self
-            .shared_state
-            .service_state
-            .additional_resource
-            .data
-            .payload_start_address() as u64
-            + offset) as *const UnrestrictedAtomicMgmt;
-
-        let data_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
-        let data_ptr = align(data_ptr, type_details.alignment);
-
-        match __InternalEntryHandleMut::new(
-            atomic_mgmt_ptr,
-            data_ptr as *mut u8,
-            EventId::new(offset as _),
-            self.shared_state.clone(),
-        ) {
-            Ok(handle) => Ok(handle),
-            Err(e) => {
-                fail!(from self, with e,
-                    "{} since a handle for the passed key and value type already exists.", msg);
-            }
-        }
-    }
-}
-
 /// Defines a failure that can occur when a [`EntryHandleMut`] is created with [`Writer::entry()`].
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum EntryHandleMutError {
@@ -429,88 +392,6 @@ impl<
     }
 }
 
-/// A handle for direct write access to a specific blackboard value. Used for the language bindings
-/// where key and value type cannot be passed as generic.
-#[doc(hidden)]
-pub struct __InternalEntryHandleMut<Service: service::Service> {
-    atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
-    data_ptr: *mut u8,
-    entry_id: EventId,
-    _shared_state: Arc<WriterSharedState<Service, u64>>,
-}
-
-impl<Service: service::Service> Drop for __InternalEntryHandleMut<Service> {
-    fn drop(&mut self) {
-        unsafe { (*self.atomic_mgmt_ptr).__internal_release_producer() };
-    }
-}
-
-impl<Service: service::Service> __InternalEntryHandleMut<Service> {
-    fn new(
-        atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
-        data_ptr: *mut u8,
-        entry_id: EventId,
-        writer_state: Arc<WriterSharedState<Service, u64>>,
-    ) -> Result<Self, EntryHandleMutError> {
-        match unsafe { (*atomic_mgmt_ptr).__internal_acquire_producer() } {
-            Ok(_) => Ok(Self {
-                atomic_mgmt_ptr,
-                data_ptr,
-                entry_id,
-                _shared_state: writer_state.clone(),
-            }),
-            Err(_) => Err(EntryHandleMutError::HandleAlreadyExists),
-        }
-    }
-
-    /// Consumes the [`__InternalEntryHandleMut`] and loans an uninitialized entry value that can be
-    /// used to update without copy.
-    pub fn loan_uninit(
-        self,
-        value_size: usize,
-        value_alignment: usize,
-    ) -> __InternalEntryValueUninit<Service> {
-        __InternalEntryValueUninit::new(self, value_size, value_alignment)
-    }
-
-    /// Returns an ID corresponding to the entry which can be used in an event based communication
-    /// setup.
-    pub fn entry_id(&self) -> EventId {
-        self.entry_id
-    }
-
-    /// Returns a pointer to the current write cell of the underlying UnrestrictedAtomicMgmt.
-    ///
-    /// # Safety
-    ///
-    /// * after writing, __internal_update_write_cell must be called to make the value accessible
-    /// * the memory position must not be modified after __internal_update_write_cell has been
-    ///   called
-    pub unsafe fn __internal_get_ptr_to_write_cell(
-        &self,
-        value_size: usize,
-        value_alignment: usize,
-    ) -> *mut u8 {
-        unsafe {
-            (*self.atomic_mgmt_ptr).__internal_get_ptr_to_write_cell(
-                value_size,
-                value_alignment,
-                self.data_ptr,
-            )
-        }
-    }
-
-    /// Updates the write cell of the underlying UnrestrictedAtomicMgmt.
-    ///
-    /// # Safety
-    ///
-    /// * the method must not be called without first writing to the memory position returned by
-    ///   __internal_get_ptr_to_write_cell
-    pub unsafe fn __internal_update_write_cell(&self) {
-        unsafe { (*self.atomic_mgmt_ptr).__internal_update_write_cell() };
-    }
-}
-
 /// Wrapper around an uninitiaized entry value that can be used for a zero-copy update.
 pub struct EntryValueUninit<
     Service: service::Service,
@@ -601,53 +482,6 @@ impl<
     /// # }
     /// ```
     pub fn discard(self) -> EntryHandleMut<Service, KeyType, ValueType> {
-        self.entry_handle_mut
-    }
-}
-
-/// Wrapper around an uninitiaized entry value that can be used for a zero-copy update. Used
-/// for the language bindings where key and value type cannot be passed as generics.
-#[doc(hidden)]
-pub struct __InternalEntryValueUninit<Service: service::Service> {
-    write_cell_ptr: *mut u8,
-    entry_handle_mut: __InternalEntryHandleMut<Service>,
-}
-
-impl<Service: service::Service> __InternalEntryValueUninit<Service> {
-    pub fn new(
-        entry_handle_mut: __InternalEntryHandleMut<Service>,
-        value_size: usize,
-        value_alignment: usize,
-    ) -> Self {
-        let write_cell_ptr = unsafe {
-            (*entry_handle_mut.atomic_mgmt_ptr).__internal_get_ptr_to_write_cell(
-                value_size,
-                value_alignment,
-                entry_handle_mut.data_ptr,
-            )
-        };
-        Self {
-            write_cell_ptr,
-            entry_handle_mut,
-        }
-    }
-
-    /// Acquire pointer to write cell of the underlying UnrestrictedAtomicMgmt.
-    pub fn write_cell(&self) -> *mut u8 {
-        self.write_cell_ptr
-    }
-
-    /// Makes new value accessible, consumes the __InternalEntryValueUninit and returns the original
-    /// __InternalEntryHandleMut.
-    pub fn update(self) -> __InternalEntryHandleMut<Service> {
-        unsafe {
-            (*self.entry_handle_mut.atomic_mgmt_ptr).__internal_update_write_cell();
-        }
-        self.entry_handle_mut
-    }
-
-    /// Discards the __InternalEntryValueUninit and returns the original __InternalEntryHandleMut.
-    pub fn discard(self) -> __InternalEntryHandleMut<Service> {
         self.entry_handle_mut
     }
 }
@@ -743,6 +577,172 @@ impl<
     /// # }
     /// ```
     pub fn discard(self) -> EntryHandleMut<Service, KeyType, ValueType> {
+        self.entry_handle_mut
+    }
+}
+
+// TODO: replace u64 with CustomKeyMarker
+impl<Service: service::Service> Writer<Service, u64> {
+    #[doc(hidden)]
+    pub fn __internal_entry(
+        &self,
+        key: &u64,
+        type_details: &TypeDetail,
+    ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
+        let msg = "Unable to create entry handle";
+        let offset = self.get_entry_offset(key, type_details, msg)?;
+
+        let atomic_mgmt_ptr = (self
+            .shared_state
+            .service_state
+            .additional_resource
+            .data
+            .payload_start_address() as u64
+            + offset) as *const UnrestrictedAtomicMgmt;
+
+        let data_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
+        let data_ptr = align(data_ptr, type_details.alignment);
+
+        match __InternalEntryHandleMut::new(
+            atomic_mgmt_ptr,
+            data_ptr as *mut u8,
+            EventId::new(offset as _),
+            self.shared_state.clone(),
+        ) {
+            Ok(handle) => Ok(handle),
+            Err(e) => {
+                fail!(from self, with e,
+                    "{} since a handle for the passed key and value type already exists.", msg);
+            }
+        }
+    }
+}
+
+/// A handle for direct write access to a specific blackboard value. Used for the language bindings
+/// where key and value type cannot be passed as generic.
+#[doc(hidden)]
+pub struct __InternalEntryHandleMut<Service: service::Service> {
+    atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
+    data_ptr: *mut u8,
+    entry_id: EventId,
+    _shared_state: Arc<WriterSharedState<Service, u64>>,
+}
+
+impl<Service: service::Service> Drop for __InternalEntryHandleMut<Service> {
+    fn drop(&mut self) {
+        unsafe { (*self.atomic_mgmt_ptr).__internal_release_producer() };
+    }
+}
+
+impl<Service: service::Service> __InternalEntryHandleMut<Service> {
+    fn new(
+        atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
+        data_ptr: *mut u8,
+        entry_id: EventId,
+        writer_state: Arc<WriterSharedState<Service, u64>>,
+    ) -> Result<Self, EntryHandleMutError> {
+        match unsafe { (*atomic_mgmt_ptr).__internal_acquire_producer() } {
+            Ok(_) => Ok(Self {
+                atomic_mgmt_ptr,
+                data_ptr,
+                entry_id,
+                _shared_state: writer_state.clone(),
+            }),
+            Err(_) => Err(EntryHandleMutError::HandleAlreadyExists),
+        }
+    }
+
+    /// Consumes the [`__InternalEntryHandleMut`] and loans an uninitialized entry value that can be
+    /// used to update without copy.
+    pub fn loan_uninit(
+        self,
+        value_size: usize,
+        value_alignment: usize,
+    ) -> __InternalEntryValueUninit<Service> {
+        __InternalEntryValueUninit::new(self, value_size, value_alignment)
+    }
+
+    /// Returns an ID corresponding to the entry which can be used in an event based communication
+    /// setup.
+    pub fn entry_id(&self) -> EventId {
+        self.entry_id
+    }
+
+    /// Returns a pointer to the current write cell of the underlying UnrestrictedAtomicMgmt.
+    ///
+    /// # Safety
+    ///
+    /// * after writing, __internal_update_write_cell must be called to make the value accessible
+    /// * the memory position must not be modified after __internal_update_write_cell has been
+    ///   called
+    pub unsafe fn __internal_get_ptr_to_write_cell(
+        &self,
+        value_size: usize,
+        value_alignment: usize,
+    ) -> *mut u8 {
+        unsafe {
+            (*self.atomic_mgmt_ptr).__internal_get_ptr_to_write_cell(
+                value_size,
+                value_alignment,
+                self.data_ptr,
+            )
+        }
+    }
+
+    /// Updates the write cell of the underlying UnrestrictedAtomicMgmt.
+    ///
+    /// # Safety
+    ///
+    /// * the method must not be called without first writing to the memory position returned by
+    ///   __internal_get_ptr_to_write_cell
+    pub unsafe fn __internal_update_write_cell(&self) {
+        unsafe { (*self.atomic_mgmt_ptr).__internal_update_write_cell() };
+    }
+}
+
+/// Wrapper around an uninitiaized entry value that can be used for a zero-copy update. Used
+/// for the language bindings where key and value type cannot be passed as generics.
+#[doc(hidden)]
+pub struct __InternalEntryValueUninit<Service: service::Service> {
+    write_cell_ptr: *mut u8,
+    entry_handle_mut: __InternalEntryHandleMut<Service>,
+}
+
+impl<Service: service::Service> __InternalEntryValueUninit<Service> {
+    pub fn new(
+        entry_handle_mut: __InternalEntryHandleMut<Service>,
+        value_size: usize,
+        value_alignment: usize,
+    ) -> Self {
+        let write_cell_ptr = unsafe {
+            (*entry_handle_mut.atomic_mgmt_ptr).__internal_get_ptr_to_write_cell(
+                value_size,
+                value_alignment,
+                entry_handle_mut.data_ptr,
+            )
+        };
+        Self {
+            write_cell_ptr,
+            entry_handle_mut,
+        }
+    }
+
+    /// Acquire pointer to write cell of the underlying UnrestrictedAtomicMgmt.
+    pub fn write_cell(&self) -> *mut u8 {
+        self.write_cell_ptr
+    }
+
+    /// Makes new value accessible, consumes the __InternalEntryValueUninit and returns the original
+    /// __InternalEntryHandleMut.
+    pub fn update(self) -> __InternalEntryHandleMut<Service> {
+        unsafe {
+            (*self.entry_handle_mut.atomic_mgmt_ptr).__internal_update_write_cell();
+        }
+        self.entry_handle_mut
+    }
+
+    /// Discards the __InternalEntryValueUninit and returns the original __InternalEntryHandleMut.
+    pub fn discard(self) -> __InternalEntryHandleMut<Service> {
         self.entry_handle_mut
     }
 }

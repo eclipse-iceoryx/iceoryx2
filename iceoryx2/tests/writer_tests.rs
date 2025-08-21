@@ -232,7 +232,7 @@ mod writer {
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<u64>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
         let entry_handle_mut = writer.__internal_entry(&0, &type_details);
         assert_that!(entry_handle_mut, is_ok);
     }
@@ -252,7 +252,7 @@ mod writer {
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<u64>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
         let entry_handle_mut = writer.__internal_entry(&9, &type_details);
         assert_that!(entry_handle_mut, is_err);
         assert_that!(
@@ -276,7 +276,7 @@ mod writer {
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<i64>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
         let entry_handle_mut = writer.__internal_entry(&0, &type_details);
         assert_that!(entry_handle_mut, is_err);
         assert_that!(
@@ -300,7 +300,7 @@ mod writer {
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<u64>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
         let entry_handle_mut1 = writer.__internal_entry(&0, &type_details);
         assert_that!(entry_handle_mut1, is_ok);
         let entry_handle_mut2 = writer.__internal_entry(&0, &type_details);
@@ -330,7 +330,7 @@ mod writer {
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<u8>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
         let _entry_handle_mut = writer.__internal_entry(&0, &type_details);
 
         drop(writer);
@@ -357,11 +357,11 @@ mod writer {
             .unwrap();
         let writer = sut.writer_builder().create().unwrap();
 
-        let type_details = TypeDetail::__internal_new::<u32>(TypeVariant::FixedSize);
+        let type_details = TypeDetail::new::<u32>(TypeVariant::FixedSize);
         let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
 
         let entry_value_uninit =
-            entry_handle_mut.loan_uninit(type_details.size, type_details.alignment);
+            entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
 
         drop(writer);
         drop(sut);

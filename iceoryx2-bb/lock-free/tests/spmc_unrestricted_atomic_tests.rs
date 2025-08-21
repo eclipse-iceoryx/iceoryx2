@@ -13,11 +13,11 @@
 use core::sync::atomic::{AtomicBool, Ordering};
 use std::{
     alloc::{alloc, dealloc, Layout},
+    ptr::addr_of,
     sync::Mutex,
     thread,
 };
 
-use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_bb_posix::{barrier::*, system_configuration::SystemInfo};
 use iceoryx2_bb_testing::assert_that;
@@ -187,49 +187,86 @@ fn spmc_unrestricted_atomic_mgmt_release_producer_allows_new_acquire() {
     assert_that!(p2, is_ok);
 }
 
-// TODO: enable test when test access to private members is implemented
-//#[test]
-//fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
-//    let _test_lock = TEST_LOCK.lock().unwrap();
-//
-//    let value: u64 = 3;
-//    let value_ptr: *const u64 = &value;
-//    let value_size = core::mem::size_of::<u64>();
-//    let value_alignment = core::mem::align_of::<u64>();
-//
-//    let mut read_value: u64 = 0;
-//    let read_value_ptr: *mut u64 = &mut read_value;
-//
-//    let atomic = UnrestrictedAtomic::<u64>::new(0);
-//    let data_ptr = atomic.data.as_ptr();
-//    let mgmt = atomic.mgmt;
-//
-//    unsafe {
-//        assert_that!(mgmt.__internal_acquire_producer(), is_ok);
-//        let write_cell_ptr =
-//            mgmt.__internal_get_ptr_to_write_cell(value_size, value_alignment, data_ptr as *mut u8);
-//        core::ptr::copy_nonoverlapping(value_ptr as *const u8, write_cell_ptr, value_size);
-//
-//        // new value not read before update
-//        mgmt.load(
-//            read_value_ptr as *mut u8,
-//            value_size,
-//            value_alignment,
-//            data_ptr as *mut u8,
-//        );
-//        assert_that!(read_value, eq 0);
-//
-//        mgmt.__internal_update_write_cell();
-//
-//        // new value can be read
-//        mgmt.load(
-//            read_value_ptr as *mut u8,
-//            value_size,
-//            value_alignment,
-//            data_ptr as *mut u8,
-//        );
-//        assert_that!(read_value, eq value);
-//
-//        mgmt.__internal_release_producer();
-//    }
-//}
+#[test]
+fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
+    let _test_lock = TEST_LOCK.lock().unwrap();
+
+    let value: u64 = 3;
+    let value_ptr: *const u64 = &value;
+    let value_size = core::mem::size_of::<u64>();
+    let value_alignment = core::mem::align_of::<u64>();
+
+    let mut read_value: u64 = 0;
+    let read_value_ptr: *mut u64 = &mut read_value;
+
+    let atomic = UnrestrictedAtomic::<u64>::new(0);
+    let data_ptr = atomic.__internal_get_data_ptr();
+    let mgmt = atomic.__internal_get_mgmt();
+
+    unsafe {
+        assert_that!(mgmt.__internal_acquire_producer(), is_ok);
+        let write_cell_ptr =
+            mgmt.__internal_get_ptr_to_write_cell(value_size, value_alignment, data_ptr);
+        core::ptr::copy_nonoverlapping(value_ptr as *const u8, write_cell_ptr, value_size);
+
+        // new value not read before update
+        mgmt.load(
+            read_value_ptr as *mut u8,
+            value_size,
+            value_alignment,
+            data_ptr,
+        );
+        assert_that!(read_value, eq 0);
+
+        mgmt.__internal_update_write_cell();
+
+        // new value can be read
+        mgmt.load(
+            read_value_ptr as *mut u8,
+            value_size,
+            value_alignment,
+            data_ptr,
+        );
+        assert_that!(read_value, eq value);
+
+        mgmt.__internal_release_producer();
+    }
+}
+
+fn internal_pointer_calculation_works<ValueType: Copy + Default>() {
+    let layout = Layout::new::<UnrestrictedAtomic<ValueType>>();
+
+    unsafe {
+        let random_ptr = alloc(layout) as *mut UnrestrictedAtomic<ValueType>;
+        *(random_ptr) = UnrestrictedAtomic::<ValueType>::new(ValueType::default());
+
+        let mgmt_ptr = addr_of!(*(&*random_ptr).__internal_get_mgmt());
+        let data_ptr = addr_of!(*(&*random_ptr).__internal_get_data_ptr());
+
+        for i in -(align_of::<UnrestrictedAtomic<ValueType>>() as isize) + 1..0 {
+            let mut ptr = random_ptr;
+            ptr = ptr.byte_offset(i);
+            let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(
+                ptr as *mut u8,
+                align_of::<ValueType>(),
+            );
+
+            assert_that!(mgmt_ptr as *mut u8, eq ptrs.atomic_mgmt_ptr);
+            assert_that!(data_ptr as *mut u8, eq ptrs.atomic_payload_ptr);
+        }
+
+        dealloc(random_ptr as *mut u8, layout);
+    }
+}
+
+#[test]
+fn spmc_unrestricted_atomic_internal_ptr_calculation_works_with_integers() {
+    internal_pointer_calculation_works::<u8>();
+    internal_pointer_calculation_works::<u16>();
+    internal_pointer_calculation_works::<u32>();
+    internal_pointer_calculation_works::<u64>();
+    internal_pointer_calculation_works::<i8>();
+    internal_pointer_calculation_works::<i16>();
+    internal_pointer_calculation_works::<i32>();
+    internal_pointer_calculation_works::<i64>();
+}

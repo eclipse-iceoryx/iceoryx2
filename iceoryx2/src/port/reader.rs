@@ -249,37 +249,6 @@ impl<
     }
 }
 
-// TODO: replace u64 with CustomKeyMarker
-impl<Service: service::Service> Reader<Service, u64> {
-    #[doc(hidden)]
-    pub fn __internal_entry(
-        &self,
-        key: &u64,
-        type_details: &TypeDetail,
-    ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
-        let msg = "Unable to create entry handle";
-        let offset = self.get_entry_offset(key, type_details, msg)?;
-
-        let atomic_mgmt_ptr = (self
-            .shared_state
-            .service_state
-            .additional_resource
-            .data
-            .payload_start_address() as u64
-            + offset) as *const UnrestrictedAtomicMgmt;
-
-        let data_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
-        let data_ptr = align(data_ptr, type_details.alignment);
-
-        Ok(__InternalEntryHandle {
-            atomic_mgmt_ptr,
-            data_ptr: data_ptr as *const u8,
-            entry_id: EventId::new(offset as _),
-            _shared_state: self.shared_state.clone(),
-        })
-    }
-}
-
 /// Defines a failure that can occur when a [`EntryHandle`] is created with [`Reader::entry()`].
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum EntryHandleError {
@@ -369,6 +338,37 @@ impl<
     /// setup.
     pub fn entry_id(&self) -> EventId {
         self.entry_id
+    }
+}
+
+// TODO: replace u64 with CustomKeyMarker
+impl<Service: service::Service> Reader<Service, u64> {
+    #[doc(hidden)]
+    pub fn __internal_entry(
+        &self,
+        key: &u64,
+        type_details: &TypeDetail,
+    ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
+        let msg = "Unable to create entry handle";
+        let offset = self.get_entry_offset(key, type_details, msg)?;
+
+        let atomic_mgmt_ptr = (self
+            .shared_state
+            .service_state
+            .additional_resource
+            .data
+            .payload_start_address() as u64
+            + offset) as *const UnrestrictedAtomicMgmt;
+
+        let data_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
+        let data_ptr = align(data_ptr, type_details.alignment);
+
+        Ok(__InternalEntryHandle {
+            atomic_mgmt_ptr,
+            data_ptr: data_ptr as *const u8,
+            entry_id: EventId::new(offset as _),
+            _shared_state: self.shared_state.clone(),
+        })
     }
 }
 

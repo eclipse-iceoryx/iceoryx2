@@ -269,4 +269,40 @@ impl<T: Copy> UnrestrictedAtomic<T> {
         );
         unsafe { return_value.assume_init() }
     }
+
+    #[doc(hidden)]
+    pub fn __internal_get_mgmt(&self) -> &UnrestrictedAtomicMgmt {
+        &self.mgmt
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_get_data_ptr(&self) -> *mut u8 {
+        self.data.as_ptr() as *mut u8
+    }
+}
+
+#[doc(hidden)]
+pub struct __InternalPtrs {
+    pub atomic_mgmt_ptr: *mut u8,
+    pub atomic_payload_ptr: *mut u8,
+}
+
+#[doc(hidden)]
+pub fn __internal_calculate_atomic_mgmt_and_payload_ptr(
+    raw_memory_ptr: *mut u8,
+    value_alignment: usize,
+) -> __InternalPtrs {
+    let atomic_mgmt_alignment_offset =
+        raw_memory_ptr.align_offset(align_of::<UnrestrictedAtomicMgmt>().max(value_alignment));
+    let atomic_mgmt_ptr: *mut UnrestrictedAtomicMgmt =
+        unsafe { raw_memory_ptr.add(atomic_mgmt_alignment_offset).cast() };
+    unsafe { atomic_mgmt_ptr.write(UnrestrictedAtomicMgmt::new()) };
+
+    let payload_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
+    let payload_ptr = align(payload_ptr, value_alignment);
+
+    __InternalPtrs {
+        atomic_mgmt_ptr: atomic_mgmt_ptr as *mut u8,
+        atomic_payload_ptr: payload_ptr as *mut u8,
+    }
 }
