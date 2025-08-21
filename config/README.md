@@ -87,6 +87,8 @@ Adjusting `global` settings ensures a non-interfering setup.
   connections.
 * `global.service.creation-timeout.secs` - [int]: Maximum time for service setup
   in seconds. Uncreated services after this are marked as stalled.
+  Attention: Both 'secs' and 'nanos' must be set together; leaving one
+  unset will cause the configuration to be invalid.
 * `global.service.creation-timeout.nanos` - [int]: Additional nanoseconds for
   service setup timeout.Maximum time for service
   setup.
@@ -107,6 +109,10 @@ payload data segment
 * `defaults.event.deadline` - [Option\<Duration\>]: Maximum allowed time between
   two consecutive notifications. If not sent after this time, all listeners attached
   to a WaitSet will be notified.
+  Due to a current limitation, the keys are actually
+  `defaults.event.deadline.secs` and `defaults.event.deadline.nanos`
+  Attention: Both 'secs' and 'nanos' must be set together; leaving one
+  unset will cause the configuration to be invalid.
 * `defaults.event.notifier-created-event` - [Option\<int\>]: If defined,
     it defines the event id that is emitted when a new notifier is created.
 * `defaults.event.notifier-dropped-event` - [Option\<int\>]: If defined,
