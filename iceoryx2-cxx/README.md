@@ -1,4 +1,4 @@
-# iceoryx2-ffi-cxx
+# iceoryx2-cxx
 
 ## Build instructions - simple developer setup
 
@@ -74,7 +74,7 @@ The C++ bindings can then use the installed artifacts via
 custom projects.
 
 ```bash
-cmake -S iceoryx2-ffi/cxx -B target/ff/cxx/build \
+cmake -S iceoryx2-cxx -B target/ff/cxx/build \
       -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/cxx/build
 cmake --install target/ff/cxx/build --prefix target/ff/cc/install

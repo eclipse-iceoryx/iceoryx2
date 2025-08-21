@@ -98,7 +98,7 @@ add_rust_feature(
 include(Iceoryx2CommonOptionsAndParams)
 include(iceoryx2-bb/cxx/cmake/options.cmake)
 include(iceoryx2-c/cmake/options.cmake)
-include(iceoryx2-ffi/cxx/cmake/options.cmake)
+include(iceoryx2-cxx/cmake/options.cmake)
 include(Iceoryx2TestOptionsAndParams)
 
 if(BUILD_TESTING)
@@ -177,9 +177,9 @@ if(BUILD_CXX)
 
     # C++ binding
     set(ICEORYX_HOOFS_VERSION 2.95.7)
-    include(${CMAKE_CURRENT_LIST_DIR}/iceoryx2-ffi/cxx/cmake/fetch-iceoryx-hoofs.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/iceoryx2-cxx/cmake/fetch-iceoryx-hoofs.cmake)
 
-    add_subdirectory(iceoryx2-ffi/cxx)
+    add_subdirectory(iceoryx2-cxx)
 
     if(BUILD_EXAMPLES)
         add_subdirectory(examples/cxx)
