@@ -31,6 +31,8 @@
 * ReqRes & events implement `Send` + `Sync` in
   `**_threadsafe` service variant
   [#838](https://github.com/eclipse-iceoryx/iceoryx2/issues/838)
+* Platform support for QNX 7.1
+  [#847](https://github.com/eclipse-iceoryx/iceoryx2/issues/847)
 * Send/receive samples with `iox2` + simple record & replay
   [#884](https://github.com/eclipse-iceoryx/iceoryx2/issues/884)
 * C example for service attributes
