@@ -58,28 +58,28 @@ template <typename T>
 class OptionalValueHolder {
   private:
     union {
-        char m_null;
-        std::remove_cv_t<T> m_value;
+        char m_u_null;
+        std::remove_cv_t<T> m_u_value;
     };
     bool m_is_empty = true;
 
   public:
     constexpr OptionalValueHolder() noexcept
-        : m_null() {
+        : m_u_null() {
     }
     constexpr explicit OptionalValueHolder(T const& value)
-        : m_value(value)
+        : m_u_value(value)
         , m_is_empty(false) {
     }
     constexpr explicit OptionalValueHolder(T&& value)
-        : m_value(std::move(value))
+        : m_u_value(std::move(value))
         , m_is_empty(false) {
     }
     constexpr OptionalValueHolder(OptionalValueHolder const& rhs)
         : OptionalValueHolder() {
         if (!rhs.m_is_empty) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
-            set(rhs.m_value);
+            set(rhs.m_u_value);
         }
     }
     // NOLINTNEXTLINE(modernize-type-traits), requires C++17
@@ -87,7 +87,7 @@ class OptionalValueHolder {
         : OptionalValueHolder() {
         if (!rhs.m_is_empty) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
-            set(std::move(rhs.m_value));
+            set(std::move(rhs.m_u_value));
         }
     }
 
@@ -104,7 +104,7 @@ class OptionalValueHolder {
                 reset();
             } else {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
-                set(rhs.m_value);
+                set(rhs.m_u_value);
             }
         }
         return *this;
@@ -118,7 +118,7 @@ class OptionalValueHolder {
                 reset();
             } else {
                 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
-                set(std::move(rhs.m_value));
+                set(std::move(rhs.m_u_value));
             }
         }
         return *this;
@@ -132,10 +132,10 @@ class OptionalValueHolder {
         if (m_is_empty) {
             m_is_empty = false;
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
-            new (&m_value) T { value };
+            new (&m_u_value) T { value };
         } else {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
-            m_value = value;
+            m_u_value = value;
         }
     }
 
@@ -143,37 +143,37 @@ class OptionalValueHolder {
         if (m_is_empty) {
             m_is_empty = false;
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
-            new (&m_value) T { std::move(value) };
+            new (&m_u_value) T { std::move(value) };
         } else {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
-            m_value = std::move(value);
+            m_u_value = std::move(value);
         }
     }
 
     constexpr auto unchecked_get() & -> T& {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), unchecked access guarded by caller
-        return m_value;
+        return m_u_value;
     }
 
     constexpr auto unchecked_get() const& -> T const& {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), unchecked access guarded by caller
-        return m_value;
+        return m_u_value;
     }
 
     constexpr auto unchecked_get() && -> T&& {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), unchecked access guarded by caller
-        return std::move(m_value);
+        return std::move(m_u_value);
     }
 
     constexpr auto unchecked_get() const&& -> T const&& {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), unchecked access guarded by caller
-        return std::move(m_value);
+        return std::move(m_u_value);
     }
 
     constexpr auto reset() -> void {
         if (!m_is_empty) {
             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-union-access), access guarded by if
-            m_value.~T();
+            m_u_value.~T();
             m_is_empty = true;
         }
     }
@@ -202,12 +202,12 @@ class Optional {
     }
 
     template <typename U = std::remove_cv_t<T>,
-              // NOLINTNEXTLINE(modernize-type-traits), requires C++17
+              // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
               std::enable_if_t<std::is_constructible<T, U>::value
-                                   // NOLINTNEXTLINE(modernize-type-traits), requires C++17
-                                   && !std::is_same<typename std::decay<U>::type, Optional<T>>::value
-                                   // NOLINTNEXTLINE(modernize-type-traits), requires C++17
-                                   && !std::is_same<typename std::decay<U>::type, NulloptT>::value,
+                                   // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+                                   && !std::is_same<std::decay_t<U>, Optional<T>>::value
+                                   // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+                                   && !std::is_same<std::decay_t<U>, NulloptT>::value,
                                bool> = true>
     // NOLINTNEXTLINE(hicpp-explicit-conversions), as specified in ISO14882:2017 [optional]
     constexpr Optional(U&& value)
