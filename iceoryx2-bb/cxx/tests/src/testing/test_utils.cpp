@@ -16,8 +16,10 @@ namespace iox2 {
 namespace container {
 namespace testing {
 
-void opaque_use(void*) {}
-void opaque_use(void const*) {}
+void opaque_use(void* /* object */) {
+}
+void opaque_use(void const* /* object */) {
+}
 
 } // namespace testing
 } // namespace container

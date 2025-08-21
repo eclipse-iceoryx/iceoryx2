@@ -20,15 +20,17 @@ namespace container {
 namespace testing {
 
 // An opaque function call that prevents the compiler from making arbitrary assumptions about how an object is used.
-void opaque_use(void*);
-void opaque_use(void const*);
+void opaque_use(void* object);
+void opaque_use(void const* object);
 
-template<typename T, std::enable_if_t<!std::is_pointer<T>::value, bool> = true>
+// NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+template <typename T, std::enable_if_t<!std::is_pointer<T>::value, bool> = true>
 void opaque_use(T& object) {
     opaque_use(&object);
 }
 
-template<typename T, std::enable_if_t<!std::is_pointer<T>::value, bool> = true>
+// NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+template <typename T, std::enable_if_t<!std::is_pointer<T>::value, bool> = true>
 void opaque_use(T const& object) {
     opaque_use(&object);
 }
