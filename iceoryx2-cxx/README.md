@@ -1,4 +1,4 @@
-# iceoryx2-ffi-cxx
+# iceoryx2-cxx
 
 ## Build instructions - simple developer setup
 
@@ -19,19 +19,19 @@ libraries are built.
 ## Build instructions for integrator
 
 For production, it is recommended to separately build and install
-`iceoryx2-ffi` and `iceoryx_hoofs`, and specify the path to the install
+`iceoryx2-ffi-c` and `iceoryx_hoofs`, and specify the path to the install
 directory with `-DCMAKE_PREFIX_PATH`.
 
 ### Build and install `iceoryx2_ffi`
 
 > [!NOTE]
-> To pass `iceoryx2` feature flags to the `iceoryx2-ffi` crate, one needs to
+> To pass `iceoryx2` feature flags to the `iceoryx2-ffi-c` crate, one needs to
 > prefix the feature with `iceoryx2/`, e.g. `--features iceoryx2/libc_platform.`.
 
 First, build the C bindings generated from Rust:
 
 ```bash
-cargo build --release --package iceoryx2-ffi
+cargo build --release --package iceoryx2-ffi-c
 ```
 
 Then install the CMake package a discoverable location:
@@ -40,7 +40,7 @@ Then install the CMake package a discoverable location:
 cmake -S iceoryx2-cmake-modules -B target/ff/cmake-modules/build
 cmake --install target/ff/cmake-modules/build --prefix target/ff/cc/install
 
-cmake -S iceoryx2-ffi/c -B target/ff/c/build \
+cmake -S iceoryx2-c -B target/ff/c/build \
       -DRUST_BUILD_ARTIFACT_PATH="$( pwd )/target/release" \
       -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/c/build
@@ -74,7 +74,7 @@ The C++ bindings can then use the installed artifacts via
 custom projects.
 
 ```bash
-cmake -S iceoryx2-ffi/cxx -B target/ff/cxx/build \
+cmake -S iceoryx2-cxx -B target/ff/cxx/build \
       -DCMAKE_PREFIX_PATH="$( pwd )/target/ff/cc/install"
 cmake --build target/ff/cxx/build
 cmake --install target/ff/cxx/build --prefix target/ff/cc/install

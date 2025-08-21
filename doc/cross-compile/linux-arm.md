@@ -8,7 +8,7 @@ Once `cross` is setup, navigate to root of the iceoryx2 repo and run
 the command below.
 
 ```bash
-cross build --target aarch64-unknown-linux-gnu --release --package iceoryx2-ffi
+cross build --target aarch64-unknown-linux-gnu --release --package iceoryx2-ffi-c
 ```
 
 ## Build C bindings

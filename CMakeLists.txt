@@ -97,8 +97,8 @@ add_rust_feature(
 
 include(Iceoryx2CommonOptionsAndParams)
 include(iceoryx2-bb/cxx/cmake/options.cmake)
-include(iceoryx2-ffi/c/cmake/options.cmake)
-include(iceoryx2-ffi/cxx/cmake/options.cmake)
+include(iceoryx2-c/cmake/options.cmake)
+include(iceoryx2-cxx/cmake/options.cmake)
 include(Iceoryx2TestOptionsAndParams)
 
 if(BUILD_TESTING)
@@ -109,7 +109,7 @@ endif()
 # BEGIN C binding
 
 if(RUST_BUILD_ARTIFACT_PATH AND NOT "${RUST_BUILD_ARTIFACT_PATH}" STREQUAL "" )
-    add_subdirectory(iceoryx2-ffi/c)
+    add_subdirectory(iceoryx2-c)
 else()
     message(WARNING
         "Using cargo to build the Rust part of iceoryx2. "
@@ -142,12 +142,12 @@ else()
         set(RUST_FEATURE_FLAGS "--features=${RUST_FEATURE_FLAGS_STRING}")
     endif()
 
-    include(iceoryx2-ffi/c/cmake/rust-ffi-c-byproduct-definitions.cmake)
+    include(iceoryx2-c/cmake/rust-ffi-c-byproduct-definitions.cmake)
 
     # run cargo
     add_custom_target(
-        iceoryx2-ffi-build-step ALL
-        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
+        iceoryx2-ffi-c-build-step ALL
+        COMMAND cargo build ${RUST_BUILD_TYPE_FLAG} ${RUST_FEATURE_FLAGS} --package iceoryx2-ffi-c --target-dir=${RUST_TARGET_DIR} ${RUST_TARGET_TRIPLET_FLAG}
         BYPRODUCTS
             ${ICEORYX2_C_INCLUDE_DIR}/iox2/iceoryx2.h
             ${ICEORYX2_C_STATIC_LIB_LINK_FILE}
@@ -158,9 +158,9 @@ else()
         USES_TERMINAL
     )
 
-    add_subdirectory(iceoryx2-ffi/c)
+    add_subdirectory(iceoryx2-c)
 
-    add_dependencies(includes-only iceoryx2-ffi-build-step)
+    add_dependencies(includes-only iceoryx2-ffi-c-build-step)
 endif()
 
 # END C binding
@@ -177,9 +177,9 @@ if(BUILD_CXX)
 
     # C++ binding
     set(ICEORYX_HOOFS_VERSION 2.95.7)
-    include(${CMAKE_CURRENT_LIST_DIR}/iceoryx2-ffi/cxx/cmake/fetch-iceoryx-hoofs.cmake)
+    include(${CMAKE_CURRENT_LIST_DIR}/iceoryx2-cxx/cmake/fetch-iceoryx-hoofs.cmake)
 
-    add_subdirectory(iceoryx2-ffi/cxx)
+    add_subdirectory(iceoryx2-cxx)
 
     if(BUILD_EXAMPLES)
         add_subdirectory(examples/cxx)

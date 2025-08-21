@@ -111,6 +111,8 @@
   [#942](https://github.com/eclipse-iceoryx/iceoryx2/issues/942)
 * Adjust visibility to `Service` constructs to allow customization
   [#954](https://github.com/eclipse-iceoryx/iceoryx2/issues/954)
+* Move C and C++ language bindings to the top level directory
+  [#963](https://github.com/eclipse-iceoryx/iceoryx2/issues/963)
 
 ### Testing
 
@@ -168,12 +170,6 @@
 
 ### API Breaking Changes
 
-1. Example
-
-   ```rust
-   // old
-   let fuu = hello().is_it_me_you_re_looking_for()
-
-   // new
-   let fuu = hypnotoad().all_glory_to_the_hypnotoad()
-   ```
+1. The `iceoryx2-ffi` crate is renamed to `iceoryx2-ffi-c` due to now also
+   having a Python FFI package. The change should be transparent since the
+   recommended way to use the C bindings is via the `iceoryx2-c` cmake package.

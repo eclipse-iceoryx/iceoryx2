@@ -39,7 +39,7 @@ iceoryx2-pal-concurrency-sync
 iceoryx2-pal-posix
 iceoryx2-pal-configuration
 iceoryx2-pal-testing
-iceoryx2-ffi
+iceoryx2-ffi-c
 "
 
 PACKAGE_LIST_CORE_MACROS="
@@ -48,7 +48,7 @@ iceoryx2-ffi-macros
 "
 
 PACKAGE_LIST_BINDINGS="
-iceoryx2-ffi
+iceoryx2-ffi-c
 iceoryx2-ffi-python
 "
 
@@ -95,7 +95,7 @@ print_help() {
     echo -e "Options:"
     echo -e "    ${COLOR_BLUE}core${COLOR_OFF}              All workspace packages"
     echo -e "                      iceoryx2 depends on and the"
-    echo -e "                      iceoryx2-ffi package"
+    echo -e "                      iceoryx2-ffi-c package"
     echo -e "    ${COLOR_BLUE}core-macros${COLOR_OFF}       The macros from core"
     echo -e "    ${COLOR_BLUE}bindings${COLOR_OFF}          All bindings"
     echo -e "    ${COLOR_BLUE}binding-macros${COLOR_OFF}    The macros from bindings"

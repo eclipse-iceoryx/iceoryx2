@@ -119,7 +119,7 @@ maybe(
         "@iceoryx2//:iceoryx2-cal/Cargo.toml",
         "@iceoryx2//:iceoryx2-cli/Cargo.toml",
         "@iceoryx2//:iceoryx2-ffi/ffi-macros/Cargo.toml",
-        "@iceoryx2//:iceoryx2-ffi/ffi/Cargo.toml",
+        "@iceoryx2//:iceoryx2-ffi/c/Cargo.toml",
         "@iceoryx2//:iceoryx2-pal/concurrency-sync/Cargo.toml",
         "@iceoryx2//:iceoryx2-pal/configuration/Cargo.toml",
         "@iceoryx2//:iceoryx2-pal/posix/Cargo.toml",
@@ -317,9 +317,9 @@ file, it must also be included in the `crate_index` target located in the
 
 ### Common Pitfalls
 
-1. **Handling `iceoryx2-ffi-cbindgen` Target**:
+1. **Handling `iceoryx2-ffi-c-cbindgen` Target**:
 
-The `iceoryx2-ffi-cbindgen` target requires access to all crates listed in the
+The `iceoryx2-ffi-c-cbindgen` target requires access to all crates listed in the
 root `Cargo.toml`. Due to the sandboxed nature of Bazel builds, this can cause
 issues if not properly configured.
 

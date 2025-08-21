@@ -12,17 +12,115 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_rust//rust:defs.bzl", "rust_shared_library", "rust_static_library", "rust_test")
+
 filegroup(
     name = "all_srcs",
     srcs = glob(["**"]),
 )
 
-alias(
-    name = "iceoryx2-c-shared",
-    actual = "//iceoryx2-ffi/ffi:iceoryx2-ffi-shared",
+filegroup(
+    name = "cbindgen-cli",
+    srcs = ["@cbindgen//file"],
 )
 
-alias(
-    name = "iceoryx2-c-static",
-    actual = "//iceoryx2-ffi/ffi:iceoryx2-ffi-static",
+genrule(
+    name = "iceoryx2-ffi-c-cbindgen",
+    srcs = glob(["src/**/*.rs"]) + [
+        "//:all_srcs",
+        "Cargo.toml",
+        "cbindgen.toml",
+        ":cbindgen-cli",
+    ],
+    outs = ["include/iox2/iceoryx2.h"],
+    # this is actually just 'cbindgen iceoryx2-ffi/c --quiet --config iceoryx2-ffi/c/cbindgen.toml --output include/iox2/iceoryx2.h'
+    cmd = "$(execpath :cbindgen-cli) $$(dirname $(location Cargo.toml)) --quiet --config $(location cbindgen.toml) --output $(OUTS)",
+)
+
+rust_shared_library(
+    name = "iceoryx2-ffi-c-shared-rust",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2-cal:iceoryx2-cal",
+        "@crate_index//:serde",
+    ],
+    tags = ["exclusive"],
+    proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+        "//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
+    ],
+)
+
+rust_static_library(
+    name = "iceoryx2-ffi-c-static-rust",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2-cal:iceoryx2-cal",
+        "@crate_index//:serde",
+    ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+        "//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
+    ],
+)
+
+# Combined library with header file
+
+cc_library(
+    name = "iceoryx2-ffi-c-shared",
+    hdrs = [ "include/iox2/iceoryx2.h" ],
+    includes = [ "include" ],
+    deps = [
+        ":iceoryx2-ffi-c-cbindgen",
+        ":iceoryx2-ffi-c-shared-rust",
+    ],
+    linkstatic = False,
+)
+
+cc_library(
+    name = "iceoryx2-ffi-c-static",
+    hdrs = [ "include/iox2/iceoryx2.h" ],
+    includes = [ "include" ],
+    deps = [
+        ":iceoryx2-ffi-c-cbindgen",
+        ":iceoryx2-ffi-c-static-rust",
+    ],
+    linkstatic = True,
+)
+
+rust_test(
+    name = "iceoryx2-ffi-c-tests",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "//iceoryx2-bb/elementary:iceoryx2-bb-elementary",
+        "//iceoryx2-bb/elementary-traits:iceoryx2-bb-elementary-traits",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
+        "//iceoryx2-bb/testing:iceoryx2-bb-testing",
+        "//iceoryx2-pal/testing:iceoryx2-pal-testing",
+        "//iceoryx2-cal:iceoryx2-cal",
+    ],
+    proc_macro_deps = [
+        "//iceoryx2-bb/derive-macros:iceoryx2-bb-derive-macros",
+        "//iceoryx2-ffi/ffi-macros:iceoryx2-ffi-macros",
+        "@crate_index//:generic-tests",
+    ],
 )

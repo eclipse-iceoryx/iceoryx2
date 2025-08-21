@@ -135,25 +135,25 @@ alias(
 
 alias(
     name = "iceoryx2-c-shared",
-    actual = "//iceoryx2-ffi/c:iceoryx2-c-shared",
+    actual = "//iceoryx2-c:iceoryx2-c-shared",
     visibility = ["//visibility:public"],
 )
 
 alias(
     name = "iceoryx2-c-static",
-    actual = "//iceoryx2-ffi/c:iceoryx2-c-static",
+    actual = "//iceoryx2-c:iceoryx2-c-static",
     visibility = ["//visibility:public"],
 )
 
 alias(
     name = "iceoryx2-cxx-shared",
-    actual = "//iceoryx2-ffi/cxx:iceoryx2-cxx-shared",
+    actual = "//iceoryx2-cxx:iceoryx2-cxx-shared",
     visibility = ["//visibility:public"],
 )
 
 alias(
     name = "iceoryx2-cxx-static",
-    actual = "//iceoryx2-ffi/cxx:iceoryx2-cxx-static",
+    actual = "//iceoryx2-cxx:iceoryx2-cxx-static",
     visibility = ["//visibility:public"],
 )
 
@@ -193,11 +193,11 @@ filegroup(
         "//iceoryx2-bb/testing:all_srcs",
         "//iceoryx2-bb/threadsafe:all_srcs",
         "//iceoryx2-bb/trait-tests:all_srcs",
+        "//iceoryx2-c:all_srcs",
         "//iceoryx2-cal:all_srcs",
         "//iceoryx2-cli:all_srcs",
-        "//iceoryx2-ffi/ffi:all_srcs",
+        "//iceoryx2-cxx:all_srcs",
         "//iceoryx2-ffi/c:all_srcs",
-        "//iceoryx2-ffi/cxx:all_srcs",
         "//iceoryx2-ffi/ffi-macros:all_srcs",
         "//iceoryx2-ffi/python:all_srcs",
         "//iceoryx2-pal/concurrency-sync:all_srcs",

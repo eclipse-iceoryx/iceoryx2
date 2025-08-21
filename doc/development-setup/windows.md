@@ -118,6 +118,6 @@ cmake --build target/ff/cc/build -j 4
 
 This will re-build the Rust crates and automatically download and build
 `iceoryx_hoofs` for the C++ bindings. This is fine for a Development setup.
-For a production setup, please have a look at `iceoryx2-ffi/c/README.md` and
-`iceoryx2-ffi/cxx/README.md`. Although the instructions are for Linux, it
+For a production setup, please have a look at `iceoryx2-c/README.md` and
+`iceoryx2-cxx/README.md`. Although the instructions are for Linux, it
 should be easy to adapt them for Windows.
