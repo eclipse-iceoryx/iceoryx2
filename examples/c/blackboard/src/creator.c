@@ -28,7 +28,7 @@ void release_callback(void* value_ptr) {
 // TODO [#817] see "RAII" in service_types example
 int main(void) {
     // Setup logging
-    iox2_set_log_level_from_env_or(iox2_log_level_e_TRACE);
+    iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
@@ -74,18 +74,19 @@ int main(void) {
                                                 sizeof(uint64_t),
                                                 alignof(uint64_t));
 
-    const char* value_type_name_float = "float";
-    void* value_ptr_key_1 = malloc(sizeof(float));
-    *(float*) value_ptr_key_1 = 1.1;
+    const char* value_type_name_double = "double";
+    void* value_ptr_key_1 = malloc(sizeof(double));
+    const double START_VALUE = 1.1;
+    *(double*) value_ptr_key_1 = START_VALUE;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
                                                 1,
                                                 value_ptr_key_1,
                                                 release_callback,
-                                                value_type_name_float,
-                                                strlen(value_type_name_float),
-                                                sizeof(float),
-                                                alignof(float));
+                                                value_type_name_double,
+                                                strlen(value_type_name_double),
+                                                sizeof(double),
+                                                alignof(double));
 
     // create service
     iox2_port_factory_blackboard_h service = NULL;
@@ -121,10 +122,10 @@ int main(void) {
                           NULL,
                           &entry_handle_mut_key_1,
                           1,
-                          value_type_name_float,
-                          strlen(value_type_name_float),
-                          sizeof(float),
-                          alignof(float))
+                          value_type_name_double,
+                          strlen(value_type_name_double),
+                          sizeof(double),
+                          alignof(double))
         != IOX2_OK) {
         printf("Unable to create entry_handle_mut!\n");
         goto drop_entry_handle_mut_key_0;
@@ -139,10 +140,10 @@ int main(void) {
         printf("Write value %lu for key 0...\n", counter);
 
         iox2_entry_value_h entry_value = NULL;
-        iox2_entry_handle_mut_loan_uninit(entry_handle_mut_key_1, NULL, &entry_value, sizeof(float), alignof(float));
-        float* payload = NULL;
+        iox2_entry_handle_mut_loan_uninit(entry_handle_mut_key_1, NULL, &entry_value, sizeof(double), alignof(double));
+        double* payload = NULL;
         iox2_entry_value_mut(&entry_value, (void**) &payload);
-        *payload = 1.1 * (float) counter;
+        *payload = START_VALUE * (double) counter;
         iox2_entry_value_update(entry_value, NULL, &entry_handle_mut_key_1);
         printf("Write value %f for key 1...\n", *payload);
     }
