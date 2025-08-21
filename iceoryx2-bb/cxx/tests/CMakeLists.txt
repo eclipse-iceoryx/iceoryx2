@@ -28,8 +28,10 @@ add_executable(iceoryx2-bb-containers-tests ${TEST_FILES})
 target_sources(iceoryx2-bb-containers-tests
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/testing/observable.hpp
+    ${PROJECT_SOURCE_DIR}/src/testing/test_utils.hpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/testing/observable.cpp
+    ${PROJECT_SOURCE_DIR}/src/testing/test_utils.cpp
     PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp

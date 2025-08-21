@@ -71,6 +71,27 @@ class DetectLeakedObservablesFixture : public ::testing::Test {
     void defuse_leak_check();
 };
 
+// A fixture that checks all Observable counters against a set of expected values after the completion of a test.
+class VerifyAllObservableInteractionsFixture : public ::testing::Test {
+  private:
+    Observable::Counters m_expected;
+
+  public:
+    VerifyAllObservableInteractionsFixture();
+    ~VerifyAllObservableInteractionsFixture() override;
+
+    VerifyAllObservableInteractionsFixture(VerifyAllObservableInteractionsFixture const&) = delete;
+    VerifyAllObservableInteractionsFixture(VerifyAllObservableInteractionsFixture&&) = delete;
+    auto operator=(VerifyAllObservableInteractionsFixture const&) -> VerifyAllObservableInteractionsFixture& = delete;
+    auto operator=(VerifyAllObservableInteractionsFixture&&) -> VerifyAllObservableInteractionsFixture& = delete;
+
+    void SetUp() override;
+    void TearDown() override;
+
+    // Retrieves the set of expected counter values that will be used for the check after this test.
+    auto expected_count() -> Observable::Counters&;
+};
+
 } // namespace testing
 } // namespace container
 } // namespace iox2
