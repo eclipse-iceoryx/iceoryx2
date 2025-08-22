@@ -76,15 +76,16 @@ int main(void) {
         goto drop_service;
     }
 
+    const char* value_type_name_int = "int32_t";
     iox2_entry_handle_h entry_handle_key_0 = NULL;
     if (iox2_reader_entry(&reader,
                           NULL,
                           &entry_handle_key_0,
                           0,
-                          value_type_name,
-                          strlen(value_type_name),
-                          sizeof(uint64_t),
-                          alignof(uint64_t))
+                          value_type_name_int,
+                          strlen(value_type_name_int),
+                          sizeof(int32_t),
+                          alignof(int32_t))
         != IOX2_OK) {
         printf("Unable to create entry_handle!\n");
         goto drop_reader;
@@ -105,11 +106,11 @@ int main(void) {
         goto drop_entry_handle_key_0;
     }
 
-    uint64_t value_0 = 0;
+    int32_t value_0 = 0;
     double value_1 = 0.0;
     while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
-        iox2_entry_handle_get(&entry_handle_key_0, &value_0, sizeof(uint64_t), alignof(uint64_t));
-        printf("Read value %lu for key 0...\n", value_0);
+        iox2_entry_handle_get(&entry_handle_key_0, &value_0, sizeof(int32_t), alignof(int32_t));
+        printf("Read value %d for key 0...\n", value_0);
 
         iox2_entry_handle_get(&entry_handle_key_1, &value_1, sizeof(double), alignof(double));
         printf("Read value %f for key 1 ...\n", value_1);

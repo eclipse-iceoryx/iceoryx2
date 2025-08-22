@@ -28,7 +28,7 @@ void release_callback(void* value_ptr) {
 // TODO [#817] see "RAII" in service_types example
 int main(void) {
     // Setup logging
-    iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+    iox2_set_log_level_from_env_or(iox2_log_level_e_TRACE);
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
@@ -62,17 +62,18 @@ int main(void) {
     }
 
     // add key-value pairs
-    void* value_ptr_key_0 = malloc(sizeof(uint64_t));
-    *(uint64_t*) value_ptr_key_0 = 3;
+    const char* value_type_name_int = "int32_t";
+    void* value_ptr_key_0 = malloc(sizeof(int32_t));
+    *(int32_t*) value_ptr_key_0 = 3;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
                                                 0,
                                                 value_ptr_key_0,
                                                 release_callback,
-                                                value_type_name,
-                                                strlen(value_type_name),
-                                                sizeof(uint64_t),
-                                                alignof(uint64_t));
+                                                value_type_name_int,
+                                                strlen(value_type_name_int),
+                                                sizeof(int32_t),
+                                                alignof(int32_t));
 
     const char* value_type_name_double = "double";
     void* value_ptr_key_1 = malloc(sizeof(double));
@@ -108,10 +109,10 @@ int main(void) {
                           NULL,
                           &entry_handle_mut_key_0,
                           0,
-                          value_type_name,
-                          strlen(value_type_name),
-                          sizeof(uint64_t),
-                          alignof(uint64_t))
+                          value_type_name_int,
+                          strlen(value_type_name_int),
+                          sizeof(int32_t),
+                          alignof(int32_t))
         != IOX2_OK) {
         printf("Unable to create entry_handle_mut!\n");
         goto drop_writer;
@@ -132,12 +133,12 @@ int main(void) {
     }
 
     // update values
-    uint64_t counter = 0;
+    int32_t counter = 0;
     while (iox2_node_wait(&node_handle, 1, 0) == IOX2_OK) {
         counter += 1;
 
-        iox2_entry_handle_mut_update_with_copy(&entry_handle_mut_key_0, &counter, sizeof(uint64_t), alignof(uint64_t));
-        printf("Write value %lu for key 0...\n", counter);
+        iox2_entry_handle_mut_update_with_copy(&entry_handle_mut_key_0, &counter, sizeof(int32_t), alignof(int32_t));
+        printf("Write value %d for key 0...\n", counter);
 
         iox2_entry_value_h entry_value = NULL;
         iox2_entry_handle_mut_loan_uninit(entry_handle_mut_key_1, NULL, &entry_value, sizeof(double), alignof(double));
