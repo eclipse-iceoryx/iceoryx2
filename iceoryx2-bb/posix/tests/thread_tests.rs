@@ -10,8 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::*;
-use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::{assert_that, test_requires};
 
 use core::time::Duration;
 
@@ -62,7 +63,8 @@ fn thread_creation_does_not_block() {
 }
 
 #[test]
-fn thread_affinity_is_at_least_core_zero() {
+fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
+    let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
         let barrier = barrier.clone();
@@ -72,8 +74,10 @@ fn thread_affinity_is_at_least_core_zero() {
                 let handle = ThreadHandle::from_self();
                 let affinity = handle.get_affinity().unwrap();
                 barrier.wait();
-                assert_that!(affinity, is_not_empty);
-                assert_that!(affinity[0], eq 0);
+
+                for core in 0..number_of_cpu_cores {
+                    assert_that!(affinity, contains core);
+                }
             })
             .unwrap()
     };
@@ -81,17 +85,19 @@ fn thread_affinity_is_at_least_core_zero() {
     barrier.wait();
     let affinity = thread.get_affinity().unwrap();
     barrier.wait();
-    assert_that!(affinity, is_not_empty);
-    assert_that!(affinity[0], eq 0);
+
+    for core in 0..number_of_cpu_cores {
+        assert_that!(affinity, contains core);
+    }
 }
 
 #[test]
-fn thread_set_affinity_on_creation_works() {
+fn thread_set_affinity_to_one_cpu_core_on_creation_works() {
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
         let barrier = barrier.clone();
         ThreadBuilder::new()
-            .affinity(0)
+            .affinity(&[0])
             .spawn(move || {
                 barrier.wait();
                 let handle = ThreadHandle::from_self();
@@ -111,15 +117,54 @@ fn thread_set_affinity_on_creation_works() {
 }
 
 #[test]
-fn thread_set_affinity_from_handle_works() {
+fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
+    test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
         let barrier = barrier.clone();
         ThreadBuilder::new()
-            .affinity(0)
+            .affinity(&[0, 1])
+            .spawn(move || {
+                barrier.wait();
+                let handle = ThreadHandle::from_self();
+                let affinity = handle.get_affinity().unwrap();
+                barrier.wait();
+                assert_that!(affinity, len 2);
+                assert_that!(affinity, contains 0);
+                assert_that!(affinity, contains 1);
+            })
+            .unwrap()
+    };
+
+    barrier.wait();
+    let affinity = thread.get_affinity().unwrap();
+    barrier.wait();
+
+    assert_that!(affinity, len 2);
+    assert_that!(affinity, contains 0);
+    assert_that!(affinity, contains 1);
+}
+
+#[test]
+fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
+    let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
+    let thread = ThreadBuilder::new()
+        .affinity(&[number_of_cpu_cores + 1])
+        .spawn(|| {});
+
+    assert_that!(thread, is_err);
+    assert_that!(thread.err(), eq Some(ThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity));
+}
+
+#[test]
+fn thread_set_affinity_to_one_core_from_handle_works() {
+    let barrier = Arc::new(Barrier::new(2));
+    let thread = {
+        let barrier = barrier.clone();
+        ThreadBuilder::new()
             .spawn(move || {
                 let mut handle = ThreadHandle::from_self();
-                handle.set_affinity(0).unwrap();
+                handle.set_affinity(&[0]).unwrap();
                 barrier.wait();
                 let affinity = handle.get_affinity().unwrap();
                 barrier.wait();
@@ -137,12 +182,81 @@ fn thread_set_affinity_from_handle_works() {
 }
 
 #[test]
-fn thread_set_affinity_from_thread_works() {
+fn thread_set_affinity_to_two_cores_from_handle_works() {
+    test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
+    let barrier = Arc::new(Barrier::new(2));
+    let thread = {
+        let barrier = barrier.clone();
+        ThreadBuilder::new()
+            .spawn(move || {
+                let mut handle = ThreadHandle::from_self();
+                handle.set_affinity(&[0, 1]).unwrap();
+                barrier.wait();
+                let affinity = handle.get_affinity().unwrap();
+                barrier.wait();
+                assert_that!(affinity, len 2);
+                assert_that!(affinity, contains 0);
+                assert_that!(affinity, contains 1);
+            })
+            .unwrap()
+    };
+
+    barrier.wait();
+    let affinity = thread.get_affinity().unwrap();
+    barrier.wait();
+
+    assert_that!(affinity, len 2);
+    assert_that!(affinity, contains 0);
+    assert_that!(affinity, contains 1);
+}
+
+#[test]
+fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
+    let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
+    let barrier = Arc::new(Barrier::new(2));
+    let thread = {
+        let barrier = barrier.clone();
+        ThreadBuilder::new()
+            .spawn(move || {
+                // thread is started
+                barrier.wait();
+                let mut handle = ThreadHandle::from_self();
+
+                let original_affinity = handle.get_affinity().unwrap();
+                barrier.wait();
+
+                let result = handle.set_affinity(&[number_of_cpu_cores + 1]);
+                assert_that!(result, is_err);
+                assert_that!(result.err(), eq Some(ThreadSetAffinityError::InvalidCpuCores));
+
+                barrier.wait();
+                let affinity = handle.get_affinity().unwrap();
+                barrier.wait();
+                assert_that!(original_affinity, eq affinity);
+            })
+            .unwrap()
+    };
+
+    // thread is started
+    barrier.wait();
+
+    // acquire original affinity
+    let original_affinity = thread.get_affinity().unwrap();
+    barrier.wait();
+
+    barrier.wait();
+    let affinity = thread.get_affinity().unwrap();
+    barrier.wait();
+
+    assert_that!(affinity, eq original_affinity);
+}
+
+#[test]
+fn thread_set_affinity_to_one_core_from_thread_works() {
     let barrier = Arc::new(Barrier::new(2));
     let mut thread = {
         let barrier = barrier.clone();
         ThreadBuilder::new()
-            .affinity(0)
             .spawn(move || {
                 barrier.wait();
                 let handle = ThreadHandle::from_self();
@@ -154,12 +268,71 @@ fn thread_set_affinity_from_thread_works() {
             .unwrap()
     };
 
-    thread.set_affinity(0).unwrap();
+    thread.set_affinity(&[0]).unwrap();
     barrier.wait();
     let affinity = thread.get_affinity().unwrap();
     barrier.wait();
     assert_that!(affinity, len 1);
     assert_that!(affinity[0], eq 0);
+}
+
+#[test]
+fn thread_set_affinity_to_two_cores_from_thread_works() {
+    test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
+    let barrier = Arc::new(Barrier::new(2));
+    let mut thread = {
+        let barrier = barrier.clone();
+        ThreadBuilder::new()
+            .spawn(move || {
+                barrier.wait();
+                let handle = ThreadHandle::from_self();
+                let affinity = handle.get_affinity().unwrap();
+                barrier.wait();
+                assert_that!(affinity, len 2);
+                assert_that!(affinity, contains 0);
+                assert_that!(affinity, contains 1);
+            })
+            .unwrap()
+    };
+
+    thread.set_affinity(&[0, 1]).unwrap();
+    barrier.wait();
+    let affinity = thread.get_affinity().unwrap();
+    barrier.wait();
+    assert_that!(affinity, len 2);
+    assert_that!(affinity, contains 0);
+    assert_that!(affinity, contains 1);
+}
+
+#[test]
+fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
+    let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
+    let barrier = Arc::new(Barrier::new(2));
+    let mut thread = {
+        let barrier = barrier.clone();
+        ThreadBuilder::new()
+            .spawn(move || {
+                let handle = ThreadHandle::from_self();
+                let original_affinity = handle.get_affinity().unwrap();
+                barrier.wait();
+                barrier.wait();
+                let affinity = handle.get_affinity().unwrap();
+                assert_that!(affinity, eq original_affinity);
+            })
+            .unwrap()
+    };
+
+    let original_affinity = thread.get_affinity().unwrap();
+
+    barrier.wait();
+    let result = thread.set_affinity(&[number_of_cpu_cores + 1]);
+    assert_that!(result, is_err);
+    assert_that!(result.err(), eq Some(ThreadSetAffinityError::InvalidCpuCores));
+
+    let affinity = thread.get_affinity().unwrap();
+    barrier.wait();
+
+    assert_that!(affinity, eq original_affinity);
 }
 
 #[test]

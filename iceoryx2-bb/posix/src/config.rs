@@ -28,8 +28,6 @@ pub enum ClockMode {
 /// Defines how often a call is repeated when it was interrupted by SIGINT
 pub const EINTR_REPETITIONS: u64 = 10;
 
-// Maximum supported CPUs in the system, relevant for the scheduler and cpu affinity
-pub const MAX_SUPPORTED_CPUS_IN_SYSTEM: usize = 64;
 pub const MAX_THREAD_NAME_LENGTH: usize = 16;
 pub const DEFAULT_SCHEDULER: Scheduler = Scheduler::Other;
 
