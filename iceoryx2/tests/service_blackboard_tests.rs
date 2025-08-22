@@ -1680,7 +1680,7 @@ mod service_blackboard {
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
         let write_ptr = entry_value_uninit.write_cell();
         unsafe {
-            *write_ptr = 8;
+            *(write_ptr as *mut ValueType) = 8;
         }
 
         // before calling update, the reader still reads the old value
