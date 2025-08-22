@@ -64,9 +64,9 @@
 //!
 //! let thread = ThreadBuilder::new()
 //!                         .name(&ThreadName::from(b"myFunkyThread"))
-//!                         // try to let the thread run on CPU core 0, must be less than
+//!                         // try to let the thread run on CPU core 0 and 4, must be less than
 //!                         // number_of_cpu_cores
-//!                         .affinity(0)
+//!                         .affinity([0, 4])
 //!                         .priority(255) // it is important, run on highest priority
 //!                         .scheduler(Scheduler::Fifo)
 //!                         // from here one we create a guarded based thread
@@ -92,7 +92,7 @@ use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 
 use crate::{
-    config::{MAX_SUPPORTED_CPUS_IN_SYSTEM, MAX_THREAD_NAME_LENGTH},
+    config::MAX_THREAD_NAME_LENGTH,
     scheduler::Scheduler,
     signal::Signal,
     system_configuration::{Limit, SystemInfo},
@@ -167,6 +167,7 @@ pub struct ThreadBuilder {
     priority: u8,
     stack_size: Option<u64>,
     affinity: [bool; posix::CPU_SETSIZE],
+    has_custom_affinity: bool,
     name: ThreadName,
 }
 
@@ -178,6 +179,7 @@ impl Default for ThreadBuilder {
             priority: 0,
             scheduler: Scheduler::default(),
             affinity: [true; posix::CPU_SETSIZE],
+            has_custom_affinity: false,
             stack_size: None,
             name: ThreadName::new(),
         }
@@ -202,27 +204,24 @@ impl ThreadBuilder {
         self
     }
 
-    /// Sets the threads CPU affinity. The CPU core must exists otherwise it has no effect.
-    /// The maximum number of supported of CPU cores is defined in
-    /// [`crate::config::MAX_SUPPORTED_CPUS_IN_SYSTEM`] and the systems number of CPU cores can
-    /// be acquired with:
+    /// Sets the threads CPU affinity to the provided list of `cpu_core_id`s.
+    /// The cpu cores must exist otherwise [`ThreadBuilder::spawn()`] will
+    /// fail with [`ThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity`].
+    ///
+    /// The systems number of CPU cores can be acquired with:
     /// ```
     /// use iceoryx2_bb_posix::system_configuration::*;
     ///
     /// let number_of_cores = SystemInfo::NumberOfCpuCores.value();
     /// ```
-    pub fn affinity(mut self, value: usize) -> Self {
-        let number_of_cores = SystemInfo::NumberOfCpuCores.value();
-        if value >= number_of_cores {
-            warn!(from self, "The system has cpu cores in the range [0, {}]. Setting affinity to cpu core {} will have no effect.", number_of_cores - 1, value);
-        }
-        if value > MAX_SUPPORTED_CPUS_IN_SYSTEM {
-            warn!(from self, "Maximum range of supported CPUs is [0, {}]. Unable to set affinity to cpu core {}.", number_of_cores - 1, value);
-            return self;
+    pub fn affinity(mut self, cpu_core_ids: &[usize]) -> Self {
+        self.affinity = [false; posix::CPU_SETSIZE];
+        self.has_custom_affinity = true;
+
+        for cpu_core_id in cpu_core_ids {
+            self.affinity[*cpu_core_id] = true;
         }
 
-        self.affinity = [false; posix::CPU_SETSIZE];
-        self.affinity[value] = true;
         self
     }
 
@@ -281,6 +280,18 @@ impl ThreadBuilder {
         T: Debug + Send + 'thread,
         F: FnOnce() -> T + Send + 'thread,
     {
+        if self.has_custom_affinity {
+            let number_of_cores = SystemInfo::NumberOfCpuCores.value();
+            for (cpu_core_id, has_affinity) in self.affinity[number_of_cores..].iter().enumerate() {
+                if *has_affinity {
+                    fail!(from self,
+                        with ThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity,
+                        "Unable to set the threads affinity since the system has cores from [0, {}] and the cpu core {} was set.",
+                    number_of_cores - 1, cpu_core_id);
+                }
+            }
+        }
+
         let mut attributes = ScopeGuardBuilder::new( posix::pthread_attr_t::new_zeroed())
             .on_init(|attr| {
                 let msg = "Failed to initialize thread attributes";
@@ -494,13 +505,9 @@ pub trait ThreadProperties {
     /// thread may run.
     fn get_affinity(&self) -> Result<Vec<usize>, ThreadSetAffinityError>;
 
-    /// Sets the threads affinity to a single CPU core. If the core does not exist it has no
-    /// effect.
-    fn set_affinity(&mut self, cpu: usize) -> Result<(), ThreadSetAffinityError>;
-
-    /// Sets the threads affinity to multiple CPU cores. If one of the CPU cores does not exist
-    /// the core will be ignored.
-    fn set_affinity_to_cores(&mut self, cores: &[usize]) -> Result<(), ThreadSetAffinityError>;
+    /// Sets the threads affinity to the provided set of cpu core ids. If one of
+    /// the cpu core id's does not exist in the system the call will fail.
+    fn set_affinity(&mut self, cpu_core_ids: &[usize]) -> Result<(), ThreadSetAffinityError>;
 }
 
 /// A thread handle can be used from within the thread to read or modify certain settings like the
@@ -590,22 +597,25 @@ impl ThreadProperties for ThreadHandle {
         Ok(cpu_affinity_set)
     }
 
-    fn set_affinity(&mut self, cpu: usize) -> Result<(), ThreadSetAffinityError> {
+    fn set_affinity(&mut self, cpu_core_ids: &[usize]) -> Result<(), ThreadSetAffinityError> {
         let msg = "Unable to set cpu affinity to core";
-        if cpu >= posix::CPU_SETSIZE {
-            fail!(from self, with ThreadSetAffinityError::InvalidCpuCores,
-                "{} {} since some cpu cores were invalid (maybe exceeded maximum supported CPU core number of the system).", msg, cpu);
-        }
+        let number_of_cores = SystemInfo::NumberOfCpuCores.value();
 
-        let cores = vec![cpu];
-        self.set_affinity_to_cores(&cores)
-    }
-
-    fn set_affinity_to_cores(&mut self, cores: &[usize]) -> Result<(), ThreadSetAffinityError> {
         let mut cpuset = posix::cpu_set_t::new_zeroed();
+        for cpu_core_id in cpu_core_ids {
+            if *cpu_core_id >= posix::CPU_SETSIZE {
+                fail!(from self, with ThreadSetAffinityError::InvalidCpuCores,
+                    "{} {} since it exceeds the capacity of the thread affinity mask of {}.",
+                    msg, cpu_core_id, posix::CPU_SETSIZE);
+            }
 
-        for core in cores {
-            cpuset.set(*core);
+            if *cpu_core_id > number_of_cores {
+                fail!(from self, with ThreadSetAffinityError::InvalidCpuCores,
+                    "{} {} since the maximum range of CPUs in the system is [0, {}].",
+                    msg, cpu_core_id, number_of_cores - 1);
+            }
+
+            cpuset.set(*cpu_core_id);
         }
 
         let msg = "Unable to set cpu affinity";
@@ -713,11 +723,7 @@ impl ThreadProperties for Thread {
         self.handle.get_affinity()
     }
 
-    fn set_affinity(&mut self, cpu: usize) -> Result<(), ThreadSetAffinityError> {
-        self.handle.set_affinity(cpu)
-    }
-
-    fn set_affinity_to_cores(&mut self, cores: &[usize]) -> Result<(), ThreadSetAffinityError> {
-        self.handle.set_affinity_to_cores(cores)
+    fn set_affinity(&mut self, cpu_core_ids: &[usize]) -> Result<(), ThreadSetAffinityError> {
+        self.handle.set_affinity(cpu_core_ids)
     }
 }

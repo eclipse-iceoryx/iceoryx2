@@ -70,7 +70,7 @@ fn perform_benchmark<Q: PushPop>(
         .unwrap();
 
     let t1 = ThreadBuilder::new()
-        .affinity(args.cpu_core_participant_1)
+        .affinity(&[args.cpu_core_participant_1])
         .priority(255)
         .spawn(|| {
             startup_barrier.wait();
@@ -83,7 +83,7 @@ fn perform_benchmark<Q: PushPop>(
         });
 
     let t2 = ThreadBuilder::new()
-        .affinity(args.cpu_core_participant_2)
+        .affinity(&[args.cpu_core_participant_2])
         .priority(255)
         .spawn(|| {
             startup_barrier.wait();

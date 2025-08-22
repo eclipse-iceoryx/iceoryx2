@@ -81,6 +81,8 @@
     [#927](https://github.com/eclipse-iceoryx/iceoryx2/issues/927)
 * Fix memory leaks when port creation fails
     [#947](https://github.com/eclipse-iceoryx/iceoryx2/issues/947)
+* Clean handling of thread CPU core affinity of `posix::Thread`
+    [#962](https://github.com/eclipse-iceoryx/iceoryx2/issues/962)
 
 ### Refactoring
 
