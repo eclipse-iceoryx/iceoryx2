@@ -381,8 +381,8 @@ fn mutex_with_deadlock_detection_blocks() {
     });
 }
 
-// This test fails on QNX due to the mutex created in the separate thread from being cleaned up
-// before the clean-up code is added. Needs investigation.
+// This test fails on QNX due to the mutex created in the separate thread being cleaned up
+// before the clean-up code is executed. Needs investigation (#978).
 #[cfg(not(target_os = "nto"))]
 #[test]
 fn mutex_can_be_recovered_when_thread_died() {
