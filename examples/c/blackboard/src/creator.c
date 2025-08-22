@@ -53,9 +53,9 @@ int main(void) {
         iox2_service_builder_blackboard_creator(service_builder);
 
     // set key type
-    const char* value_type_name = "uint64_t";
+    const char* key_type_name = "uint64_t";
     if (iox2_service_builder_blackboard_creator_set_key_type_details(
-            &service_builder_blackboard, value_type_name, strlen(value_type_name), sizeof(uint64_t), alignof(uint64_t))
+            &service_builder_blackboard, key_type_name, strlen(key_type_name), sizeof(uint64_t), alignof(uint64_t))
         != IOX2_OK) {
         printf("Unable to set key type details!\n");
         goto drop_service_name;
@@ -63,27 +63,25 @@ int main(void) {
 
     // add key-value pairs
     const char* value_type_name_int = "int32_t";
-    void* value_ptr_key_0 = malloc(sizeof(int32_t));
-    *(int32_t*) value_ptr_key_0 = 3;
+    int32_t value_key_0 = 3;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
                                                 0,
-                                                value_ptr_key_0,
-                                                release_callback,
+                                                &value_key_0,
+                                                NULL,
                                                 value_type_name_int,
                                                 strlen(value_type_name_int),
                                                 sizeof(int32_t),
                                                 alignof(int32_t));
 
     const char* value_type_name_double = "double";
-    void* value_ptr_key_1 = malloc(sizeof(double));
     const double START_VALUE = 1.1;
-    *(double*) value_ptr_key_1 = START_VALUE;
+    double value_key_1 = START_VALUE;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
                                                 1,
-                                                value_ptr_key_1,
-                                                release_callback,
+                                                &value_key_1,
+                                                NULL,
                                                 value_type_name_double,
                                                 strlen(value_type_name_double),
                                                 sizeof(double),

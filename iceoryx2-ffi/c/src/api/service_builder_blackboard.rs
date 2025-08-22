@@ -37,7 +37,7 @@ use iceoryx2_ffi_macros::CStrRepr;
 
 // BEGIN types definition
 
-pub type iox2_service_blackboard_creator_add_release_callback = extern "C" fn(*mut c_void);
+pub type iox2_service_blackboard_creator_add_release_callback = Option<extern "C" fn(*mut c_void)>;
 
 #[repr(C)]
 #[derive(Copy, Clone, CStrRepr)]
@@ -564,7 +564,9 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
         + align(core::mem::size_of::<UnrestrictedAtomicMgmt>(), type_align);
     let value_alignment = max(core::mem::align_of::<UnrestrictedAtomicMgmt>(), type_align);
     let value_cleanup = Box::new(move || {
-        release_callback(value_ptr);
+        if let Some(callback) = release_callback {
+            callback(value_ptr);
+        }
     });
 
     let internals = BuilderInternals::new(
