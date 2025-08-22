@@ -47,8 +47,18 @@ using Optional = IOX2_CONTAINER_CONFIG_USE_CUSTOM_OPTIONAL<T>;
 template <class T>
 class Optional;
 
+namespace detail {
+// An empty literal type used as a tag to NulloptT's constructor.
+struct NulloptTConstructorTag {
+    explicit NulloptTConstructorTag() noexcept = default;
+};
+} // namespace detail
+
 /// A drop-in replacement for C++17 `std::nullopt_t` for use with Optional.
-struct NulloptT { };
+struct NulloptT {
+    constexpr explicit NulloptT(detail::NulloptTConstructorTag /* unused */) noexcept {
+    }
+};
 
 
 namespace detail {
@@ -315,7 +325,19 @@ Optional(T) -> Optional<T>;
 
 #if __cplusplus >= 201703L
 // NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
-inline constexpr NulloptT nullopt;
+inline constexpr NulloptT nullopt { detail::NulloptTConstructorTag {} };
+#else
+namespace detail {
+template <typename = void>
+struct NulloptHelper {
+    static NulloptT nullopt;
+};
+template <>
+// NOLINTNEXTLINE(misc-definitions-in-headers), not an ODR violation because of template
+NulloptT NulloptHelper<>::nullopt = NulloptT { detail::NulloptTConstructorTag {} };
+} // namespace detail
+// NOLINTNEXTLINE(readability-identifier-naming), for consistency with C++17 code using std::optional
+static constexpr NulloptT const& nullopt = detail::NulloptHelper<>::nullopt;
 #endif
 
 } // namespace container

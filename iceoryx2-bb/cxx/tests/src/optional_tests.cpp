@@ -38,13 +38,13 @@ TEST_F(OptionalFixture, default_constructor_does_not_initialize_an_object_of_con
 }
 
 TEST(Optional, nullopt_constructor_initializes_empty_optional) {
-    iox2::container::Optional<int> const sut(iox2::container::NulloptT {});
+    iox2::container::Optional<int> const sut(iox2::container::nullopt);
     ASSERT_FALSE(sut.has_value());
 }
 
 TEST_F(OptionalFixture, nullopt_constructor_does_not_initialize_an_object_of_contained_type) {
     Observable::s_counter.wasInitialized = 0;
-    iox2::container::Optional<Observable> const sut(iox2::container::NulloptT {});
+    iox2::container::Optional<Observable> const sut(iox2::container::nullopt);
     ASSERT_FALSE(sut.has_value());
     ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
     ASSERT_EQ(Observable::s_counter.totalInstances, 0);
@@ -82,7 +82,7 @@ TEST_F(OptionalFixture, value_constructor_copy_constructs_for_lvalue) {
 TEST_F(OptionalFixture, destructor_does_nothing_on_empty_optiona) {
     Observable::s_counter.wasDestructed = 0;
     {
-        iox2::container::Optional<Observable> const sut(iox2::container::NulloptT {});
+        iox2::container::Optional<Observable> const sut(iox2::container::nullopt);
         ASSERT_TRUE(!sut.has_value());
     }
     EXPECT_EQ(Observable::s_counter.wasDestructed, 0);
@@ -527,7 +527,14 @@ TEST(Optional, move_assignment_returns_reference_to_this) {
 TEST(Optional, assignment_from_nullopt_to_empty_leaves_optional_empty) {
     iox2::container::Optional<int> sut;
     ASSERT_TRUE(!sut.has_value());
-    sut = iox2::container::NulloptT {};
+    sut = iox2::container::nullopt;
+    ASSERT_TRUE(!sut.has_value());
+}
+
+TEST(Optional, assignment_from_nullopt_to_empty_works_with_braces_syntax) {
+    iox2::container::Optional<int> sut;
+    ASSERT_TRUE(!sut.has_value());
+    sut = {};
     ASSERT_TRUE(!sut.has_value());
 }
 
@@ -541,7 +548,7 @@ TEST_F(OptionalFixture, assignment_from_nullopt_to_empty_does_not_construct_an_o
         Observable::s_counter.wasDestructed = 0;
         iox2::container::Optional<Observable> sut;
         ASSERT_TRUE(!sut.has_value());
-        sut = iox2::container::NulloptT {};
+        sut = iox2::container::nullopt;
         ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
@@ -556,7 +563,15 @@ TEST(Optional, assignment_from_nullopt_to_full_empties_optional) {
     int const overwritten_value = -99;
     iox2::container::Optional<int> sut { overwritten_value };
     ASSERT_TRUE(sut.has_value());
-    sut = iox2::container::NulloptT {};
+    sut = iox2::container::nullopt;
+    ASSERT_TRUE(!sut.has_value());
+}
+
+TEST(Optional, assignment_from_nullopt_to_full_works_with_braces_syntax) {
+    int const overwritten_value = -99;
+    iox2::container::Optional<int> sut { overwritten_value };
+    ASSERT_TRUE(sut.has_value());
+    sut = {};
     ASSERT_TRUE(!sut.has_value());
 }
 
@@ -570,7 +585,7 @@ TEST_F(OptionalFixture, assignment_from_nullopt_to_full_destructs_contained_obje
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
         ASSERT_TRUE(sut.has_value());
-        sut = iox2::container::NulloptT {};
+        sut = iox2::container::nullopt;
         ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
@@ -585,7 +600,7 @@ TEST_F(OptionalFixture, assignment_from_nullopt_to_full_destructs_contained_obje
 
 TEST(Optional, assignment_from_nullopt_returns_reference_to_this) {
     iox2::container::Optional<Observable> sut { Observable {} };
-    ASSERT_EQ(&(sut = iox2::container::NulloptT {}), &sut);
+    ASSERT_EQ(&(sut = iox2::container::nullopt), &sut);
 }
 
 TEST(Optional, operator_arrow_returns_nullptr_for_empty_optional) {
