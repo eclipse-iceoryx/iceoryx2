@@ -28,8 +28,20 @@ file(GLOB TEST_FILES src/*.cpp)
 
 add_executable(${PROJECT_NAME} ${TEST_FILES})
 
-target_link_libraries(${PROJECT_NAME} iceoryx2-c::static-lib GTest::gtest GTest::gmock)
-target_compile_options(${PROJECT_NAME} PRIVATE ${ICEORYX2_TEST_CXX_FLAGS} ${ICEORYX2_CXX_WARNINGS})
+target_link_libraries(
+    ${PROJECT_NAME}
+    iceoryx2-c::static-lib
+    GTest::gtest
+    GTest::gmock
+    ${ICEORYX2_SANITIZER_FLAGS}
+)
+target_compile_options(
+    ${PROJECT_NAME}
+    PRIVATE
+    ${ICEORYX2_TEST_CXX_FLAGS}
+    ${ICEORYX2_CXX_WARNINGS}
+    ${ICEORYX2_SANITIZER_FLAGS}
+)
 target_compile_features(${PROJECT_NAME} PRIVATE ${ICEORYX2_CXX_STD})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
