@@ -302,8 +302,15 @@ impl<
     }
 
     fn prepare_config_details(&mut self) {
-        self.config_details_mut().type_details =
-            TypeDetail::new::<KeyType>(message_type_details::TypeVariant::FixedSize);
+        match &self.override_key_type {
+            None => {
+                self.config_details_mut().type_details =
+                    TypeDetail::new::<KeyType>(message_type_details::TypeVariant::FixedSize);
+            }
+            Some(details) => {
+                self.config_details_mut().type_details = details.clone();
+            }
+        }
     }
 
     /// If the [`Service`] is created it defines how many [`Reader`](crate::port::reader::Reader)s
