@@ -145,14 +145,15 @@ pub fn get_sections() -> Vec<CliSection> {
                     key: "global.service.creation-timeout.secs",
                     value_type: "int",
                     default: config.global.service.creation_timeout.as_secs().to_string(),
-                    description: "Maximum time for service setup in seconds. Uncreated services after this are marked as stalled.\n
+                    description: "Maximum time for service setup in seconds. Uncreated services after this are marked as stalled.\n   \
                     Attention: Both 'secs' and 'nanos' must be set together; leaving one unset will cause the configuration to be invalid.",
                 },
                 CliEntry {
                     key: "global.service.creation-timeout.nanos",
                     value_type: "int",
                     default: config.global.service.creation_timeout.subsec_nanos().to_string(),
-                    description: "Additional nanoseconds for service setup timeout.",
+                    description: "Additional nanoseconds for service setup timeout.\n   \
+                    Attention: Both 'secs' and 'nanos' must be set together; leaving one unset will cause the configuration to be invalid.",
                 },
             ],
         },
@@ -252,13 +253,13 @@ pub fn get_sections() -> Vec<CliSection> {
                     key: "defaults.event.deadline",
                     value_type: "Option<Duration>",
                     default: config.defaults.event.deadline.map_or("None".to_string(), |e| format!("{e:?}")),
-                    description: "Maximum allowed time between
-                    two consecutive notifications. If not sent after this time, all listeners attached
-                    to a WaitSet will be notified.\n
-                    Due to a current limitation, the keys are actually
-                    `defaults.event.deadline.secs` and `defaults.event.deadline.nanos`.\n
-                    Attention: Both 'secs' and 'nanos' must be set together; leaving one
-                    unset will cause the configuration to be invalid.",
+                    description: "\
+                    Maximum allowed time between two consecutive notifications. If not sent after \
+                    this time, all listeners attached to a WaitSet will be notified.\n   \
+                    Due to a current limitation, the keys are actually \
+                    `defaults.event.deadline.secs` and `defaults.event.deadline.nanos`.\n   \
+                    Attention: Both 'secs' and 'nanos' must be set together; leaving one unset \
+                    will cause the configuration to be invalid.",
                 },
                 CliEntry {
                     key: "defaults.event.notifier-created-event",
