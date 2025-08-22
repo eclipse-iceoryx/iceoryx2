@@ -65,7 +65,7 @@ fn perform_response_stream_benchmark<T: Service>(
         .unwrap();
 
     let t1 = ThreadBuilder::new()
-        .affinity(args.cpu_core_participant_1)
+        .affinity(&[args.cpu_core_participant_1])
         .priority(255)
         .spawn(|| {
             let client_a2b = service_a2b.client_builder().create().unwrap();
@@ -89,7 +89,7 @@ fn perform_response_stream_benchmark<T: Service>(
         });
 
     let t2 = ThreadBuilder::new()
-        .affinity(args.cpu_core_participant_2)
+        .affinity(&[args.cpu_core_participant_2])
         .priority(255)
         .spawn(|| {
             let server_a2b = service_a2b.server_builder().create().unwrap();
@@ -174,7 +174,7 @@ fn perform_request_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core
         .unwrap();
 
     let t1 = ThreadBuilder::new()
-        .affinity(args.cpu_core_participant_1)
+        .affinity(&[args.cpu_core_participant_1])
         .priority(255)
         .spawn(|| {
             let client_a2b = service_a2b.client_builder().create().unwrap();
@@ -193,7 +193,7 @@ fn perform_request_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core
         });
 
     let t2 = ThreadBuilder::new()
-        .affinity(args.cpu_core_participant_2)
+        .affinity(&[args.cpu_core_participant_2])
         .priority(255)
         .spawn(|| {
             let client_b2a = service_b2a.client_builder().create().unwrap();

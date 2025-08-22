@@ -69,7 +69,7 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core::error:
         .unwrap();
 
     let t1 = ThreadBuilder::new()
-        .affinity(args.cpu_core_participant_1)
+        .affinity(&[args.cpu_core_participant_1])
         .priority(255)
         .spawn(|| {
             let sender_a2b = service_a2b
@@ -108,7 +108,7 @@ fn perform_benchmark<T: Service>(args: &Args) -> Result<(), Box<dyn core::error:
         });
 
     let t2 = ThreadBuilder::new()
-        .affinity(args.cpu_core_participant_2)
+        .affinity(&[args.cpu_core_participant_2])
         .priority(255)
         .spawn(|| {
             let sender_b2a = service_b2a
