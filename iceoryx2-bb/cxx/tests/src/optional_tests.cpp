@@ -13,110 +13,124 @@
 #include "iox2/container/optional.hpp"
 
 #include "testing/observable.hpp"
+#include "testing/test_utils.hpp"
 
 #include <gtest/gtest.h>
 
 namespace {
 using iox2::container::testing::Observable;
 
-class Optional : public iox2::container::testing::DetectLeakedObservablesFixture { };
+class OptionalFixture : public iox2::container::testing::DetectLeakedObservablesFixture { };
 
-TEST_F(Optional, DefaultConstructor) {
+TEST(Optional, default_constructor_initializes_empty_optional) {
     // [optional.ctor] / 2
-    {
-        iox2::container::Optional<int> o;
-        ASSERT_FALSE(o.has_value());
-    }
+    iox2::container::Optional<int> const sut;
+    ASSERT_FALSE(sut.has_value());
+}
+
+TEST_F(OptionalFixture, default_constructor_does_not_initialize_an_object_of_contained_type) {
     // [optional.ctor] / 3
-    {
-        // No contained value is initialized
-        Observable::s_counter.wasInitialized = 0;
-        iox2::container::Optional<Observable> o;
-        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
-    }
+    Observable::reset_all_counters();
+    iox2::container::Optional<Observable> const sut;
+    ASSERT_FALSE(sut.has_value());
+    ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
+    ASSERT_EQ(Observable::s_counter.totalInstances, 0);
 }
 
-TEST_F(Optional, NulloptConstructor) {
-    {
-        iox2::container::Optional<int> o(iox2::container::NulloptT {});
-        ASSERT_FALSE(o.has_value());
-    }
-    {
-        Observable::s_counter.wasInitialized = 0;
-        iox2::container::Optional<Observable> o(iox2::container::NulloptT {});
-        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
-    }
+TEST(Optional, nullopt_constructor_initializes_empty_optional) {
+    iox2::container::Optional<int> const sut(iox2::container::NulloptT {});
+    ASSERT_FALSE(sut.has_value());
 }
 
-TEST_F(Optional, ValueConstructor) {
-    {
-        iox2::container::Optional<int> o(42);
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(*o, 42);
-    }
-    {
-        Observable::s_counter.wasInitialized = 0;
-        Observable::s_counter.wasMoveConstructed = 0;
-        iox2::container::Optional<Observable> o(Observable {});
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(Observable::s_counter.wasInitialized, 1);
-        ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 1);
-    }
-    {
-        Observable::s_counter.wasInitialized = 0;
-        Observable::s_counter.wasCopyConstructed = 0;
-        Observable value;
-        value.id = 9999;
-        iox2::container::Optional<Observable> o(value);
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(o->id, 9999);
-        ASSERT_EQ(Observable::s_counter.wasInitialized, 1);
-        ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
-    }
+TEST_F(OptionalFixture, nullopt_constructor_does_not_initialize_an_object_of_contained_type) {
+    Observable::s_counter.wasInitialized = 0;
+    iox2::container::Optional<Observable> const sut(iox2::container::NulloptT {});
+    ASSERT_FALSE(sut.has_value());
+    ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
+    ASSERT_EQ(Observable::s_counter.totalInstances, 0);
 }
 
-TEST_F(Optional, Destructor) {
+TEST(Optional, value_constructor_initializes_the_contained_value) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> const sut(contained_value);
+    ASSERT_TRUE(sut.has_value());
+    EXPECT_EQ(*sut, contained_value);
+}
+
+TEST_F(OptionalFixture, value_constructor_move_constructs_for_rvalue) {
+    Observable::s_counter.wasInitialized = 0;
+    Observable::s_counter.wasMoveConstructed = 0;
+    iox2::container::Optional<Observable> const sut(Observable {});
+    ASSERT_TRUE(sut.has_value());
+    EXPECT_EQ(Observable::s_counter.wasInitialized, 1);
+    EXPECT_EQ(Observable::s_counter.wasMoveConstructed, 1);
+}
+
+TEST_F(OptionalFixture, value_constructor_copy_constructs_for_lvalue) {
+    Observable::s_counter.wasInitialized = 0;
+    Observable::s_counter.wasCopyConstructed = 0;
+    int const contained_value = 9999;
+    Observable value;
+    value.id = contained_value;
+    iox2::container::Optional<Observable> sut(value);
+    ASSERT_TRUE(sut.has_value());
+    EXPECT_EQ(sut->id, value.id);
+    EXPECT_EQ(Observable::s_counter.wasInitialized, 1);
+    EXPECT_EQ(Observable::s_counter.wasCopyConstructed, 1);
+}
+
+TEST_F(OptionalFixture, destructor_does_nothing_on_empty_optiona) {
     Observable::s_counter.wasDestructed = 0;
     {
-        iox2::container::Optional<Observable> o(iox2::container::NulloptT {});
-        ASSERT_TRUE(!o.has_value());
+        iox2::container::Optional<Observable> const sut(iox2::container::NulloptT {});
+        ASSERT_TRUE(!sut.has_value());
     }
-    ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
-
-    Observable::s_counter.wasDestructed = 0;
-    {
-        iox2::container::Optional<Observable> o(Observable {});
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
-        Observable::s_counter.wasDestructed = 0;
-    }
-    ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
+    EXPECT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
-TEST_F(Optional, CopyConstruction_FromEmpty) {
+TEST_F(OptionalFixture, destructor_destructs_contained_values) {
+    Observable::s_counter.wasDestructed = 0;
     {
-        iox2::container::Optional<int> empty;
-        iox2::container::Optional<int> o { empty };
-        ASSERT_TRUE(!o.has_value());
+        iox2::container::Optional<Observable> const sut(Observable {});
+        ASSERT_TRUE(sut.has_value());
+        EXPECT_EQ(Observable::s_counter.wasDestructed, 1);
+        Observable::s_counter.wasDestructed = 0;
     }
+    EXPECT_EQ(Observable::s_counter.wasDestructed, 1);
+}
+
+TEST(Optional, copy_constructor_constructs_empty_from_empty) {
+    iox2::container::Optional<int> const empty;
+    iox2::container::Optional<int> sut { empty };
+    ASSERT_TRUE(!sut.has_value());
+    iox2::container::testing::opaque_use(sut);
+}
+
+TEST_F(OptionalFixture, copy_construction_from_empty_does_not_initialize_object) {
     {
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasDestructed = 0;
-        iox2::container::Optional<Observable> empty;
-        iox2::container::Optional<Observable> o { empty };
-        ASSERT_TRUE(!o.has_value());
+        iox2::container::Optional<Observable> const empty;
+        iox2::container::Optional<Observable> sut { empty };
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
+        iox2::container::testing::opaque_use(sut);
     }
-    ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
+    EXPECT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
-TEST_F(Optional, CopyConstruction_FromFull) {
-    {
-        iox2::container::Optional<int> full(42);
-        iox2::container::Optional<int> o { full };
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(*o, 42);
-    }
+TEST(Optional, copy_construction_from_filled_object_constructs_new_object) {
+    int const contained_valued = 42;
+    iox2::container::Optional<int> const full(contained_valued);
+    iox2::container::Optional<int> sut { full };
+    ASSERT_TRUE(sut.has_value());
+    EXPECT_EQ(*sut, contained_valued);
+    iox2::container::testing::opaque_use(sut);
+}
+
+
+TEST_F(OptionalFixture, copy_construction_from_filled_object_invokes_copy_constructor) {
+    int const tracking_id = 12345;
     {
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
@@ -126,43 +140,49 @@ TEST_F(Optional, CopyConstruction_FromFull) {
         Observable::s_counter.wasDestructed = 0;
         ASSERT_EQ(Observable::s_counter.wasInitialized, 1);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
-        full->id = 12345;
-        iox2::container::Optional<Observable> o { full };
+        full->id = tracking_id;
+        iox2::container::Optional<Observable> const sut { full };
         ASSERT_EQ(Observable::s_counter.wasInitialized, 1);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(o->id, 12345);
+        ASSERT_TRUE(sut.has_value());
+        EXPECT_EQ(sut->id, tracking_id);
         ASSERT_TRUE(full.has_value());
-        ASSERT_EQ(full->id, 12345);
+        EXPECT_EQ(full->id, tracking_id);
+        iox2::container::testing::opaque_use(sut);
         ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
     }
     ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
 }
 
-TEST_F(Optional, MoveConstruction_FromEmpty) {
-    {
-        iox2::container::Optional<int> empty;
-        iox2::container::Optional<int> o { std::move(empty) };
-        ASSERT_TRUE(!o.has_value());
-    }
+TEST(Optional, move_constructor_constructs_empty_from_empty) {
+    iox2::container::Optional<int> empty;
+    iox2::container::Optional<int> const sut { std::move(empty) };
+    ASSERT_TRUE(!sut.has_value());
+}
+
+TEST_F(OptionalFixture, move_construction_from_empty_does_not_initialize_object) {
     {
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasDestructed = 0;
         iox2::container::Optional<Observable> empty;
-        iox2::container::Optional<Observable> o { std::move(empty) };
-        ASSERT_TRUE(!o.has_value());
+        iox2::container::Optional<Observable> sut { std::move(empty) };
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
+        iox2::container::testing::opaque_use(sut);
     }
     ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
-TEST_F(Optional, MoveConstruction_FromFull) {
-    {
-        iox2::container::Optional<int> full(42);
-        iox2::container::Optional<int> o { std::move(full) };
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(*o, 42);
-    }
+TEST(Optional, move_constructor_from_filled_object_constructs_new_object) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> full(contained_value);
+    iox2::container::Optional<int> sut { std::move(full) };
+    ASSERT_TRUE(sut.has_value());
+    EXPECT_EQ(*sut, contained_value);
+}
+
+TEST_F(OptionalFixture, move_constructor_from_filled_object_moves_value) {
+    int const tracking_id = 12345;
     {
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasMoveConstructed = 0;
@@ -173,29 +193,29 @@ TEST_F(Optional, MoveConstruction_FromFull) {
         ASSERT_EQ(Observable::s_counter.wasInitialized, 1);
         ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 1);
         Observable::s_counter.wasMoveConstructed = 0;
-        full->id = 12345;
-        iox2::container::Optional<Observable> o { std::move(full) };
+        full->id = tracking_id;
+        iox2::container::Optional<Observable> sut { std::move(full) };
         ASSERT_EQ(Observable::s_counter.wasInitialized, 1);
         ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 1);
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(o->id, 12345);
-        ASSERT_TRUE(full.has_value());
-        ASSERT_EQ(full->id, 12345);
+        ASSERT_TRUE(sut.has_value());
+        EXPECT_EQ(sut->id, tracking_id);
+        iox2::container::testing::opaque_use(sut);
         ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
     }
     ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
 }
 
-TEST_F(Optional, CopyAssignment_EmptyToEmpty) {
-    {
-        iox2::container::Optional<int> o;
-        iox2::container::Optional<int> empty;
-        ASSERT_TRUE(!o.has_value());
-        ASSERT_TRUE(!empty.has_value());
-        o = empty;
-        ASSERT_TRUE(!o.has_value());
-        ASSERT_TRUE(!empty.has_value());
-    }
+TEST(Optional, copy_assignment_from_empty_to_empty_leaves_optional_empty) {
+    iox2::container::Optional<int> sut;
+    iox2::container::Optional<int> const empty;
+    ASSERT_TRUE(!sut.has_value());
+    ASSERT_TRUE(!empty.has_value());
+    sut = empty;
+    ASSERT_TRUE(!sut.has_value());
+    ASSERT_TRUE(!empty.has_value());
+}
+
+TEST_F(OptionalFixture, copy_assignment_from_empty_to_empty_does_not_construct_any_objects) {
     {
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
@@ -203,12 +223,12 @@ TEST_F(Optional, CopyAssignment_EmptyToEmpty) {
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        iox2::container::Optional<Observable> o;
-        iox2::container::Optional<Observable> empty;
-        ASSERT_TRUE(!o.has_value());
+        iox2::container::Optional<Observable> sut;
+        iox2::container::Optional<Observable> const empty;
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_TRUE(!empty.has_value());
-        o = empty;
-        ASSERT_TRUE(!o.has_value());
+        sut = empty;
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_TRUE(!empty.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
@@ -219,29 +239,32 @@ TEST_F(Optional, CopyAssignment_EmptyToEmpty) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
-TEST_F(Optional, CopyAssignment_EmptyToFull) {
+
+TEST(Optional, copy_assignment_from_empty_to_full_empties_target) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> sut { contained_value };
+    iox2::container::Optional<int> const empty;
+    ASSERT_TRUE(sut.has_value());
+    ASSERT_TRUE(!empty.has_value());
+    sut = empty;
+    ASSERT_TRUE(!sut.has_value());
+    ASSERT_TRUE(!empty.has_value());
+}
+
+TEST_F(OptionalFixture, copy_assignment_from_empty_to_full_destructs_object_in_target) {
     {
-        iox2::container::Optional<int> o { 42 };
-        iox2::container::Optional<int> empty;
-        ASSERT_TRUE(o.has_value());
-        ASSERT_TRUE(!empty.has_value());
-        o = empty;
-        ASSERT_TRUE(!o.has_value());
-        ASSERT_TRUE(!empty.has_value());
-    }
-    {
-        iox2::container::Optional<Observable> o { Observable {} };
+        iox2::container::Optional<Observable> sut { Observable {} };
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        iox2::container::Optional<Observable> empty;
-        ASSERT_TRUE(o.has_value());
+        iox2::container::Optional<Observable> const empty;
+        ASSERT_TRUE(sut.has_value());
         ASSERT_TRUE(!empty.has_value());
-        o = empty;
-        ASSERT_TRUE(!o.has_value());
+        sut = empty;
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_TRUE(!empty.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
@@ -254,35 +277,38 @@ TEST_F(Optional, CopyAssignment_EmptyToFull) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
-TEST_F(Optional, CopyAssignment_FullToEmpty) {
+TEST(Optional, copy_assignment_from_full_to_empty_assigns_value_to_target) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> sut;
+    iox2::container::Optional<int> full { contained_value };
+    ASSERT_TRUE(!sut.has_value());
+    ASSERT_TRUE(full.has_value());
+    sut = full;
+    ASSERT_TRUE(sut.has_value());
+    ASSERT_TRUE(full.has_value());
+    ASSERT_EQ(*sut, contained_value);
+    ASSERT_EQ(*full, contained_value);
+}
+
+TEST_F(OptionalFixture, copy_assignment_from_full_to_empty_constructs_object_in_target) {
+    int const tracking_id = 12345;
     {
-        iox2::container::Optional<int> o;
-        iox2::container::Optional<int> full { 42 };
-        ASSERT_TRUE(!o.has_value());
-        ASSERT_TRUE(full.has_value());
-        o = full;
-        ASSERT_TRUE(o.has_value());
-        ASSERT_TRUE(full.has_value());
-        ASSERT_EQ(*o, 42);
-        ASSERT_EQ(*full, 42);
-    }
-    {
-        iox2::container::Optional<Observable> o;
+        iox2::container::Optional<Observable> sut;
         iox2::container::Optional<Observable> full { Observable {} };
-        ASSERT_TRUE(!o.has_value());
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_TRUE(full.has_value());
-        full->id = 12345;
+        full->id = tracking_id;
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        o = full;
-        ASSERT_TRUE(o.has_value());
+        sut = full;
+        ASSERT_TRUE(sut.has_value());
         ASSERT_TRUE(full.has_value());
-        ASSERT_EQ(o->id, 12345);
-        ASSERT_EQ(full->id, 12345);
+        EXPECT_EQ(sut->id, tracking_id);
+        EXPECT_EQ(full->id, tracking_id);
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
@@ -293,37 +319,42 @@ TEST_F(Optional, CopyAssignment_FullToEmpty) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
 }
 
-TEST_F(Optional, CopyAssignment_FullToFull) {
+TEST(Optional, copy_assignment_from_full_to_full_overwrites_target_value) {
+    int const contained_value = 42;
+    int const original_target_value = -99;
+    iox2::container::Optional<int> sut { original_target_value };
+    iox2::container::Optional<int> const full { contained_value };
+    ASSERT_TRUE(sut.has_value());
+    ASSERT_TRUE(full.has_value());
+    EXPECT_EQ(*sut, original_target_value);
+    sut = full;
+    ASSERT_TRUE(sut.has_value());
+    ASSERT_TRUE(full.has_value());
+    ASSERT_EQ(*sut, contained_value);
+    ASSERT_EQ(*full, contained_value);
+}
+
+TEST_F(OptionalFixture, copy_assignment_from_full_to_full_copy_assigns_to_target) {
+    int const tracking_id = 12345;
+    int const overwritten_id = 1111111;
     {
-        iox2::container::Optional<int> o { -99 };
-        iox2::container::Optional<int> full { 42 };
-        ASSERT_TRUE(o.has_value());
-        ASSERT_TRUE(full.has_value());
-        ASSERT_EQ(*o, -99);
-        o = full;
-        ASSERT_TRUE(o.has_value());
-        ASSERT_TRUE(full.has_value());
-        ASSERT_EQ(*o, 42);
-        ASSERT_EQ(*full, 42);
-    }
-    {
-        iox2::container::Optional<Observable> o { Observable {} };
+        iox2::container::Optional<Observable> sut { Observable {} };
         iox2::container::Optional<Observable> full { Observable {} };
-        ASSERT_TRUE(o.has_value());
+        ASSERT_TRUE(sut.has_value());
         ASSERT_TRUE(full.has_value());
-        o->id = 111111;
-        full->id = 12345;
+        sut->id = overwritten_id;
+        full->id = tracking_id;
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        o = full;
-        ASSERT_TRUE(o.has_value());
+        sut = full;
+        ASSERT_TRUE(sut.has_value());
         ASSERT_TRUE(full.has_value());
-        ASSERT_EQ(o->id, 12345);
-        ASSERT_EQ(full->id, 12345);
+        ASSERT_EQ(sut->id, tracking_id);
+        ASSERT_EQ(full->id, tracking_id);
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 1);
@@ -334,15 +365,22 @@ TEST_F(Optional, CopyAssignment_FullToFull) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
 }
 
-TEST_F(Optional, MoveAssignment_EmptyToEmpty) {
-    {
-        iox2::container::Optional<int> o;
-        iox2::container::Optional<int> empty;
-        ASSERT_TRUE(!o.has_value());
-        ASSERT_TRUE(!empty.has_value());
-        o = std::move(empty);
-        ASSERT_TRUE(!o.has_value());
-    }
+TEST(Optional, copy_assignment_returns_reference_to_this) {
+    iox2::container::Optional<Observable> sut;
+    iox2::container::Optional<Observable> const full(Observable {});
+    ASSERT_EQ(&(sut = full), &sut);
+}
+
+TEST(Optional, move_assignment_from_empty_to_empty_leaves_optional_empty) {
+    iox2::container::Optional<int> sut;
+    iox2::container::Optional<int> empty;
+    ASSERT_TRUE(!sut.has_value());
+    ASSERT_TRUE(!empty.has_value());
+    sut = std::move(empty);
+    ASSERT_TRUE(!sut.has_value());
+}
+
+TEST_F(OptionalFixture, move_assignment_from_empty_to_empty_does_not_construct_any_objects) {
     {
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
@@ -350,12 +388,12 @@ TEST_F(Optional, MoveAssignment_EmptyToEmpty) {
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        iox2::container::Optional<Observable> o;
+        iox2::container::Optional<Observable> sut;
         iox2::container::Optional<Observable> empty;
-        ASSERT_TRUE(!o.has_value());
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_TRUE(!empty.has_value());
-        o = std::move(empty);
-        ASSERT_TRUE(!o.has_value());
+        sut = std::move(empty);
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
@@ -365,17 +403,19 @@ TEST_F(Optional, MoveAssignment_EmptyToEmpty) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
-TEST_F(Optional, MoveAssignment_EmptyToFull) {
+TEST(Optional, move_assignment_from_empty_to_full_empties_target) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> sut { contained_value };
+    iox2::container::Optional<int> empty;
+    ASSERT_TRUE(sut.has_value());
+    ASSERT_TRUE(!empty.has_value());
+    sut = std::move(empty);
+    ASSERT_TRUE(!sut.has_value());
+}
+
+TEST_F(OptionalFixture, move_assignment_from_empty_to_full_destructs_object_in_target) {
     {
-        iox2::container::Optional<int> o { 42 };
-        iox2::container::Optional<int> empty;
-        ASSERT_TRUE(o.has_value());
-        ASSERT_TRUE(!empty.has_value());
-        o = std::move(empty);
-        ASSERT_TRUE(!o.has_value());
-    }
-    {
-        iox2::container::Optional<Observable> o { Observable {} };
+        iox2::container::Optional<Observable> sut { Observable {} };
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
@@ -383,10 +423,10 @@ TEST_F(Optional, MoveAssignment_EmptyToFull) {
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
         iox2::container::Optional<Observable> empty;
-        ASSERT_TRUE(o.has_value());
+        ASSERT_TRUE(sut.has_value());
         ASSERT_TRUE(!empty.has_value());
-        o = std::move(empty);
-        ASSERT_TRUE(!o.has_value());
+        sut = std::move(empty);
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
@@ -398,31 +438,34 @@ TEST_F(Optional, MoveAssignment_EmptyToFull) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
-TEST_F(Optional, MoveAssignment_FullToEmpty) {
+TEST(Optional, move_assignment_from_full_to_empty_assigns_value_to_target) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> sut;
+    iox2::container::Optional<int> full { contained_value };
+    ASSERT_TRUE(!sut.has_value());
+    ASSERT_TRUE(full.has_value());
+    sut = std::move(full);
+    ASSERT_TRUE(sut.has_value());
+    EXPECT_EQ(*sut, contained_value);
+}
+
+TEST_F(OptionalFixture, move_assignment_from_full_to_empty_move_constructs_object_in_target) {
+    int const tracking_id = 12345;
     {
-        iox2::container::Optional<int> o;
-        iox2::container::Optional<int> full { 42 };
-        ASSERT_TRUE(!o.has_value());
-        ASSERT_TRUE(full.has_value());
-        o = std::move(full);
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(*o, 42);
-    }
-    {
-        iox2::container::Optional<Observable> o;
+        iox2::container::Optional<Observable> sut;
         iox2::container::Optional<Observable> full { Observable {} };
-        ASSERT_TRUE(!o.has_value());
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_TRUE(full.has_value());
-        full->id = 12345;
+        full->id = tracking_id;
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        o = std::move(full);
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(o->id, 12345);
+        sut = std::move(full);
+        ASSERT_TRUE(sut.has_value());
+        ASSERT_EQ(sut->id, tracking_id);
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
@@ -433,33 +476,38 @@ TEST_F(Optional, MoveAssignment_FullToEmpty) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
 }
 
-TEST_F(Optional, MoveAssignment_FullToFull) {
+TEST(Optional, move_assignment_from_full_to_full_overwrites_target_value) {
+    int const contained_value = 42;
+    int const overwritten_value = -99;
+    iox2::container::Optional<int> sut { overwritten_value };
+    iox2::container::Optional<int> full { contained_value };
+    ASSERT_TRUE(sut.has_value());
+    ASSERT_TRUE(full.has_value());
+    ASSERT_EQ(*sut, overwritten_value);
+    sut = std::move(full);
+    ASSERT_TRUE(sut.has_value());
+    EXPECT_EQ(*sut, contained_value);
+}
+
+TEST_F(OptionalFixture, move_assignment_from_full_to_full_move_assigns_to_target) {
+    int const tracking_id = 12345;
+    int const overwritten_id = 111111;
     {
-        iox2::container::Optional<int> o { -99 };
-        iox2::container::Optional<int> full { 42 };
-        ASSERT_TRUE(o.has_value());
-        ASSERT_TRUE(full.has_value());
-        ASSERT_EQ(*o, -99);
-        o = std::move(full);
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(*o, 42);
-    }
-    {
-        iox2::container::Optional<Observable> o { Observable {} };
+        iox2::container::Optional<Observable> sut { Observable {} };
         iox2::container::Optional<Observable> full { Observable {} };
-        ASSERT_TRUE(o.has_value());
+        ASSERT_TRUE(sut.has_value());
         ASSERT_TRUE(full.has_value());
-        o->id = 111111;
-        full->id = 12345;
+        sut->id = overwritten_id;
+        full->id = tracking_id;
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        o = std::move(full);
-        ASSERT_TRUE(o.has_value());
-        ASSERT_EQ(o->id, 12345);
+        sut = std::move(full);
+        ASSERT_TRUE(sut.has_value());
+        ASSERT_EQ(sut->id, tracking_id);
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
@@ -470,13 +518,20 @@ TEST_F(Optional, MoveAssignment_FullToFull) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
 }
 
-TEST_F(Optional, Assignment_NulloptToEmpty) {
-    {
-        iox2::container::Optional<int> o;
-        ASSERT_TRUE(!o.has_value());
-        o = iox2::container::NulloptT {};
-        ASSERT_TRUE(!o.has_value());
-    }
+TEST(Optional, move_assignment_returns_reference_to_this) {
+    iox2::container::Optional<Observable> sut;
+    iox2::container::Optional<Observable> full(Observable {});
+    ASSERT_EQ(&(sut = std::move(full)), &sut);
+}
+
+TEST(Optional, assignment_from_nullopt_to_empty_leaves_optional_empty) {
+    iox2::container::Optional<int> sut;
+    ASSERT_TRUE(!sut.has_value());
+    sut = iox2::container::NulloptT {};
+    ASSERT_TRUE(!sut.has_value());
+}
+
+TEST_F(OptionalFixture, assignment_from_nullopt_to_empty_does_not_construct_an_object) {
     {
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
@@ -484,10 +539,10 @@ TEST_F(Optional, Assignment_NulloptToEmpty) {
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        iox2::container::Optional<Observable> o;
-        ASSERT_TRUE(!o.has_value());
-        o = iox2::container::NulloptT {};
-        ASSERT_TRUE(!o.has_value());
+        iox2::container::Optional<Observable> sut;
+        ASSERT_TRUE(!sut.has_value());
+        sut = iox2::container::NulloptT {};
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
@@ -497,24 +552,26 @@ TEST_F(Optional, Assignment_NulloptToEmpty) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
-TEST_F(Optional, Assignment_NulloptToFull) {
+TEST(Optional, assignment_from_nullopt_to_full_empties_optional) {
+    int const overwritten_value = -99;
+    iox2::container::Optional<int> sut { overwritten_value };
+    ASSERT_TRUE(sut.has_value());
+    sut = iox2::container::NulloptT {};
+    ASSERT_TRUE(!sut.has_value());
+}
+
+TEST_F(OptionalFixture, assignment_from_nullopt_to_full_destructs_contained_object) {
     {
-        iox2::container::Optional<int> o { 42 };
-        ASSERT_TRUE(o.has_value());
-        o = iox2::container::NulloptT {};
-        ASSERT_TRUE(!o.has_value());
-    }
-    {
-        iox2::container::Optional<Observable> o { Observable {} };
+        iox2::container::Optional<Observable> sut { Observable {} };
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        ASSERT_TRUE(o.has_value());
-        o = iox2::container::NulloptT {};
-        ASSERT_TRUE(!o.has_value());
+        ASSERT_TRUE(sut.has_value());
+        sut = iox2::container::NulloptT {};
+        ASSERT_TRUE(!sut.has_value());
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
@@ -526,204 +583,295 @@ TEST_F(Optional, Assignment_NulloptToFull) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
-TEST_F(Optional, OperatorArrowPointerAccess) {
-    iox2::container::Optional<int> o;
-    ASSERT_EQ(o.operator->(), nullptr);
-    o = 42;
-    ASSERT_NE(o.operator->(), nullptr);
-    ASSERT_EQ(*(o.operator->()), 42);
+TEST(Optional, assignment_from_nullopt_returns_reference_to_this) {
+    iox2::container::Optional<Observable> sut { Observable {} };
+    ASSERT_EQ(&(sut = iox2::container::NulloptT {}), &sut);
 }
 
-TEST_F(Optional, OperatorArrowConstPointerAccess) {
-    iox2::container::Optional<int> const o1;
-    ASSERT_EQ(o1.operator->(), nullptr);
-    iox2::container::Optional<int> const o2 { 42 };
-    ASSERT_NE(o2.operator->(), nullptr);
-    ASSERT_EQ(*(o2.operator->()), 42);
+TEST(Optional, operator_arrow_returns_nullptr_for_empty_optional) {
+    iox2::container::Optional<int> sut;
+    ASSERT_EQ(sut.operator->(), nullptr);
 }
 
-TEST_F(Optional, OperatorStarDereferenceAccess) {
-    iox2::container::Optional<int> o { 42 };
-    ASSERT_EQ(*o, 42);
-    *o = 55;
-    ASSERT_EQ(*o, 55);
+TEST(Optional, operator_arrow_returns_pointer_to_contained_value_for_full_optional) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> sut { contained_value };
+    ASSERT_NE(sut.operator->(), nullptr);
+    EXPECT_EQ(*(sut.operator->()), contained_value);
 }
 
-TEST_F(Optional, OperatorStarConstDereferenceAccess) {
-    iox2::container::Optional<int> const o1 { 42 };
-    ASSERT_EQ(*o1, 42);
-    iox2::container::Optional<int> const o2 { 55 };
-    ASSERT_EQ(*o2, 55);
+TEST(Optional, const_operator_arrow_returns_nullptr_for_empty_optional) {
+    iox2::container::Optional<int> const sut;
+    ASSERT_EQ(sut.operator->(), nullptr);
 }
 
-TEST_F(Optional, OperatorStarMoveAccess) {
+TEST(Optional, const_operator_arrow_returns_pointer_to_contained_value_for_full_optional) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> const sut { contained_value };
+    ASSERT_NE(sut.operator->(), nullptr);
+    EXPECT_EQ(*(sut.operator->()), contained_value);
+}
+
+TEST(Optional, operator_star_returns_mutable_reference_to_contained_value) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> sut { contained_value };
+    ASSERT_EQ(*sut, contained_value);
+    int const alternative_value = 55;
+    *sut = alternative_value;
+    ASSERT_EQ(*sut, alternative_value);
+}
+
+TEST(Optional, const_operator_star_dereferences_contained_value) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> const sut1 { contained_value };
+    ASSERT_EQ(*sut1, 42);
+    int const alternative_value = 55;
+    iox2::container::Optional<int> const sut2 { alternative_value };
+    ASSERT_EQ(*sut2, alternative_value);
+}
+
+TEST_F(OptionalFixture, rvalue_operator_star_dereferences_to_rvalue) {
+    int const tracking_id = 12345;
     Observable value;
-    value.id = 12345;
+    value.id = tracking_id;
     {
-        iox2::container::Optional<Observable> o { value };
+        iox2::container::Optional<Observable> sut { value };
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        Observable m = *std::move(o);
+        Observable const move_target = *std::move(sut);
         ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 1);
         ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
         ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
-        ASSERT_EQ(m.id, 12345);
+        ASSERT_EQ(move_target.id, tracking_id);
     }
     ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
 }
 
-TEST_F(Optional, OperatorStarConstRvalueAccess) {
+TEST_F(OptionalFixture, const_rvalue_operator_star_dereferences_to_const_rvalue_and_is_just_not_very_useful_overall) {
+    int const tracking_id = 12345;
     Observable value;
-    value.id = 12345;
+    value.id = tracking_id;
     {
-        iox2::container::Optional<Observable> const o { value };
+        iox2::container::Optional<Observable> const sut { value };
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        Observable const&& ref = *std::move(o);
+        Observable const&& ref = *std::move(sut);
         ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
         ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
-        ASSERT_EQ(ref.id, 12345);
+        ASSERT_EQ(ref.id, tracking_id);
     }
     ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
 }
 
-TEST_F(Optional, OperatorBool) {
-    iox2::container::Optional<int> o;
-    ASSERT_FALSE(static_cast<bool>(o));
-    o = 42;
-    ASSERT_TRUE(static_cast<bool>(o));
+TEST(Optional, operator_bool_checks_for_non_empty) {
+    iox2::container::Optional<int> sut;
+    ASSERT_FALSE(static_cast<bool>(sut));
+    int const just_some_arbitrary_value = 42;
+    sut = just_some_arbitrary_value;
+    ASSERT_TRUE(static_cast<bool>(sut));
 }
 
-TEST_F(Optional, HasValue) {
-    iox2::container::Optional<int> o;
-    ASSERT_FALSE(o.has_value());
-    o = 42;
-    ASSERT_TRUE(o.has_value());
+TEST(Optional, has_value_checks_for_non_empty) {
+    iox2::container::Optional<int> sut;
+    ASSERT_FALSE(sut.has_value());
+    int const just_some_arbitrary_value = 42;
+    sut = just_some_arbitrary_value;
+    ASSERT_TRUE(sut.has_value());
 }
 
-TEST_F(Optional, ValueAccess) {
-    iox2::container::Optional<int> o { 42 };
-    ASSERT_EQ(o.value(), 42);
-    o.value() = 55;
-    ASSERT_EQ(o.value(), 55);
+TEST(Optional, value_returns_mutable_reference_to_contained_value) {
+    int const contained_value = 42;
+    int const alternative_value = 55;
+    iox2::container::Optional<int> sut { contained_value };
+    ASSERT_EQ(sut.value(), contained_value);
+    sut.value() = alternative_value;
+    ASSERT_EQ(sut.value(), alternative_value);
 }
 
-TEST_F(Optional, ValueConstAccess) {
-    iox2::container::Optional<int> const o1 { 42 };
-    ASSERT_EQ(o1.value(), 42);
-    iox2::container::Optional<int> const o2 { 55 };
-    ASSERT_EQ(o2.value(), 55);
+TEST(Optional, const_value_dereferences_contained_value) {
+    int const contained_value = 42;
+    int const alternative_value = 55;
+    iox2::container::Optional<int> const sut1 { contained_value };
+    ASSERT_EQ(sut1.value(), contained_value);
+    iox2::container::Optional<int> const sut2 { alternative_value };
+    ASSERT_EQ(sut2.value(), alternative_value);
 }
 
-TEST_F(Optional, ValueMoveAccess) {
+TEST_F(OptionalFixture, rvalue_value_returns_rvalue_dereferences_to_contained_value) {
+    int const tracking_id = 12345;
     Observable value;
-    value.id = 12345;
+    value.id = tracking_id;
     {
-        iox2::container::Optional<Observable> o { value };
+        iox2::container::Optional<Observable> sut { value };
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        Observable m = std::move(o).value();
+        Observable const target = std::move(sut).value();
         ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 1);
         ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
         ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
-        ASSERT_EQ(m.id, 12345);
+        ASSERT_EQ(target.id, tracking_id);
     }
     ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
 }
 
-TEST_F(Optional, ValueConstRvalueAccess) {
+TEST_F(OptionalFixture, const_rvalue_value_dereferences_to_const_rvalue_and_is_just_not_very_useful_overall) {
+    int const tracking_id = 12345;
     Observable value;
-    value.id = 12345;
+    value.id = tracking_id;
     {
-        iox2::container::Optional<Observable> const o { value };
+        iox2::container::Optional<Observable> const sut { value };
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
         Observable::s_counter.wasDestructed = 0;
-        Observable const&& ref = std::move(o).value();
+        Observable const&& ref = std::move(sut).value();
         ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
         ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
-        ASSERT_EQ(ref.id, 12345);
+        ASSERT_EQ(ref.id, tracking_id);
     }
     ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
 }
 
-TEST_F(Optional, ValueOr_Full) {
-    {
-        iox2::container::Optional<int> o { 42 };
-        ASSERT_EQ(o.value_or(-1), 42);
-    }
-    {
-        iox2::container::Optional<Observable> o { Observable {} };
-        o->id = 12345;
-        Observable fallback;
-        fallback.id = -1;
-        Observable::s_counter.wasInitialized = 0;
-        Observable::s_counter.wasCopyConstructed = 0;
-        Observable::s_counter.wasCopyAssigned = 0;
-        Observable::s_counter.wasMoveConstructed = 0;
-        Observable::s_counter.wasMoveAssigned = 0;
-        ASSERT_EQ(o.value_or(fallback).id, 12345);
-        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
-        ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
-        ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
-        ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 0);
-        ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
-    }
-    {
-        iox2::container::Optional<Observable> o { Observable {} };
-        o->id = 12345;
-        Observable fallback;
-        fallback.id = -1;
-        Observable::s_counter.wasInitialized = 0;
-        Observable::s_counter.wasCopyConstructed = 0;
-        Observable::s_counter.wasCopyAssigned = 0;
-        Observable::s_counter.wasMoveConstructed = 0;
-        Observable::s_counter.wasMoveAssigned = 0;
-        ASSERT_EQ(o.value_or(std::move(fallback)).id, 12345);
-        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
-        ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
-        ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
-        ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 0);
-        ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
-    }
+TEST(Optional, value_or_returns_contained_value_on_full_optional) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> const sut { contained_value };
+    int const fallback = -1;
+    ASSERT_EQ(sut.value_or(fallback), contained_value);
 }
 
-TEST_F(Optional, ValueOr_Empty) {
+TEST_F(OptionalFixture, value_or_returns_copy_of_contained_value_on_full_optional) {
+    int const tracking_id = 12345;
+    int const fallback_id = -1;
     {
-        iox2::container::Optional<int> o;
-        ASSERT_EQ(o.value_or(-1), -1);
-    }
-    {
-        iox2::container::Optional<Observable> o;
+        iox2::container::Optional<Observable> sut { Observable {} };
+        sut->id = tracking_id;
         Observable fallback;
-        fallback.id = -1;
+        fallback.id = fallback_id;
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
-        ASSERT_EQ(o.value_or(fallback).id, -1);
+        Observable::s_counter.wasDestructed = 0;
+        ASSERT_EQ(sut.value_or(fallback).id, tracking_id);
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
         ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
+        ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
+        Observable::s_counter.wasDestructed = 0;
     }
+    ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
+}
+
+TEST_F(OptionalFixture, value_or_with_rvalue_argument_returns_copy_of_contained_value_on_full_optional) {
+    int const tracking_id = 12345;
+    int const fallback_id = -1;
     {
-        iox2::container::Optional<Observable> o;
+        iox2::container::Optional<Observable> sut { Observable {} };
+        sut->id = tracking_id;
         Observable fallback;
-        fallback.id = -1;
+        fallback.id = fallback_id;
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
-        ASSERT_EQ(o.value_or(std::move(fallback)).id, -1);
+        Observable::s_counter.wasDestructed = 0;
+        ASSERT_EQ(sut.value_or(std::move(fallback)).id, tracking_id);
+        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
+        ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
+        ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
+        ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 0);
+        ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
+        ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
+        Observable::s_counter.wasDestructed = 0;
+    }
+    ASSERT_EQ(Observable::s_counter.wasDestructed, 2);
+}
+
+TEST(Optional, value_or_returns_fallback_argument_on_empty_optional) {
+    int const fallback_value = 225;
+    iox2::container::Optional<int> const sut;
+    ASSERT_EQ(sut.value_or(fallback_value), fallback_value);
+}
+
+TEST_F(OptionalFixture, value_or_returns_copy_of_fallback_argument_on_empty_optional) {
+    int const fallback_tracking_id = 225;
+    {
+        iox2::container::Optional<Observable> const sut;
+        Observable fallback;
+        fallback.id = fallback_tracking_id;
+        Observable::s_counter.wasInitialized = 0;
+        Observable::s_counter.wasCopyConstructed = 0;
+        Observable::s_counter.wasCopyAssigned = 0;
+        Observable::s_counter.wasMoveConstructed = 0;
+        Observable::s_counter.wasMoveAssigned = 0;
+        Observable::s_counter.wasDestructed = 0;
+        ASSERT_EQ(sut.value_or(fallback).id, fallback_tracking_id);
+        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
+        ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
+        ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
+        ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 0);
+        ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
+        ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
+        Observable::s_counter.wasDestructed = 0;
+    }
+    ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
+}
+
+TEST_F(OptionalFixture, value_or_moves_rvalue_fallback_argument_on_empty_optional) {
+    int const fallback_tracking_id = 225;
+    {
+        iox2::container::Optional<Observable> const sut;
+        Observable fallback;
+        fallback.id = fallback_tracking_id;
+        Observable::s_counter.wasInitialized = 0;
+        Observable::s_counter.wasCopyConstructed = 0;
+        Observable::s_counter.wasCopyAssigned = 0;
+        Observable::s_counter.wasMoveConstructed = 0;
+        Observable::s_counter.wasMoveAssigned = 0;
+        Observable::s_counter.wasDestructed = 0;
+        ASSERT_EQ(sut.value_or(std::move(fallback)).id, fallback_tracking_id);
+        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
+        ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
+        ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
+        ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 1);
+        ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
+        ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
+        Observable::s_counter.wasDestructed = 0;
+    }
+    ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
+}
+
+
+TEST(Optional, rvalue_value_or_returns_contained_value_on_full_optional) {
+    int const contained_value = 42;
+    int const fallback_value = 225;
+    iox2::container::Optional<int> sut { contained_value };
+    ASSERT_EQ(std::move(sut).value_or(fallback_value), contained_value);
+}
+
+
+TEST_F(OptionalFixture, rvalue_value_or_moves_contained_value_on_full_optional) {
+    int const tracking_id = 12345;
+    int const fallback_tracking_id = -1;
+    {
+        iox2::container::Optional<Observable> sut { Observable {} };
+        sut->id = tracking_id;
+        Observable fallback;
+        fallback.id = fallback_tracking_id;
+        Observable::s_counter.wasInitialized = 0;
+        Observable::s_counter.wasCopyConstructed = 0;
+        Observable::s_counter.wasCopyAssigned = 0;
+        Observable::s_counter.wasMoveConstructed = 0;
+        Observable::s_counter.wasMoveAssigned = 0;
+        ASSERT_EQ(std::move(sut).value_or(fallback).id, tracking_id);
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
@@ -732,40 +880,20 @@ TEST_F(Optional, ValueOr_Empty) {
     }
 }
 
-
-TEST_F(Optional, ValueOrRvalue_Full) {
+TEST_F(OptionalFixture, rvalue_value_or_with_rvalue_argument_moves_contained_value_on_full_optional) {
+    int const tracking_id = 12345;
+    int const fallback_tracking_id = -1;
     {
-        iox2::container::Optional<int> o { 42 };
-        ASSERT_EQ(std::move(o).value_or(-1), 42);
-    }
-    {
-        iox2::container::Optional<Observable> o { Observable {} };
-        o->id = 12345;
+        iox2::container::Optional<Observable> sut { Observable {} };
+        sut->id = tracking_id;
         Observable fallback;
-        fallback.id = -1;
+        fallback.id = fallback_tracking_id;
         Observable::s_counter.wasInitialized = 0;
         Observable::s_counter.wasCopyConstructed = 0;
         Observable::s_counter.wasCopyAssigned = 0;
         Observable::s_counter.wasMoveConstructed = 0;
         Observable::s_counter.wasMoveAssigned = 0;
-        ASSERT_EQ(std::move(o).value_or(fallback).id, 12345);
-        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
-        ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
-        ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
-        ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 1);
-        ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
-    }
-    {
-        iox2::container::Optional<Observable> o { Observable {} };
-        o->id = 12345;
-        Observable fallback;
-        fallback.id = -1;
-        Observable::s_counter.wasInitialized = 0;
-        Observable::s_counter.wasCopyConstructed = 0;
-        Observable::s_counter.wasCopyAssigned = 0;
-        Observable::s_counter.wasMoveConstructed = 0;
-        Observable::s_counter.wasMoveAssigned = 0;
-        ASSERT_EQ(std::move(o).value_or(std::move(fallback)).id, 12345);
+        ASSERT_EQ(std::move(sut).value_or(std::move(fallback)).id, tracking_id);
         ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
         ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
@@ -774,54 +902,72 @@ TEST_F(Optional, ValueOrRvalue_Full) {
     }
 }
 
-TEST_F(Optional, ValueOrRvalue_Empty) {
-    {
-        iox2::container::Optional<int> o;
-        ASSERT_EQ(std::move(o).value_or(-1), -1);
-    }
-    {
-        iox2::container::Optional<Observable> o;
-        Observable fallback;
-        fallback.id = -1;
-        Observable::s_counter.wasInitialized = 0;
-        Observable::s_counter.wasCopyConstructed = 0;
-        Observable::s_counter.wasCopyAssigned = 0;
-        Observable::s_counter.wasMoveConstructed = 0;
-        Observable::s_counter.wasMoveAssigned = 0;
-        ASSERT_EQ(std::move(o).value_or(fallback).id, -1);
-        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
-        ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
-        ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
-        ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 0);
-        ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
-    }
-    {
-        iox2::container::Optional<Observable> o;
-        Observable fallback;
-        fallback.id = -1;
-        Observable::s_counter.wasInitialized = 0;
-        Observable::s_counter.wasCopyConstructed = 0;
-        Observable::s_counter.wasCopyAssigned = 0;
-        Observable::s_counter.wasMoveConstructed = 0;
-        Observable::s_counter.wasMoveAssigned = 0;
-        ASSERT_EQ(std::move(o).value_or(std::move(fallback)).id, -1);
-        ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
-        ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
-        ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
-        ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 1);
-        ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
-    }
+TEST(Optional, rvalue_value_or_returns_fallback_on_empty_optional) {
+    int const fallback_value = 225;
+    iox2::container::Optional<int> sut;
+    ASSERT_EQ(std::move(sut).value_or(fallback_value), fallback_value);
+}
+TEST_F(OptionalFixture, rvalue_value_or_returns_fallback_on_empty_optional) {
+    int const fallback_tracking_id = 225;
+    iox2::container::Optional<Observable> sut;
+    Observable fallback;
+    fallback.id = fallback_tracking_id;
+    Observable::s_counter.wasInitialized = 0;
+    Observable::s_counter.wasCopyConstructed = 0;
+    Observable::s_counter.wasCopyAssigned = 0;
+    Observable::s_counter.wasMoveConstructed = 0;
+    Observable::s_counter.wasMoveAssigned = 0;
+    ASSERT_EQ(std::move(sut).value_or(fallback).id, fallback_tracking_id);
+    ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
+    ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 1);
+    ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
+    ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 0);
+    ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
+}
+TEST_F(OptionalFixture, rvalue_value_or_with_rvalue_argument_moves_fallback_on_empty_optional) {
+    int const fallback_tracking_id = 225;
+    iox2::container::Optional<Observable> sut;
+    Observable fallback;
+    fallback.id = fallback_tracking_id;
+    Observable::s_counter.wasInitialized = 0;
+    Observable::s_counter.wasCopyConstructed = 0;
+    Observable::s_counter.wasCopyAssigned = 0;
+    Observable::s_counter.wasMoveConstructed = 0;
+    Observable::s_counter.wasMoveAssigned = 0;
+    ASSERT_EQ(std::move(sut).value_or(std::move(fallback)).id, fallback_tracking_id);
+    ASSERT_EQ(Observable::s_counter.wasInitialized, 0);
+    ASSERT_EQ(Observable::s_counter.wasCopyConstructed, 0);
+    ASSERT_EQ(Observable::s_counter.wasCopyAssigned, 0);
+    ASSERT_EQ(Observable::s_counter.wasMoveConstructed, 1);
+    ASSERT_EQ(Observable::s_counter.wasMoveAssigned, 0);
 }
 
-TEST_F(Optional, Reset) {
-    iox2::container::Optional<int> o;
-    ASSERT_TRUE(!o.has_value());
-    o.reset();
-    ASSERT_TRUE(!o.has_value());
-    o = 42;
-    ASSERT_TRUE(o.has_value());
-    o.reset();
-    ASSERT_TRUE(!o.has_value());
+TEST(Optional, reset_leaves_empty_optional_in_empty_state) {
+    iox2::container::Optional<int> sut;
+    ASSERT_TRUE(!sut.has_value());
+    sut.reset();
+    ASSERT_TRUE(!sut.has_value());
+}
+
+TEST(Optional, reset_puts_full_optional_to_empty_state) {
+    int const contained_value = 42;
+    iox2::container::Optional<int> sut { contained_value };
+    ASSERT_TRUE(sut.has_value());
+    sut.reset();
+    ASSERT_TRUE(!sut.has_value());
+}
+
+TEST_F(OptionalFixture, reset_on_full_optional_destructs_contained_value) {
+    {
+        iox2::container::Optional<Observable> sut { Observable {} };
+        ASSERT_TRUE(sut.has_value());
+        Observable::s_counter.wasDestructed = 0;
+        sut.reset();
+        ASSERT_TRUE(!sut.has_value());
+        ASSERT_EQ(Observable::s_counter.wasDestructed, 1);
+        Observable::s_counter.wasDestructed = 0;
+    }
+    ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
 } // namespace
