@@ -20,10 +20,12 @@ pub const FD_SETSIZE: usize = crate::internal::FD_SETSIZE as _;
 pub const NULL_TERMINATOR: c_char = 0;
 pub const USER_NAME_LENGTH: usize = 255;
 pub const GROUP_NAME_LENGTH: usize = 31;
+pub const NAME_MAX: usize = 255;
 
 pub const O_RDONLY: int = crate::internal::O_RDONLY as _;
 pub const O_WRONLY: int = crate::internal::O_WRONLY as _;
 pub const O_RDWR: int = crate::internal::O_RDWR as _;
+pub const O_SYNC: int = crate::internal::O_SYNC as _;
 
 pub const O_CREAT: int = crate::internal::O_CREAT as _;
 pub const O_EXCL: int = crate::internal::O_EXCL as _;

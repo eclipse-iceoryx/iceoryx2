@@ -14,6 +14,7 @@ pub const POSIX_SUPPORT_ACL: bool = false;
 pub const POSIX_SUPPORT_NAMED_SEMAPHORE: bool = false;
 pub const POSIX_SUPPORT_PERSISTENT_SHARED_MEMORY: bool = false;
 pub const POSIX_SUPPORT_UNIX_DATAGRAM_SOCKETS_ANCILLARY_DATA: bool = false;
+pub const POSIX_SUPPORT_CPU_AFFINITY: bool = true;
 pub const POSIX_SUPPORT_USERS_AND_GROUPS: bool = false;
 pub const POSIX_SUPPORT_PERMISSIONS: bool = true;
 pub const POSIX_SUPPORT_FILE_LOCK: bool = false;

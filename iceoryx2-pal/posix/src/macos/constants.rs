@@ -22,6 +22,7 @@ pub const THREAD_NAME_LENGTH: usize = 16;
 pub const NULL_TERMINATOR: c_char = 0;
 pub const USER_NAME_LENGTH: usize = 31;
 pub const GROUP_NAME_LENGTH: usize = 31;
+pub const NAME_MAX: usize = crate::internal::NAME_MAX as _;
 
 pub const O_RDONLY: int = crate::internal::O_RDONLY as _;
 pub const O_WRONLY: int = crate::internal::O_WRONLY as _;
