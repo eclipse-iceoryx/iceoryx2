@@ -212,7 +212,7 @@ pub fn print_config_description() -> Result<()> {
             );
             println!(
                 "   {}",
-                format!("(Default value: {})", entry.default.bright_white()).bright_yellow()
+                format!("(Default value: {})", entry.default_value.bright_white()).bright_yellow()
             );
             println!("   {}", entry.description.italic());
         }
