@@ -11,4 +11,4 @@
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
 # TODO #957: differentiate between address and thread sanitizer
-set(ICEORYX2_SANITZER_FLAGS      "-fsanitize=address -fsanitize=undefined" CACHE INTERNAL "")
+set(ICEORYX2_SANITZER_FLAGS -fsanitize=address -fsanitize=undefined CACHE INTERNAL "")

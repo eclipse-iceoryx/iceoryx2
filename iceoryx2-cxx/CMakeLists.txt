@@ -89,7 +89,13 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/writer_details.cpp
 )
 
-target_compile_options(iceoryx2-cxx-object-lib PRIVATE ${ICEORYX2_CXX_FLAGS} ${ICEORYX2_CXX_WARNINGS})
+target_compile_options(
+    iceoryx2-cxx-object-lib
+    PRIVATE
+    ${ICEORYX2_CXX_FLAGS}
+    ${ICEORYX2_CXX_WARNINGS}
+    ${ICEORYX2_SANITIZER_FLAGS}
+)
 target_compile_features(iceoryx2-cxx-object-lib PRIVATE ${ICEORYX2_CXX_STD})
 
 set_target_properties(iceoryx2-cxx-object-lib
@@ -102,6 +108,7 @@ target_link_libraries(iceoryx2-cxx-object-lib
     iceoryx_hoofs::iceoryx_hoofs
     iceoryx2-c::includes-only
     iceoryx2-cxx::includes-only-cxx
+    ${ICEORYX2_SANITIZER_FLAGS}
 )
 
 # static lib
