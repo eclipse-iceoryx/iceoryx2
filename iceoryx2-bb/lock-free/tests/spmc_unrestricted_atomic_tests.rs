@@ -18,6 +18,7 @@ use std::{
     thread,
 };
 
+use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_bb_posix::{barrier::*, system_configuration::SystemInfo};
 use iceoryx2_bb_testing::assert_that;
@@ -191,15 +192,17 @@ fn spmc_unrestricted_atomic_mgmt_release_producer_allows_new_acquire() {
 fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
     let _test_lock = TEST_LOCK.lock().unwrap();
 
-    let value: u64 = 3;
-    let value_ptr: *const u64 = &value;
+    const INITIAL_VALUE: u64 = 0;
+    const NEW_VALUE: u64 = 3;
+
+    let value_ptr: *const u64 = &NEW_VALUE;
     let value_size = core::mem::size_of::<u64>();
     let value_alignment = core::mem::align_of::<u64>();
 
     let mut read_value: u64 = 0;
     let read_value_ptr: *mut u64 = &mut read_value;
 
-    let atomic = UnrestrictedAtomic::<u64>::new(0);
+    let atomic = UnrestrictedAtomic::<u64>::new(INITIAL_VALUE);
     let data_ptr = atomic.__internal_get_data_ptr();
     let mgmt = atomic.__internal_get_mgmt();
 
@@ -216,7 +219,7 @@ fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
             value_alignment,
             data_ptr,
         );
-        assert_that!(read_value, eq 0);
+        assert_that!(read_value, eq INITIAL_VALUE);
 
         mgmt.__internal_update_write_cell();
 
@@ -227,7 +230,7 @@ fn spmc_unrestricted_atomic_mgmt_get_ptr_write_and_update_works() {
             value_alignment,
             data_ptr,
         );
-        assert_that!(read_value, eq value);
+        assert_that!(read_value, eq NEW_VALUE);
 
         mgmt.__internal_release_producer();
     }
@@ -243,7 +246,7 @@ fn internal_pointer_calculation_works<ValueType: Copy + Default>() {
         let mgmt_ptr = addr_of!(*(&*random_ptr).__internal_get_mgmt());
         let data_ptr = addr_of!(*(&*random_ptr).__internal_get_data_ptr());
 
-        for i in -(align_of::<UnrestrictedAtomic<ValueType>>() as isize) + 1..0 {
+        for i in -(align_of::<UnrestrictedAtomic<ValueType>>() as isize) + 1..=0 {
             let mut ptr = random_ptr;
             ptr = ptr.byte_offset(i);
             let ptrs = __internal_calculate_atomic_mgmt_and_payload_ptr(
@@ -265,8 +268,77 @@ fn spmc_unrestricted_atomic_internal_ptr_calculation_works_with_integers() {
     internal_pointer_calculation_works::<u16>();
     internal_pointer_calculation_works::<u32>();
     internal_pointer_calculation_works::<u64>();
+    internal_pointer_calculation_works::<u128>();
     internal_pointer_calculation_works::<i8>();
     internal_pointer_calculation_works::<i16>();
     internal_pointer_calculation_works::<i32>();
     internal_pointer_calculation_works::<i64>();
+    internal_pointer_calculation_works::<i128>();
+    internal_pointer_calculation_works::<f32>();
+    internal_pointer_calculation_works::<f64>();
+}
+
+fn internal_get_data_cell_calculation_works<ValueType: Copy + Default>() {
+    const INITIAL_READ_CELL: u32 = 0;
+    const INITIAL_WRITE_CELL: u32 = 1;
+
+    let atomic = UnrestrictedAtomic::<ValueType>::new(ValueType::default());
+    let data_ptr = atomic.__internal_get_data_ptr();
+
+    unsafe {
+        // get data cells of initial UnrestrictedAtomic
+        let data_cell_read_before_write = UnrestrictedAtomicMgmt::__internal_get_data_cell(
+            size_of::<ValueType>(),
+            align_of::<ValueType>(),
+            data_ptr,
+            INITIAL_READ_CELL,
+        );
+        assert_that!(align_of_val(&*(data_cell_read_before_write as *const ValueType)), eq align_of::<ValueType>());
+
+        let data_cell_write_before_write = UnrestrictedAtomicMgmt::__internal_get_data_cell(
+            size_of::<ValueType>(),
+            align_of::<ValueType>(),
+            data_ptr,
+            INITIAL_WRITE_CELL,
+        );
+        assert_that!(align_of_val(&*(data_cell_write_before_write as *const ValueType)), eq align_of::<ValueType>());
+        assert_that!(data_cell_write_before_write, eq align(data_cell_read_before_write + size_of::<ValueType>(), align_of::<ValueType>()));
+
+        // store new value into UnrestrictedAtomic
+        let producer = atomic.acquire_producer().unwrap();
+        producer.store(ValueType::default());
+
+        // check new data cells
+        let data_cell_read = UnrestrictedAtomicMgmt::__internal_get_data_cell(
+            size_of::<ValueType>(),
+            align_of::<ValueType>(),
+            data_ptr,
+            INITIAL_READ_CELL + 1,
+        );
+        assert_that!(data_cell_read, eq data_cell_write_before_write);
+
+        let data_cell_write = UnrestrictedAtomicMgmt::__internal_get_data_cell(
+            size_of::<ValueType>(),
+            align_of::<ValueType>(),
+            data_ptr,
+            INITIAL_WRITE_CELL + 1,
+        );
+        assert_that!(data_cell_write, eq data_cell_read_before_write);
+    }
+}
+
+#[test]
+fn spmc_unrestricted_atomic_internal_get_data_cell_with_integers() {
+    internal_get_data_cell_calculation_works::<u8>();
+    internal_get_data_cell_calculation_works::<u16>();
+    internal_get_data_cell_calculation_works::<u32>();
+    internal_get_data_cell_calculation_works::<u64>();
+    internal_get_data_cell_calculation_works::<u128>();
+    internal_get_data_cell_calculation_works::<i8>();
+    internal_get_data_cell_calculation_works::<i16>();
+    internal_get_data_cell_calculation_works::<i32>();
+    internal_get_data_cell_calculation_works::<i64>();
+    internal_get_data_cell_calculation_works::<i128>();
+    internal_get_data_cell_calculation_works::<f32>();
+    internal_get_data_cell_calculation_works::<f64>();
 }

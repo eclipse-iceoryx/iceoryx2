@@ -56,8 +56,8 @@ impl<T: Copy> Producer<'_, T> {
     #[doc(hidden)]
     // # Safety
     //
-    //   * the memory position must not be modified after __internal_update_write_cell has been
-    //     called
+    //   * the memory position must not be modified after
+    //     [`Producer::__internal_update_write_cell()`] has been called
     pub unsafe fn __internal_get_ptr_to_write_cell(&self) -> *mut T {
         let write_cell = self.atomic.mgmt.write_cell.load(Ordering::Relaxed);
         unsafe { (*self.atomic.data[write_cell as usize % NUMBER_OF_CELLS].get()).as_mut_ptr() }
@@ -67,7 +67,7 @@ impl<T: Copy> Producer<'_, T> {
     // # Safety
     //
     //   * the method must not be called without first writing to the memory position returned by
-    //     __internal_get_ptr_to_write_cell
+    //     [`Producer::__internal_get_ptr_to_write_cell()`]
     pub unsafe fn __internal_update_write_cell(&self) {
         /////////////////////////
         // SYNC POINT - write
@@ -108,29 +108,36 @@ impl UnrestrictedAtomicMgmt {
         Self::default()
     }
 
+    #[doc(hidden)]
     /// # Safety
     ///
     ///   * store operations are only allowed when this method returns Ok
-    ///   * __internal_release_producer must be called when the UnrestrictedAtomicMgmt (used
-    ///     without UnrestrictedAtomic) is dropped
+    ///   * [`UnrestrictedAtomicMgmt::__internal_release_producer()`] must be called when the
+    ///     [`UnrestrictedAtomicMgmt`] (used without [`UnrestrictedAtomic`]) is dropped
     pub unsafe fn __internal_acquire_producer(&self) -> Result<bool, bool> {
         self.has_producer
             .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
     }
 
+    #[doc(hidden)]
     /// # Safety
     ///
     ///   * store operations are not allowed after this method was called
-    ///   * __internal_acquire_producer must have been successfully called before
+    ///   * [`UnrestrictedAtomicMgmt::__internal_acquire_producer()`] must have been
+    ///     successfully called before
     pub unsafe fn __internal_release_producer(&self) {
         self.has_producer.store(true, Ordering::Relaxed);
     }
 
+    #[doc(hidden)]
     /// # Safety
     ///
-    ///   * __internal_acquire_producer must have been successfully called before
-    ///   * the memory position must not be modified after __internal_update_write_cell has been
-    ///     called
+    ///   * [`UnrestrictedAtomicMgmt::__internal_acquire_producer()`] must have been
+    ///     successfully called before
+    ///   * the memory position must not be modified after
+    ///     [`UnrestrictedAtomicMgmt::__internal_update_write_cell()`] has been called
+    ///   * the memory position must not be read before
+    ///     [`UnrestrictedAtomicMgmt::__internal_update_write_cell()`] has been called
     pub unsafe fn __internal_get_ptr_to_write_cell(
         &self,
         value_size: usize,
@@ -138,17 +145,18 @@ impl UnrestrictedAtomicMgmt {
         data_ptr: *mut u8,
     ) -> *mut u8 {
         let write_cell = self.write_cell.load(Ordering::Relaxed);
-        let data_cell_ptr = align(
-            unsafe { data_ptr.add(value_size * (write_cell as usize % NUMBER_OF_CELLS)) } as usize,
-            value_alignment,
-        );
-        data_cell_ptr as *mut u8
+        unsafe {
+            let data_cell_ptr =
+                Self::__internal_get_data_cell(value_size, value_alignment, data_ptr, write_cell);
+            data_cell_ptr as *mut u8
+        }
     }
 
+    #[doc(hidden)]
     /// # Safety
     ///
     ///   * the method must not be called without first writing to the memory position returned by
-    ///     __internal_get_ptr_to_write_cell
+    ///     [`UnrestrictedAtomicMgmt::__internal_get_ptr_to_write_cell()`]
     pub unsafe fn __internal_update_write_cell(&self) {
         /////////////////////////
         // SYNC POINT - write
@@ -174,12 +182,13 @@ impl UnrestrictedAtomicMgmt {
         let mut read_cell = self.write_cell.load(Ordering::Acquire) - 1;
 
         loop {
-            let data_cell_ptr = align(
-                unsafe { data_ptr.add(value_size * (read_cell as usize % NUMBER_OF_CELLS)) }
-                    as usize,
-                value_alignment,
-            );
             unsafe {
+                let data_cell_ptr = Self::__internal_get_data_cell(
+                    value_size,
+                    value_alignment,
+                    data_ptr,
+                    read_cell,
+                );
                 core::ptr::copy_nonoverlapping(data_cell_ptr as *const u8, value_ptr, value_size);
             }
 
@@ -201,6 +210,21 @@ impl UnrestrictedAtomicMgmt {
                 break;
             }
         }
+    }
+
+    /// # Safety
+    ///
+    ///   * see Safety section of core::ptr::add
+    pub unsafe fn __internal_get_data_cell(
+        value_size: usize,
+        value_alignment: usize,
+        data_ptr: *const u8,
+        cell: u32,
+    ) -> usize {
+        align(
+            unsafe { data_ptr.add(value_size * (cell as usize % NUMBER_OF_CELLS)) } as usize,
+            value_alignment,
+        )
     }
 }
 
@@ -293,16 +317,16 @@ impl<T: Copy> UnrestrictedAtomic<T> {
     }
 }
 
-/// Used for the language bindings where the type to store in the UnrestrictedAtomic cannot be
-/// passed as generic.
+/// Used for the language bindings where the type to store in the [`UnrestrictedAtomic`]
+/// cannot be passed as generic.
 #[doc(hidden)]
 pub struct __InternalPtrs {
     pub atomic_mgmt_ptr: *mut u8,
     pub atomic_payload_ptr: *mut u8,
 }
 
-/// Used for the language bindings where the type to store in the UnrestrictedAtomic cannot be
-/// passed as generic.
+/// Used for the language bindings where the type to store in the [`UnrestrictedAtomic`]
+/// cannot be passed as generic.
 #[doc(hidden)]
 pub unsafe fn __internal_calculate_atomic_mgmt_and_payload_ptr(
     raw_memory_ptr: *mut u8,
