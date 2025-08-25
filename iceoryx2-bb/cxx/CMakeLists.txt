@@ -28,6 +28,11 @@ include(Iceoryx2PlatformSettings)
 add_library(iceoryx2-bb-containers-cxx INTERFACE)
 add_library(iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx ALIAS iceoryx2-bb-containers-cxx)
 
+target_sources(iceoryx2-bb-containers-cxx INTERFACE
+    ${PROJECT_SOURCE_DIR}/include/iox2/container/config.hpp
+    ${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp
+)
+
 target_include_directories(iceoryx2-bb-containers-cxx
     INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
