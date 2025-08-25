@@ -28,6 +28,7 @@ set(CMAKE_C_FLAGS "\
     ${ICEORYX2_SANITIZER_FLAGS_STRING}\
 ")
 
+add_subdirectory(blackboard)
 add_subdirectory(discovery)
 add_subdirectory(domains)
 add_subdirectory(event)

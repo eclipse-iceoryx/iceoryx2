@@ -511,8 +511,8 @@ mod node_death_tests {
         assert_that!(reader.entry::<u64>(&0).unwrap().get(), eq 0);
 
         let writer = good_service.writer_builder().create().unwrap();
-        let writer_handle = writer.entry::<u64>(&0).unwrap();
-        writer_handle.update_with_copy(1);
+        let entry_handle_mut = writer.entry::<u64>(&0).unwrap();
+        entry_handle_mut.update_with_copy(1);
 
         assert_that!(good_service.dynamic_config().number_of_readers(), eq 1);
         assert_that!(good_service.dynamic_config().number_of_writers(), eq 1);

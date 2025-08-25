@@ -36,6 +36,7 @@ class TypeDetail {
 
   private:
     friend class MessageTypeDetails;
+    friend class StaticConfigBlackboard;
     explicit TypeDetail(iox2_type_detail_t value);
 
     iox2_type_detail_t m_value;

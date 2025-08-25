@@ -39,8 +39,8 @@ class ReaderDetailsView {
     template <typename T, typename>
     friend auto internal::list_ports_callback(void* context, T port_details_view) -> iox2_callback_progression_e;
 
-    explicit ReaderDetailsView(/*iox2_reader_details_ptr handle*/);
-    // iox2_reader_details_ptr m_handle = nullptr;
+    explicit ReaderDetailsView(iox2_reader_details_ptr handle);
+    iox2_reader_details_ptr m_handle = nullptr;
 };
 } // namespace iox2
 

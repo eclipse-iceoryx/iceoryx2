@@ -13,7 +13,6 @@
 #ifndef IOX2_PORTFACTORY_WRITER_HPP
 #define IOX2_PORTFACTORY_WRITER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox2/service_type.hpp"
 #include "iox2/writer.hpp"
@@ -39,19 +38,26 @@ class PortFactoryWriter {
     template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
-    explicit PortFactoryWriter(/*iox2_port_factory_writer_builder_h handle*/);
+    explicit PortFactoryWriter(iox2_port_factory_writer_builder_h handle);
 
-    // iox2_port_factory_writer_builder_h m_handle = nullptr;
+    iox2_port_factory_writer_builder_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType>
-inline PortFactoryWriter<S, KeyType>::PortFactoryWriter(/*iox2_port_factory_writer_builder_h handle*/) {
-    IOX_TODO();
+inline PortFactoryWriter<S, KeyType>::PortFactoryWriter(iox2_port_factory_writer_builder_h handle)
+    : m_handle { handle } {
 }
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryWriter<S, KeyType>::create() && -> iox::expected<Writer<S, KeyType>, WriterCreateError> {
-    IOX_TODO();
+    iox2_writer_h writer_handle {};
+    auto result = iox2_port_factory_writer_builder_create(m_handle, nullptr, &writer_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Writer<S, KeyType>(writer_handle));
+    }
+
+    return iox::err(iox::into<WriterCreateError>(result));
 }
 } // namespace iox2
 

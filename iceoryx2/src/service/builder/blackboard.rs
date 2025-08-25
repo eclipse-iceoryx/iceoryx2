@@ -154,17 +154,45 @@ impl From<ServiceAvailabilityState> for BlackboardCreateError {
     }
 }
 
-struct BuilderInternals<KeyType> {
+#[doc(hidden)]
+pub struct BuilderInternals<KeyType> {
     key: KeyType,
     value_type_details: TypeDetail,
     value_writer: Box<dyn FnMut(*mut u8)>,
     internal_value_size: usize,
     internal_value_alignment: usize,
+    internal_value_cleanup_callback: Box<dyn FnMut()>,
 }
 
 impl<KeyType> Debug for BuilderInternals<KeyType> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "")
+    }
+}
+
+impl<KeyType> Drop for BuilderInternals<KeyType> {
+    fn drop(&mut self) {
+        (self.internal_value_cleanup_callback)();
+    }
+}
+
+impl<KeyType> BuilderInternals<KeyType> {
+    pub fn new(
+        key: KeyType,
+        value_type_details: TypeDetail,
+        value_writer: Box<dyn FnMut(*mut u8)>,
+        value_size: usize,
+        value_alignment: usize,
+        vale_cleanup_callback: Box<dyn FnMut()>,
+    ) -> Self {
+        Self {
+            key,
+            value_type_details,
+            value_writer,
+            internal_value_size: value_size,
+            internal_value_alignment: value_alignment,
+            internal_value_cleanup_callback: vale_cleanup_callback,
+        }
     }
 }
 
@@ -211,6 +239,7 @@ struct Builder<
     verify_max_readers: bool,
     verify_max_nodes: bool,
     internals: Vec<BuilderInternals<KeyType>>,
+    override_key_type: Option<TypeDetail>,
 }
 
 impl<
@@ -224,6 +253,7 @@ impl<
             verify_max_readers: false,
             verify_max_nodes: false,
             internals: Vec::<BuilderInternals<KeyType>>::new(),
+            override_key_type: None,
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Blackboard(
@@ -272,8 +302,15 @@ impl<
     }
 
     fn prepare_config_details(&mut self) {
-        self.config_details_mut().type_details =
-            TypeDetail::new::<KeyType>(message_type_details::TypeVariant::FixedSize);
+        match &self.override_key_type {
+            None => {
+                self.config_details_mut().type_details =
+                    TypeDetail::new::<KeyType>(message_type_details::TypeVariant::FixedSize);
+            }
+            Some(details) => {
+                self.config_details_mut().type_details = details.clone();
+            }
+        }
     }
 
     /// If the [`Service`] is created it defines how many [`Reader`](crate::port::reader::Reader)s
@@ -331,11 +368,11 @@ impl<
 
     /// Adds key-value pairs to the blackboard.
     pub fn add<ValueType: ZeroCopySend + Copy + 'static>(
-        mut self,
+        self,
         key: KeyType,
         value: ValueType,
     ) -> Self {
-        self.builder.internals.push(BuilderInternals {
+        let internals = BuilderInternals {
             key,
             value_type_details: TypeDetail::new::<ValueType>(
                 message_type_details::TypeVariant::FixedSize,
@@ -347,7 +384,14 @@ impl<
             }),
             internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
-        });
+            internal_value_cleanup_callback: Box::new(|| {}),
+        };
+        self.__internal_add(internals)
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_add(mut self, builder_internals: BuilderInternals<KeyType>) -> Self {
+        self.builder.internals.push(builder_internals);
         self
     }
 
@@ -368,6 +412,7 @@ impl<
             }),
             internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
+            internal_value_cleanup_callback: Box::new(|| {}),
         });
         self
     }
@@ -599,6 +644,15 @@ impl<
     }
 }
 
+// TODO [#817] replace u64 with CustomKeyMarker
+impl<ServiceType: service::Service> Creator<u64, ServiceType> {
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
+        self.builder.override_key_type = Some(value.clone());
+        self
+    }
+}
+
 /// Builder to open a [`MessagingPattern::Blackboard`] based [`Service`]s
 ///
 /// # Example
@@ -827,5 +881,14 @@ impl<
                 }
             }
         }
+    }
+}
+
+// TODO [#817] replace u64 with CustomKeyMarker
+impl<ServiceType: service::Service> Opener<u64, ServiceType> {
+    #[doc(hidden)]
+    pub unsafe fn __internal_set_key_type_details(mut self, value: &TypeDetail) -> Self {
+        self.builder.override_key_type = Some(value.clone());
+        self
     }
 }

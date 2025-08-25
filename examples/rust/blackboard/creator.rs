@@ -33,27 +33,27 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let writer = service.writer_builder().create()?;
 
-    let writer_handle_0 = writer.entry::<u64>(&0)?;
-    let mut writer_handle_5 = writer.entry::<FixedSizeByteString<30>>(&5)?;
-    let writer_handle_9 = writer.entry::<f32>(&9)?;
+    let entry_handle_mut_0 = writer.entry::<u64>(&0)?;
+    let mut entry_handle_mut_5 = writer.entry::<FixedSizeByteString<30>>(&5)?;
+    let entry_handle_mut_9 = writer.entry::<f32>(&9)?;
 
     let mut counter = 0;
 
     while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
 
-        writer_handle_0.update_with_copy(counter);
+        entry_handle_mut_0.update_with_copy(counter);
         println!("Write new value for key 0: {counter}");
 
-        let entry_value_uninit = writer_handle_5.loan_uninit();
+        let entry_value_uninit = entry_handle_mut_5.loan_uninit();
         let value = format!("Funky {}", counter);
         let entry_value =
             entry_value_uninit.write(FixedSizeByteString::<30>::from_bytes(value.as_bytes())?);
-        writer_handle_5 = entry_value.update();
+        entry_handle_mut_5 = entry_value.update();
         println!("Write new value for key 5: {}", value);
 
         let value = counter as f32 * 7.7;
-        writer_handle_9.update_with_copy(value);
+        entry_handle_mut_9.update_with_copy(value);
         println!("Write new value for key 9: {value}\n");
     }
 

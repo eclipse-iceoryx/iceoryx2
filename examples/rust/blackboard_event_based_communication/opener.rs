@@ -33,15 +33,15 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let listener = event_service.listener_builder().create()?;
 
     let reader = service.reader_builder().create()?;
-    let reader_handle = reader.entry::<u64>(&INTERESTING_KEY)?;
+    let entry_handle = reader.entry::<u64>(&INTERESTING_KEY)?;
 
     // wait for entry id
     while node.wait(Duration::ZERO).is_ok() {
         if let Ok(Some(id)) = listener.timed_wait_one(CYCLE_TIME) {
-            if id == reader_handle.entry_id() {
+            if id == entry_handle.entry_id() {
                 println!(
                     "read: {} for entry id {}",
-                    reader_handle.get(),
+                    entry_handle.get(),
                     id.as_value()
                 );
             }

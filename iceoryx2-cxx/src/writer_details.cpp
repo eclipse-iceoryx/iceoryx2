@@ -13,23 +13,34 @@
 #include "iox2/writer_details.hpp"
 
 namespace iox2 {
-WriterDetailsView::WriterDetailsView(/*iox2_writer_details_ptr handle*/) {
-    IOX_TODO();
+WriterDetailsView::WriterDetailsView(iox2_writer_details_ptr handle)
+    : m_handle { handle } {
 }
 
-WriterDetailsView::WriterDetailsView([[maybe_unused]] WriterDetailsView&& rhs) noexcept {
-    IOX_TODO();
+WriterDetailsView::WriterDetailsView(WriterDetailsView&& rhs) noexcept
+    : m_handle { std::move(rhs.m_handle) } {
+    rhs.m_handle = nullptr;
 }
 
-auto WriterDetailsView::operator=([[maybe_unused]] WriterDetailsView&& rhs) noexcept -> WriterDetailsView& {
-    IOX_TODO();
+auto WriterDetailsView::operator=(WriterDetailsView&& rhs) noexcept -> WriterDetailsView& {
+    if (this != &rhs) {
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 auto WriterDetailsView::writer_id() const -> UniqueWriterId {
-    IOX_TODO();
+    iox2_unique_writer_id_h id_handle = nullptr;
+    iox2_writer_details_writer_id(m_handle, nullptr, &id_handle);
+    return UniqueWriterId { id_handle };
 }
 
 auto WriterDetailsView::node_id() const -> NodeId {
-    IOX_TODO();
+    const auto* node_id_ptr = iox2_writer_details_node_id(m_handle);
+    iox2_node_id_h id_handle = nullptr;
+    iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
+    return NodeId(id_handle);
 }
 } // namespace iox2

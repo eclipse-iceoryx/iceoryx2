@@ -30,15 +30,15 @@ class StaticConfigBlackboard {
     auto max_readers() const -> size_t;
 
     /// Returns the type details of the [`Service`].
-    auto type_details() const -> TypeDetail&;
+    auto type_details() const -> TypeDetail;
 
   private:
     template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
-    explicit StaticConfigBlackboard(/*iox2_static_config_blackboard_t value*/);
+    explicit StaticConfigBlackboard(iox2_static_config_blackboard_t value);
 
-    // iox2_static_config_blackboard_t m_value;
+    iox2_static_config_blackboard_t m_value;
 };
 } // namespace iox2
 
