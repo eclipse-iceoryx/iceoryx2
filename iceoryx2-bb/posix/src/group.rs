@@ -149,6 +149,12 @@ impl GidInRange for u32 {
     }
 }
 
+impl GidInRange for i32 {
+    fn gid_in_range(other: u32) -> bool {
+        other <= i32::MAX as u32
+    }
+}
+
 impl GidInRange for u16 {
     fn gid_in_range(other: u32) -> bool {
         other <= u16::MAX as u32

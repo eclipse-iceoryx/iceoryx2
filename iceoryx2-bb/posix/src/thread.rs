@@ -378,16 +378,18 @@ impl ThreadBuilder {
             }
         }
 
-        let msg = "Unable to set cpu affinity for thread";
-        handle_errno!(ThreadSpawnError, from self,
-            errno_source unsafe { posix::pthread_attr_setaffinity_np(attributes.get_mut(), core::mem::size_of::<posix::cpu_set_t>(), &cpuset)
-                                            .into()},
-            continue_on_success,
-            success Errno::ESUCCES => (),
-            Errno::EINVAL => (CpuCoreOutsideOfSupportedCpuRangeForAffinity, "{} since it contains cores greater than the maximum supported number of CPU cores of the system.", msg),
-            Errno::ENOMEM => (InsufficientMemory, "{} due to insufficient memory.", msg),
-            v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg,v)
-        );
+        if posix::support::POSIX_SUPPORT_CPU_AFFINITY {
+            let msg = "Unable to set cpu affinity for thread";
+            handle_errno!(ThreadSpawnError, from self,
+                errno_source unsafe { posix::pthread_attr_setaffinity_np(attributes.get_mut(), core::mem::size_of::<posix::cpu_set_t>(), &cpuset)
+                                                .into()},
+                continue_on_success,
+                success Errno::ESUCCES => (),
+                Errno::EINVAL => (CpuCoreOutsideOfSupportedCpuRangeForAffinity, "{} since it contains cores greater than the maximum supported number of CPU cores of the system.", msg),
+                Errno::ENOMEM => (InsufficientMemory, "{} due to insufficient memory.", msg),
+                v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg,v)
+            );
+        }
 
         extern "C" fn start_routine<'thread, FF, TT>(args: *mut posix::void) -> *mut posix::void
         where

@@ -52,7 +52,7 @@ impl TestFixture {
             directories: vec![],
         }
     }
-    fn create_file(&mut self, directory: &Path) -> File {
+    fn create_test_file_at_path(&mut self, directory: &Path) -> File {
         let mut file = FileName::new(b"dir_tests_file").unwrap();
         file.push_bytes(
             UniqueSystemId::new()
@@ -73,7 +73,7 @@ impl TestFixture {
             .unwrap()
     }
 
-    fn create_dir(&mut self, directory: &Path) -> Directory {
+    fn create_test_directory_at_path(&mut self, directory: &Path) -> Directory {
         let mut directory = directory.clone();
         let mut file = FileName::new(b"dir_tests_").unwrap();
         file.push_bytes(
@@ -91,7 +91,7 @@ impl TestFixture {
         Directory::create(&directory, Permission::OWNER_ALL).unwrap()
     }
 
-    fn generate_directory_name(&mut self) -> Path {
+    fn generate_path_in_test_directory(&mut self) -> Path {
         let mut directory = test_directory();
         directory.push(PATH_SEPARATOR).unwrap();
         directory.push_bytes(b"dir_tests_").unwrap();
@@ -111,7 +111,7 @@ impl TestFixture {
 }
 
 #[test]
-fn directory_temp_directory_does_exist() {
+fn directory_test_directory_does_exist() {
     create_test_directory();
     assert_that!(Directory::does_exist(&test_directory()).unwrap(), eq true);
 }
@@ -119,18 +119,25 @@ fn directory_temp_directory_does_exist() {
 #[test]
 fn directory_non_existing_directory_does_not_exist() {
     create_test_directory();
-    assert_that!(!Directory::does_exist(&Path::new(b"i_do_not_exist").unwrap()).unwrap(), eq true);
+    let mut non_existant_path = Path::new(&test_directory()).unwrap();
+    non_existant_path.push_bytes(b"i_do_not_exist").unwrap();
+    assert_that!(!Directory::does_exist(&non_existant_path).unwrap(), eq true);
 }
 
 #[test]
 fn directory_file_is_not_a_directory() {
     create_test_directory();
-    FileBuilder::new(&FilePath::new(b"no_directory").unwrap())
+
+    let not_a_directory_entry = FileName::new(b"not_a_directory").unwrap();
+    let not_a_directory_path =
+        FilePath::from_path_and_file(&test_directory(), &not_a_directory_entry).unwrap();
+
+    FileBuilder::new(&not_a_directory_path)
         .creation_mode(CreationMode::PurgeAndCreate)
         .create()
         .unwrap();
-    assert_that!(Directory::does_exist(&Path::new(b"no_directory").unwrap()).unwrap(), eq false);
-    File::remove(&FilePath::new(b"no_directory").unwrap()).unwrap();
+    assert_that!(Directory::does_exist(&not_a_directory_path.clone().into()).unwrap(), eq false);
+    File::remove(&not_a_directory_path).unwrap();
 }
 
 #[test]
@@ -138,7 +145,7 @@ fn directory_create_from_path_works() {
     let mut test = TestFixture::new();
 
     create_test_directory();
-    let sut_name = test.generate_directory_name();
+    let sut_name = test.generate_path_in_test_directory();
 
     assert_that!(Directory::does_exist(&sut_name).unwrap(), eq false);
     let sut_create = Directory::create(&sut_name, Permission::OWNER_ALL);
@@ -152,7 +159,7 @@ fn directory_create_from_path_works_recursively() {
     let mut test = TestFixture::new();
 
     create_test_directory();
-    let mut sut_name = test.generate_directory_name();
+    let mut sut_name = test.generate_path_in_test_directory();
     sut_name
         .add_path_entry(&Path::new(b"all").unwrap())
         .unwrap();
@@ -180,7 +187,7 @@ fn directory_create_from_path_is_thread_safe() {
     let mut test = TestFixture::new();
 
     create_test_directory();
-    let mut sut_name = test.generate_directory_name();
+    let mut sut_name = test.generate_path_in_test_directory();
     sut_name
         .add_path_entry(&Path::new(b"all").unwrap())
         .unwrap();
@@ -217,7 +224,7 @@ fn directory_open_from_path_works() {
     let mut test = TestFixture::new();
 
     create_test_directory();
-    let sut_name = test.generate_directory_name();
+    let sut_name = test.generate_path_in_test_directory();
 
     Directory::create(&sut_name, Permission::OWNER_ALL).unwrap();
 
@@ -230,7 +237,7 @@ fn directory_list_contents_works() {
     let mut test = TestFixture::new();
 
     create_test_directory();
-    let sut_name = test.generate_directory_name();
+    let sut_name = test.generate_path_in_test_directory();
 
     let sut = Directory::create(&sut_name, Permission::OWNER_ALL);
     assert_that!(sut, is_ok);
@@ -239,14 +246,14 @@ fn directory_list_contents_works() {
     let mut dir_vec = vec![];
     const NUMBER_OF_DIRECTORIES: usize = 10;
     for _i in 0..NUMBER_OF_DIRECTORIES {
-        let dir = test.create_dir(sut.path());
+        let dir = test.create_test_directory_at_path(sut.path());
         dir_vec.push(dir.path().to_string());
     }
 
     let mut file_vec = vec![];
     const NUMBER_OF_FILES: usize = 10;
     for _i in 0..NUMBER_OF_FILES {
-        let file = test.create_file(sut.path());
+        let file = test.create_test_file_at_path(sut.path());
         file_vec.push(file.path().unwrap().to_string());
     }
 

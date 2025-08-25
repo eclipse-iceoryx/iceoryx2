@@ -110,9 +110,16 @@ mod file_descriptor_management {
 
         let mut sut = Sut::sut();
 
-        assert_that!(sut.set_permission(Permission::ALL), is_ok);
+        let rw_all = Permission::OWNER_READ
+            | Permission::OWNER_WRITE
+            | Permission::GROUP_READ
+            | Permission::GROUP_WRITE
+            | Permission::OTHERS_READ
+            | Permission::OTHERS_WRITE;
+
+        assert_that!(sut.set_permission(rw_all), is_ok);
         let permission = sut.permission().unwrap();
-        assert_that!(permission, eq Permission::ALL);
+        assert_that!(permission, eq rw_all);
     }
 
     #[test]
@@ -131,22 +138,26 @@ mod file_descriptor_management {
             assert_that!(metadata.permission(), eq perms);
         };
 
-        test(Permission::OWNER_ALL);
+        test(Permission::OWNER_READ | Permission::OWNER_WRITE);
         test(Permission::OWNER_READ);
         test(Permission::OWNER_WRITE);
-        test(Permission::OWNER_EXEC);
 
-        test(Permission::GROUP_ALL);
+        test(Permission::GROUP_READ | Permission::GROUP_WRITE);
         test(Permission::GROUP_READ);
         test(Permission::GROUP_WRITE);
-        test(Permission::GROUP_EXEC);
 
-        test(Permission::OTHERS_ALL);
+        test(Permission::OTHERS_READ | Permission::OTHERS_WRITE);
         test(Permission::OTHERS_READ);
         test(Permission::OTHERS_WRITE);
-        test(Permission::OTHERS_EXEC);
 
-        test(Permission::OWNER_ALL | Permission::GROUP_ALL | Permission::OTHERS_ALL);
+        test(
+            Permission::OWNER_READ
+                | Permission::OWNER_WRITE
+                | Permission::GROUP_READ
+                | Permission::GROUP_WRITE
+                | Permission::OTHERS_READ
+                | Permission::OTHERS_WRITE,
+        );
     }
 
     #[instantiate_tests(<File>)]

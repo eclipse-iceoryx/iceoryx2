@@ -41,7 +41,9 @@ pub unsafe fn shm_unlink(name: *const c_char) -> int {
 
 pub unsafe fn shm_list() -> Vec<[i8; 256]> {
     let mut result = vec![];
-    let dir = opendir(c"/dev/shm/".as_ptr().cast());
+    let mut search_path = iceoryx2_pal_configuration::SHARED_MEMORY_DIRECTORY.to_vec();
+    search_path.push(0);
+    let dir = opendir(search_path.as_ptr().cast());
     if dir.is_null() {
         return result;
     }

@@ -156,6 +156,12 @@ impl UidInRange for u32 {
     }
 }
 
+impl UidInRange for i32 {
+    fn uid_in_range(other: u32) -> bool {
+        other <= i32::MAX as u32
+    }
+}
+
 impl UidInRange for u16 {
     fn uid_in_range(other: u32) -> bool {
         other <= u16::MAX as u32

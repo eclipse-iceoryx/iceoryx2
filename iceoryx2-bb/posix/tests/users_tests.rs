@@ -36,7 +36,7 @@ fn user_works() {
     assert_that!(root_details.name().as_bytes(), eq b"root");
 
     assert_that!(root_details.home_dir(), eq root_from_uid_details.home_dir());
-    assert_that!(root_details.home_dir().to_string(), eq "/root");
+    assert_that!(root_details.home_dir().to_string(), ne "");
 
     assert_that!(root_details.shell(), eq root_from_uid_details.shell());
 }

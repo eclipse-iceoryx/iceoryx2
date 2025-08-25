@@ -160,8 +160,21 @@ impl MemZeroedStruct for msghdr {}
 pub type cmsghdr = crate::internal::cmsghdr;
 impl MemZeroedStruct for cmsghdr {}
 
-pub type iovec = crate::internal::iovec;
+#[repr(transparent)]
+pub struct iovec(crate::internal::iovec);
 impl MemZeroedStruct for iovec {}
+
+impl iovec {
+    pub fn set_base(&mut self, base: *mut crate::posix::void) {
+        self.0.iov_base = base;
+    }
+    pub fn set_len(&mut self, len: usize) {
+        self.0.iov_len = len;
+    }
+    pub fn as_mut_ptr(&mut self) -> *mut crate::internal::iovec {
+        &mut self.0
+    }
+}
 
 pub type sockaddr = crate::internal::sockaddr;
 impl MemZeroedStruct for sockaddr {}
