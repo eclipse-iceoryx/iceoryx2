@@ -282,27 +282,29 @@ fn internal_get_data_cell_calculation_works<ValueType: Copy + Default>() {
     const INITIAL_READ_CELL: u32 = 0;
     const INITIAL_WRITE_CELL: u32 = 1;
 
+    let value_size = size_of::<ValueType>();
+    let value_alignment = align_of::<ValueType>();
     let atomic = UnrestrictedAtomic::<ValueType>::new(ValueType::default());
     let data_ptr = atomic.__internal_get_data_ptr();
 
     unsafe {
         // get data cells of initial UnrestrictedAtomic
         let data_cell_read_before_write = UnrestrictedAtomicMgmt::__internal_get_data_cell(
-            size_of::<ValueType>(),
-            align_of::<ValueType>(),
+            value_size,
+            value_alignment,
             data_ptr,
             INITIAL_READ_CELL,
         );
-        assert_that!(align_of_val(&*(data_cell_read_before_write as *const ValueType)), eq align_of::<ValueType>());
+        assert_that!(align_of_val(&*(data_cell_read_before_write as *const ValueType)), eq value_alignment);
 
         let data_cell_write_before_write = UnrestrictedAtomicMgmt::__internal_get_data_cell(
-            size_of::<ValueType>(),
-            align_of::<ValueType>(),
+            value_size,
+            value_alignment,
             data_ptr,
             INITIAL_WRITE_CELL,
         );
-        assert_that!(align_of_val(&*(data_cell_write_before_write as *const ValueType)), eq align_of::<ValueType>());
-        assert_that!(data_cell_write_before_write, eq align(data_cell_read_before_write + size_of::<ValueType>(), align_of::<ValueType>()));
+        assert_that!(align_of_val(&*(data_cell_write_before_write as *const ValueType)), eq value_alignment);
+        assert_that!(data_cell_write_before_write, eq align(data_cell_read_before_write + value_size, value_alignment));
 
         // store new value into UnrestrictedAtomic
         let producer = atomic.acquire_producer().unwrap();
@@ -310,16 +312,16 @@ fn internal_get_data_cell_calculation_works<ValueType: Copy + Default>() {
 
         // check new data cells
         let data_cell_read = UnrestrictedAtomicMgmt::__internal_get_data_cell(
-            size_of::<ValueType>(),
-            align_of::<ValueType>(),
+            value_size,
+            value_alignment,
             data_ptr,
             INITIAL_READ_CELL + 1,
         );
         assert_that!(data_cell_read, eq data_cell_write_before_write);
 
         let data_cell_write = UnrestrictedAtomicMgmt::__internal_get_data_cell(
-            size_of::<ValueType>(),
-            align_of::<ValueType>(),
+            value_size,
+            value_alignment,
             data_ptr,
             INITIAL_WRITE_CELL + 1,
         );
@@ -341,4 +343,36 @@ fn spmc_unrestricted_atomic_internal_get_data_cell_with_integers() {
     internal_get_data_cell_calculation_works::<i128>();
     internal_get_data_cell_calculation_works::<f32>();
     internal_get_data_cell_calculation_works::<f64>();
+}
+
+fn mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic<ValueType: Copy + Default>() {
+    let value_size = size_of::<ValueType>();
+    let value_alignment = align_of::<ValueType>();
+    let atomic = UnrestrictedAtomic::<ValueType>::new(ValueType::default());
+
+    let sut_size = UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_size(
+        value_size,
+        value_alignment,
+    );
+    let sut_alignment =
+        UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_alignment(value_alignment);
+
+    assert_that!(sut_size, eq size_of_val(&atomic));
+    assert_that!(sut_alignment, eq align_of_val(&atomic));
+}
+
+#[test]
+fn spmc_unrestricted_atomic_internal_size_and_alignment_calculation_with_integers() {
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u8>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u16>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u32>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u64>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<u128>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<i8>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<i16>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<i32>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<i64>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<i128>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<f32>();
+    mgmt_calculates_correct_size_and_alignment_of_unrestricted_atomic::<f64>();
 }

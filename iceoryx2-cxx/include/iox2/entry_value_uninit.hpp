@@ -14,6 +14,7 @@
 #define IOX2_ENTRY_VALUE_UNINIT_HPP
 
 #include "iox2/entry_value.hpp"
+#include "iox2/iceoryx2.h"
 #include "iox2/service_type.hpp"
 
 namespace iox2 {
@@ -47,12 +48,15 @@ class EntryValueUninit {
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto loan_uninit(EntryHandleMut<ST, KeyT, ValueT>&&) -> EntryValueUninit<ST, KeyT, ValueT>;
 
-    // The EntryValueUninit is defaulted since the member is initialized in
-    // EntryHandleMut::loan_uninit().
-    explicit EntryValueUninit() = default;
+    explicit EntryValueUninit(iox2_entry_handle_mut_h entry_handle);
 
     EntryValue<S, KeyType, ValueType> m_entry_value;
 };
+
+template <ServiceType S, typename KeyType, typename ValueType>
+inline EntryValueUninit<S, KeyType, ValueType>::EntryValueUninit(iox2_entry_handle_mut_h entry_handle)
+    : m_entry_value { entry_handle } {
+}
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto write(EntryValueUninit<S, KeyType, ValueType>&& self, ValueType value)

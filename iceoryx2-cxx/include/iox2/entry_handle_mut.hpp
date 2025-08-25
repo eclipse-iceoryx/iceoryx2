@@ -97,15 +97,7 @@ inline void EntryHandleMut<S, KeyType, ValueType>::update_with_copy(ValueType va
 
 template <ServiceType S, typename KeyType, typename ValueType>
 inline auto loan_uninit(EntryHandleMut<S, KeyType, ValueType>&& self) -> EntryValueUninit<S, KeyType, ValueType> {
-    EntryValueUninit<S, KeyType, ValueType> entry_value_uninit;
-
-    iox2_entry_handle_mut_loan_uninit(self.take_handle_ownership(),
-                                      &entry_value_uninit.m_entry_value.m_entry_value,
-                                      &entry_value_uninit.m_entry_value.m_handle,
-                                      sizeof(ValueType),
-                                      alignof(ValueType));
-
-    return std::move(entry_value_uninit);
+    return EntryValueUninit<S, KeyType, ValueType> { self.take_handle_ownership() };
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>

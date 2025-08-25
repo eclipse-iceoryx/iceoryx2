@@ -33,7 +33,7 @@
 
 use core::{cell::UnsafeCell, fmt::Debug, mem::MaybeUninit, sync::atomic::Ordering};
 
-use iceoryx2_bb_elementary::math::align;
+use iceoryx2_bb_elementary::math::{align, max};
 use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU32};
 
 // ATTENTION: To ensure the functionality also in the case of an overflow with the 'write_cell'
@@ -223,6 +223,36 @@ impl UnrestrictedAtomicMgmt {
     ) -> usize {
         align(
             unsafe { data_ptr.add(value_size * (cell as usize % NUMBER_OF_CELLS)) } as usize,
+            value_alignment,
+        )
+    }
+
+    #[doc(hidden)]
+    /// Returns the size of an UnrestrictedAtomic<T> when value_size = size_of::<T>() and
+    /// value_alignment = align_of::<T>()
+    pub fn __internal_get_unrestricted_atomic_size(
+        value_size: usize,
+        value_alignment: usize,
+    ) -> usize {
+        let atomic_alignment =
+            UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_alignment(value_alignment);
+        // atomic_size = aligned size of data + aligned size of UnrestrictedAtomicMgmt
+        let atomic_size = 2 * align(value_size, value_alignment)
+            + align(
+                core::mem::size_of::<UnrestrictedAtomicMgmt>(),
+                atomic_alignment,
+            );
+        // Align atomic_size to a multiple of atomic_alignment because the size of UnrestrictedAtomic must
+        // be a multiple of its alignment.
+        align(atomic_size, atomic_alignment)
+    }
+
+    #[doc(hidden)]
+    /// Returns the alignment of an UnrestrictedAtomic<T> when
+    /// value_alignment = align_of::<T>()
+    pub fn __internal_get_unrestricted_atomic_alignment(value_alignment: usize) -> usize {
+        max(
+            core::mem::align_of::<UnrestrictedAtomicMgmt>(),
             value_alignment,
         )
     }

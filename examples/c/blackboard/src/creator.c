@@ -21,10 +21,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void release_callback(void* value_ptr) {
-    free(value_ptr);
-}
-
 // TODO [#817] see "RAII" in service_types example
 int main(void) {
     // Setup logging

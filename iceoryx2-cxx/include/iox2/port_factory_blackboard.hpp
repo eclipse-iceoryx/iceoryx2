@@ -100,7 +100,7 @@ inline PortFactoryBlackboard<S, KeyType>::PortFactoryBlackboard(PortFactoryBlack
 }
 
 template <ServiceType S, typename KeyType>
-inline auto PortFactoryBlackboard<S, KeyType>::operator=([[maybe_unused]] PortFactoryBlackboard&& rhs) noexcept
+inline auto PortFactoryBlackboard<S, KeyType>::operator=(PortFactoryBlackboard&& rhs) noexcept
     -> PortFactoryBlackboard& {
     if (this != &rhs) {
         drop();

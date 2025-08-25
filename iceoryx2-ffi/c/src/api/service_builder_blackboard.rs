@@ -30,7 +30,6 @@ use iceoryx2::service::port_factory::blackboard::PortFactory;
 use iceoryx2::service::static_config::message_type_details::{
     TypeDetail, TypeNameString, TypeVariant,
 };
-use iceoryx2_bb_elementary::math::{align, max};
 use iceoryx2_bb_elementary_traits::AsCStr;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::*;
 use iceoryx2_ffi_macros::CStrRepr;
@@ -560,9 +559,10 @@ pub unsafe extern "C" fn iox2_service_builder_blackboard_creator_add(
             type_size,
         );
     });
-    let value_size = 2 * (align(type_size, type_align))
-        + align(core::mem::size_of::<UnrestrictedAtomicMgmt>(), type_align);
-    let value_alignment = max(core::mem::align_of::<UnrestrictedAtomicMgmt>(), type_align);
+    let value_size =
+        UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_size(type_size, type_align);
+    let value_alignment =
+        UnrestrictedAtomicMgmt::__internal_get_unrestricted_atomic_alignment(type_align);
     let value_cleanup = Box::new(move || {
         if let Some(callback) = release_callback {
             callback(value_ptr);

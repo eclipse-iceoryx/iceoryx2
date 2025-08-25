@@ -26,7 +26,7 @@ class EntryValueUninit;
 
 /// Wrapper around an initialized entry value that can be used for a zero-copy update.
 template <ServiceType S, typename KeyType, typename ValueType>
-// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value is not used directly but only via the initialized 'm_handle'; furthermore, it will be initialized on the call site
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value is initialized in the the c'tor via iox2_entry_handle_mut_loan_uninit
 class EntryValue {
   public:
     EntryValue(EntryValue&& rhs) noexcept;
@@ -57,9 +57,7 @@ class EntryValue {
     template <ServiceType ST, typename KeyT, typename ValueT>
     friend auto discard(EntryValueUninit<ST, KeyT, ValueT>&&) -> EntryHandleMut<ST, KeyT, ValueT>;
 
-    // The EntryValue is defaulted since the member is initialized in
-    // EntryHandleMut::loan_uninit()
-    explicit EntryValue() = default;
+    explicit EntryValue(iox2_entry_handle_mut_h entry_handle);
 
     void drop();
 
@@ -67,10 +65,16 @@ class EntryValue {
 
     auto take_handle_ownership() -> iox2_entry_value_h;
 
-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value will be initialized in the move assignment operator
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value is initialized in the the c'tor via iox2_entry_handle_mut_loan_uninit
     iox2_entry_value_t m_entry_value;
     iox2_entry_value_h m_handle = nullptr;
 };
+
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value is initialized in the the c'tor via iox2_entry_handle_mut_loan_uninit
+template <ServiceType S, typename KeyType, typename ValueType>
+inline EntryValue<S, KeyType, ValueType>::EntryValue(iox2_entry_handle_mut_h entry_handle) {
+    iox2_entry_handle_mut_loan_uninit(entry_handle, &m_entry_value, &m_handle, sizeof(ValueType), alignof(ValueType));
+}
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init,hicpp-member-init) m_entry_value will be initialized in the move assignment operator
 template <ServiceType S, typename KeyType, typename ValueType>
