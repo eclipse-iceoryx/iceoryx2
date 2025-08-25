@@ -302,12 +302,20 @@ class Optional {
 
     template <class U = std::remove_cv_t<T>>
     constexpr auto value_or(U&& fallback) const& -> T {
-        return m_value.is_empty() ? std::forward<U>(fallback) : m_value.unchecked_get();
+        if (m_value.is_empty()) {
+            return std::forward<U>(fallback);
+        } else {
+            return m_value.unchecked_get();
+        }
     }
 
     template <class U = std::remove_cv_t<T>>
     constexpr auto value_or(U&& fallback) && -> T {
-        return m_value.is_empty() ? std::forward<U>(fallback) : std::move(m_value).unchecked_get();
+        if (m_value.is_empty()) {
+            return std::forward<U>(fallback);
+        } else {
+            return std::move(m_value).unchecked_get();
+        }
     }
 
     // modifiers
