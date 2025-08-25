@@ -43,6 +43,8 @@
   [#931](https://github.com/eclipse-iceoryx/iceoryx2/issues/931)
 * Add script to list dependencies of multiple packages
   [#933](https://github.com/eclipse-iceoryx/iceoryx2/issues/933)
+* Add a C++ Optional vocabulary type for use with C++ containers
+  [#939](https://github.com/eclipse-iceoryx/iceoryx2/issues/939)
 
 ### Bugfixes
 
