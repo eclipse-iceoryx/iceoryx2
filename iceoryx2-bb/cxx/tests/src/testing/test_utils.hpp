@@ -35,6 +35,28 @@ void opaque_use(T const& object) {
     opaque_use(&object);
 }
 
+// A class that overloads operator&, the address-of operator.
+// The operator behaves the same as the built-in operator& but increments
+// the static counter CustomAddressOperator::s_count_address_operator as
+// a side-effect to make it detectable during testing.
+class CustomAddressOperator {
+  public:
+    static int s_count_address_operator;
+
+    // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes), exposed for testability
+    int id = 0;
+
+    auto operator&() -> CustomAddressOperator* {
+        ++s_count_address_operator;
+        return this;
+    }
+
+    auto operator&() const -> CustomAddressOperator const* {
+        ++s_count_address_operator;
+        return this;
+    }
+};
+
 } // namespace testing
 } // namespace container
 } // namespace iox2

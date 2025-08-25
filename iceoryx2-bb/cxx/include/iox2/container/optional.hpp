@@ -16,6 +16,7 @@
 #include "iox2/container/config.hpp"
 
 #include <cstdlib>
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -241,11 +242,11 @@ class Optional {
 
     // observers
     constexpr auto operator->() const noexcept -> const T* {
-        return m_value.is_empty() ? nullptr : &(m_value.unchecked_get());
+        return m_value.is_empty() ? nullptr : std::addressof(m_value.unchecked_get());
     }
 
     constexpr auto operator->() noexcept -> T* {
-        return m_value.is_empty() ? nullptr : &(m_value.unchecked_get());
+        return m_value.is_empty() ? nullptr : std::addressof(m_value.unchecked_get());
     }
 
     constexpr auto operator*() const& noexcept -> const T& {

@@ -985,4 +985,24 @@ TEST_F(OptionalFixture, reset_on_full_optional_destructs_contained_value) {
     ASSERT_EQ(Observable::s_counter.wasDestructed, 0);
 }
 
+TEST(Optional, operator_arrow_should_bypass_overloaded_operator_ampersand) {
+    int const tracking_id = 54321;
+    iox2::container::testing::CustomAddressOperator obj;
+    obj.id = tracking_id;
+    iox2::container::Optional<iox2::container::testing::CustomAddressOperator> sut { obj };
+    iox2::container::testing::CustomAddressOperator::s_count_address_operator = 0;
+    ASSERT_EQ(sut->id, tracking_id);
+    ASSERT_EQ(iox2::container::testing::CustomAddressOperator::s_count_address_operator, 0);
+}
+
+TEST(Optional, const_operator_arrow_should_bypass_overloaded_operator_ampersand) {
+    int const tracking_id = 54321;
+    iox2::container::testing::CustomAddressOperator obj;
+    obj.id = tracking_id;
+    iox2::container::Optional<iox2::container::testing::CustomAddressOperator> const sut { obj };
+    iox2::container::testing::CustomAddressOperator::s_count_address_operator = 0;
+    ASSERT_EQ(sut->id, tracking_id);
+    ASSERT_EQ(iox2::container::testing::CustomAddressOperator::s_count_address_operator, 0);
+}
+
 } // namespace
