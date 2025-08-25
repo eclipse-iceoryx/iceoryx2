@@ -83,6 +83,8 @@
     [#947](https://github.com/eclipse-iceoryx/iceoryx2/issues/947)
 * Clean handling of thread CPU core affinity of `posix::Thread`
     [#962](https://github.com/eclipse-iceoryx/iceoryx2/issues/962)
+* Set thread priority correctly, not always min value
+    [#977](https://github.com/eclipse-iceoryx/iceoryx2/issues/977)
 
 ### Refactoring
 

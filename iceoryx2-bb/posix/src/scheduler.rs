@@ -64,7 +64,7 @@ impl Scheduler {
     }
 
     fn max_priority(&self) -> i32 {
-        match unsafe { posix::sched_get_priority_min(*self as i32) } {
+        match unsafe { posix::sched_get_priority_max(*self as i32) } {
             -1 => {
                 fatal_panic!("This should never happen! Unable to acquire maximum priority for scheduler {:#?}.", self);
             }
