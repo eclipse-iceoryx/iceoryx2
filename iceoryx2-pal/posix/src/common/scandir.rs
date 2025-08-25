@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::posix::types::*;
 use crate::posix::{closedir, free, malloc, opendir, readdir_r};
+use crate::posix::{dirent_size, types::*};
 
 pub(crate) unsafe fn scandir_impl(
     path: *const c_char,
@@ -37,7 +37,7 @@ pub(crate) unsafe fn scandir_impl(
     };
 
     loop {
-        let dirent_ptr = malloc(core::mem::offset_of!(dirent, d_name) + crate::posix::NAME_MAX + 1);
+        let dirent_ptr = malloc(dirent_size());
 
         let mut result_ptr: *mut dirent = core::ptr::null_mut();
 

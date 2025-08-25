@@ -38,3 +38,7 @@ pub unsafe fn dirfd(dirp: *mut DIR) -> int {
 pub unsafe fn readdir_r(dirp: *mut DIR, entry: *mut dirent, result: *mut *mut dirent) -> int {
     crate::internal::readdir_r(dirp, entry, result)
 }
+
+pub fn dirent_size() -> usize {
+    core::mem::size_of::<crate::posix::types::dirent>()
+}

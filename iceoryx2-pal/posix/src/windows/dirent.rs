@@ -134,3 +134,7 @@ pub unsafe fn closedir(dirp: *mut DIR) -> int {
 pub unsafe fn dirfd(dirp: *mut DIR) -> int {
     HandleTranslator::get_instance().get_fd(FdHandleEntry::DirectoryStream(dirp as u64))
 }
+
+pub fn dirent_size() -> usize {
+    core::mem::size_of::<crate::posix::types::dirent>()
+}

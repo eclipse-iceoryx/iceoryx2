@@ -42,3 +42,14 @@ pub unsafe fn readdir(dirp: *mut DIR) -> *const dirent {
 pub unsafe fn readdir_r(dirp: *mut DIR, entry: *mut dirent, result: *mut *mut dirent) -> int {
     crate::internal::readdir_r(dirp, entry, result)
 }
+
+pub fn dirent_size() -> usize {
+    // The POSIX manual does not enforce that the name is stored in the dirent
+    // struct (https://pubs.opengroup.org/onlinepubs/9699919799/):
+    //   The array d_name is of unspecified size, but shall contain a filename
+    //   of at most {NAME_MAX} bytes followed by a terminating null byte.
+    //
+    // On QNX, only the first character is stored in the dirent struct:
+    // https://www.qnx.com/developers/docs/7.1/index.html#com.qnx.doc.neutrino.lib_ref/topic/d/dirent.html
+    core::mem::size_of::<crate::posix::types::dirent>() + crate::internal::NAME_MAX as usize + 1
+}
