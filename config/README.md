@@ -85,9 +85,18 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `global.service.event-connection-suffix` - [string]: Suffix for event channel.
 * `global.service.connection-suffix` - [string]: Suffix for one-to-one
   connections.
-* `global.service.creation-timeout.secs` &
-  `global.service.creation-timeout.nanos` - [int]: Maximum time for service
-  setup. Uncreated services after this are marked as stalled.
+* `global.service.creation-timeout.secs` - [int]: Maximum time for service setup
+  in seconds. Uncreated services after this are marked as stalled.
+  Attention: Both 'secs' and 'nanos' must be set together; leaving one
+  unset will cause the configuration to be invalid.
+* `global.service.creation-timeout.nanos` - [int]: Additional nanoseconds for
+  service setup timeout.Maximum time for service setup.
+  Attention: Both 'secs' and 'nanos' must be set together; leaving one
+  unset will cause the configuration to be invalid.
+* `global.service.blackboard-mgmt-suffix` - [string]: The suffix of the blackboard
+management data segment
+* `global.service.blackboard-data-suffix` - [string]: The suffix of the blackboard
+payload data segment
 
 ## Defaults
 
@@ -98,6 +107,13 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.event.max-nodes` - [int]: Maximum number of nodes.
 * `defaults.event.event-id-max-value` - [int]: Greatest value an [`EventId`] can
   have.
+* `defaults.event.deadline` - [Option\<Duration\>]: Maximum allowed time between
+  two consecutive notifications. If not sent after this time, all listeners attached
+  to a WaitSet will be notified.
+  Due to a current limitation, the keys are actually
+  `defaults.event.deadline.secs` and `defaults.event.deadline.nanos`
+  Attention: Both 'secs' and 'nanos' must be set together; leaving one
+  unset will cause the configuration to be invalid.
 * `defaults.event.notifier-created-event` - [Option\<int\>]: If defined,
     it defines the event id that is emitted when a new notifier is created.
 * `defaults.event.notifier-dropped-event` - [Option\<int\>]: If defined,
@@ -114,7 +130,7 @@ Adjusting `global` settings ensures a non-interfering setup.
 * `defaults.publish-subscribe.max-nodes` - [int]: Maximum number of nodes.
 * `defaults.publish-subscribe.publisher-history-size` - [int]: Maximum history
   size a subscriber can request.
-* `defaults.publish-subscribe.subscriber-buffer-size` - [int]: Maximum buffer
+* `defaults.publish-subscribe.subscriber-max-buffer-size` - [int]: Maximum buffer
   size of a subscriber.
 * `defaults.publish-subscribe.subscriber-max-borrowed-samples` - [int]: Maximum
   samples a subscriber can hold.
@@ -150,8 +166,8 @@ Adjusting `global` settings ensures a non-interfering setup.
   overflows.
 * `defaults.request-response.max-active-requests-per-client` - [int]:
   The maximum of active requests a server can hold per client
-* `defaults.request-response.max-borrowed-responses-per-pending-response` -
-  [int]: The maximum number of borrowed responses a client can hold in
+* `defaults.request-response.max-borrowed-responses-per-pending-response` - [int]:
+  The maximum number of borrowed responses a client can hold in
   parallel per pending response.
 * `defaults.request-response.max-clients` - [int]:
   The maximum amount of supported clients.
@@ -160,8 +176,10 @@ Adjusting `global` settings ensures a non-interfering setup.
   processes can open the service at the same time.
 * `defaults.request-response.max-response-buffer-size` - [int]:
   The maximum buffer size for responses for an active request.
-* `defaults.request-response.max-request-buffer-size` - [int]:
-  The maximum buffer size for requests for a server.
+* `defaults.request-response.max-loaned-requests` - [int]:
+  Maximum number of requests a client can loan in parallel.
+* `defaults.request-response.server-max-loaned-responses-per-request` - [int]:
+  Maximum number of responses a server can loan per request.
 * `defaults.request-response.max-servers` - [int]:
   The maximum amount of supported servers.
 * `defaults.request-response.server-unable-to-deliver-strategy` -
@@ -171,3 +189,9 @@ Adjusting `global` settings ensures a non-interfering setup.
   Expired connection buffer size of the server. Connections to clients
   are expired when the client disconnected from the service and the
   connection contains unconsumed active requests.
+
+### Blackboard Pattern
+
+* `defaults.blackboard.max-readers` - [int]: The maximum amount of supported Readers.
+* `defaults.blackboard.max-nodes` - [int]: The maximum amount of supported Nodes.
+Defines indirectly how many processes can open the service at the same time.

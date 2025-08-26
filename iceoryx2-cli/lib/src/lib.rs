@@ -13,6 +13,7 @@
 mod cli;
 mod format;
 
+pub mod config_descriptions;
 pub mod filter;
 pub mod output;
 
