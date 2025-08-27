@@ -10,13 +10,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0 OR MIT
 
-cmake_minimum_required(VERSION 3.22)
-project(example_c_blackboard LANGUAGES C)
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library")
 
-find_package(iceoryx2-c 0.7.0 REQUIRED)
+cc_binary(
+    name = "example_c_creator",
+    srcs = [
+        "src/creator.c",
+    ],
+    deps = [
+        "//:iceoryx2-c-static",
+    ],
+)
 
-add_executable(example_c_creator src/creator.c)
-target_link_libraries(example_c_creator iceoryx2-c::static-lib)
-
-add_executable(example_c_opener src/opener.c)
-target_link_libraries(example_c_opener iceoryx2-c::static-lib)
+cc_binary(
+    name = "example_c_opener",
+    srcs = [
+        "src/opener.c",
+    ],
+    deps = [
+        "//:iceoryx2-c-static",
+    ],
+)

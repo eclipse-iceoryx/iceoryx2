@@ -13,7 +13,7 @@
 #include "iox2/iceoryx2.h"
 #include "transmission_data.h"
 
-#ifdef _WIN64
+#if defined(_WIN32) || defined(WIN32) || defined(__WIN32__) || defined(_WIN64)
 #define alignof __alignof
 #else
 #include <stdalign.h>
@@ -22,10 +22,56 @@
 #include <stdio.h>
 #include <string.h>
 
-// TODO [#817] see "RAII" in service_types example
+struct res { // NOLINT
+    iox2_node_h node;
+    iox2_service_name_h service_name;
+    iox2_port_factory_blackboard_h service;
+    iox2_writer_h writer;
+    iox2_entry_handle_mut_h entry_handle_mut_key_0;
+    iox2_entry_handle_mut_h entry_handle_mut_key_1;
+};
+
+void init_res(struct res* const value) { // NOLINT
+    value->node = NULL;
+    value->service_name = NULL;
+    value->service = NULL;
+    value->writer = NULL;
+    value->entry_handle_mut_key_0 = NULL;
+    value->entry_handle_mut_key_1 = NULL;
+}
+
+void drop_res(struct res* const value) { // NOLINT
+    if (value->entry_handle_mut_key_1 != NULL) {
+        iox2_entry_handle_mut_drop(value->entry_handle_mut_key_1);
+    }
+
+    if (value->entry_handle_mut_key_0 != NULL) {
+        iox2_entry_handle_mut_drop(value->entry_handle_mut_key_0);
+    }
+
+    if (value->writer != NULL) {
+        iox2_writer_drop(value->writer);
+    }
+
+    if (value->service != NULL) {
+        iox2_port_factory_blackboard_drop(value->service);
+    }
+
+    if (value->service_name != NULL) {
+        iox2_service_name_drop(value->service_name);
+    }
+
+    if (value->node != NULL) {
+        iox2_node_drop(value->node);
+    }
+}
+
 int main(void) {
     // Setup logging
     iox2_set_log_level_from_env_or(iox2_log_level_e_INFO);
+
+    struct res example;
+    init_res(&example);
 
     // create new node
     iox2_node_builder_h node_builder_handle = iox2_node_builder_new(NULL);
@@ -40,7 +86,7 @@ int main(void) {
     iox2_service_name_h service_name = NULL;
     if (iox2_service_name_new(NULL, service_name_value, strlen(service_name_value), &service_name) != IOX2_OK) {
         printf("Unable to create service name!\n");
-        goto drop_node;
+        goto end;
     }
 
     // create service builder
@@ -55,7 +101,7 @@ int main(void) {
             &service_builder_blackboard, key_type_name, strlen(key_type_name), sizeof(struct Foo), alignof(struct Foo))
         != IOX2_OK) {
         printf("Unable to set key type details!\n");
-        goto drop_service_name;
+        goto end;
     }
 
     // set key eq comparison function
@@ -99,7 +145,7 @@ int main(void) {
     iox2_port_factory_blackboard_h service = NULL;
     if (iox2_service_builder_blackboard_create(service_builder_blackboard, NULL, &service) != IOX2_OK) {
         printf("Unable to create service!\n");
-        goto drop_service_name;
+        goto end;
     }
 
     // create writer and entry handles
@@ -107,7 +153,7 @@ int main(void) {
     iox2_writer_h writer = NULL;
     if (iox2_port_factory_writer_builder_create(writer_builder, NULL, &writer) != IOX2_OK) {
         printf("Unable to create writer!\n");
-        goto drop_service;
+        goto end;
     }
 
     iox2_entry_handle_mut_h entry_handle_mut_key_0 = NULL;
@@ -121,7 +167,7 @@ int main(void) {
                           alignof(int32_t))
         != IOX2_OK) {
         printf("Unable to create entry_handle_mut!\n");
-        goto drop_writer;
+        goto end;
     }
 
     iox2_entry_handle_mut_h entry_handle_mut_key_1 = NULL;
@@ -135,7 +181,7 @@ int main(void) {
                           alignof(double))
         != IOX2_OK) {
         printf("Unable to create entry_handle_mut!\n");
-        goto drop_entry_handle_mut_key_0;
+        goto end;
     }
 
     // update values
@@ -144,7 +190,7 @@ int main(void) {
         counter += 1;
 
         iox2_entry_handle_mut_update_with_copy(&entry_handle_mut_key_0, &counter, sizeof(int32_t), alignof(int32_t));
-        printf("Write value %d for key 0...\n", counter);
+        printf("Write new value %d for key 0...\n", counter);
 
         iox2_entry_value_h entry_value = NULL;
         iox2_entry_handle_mut_loan_uninit(entry_handle_mut_key_1, NULL, &entry_value, sizeof(double), alignof(double));
@@ -152,26 +198,10 @@ int main(void) {
         iox2_entry_value_mut(&entry_value, (void**) &payload);
         *payload = START_VALUE * (double) counter;
         iox2_entry_value_update(entry_value, NULL, &entry_handle_mut_key_1);
-        printf("Write value %f for key 1...\n", *payload);
+        printf("Write new value %f for key 1...\n\n", *payload);
     }
 
-    iox2_entry_handle_mut_drop(entry_handle_mut_key_1);
-
-drop_entry_handle_mut_key_0:
-    iox2_entry_handle_mut_drop(entry_handle_mut_key_0);
-
-drop_writer:
-    iox2_writer_drop(writer);
-
-drop_service:
-    iox2_port_factory_blackboard_drop(service);
-
-drop_service_name:
-    iox2_service_name_drop(service_name);
-
-drop_node:
-    iox2_node_drop(node_handle);
-
 end:
+    drop_res(&example);
     return 0;
 }
