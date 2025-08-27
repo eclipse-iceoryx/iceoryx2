@@ -43,7 +43,9 @@ steps for producing the object file containing the gdb pretty printer
 data. That object file will then get added to `target` as a library link
 input.
 
-This function does nothing unless you are building natively on Linux.
+This function does nothing unless you are building natively on Linux and
+ICEORYX2_EMBED_GDB_PRETTY_PRINTER is set. This function may fail to perform
+correctly if using another linker than the GNU binutils `ld` (BFD) linker.
 
 #]=======================================================================]
 
@@ -54,7 +56,7 @@ function(target_gdb_pretty_printer target scope pretty_printer_file_path)
     if (NOT EXISTS ${pretty_printer_file_path})
         message(FATAL_ERROR "Pretty printer source file not found ${pretty_printer_file_path}")
     endif()
-    if ((NOT LINUX) OR CMAKE_CROSSCOMPILING)
+    if ((NOT ICEORYX2_EMBED_GDB_PRETTY_PRINTER) OR (NOT LINUX) OR CMAKE_CROSSCOMPILING)
         return()
     endif()
     if (NOT ((scope STREQUAL INTERFACE) OR (scope STREQUAL PUBLIC) OR (scope STREQUAL PRIVATE)))
