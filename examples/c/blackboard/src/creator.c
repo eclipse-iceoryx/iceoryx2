@@ -147,6 +147,7 @@ int main(void) {
         printf("Unable to create service!\n");
         goto end;
     }
+    printf("Blackboard created.\n");
 
     // create writer and entry handles
     iox2_port_factory_writer_builder_h writer_builder = iox2_port_factory_blackboard_writer_builder(&service, NULL);

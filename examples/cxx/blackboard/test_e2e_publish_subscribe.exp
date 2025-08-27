@@ -22,16 +22,16 @@ source examples/cross-language-end-to-end-tests/common.exp
 
 set timeout 10
 
-spawn target/ff/cc/build/examples/c/blackboard/example_c_creator
+spawn target/ff/cc/build/examples/cxx/blackboard/example_cxx_blackboard_creator
 set id_creator $spawn_id
 # wait until ready
 expect_output "Blackboard created."
 
-spawn target/ff/cc/build/examples/c/blackboard/example_c_opener
+spawn target/ff/cc/build/examples/cxx/blackboard/example_cxx_blackboard_opener
 
 #### Test Assertion
 
-expect_output_from $id_creator "Write new value 4 for key 0..."
+expect_output_from $id_creator "Write new value for key 0: 4..."
 expect_output "Read value 4 for key 0..."
 
 show_test_passed
