@@ -129,8 +129,8 @@ int main(void) {
     key_1.y = -4;
     key_1.z = 4;
     const char* value_type_name_double = "double";
-    const double START_VALUE = 1.1;
-    double value_key_1 = START_VALUE;
+    const double INITIAL_VALUE = 1.1;
+    double value_key_1 = INITIAL_VALUE;
 
     iox2_service_builder_blackboard_creator_add(&service_builder_blackboard,
                                                 &key_1,
@@ -197,7 +197,7 @@ int main(void) {
         iox2_entry_handle_mut_loan_uninit(entry_handle_mut_key_1, NULL, &entry_value, sizeof(double), alignof(double));
         double* payload = NULL;
         iox2_entry_value_mut(&entry_value, (void**) &payload);
-        *payload = START_VALUE * (double) counter;
+        *payload = INITIAL_VALUE * (double) counter;
         iox2_entry_value_update(entry_value, NULL, &entry_handle_mut_key_1);
         printf("Write new value %f for key 1...\n\n", *payload);
     }

@@ -28,11 +28,11 @@ auto main() -> int {
     set_log_level_from_env_or(LogLevel::Info);
     auto node = NodeBuilder().create<ServiceType::Ipc>().expect("successful node creation");
 
-    const double start_value = 1.1;
+    const double initial_value = 1.1;
     auto service = node.service_builder(ServiceName::create("My/Funk/ServiceName").expect("valid service name"))
                        .blackboard_creator<uint64_t>()
                        .template add_with_default<uint64_t>(0)
-                       .template add<double>(1, start_value)
+                       .template add<double>(1, initial_value)
                        .create()
                        .expect("successful service creation");
     std::cout << "Blackboard created." << std::endl;
@@ -49,7 +49,7 @@ auto main() -> int {
         std::cout << "Write new value for key 0: " << counter << "..." << std::endl;
 
         auto entry_value_uninit = loan_uninit(std::move(entry_handle_mut_key_1));
-        auto value = start_value * counter;
+        auto value = initial_value * counter;
         auto entry_value = write(std::move(entry_value_uninit), value);
         entry_handle_mut_key_1 = update(std::move(entry_value));
         std::cout << "Write new value for key 1: " << value << "...\n" << std::endl;
