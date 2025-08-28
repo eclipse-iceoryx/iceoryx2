@@ -59,6 +59,17 @@ function(target_gdb_pretty_printer target scope pretty_printer_file_path)
     if ((NOT ICEORYX2_EMBED_GDB_PRETTY_PRINTER) OR (NOT LINUX) OR CMAKE_CROSSCOMPILING)
         return()
     endif()
+    find_program(ICEORYX2_GNU_BINUTILS_LD NAMES ld)
+    mark_as_advanced(ICEORYX2_GNU_BINUTILS_LD)
+    if (NOT ICEORYX2_GNU_BINUTILS_LD)
+        message(FATAL_ERROR "ICEORYX2_GNU_BINUTILS_LD must point to GNU Binutils ld")
+    endif()
+    execute_process(COMMAND ${ICEORYX2_GNU_BINUTILS_LD} --version
+        OUTPUT_VARIABLE gnuld_version_out
+    )
+    if (NOT (gnuld_version_out MATCHES "^GNU ld \\(GNU Binutils\\) (.*)"))
+        message(FATAL_ERROR "ICEORYX2_GNU_BINUTILS_LD must point to GNU Binutils ld")
+    endif()
     if (NOT ((scope STREQUAL INTERFACE) OR (scope STREQUAL PUBLIC) OR (scope STREQUAL PRIVATE)))
         message(FATAL_ERROR "Invalid scope ${scope}. Must be INTERFACE, PUBLIC, or PRIVATE.")
     endif()
@@ -69,19 +80,13 @@ function(target_gdb_pretty_printer target scope pretty_printer_file_path)
     #  - A single line-feed character (0x0a)
     #  - The contents of the pretty printer Python file
     #  - A single null terminator byte (0x00)
-    # The script sets up individual object files for each of those components
-    # and then links them together to a single object file that will be added
-    # as a link dependency to the target.
+    # The script sets up individual object files for the filename and script content
+    # and then links them together to a single object file. A linker script ensures
+    # the correct layout of the section contents. The resulting object file will
+    # be added as a link dependency to the target.
     get_filename_component(pretty_printer_filename ${pretty_printer_file_path} NAME)
     get_filename_component(pretty_printer_name ${pretty_printer_file_path} NAME_WE)
     set(output_dir ${PROJECT_BINARY_DIR}/pretty_printer_files/${target}/${pretty_printer_name})
-    add_custom_command(
-        OUTPUT ${output_dir}/start_byte.o
-        COMMAND ${CMAKE_LINKER} -r -b binary -o ${output_dir}/start_byte.o
-        ${PROJECT_SOURCE_DIR}/cmake/resources/start_byte.bin
-        DEPENDS ${PROJECT_SOURCE_DIR}/cmake/resources/start_byte.bin
-        VERBATIM
-    )
     add_custom_command(
         OUTPUT ${output_dir}/filename.raw
         COMMAND ${CMAKE_COMMAND}
@@ -91,48 +96,29 @@ function(target_gdb_pretty_printer target scope pretty_printer_file_path)
         VERBATIM
     )
     add_custom_command(
-        OUTPUT ${output_dir}/filename_byte.o
-        COMMAND ${CMAKE_LINKER} -r -b binary -o ${output_dir}/filename_byte.o
+        OUTPUT ${output_dir}/pretty_printer_filename.o
+        COMMAND ${ICEORYX2_GNU_BINUTILS_LD} -r -b binary -o ${output_dir}/pretty_printer_filename.o
         ${output_dir}/filename.raw
         DEPENDS ${output_dir}/filename.raw
         VERBATIM
     )
     add_custom_command(
-        OUTPUT ${output_dir}/lf_byte.o
-        COMMAND ${CMAKE_LINKER} -r -b binary -o ${output_dir}/lf_byte.o
-        ${PROJECT_SOURCE_DIR}/cmake/resources/lf_byte.bin
-        DEPENDS ${PROJECT_SOURCE_DIR}/cmake/resources/lf_byte.bin
-        VERBATIM
-    )
-    add_custom_command(
         OUTPUT ${output_dir}/pretty_printer_script.o
-        COMMAND ${CMAKE_LINKER} -r -b binary -o ${output_dir}/pretty_printer_script.o
+        COMMAND ${ICEORYX2_GNU_BINUTILS_LD} -r -b binary -o ${output_dir}/pretty_printer_script.o
         ${pretty_printer_file_path}
         DEPENDS ${pretty_printer_file_path}
         VERBATIM
     )
     add_custom_command(
-        OUTPUT ${output_dir}/end_byte.o
-        COMMAND ${CMAKE_LINKER} -r -b binary -o ${output_dir}/end_byte.o
-        ${PROJECT_SOURCE_DIR}/cmake/resources/end_byte.bin
-        DEPENDS ${PROJECT_SOURCE_DIR}/cmake/resources/end_byte.bin
-        VERBATIM
-    )
-    add_custom_command(
         OUTPUT ${output_dir}/${pretty_printer_name}.o
-        COMMAND ${CMAKE_LINKER} -r -o ${output_dir}/${pretty_printer_name}.o
-        ${output_dir}/start_byte.o
-        ${output_dir}/filename_byte.o
-        ${output_dir}/lf_byte.o
+        COMMAND ${ICEORYX2_GNU_BINUTILS_LD} -r -o ${output_dir}/${pretty_printer_name}.o
+        ${output_dir}/pretty_printer_filename.o
         ${output_dir}/pretty_printer_script.o
-        ${output_dir}/end_byte.o
         -T ${PROJECT_SOURCE_DIR}/cmake/resources/linker_script.ld
         DEPENDS
-        ${output_dir}/start_byte.o
-        ${output_dir}/filename_byte.o
-        ${output_dir}/lf_byte.o
+        ${output_dir}/pretty_printer_filename.o
         ${output_dir}/pretty_printer_script.o
-        ${output_dir}/end_byte.o
+        ${PROJECT_SOURCE_DIR}/cmake/resources/linker_script.ld
         VERBATIM
     )
     add_custom_target(${target}_pretty_printer_${pretty_printer_name}
