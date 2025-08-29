@@ -86,12 +86,12 @@ environments. Consider:
 
 ## Milestones
 
-List development phases and deliverables.
+List development phases and results.
 
 ### Milestone 1 – Implement A
 
 * Planned classes, modules, details
 
-**Deliverables:**
+**Results:**
 
 * What the user will see or gain from this milestone
