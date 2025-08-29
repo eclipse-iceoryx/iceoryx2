@@ -26,7 +26,7 @@ mod reactor {
 
     const TIMEOUT: Duration = Duration::from_millis(50);
     const INFINITE_TIMEOUT: Duration = Duration::from_secs(3600 * 24);
-    const NUMBER_OF_ATTACHMENTS: usize = 64;
+    const NUMBER_OF_ATTACHMENTS: usize = 32;
 
     struct NotifierListenerPair {
         notifier: unix_datagram_socket::Notifier,

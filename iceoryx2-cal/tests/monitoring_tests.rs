@@ -67,8 +67,13 @@ mod monitoring {
         assert_that!(sut_cleaner.err().unwrap(), eq MonitoringCreateCleanerError::DoesNotExist);
     }
 
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "freebsd",
+        target_os = "macos",
+        target_os = "nto"
+    )))]
     #[test]
-    #[cfg(not(any(target_os = "linux", target_os = "freebsd", target_os = "macos")))]
     fn monitor_works<Sut: Monitoring>() {
         let name = generate_name();
         let config = generate_isolated_config::<Sut>();

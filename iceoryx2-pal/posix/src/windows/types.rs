@@ -268,6 +268,18 @@ pub struct iovec {
 }
 impl MemZeroedStruct for iovec {}
 
+impl iovec {
+    pub fn set_base(&mut self, base: *mut ::core::ffi::c_void) {
+        self.iov_base = base;
+    }
+    pub fn set_len(&mut self, len: usize) {
+        self.iov_len = len as _;
+    }
+    pub fn as_mut_ptr(&mut self) -> *mut crate::posix::iovec {
+        &mut *self
+    }
+}
+
 pub struct sockaddr {}
 impl MemZeroedStruct for sockaddr {}
 

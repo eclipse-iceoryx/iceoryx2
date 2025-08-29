@@ -241,7 +241,7 @@ impl Process {
     pub fn get_scheduler(&self) -> Result<Scheduler, ProcessGetSchedulerError> {
         let msg = "Unable to acquire scheduler of process";
         let v = unsafe { posix::sched_getscheduler(self.pid.0) };
-        if v == 0 {
+        if v != -1 {
             return Ok(
                 fail!(from self, when Scheduler::from_int(v), "{} since the scheduler seems to be unknown.", msg),
             );

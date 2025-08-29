@@ -13,4 +13,8 @@
 /// Provides the recommended
 /// [`Serialize`](crate::serialize::Serialize) concept implementation
 /// for the target.
+#[cfg(not(target_os = "nto"))]
 pub type Recommended = crate::serialize::toml::Toml;
+
+#[cfg(target_os = "nto")]
+pub type Recommended = crate::serialize::postcard::Postcard;

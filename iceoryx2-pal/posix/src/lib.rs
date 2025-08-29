@@ -32,6 +32,9 @@ mod platform;
 #[cfg(all(target_os = "linux", not(feature = "libc_platform")))]
 #[path = "linux/mod.rs"]
 pub mod platform;
+#[cfg(all(target_os = "nto", not(feature = "libc_platform")))]
+#[path = "qnx/mod.rs"]
+mod platform;
 #[cfg(all(target_os = "windows", not(feature = "libc_platform")))]
 #[path = "windows/mod.rs"]
 mod platform;

@@ -89,7 +89,7 @@ iceoryx2-tunnels-zenoh = { version = "0.6.1", path = "iceoryx2-tunnels/zenoh" }
 iceoryx2-userland-record-and-replay = { version = "0.6.1", path = "iceoryx2-userland/record-and-replay" }
 
 anyhow = { version = "1.0.86" }
-bindgen = { version = "0.69.4" }
+bindgen = { version = "0.72.0" }
 cargo_metadata = { version = "0.18.1" }
 cbindgen = { version = "0.27.0" }
 cc = { version = "1.0.98" }

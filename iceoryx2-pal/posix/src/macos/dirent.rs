@@ -39,6 +39,10 @@ pub unsafe fn readdir_r(dirp: *mut DIR, entry: *mut dirent, result: *mut *mut di
     crate::internal::readdir_r(dirp, entry, result)
 }
 
+pub fn dirent_size() -> usize {
+    core::mem::size_of::<crate::posix::types::dirent>()
+}
+
 mod internal {
     use super::*;
 
