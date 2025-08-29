@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="iox2::container::Optional&lt;*&gt;">
+    <Intrinsic Name="has_value" Expression="!m_value.m_is_empty"/>
+    <Intrinsic Name="value" Expression="m_value.m_u_value"/>
+    <DisplayString Condition="!has_value()">nullopt</DisplayString>
+    <DisplayString Condition="has_value()">{value()}</DisplayString>
+    <Expand>
+      <Item Name="[value]" Condition="has_value()">value()</Item>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>
