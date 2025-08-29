@@ -30,6 +30,7 @@ use windows_sys::Win32::System::Memory::LocalFree;
 use crate::posix::{mode_t, S_IRGRP, S_IROTH, S_IWGRP, S_IWOTH, S_IXGRP, S_IXOTH};
 use crate::posix::{types::*, S_IRUSR, S_IWUSR, S_IXUSR};
 
+// SID String Mappings
 // syntax:
 // ace_type;ace_flags;rights;object_guid;inherit_object_guid;account_sid
 // ace_type:
@@ -72,10 +73,21 @@ const FILE_PERM_READ: &[u8] = b"FR";
 const FILE_PERM_WRITE: &[u8] = b"FW";
 const FILE_PERM_EXECUTE: &[u8] = b"FX";
 const ACE_INHERITANCE: &[u8] = b"OICI";
+const DELETE: &[u8] = b"SD";
 
 const IDENT_OTHERS: &[u8] = b"WD";
 const IDENT_GROUP: &[u8] = b"SU";
 const IDENT_OWNER: &[u8] = b"BU";
+
+// Windows access rights constants as HEX
+// https://learn.microsoft.com/en-us/windows/win32/fileio/file-access-rights-constants
+// https://learn.microsoft.com/en-us/windows/win32/secauthz/access-mask
+const FILE_READ_DATA_HEX: u32 = 0x1;
+const FILE_WRITE_DATA_HEX: u32 = 0x2;
+const FILE_EXECUTE_HEX: u32 = 0x20;
+const FILE_READ_ATTRIBUTES_HEX: u32 = 0x80;
+const FILE_WRITE_ATTRIBUTES_HEX: u32 = 0x100;
+const DELETE_HEX: u32 = 0x10000;
 
 fn add_to_sd_string(data: &mut [u8], add: &[u8]) {
     let mut start_adding = false;
@@ -184,6 +196,7 @@ pub fn from_mode_to_security_attributes(handle: HANDLE, mode: mode_t) -> SECURIT
 
     // deny everything
     add_to_ace_string!(&mut buffer, b"D:");
+
     // local system allow everything
     add_to_ace_string!(
         &mut buffer,
@@ -193,6 +206,7 @@ pub fn from_mode_to_security_attributes(handle: HANDLE, mode: mode_t) -> SECURIT
         GENERIC_PERM_ALL,
         b";;;SY)"
     );
+
     // builtin administrator allow everything
     add_to_ace_string!(
         &mut buffer,
@@ -203,63 +217,82 @@ pub fn from_mode_to_security_attributes(handle: HANDLE, mode: mode_t) -> SECURIT
         b";;;BA)"
     );
 
-    // add rights for other
-    add_to_ace_string!(&mut buffer, b"(A;", ACE_INHERITANCE, b";");
-    if mode & S_IXOTH != 0 && mode & S_IWOTH != 0 && mode & S_IROTH != 0 {
-        add_to_ace_string!(&mut buffer, GENERIC_PERM_ALL);
-    } else {
-        if mode & S_IROTH != 0 {
-            add_to_ace_string!(&mut buffer, GENERIC_PERM_READ);
-        }
+    let add_permissions = |buffer: &mut [u8], ident: &[u8]| {
+        // determine which permissions to set based on identity
+        let (read_bit, write_bit, exec_bit) = match ident {
+            IDENT_OTHERS => (S_IROTH, S_IWOTH, S_IXOTH),
+            IDENT_GROUP => (S_IRGRP, S_IWGRP, S_IXGRP),
+            IDENT_OWNER => (S_IRUSR, S_IWUSR, S_IXUSR),
+            _ => panic!(
+                "Attempted to set permissions for unknown identity: {:?}",
+                ident
+            ),
+        };
 
-        if mode & S_IWOTH != 0 {
-            add_to_ace_string!(&mut buffer, GENERIC_PERM_WRITE);
-        }
+        let has_read = mode & read_bit != 0;
+        let has_write = mode & write_bit != 0;
+        let has_exec = mode & exec_bit != 0;
 
-        if mode & S_IXOTH != 0 {
-            add_to_ace_string!(&mut buffer, GENERIC_PERM_EXECUTE);
+        if has_read && has_write && has_exec {
+            // all permissions, including delete
+            add_to_ace_string!(
+                buffer,
+                b"(A;",
+                ACE_INHERITANCE,
+                b";",
+                GENERIC_PERM_ALL,
+                DELETE,
+                b";;;",
+                ident,
+                b")"
+            );
+        } else {
+            // individual permissions - use separate ACEs for each
+            if has_read {
+                add_to_ace_string!(
+                    buffer,
+                    b"(A;",
+                    ACE_INHERITANCE,
+                    b";",
+                    GENERIC_PERM_READ,
+                    b";;;",
+                    ident,
+                    b")"
+                );
+            }
+            if has_write {
+                // include delete permissions with write permissions
+                add_to_ace_string!(
+                    buffer,
+                    b"(A;",
+                    ACE_INHERITANCE,
+                    b";",
+                    GENERIC_PERM_WRITE,
+                    DELETE,
+                    b";;;",
+                    ident,
+                    b")"
+                );
+            }
+            if has_exec {
+                add_to_ace_string!(
+                    buffer,
+                    b"(A;",
+                    ACE_INHERITANCE,
+                    b";",
+                    GENERIC_PERM_EXECUTE,
+                    b";;;",
+                    ident,
+                    b")"
+                );
+            }
         }
-    }
-    add_to_ace_string!(&mut buffer, b";;;", IDENT_OTHERS, b")");
+    };
 
-    // add rights for group
-    add_to_ace_string!(&mut buffer, b"(A;", ACE_INHERITANCE, b";");
-    if mode & S_IXGRP != 0 && mode & S_IWGRP != 0 && mode & S_IRGRP != 0 {
-        add_to_ace_string!(&mut buffer, GENERIC_PERM_ALL);
-    } else {
-        if mode & S_IRGRP != 0 {
-            add_to_ace_string!(&mut buffer, GENERIC_PERM_READ);
-        }
-
-        if mode & S_IWGRP != 0 {
-            add_to_ace_string!(&mut buffer, GENERIC_PERM_WRITE);
-        }
-
-        if mode & S_IXGRP != 0 {
-            add_to_ace_string!(&mut buffer, GENERIC_PERM_EXECUTE);
-        }
-    }
-    add_to_ace_string!(&mut buffer, b";;;", IDENT_GROUP, b")");
-
-    // add rights for owner
-    add_to_ace_string!(&mut buffer, b"(A;", ACE_INHERITANCE, b";");
-    if mode & S_IXUSR != 0 && mode & S_IWUSR != 0 && mode & S_IRUSR != 0 {
-        add_to_ace_string!(&mut buffer, GENERIC_PERM_ALL);
-    } else {
-        if mode & S_IRUSR != 0 {
-            add_to_ace_string!(&mut buffer, GENERIC_PERM_READ);
-        }
-
-        if mode & S_IWUSR != 0 {
-            add_to_ace_string!(&mut buffer, GENERIC_PERM_WRITE);
-        }
-
-        if mode & S_IXUSR != 0 {
-            add_to_ace_string!(&mut buffer, GENERIC_PERM_EXECUTE);
-        }
-    }
-    //add_to_ace_string!(&mut buffer, b";;;", &get_owner_sid(handle), b")");
-    add_to_ace_string!(&mut buffer, b";;;", &IDENT_OWNER, b")");
+    // add permissions for each category
+    add_permissions(&mut buffer, IDENT_OTHERS);
+    add_permissions(&mut buffer, IDENT_GROUP);
+    add_permissions(&mut buffer, IDENT_OWNER);
 
     let (convert_result, _) = unsafe {
         win32call! { ConvertStringSecurityDescriptorToSecurityDescriptorA(
@@ -269,6 +302,7 @@ pub fn from_mode_to_security_attributes(handle: HANDLE, mode: mode_t) -> SECURIT
             core::ptr::null_mut::<u32>(),
         ) }
     };
+
     if convert_result == FALSE {
         return SECURITY_ATTRIBUTES {
             nLength: 0,
@@ -284,6 +318,7 @@ fn extract_ace_entry_sections(entry: &[u8]) -> (&[u8], &[u8], &[u8]) {
     let mut iter = entry.split(|c| *c == b';');
 
     let ace_type = iter.next().unwrap();
+
     // ace flags
     iter.next();
 
@@ -322,11 +357,32 @@ fn extract_ace_entries(value: &[u8]) -> Vec<&[u8]> {
     ace_entries
 }
 
-fn ace_rights_to_bits(ace_rights: &[u8]) -> u8 {
+fn parse_hex_rights(hex_str: &str) -> u8 {
+    let mut ret_val = 0;
+    if let Ok(hex_val) = u32::from_str_radix(hex_str, 16) {
+        if (hex_val & FILE_READ_DATA_HEX) != 0 || (hex_val & FILE_READ_ATTRIBUTES_HEX) != 0 {
+            ret_val |= 4;
+        }
+        // windows has separate permissions for write and delete...
+        // if either one are present, set the corresponding POSIX write mode
+        if (hex_val & FILE_WRITE_DATA_HEX) != 0
+            || (hex_val & FILE_WRITE_ATTRIBUTES_HEX) != 0
+            || (hex_val & DELETE_HEX) != 0
+        {
+            ret_val |= 2;
+        }
+        if (hex_val & FILE_EXECUTE_HEX) != 0 {
+            ret_val |= 1;
+        }
+    }
+    ret_val
+}
+
+fn parse_ace_string_rights(ace_rights: &[u8]) -> u8 {
     let mut i = 0;
     let mut ret_val = 0;
 
-    loop {
+    while i < ace_rights.len() {
         if i + 2 > ace_rights.len() {
             break;
         }
@@ -335,22 +391,32 @@ fn ace_rights_to_bits(ace_rights: &[u8]) -> u8 {
 
         if right == GENERIC_PERM_ALL || right == FILE_PERM_ALL {
             ret_val = 7;
-        } else if right == GENERIC_PERM_READ || right == FILE_PERM_READ {
-            ret_val += 4;
-        } else if right == GENERIC_PERM_WRITE || right == FILE_PERM_WRITE {
-            ret_val += 2;
-        } else if right == GENERIC_PERM_EXECUTE || right == FILE_PERM_EXECUTE {
-            ret_val += 1;
+        }
+        if right == GENERIC_PERM_READ || right == FILE_PERM_READ {
+            ret_val |= 4;
+        }
+        // windows has separate permissions for write and delete...
+        // if either one are present, set the corresponding POSIX write mode
+        if right == GENERIC_PERM_WRITE || right == FILE_PERM_WRITE || right == DELETE {
+            ret_val |= 2;
+        }
+        if right == GENERIC_PERM_EXECUTE || right == FILE_PERM_EXECUTE {
+            ret_val |= 1;
         }
 
         i += 2;
-
-        if ret_val == 7 {
-            return ret_val;
-        }
     }
 
     ret_val
+}
+
+fn ace_rights_to_bits(ace_rights: &[u8]) -> u8 {
+    if ace_rights.starts_with(b"0x") {
+        if let Ok(hex_str) = core::str::from_utf8(&ace_rights[2..]) {
+            return parse_hex_rights(hex_str);
+        }
+    }
+    parse_ace_string_rights(ace_rights)
 }
 
 fn is_owner(account_sid: &[u8]) -> bool {
@@ -378,6 +444,11 @@ pub fn from_security_attributes_to_mode(value: &SECURITY_ATTRIBUTES) -> mode_t {
     let raw_string = unsafe { core::slice::from_raw_parts(raw_string, raw_string_length as usize) };
     let ace_entries = extract_ace_entries(raw_string);
 
+    // group ACEs by identity
+    let mut others_perms = 0u8;
+    let mut group_perms = 0u8;
+    let mut owner_perms = 0u8;
+
     for entry in ace_entries {
         let (ace_type, ace_rights, account_sid) = extract_ace_entry_sections(entry);
 
@@ -385,14 +456,21 @@ pub fn from_security_attributes_to_mode(value: &SECURITY_ATTRIBUTES) -> mode_t {
             continue;
         }
 
+        let rights_bits = ace_rights_to_bits(ace_rights);
+
         if account_sid == IDENT_OTHERS {
-            mode |= ace_rights_to_bits(ace_rights) as u64;
+            others_perms |= rights_bits;
         } else if account_sid == IDENT_GROUP {
-            mode |= (ace_rights_to_bits(ace_rights) as u64) << 3;
+            group_perms |= rights_bits;
         } else if is_owner(account_sid) {
-            mode |= (ace_rights_to_bits(ace_rights) as u64) << 6;
+            owner_perms |= rights_bits;
         }
     }
+
+    // consolidate permissions into single POSIX mode
+    mode |= others_perms as u64;
+    mode |= (group_perms as u64) << 3;
+    mode |= (owner_perms as u64) << 6;
 
     mode
 }
