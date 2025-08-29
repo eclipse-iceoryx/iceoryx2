@@ -13,7 +13,6 @@
 #ifndef IOX2_PORTFACTORY_READER_HPP
 #define IOX2_PORTFACTORY_READER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox2/reader.hpp"
 #include "iox2/reader_error.hpp"
@@ -39,19 +38,26 @@ class PortFactoryReader {
     template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
-    explicit PortFactoryReader(/*iox2_port_factory_reader_builder_h handle*/);
+    explicit PortFactoryReader(iox2_port_factory_reader_builder_h handle);
 
-    // iox2_port_factory_reader_builder_h m_handle = nullptr;
+    iox2_port_factory_reader_builder_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType>
-inline PortFactoryReader<S, KeyType>::PortFactoryReader(/*iox2_port_factory_reader_builder_h handle*/) {
-    IOX_TODO();
+inline PortFactoryReader<S, KeyType>::PortFactoryReader(iox2_port_factory_reader_builder_h handle)
+    : m_handle { handle } {
 }
 
 template <ServiceType S, typename KeyType>
 inline auto PortFactoryReader<S, KeyType>::create() && -> iox::expected<Reader<S, KeyType>, ReaderCreateError> {
-    IOX_TODO();
+    iox2_reader_h reader_handle {};
+    auto result = iox2_port_factory_reader_builder_create(m_handle, nullptr, &reader_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(Reader<S, KeyType>(reader_handle));
+    }
+
+    return iox::err(iox::into<ReaderCreateError>(result));
 }
 } // namespace iox2
 

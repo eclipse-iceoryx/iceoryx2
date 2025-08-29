@@ -13,11 +13,11 @@
 #ifndef IOX2_SERVICE_BLACKBOARD_BUILDER_HPP
 #define IOX2_SERVICE_BLACKBOARD_BUILDER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/builder_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox2/attribute_specifier.hpp"
 #include "iox2/attribute_verifier.hpp"
+#include "iox2/internal/service_builder_internal.hpp"
 #include "iox2/port_factory_blackboard.hpp"
 #include "iox2/service_builder_blackboard_error.hpp"
 #include "iox2/service_type.hpp"
@@ -68,7 +68,7 @@ class ServiceBuilderBlackboardCreator {
 
     void set_parameters();
 
-    // iox2_service_builder_blackboard_creator_h m_handle = nullptr;
+    iox2_service_builder_blackboard_creator_h m_handle = nullptr;
 };
 
 template <typename KeyType, ServiceType S>
@@ -106,48 +106,146 @@ class ServiceBuilderBlackboardOpener {
 
     void set_parameters();
 
-    // iox2_service_builder_blackboard_opener_h m_handle = nullptr;
+    iox2_service_builder_blackboard_opener_h m_handle = nullptr;
 };
 
 template <typename KeyType, ServiceType S>
-template <typename ValueType>
-inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add([[maybe_unused]] KeyType key,
-                                                             [[maybe_unused]] ValueType value)
-    -> ServiceBuilderBlackboardCreator&& {
-    IOX_TODO();
+inline ServiceBuilderBlackboardCreator<KeyType, S>::ServiceBuilderBlackboardCreator(iox2_service_builder_h handle)
+    : m_handle { iox2_service_builder_blackboard_creator(handle) } {
+}
+
+template <typename KeyType, ServiceType S>
+inline void ServiceBuilderBlackboardCreator<KeyType, S>::set_parameters() {
+    m_max_readers.and_then(
+        [&](auto value) { iox2_service_builder_blackboard_creator_set_max_readers(&m_handle, value); });
+    m_max_nodes.and_then([&](auto value) { iox2_service_builder_blackboard_creator_set_max_nodes(&m_handle, value); });
+
+    // key type details
+    const auto* type_name = internal::get_payload_type_name<KeyType>();
+    const auto key_type_result = iox2_service_builder_blackboard_creator_set_key_type_details(
+        &m_handle, type_name, strlen(type_name), sizeof(KeyType), alignof(KeyType));
+    if (key_type_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the Key-Type.");
+    }
 }
 
 template <typename KeyType, ServiceType S>
 template <typename ValueType>
-inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add_with_default([[maybe_unused]] KeyType key)
+inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add(KeyType key, ValueType value)
     -> ServiceBuilderBlackboardCreator&& {
-    IOX_TODO();
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
+    auto value_ptr = new ValueType(value);
+    const auto* type_name = internal::get_payload_type_name<ValueType>();
+
+    iox2_service_builder_blackboard_creator_add(
+        &m_handle,
+        key,
+        value_ptr,
+        [](void* value) {
+            auto* value_ptr = static_cast<ValueType*>(value);
+            if (value_ptr != nullptr) {
+                // NOLINTNEXTLINE(cppcoreguidelines-owning-memory): required by C API
+                delete value_ptr;
+                value_ptr = nullptr;
+            }
+        },
+        type_name,
+        strlen(type_name),
+        sizeof(ValueType),
+        alignof(ValueType));
+
+    return std::move(*this);
+}
+
+template <typename KeyType, ServiceType S>
+template <typename ValueType>
+inline auto ServiceBuilderBlackboardCreator<KeyType, S>::add_with_default(KeyType key)
+    -> ServiceBuilderBlackboardCreator&& {
+    return add(key, ValueType());
 }
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create() && -> iox::expected<PortFactoryBlackboard<S, KeyType>,
                                                                                       BlackboardCreateError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_blackboard_h port_factory_handle {};
+    auto result = iox2_service_builder_blackboard_create(m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
+    }
+
+    return iox::err(iox::into<BlackboardCreateError>(result));
 }
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardCreator<KeyType, S>::create_with_attributes(
-    [[maybe_unused]] const AttributeSpecifier&
+    const AttributeSpecifier&
         attributes) && -> iox::expected<PortFactoryBlackboard<S, KeyType>, BlackboardCreateError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_blackboard_h port_factory_handle {};
+    auto result = iox2_service_builder_blackboard_create_with_attributes(
+        m_handle, &attributes.m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
+    }
+
+    return iox::err(iox::into<BlackboardCreateError>(result));
+}
+
+template <typename KeyType, ServiceType S>
+inline ServiceBuilderBlackboardOpener<KeyType, S>::ServiceBuilderBlackboardOpener(iox2_service_builder_h handle)
+    : m_handle { iox2_service_builder_blackboard_opener(handle) } {
+}
+
+template <typename KeyType, ServiceType S>
+inline void ServiceBuilderBlackboardOpener<KeyType, S>::set_parameters() {
+    m_max_readers.and_then(
+        [&](auto value) { iox2_service_builder_blackboard_opener_set_max_readers(&m_handle, value); });
+    m_max_nodes.and_then([&](auto value) { iox2_service_builder_blackboard_opener_set_max_nodes(&m_handle, value); });
+
+    // key type details
+    const auto* type_name = internal::get_payload_type_name<KeyType>();
+    const auto key_type_result = iox2_service_builder_blackboard_opener_set_key_type_details(
+        &m_handle, type_name, strlen(type_name), sizeof(KeyType), alignof(KeyType));
+    if (key_type_result != IOX2_OK) {
+        IOX_PANIC("This should never happen! Implementation failure while setting the Key-Type.");
+    }
 }
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open() && -> iox::expected<PortFactoryBlackboard<S, KeyType>,
                                                                                    BlackboardOpenError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_blackboard_h port_factory_handle {};
+    auto result = iox2_service_builder_blackboard_open(m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
+    }
+
+    return iox::err(iox::into<BlackboardOpenError>(result));
 }
 
 template <typename KeyType, ServiceType S>
 inline auto ServiceBuilderBlackboardOpener<KeyType, S>::open_with_attributes(
-    [[maybe_unused]] const AttributeVerifier&
+    const AttributeVerifier&
         required_attributes) && -> iox::expected<PortFactoryBlackboard<S, KeyType>, BlackboardOpenError> {
-    IOX_TODO();
+    set_parameters();
+
+    iox2_port_factory_blackboard_h port_factory_handle {};
+    auto result = iox2_service_builder_blackboard_open_with_attributes(
+        m_handle, &required_attributes.m_handle, nullptr, &port_factory_handle);
+
+    if (result == IOX2_OK) {
+        return iox::ok(PortFactoryBlackboard<S, KeyType>(port_factory_handle));
+    }
+
+    return iox::err(iox::into<BlackboardOpenError>(result));
 }
 } // namespace iox2
 

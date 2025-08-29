@@ -26,10 +26,10 @@
 //! let reader = service.reader_builder().create()?;
 //!
 //! // create a handle for direct read access to a value
-//! let reader_handle = reader.entry::<i32>(&1)?;
+//! let entry_handle = reader.entry::<i32>(&1)?;
 //!
 //! // get a copy of the value
-//! let value = reader_handle.get();
+//! let value = entry_handle.get();
 //!
 //! # Ok(())
 //! # }
@@ -43,9 +43,12 @@ use crate::service::{self, ServiceState};
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::sync::atomic::Ordering;
+use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
-use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
+use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::{
+    UnrestrictedAtomic, UnrestrictedAtomicMgmt,
+};
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_cal::dynamic_storage::DynamicStorage;
 use iceoryx2_cal::shared_memory::SharedMemory;
@@ -162,7 +165,7 @@ impl<
         self.reader_id
     }
 
-    /// Creates a [`ReaderHandle`] for direct read access to the value.
+    /// Creates a [`EntryHandle`] for direct read access to the value.
     ///
     /// # Example
     ///
@@ -176,16 +179,39 @@ impl<
     /// #     .create()?;
     /// #
     /// # let reader = service.reader_builder().create()?;
-    /// let reader_handle = reader.entry::<i32>(&1)?;
+    /// let entry_handle = reader.entry::<i32>(&1)?;
     /// # Ok(())
     /// # }
     /// ```
     pub fn entry<ValueType: Copy + ZeroCopySend>(
         &self,
         key: &KeyType,
-    ) -> Result<ReaderHandle<Service, KeyType, ValueType>, ReaderHandleError> {
-        let msg = "Unable to create reader handle";
+    ) -> Result<EntryHandle<Service, KeyType, ValueType>, EntryHandleError> {
+        let msg = "Unable to create entry handle";
 
+        let offset = self.get_entry_offset(
+            key,
+            &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
+            msg,
+        )?;
+
+        let atomic = (self
+            .shared_state
+            .service_state
+            .additional_resource
+            .data
+            .payload_start_address() as u64
+            + offset) as *const UnrestrictedAtomic<ValueType>;
+
+        Ok(EntryHandle::new(self.shared_state.clone(), atomic, offset))
+    }
+
+    fn get_entry_offset(
+        &self,
+        key: &KeyType,
+        type_details: &TypeDetail,
+        msg: &str,
+    ) -> Result<u64, EntryHandleError> {
         // check if key exists
         let index = match unsafe {
             self.shared_state
@@ -198,7 +224,7 @@ impl<
         } {
             Some(i) => i,
             None => {
-                fail!(from self, with ReaderHandleError::EntryDoesNotExist,
+                fail!(from self, with EntryHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key exists.", msg);
             }
         };
@@ -212,41 +238,34 @@ impl<
             .entries[index];
 
         // check if ValueType matches
-        if TypeDetail::new::<ValueType>(TypeVariant::FixedSize) != entry.type_details {
-            fail!(from self, with ReaderHandleError::EntryDoesNotExist,
+        if *type_details != entry.type_details {
+            fail!(from self, with EntryHandleError::EntryDoesNotExist,
                 "{} since no entry with the given key and value type exists.", msg);
         }
 
         let offset = entry.offset.load(core::sync::atomic::Ordering::Relaxed);
-        let atomic = (self
-            .shared_state
-            .service_state
-            .additional_resource
-            .data
-            .payload_start_address() as u64
-            + offset) as *const UnrestrictedAtomic<ValueType>;
 
-        Ok(ReaderHandle::new(self.shared_state.clone(), atomic, offset))
+        Ok(offset)
     }
 }
 
-/// Defines a failure that can occur when a [`ReaderHandle`] is created with [`Reader::entry()`].
+/// Defines a failure that can occur when a [`EntryHandle`] is created with [`Reader::entry()`].
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum ReaderHandleError {
+pub enum EntryHandleError {
     /// The entry with the given key and value type does not exist.
     EntryDoesNotExist,
 }
 
-impl core::fmt::Display for ReaderHandleError {
+impl core::fmt::Display for EntryHandleError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        std::write!(f, "ReaderHandleError::{self:?}")
+        std::write!(f, "EntryHandleError::{self:?}")
     }
 }
 
-impl core::error::Error for ReaderHandleError {}
+impl core::error::Error for EntryHandleError {}
 
 /// A handle for direct read access to a specific blackboard value.
-pub struct ReaderHandle<
+pub struct EntryHandle<
     Service: service::Service,
     KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
     ValueType: Copy,
@@ -263,14 +282,14 @@ unsafe impl<
         Service: service::Service,
         KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
         ValueType: Copy + 'static,
-    > Send for ReaderHandle<Service, KeyType, ValueType>
+    > Send for EntryHandle<Service, KeyType, ValueType>
 {
 }
 unsafe impl<
         Service: service::Service,
         KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
         ValueType: Copy + 'static,
-    > Sync for ReaderHandle<Service, KeyType, ValueType>
+    > Sync for EntryHandle<Service, KeyType, ValueType>
 {
 }
 
@@ -278,7 +297,7 @@ impl<
         Service: service::Service,
         KeyType: Send + Sync + Eq + Clone + Debug + 'static + Hash + ZeroCopySend,
         ValueType: Copy,
-    > ReaderHandle<Service, KeyType, ValueType>
+    > EntryHandle<Service, KeyType, ValueType>
 {
     fn new(
         reader_state: Arc<ReaderSharedState<Service, KeyType>>,
@@ -306,13 +325,71 @@ impl<
     /// #     .create()?;
     /// #
     /// # let reader = service.reader_builder().create()?;
-    /// # let reader_handle = reader.entry::<i32>(&1)?;
-    /// let value = reader_handle.get();
+    /// # let entry_handle = reader.entry::<i32>(&1)?;
+    /// let value = entry_handle.get();
     /// # Ok(())
     /// # }
     /// ```
     pub fn get(&self) -> ValueType {
         unsafe { (*self.atomic).load() }
+    }
+
+    /// Returns an ID corresponding to the entry which can be used in an event based communication
+    /// setup.
+    pub fn entry_id(&self) -> EventId {
+        self.entry_id
+    }
+}
+
+// TODO [#817] replace u64 with CustomKeyMarker
+impl<Service: service::Service> Reader<Service, u64> {
+    #[doc(hidden)]
+    pub fn __internal_entry(
+        &self,
+        key: &u64,
+        type_details: &TypeDetail,
+    ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
+        let msg = "Unable to create entry handle";
+        let offset = self.get_entry_offset(key, type_details, msg)?;
+
+        let atomic_mgmt_ptr = (self
+            .shared_state
+            .service_state
+            .additional_resource
+            .data
+            .payload_start_address() as u64
+            + offset) as *const UnrestrictedAtomicMgmt;
+
+        let data_ptr = atomic_mgmt_ptr as usize + core::mem::size_of::<UnrestrictedAtomicMgmt>();
+        let data_ptr = align(data_ptr, type_details.alignment);
+
+        Ok(__InternalEntryHandle {
+            atomic_mgmt_ptr,
+            data_ptr: data_ptr as *const u8,
+            entry_id: EventId::new(offset as _),
+            _shared_state: self.shared_state.clone(),
+        })
+    }
+}
+
+/// A handle for direct read access to a specific blackboard value. Used for the language bindings
+/// where key and value type cannot be passed as generic.
+#[doc(hidden)]
+pub struct __InternalEntryHandle<Service: service::Service> {
+    atomic_mgmt_ptr: *const UnrestrictedAtomicMgmt,
+    data_ptr: *const u8,
+    entry_id: EventId,
+    _shared_state: Arc<ReaderSharedState<Service, u64>>,
+}
+
+impl<Service: service::Service> __InternalEntryHandle<Service> {
+    /// Stores a copy of the value in `value_ptr`.
+    ///
+    /// # Safety
+    ///
+    ///   * see Safety section of core::ptr::copy_nonoverlapping
+    pub unsafe fn get(&self, value_ptr: *mut u8, value_size: usize, value_alignment: usize) {
+        (&*self.atomic_mgmt_ptr).load(value_ptr, value_size, value_alignment, self.data_ptr);
     }
 
     /// Returns an ID corresponding to the entry which can be used in an event based communication

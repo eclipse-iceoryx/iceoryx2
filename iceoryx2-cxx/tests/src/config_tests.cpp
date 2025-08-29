@@ -399,4 +399,20 @@ TEST(Config, defaults_request_response_enable_fire_and_forget_requests) {
     config.defaults().request_response().set_enable_fire_and_forget_requests(false);
     ASSERT_THAT(config.defaults().request_response().enable_fire_and_forget_requests(), Eq(false));
 }
+
+TEST(Config, defaults_blackboard_max_nodes) {
+    const auto test_value = 10;
+    auto config = Config();
+
+    config.defaults().blackboard().set_max_nodes(test_value);
+    ASSERT_THAT(config.defaults().blackboard().max_nodes(), Eq(test_value));
+}
+
+TEST(Config, defaults_blackboard_max_subscribers) {
+    const auto test_value = 13;
+    auto config = Config();
+
+    config.defaults().blackboard().set_max_readers(test_value);
+    ASSERT_THAT(config.defaults().blackboard().max_readers(), Eq(test_value));
+}
 } // namespace

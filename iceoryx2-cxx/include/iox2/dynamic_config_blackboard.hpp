@@ -53,9 +53,9 @@ class DynamicConfigBlackboard {
     template <ServiceType, typename>
     friend class PortFactoryBlackboard;
 
-    explicit DynamicConfigBlackboard(/*iox2_port_factory_blackboard_h handle*/);
+    explicit DynamicConfigBlackboard(iox2_port_factory_blackboard_h handle);
 
-    // iox2_port_factory_blackboard_h m_handle = nullptr;
+    iox2_port_factory_blackboard_h m_handle = nullptr;
 };
 } // namespace iox2
 

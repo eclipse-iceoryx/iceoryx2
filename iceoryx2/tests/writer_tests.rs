@@ -15,6 +15,7 @@ mod writer {
     use core::sync::atomic::{AtomicU64, Ordering};
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
+    use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
@@ -45,8 +46,8 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let writer_handle = writer.entry::<u64>(&0);
-        assert_that!(writer_handle, is_ok);
+        let entry_handle_mut = writer.entry::<u64>(&0);
+        assert_that!(entry_handle_mut, is_ok);
     }
 
     #[test]
@@ -63,11 +64,11 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let writer_handle = writer.entry::<u64>(&9);
-        assert_that!(writer_handle, is_err);
+        let entry_handle_mut = writer.entry::<u64>(&9);
+        assert_that!(entry_handle_mut, is_err);
         assert_that!(
-            writer_handle.err().unwrap(),
-            eq WriterHandleError::EntryDoesNotExist
+            entry_handle_mut.err().unwrap(),
+            eq EntryHandleMutError::EntryDoesNotExist
         );
     }
 
@@ -85,16 +86,16 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let writer_handle = writer.entry::<i64>(&0);
-        assert_that!(writer_handle, is_err);
+        let entry_handle_mut = writer.entry::<i64>(&0);
+        assert_that!(entry_handle_mut, is_err);
         assert_that!(
-            writer_handle.err().unwrap(),
-            eq WriterHandleError::EntryDoesNotExist
+            entry_handle_mut.err().unwrap(),
+            eq EntryHandleMutError::EntryDoesNotExist
         );
     }
 
     #[test]
-    fn writer_handle_cannot_be_acquired_twice<Sut: Service>() {
+    fn entry_handle_mut_cannot_be_acquired_twice<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -107,22 +108,22 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let writer_handle1 = writer.entry::<u64>(&0);
-        assert_that!(writer_handle1, is_ok);
-        let writer_handle2 = writer.entry::<u64>(&0);
-        assert_that!(writer_handle2, is_err);
+        let entry_handle_mut1 = writer.entry::<u64>(&0);
+        assert_that!(entry_handle_mut1, is_ok);
+        let entry_handle_mut2 = writer.entry::<u64>(&0);
+        assert_that!(entry_handle_mut2, is_err);
         assert_that!(
-            writer_handle2.err().unwrap(),
-            eq WriterHandleError::HandleAlreadyExists
+            entry_handle_mut2.err().unwrap(),
+            eq EntryHandleMutError::HandleAlreadyExists
         );
 
-        drop(writer_handle1);
-        let writer_handle2 = writer.entry::<u64>(&0);
-        assert_that!(writer_handle2, is_ok);
+        drop(entry_handle_mut1);
+        let entry_handle_mut2 = writer.entry::<u64>(&0);
+        assert_that!(entry_handle_mut2, is_ok);
     }
 
     #[test]
-    fn writer_handle_prevents_another_writer<Sut: Service>() {
+    fn entry_handle_mut_prevents_another_writer<Sut: Service>() {
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
@@ -135,7 +136,7 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let _writer_handle = writer.entry::<u8>(&0).unwrap();
+        let _entry_handle_mut = writer.entry::<u8>(&0).unwrap();
 
         drop(writer);
 
@@ -160,14 +161,14 @@ mod writer {
             .unwrap();
 
         let writer = sut.writer_builder().create().unwrap();
-        let writer_handle = writer.entry::<u32>(&0).unwrap();
-        let entry_value_uninit = writer_handle.loan_uninit();
+        let entry_handle_mut = writer.entry::<u32>(&0).unwrap();
+        let entry_value_uninit = entry_handle_mut.loan_uninit();
 
         drop(writer);
         drop(sut);
 
         let entry_value = entry_value_uninit.write(333);
-        let _writer_handle = entry_value.update();
+        let _entry_handle_mut = entry_value.update();
     }
 
     #[test]
@@ -214,6 +215,162 @@ mod writer {
         });
 
         assert_that!(counter.load(Ordering::Relaxed), eq 1);
+    }
+
+    // TODO [#817] replace u64 with CustomKeyMarker
+    #[test]
+    fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()
+            .unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+
+        let type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
+        let entry_handle_mut = writer.__internal_entry(&0, &type_details);
+        assert_that!(entry_handle_mut, is_ok);
+    }
+
+    // TODO [#817] replace u64 with CustomKeyMarker
+    #[test]
+    fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()
+            .unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+
+        let type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
+        let entry_handle_mut = writer.__internal_entry(&9, &type_details);
+        assert_that!(entry_handle_mut, is_err);
+        assert_that!(
+            entry_handle_mut.err().unwrap(),
+            eq EntryHandleMutError::EntryDoesNotExist
+        );
+    }
+
+    // TODO [#817] replace u64 with CustomKeyMarker
+    #[test]
+    fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()
+            .unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+
+        let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
+        let entry_handle_mut = writer.__internal_entry(&0, &type_details);
+        assert_that!(entry_handle_mut, is_err);
+        assert_that!(
+            entry_handle_mut.err().unwrap(),
+            eq EntryHandleMutError::EntryDoesNotExist
+        );
+    }
+
+    // TODO [#817] replace u64 with CustomKeyMarker
+    #[test]
+    fn entry_handle_mut_cannot_be_acquired_twice_with_custom_key_type<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u64>(0, 0)
+            .create()
+            .unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+
+        let type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
+        let entry_handle_mut1 = writer.__internal_entry(&0, &type_details);
+        assert_that!(entry_handle_mut1, is_ok);
+        let entry_handle_mut2 = writer.__internal_entry(&0, &type_details);
+        assert_that!(entry_handle_mut2, is_err);
+        assert_that!(
+            entry_handle_mut2.err().unwrap(),
+            eq EntryHandleMutError::HandleAlreadyExists
+        );
+
+        drop(entry_handle_mut1);
+        let entry_handle_mut2 = writer.__internal_entry(&0, &type_details);
+        assert_that!(entry_handle_mut2, is_ok);
+    }
+
+    // TODO [#817] replace u64 with CustomKeyMarker
+    #[test]
+    fn entry_handle_mut_prevents_another_writer_with_custom_key_type<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u8>(0, 0)
+            .create()
+            .unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+
+        let type_details = TypeDetail::new::<u8>(TypeVariant::FixedSize);
+        let _entry_handle_mut = writer.__internal_entry(&0, &type_details);
+
+        drop(writer);
+
+        let res = sut.writer_builder().create();
+        assert_that!(res, is_err);
+        assert_that!(res.err().unwrap(), eq WriterCreateError::ExceedsMaxSupportedWriters);
+    }
+
+    // TODO [#817] replace u64 with CustomKeyMarker
+    #[test]
+    fn entry_value_can_still_be_used_after_every_previous_service_state_owner_was_dropped_with_custom_key_type<
+        Sut: Service,
+    >() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u64>()
+            .add::<u32>(0, 0)
+            .create()
+            .unwrap();
+        let writer = sut.writer_builder().create().unwrap();
+
+        let type_details = TypeDetail::new::<u32>(TypeVariant::FixedSize);
+        let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
+
+        let entry_value_uninit =
+            entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
+
+        drop(writer);
+        drop(sut);
+
+        let write_ptr = entry_value_uninit.write_cell();
+        unsafe {
+            *write_ptr = 8;
+        }
+        let _entry_handle_mut = entry_value_uninit.update();
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

@@ -10,14 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_READER_HANDLE_ERROR_HPP
-#define IOX2_READER_HANDLE_ERROR_HPP
+#ifndef IOX2_ENTRY_HANDLE_ERROR_HPP
+#define IOX2_ENTRY_HANDLE_ERROR_HPP
 
 #include <cstdint>
 
 namespace iox2 {
-/// Defines a failure that can occur when a [`ReaderHandle`] is created with [`Reader::entry()`].
-enum class ReaderHandleError : uint8_t {
+/// Defines a failure that can occur when a [`EntryHandle`] is created with [`Reader::entry()`].
+enum class EntryHandleError : uint8_t {
     /// The entry with the given key and value type does not exist.
     EntryDoesNotExist,
 };

@@ -13,23 +13,34 @@
 #include "iox2/reader_details.hpp"
 
 namespace iox2 {
-ReaderDetailsView::ReaderDetailsView(/*iox2_reader_details_ptr handle*/) {
-    IOX_TODO();
+ReaderDetailsView::ReaderDetailsView(iox2_reader_details_ptr handle)
+    : m_handle { handle } {
 }
 
-ReaderDetailsView::ReaderDetailsView([[maybe_unused]] ReaderDetailsView&& rhs) noexcept {
-    IOX_TODO();
+ReaderDetailsView::ReaderDetailsView(ReaderDetailsView&& rhs) noexcept
+    : m_handle { std::move(rhs.m_handle) } {
+    rhs.m_handle = nullptr;
 }
 
-auto ReaderDetailsView::operator=([[maybe_unused]] ReaderDetailsView&& rhs) noexcept -> ReaderDetailsView& {
-    IOX_TODO();
+auto ReaderDetailsView::operator=(ReaderDetailsView&& rhs) noexcept -> ReaderDetailsView& {
+    if (this != &rhs) {
+        m_handle = rhs.m_handle;
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 auto ReaderDetailsView::reader_id() const -> UniqueReaderId {
-    IOX_TODO();
+    iox2_unique_reader_id_h id_handle = nullptr;
+    iox2_reader_details_reader_id(m_handle, nullptr, &id_handle);
+    return UniqueReaderId { id_handle };
 }
 
 auto ReaderDetailsView::node_id() const -> NodeId {
-    IOX_TODO();
+    const auto* node_id_ptr = iox2_reader_details_node_id(m_handle);
+    iox2_node_id_h id_handle = nullptr;
+    iox2_node_id_clone_from_ptr(nullptr, node_id_ptr, &id_handle);
+    return NodeId(id_handle);
 }
 } // namespace iox2

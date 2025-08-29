@@ -658,8 +658,6 @@ pub unsafe extern "C" fn iox2_service_builder_event_set_max_listeners(
     }
 }
 
-// TODO [#210] add all the other setter methods
-
 /// Opens an event service or creates the service if it does not exist and returns a port factory to create notifiers and listeners.
 ///
 /// # Arguments

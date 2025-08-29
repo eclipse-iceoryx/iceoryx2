@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_READER_HANDLE_HPP
-#define IOX2_READER_HANDLE_HPP
+#ifndef IOX2_ENTRY_HANDLE_HPP
+#define IOX2_ENTRY_HANDLE_HPP
 
 #include "iox/assertions_addendum.hpp"
 #include "iox2/event_id.hpp"
@@ -20,14 +20,14 @@
 namespace iox2 {
 /// A handle for direct read access to a specific blackboard value.
 template <ServiceType S, typename KeyType, typename ValueType>
-class ReaderHandle {
+class EntryHandle {
   public:
-    ReaderHandle(ReaderHandle&& rhs) noexcept;
-    auto operator=(ReaderHandle&& rhs) noexcept -> ReaderHandle&;
-    ~ReaderHandle();
+    EntryHandle(EntryHandle&& rhs) noexcept;
+    auto operator=(EntryHandle&& rhs) noexcept -> EntryHandle&;
+    ~EntryHandle();
 
-    ReaderHandle(const ReaderHandle&) = delete;
-    auto operator=(const ReaderHandle&) -> ReaderHandle& = delete;
+    EntryHandle(const EntryHandle&) = delete;
+    auto operator=(const EntryHandle&) -> EntryHandle& = delete;
 
     /// Returns a copy of the value.
     auto get() const -> ValueType;
@@ -37,46 +37,65 @@ class ReaderHandle {
     auto entry_id() const -> EventId;
 
   private:
-    explicit ReaderHandle(/*iox2_reader_handle_h handle*/);
+    template <ServiceType, typename>
+    friend class Reader;
+
+    explicit EntryHandle(iox2_entry_handle_h handle);
     void drop();
 
-    // iox2_reader_handle_h m_handle = nullptr;
+    iox2_entry_handle_h m_handle = nullptr;
 };
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline ReaderHandle<S, KeyType, ValueType>::ReaderHandle(/*iox2_reader_handle_h handle*/) {
-    IOX_TODO();
+inline EntryHandle<S, KeyType, ValueType>::EntryHandle(iox2_entry_handle_h handle)
+    : m_handle { handle } {
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline void ReaderHandle<S, KeyType, ValueType>::drop() {
-    IOX_TODO();
+inline void EntryHandle<S, KeyType, ValueType>::drop() {
+    if (m_handle != nullptr) {
+        iox2_entry_handle_drop(m_handle);
+        m_handle = nullptr;
+    }
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline ReaderHandle<S, KeyType, ValueType>::ReaderHandle(ReaderHandle&& rhs) noexcept {
+inline EntryHandle<S, KeyType, ValueType>::EntryHandle(EntryHandle&& rhs) noexcept {
     *this = std::move(rhs);
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto ReaderHandle<S, KeyType, ValueType>::operator=([[maybe_unused]] ReaderHandle&& rhs) noexcept
-    -> ReaderHandle& {
-    IOX_TODO();
+inline auto EntryHandle<S, KeyType, ValueType>::operator=(EntryHandle&& rhs) noexcept -> EntryHandle& {
+    if (this != &rhs) {
+        drop();
+        m_handle = std::move(rhs.m_handle);
+        rhs.m_handle = nullptr;
+    }
+
+    return *this;
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline ReaderHandle<S, KeyType, ValueType>::~ReaderHandle() {
+inline EntryHandle<S, KeyType, ValueType>::~EntryHandle() {
     drop();
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto ReaderHandle<S, KeyType, ValueType>::entry_id() const -> EventId {
-    IOX_TODO();
+inline auto EntryHandle<S, KeyType, ValueType>::entry_id() const -> EventId {
+    iox2_event_id_t entry_id {};
+
+    iox2_entry_handle_entry_id(&m_handle, &entry_id);
+
+    return EventId { entry_id };
 }
 
 template <ServiceType S, typename KeyType, typename ValueType>
-inline auto ReaderHandle<S, KeyType, ValueType>::get() const -> ValueType {
-    IOX_TODO();
+inline auto EntryHandle<S, KeyType, ValueType>::get() const -> ValueType {
+    ValueType value;
+
+    iox2_entry_handle_get(&m_handle, &value, sizeof(ValueType), alignof(ValueType));
+
+    return value;
 }
 } // namespace iox2
 

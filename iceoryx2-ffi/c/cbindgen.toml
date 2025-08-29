@@ -89,9 +89,11 @@ typedef struct iox2_node_id_ptr_t iox2_node_id_ptr_t;
 typedef struct iox2_node_name_ptr_t iox2_node_name_ptr_t;
 typedef struct iox2_notifier_details_ptr_t iox2_notifier_details_ptr_t;
 typedef struct iox2_publisher_details_ptr_t iox2_publisher_details_ptr_t;
+typedef struct iox2_reader_details_ptr_t iox2_reader_details_ptr_t;
 typedef struct iox2_server_details_ptr_t iox2_server_details_ptr_t;
 typedef struct iox2_service_name_ptr_t iox2_service_name_ptr_t;
 typedef struct iox2_subscriber_details_ptr_t iox2_subscriber_details_ptr_t;
+typedef struct iox2_writer_details_ptr_t iox2_writer_details_ptr_t;
 """
 
 
@@ -163,9 +165,11 @@ renaming_overrides_prefixing = false
 "NodeName" = "iox2_node_name_ptr_t"
 "NotifierDetails" = "iox2_notifier_details_ptr_t"
 "PublisherDetails" = "iox2_publisher_details_ptr_t"
+"ReaderDetails" = "iox2_reader_details_ptr_t"
 "ServerDetails" = "iox2_server_details_ptr_t"
 "ServiceName" = "iox2_service_name_ptr_t"
 "SubscriberDetails" = "iox2_subscriber_details_ptr_t"
+"WriterDetails" = "iox2_writer_details_ptr_t"
 
 [export.pre_body]
 

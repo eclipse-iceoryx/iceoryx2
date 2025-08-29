@@ -38,24 +38,24 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
 
     let writer = service.writer_builder().create()?;
 
-    let writer_handle = writer.entry::<u64>(&0)?;
-    let entry_id = writer_handle.entry_id();
+    let entry_handle_mut = writer.entry::<u64>(&0)?;
+    let entry_id = entry_handle_mut.entry_id();
 
-    let interesting_writer_handle = writer.entry::<u64>(&INTERESTING_KEY)?;
-    let interesting_entry_id = interesting_writer_handle.entry_id();
+    let interesting_entry_handle_mut = writer.entry::<u64>(&INTERESTING_KEY)?;
+    let interesting_entry_id = interesting_entry_handle_mut.entry_id();
 
     // notify with entry id
     let mut counter: u64 = 0;
     while node.wait(CYCLE_TIME).is_ok() {
         counter += 1;
-        interesting_writer_handle.update_with_copy(counter);
+        interesting_entry_handle_mut.update_with_copy(counter);
         notifier.notify_with_custom_event_id(interesting_entry_id)?;
         println!(
             "Trigger event with entry id {}",
             interesting_entry_id.as_value()
         );
 
-        writer_handle.update_with_copy(2 * counter);
+        entry_handle_mut.update_with_copy(2 * counter);
         notifier.notify_with_custom_event_id(entry_id)?;
         println!("Trigger event with entry id {}", entry_id.as_value());
     }
