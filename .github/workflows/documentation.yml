@@ -1,0 +1,454 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, release* ]
+    types: [ opened, ready_for_review, reopened, synchronize ]
+  schedule:
+    # Nightly at 02:00 UTC - prevents artifact expiration
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+
+  changes:
+    if: github.event.pull_request.draft == false || github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      source-code: ${{ steps.filter.outputs.source-code }}
+      api-docs: ${{ steps.filter.outputs.api-docs }}
+      should-run: ${{ steps.should-run.outputs.should-run }}
+    steps:
+      - name: Checkout sources
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Check for changed file types
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+        id: filter
+        with:
+          filters: |
+            source-code:
+              - '**'
+              - '!**/*.md'
+            api-docs:
+              - 'doc/api/**/*'
+
+      - name: Check if should run
+        id: should-run
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" || "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+            echo "Running - scheduled"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+            echo "Running - manual trigger"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if [[ "${{ steps.filter.outputs.source-code }}" == "true" || "${{ steps.filter.outputs.api-docs }}" == "true" ]]; then
+              echo "should-run=true" >> $GITHUB_OUTPUT
+              echo "Running - relevant file changes in PR"
+            else
+              echo "should-run=false" >> $GITHUB_OUTPUT
+              echo "Skipping - no relevant changes in PR"
+            fi
+          else
+            echo "should-run=true" >> $GITHUB_OUTPUT
+            echo "Unknown trigger condition - running by default"
+          fi
+
+  build-api-reference-python:
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 2.1.3
+
+      - name: Build Python Bindings
+        run: |
+          poetry --project iceoryx2-ffi/python install
+          poetry --project iceoryx2-ffi/python build-into-venv
+
+      - name: Build Python API Documentation
+        run: |
+          poetry --project doc/api/python install
+          poetry --project doc/api/python build-docs
+
+      - name: Upload Python Documentation Artifact
+        if: |
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request')
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-api-python-${{ github.sha }}
+          path: doc/api/python/target/html
+          retention-days: 90
+
+  build-api-reference-c:
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Build C Bindings
+        run: |
+          cargo build --release --package iceoryx2-ffi-c
+
+      - name: Build C API Documentation
+        run: |
+          cd doc/api/c && make html && cd -
+
+      - name: Upload C Documentation Artifact
+        if: |
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request')
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-api-c-${{ github.sha }}
+          path: doc/api/c/target/html
+          retention-days: 90
+
+  build-api-reference-cxx:
+    needs: changes
+    if: needs.changes.outputs.should-run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Build C++ API Documentation
+        run: |
+          cd doc/api/cxx && make html && cd -
+
+      - name: Upload C++ Documentation Artifact
+        if: |
+          (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request')
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-api-cxx-${{ github.sha }}
+          path: doc/api/cxx/target/html
+          retention-days: 90
+
+  deploy:
+    if: |
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request')
+    needs: [build-api-reference-python, build-api-reference-c, build-api-reference-cxx]
+    runs-on: ubuntu-latest
+    
+    permissions:
+      pages: write
+      id-token: write
+      actions: read
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Determine version/branch name
+        id: version
+        run: |
+          echo "DEBUG: Event name: ${{ github.event_name }}"
+          echo "DEBUG: GitHub ref: ${{ github.ref }}"
+          echo "DEBUG: GitHub ref name: ${{ github.ref_name }}"
+          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            VERSION="main"
+          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
+            VERSION="main"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            VERSION="main"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="${{ github.ref_name }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying documentation for version: $VERSION"
+
+      - name: Find previous successful deployment
+        id: find-previous
+        run: |
+          echo "Looking for most recent successful Pages deployment..."
+
+          # Find successful runs from this workflow
+          RUNS=$(gh run list \
+            --workflow="${{ github.workflow }}" \
+            --status=success \
+            --limit=20 \
+            --json databaseId)
+
+          FOUND_RUN_ID=""
+
+          for run_id in $(echo "$RUNS" | jq -r '.[].databaseId'); do
+            if [ "$run_id" = "${{ github.run_id }}" ]; then
+              continue
+            fi
+
+            echo "Checking run $run_id for github-pages artifact..."
+            ARTIFACTS=$(gh api "repos/${{ github.repository }}/actions/runs/$run_id/artifacts" --jq '.artifacts[] | select(.name == "github-pages" and .expired == false)')
+
+            if [ -n "$ARTIFACTS" ]; then
+              echo "Found valid github-pages artifact in run $run_id"
+              FOUND_RUN_ID="$run_id"
+              break
+            fi
+          done
+
+          if [ -n "$FOUND_RUN_ID" ]; then
+            echo "Previous deployment found: $FOUND_RUN_ID"
+            echo "run-id=$FOUND_RUN_ID" >> $GITHUB_OUTPUT
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "No previous deployment found, starting fresh"
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Download Python Documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-api-python-${{ github.sha }}
+          path: ./artifacts/python
+
+      - name: Download C Documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-api-c-${{ github.sha }}
+          path: ./artifacts/c
+
+      - name: Download C++ Documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-api-cxx-${{ github.sha }}
+          path: ./artifacts/cxx
+
+      - name: Download existing GitHub Pages deployment
+        if: steps.find-previous.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: ./existing-pages
+          run-id: ${{ steps.find-previous.outputs.run-id }}
+          github-token: ${{ github.token }}
+
+      - name: Prepare artifact for GitHub Pages
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "Preparing Pages with new artifact for version: $VERSION"
+
+          mkdir -p ./staged-pages
+
+          # Extract and copy previous deployment if available
+          if [ "${{ steps.find-previous.outputs.found }}" = "true" ] && [ -f "./existing-pages/artifact.tar" ]; then
+            echo "Extracting previous documentation..."
+            tar -xf ./existing-pages/artifact.tar -C ./staged-pages
+            echo "Using previous documentation as starting point"
+          else
+            echo "No previous documentation found, starting fresh"
+          fi
+
+          # Remove existing docs for this version and create fresh directories
+          echo "Setting up directories for version: $VERSION"
+          rm -rf "./staged-pages/python/$VERSION" "./staged-pages/c/$VERSION" "./staged-pages/cxx/$VERSION" 2>/dev/null || true
+          mkdir -p "./staged-pages/python/$VERSION" "./staged-pages/c/$VERSION" "./staged-pages/cxx/$VERSION"
+
+          # Copy new documentation
+          echo "Installing new documentation for version: $VERSION"
+          cp -r ./artifacts/python/* "./staged-pages/python/$VERSION/"
+          cp -r ./artifacts/c/* "./staged-pages/c/$VERSION/"
+          cp -r ./artifacts/cxx/* "./staged-pages/cxx/$VERSION/"
+
+          # Debug: Show directory structure
+          echo "DEBUG: Directory structure after preparation:"
+          find ./staged-pages -type d | head -20
+
+      - name: Generate landing page
+        run: |
+          # Install tera-cli
+          curl -L https://github.com/chevdor/tera-cli/releases/download/v0.5.0/tera-cli_linux_amd64.deb -o tera-cli.deb
+          sudo dpkg -i tera-cli.deb || sudo apt-get install -f
+          
+          fetch_rust_versions_json() {
+            local versions_array='[{
+              "name": "docs.rs",
+              "url": "https://docs.rs/iceoryx2/latest/iceoryx2/",
+              "isLatest": true
+            }]'
+            
+            echo "$versions_array"
+          }
+          
+          generate_bindings_versions_json() {
+            local lang_path=$1
+            local versions_array="[]"
+            
+            echo "DEBUG: Generating versions for language path: $lang_path" >&2
+            echo "DEBUG: Checking directory: ./staged-pages/$lang_path" >&2
+            
+            if [ -d "./staged-pages/$lang_path" ]; then
+              echo "DEBUG: Directory exists, listing contents:" >&2
+              ls -la "./staged-pages/$lang_path" >&2 || echo "DEBUG: Failed to list directory" >&2
+              
+              echo "[]" > temp_versions.json
+              
+              local all_versions=($(find "./staged-pages/$lang_path" -maxdepth 1 -type d -exec basename {} \; | grep -v "^$(basename "./staged-pages/$lang_path")$" | sort -V))
+              echo "DEBUG: Found versions: ${all_versions[*]}" >&2
+              
+              local sorted_versions=()
+              for v in "${all_versions[@]}"; do
+                if [ "$v" = "main" ]; then
+                  sorted_versions=("main" "${sorted_versions[@]}")
+                else
+                  sorted_versions+=("$v")
+                fi
+              done
+              echo "DEBUG: Sorted versions: ${sorted_versions[*]}" >&2
+              
+              for version in "${sorted_versions[@]}"; do
+                if [ -d "./staged-pages/$lang_path/$version" ]; then
+                  echo "DEBUG: Processing version: $version" >&2
+                  if [ "$version" = "main" ]; then
+                    versions_array=$(jq --argjson new '{
+                      "name": "'$version'",
+                      "url": "'$lang_path'/'$version'/", 
+                      "isLatest": true
+                    }' '. + [$new]' temp_versions.json)
+                  else
+                    versions_array=$(jq --argjson new '{
+                      "name": "'$version'",
+                      "url": "'$lang_path'/'$version'/",
+                      "isLatest": false
+                    }' '. + [$new]' temp_versions.json)
+                  fi
+                  echo "$versions_array" > temp_versions.json
+                  echo "DEBUG: Updated JSON after adding $version:" >&2
+                  cat temp_versions.json >&2
+                else
+                  echo "DEBUG: Directory ./staged-pages/$lang_path/$version does not exist" >&2
+                fi
+              done
+              
+              versions_array=$(cat temp_versions.json)
+              rm -f temp_versions.json
+            else
+              echo "DEBUG: Directory ./staged-pages/$lang_path does not exist" >&2
+            fi
+            
+            echo "DEBUG: Final versions_array for $lang_path: $versions_array" >&2
+            echo "$versions_array"
+          }
+          
+          echo "DEBUG: Calling fetch_rust_versions_json"
+          RUST_VERSIONS=$(fetch_rust_versions_json)
+          echo "DEBUG: RUST_VERSIONS: $RUST_VERSIONS"
+          
+          echo "DEBUG: Calling generate_bindings_versions_json for python"
+          PYTHON_VERSIONS=$(generate_bindings_versions_json 'python')
+          echo "DEBUG: PYTHON_VERSIONS: $PYTHON_VERSIONS"
+          
+          echo "DEBUG: Calling generate_bindings_versions_json for c"
+          C_VERSIONS=$(generate_bindings_versions_json 'c')
+          echo "DEBUG: C_VERSIONS: $C_VERSIONS"
+          
+          echo "DEBUG: Calling generate_bindings_versions_json for cxx"
+          CXX_VERSIONS=$(generate_bindings_versions_json 'cxx')
+          echo "DEBUG: CXX_VERSIONS: $CXX_VERSIONS"
+          
+          echo "DEBUG: Validating JSON with jq:"
+          echo "$RUST_VERSIONS" | jq . && echo "RUST_VERSIONS is valid JSON" || echo "RUST_VERSIONS is invalid JSON"
+          echo "$PYTHON_VERSIONS" | jq . && echo "PYTHON_VERSIONS is valid JSON" || echo "PYTHON_VERSIONS is invalid JSON"
+          echo "$C_VERSIONS" | jq . && echo "C_VERSIONS is valid JSON" || echo "C_VERSIONS is invalid JSON"
+          echo "$CXX_VERSIONS" | jq . && echo "CXX_VERSIONS is valid JSON" || echo "CXX_VERSIONS is invalid JSON"
+          
+          echo "DEBUG: Creating final JSON with jq"
+          jq -n \
+            --arg title "iceoryx2 API Reference" \
+            --arg description "Language bindings for the iceoryx2 zero-copy inter-process communication library" \
+            --arg buildDate "$(date '+%Y-%m-%d %H:%M UTC')" \
+            --argjson pythonVersions "$PYTHON_VERSIONS" \
+            --argjson cVersions "$C_VERSIONS" \
+            --argjson cxxVersions "$CXX_VERSIONS" \
+            --argjson rustVersions "$RUST_VERSIONS" \
+            '{
+              title: $title,
+              description: $description, 
+              buildDate: $buildDate,
+              languages: [
+                {
+                  name: "Rust",
+                  path: "rust",
+                  icon: "Rs",
+                  className: "rust-icon", 
+                  versions: $rustVersions
+                },
+                {
+                  name: "Python",
+                  path: "python",
+                  icon: "Py",
+                  className: "python-icon", 
+                  versions: $pythonVersions
+                },
+                {
+                  name: "C++", 
+                  path: "cxx",
+                  icon: "C++",
+                  className: "cxx-icon",
+                  versions: $cxxVersions
+                },
+                {
+                  name: "C",
+                  path: "c",
+                  icon: "C",
+                  className: "c-icon",
+                  versions: $cVersions
+                }
+              ]
+            }' > context.json
+          
+          echo "DEBUG: Final context.json contents:"
+          cat context.json
+          
+          tera --template doc/api/templates/index.html.tera --out ./staged-pages/index.html context.json
+          cp doc/api/templates/styles.css ./staged-pages/
+
+      - name: Upload artifact to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./staged-pages
+          retention-days: 90
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

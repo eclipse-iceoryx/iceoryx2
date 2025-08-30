@@ -1,0 +1,29 @@
+[project]
+name = "iceoryx2-docs"
+version = "0.6.1"
+description = "API documentation for the Python bindings for iceoryx2"
+requires-python = ">=3.11,<4.0"
+license = "Apache-2.0 OR MIT"
+authors = [
+    {name = "Contributors of eclipse-iceoryx"}
+]
+dependencies = [
+    "sphinx (>=8.2.3,<9.0.0)",
+    "furo (>=2025.7.19,<2026.0.0)"
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.requires-plugins]
+poethepoet = { version = "~0.35.0", extras = ["poetry_plugin"]}
+
+[tool.poe]
+poetry_command = ""
+
+[tool.poe.tasks.build-docs]
+shell = "sphinx-build -M html . target"
