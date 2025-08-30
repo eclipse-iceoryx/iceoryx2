@@ -27,11 +27,19 @@ include(Iceoryx2GTest)
 add_executable(iceoryx2-bb-containers-tests ${TEST_FILES})
 target_sources(iceoryx2-bb-containers-tests
     PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/testing/observable.hpp
+    ${PROJECT_SOURCE_DIR}/src/testing/test_utils.hpp
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/src/testing/observable.cpp
+    ${PROJECT_SOURCE_DIR}/src/testing/test_utils.cpp
+    PRIVATE
     ${PROJECT_SOURCE_DIR}/src/main.cpp
+    ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
 )
-
+target_include_directories(iceoryx2-bb-containers-tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(
     iceoryx2-bb-containers-tests
+    PRIVATE
     iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
     GTest::gtest GTest::gmock
     ${ICEORYX2_SANITIZER_FLAGS}
