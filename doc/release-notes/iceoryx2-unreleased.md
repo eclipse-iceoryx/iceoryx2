@@ -87,6 +87,8 @@
     [#962](https://github.com/eclipse-iceoryx/iceoryx2/issues/962)
 * Set thread priority correctly, not always min value
     [#977](https://github.com/eclipse-iceoryx/iceoryx2/issues/977)
+* Fix provenance in bump allocator and remove implicit Sync impl
+    [#992](https://github.com/eclipse-iceoryx/iceoryx2/issues/992)
 
 ### Refactoring
 
