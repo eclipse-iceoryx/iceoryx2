@@ -148,6 +148,10 @@
 
 * Added brief cross-compile documentation
   [#70](https://github.com/eclipse-iceoryx/iceoryx2/issues/70)
+* Added development documentation for QNX
+  [#847](https://github.com/eclipse-iceoryx/iceoryx2/issues/847)
+* Set up automated documentation builds for C/C++/Python hosted on GitHub Pages
+  [#920](https://github.com/eclipse-iceoryx/iceoryx2/issues/920)
 
 ### New API features
 
