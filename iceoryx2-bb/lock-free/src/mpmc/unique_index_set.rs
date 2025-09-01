@@ -25,7 +25,7 @@
 //!
 //! const CAPACITY: usize = 128;
 //! let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
-//! let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+//! let allocator = BumpAllocator::new(memory.as_mut_ptr());
 //!
 //! let mut index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
 //! unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
@@ -180,7 +180,7 @@ impl Drop for UniqueIndex<'_> {
 ///
 /// const CAPACITY: usize = 128;
 /// let mut memory = [0u8; UniqueIndexSet::const_memory_size(CAPACITY)];
-/// let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+/// let allocator = BumpAllocator::new(memory.as_mut_ptr());
 ///
 /// let mut index_set = unsafe { UniqueIndexSet::new_uninit(CAPACITY) };
 /// unsafe { index_set.init(&allocator) }.expect("failed to allocate enough memory");
@@ -215,7 +215,7 @@ impl Drop for UniqueIndex<'_> {
 ///             data: [MaybeUninit::uninit(); UniqueIndexSet::const_memory_size(CAPACITY)]
 ///         };
 ///
-///         let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.data) as usize);
+///         let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
 ///         unsafe {
 ///             new_self.set.init(&allocator).expect("Enough memory provided.")
 ///         };

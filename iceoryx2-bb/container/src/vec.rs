@@ -56,7 +56,7 @@
 //!             vec_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
 //!         };
 //!
-//!         let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.vec_memory) as usize);
+//!         let allocator = BumpAllocator::new(new_self.vec_memory.as_mut_ptr().cast());
 //!         unsafe {
 //!             new_self.vec.init(&allocator).expect("Enough memory provided.")
 //!         };
@@ -77,7 +77,7 @@
 //! const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(VEC_CAPACITY);
 //! let mut memory = [0u8; MEM_SIZE];
 //!
-//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
 //!
 //! let mut vec = unsafe { RelocatableVec::<u128>::new_uninit(VEC_CAPACITY) };
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
