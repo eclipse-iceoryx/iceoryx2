@@ -26,17 +26,17 @@ class Observable {
   public:
     /// Counters keeping track of all operations performed on objects of type Observable.
     static struct Counters {
-        int32_t wasInitialized;     ///< Incremented for each invocation of a constructor other than copy or move.
-        int32_t wasCopyConstructed; ///< Incremented for each invocation of the copy constructor.
-        int32_t wasCopyAssigned;    ///< Incremented for each invocation of the copy assignment operator.
-        int32_t wasMoveConstructed; ///< Incremented for each invocation of the move constructor.
-        int32_t wasMoveAssigned;    ///< Incremented for each invocation of the move assignment operator.
-        int32_t wasDestructed;      ///< Incremented for each invocation of the destructor.
-        int32_t totalInstances;     ///< Incremented for each constructor, decremented for each destructor invocation.
-    } s_counter;                    ///< Static counters for Observable.
+        int32_t was_initialized;      ///< Incremented for each invocation of a constructor other than copy or move.
+        int32_t was_copy_constructed; ///< Incremented for each invocation of the copy constructor.
+        int32_t was_copy_assigned;    ///< Incremented for each invocation of the copy assignment operator.
+        int32_t was_move_constructed; ///< Incremented for each invocation of the move constructor.
+        int32_t was_move_assigned;    ///< Incremented for each invocation of the move assignment operator.
+        int32_t was_destructed;       ///< Incremented for each invocation of the destructor.
+        int32_t total_instances;      ///< Incremented for each constructor, decremented for each destructor invocation.
+    } s_counter;                      ///< Static counters for Observable.
 
     // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes), exposed for testability
-    int32_t id; ///< Id of this object. Ids propagate on copy/move construction and assignment.
+    int32_t id = 0; ///< Id of this object. Ids propagate on copy/move construction and assignment.
 
     /// Sets all counters in s_counter to 0.
     static void reset_all_counters();
@@ -53,7 +53,7 @@ class Observable {
 /// A fixture that asserts that no instances of Observable were leaked after the completion of a test.
 class DetectLeakedObservablesFixture : public ::testing::Test {
   private:
-    bool m_is_armed;
+    bool m_is_armed = true;
 
   public:
     DetectLeakedObservablesFixture();
