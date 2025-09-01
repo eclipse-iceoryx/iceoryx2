@@ -13,6 +13,7 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_TESTING_TEST_UTILS_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_TESTING_TEST_UTILS_HPP
 
+#include <cstdint>
 #include <type_traits>
 
 namespace iox2 {
@@ -41,10 +42,10 @@ void opaque_use(T const& object) {
 // a side-effect to make it detectable during testing.
 class CustomAddressOperator {
   public:
-    static int s_count_address_operator;
+    static int32_t s_count_address_operator;
 
     // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes), exposed for testability
-    int id = 0;
+    int32_t id = 0;
 
     auto operator&() -> CustomAddressOperator* {
         ++s_count_address_operator;

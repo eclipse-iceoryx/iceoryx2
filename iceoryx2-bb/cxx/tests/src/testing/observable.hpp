@@ -15,6 +15,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
+
 namespace iox2 {
 namespace container {
 namespace testing {
@@ -24,23 +26,23 @@ class Observable {
   public:
     /// Counters keeping track of all operations performed on objects of type Observable.
     static struct Counters {
-        int wasInitialized;     ///< Incremented for each invocation of a constructor other than copy or move.
-        int wasCopyConstructed; ///< Incremented for each invocation of the copy constructor.
-        int wasCopyAssigned;    ///< Incremented for each invocation of the copy assignment operator.
-        int wasMoveConstructed; ///< Incremented for each invocation of the move constructor.
-        int wasMoveAssigned;    ///< Incremented for each invocation of the move assignment operator.
-        int wasDestructed;      ///< Incremented for each invocation of the destructor.
-        int totalInstances;     ///< Incremented for each constructor, decremented for each destructor invocation.
-    } s_counter;                ///< Static counters for Observable.
+        int32_t wasInitialized;     ///< Incremented for each invocation of a constructor other than copy or move.
+        int32_t wasCopyConstructed; ///< Incremented for each invocation of the copy constructor.
+        int32_t wasCopyAssigned;    ///< Incremented for each invocation of the copy assignment operator.
+        int32_t wasMoveConstructed; ///< Incremented for each invocation of the move constructor.
+        int32_t wasMoveAssigned;    ///< Incremented for each invocation of the move assignment operator.
+        int32_t wasDestructed;      ///< Incremented for each invocation of the destructor.
+        int32_t totalInstances;     ///< Incremented for each constructor, decremented for each destructor invocation.
+    } s_counter;                    ///< Static counters for Observable.
 
     // NOLINTNEXTLINE(misc-non-private-member-variables-in-classes), exposed for testability
-    int id; ///< Id of this object. Ids propagate on copy/move construction and assignment.
+    int32_t id; ///< Id of this object. Ids propagate on copy/move construction and assignment.
 
     /// Sets all counters in s_counter to 0.
     static void reset_all_counters();
 
     Observable();
-    explicit Observable(int object_id);
+    explicit Observable(int32_t object_id);
     ~Observable();
     Observable(Observable const& rhs);
     Observable(Observable&& rhs) noexcept;

@@ -32,7 +32,7 @@ Observable::Observable()
     ++s_counter.totalInstances;
 }
 
-Observable::Observable(int object_id)
+Observable::Observable(int32_t object_id)
     : Observable() {
     id = object_id;
 }

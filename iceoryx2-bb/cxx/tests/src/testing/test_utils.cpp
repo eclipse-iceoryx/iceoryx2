@@ -21,7 +21,7 @@ void opaque_use(void* /* object */) {
 void opaque_use(void const* /* object */) {
 }
 
-int CustomAddressOperator::s_count_address_operator = 0;
+int32_t CustomAddressOperator::s_count_address_operator = 0;
 
 } // namespace testing
 } // namespace container
