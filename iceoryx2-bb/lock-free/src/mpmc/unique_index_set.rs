@@ -548,7 +548,7 @@ impl<const CAPACITY: usize> FixedSizeUniqueIndexSet<CAPACITY> {
             next_free_index_plus_one: UnsafeCell::new(capacity as u32 + 1),
         };
 
-        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.next_free_index) as usize);
+        let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());
         unsafe {
             new_self
                 .state

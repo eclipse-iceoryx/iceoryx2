@@ -456,7 +456,7 @@ impl<T: Copy + Debug, const CAPACITY: usize> Default for FixedSizeContainer<T, C
             data: core::array::from_fn(|_| UnsafeCell::new(MaybeUninit::uninit())),
         };
 
-        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.next_free_index) as usize);
+        let allocator = BumpAllocator::new(new_self.next_free_index.as_mut_ptr().cast());
         unsafe {
             new_self
                 .container

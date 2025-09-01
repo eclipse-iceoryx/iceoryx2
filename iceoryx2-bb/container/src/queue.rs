@@ -464,7 +464,7 @@ impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeQueue<T, CAPACITY> 
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(RelocatableQueue::new_uninit(CAPACITY));
 
-        let allocator = BumpAllocator::new(core::ptr::addr_of!((*ptr)._data) as usize);
+        let allocator = BumpAllocator::new((*ptr)._data.as_mut_ptr().cast());
         (*ptr)
             .state
             .init(&allocator)
@@ -479,7 +479,7 @@ impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
             _data: unsafe { MaybeUninit::uninit().assume_init() },
         };
 
-        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self._data) as usize);
+        let allocator = BumpAllocator::new(new_self._data.as_mut_ptr().cast());
         unsafe {
             new_self
                 .state

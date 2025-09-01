@@ -437,7 +437,7 @@ impl<const CAPACITY: usize> FixedSizeSafelyOverflowingIndexQueue<CAPACITY> {
             data_plus_one: UnsafeCell::new(0),
         };
 
-        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.data) as usize);
+        let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
         unsafe {
             new_self
                 .state

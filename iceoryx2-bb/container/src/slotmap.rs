@@ -601,7 +601,7 @@ impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeSlotMap<T, CAPACITY
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(unsafe { RelocatableSlotMap::new_uninit(CAPACITY) });
-        let allocator = BumpAllocator::new(core::ptr::addr_of!((*ptr)._idx_to_data) as usize);
+        let allocator = BumpAllocator::new((*ptr)._idx_to_data.as_mut_ptr().cast());
         (*ptr)
             .state
             .init(&allocator)
@@ -619,7 +619,7 @@ impl<T, const CAPACITY: usize> Default for FixedSizeSlotMap<T, CAPACITY> {
             state: unsafe { RelocatableSlotMap::new_uninit(CAPACITY) },
         };
 
-        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self._idx_to_data) as usize);
+        let allocator = BumpAllocator::new(new_self._idx_to_data.as_mut_ptr().cast());
         unsafe {
             new_self
                 .state

@@ -383,7 +383,7 @@ impl<const CAPACITY: usize> FixedSizeIndexQueue<CAPACITY> {
             data: core::array::from_fn(|_| UnsafeCell::new(0)),
         };
 
-        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.data) as usize);
+        let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
         unsafe {
             new_self
                 .state
