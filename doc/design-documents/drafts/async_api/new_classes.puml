@@ -1,0 +1,56 @@
+package iceoryx2 {
+
+  interface AsyncListenerTrait<Trait> {
+    ' /// Create new instance of async Listener
+    + fn new(listener: iceoryx2::Listener) -> Self;
+    ' /// Returns the [`UniqueListenerId`] of the [`Listener`]
+    + fn id(&self) -> UniqueListenerId;
+    ' /// Returns the deadline of the corresponding [`Service`](crate::service::Service).
+    + fn deadline(&self) -> Option<Duration>;
+    ' /// Async wait for a new [`EventId`]. On error it returns [`AsyncListenerWaitError`] is returned which describes
+    ' /// the error in detail.
+    + fn wait_one(&self) -> impl Future<Output = Result<EventId, AsyncListenerWaitError>>;
+    ' /// Async wait for new [`EventId`]s. Collects all [`EventId`]s that were received and
+    ' /// calls the provided callback is with the [`EventId`] as input argument. This will `await` until callback is called at least once
+    + fn wait_all<F: FnMut(EventId)>(&self, callback: &mut F) -> impl Future<Output = Result<(), AsyncListenerWaitError>>;
+  }
+
+  enum AsyncListenerWaitError {
+    ContractViolation = ListenerWaitError::ContractViolation,
+    InternalFailure = ListenerWaitError::InternalFailure,
+    ...
+  }
+
+
+  class AsyncSubscriber <<Service,Payload,UserHeader, EventListener: AsyncListenerTrait>> {
+      sync_subscriber: iceoryx2::port::subscriber::Subscriber<Service, Payload, UserHeader>,
+      listener: EventListener,
+
+      + API follows as in usual Subscriber ie:
+      + async fn receive(&self) -> Result<Sample<Service, Payload, UserHeader>, AsyncReceiveError>
+
+  }
+
+  class AsyncConnector<Trait> {
+    type ListenerType: AsyncListenerTrait;
+
+  }
+
+  note top of AsyncConnector
+    Let us group external async properties in one place.
+    This will come in handy if it happens
+    that we need to know more unknown types that depend on runtime implementation.
+    Good example can be `Sleep`.
+  end note
+
+}
+
+package "Some Runtime / Runtime Adapter Crate" {
+
+  class AsyncListener {
+    - listener: iceoryx2::Listener
+  }
+
+  AsyncListener ..|> AsyncListenerTrait
+  AsyncSubscriber --> AsyncListenerTrait
+}
