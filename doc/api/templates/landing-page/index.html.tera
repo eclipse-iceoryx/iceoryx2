@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }}</title>
+    <title>iceoryx2 :: API Reference Index</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,7 @@
     <main class="main-content">
         <div class="content-wrapper">
             <header class="page-header">
-                <h1 class="page-title">iceoryx2 API Reference</h1>
+                <h1 class="page-title">iceoryx2 :: API Reference Index</h1>
                 <p class="page-description">Hook into iceoryx2 from any language, interoperate with all languages.</p>
                 
                 <div class="header-badges">

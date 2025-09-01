@@ -423,16 +423,12 @@ jobs:
           CXX_VERSIONS=$(generate_bindings_versions_json 'cxx')
           
           jq -n \
-            --arg title "iceoryx2 :: API Reference" \
-            --arg description "Language bindings for the iceoryx2 zero-copy inter-process communication library" \
             --arg buildDate "$(date '+%Y-%m-%d %H:%M UTC')" \
             --argjson pythonVersions "$PYTHON_VERSIONS" \
             --argjson cVersions "$C_VERSIONS" \
             --argjson cxxVersions "$CXX_VERSIONS" \
             --argjson rustVersions "$RUST_VERSIONS" \
             '{
-              title: $title,
-              description: $description, 
               buildDate: $buildDate,
               languages: [
                 {
