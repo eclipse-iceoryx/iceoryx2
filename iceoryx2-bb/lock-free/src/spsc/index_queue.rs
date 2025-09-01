@@ -43,14 +43,15 @@
 //! ```
 
 use core::{alloc::Layout, cell::UnsafeCell, fmt::Debug, sync::atomic::Ordering};
-
+use iceoryx2_bb_elementary::math::unaligned_mem_size;
 use iceoryx2_bb_elementary::{bump_allocator::BumpAllocator, relocatable_ptr::RelocatablePointer};
 use iceoryx2_bb_elementary_traits::{
     owning_pointer::OwningPointer, pointer_trait::PointerTrait,
     relocatable_container::RelocatableContainer,
 };
 use iceoryx2_bb_log::{fail, fatal_panic};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 /// The [`Producer`] of the [`IndexQueue`]/[`FixedSizeIndexQueue`] which can add values to it
 /// via [`Producer::push()`].
@@ -96,9 +97,6 @@ pub type IndexQueue = details::IndexQueue<OwningPointer<UnsafeCell<u64>>>;
 pub type RelocatableIndexQueue = details::IndexQueue<RelocatablePointer<UnsafeCell<u64>>>;
 
 pub mod details {
-    use core::fmt::Debug;
-
-    use iceoryx2_bb_elementary::math::unaligned_mem_size;
 
     use super::*;
 
@@ -109,8 +107,8 @@ pub mod details {
     pub struct IndexQueue<PointerType: PointerTrait<UnsafeCell<u64>>> {
         data_ptr: PointerType,
         capacity: usize,
-        write_position: IoxAtomicUsize,
-        read_position: IoxAtomicUsize,
+        write_position: IoxAtomicU64,
+        read_position: IoxAtomicU64,
         pub(super) has_producer: IoxAtomicBool,
         pub(super) has_consumer: IoxAtomicBool,
         is_memory_initialized: IoxAtomicBool,
@@ -130,8 +128,8 @@ pub mod details {
             Self {
                 data_ptr,
                 capacity,
-                write_position: IoxAtomicUsize::new(0),
-                read_position: IoxAtomicUsize::new(0),
+                write_position: IoxAtomicU64::new(0),
+                read_position: IoxAtomicU64::new(0),
                 has_producer: IoxAtomicBool::new(true),
                 has_consumer: IoxAtomicBool::new(true),
                 is_memory_initialized: IoxAtomicBool::new(true),
@@ -144,8 +142,8 @@ pub mod details {
             Self {
                 data_ptr: RelocatablePointer::new_uninit(),
                 capacity,
-                write_position: IoxAtomicUsize::new(0),
-                read_position: IoxAtomicUsize::new(0),
+                write_position: IoxAtomicU64::new(0),
+                read_position: IoxAtomicU64::new(0),
                 has_producer: IoxAtomicBool::new(true),
                 has_consumer: IoxAtomicBool::new(true),
                 is_memory_initialized: IoxAtomicBool::new(false),
@@ -196,8 +194,12 @@ pub mod details {
             unaligned_mem_size::<UnsafeCell<u64>>(capacity)
         }
 
-        unsafe fn at(&self, position: usize) -> *mut u64 {
-            (*self.data_ptr.as_ptr().add(position % self.capacity)).get()
+        unsafe fn at(&self, position: u64) -> *mut u64 {
+            (*self
+                .data_ptr
+                .as_ptr()
+                .add((position % self.capacity as u64) as usize))
+            .get()
         }
 
         /// Acquires the [`Producer`] of the [`IndexQueue`]. This is threadsafe and lock-free without
@@ -272,7 +274,7 @@ pub mod details {
         pub unsafe fn push(&self, value: u64) -> bool {
             let write_position = self.write_position.load(Ordering::Relaxed);
             let is_full =
-                write_position == self.read_position.load(Ordering::Relaxed) + self.capacity;
+                write_position == self.read_position.load(Ordering::Relaxed) + self.capacity as u64;
 
             if is_full {
                 return false;
@@ -314,7 +316,7 @@ pub mod details {
             Some(value)
         }
 
-        fn acquire_read_and_write_position(&self) -> (usize, usize) {
+        fn acquire_read_and_write_position(&self) -> (u64, u64) {
             loop {
                 let write_position = self.write_position.load(Ordering::Relaxed);
                 let read_position = self.read_position.load(Ordering::Relaxed);
@@ -340,7 +342,7 @@ pub mod details {
         ///       could be out-of-date as soon as it is acquired.
         pub fn len(&self) -> usize {
             let (write_position, read_position) = self.acquire_read_and_write_position();
-            write_position - read_position
+            (write_position - read_position) as usize
         }
 
         /// Returns the capacity of the [`IndexQueue`].
@@ -353,7 +355,7 @@ pub mod details {
         ///       could be out-of-date as soon as it is acquired.
         pub fn is_full(&self) -> bool {
             let (write_position, read_position) = self.acquire_read_and_write_position();
-            write_position == read_position + self.capacity
+            write_position == read_position + self.capacity as u64
         }
     }
 }

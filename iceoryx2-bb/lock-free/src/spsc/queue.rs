@@ -43,7 +43,7 @@
 //! ```
 
 use core::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::Ordering};
-use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicUsize};
+use iceoryx2_pal_concurrency_sync::iox_atomic::{IoxAtomicBool, IoxAtomicU64};
 
 /// The [`Producer`] of the [`Queue`] which can add values to it via [`Producer::push()`].
 pub struct Producer<'a, T: Copy, const CAPACITY: usize> {
@@ -84,8 +84,8 @@ impl<T: Copy, const CAPACITY: usize> Drop for Consumer<'_, T, CAPACITY> {
 /// The threadsafe lock-free with a compile time fixed capacity.
 pub struct Queue<T: Copy, const CAPACITY: usize> {
     data: [UnsafeCell<MaybeUninit<T>>; CAPACITY],
-    write_position: IoxAtomicUsize,
-    read_position: IoxAtomicUsize,
+    write_position: IoxAtomicU64,
+    read_position: IoxAtomicU64,
     has_producer: IoxAtomicBool,
     has_consumer: IoxAtomicBool,
 }
@@ -97,8 +97,8 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     pub fn new() -> Self {
         Self {
             data: core::array::from_fn(|_| UnsafeCell::new(MaybeUninit::uninit())),
-            write_position: IoxAtomicUsize::new(0),
-            read_position: IoxAtomicUsize::new(0),
+            write_position: IoxAtomicU64::new(0),
+            read_position: IoxAtomicU64::new(0),
             has_producer: IoxAtomicBool::new(true),
             has_consumer: IoxAtomicBool::new(true),
         }
@@ -178,7 +178,7 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
         }
 
         unsafe {
-            self.data[current_write_pos % CAPACITY]
+            self.data[(current_write_pos % (CAPACITY as u64)) as usize]
                 .get()
                 .write(MaybeUninit::new(*t));
         }
@@ -212,7 +212,7 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
         }
 
         let out: T = unsafe {
-            *self.data[current_read_pos % CAPACITY]
+            *self.data[(current_read_pos % (CAPACITY as u64)) as usize]
                 .get()
                 .as_ref()
                 .unwrap()
@@ -231,7 +231,7 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
         Some(out)
     }
 
-    fn acquire_read_and_write_position(&self) -> (usize, usize) {
+    fn acquire_read_and_write_position(&self) -> (u64, u64) {
         loop {
             let write_position = self.write_position.load(Ordering::Relaxed);
             let read_position = self.read_position.load(Ordering::Relaxed);
@@ -253,7 +253,7 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
     /// Returns the number of elements stored in the queue
     pub fn len(&self) -> usize {
         let (write_position, read_position) = self.acquire_read_and_write_position();
-        write_position - read_position
+        (write_position - read_position) as usize
     }
 
     /// Returns the overall capacity of the queue
@@ -267,8 +267,8 @@ impl<T: Copy, const CAPACITY: usize> Queue<T, CAPACITY> {
         Self::check_is_full(write_position, read_position)
     }
 
-    fn check_is_full(write_pos: usize, read_pos: usize) -> bool {
-        write_pos == read_pos + CAPACITY
+    fn check_is_full(write_pos: u64, read_pos: u64) -> bool {
+        write_pos == read_pos + CAPACITY as u64
     }
 }
 
