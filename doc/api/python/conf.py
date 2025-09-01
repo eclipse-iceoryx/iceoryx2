@@ -34,5 +34,9 @@ extensions = [
 
 html_theme = "furo"
 html_title = "iceoryx2 <br><small style='font-size: 0.7em;'>Python Language Bindings</small>"
-html_theme_options = {
-}
+
+html_static_path = ['_static']
+html_css_files = [
+    'custom.css',
+]
+
