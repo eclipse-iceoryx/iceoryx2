@@ -7,5 +7,5 @@ inter-process communication library.
 
 * [The `iceoryx2` Book](http://ekxide.github.io/iceoryx2-book/index.html)
 * [Rust API Documentation](https://docs.rs/crate/iceoryx2/latest)
-* [C API Documentation](http://eclipse-iceoryx.github.io/iceoryx2/c/index.html)
-* [Python API Documentation](http://eclipse-iceoryx.github.io/iceoryx2/python/index.html)
+* [C API Documentation](http://eclipse-iceoryx.github.io/iceoryx2/c/latest)
+* [Python API Documentation](http://eclipse-iceoryx.github.io/iceoryx2/python/latest)
