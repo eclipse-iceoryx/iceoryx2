@@ -42,8 +42,6 @@ target_include_directories(iceoryx2-bb-containers-cxx
 )
 
 target_compile_features(iceoryx2-bb-containers-cxx INTERFACE cxx_std_14)
-# TODO check if this settings will be propagated to the user; maybe this should only be used for the tests
-target_compile_options(iceoryx2-bb-containers-cxx INTERFACE ${ICEORYX2_CXX_FLAGS} ${ICEORYX2_CXX_WARNINGS})
 target_gdb_pretty_printer(iceoryx2-bb-containers-cxx
     INTERFACE
     ${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx-pretty-printer.py
