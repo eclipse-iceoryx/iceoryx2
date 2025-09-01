@@ -18,39 +18,42 @@ use iceoryx2_bb_testing::assert_that;
 
 #[test]
 fn start_position_is_correctly_used() {
-    const START_POSITION: usize = 918243;
+    let mut memory = [0u8; 8192];
+    let start_position: *mut u8 = memory.as_mut_ptr();
     const MEM_SIZE: usize = 91;
     const MEM_ALIGN: usize = 1;
-    let sut = BumpAllocator::new(START_POSITION as *mut u8);
+    let sut = BumpAllocator::new(start_position);
 
     let memory = sut
         .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
         .unwrap();
 
-    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq START_POSITION);
-    assert_that!(unsafe { memory.as_ref() }.len() as usize, eq MEM_SIZE);
+    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq start_position as usize);
+    assert_that!(unsafe { memory.as_ref() }.len(), eq MEM_SIZE);
 }
 
 #[test]
 fn allocated_memory_is_correctly_aligned() {
-    const START_POSITION: usize = 918243;
+    let mut memory = [0u8; 8192];
+    let start_position: *mut u8 = unsafe { memory.as_mut_ptr().add(1) };
     const MEM_SIZE: usize = 128;
     const MEM_ALIGN: usize = 64;
-    let sut = BumpAllocator::new(START_POSITION as *mut u8);
+    let sut = BumpAllocator::new(start_position);
 
     let memory = sut
         .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
         .unwrap();
 
-    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq align(START_POSITION, MEM_ALIGN));
-    assert_that!(unsafe { memory.as_ref() }.len() as usize, eq MEM_SIZE);
+    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq align(start_position as usize, MEM_ALIGN));
+    assert_that!(unsafe { memory.as_ref() }.len(), eq MEM_SIZE);
 }
 
 #[test]
 fn allocating_many_aligned_chunks_work() {
+    let mut memory = [0u8; 8192];
+    let start_position: *mut u8 = unsafe { memory.as_mut_ptr().add(1) };
     const ITERATIONS: u32 = 5;
-    const START_POSITION: usize = 192874901;
-    let sut = BumpAllocator::new(START_POSITION as *mut u8);
+    let sut = BumpAllocator::new(start_position);
 
     let mut last_size = 0;
     let mut last_position = 0;
@@ -63,7 +66,7 @@ fn allocating_many_aligned_chunks_work() {
 
         let new_position = unsafe { memory.as_ref() }.as_ptr() as usize;
         assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq align(new_position, mem_align));
-        assert_that!(unsafe { memory.as_ref() }.len() as usize, eq mem_size);
+        assert_that!(unsafe { memory.as_ref() }.len(), eq mem_size);
         assert_that!(new_position - last_position, ge last_size);
 
         last_position = new_position;
@@ -73,10 +76,11 @@ fn allocating_many_aligned_chunks_work() {
 
 #[test]
 fn deallocating_releases_everything() {
-    const START_POSITION: usize = 918243;
+    let mut memory = [0u8; 8192];
+    let start_position: *mut u8 = unsafe { memory.as_mut_ptr().add(3) };
     const MEM_SIZE: usize = 128;
     const MEM_ALIGN: usize = 1;
-    let sut = BumpAllocator::new(START_POSITION as *mut u8);
+    let sut = BumpAllocator::new(start_position);
 
     let layout = Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap();
     let mut memory = sut.allocate(layout).unwrap();
@@ -92,6 +96,6 @@ fn deallocating_releases_everything() {
         .allocate(Layout::from_size_align(MEM_SIZE, MEM_ALIGN).unwrap())
         .unwrap();
 
-    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq START_POSITION);
-    assert_that!(unsafe { memory.as_ref() }.len() as usize, eq MEM_SIZE);
+    assert_that!(unsafe { memory.as_ref() }.as_ptr() as usize, eq start_position as usize);
+    assert_that!(unsafe { memory.as_ref() }.len(), eq MEM_SIZE);
 }
