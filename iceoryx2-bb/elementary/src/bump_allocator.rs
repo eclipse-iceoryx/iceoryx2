@@ -17,16 +17,16 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
 /// A minimalistic [`BumpAllocator`].
 pub struct BumpAllocator {
-    start: usize,
+    start: *mut u8,
     pos: IoxAtomicUsize,
 }
 
 impl BumpAllocator {
     /// Creates a new [`BumpAllocator`] that manages the memory starting at `start`.
-    pub fn new(start: usize) -> Self {
+    pub fn new(start: *mut u8) -> Self {
         Self {
             start,
-            pos: IoxAtomicUsize::new(start),
+            pos: IoxAtomicUsize::new(start as usize),
         }
     }
 }
@@ -41,12 +41,15 @@ impl BaseAllocator for BumpAllocator {
 
         unsafe {
             Ok(core::ptr::NonNull::new_unchecked(
-                core::slice::from_raw_parts_mut(mem as *mut u8, layout.size()),
+                core::slice::from_raw_parts_mut(
+                    self.start.add(mem - self.start as usize),
+                    layout.size(),
+                ),
             ))
         }
     }
 
     unsafe fn deallocate(&self, _ptr: core::ptr::NonNull<u8>, _layout: core::alloc::Layout) {
-        self.pos.store(self.start, Ordering::Relaxed);
+        self.pos.store(self.start as usize, Ordering::Relaxed);
     }
 }

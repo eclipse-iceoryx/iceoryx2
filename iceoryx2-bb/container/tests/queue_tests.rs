@@ -22,7 +22,7 @@ mod queue {
     #[test]
     fn relocatable_push_pop_works_with_uninitialized_memory() {
         let mut memory = [0u8; 1024];
-        let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+        let allocator = BumpAllocator::new(memory.as_mut_ptr());
 
         let mut sut = unsafe { RelocatableQueue::<usize>::new_uninit(SUT_CAPACITY) };
         unsafe { assert_that!(sut.init(&allocator), is_ok) };
@@ -51,7 +51,7 @@ mod queue {
     #[test]
     fn relocatable_clear_empties_queue() {
         let mut memory = [0u8; 1024];
-        let allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+        let allocator = BumpAllocator::new(memory.as_mut_ptr());
 
         let mut sut = unsafe { RelocatableQueue::<usize>::new_uninit(SUT_CAPACITY) };
         unsafe { assert_that!(sut.init(&allocator), is_ok) };
@@ -330,7 +330,7 @@ mod queue {
     fn double_init_call_causes_panic() {
         const MEM_SIZE: usize = RelocatableQueue::<usize>::const_memory_size(SUT_CAPACITY);
         let mut memory = [0u8; MEM_SIZE];
-        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
 
         let mut sut = unsafe { RelocatableQueue::<usize>::new_uninit(SUT_CAPACITY) };
         unsafe { sut.init(&bump_allocator).expect("sut init failed") };

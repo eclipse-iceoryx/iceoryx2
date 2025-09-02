@@ -241,7 +241,7 @@ mod slot_map {
     fn double_init_call_causes_panic() {
         const MEM_SIZE: usize = RelocatableSlotMap::<usize>::const_memory_size(SUT_CAPACITY);
         let mut memory = [0u8; MEM_SIZE];
-        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+        let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
 
         let mut sut = unsafe { RelocatableSlotMap::<usize>::new_uninit(SUT_CAPACITY) };
         unsafe { sut.init(&bump_allocator).expect("sut init failed") };

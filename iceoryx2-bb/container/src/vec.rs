@@ -56,7 +56,7 @@
 //!             vec_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
 //!         };
 //!
-//!         let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.vec_memory) as usize);
+//!         let allocator = BumpAllocator::new(new_self.vec_memory.as_mut_ptr().cast());
 //!         unsafe {
 //!             new_self.vec.init(&allocator).expect("Enough memory provided.")
 //!         };
@@ -77,7 +77,7 @@
 //! const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(VEC_CAPACITY);
 //! let mut memory = [0u8; MEM_SIZE];
 //!
-//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr() as usize);
+//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
 //!
 //! let mut vec = unsafe { RelocatableVec::<u128>::new_uninit(VEC_CAPACITY) };
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
@@ -618,7 +618,7 @@ impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeVec<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
         state_ptr.write(unsafe { RelocatableVec::new_uninit(CAPACITY) });
-        let allocator = BumpAllocator::new(core::ptr::addr_of!((*ptr)._data) as usize);
+        let allocator = BumpAllocator::new((*ptr)._data.as_mut_ptr().cast());
         (*ptr)
             .state
             .init(&allocator)
@@ -633,7 +633,7 @@ impl<T, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACITY> {
             _data: core::array::from_fn(|_| MaybeUninit::uninit()),
         };
 
-        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self._data) as usize);
+        let allocator = BumpAllocator::new(new_self._data.as_mut_ptr().cast());
         unsafe {
             new_self
                 .state

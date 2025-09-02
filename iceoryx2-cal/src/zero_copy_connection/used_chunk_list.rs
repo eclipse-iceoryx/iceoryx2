@@ -172,7 +172,7 @@ impl<const CAPACITY: usize> Default for FixedSizeUsedChunkList<CAPACITY> {
             data: core::array::from_fn(|_| IoxAtomicBool::new(false)),
         };
 
-        let allocator = BumpAllocator::new(core::ptr::addr_of!(new_self.data) as usize);
+        let allocator = BumpAllocator::new(new_self.data.as_mut_ptr().cast());
         unsafe {
             new_self
                 .list

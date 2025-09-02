@@ -91,6 +91,8 @@
     [#977](https://github.com/eclipse-iceoryx/iceoryx2/issues/977)
 * Fix 32-bit data corruption issue in lock-free queues
     [#986](https://github.com/eclipse-iceoryx/iceoryx2/issues/986)
+* Fix provenance in bump allocator and remove implicit Sync impl
+    [#992](https://github.com/eclipse-iceoryx/iceoryx2/issues/992)
 
 ### Refactoring
 
