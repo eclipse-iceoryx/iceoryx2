@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef INCLUDE_GUARD_IOX2_CONTAINER_STATIC_VECTOR_HPP
-#define INCLUDE_GUARD_IOX2_CONTAINER_STATIC_VECTOR_HPP
+#ifndef IOX2_INCLUDE_GUARD_CONTAINER_STATIC_VECTOR_HPP
+#define IOX2_INCLUDE_GUARD_CONTAINER_STATIC_VECTOR_HPP
 
 #include "iox2/container/config.hpp"
 #include "iox2/container/optional.hpp"
@@ -27,61 +27,99 @@ namespace iox2 {
 namespace container {
 
 namespace detail {
-    template<typename T, uint64_t N>
-    struct StaticVectorStorage {
-        static_assert(std::is_standard_layout<T>::value, "Storage is only valid for standard layout types.");
+template <typename T, uint64_t N>
+class StaticVectorStorage {
+    // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+    static_assert(std::is_standard_layout<T>::value, "Storage is only valid for standard layout types.");
 
-        alignas(T) char bytes[sizeof(T) * N];
-        uint64_t size;
+  private:
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) raw storage, will not be used as array
+    alignas(T) char m_bytes[sizeof(T) * N];
+    uint64_t m_size;
 
-        constexpr StaticVectorStorage() noexcept
-        :bytes{}, size(0)
-        {}
+  public:
+    constexpr StaticVectorStorage() noexcept
+        : m_bytes {}
+        , m_size(0) {
+    }
 
-        template<size_t M, typename std::enable_if<(N >= M), bool>::type = true>
-        constexpr StaticVectorStorage(StaticVectorStorage<T, M> const& rhs)
-        :bytes{}, size(rhs.size)
-        {
-            for (uint64_t index = 0; index < size; ++index) {
-                new (pointer_from_index(index)) T(*rhs.pointer_from_index(index));
-            }
+    constexpr StaticVectorStorage(StaticVectorStorage const& rhs)
+        : m_bytes {}
+        , m_size(rhs.m_size) {
+        for (uint64_t index = 0; index < m_size; ++index) {
+            new (pointer_from_index(index)) T(*rhs.pointer_from_index(index));
         }
+    }
 
-        template<size_t M, typename std::enable_if<(N >= M), bool>::type = true>
-        constexpr StaticVectorStorage(StaticVectorStorage<T, M>&& rhs)
-        :bytes{}, size(rhs.size)
-        {
-            for (uint64_t index = 0; index < size; ++index) {
-                new (pointer_from_index(index)) T(std::move(*rhs.pointer_from_index(index)));
-            }
+    constexpr StaticVectorStorage(StaticVectorStorage&& rhs) noexcept
+        : m_bytes {}
+        , m_size(rhs.m_size) {
+        for (uint64_t index = 0; index < m_size; ++index) {
+            new (pointer_from_index(index)) T(std::move_if_noexcept(*rhs.pointer_from_index(index)));
         }
+    }
 
-#       if __cplusplus >= 202002L
-        constexpr
-#       endif
+    template <uint64_t M, std::enable_if_t<(N > M), bool> = true>
+    // NOLINTNEXTLINE(hicpp-explicit-conversions), conceptually a copy constructor
+    constexpr StaticVectorStorage(StaticVectorStorage<T, M> const& rhs)
+        : m_bytes {}
+        , m_size(rhs.size()) {
+        for (uint64_t index = 0; index < m_size; ++index) {
+            new (pointer_from_index(index)) T(*rhs.pointer_from_index(index));
+        }
+    }
+
+    template <uint64_t M, std::enable_if_t<(N > M), bool> = true>
+    // NOLINTNEXTLINE(hicpp-explicit-conversions), conceptually a move constructor
+    constexpr StaticVectorStorage(StaticVectorStorage<T, M>&& rhs)
+        : m_bytes {}
+        , m_size(rhs.size()) {
+        for (uint64_t index = 0; index < m_size; ++index) {
+            new (pointer_from_index(index)) T(std::move(*rhs.pointer_from_index(index)));
+        }
+    }
+
+#if __cplusplus >= 202002L
+    constexpr
+#endif
         ~StaticVectorStorage() {
-            for (uint64_t i = size; i != 0; --i) {
-                uint64_t const index = i - 1;
-                pointer_from_index(index)->~T();
-            }
+        for (uint64_t i = m_size; i != 0; --i) {
+            uint64_t const index = i - 1;
+            pointer_from_index(index)->~T();
         }
+    }
 
-        T* pointer_from_index(size_t idx) {
-            return reinterpret_cast<T*>(bytes + idx * sizeof(T));
-        }
+    constexpr auto operator=(StaticVectorStorage const&) -> StaticVectorStorage& = delete;
+    constexpr auto operator=(StaticVectorStorage&&) -> StaticVectorStorage& = delete;
 
-        T const* pointer_from_index(size_t idx) const {
-            return reinterpret_cast<T const*>(bytes + idx * sizeof(T));
-        }
-    };
+    auto constexpr size() const noexcept -> uint64_t {
+        return m_size;
+    }
+
+    constexpr void increment_size() {
+        ++m_size;
+    }
+
+    auto pointer_from_index(uint64_t idx) -> T* {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast), required for storage access
+        return reinterpret_cast<T*>(m_bytes + (idx * sizeof(T)));
+    }
+
+    auto pointer_from_index(uint64_t idx) const -> T const* {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast), required for storage access
+        return reinterpret_cast<T const*>(m_bytes + (idx * sizeof(T)));
+    }
+};
 } // namespace detail
 
 /// A resizable container with compile-time fixed static capacity and contiguous inplace storage.
-template<typename T, uint64_t N>
+template <typename T, uint64_t N>
 class StaticVector {
     static_assert(N > 0, "Static container with capacity 0 is not allowed.");
+    // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
     static_assert(std::is_standard_layout<T>::value, "Containers can only be used with standard layout types.");
-public:
+
+  public:
     using ValueType = T;
     using SizeType = size_t;
     using DifferenceType = ptrdiff_t;
@@ -97,162 +135,181 @@ public:
     // Unchecked element access
     class UncheckedConstAccessor {
         friend class StaticVector;
-    private:
-        StaticVector const* m_parent;
-    private:
-        constexpr UncheckedConstAccessor(StaticVector const& parent)
-        :m_parent(&parent)
-        {}
-    public:
-        UncheckedConstAccessor& operator=(UncheckedConstAccessor&&) = delete;
 
-        constexpr ConstReference operator[](SizeType index) const {
+      private:
+        StaticVector const* m_parent;
+
+        constexpr explicit UncheckedConstAccessor(StaticVector const& parent)
+            : m_parent(&parent) {
+        }
+
+      public:
+        ~UncheckedConstAccessor() = default;
+        UncheckedConstAccessor(UncheckedConstAccessor const&) = delete;
+        UncheckedConstAccessor(UncheckedConstAccessor&&) = delete;
+        auto operator=(UncheckedConstAccessor const&) -> UncheckedConstAccessor& = delete;
+        auto operator=(UncheckedConstAccessor&&) -> UncheckedConstAccessor& = delete;
+
+        constexpr auto operator[](SizeType index) const -> ConstReference {
             return *m_parent->m_storage.pointer_from_index(index);
         }
 
-        constexpr ConstIterator begin() const noexcept {
+        constexpr auto begin() const noexcept -> ConstIterator {
             return m_parent->m_storage.pointer_from_index(0);
         }
 
-        constexpr ConstIterator end() const noexcept {
+        constexpr auto end() const noexcept -> ConstIterator {
             return m_parent->m_storage.pointer_from_index(m_parent->m_storage.size);
         }
 
-        constexpr ConstPointer data() const noexcept {
+        constexpr auto data() const noexcept -> ConstPointer {
             return m_parent->m_storage.pointer_from_index(0);
         }
     };
 
     class UncheckedAccessor {
         friend class StaticVector;
-    private:
+
+      private:
         StaticVector* m_parent;
-    private:
-        constexpr UncheckedAccessor(StaticVector& parent)
-        :m_parent(&parent)
-        {}
-    public:
-        UncheckedAccessor& operator=(UncheckedAccessor&&) = delete;
 
-        constexpr Reference operator[](SizeType index) {
+        constexpr explicit UncheckedAccessor(StaticVector& parent)
+            : m_parent(&parent) {
+        }
+
+      public:
+        ~UncheckedAccessor() = default;
+        UncheckedAccessor(UncheckedAccessor const&) = delete;
+        UncheckedAccessor(UncheckedAccessor&&) = delete;
+        auto operator=(UncheckedAccessor const&) -> UncheckedAccessor& = delete;
+        auto operator=(UncheckedAccessor&&) -> UncheckedAccessor& = delete;
+
+        constexpr auto operator[](SizeType index) -> Reference {
             return *m_parent->m_storage.pointer_from_index(index);
         }
 
-        constexpr ConstReference operator[](SizeType index) const {
+        constexpr auto operator[](SizeType index) const -> ConstReference {
             return *m_parent->m_storage.pointer_from_index(index);
         }
 
-        constexpr Iterator begin() noexcept {
+        constexpr auto begin() noexcept -> Iterator {
             return m_parent->m_storage.pointer_from_index(0);
         }
 
-        constexpr ConstIterator begin() const noexcept {
+        constexpr auto begin() const noexcept -> ConstIterator {
             return m_parent->m_storage.pointer_from_index(0);
         }
 
-        constexpr Iterator end() noexcept {
-            return m_parent->m_storage.pointer_from_index(this->m_parent->m_storage.size);
-        }
-        
-        constexpr ConstIterator end() const noexcept {
-            return m_parent->m_storage.pointer_from_index(this->m_parent->m_storage.size);
+        constexpr auto end() noexcept -> Iterator {
+            return m_parent->m_storage.pointer_from_index(this->m_parent->m_storage.size());
         }
 
-        constexpr Pointer data() noexcept {
+        constexpr auto end() const noexcept -> ConstIterator {
+            return m_parent->m_storage.pointer_from_index(this->m_parent->m_storage.size());
+        }
+
+        constexpr auto data() noexcept -> Pointer {
             return m_parent->m_storage.pointer_from_index(0);
         }
 
-        constexpr ConstPointer data() const noexcept {
+        constexpr auto data() const noexcept -> ConstPointer {
             return m_parent->m_storage.pointer_from_index(0);
         }
     };
-private:
-    template<uint64_t M> friend class StaticVector<T, M>;
+
+  private:
+    template <typename, uint64_t>
+    friend class StaticVector;
     detail::StaticVectorStorage<T, N> m_storage;
-public:
+
+  public:
     // constructors
     constexpr StaticVector() noexcept = default;
     constexpr StaticVector(StaticVector const&) = default;
     constexpr StaticVector(StaticVector&&) = default;
-    
-    template<uint64_t M, typename std::enable_if<(N >= M), bool>::type = true>
+
+    template <uint64_t M, std::enable_if_t<(N >= M), bool> = true>
+    // NOLINTNEXTLINE(hicpp-explicit-conversions), conceptually a copy constructor
     constexpr StaticVector(StaticVector<T, M> const& rhs)
-    :m_storage(rhs.m_storage)
-    {}
+        : m_storage(rhs.m_storage) {
+    }
 
     // destructor
 #if __cplusplus >= 202002L
     constexpr
 #endif
-    ~StaticVector() = default;
+        ~StaticVector() = default;
 
-    template<typename... Args>
-    constexpr
-    typename std::enable_if<std::is_constructible<T, Args...>::value, bool>::type
-    try_emplace_back(Args&&... args) {
-        if (m_storage.size < N) {
+    auto operator=(StaticVector const&) -> StaticVector& = delete;
+    auto operator=(StaticVector&&) -> StaticVector& = delete;
+
+    template <typename... Args>
+    constexpr auto try_emplace_back(Args&&... args) ->
+        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+        std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
+        if (m_storage.size() < N) {
             new (m_storage.pointer_from_index(m_storage.size)) T(std::forward<Args>(args)...);
-            ++m_storage.size;
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
-    constexpr bool try_push_back(T const& v) {
-        if (m_storage.size < N) {
-            new (m_storage.pointer_from_index(m_storage.size)) T(v);
-            ++m_storage.size;
+            m_storage.increment_size();
             return true;
         } else {
             return false;
         }
     }
 
-    constexpr bool try_push_back(T&& v) {
-        if (m_storage.size < N) {
-            new (m_storage.pointer_from_index(m_storage.size)) T(std::move(v));
-            ++m_storage.size;
+    constexpr auto try_push_back(T const& value) -> bool {
+        if (m_storage.size() < N) {
+            new (m_storage.pointer_from_index(m_storage.size())) T(value);
+            m_storage.increment_size();
             return true;
         } else {
             return false;
         }
     }
 
-    static constexpr SizeType capacity() noexcept {
+    constexpr auto try_push_back(T&& value) -> bool {
+        if (m_storage.size() < N) {
+            new (m_storage.pointer_from_index(m_storage.size())) T(std::move(value));
+            m_storage.increment_size();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    static constexpr auto capacity() noexcept -> SizeType {
         return N;
     }
 
-    constexpr SizeType size() const noexcept {
-        return m_storage.size;
+    constexpr auto size() const noexcept -> SizeType {
+        return m_storage.size();
     }
 
-    bool empty() const {
+    constexpr auto empty() const -> bool {
         return size() == 0;
     }
 
-    OptionalReference element_at(SizeType index) {
-        if (index < m_storage.size) {
+    auto element_at(SizeType index) -> OptionalReference {
+        if (index < m_storage.size()) {
             return *m_storage.pointer_from_index(index);
         } else {
-            return NulloptT{};
+            return nullopt;
         }
     }
 
-    OptionalConstReference element_at(SizeType index) const {
-        if (index < m_storage.size) {
+    auto element_at(SizeType index) const -> OptionalConstReference {
+        if (index < m_storage.size()) {
             return *m_storage.pointer_from_index(index);
         } else {
-            return NulloptT{};
+            return nullopt;
         }
     }
 
-    UncheckedAccessor unchecked_access() {
-        return UncheckedAccessor{ *this };
+    auto unchecked_access() -> UncheckedAccessor {
+        return UncheckedAccessor { *this };
     }
-    
-    UncheckedConstAccessor unchecked_access() const {
-        return UncheckedConstAccessor{ *this };
+
+    auto unchecked_access() const -> UncheckedConstAccessor {
+        return UncheckedConstAccessor { *this };
     }
 };
 
