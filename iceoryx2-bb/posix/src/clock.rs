@@ -21,8 +21,8 @@
 //! * [`AsTimespec`] - trait for easy [`posix::timespec`] conversion, required for low level posix
 //!   calls
 
+use crate::handle_errno;
 use crate::system_configuration::Feature;
-use crate::{config::DEFAULT_CLOCK_MODE, handle_errno};
 use core::time::Duration;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::enum_gen;
@@ -79,15 +79,10 @@ pub enum ClockType {
 
 impl Default for ClockType {
     fn default() -> Self {
-        match DEFAULT_CLOCK_MODE {
-            crate::config::ClockMode::Safety => {
-                if Feature::MonotonicClock.is_available() {
-                    ClockType::Monotonic
-                } else {
-                    ClockType::Realtime
-                }
-            }
-            crate::config::ClockMode::Performance => ClockType::Realtime,
+        if Feature::MonotonicClock.is_available() {
+            ClockType::Monotonic
+        } else {
+            ClockType::Realtime
         }
     }
 }
