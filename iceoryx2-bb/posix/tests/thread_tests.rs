@@ -13,7 +13,7 @@
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::*;
 use iceoryx2_bb_testing::{assert_that, test_requires};
-use iceoryx2_pal_posix::posix::POSIX_SUPPORT_CPU_AFFINITY;
+use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_CPU_AFFINITY};
 
 use core::time::Duration;
 
@@ -155,6 +155,17 @@ fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
     let thread = ThreadBuilder::new()
         .affinity(&[number_of_cpu_cores + 1])
+        .spawn(|| {});
+
+    assert_that!(thread, is_err);
+    assert_that!(thread.err(), eq Some(ThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity));
+}
+
+#[test]
+fn thread_set_affinity_to_cores_greater_than_cpu_set_size_fails() {
+    test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
+    let thread = ThreadBuilder::new()
+        .affinity(&[posix::CPU_SETSIZE])
         .spawn(|| {});
 
     assert_that!(thread, is_err);
