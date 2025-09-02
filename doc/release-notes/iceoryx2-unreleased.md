@@ -93,6 +93,8 @@
     [#986](https://github.com/eclipse-iceoryx/iceoryx2/issues/986)
 * Fix provenance in bump allocator and remove implicit Sync impl
     [#992](https://github.com/eclipse-iceoryx/iceoryx2/issues/992)
+* Fix deadlock when system time changes and `wait` is called
+    [#1000](https://github.com/eclipse-iceoryx/iceoryx2/issues/1000)
 
 ### Refactoring
 

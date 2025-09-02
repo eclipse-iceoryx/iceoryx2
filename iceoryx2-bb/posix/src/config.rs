@@ -20,6 +20,7 @@ use iceoryx2_bb_system_types::{file_name::FileName, path::Path, user_name::UserN
 use crate::{scheduler::Scheduler, system_configuration::*};
 use iceoryx2_bb_container::semantic_string::SemanticString;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ClockMode {
     Performance,
     Safety,
@@ -53,7 +54,6 @@ pub fn shared_memory_directory() -> Path {
 pub const ACL_LIST_CAPACITY: u32 = 25;
 
 pub const UNIX_DOMAIN_SOCKET_PATH_LENGTH: usize = 108;
-pub const DEFAULT_CLOCK_MODE: ClockMode = ClockMode::Performance;
 pub const PASSWD_BUFFER_SIZE: usize = 1024;
 pub const GROUP_BUFFER_SIZE: usize = 1024;
 
