@@ -10,10 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include <gtest/gtest.h>
+#include "testing/test_utils.hpp"
 
-auto main(int argc, char* argv[]) -> int {
-    ::testing::InitGoogleTest(&argc, argv);
+namespace iox2 {
+namespace container {
+namespace testing {
 
-    return RUN_ALL_TESTS();
+void opaque_use(void* /* object */) {
 }
+void opaque_use(void const* /* object */) {
+}
+
+int32_t CustomAddressOperator::s_count_address_operator = 0;
+
+} // namespace testing
+} // namespace container
+} // namespace iox2

@@ -10,10 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include <gtest/gtest.h>
+#ifndef IOX2_INCLUDE_GUARD_CONTAINER_CONFIG_HPP
+#define IOX2_INCLUDE_GUARD_CONTAINER_CONFIG_HPP
 
-auto main(int argc, char* argv[]) -> int {
-    ::testing::InitGoogleTest(&argc, argv);
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define IOX2_CONTAINER_CONFIG_USE_STD_OPTIONAL 0
 
-    return RUN_ALL_TESTS();
-}
+// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+#define IOX2_CONTAINER_CONFIG_USE_STD_EXPECTED 1
+
+// custom headers go here
+
+
+#endif
