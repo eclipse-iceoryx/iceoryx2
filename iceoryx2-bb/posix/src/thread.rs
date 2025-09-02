@@ -88,6 +88,7 @@ use crate::handle_errno;
 use iceoryx2_bb_container::byte_string::FixedSizeByteString;
 use iceoryx2_bb_elementary::{enum_gen, scope_guard::ScopeGuardBuilder};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_pal_posix::posix::CPU_SETSIZE;
 use iceoryx2_pal_posix::posix::{errno::Errno, MemZeroedStruct};
 use iceoryx2_pal_posix::*;
 
@@ -168,6 +169,7 @@ pub struct ThreadBuilder {
     stack_size: Option<u64>,
     affinity: [bool; posix::CPU_SETSIZE],
     has_custom_affinity: bool,
+    has_invalid_affinity: bool,
     name: ThreadName,
 }
 
@@ -180,6 +182,7 @@ impl Default for ThreadBuilder {
             scheduler: Scheduler::default(),
             affinity: [true; posix::CPU_SETSIZE],
             has_custom_affinity: false,
+            has_invalid_affinity: false,
             stack_size: None,
             name: ThreadName::new(),
         }
@@ -216,12 +219,17 @@ impl ThreadBuilder {
     /// ```
     pub fn affinity(mut self, cpu_core_ids: &[usize]) -> Self {
         self.affinity = [false; posix::CPU_SETSIZE];
-        self.has_custom_affinity = true;
 
         for cpu_core_id in cpu_core_ids {
+            if *cpu_core_id >= posix::CPU_SETSIZE {
+                self.has_invalid_affinity = true;
+                return self;
+            }
+
             self.affinity[*cpu_core_id] = true;
         }
 
+        self.has_custom_affinity = true;
         self
     }
 
@@ -280,6 +288,12 @@ impl ThreadBuilder {
         T: Debug + Send + 'thread,
         F: FnOnce() -> T + Send + 'thread,
     {
+        if self.has_invalid_affinity {
+            fail!(from self, with ThreadSpawnError::CpuCoreOutsideOfSupportedCpuRangeForAffinity,
+                "Unable to set the threads cpu affinity since the provided core value exceeds the cpu affinity set size of {}.",
+                CPU_SETSIZE);
+        }
+
         if self.has_custom_affinity {
             let number_of_cores = SystemInfo::NumberOfCpuCores.value();
             for (cpu_core_id, has_affinity) in self.affinity[number_of_cores..].iter().enumerate() {
