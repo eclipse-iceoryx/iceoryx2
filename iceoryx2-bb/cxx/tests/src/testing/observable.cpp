@@ -96,6 +96,7 @@ void DetectLeakedObservablesFixture::defuse_leak_check() {
 
 VerifyAllObservableInteractionsFixture::VerifyAllObservableInteractionsFixture()
     : m_expected {} {
+    Observable::reset_all_counters();
 }
 
 VerifyAllObservableInteractionsFixture::~VerifyAllObservableInteractionsFixture() = default;

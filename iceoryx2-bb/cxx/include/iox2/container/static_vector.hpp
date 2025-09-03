@@ -100,6 +100,10 @@ class StaticVectorStorage {
         ++m_size;
     }
 
+    constexpr void decrement_size() {
+        --m_size;
+    }
+
     auto pointer_from_index(uint64_t idx) -> T* {
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast), required for storage access
         return reinterpret_cast<T*>(m_bytes + (idx * sizeof(T)));
@@ -234,6 +238,14 @@ class StaticVector {
         : m_storage(rhs.m_storage) {
     }
 
+    template <uint64_t M, std::enable_if_t<(N >= M), bool> = true>
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays), static bounds
+    constexpr explicit StaticVector(T const (&element_array)[M]) {
+        for (auto& element : element_array) {
+            try_push_back(element);
+        }
+    }
+
     // destructor
 #if __cplusplus >= 202002L
     constexpr
@@ -248,7 +260,7 @@ class StaticVector {
         // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
         std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
         if (m_storage.size() < N) {
-            new (m_storage.pointer_from_index(m_storage.size)) T(std::forward<Args>(args)...);
+            new (m_storage.pointer_from_index(m_storage.size())) T(std::forward<Args>(args)...);
             m_storage.increment_size();
             return true;
         } else {
@@ -257,19 +269,17 @@ class StaticVector {
     }
 
     constexpr auto try_push_back(T const& value) -> bool {
-        if (m_storage.size() < N) {
-            new (m_storage.pointer_from_index(m_storage.size())) T(value);
-            m_storage.increment_size();
-            return true;
-        } else {
-            return false;
-        }
+        return try_emplace_back(value);
     }
 
     constexpr auto try_push_back(T&& value) -> bool {
-        if (m_storage.size() < N) {
-            new (m_storage.pointer_from_index(m_storage.size())) T(std::move(value));
-            m_storage.increment_size();
+        return try_emplace_back(std::move(value));
+    }
+
+    constexpr auto try_pop_back() -> bool {
+        if (m_storage.size() > 0) {
+            m_storage.pointer_from_index(m_storage.size() - 1)->~T();
+            m_storage.decrement_size();
             return true;
         } else {
             return false;
@@ -304,12 +314,64 @@ class StaticVector {
         }
     }
 
+    auto front() -> OptionalReference {
+        if (!empty()) {
+            return *m_storage.pointer_from_index(0);
+        } else {
+            return nullopt;
+        }
+    }
+
+    auto front() const -> OptionalReference {
+        if (!empty()) {
+            return *m_storage.pointer_from_index(0);
+        } else {
+            return nullopt;
+        }
+    }
+
+    auto back() -> OptionalReference {
+        if (!empty()) {
+            return *m_storage.pointer_from_index(size() - 1);
+        } else {
+            return nullopt;
+        }
+    }
+
+    auto back() const -> OptionalConstReference {
+        if (!empty()) {
+            return *m_storage.pointer_from_index(size() - 1);
+        } else {
+            return nullopt;
+        }
+    }
+
     auto unchecked_access() -> UncheckedAccessor {
         return UncheckedAccessor { *this };
     }
 
     auto unchecked_access() const -> UncheckedConstAccessor {
         return UncheckedConstAccessor { *this };
+    }
+
+    friend auto operator==(StaticVector const& lhs, StaticVector const& rhs) -> bool {
+        if (lhs.size() != rhs.size()) {
+            return false;
+        } else {
+            auto const lhs_unchecked = lhs.unchecked_access();
+            auto const rhs_unchecked = rhs.unchecked_access();
+            auto const lhs_it_end = lhs_unchecked.end();
+            auto lhs_it = lhs_unchecked.begin();
+            auto rhs_it = rhs_unchecked.begin();
+            while (lhs_it != lhs_it_end) {
+                if (!(*lhs_it == *rhs_it)) {
+                    return false;
+                }
+                ++lhs_it;
+                ++rhs_it;
+            }
+            return true;
+        }
     }
 };
 
