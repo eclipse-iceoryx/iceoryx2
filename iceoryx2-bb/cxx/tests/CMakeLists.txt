@@ -36,6 +36,7 @@ target_sources(iceoryx2-bb-containers-tests
     ${PROJECT_SOURCE_DIR}/src/main.cpp
     ${PROJECT_SOURCE_DIR}/src/optional_tests.cpp
     ${PROJECT_SOURCE_DIR}/src/static_string_tests.cpp
+    ${PROJECT_SOURCE_DIR}/src/static_vector_tests.cpp
 )
 target_include_directories(iceoryx2-bb-containers-tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
 target_link_libraries(
