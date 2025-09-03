@@ -22,6 +22,107 @@ A high-level pitch of the feature:
 * The `async` usage in Rust is already well established technique that is
   adopted by many crates, including those with highest usage
 
+### Introduction to async in context of iceoryx2
+
+The Rust `async` APIs are build with the help of usage of compiler. At the end
+`async` and `await` is just a syntactic sugar that is removed during `HIR`. In
+practice it means:
+
+* `async fn abc() -> bool` signature is turned into
+  `fn abc() -> impl core::future::Future<Output=bool>`. This basically means
+  each async fn is a anonymous type that implements `core::future::Future`
+* `await` is turned be compiler into generated state machine that simply
+  decompose to all states (continues and returns) in function using `Future`
+  trait API. To have small example, below code:
+
+```rust
+
+async fn some_other_async_fn() {
+  println!("Test");
+}
+
+async fn abc() -> bool {
+
+  some_other_async_fn().await
+
+  true
+}
+```
+
+Will be turned into (pseudocode):
+
+```rust
+
+fn some_other_async_fn() -> impl core::future::Future<Output=()> {
+  println!("Test");
+  core::task::Poll::Ready(())
+}
+
+fn abc() -> impl core::future::Future<Output=bool> {
+
+  let future = some_other_async_fn();
+  let mut _hidden_satte = 0;
+
+  if _hidden_satte == 0 {
+    match future.poll(...) {
+      core::task::Poll::Pending => return Pending
+      core::task::Poll::Ready(_) => {
+        ///
+        _hidden_satte = 1;
+      }
+    }
+  }
+
+  /// And for next .awaits, continue the idea
+  /// Compiler will ofc generate something totally different but thats the idea behind
+
+  true
+}
+
+```
+
+At the end, Rust SIG has decided to provide interface (traits) and compiler
+syntactic sugar to support `async` but left the `runtime` being external needed
+component that is not part of language.
+
+#### Brief simplification how does Futures works
+
+ Once creating own `Future`implementation using `core::future::Future` trait You
+ are provided the `Context` that holds the `Waker`. The implementer
+ responsibility for future is to return either `core::task::Poll::Pending` once
+ Your Future is not ready yet or `core::task::Poll::Ready(_)` once Future is
+ done wih work. In the first case, once You detected you are not ready, Your
+ obligation is to:
+
+* take `Waker` and store it somewhere
+* return `core::task::Poll::Pending` (at this moment runtime will remove You
+  from processing queue and will not process until woken)
+* call `Waker::wake*` API once You know your Future can progress
+
+After telling runtime via `Waker::wake*` that you are ready, `runtime` will
+bring You back to some of its workers and again will execute `Future::poll` to
+check Your progress.
+
+### Connection to iceoryx2 messaging patterns
+
+#### Events
+
+Nothing to add, blocking API needs async versions
+
+#### Publisher Subscriber
+
+Here in async world (and even in non async really) as a user expectation would
+be that I can react once a new `sample` is produced so that I don't have to poll
+for it, instead simply `await` it.
+
+#### Request Response
+
+Here in async world (and even in non async really) as a user expectation would
+be that there is one entity that is a "Server" (the one that hosts method and
+produces responses) and there are clients that do requests. Due to this,
+`request-response` would need `async` API to only act once there is request and
+once there is reply for it.
+
 ## Requirements
 
 * **R1: Async API look and feel** \* The new `async` API shall provide the same
@@ -201,3 +302,83 @@ guarantee any of above.
 **Results:**
 
 * PubSub API will have `async` API available
+
+## Extended examples
+
+### Pub Sub pseudo code example
+
+> NOTE: `async main` is the extension provided by runtimes, it simply wraps
+> regular main into creation of runtime and put this into execution
+
+#### Process 1
+
+```rust
+async fn main() {
+  let node = NodeBuilder::new().create::<ipc_threadsafe::Service>().unwrap();
+
+  let event = node
+      .service_builder(&"MyEventName".try_into().unwrap())
+      .event()
+      .open_or_create()
+      .unwrap();
+
+  let listener = event.listener_builder().create_async().unwrap();
+  let listener2 = event.listener_builder().create_async().unwrap();
+
+  let task1_handle = spawn(async move {
+    println!("Awaiting for Iceoryx event in batches while doing something else ...");
+    loop {
+
+        listener
+              .wait_all(&mut |event_id| {
+                  print!("Received Iceoryx event: {:?}\n", event_id);
+              })
+              .await // During this not being ready, worker can do any other work
+              .unwrap();
+       } 
+  });
+
+
+ spawn(async move {
+   
+    // Some logic
+    // ..
+
+    // now I need sample in this place due to my logic, so I simply 'await' it and once
+    // I have a sample, this code will continue executing further
+    let sample_res = listener2.wait().await; // During this not being ready, worker can do any other work
+
+    // Process sample
+
+    // ..
+    
+  });
+
+
+
+  // Optionally You may wait until task finishes
+  task1_handle.await.unwrap(); // During this not being ready, worker can do any other work
+}
+```
+
+#### Process 2
+
+```rust
+async fn main() {
+  let node = NodeBuilder::new().create::<ipc_threadsafe::Service>().unwrap();
+
+  let event = node
+    .service_builder(&"MyEventName".try_into().unwrap())
+    .event()
+    .open_or_create()
+    .unwrap();
+
+  let notifier = event.notifier_builder().create_async().unwrap();
+  println!("Awaiting for Iceoryx event in batches while doing something else ...");
+
+  loop {
+    notifier.notify();
+    sleep(100).await; // During that sleep, worker can be doing any other work ;)
+  }
+}
+```
