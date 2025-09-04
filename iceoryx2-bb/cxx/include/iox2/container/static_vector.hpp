@@ -314,7 +314,7 @@ class StaticVector {
         }
     }
 
-    auto front() -> OptionalReference {
+    auto front_element() -> OptionalReference {
         if (!empty()) {
             return *m_storage.pointer_from_index(0);
         } else {
@@ -322,7 +322,7 @@ class StaticVector {
         }
     }
 
-    auto front() const -> OptionalReference {
+    auto front_element() const -> OptionalReference {
         if (!empty()) {
             return *m_storage.pointer_from_index(0);
         } else {
@@ -330,7 +330,7 @@ class StaticVector {
         }
     }
 
-    auto back() -> OptionalReference {
+    auto back_element() -> OptionalReference {
         if (!empty()) {
             return *m_storage.pointer_from_index(size() - 1);
         } else {
@@ -338,7 +338,7 @@ class StaticVector {
         }
     }
 
-    auto back() const -> OptionalConstReference {
+    auto back_element() const -> OptionalConstReference {
         if (!empty()) {
             return *m_storage.pointer_from_index(size() - 1);
         } else {
