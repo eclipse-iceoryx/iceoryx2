@@ -268,15 +268,23 @@ impl<T, Ptr: GenericPointer> MetaVec<T, Ptr> {
     where
         T: Clone,
     {
-        for _ in self.len..self.capacity {
-            self.push_unchecked(value.clone());
+        // NOTE: Since 'self.data_ptr' is a relocatable pointer, converting it
+        // to an absolute pointer is expensive and should not be done in the loop
+        let data_ptr = self.data_ptr.as_mut_ptr();
+        for i in self.len..self.capacity {
+            data_ptr.add(i).write(MaybeUninit::new(value.clone()));
         }
+        self.len = self.capacity;
     }
 
     unsafe fn fill_with_impl<F: FnMut() -> T>(&mut self, mut f: F) {
-        for _ in self.len..self.capacity {
-            self.push_unchecked(f());
+        // NOTE: Since 'self.data_ptr' is a relocatable pointer, converting it
+        // to an absolute pointer is expensive and should not be done in the loop
+        let data_ptr = self.data_ptr.as_mut_ptr();
+        for i in self.len..self.capacity {
+            data_ptr.add(i).write(MaybeUninit::new(f()));
         }
+        self.len = self.capacity;
     }
 
     fn push_unchecked(&mut self, value: T) {
@@ -298,9 +306,14 @@ impl<T, Ptr: GenericPointer> MetaVec<T, Ptr> {
             return false;
         }
 
-        for element in other {
-            self.push_unchecked(element.clone());
+        // NOTE: Since 'self.data_ptr' is a relocatable pointer, converting it
+        // to an absolute pointer is expensive and should not be done in the loop
+        let data_ptr = self.data_ptr.as_mut_ptr().add(self.len);
+        for (i, element) in other.iter().enumerate() {
+            data_ptr.add(i).write(MaybeUninit::new(element.clone()));
         }
+
+        self.len += other.len();
 
         true
     }
