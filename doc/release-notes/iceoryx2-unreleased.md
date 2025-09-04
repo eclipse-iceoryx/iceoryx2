@@ -47,7 +47,7 @@
   [#933](https://github.com/eclipse-iceoryx/iceoryx2/issues/933)
 * Add a C++ Optional vocabulary type for use with C++ containers
   [#939](https://github.com/eclipse-iceoryx/iceoryx2/issues/939)
-* Add custom mapping offset to shared memory posix wrapper
+* Add custom mapping offset to shared memory POSIX wrapper
   [#1010](https://github.com/eclipse-iceoryx/iceoryx2/issues/1010)
 
 ### Bugfixes
