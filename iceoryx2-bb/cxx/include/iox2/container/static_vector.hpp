@@ -16,6 +16,8 @@
 #include "iox2/container/config.hpp"
 #include "iox2/container/optional.hpp"
 
+#include "iox2/container/detail/raw_byte_storage.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -25,96 +27,6 @@
 
 namespace iox2 {
 namespace container {
-
-namespace detail {
-template <typename T, uint64_t N>
-class StaticVectorStorage {
-    // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
-    static_assert(std::is_standard_layout<T>::value, "Storage is only valid for standard layout types.");
-
-  private:
-    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) raw storage, will not be used as array
-    alignas(T) char m_bytes[sizeof(T) * N];
-    uint64_t m_size;
-
-  public:
-    constexpr StaticVectorStorage() noexcept
-        : m_bytes {}
-        , m_size(0) {
-    }
-
-    constexpr StaticVectorStorage(StaticVectorStorage const& rhs)
-        : m_bytes {}
-        , m_size(rhs.m_size) {
-        for (uint64_t index = 0; index < m_size; ++index) {
-            new (pointer_from_index(index)) T(*rhs.pointer_from_index(index));
-        }
-    }
-
-    constexpr StaticVectorStorage(StaticVectorStorage&& rhs) noexcept
-        : m_bytes {}
-        , m_size(rhs.m_size) {
-        for (uint64_t index = 0; index < m_size; ++index) {
-            new (pointer_from_index(index)) T(std::move_if_noexcept(*rhs.pointer_from_index(index)));
-        }
-    }
-
-    template <uint64_t M, std::enable_if_t<(N > M), bool> = true>
-    // NOLINTNEXTLINE(hicpp-explicit-conversions), conceptually a copy constructor
-    constexpr StaticVectorStorage(StaticVectorStorage<T, M> const& rhs)
-        : m_bytes {}
-        , m_size(rhs.size()) {
-        for (uint64_t index = 0; index < m_size; ++index) {
-            new (pointer_from_index(index)) T(*rhs.pointer_from_index(index));
-        }
-    }
-
-    template <uint64_t M, std::enable_if_t<(N > M), bool> = true>
-    // NOLINTNEXTLINE(hicpp-explicit-conversions), conceptually a move constructor
-    constexpr StaticVectorStorage(StaticVectorStorage<T, M>&& rhs)
-        : m_bytes {}
-        , m_size(rhs.size()) {
-        for (uint64_t index = 0; index < m_size; ++index) {
-            new (pointer_from_index(index)) T(std::move(*rhs.pointer_from_index(index)));
-        }
-    }
-
-#if __cplusplus >= 202002L
-    constexpr
-#endif
-        ~StaticVectorStorage() {
-        for (uint64_t i = m_size; i != 0; --i) {
-            uint64_t const index = i - 1;
-            pointer_from_index(index)->~T();
-        }
-    }
-
-    constexpr auto operator=(StaticVectorStorage const&) -> StaticVectorStorage& = delete;
-    constexpr auto operator=(StaticVectorStorage&&) -> StaticVectorStorage& = delete;
-
-    auto constexpr size() const noexcept -> uint64_t {
-        return m_size;
-    }
-
-    constexpr void increment_size() {
-        ++m_size;
-    }
-
-    constexpr void decrement_size() {
-        --m_size;
-    }
-
-    auto pointer_from_index(uint64_t idx) -> T* {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast), required for storage access
-        return reinterpret_cast<T*>(m_bytes + (idx * sizeof(T)));
-    }
-
-    auto pointer_from_index(uint64_t idx) const -> T const* {
-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast), required for storage access
-        return reinterpret_cast<T const*>(m_bytes + (idx * sizeof(T)));
-    }
-};
-} // namespace detail
 
 /// A resizable container with compile-time fixed static capacity and contiguous inplace storage.
 template <typename T, uint64_t N>
@@ -224,7 +136,7 @@ class StaticVector {
   private:
     template <typename, uint64_t>
     friend class StaticVector;
-    detail::StaticVectorStorage<T, N> m_storage;
+    detail::RawByteStorage<T, N> m_storage;
 
   public:
     // constructors
