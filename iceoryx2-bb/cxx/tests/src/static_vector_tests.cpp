@@ -73,4 +73,56 @@ TEST(StaticVector, try_push_back_returns_false_if_there_is_no_room) {
     ASSERT_TRUE(!sut.try_push_back(test_value));
 }
 
+TEST_F(StaticVectorFixture, try_push_back_copies_values_into_vector) {
+    {
+        iox2::container::StaticVector<Observable, G_TEST_ARRAY_SIZE> sut;
+        int32_t const contained_value = 12345;
+        {
+            Observable const observable_value { contained_value };
+            expected_count().was_initialized = 1;
+            ASSERT_TRUE(sut.try_push_back(observable_value));
+            ASSERT_TRUE(sut.element_at(0).has_value());
+            EXPECT_EQ(sut.element_at(0).value().get().id, contained_value);
+            EXPECT_EQ(Observable::s_counter.was_initialized, 1);
+            EXPECT_EQ(Observable::s_counter.was_destructed, 0);
+        }
+        EXPECT_EQ(Observable::s_counter.was_destructed, 1);
+        expected_count().was_copy_constructed = 1;
+        EXPECT_EQ(Observable::s_counter.was_copy_constructed, 1);
+    }
+    EXPECT_EQ(Observable::s_counter.was_destructed, 2);
+    expected_count().was_destructed = 2;
+}
+
+TEST_F(StaticVectorFixture, try_push_back_moves_temporaries_into_vector) {
+    {
+        iox2::container::StaticVector<Observable, G_TEST_ARRAY_SIZE> sut;
+        int32_t const contained_value = 12345;
+        ASSERT_TRUE(sut.try_push_back(Observable { contained_value }));
+        ASSERT_TRUE(sut.element_at(0).has_value());
+        EXPECT_EQ(sut.element_at(0).value().get().id, contained_value);
+        expected_count().was_initialized = 1;
+        EXPECT_EQ(Observable::s_counter.was_initialized, 1);
+        expected_count().was_move_constructed = 1;
+        EXPECT_EQ(Observable::s_counter.was_move_constructed, 1);
+        EXPECT_EQ(Observable::s_counter.was_destructed, 1);
+    }
+    EXPECT_EQ(Observable::s_counter.was_destructed, 2);
+    expected_count().was_destructed = 2;
+}
+
+TEST_F(StaticVectorFixture, try_push_back_fails_for_temporaries_if_vector_is_full) {
+    size_t const small_vector_size = 1;
+    iox2::container::StaticVector<Observable, small_vector_size> sut;
+    ASSERT_TRUE(sut.try_push_back(Observable {}));
+    EXPECT_EQ(Observable::s_counter.was_initialized, 1);
+    EXPECT_EQ(Observable::s_counter.was_move_constructed, 1);
+    ASSERT_FALSE(sut.try_push_back(Observable {}));
+    EXPECT_EQ(Observable::s_counter.was_initialized, 2);
+    EXPECT_EQ(Observable::s_counter.was_move_constructed, 1);
+    expected_count().was_initialized = 2;
+    expected_count().was_move_constructed = 1;
+    expected_count().was_destructed = 3;
+}
+
 } // namespace
