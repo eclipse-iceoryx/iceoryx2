@@ -95,6 +95,7 @@ enum_gen! { SharedMemoryCreationError
     InsufficientMemory,
     InsufficientMemoryToBeMemoryLocked,
     UnsupportedSizeOfZero,
+    UnsupportedMemoryMappingOffsetValue,
     InsufficientPermissions,
     MappedRegionLimitReached,
     PerProcessFileHandleLimitReached,
@@ -129,6 +130,7 @@ pub struct SharedMemoryBuilder {
     creation_mode: Option<CreationMode>,
     zero_memory: bool,
     access_mode: AccessMode,
+    mapping_offset: isize,
     enforce_base_address: Option<u64>,
 }
 
@@ -143,8 +145,16 @@ impl SharedMemoryBuilder {
             has_ownership: true,
             creation_mode: None,
             zero_memory: true,
+            mapping_offset: 0,
             enforce_base_address: None,
         }
+    }
+
+    /// Defines the mapping offset when the shared memory object is mapped into
+    /// the process space.
+    pub fn mapping_offset(mut self, value: isize) -> Self {
+        self.mapping_offset = value;
+        self
     }
 
     /// Locks the shared memory into the heap. If this is enabled swapping of the
@@ -196,6 +206,7 @@ impl SharedMemoryBuilder {
             has_ownership: IoxAtomicBool::new(false),
             memory_lock: None,
             file_descriptor: fd,
+            mapping_offset: self.mapping_offset,
         };
 
         trace!(from shm, "open");
@@ -250,6 +261,11 @@ impl SharedMemoryCreationBuilder {
     pub fn create(mut self) -> Result<SharedMemory, SharedMemoryCreationError> {
         let msg = "Unable to create shared memory";
 
+        if self.config.size == 0 {
+            fail!(from self.config, with SharedMemoryCreationError::UnsupportedSizeOfZero,
+                "{msg} since a size of 0 is not supported for a shared memory object.");
+        }
+
         let shm_created;
         let fd = match self
             .config
@@ -295,6 +311,7 @@ impl SharedMemoryCreationBuilder {
             has_ownership: IoxAtomicBool::new(self.config.has_ownership),
             memory_lock: None,
             file_descriptor: fd,
+            mapping_offset: self.config.mapping_offset,
         };
 
         if !shm_created {
@@ -374,6 +391,7 @@ pub struct SharedMemory {
     has_ownership: IoxAtomicBool,
     file_descriptor: FileDescriptor,
     memory_lock: Option<MemoryLock>,
+    mapping_offset: isize,
 }
 
 impl Drop for SharedMemory {
@@ -416,6 +434,11 @@ impl SharedMemory {
             )
         })
         .is_some()
+    }
+
+    /// Returns the mapping offset used when the shared memory object was mapped into process space
+    pub fn mapping_offset(&self) -> isize {
+        self.mapping_offset
     }
 
     /// Returns if the posix implementation supports persistent shared memory, meaning that when every
@@ -573,7 +596,7 @@ impl SharedMemory {
                 config.access_mode.as_protflag(),
                 posix::MAP_SHARED,
                 file_descriptor.native_handle(),
-                0,
+                config.mapping_offset as _,
             )
         };
 
@@ -584,7 +607,7 @@ impl SharedMemory {
         let msg = "Unable to map shared memory";
         handle_errno!(SharedMemoryCreationError, from config,
             Errno::EAGAIN => (InsufficientMemoryToBeMemoryLocked, "{} since a previous mlockall() enforces all mappings to be memory locked but this mapping cannot be locked due to insufficient memory.", msg),
-            Errno::EINVAL => (UnsupportedSizeOfZero, "{} since a size of zero is not supported.", msg),
+            Errno::EINVAL => (UnsupportedMemoryMappingOffsetValue, "{} since the value {} is not supported as a mapping offset.", msg, config.mapping_offset),
             Errno::ENOMEM => (InsufficientMemory, "{} since the system is out-of-memory or does not the support a shared memory with the size of {}.", msg, config.size),
             Errno::EMFILE => (MappedRegionLimitReached, "{} since the number of mapped regions would exceed the process or system limit.", msg),
             v => (UnknownError(v as i32), "{} since an unknown error occurred ({}).", msg, v)
