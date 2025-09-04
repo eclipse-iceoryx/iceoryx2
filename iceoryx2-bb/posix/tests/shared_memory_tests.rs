@@ -260,3 +260,17 @@ fn shared_memory_existing_shm_can_be_listed() {
         assert_that!(shm_list, contains * shm.name());
     }
 }
+
+#[test]
+fn shared_memory_can_be_mapped_with_a_custom_offset() {
+    const MAPPING_OFFSET: isize = 0; // only zero works reliably
+    let shm_name = generate_shm_name();
+    let sut = SharedMemoryBuilder::new(&shm_name)
+        .mapping_offset(MAPPING_OFFSET)
+        .creation_mode(CreationMode::PurgeAndCreate)
+        .size(1024 * 1024)
+        .create()
+        .unwrap();
+
+    assert_that!(sut.mapping_offset(), eq MAPPING_OFFSET);
+}
