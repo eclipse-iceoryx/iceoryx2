@@ -1,0 +1,15 @@
+@startuml
+
+class PortFactory {
+  ...
+  + fn create_**subscriber/listener**_async<T: AsyncConnector>()
+}
+
+note top of PortFactory
+Extend each **messaging_pattern* PortFactory by creational method with _async suffix.
+This can be done directly or over **some trait** definition.
+The **PortFactory** does have access to **service** itself so it shall be possible
+to create required instance of internal Event along with wrapping using **T**
+end note
+
+@enduml
