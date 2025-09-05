@@ -1,0 +1,98 @@
+# Include the generated global configuration (this will be created by 'doxygen -g')
+@INCLUDE = "./Doxyfile.global"
+
+# ==============================================
+
+# Project Configuration
+PROJECT_NAME                    = "iceoryx2"
+PROJECT_BRIEF                   = "C++ Language Bindings"
+OUTPUT_DIRECTORY                = "./target"
+
+# HTML Generation
+GENERATE_HTML                   = YES
+HTML_OUTPUT                     = html
+
+# Doxygen Awesome CSS Theme
+HTML_EXTRA_STYLESHEET           = target/deps/doxygen-awesome/doxygen-awesome.css \
+                                  target/deps/doxygen-awesome/doxygen-awesome-sidebar-only.css \
+                                  target/deps/doxygen-awesome/doxygen-awesome-sidebar-only-darkmode-toggle.css
+
+HTML_EXTRA_FILES                = target/deps/doxygen-awesome/doxygen-awesome-darkmode-toggle.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-fragment-copy-button.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-paragraph-link.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-interactive-toc.js \
+                                  target/deps/doxygen-awesome/doxygen-awesome-tabs.js
+
+HTML_HEADER                     = header.html
+HTML_COLORSTYLE                 = LIGHT
+HTML_DYNAMIC_MENUS              = YES
+GENERATE_TREEVIEW               = YES
+SEARCHENGINE                    = YES
+TREEVIEW_WIDTH                  = 270
+
+# XML Generation
+GENERATE_XML                    = NO
+XML_PROGRAMLISTING              = NO
+
+# Extraction Settings
+EXTRACT_ALL                     = YES
+EXTRACT_STATIC                  = YES
+EXTRACT_PRIVATE                 = NO
+EXTRACT_LOCAL_CLASSES           = YES
+EXTRACT_LOCAL_METHODS           = YES
+
+# Preprocessing
+MACRO_EXPANSION                 = YES
+EXPAND_ONLY_PREDEF              = NO
+ENABLE_PREPROCESSING            = YES
+PREDEFINED                     += DOXYGEN_MACRO_FIX
+
+# Input Configuration
+INPUT                           = "../../../iceoryx2-cxx/include" \
+                                  "mainpage.md"
+
+STRIP_FROM_PATH                 = "../../../iceoryx2-cxx/include" \
+                                  "../../../doc/api/cxx"
+
+FILE_PATTERNS                   = *.h \
+                                  *.hpp \
+                                  *.hxx \
+                                  *.cpp \
+                                  *.cxx \
+                                  *.cc \
+                                  *.md \
+                                  *.dox
+
+EXCLUDE_PATTERNS               += "*/iceoryx2/v*/iox2/iceoryx2.h"
+RECURSIVE                       = YES
+USE_MDFILE_AS_MAINPAGE          = mainpage.md
+
+# Configuration for C++ (replaces C-specific settings)
+OPTIMIZE_OUTPUT_FOR_C           = NO
+SHOW_INCLUDE_FILES              = YES
+SHOW_USED_FILES                 = YES
+SHOW_FILES                      = YES
+HIDE_UNDOC_MEMBERS              = NO
+HIDE_UNDOC_CLASSES              = NO
+TYPEDEF_HIDES_STRUCT            = NO
+SEARCH_INCLUDES                 = YES
+SKIP_FUNCTION_MACROS            = YES
+
+# Additional Features
+MARKDOWN_SUPPORT                = YES
+AUTOLINK_SUPPORT                = YES
+SOURCE_BROWSER                  = YES
+INLINE_SOURCES                  = NO
+REFERENCED_BY_RELATION          = YES
+REFERENCES_RELATION             = YES
+ALPHABETICAL_INDEX              = YES
+
+# Diagrams
+HAVE_DOT                        = NO
+CALL_GRAPH                      = NO
+CALLER_GRAPH                    = NO
+INCLUDE_GRAPH                   = NO
+INCLUDED_BY_GRAPH               = NO
+DOT_IMAGE_FORMAT                = svg
+INTERACTIVE_SVG                 = NO
+GRAPHICAL_HIERARCHY             = NO

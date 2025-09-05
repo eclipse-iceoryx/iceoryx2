@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Redirecting to latest {{ language }} documentation...</title>
+  <meta http-equiv="refresh" content="0; url='../{{ url }}'">
+  <script>window.location.replace('/iceoryx2/{{ url }}');</script>
+</head>
+<body>
+  <p>Redirecting to latest {{ language }} documentation...</p>
+  <p>If you are not redirected automatically, <a href="/iceoryx2/{{ url }}">click here</a>.</p>
+</body>
+</html>

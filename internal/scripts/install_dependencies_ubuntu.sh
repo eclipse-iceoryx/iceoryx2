@@ -22,6 +22,7 @@ apt-get install -y \
      clang \
      cmake \
      curl \
+     doxygen \
      expect \
      flex \
      gcc \

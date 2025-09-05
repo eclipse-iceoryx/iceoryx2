@@ -95,12 +95,12 @@ your answer.
 
 The documentation can be found at:
 
-| language |                          documentation link |
-| :------: | ------------------------------------------: |
-|    C     |           <https://iceoryx2.readthedocs.io> |
-|   C++    |           <https://iceoryx2.readthedocs.io> |
-|  Python  |           <https://iceoryx2.readthedocs.io> |
-|   Rust   | <https://docs.rs/iceoryx2/latest/iceoryx2/> |
+| language |                                                                                           |
+| :------: | ----------------------------------------------------------------------------------------: |
+|    C     |                [Documentation Link](https://eclipse-iceoryx.github.io/iceoryx2/c/latest/) |
+|   C++    |              [Documentation Link](https://eclipse-iceoryx.github.io/iceoryx2/cxx/latest/) |
+|  Python  |           [Documentation Link](https://eclipse-iceoryx.github.io/iceoryx2/python/latest/) |
+|   Rust   |                           [Documentation Link](https://docs.rs/iceoryx2/latest/iceoryx2/) |
 
 ### Publish Subscribe
 
