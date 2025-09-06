@@ -101,7 +101,7 @@ use crate::{
     request_mut_uninit::RequestMutUninit,
     service::{
         self,
-        builder::CustomPayloadMarker,
+        builder::{CustomHeaderMarker, CustomPayloadMarker},
         dynamic_config::request_response::{ClientDetails, ServerDetails},
         header,
         naming_scheme::data_segment_name,
@@ -568,7 +568,7 @@ impl<
 impl<
         Service: service::Service,
         RequestPayload: Debug + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
+        RequestHeader: Default + Debug + ZeroCopySend,
         ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -657,27 +657,24 @@ impl<
                 }
             };
 
+        let header_ptr: *mut service::header::request_response::RequestHeader = chunk.header.cast();
+        let user_header_ptr: *mut RequestHeader = chunk.user_header.cast();
         unsafe {
-            (chunk.header as *mut service::header::request_response::RequestHeader).write(
-                service::header::request_response::RequestHeader {
-                    client_id: self.id(),
-                    channel_id,
-                    request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
-                    number_of_elements: 1,
-                },
-            )
+            header_ptr.write(service::header::request_response::RequestHeader {
+                client_id: self.id(),
+                channel_id,
+                request_id: self.request_id_counter.fetch_add(1, Ordering::Relaxed),
+                number_of_elements: 1,
+            })
         };
+        unsafe { user_header_ptr.write(RequestHeader::default()) };
 
         let ptr = unsafe {
             RawSampleMut::<
                 service::header::request_response::RequestHeader,
                 RequestHeader,
                 MaybeUninit<RequestPayload>,
-            >::new_unchecked(
-                chunk.header.cast(),
-                chunk.user_header.cast(),
-                chunk.payload.cast(),
-            )
+            >::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
         };
 
         Ok(RequestMutUninit {
@@ -717,7 +714,7 @@ impl<
 impl<
         Service: service::Service,
         RequestPayload: Debug + Default + ZeroCopySend,
-        RequestHeader: Debug + ZeroCopySend,
+        RequestHeader: Default + Debug + ZeroCopySend,
         ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
@@ -771,7 +768,7 @@ impl<
 impl<
         Service: service::Service,
         RequestPayload: Default + Debug + ZeroCopySend + 'static,
-        RequestHeader: Debug + ZeroCopySend,
+        RequestHeader: Default + Debug + ZeroCopySend,
         ResponsePayload: Debug + ZeroCopySend + ?Sized,
         ResponseHeader: Debug + ZeroCopySend,
     > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
@@ -835,7 +832,16 @@ impl<
     pub fn initial_max_slice_len(&self) -> usize {
         self.client_shared_state.lock().config.initial_max_slice_len
     }
+}
 
+impl<
+        Service: service::Service,
+        RequestPayload: Debug + ZeroCopySend + 'static,
+        RequestHeader: Default + Debug + ZeroCopySend,
+        ResponsePayload: Debug + ZeroCopySend + ?Sized,
+        ResponseHeader: Debug + ZeroCopySend,
+    > Client<Service, [RequestPayload], RequestHeader, ResponsePayload, ResponseHeader>
+{
     /// Loans/allocates a [`RequestMutUninit`] from the underlying data segment of the [`Client`].
     /// The user has to initialize the payload before it can be sent.
     ///
@@ -929,6 +935,7 @@ impl<
                 }
             };
 
+        let user_header_ptr: *mut RequestHeader = chunk.user_header.cast();
         let header_ptr = chunk.header as *mut header::request_response::RequestHeader;
         unsafe {
             header_ptr.write(header::request_response::RequestHeader {
@@ -938,6 +945,7 @@ impl<
                 number_of_elements: slice_len as _,
             })
         };
+        unsafe { user_header_ptr.write(RequestHeader::default()) };
 
         let ptr = unsafe {
             RawSampleMut::<
@@ -945,8 +953,8 @@ impl<
                 RequestHeader,
                 [MaybeUninit<RequestPayload>],
             >::new_unchecked(
-                chunk.header.cast(),
-                chunk.user_header.cast(),
+                header_ptr,
+                user_header_ptr,
                 core::slice::from_raw_parts_mut(
                     chunk.payload.cast(),
                     underlying_number_of_slice_elements,
@@ -969,12 +977,14 @@ impl<
     }
 }
 
-impl<
-        Service: service::Service,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponsePayload: Debug + ZeroCopySend + ?Sized,
-        ResponseHeader: Debug + ZeroCopySend,
-    > Client<Service, [CustomPayloadMarker], RequestHeader, ResponsePayload, ResponseHeader>
+impl<Service: service::Service>
+    Client<
+        Service,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+        [CustomPayloadMarker],
+        CustomHeaderMarker,
+    >
 {
     #[doc(hidden)]
     #[allow(clippy::type_complexity)] // type alias would require 5 generic parameters which hardly reduces complexity
@@ -985,9 +995,9 @@ impl<
         RequestMutUninit<
             Service,
             [MaybeUninit<CustomPayloadMarker>],
-            RequestHeader,
-            ResponsePayload,
-            ResponseHeader,
+            CustomHeaderMarker,
+            [CustomPayloadMarker],
+            CustomHeaderMarker,
         >,
         LoanError,
     > {
