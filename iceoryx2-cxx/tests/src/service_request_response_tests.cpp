@@ -19,6 +19,21 @@
 namespace {
 using namespace iox2;
 
+template <uint64_t A, uint32_t B>
+struct CustomTestHeader {
+    CustomTestHeader()
+        : data_a { A }
+        , data_b { B } {
+    }
+
+    auto operator==(const CustomTestHeader& rhs) const -> bool {
+        return data_a == rhs.data_a && data_b == rhs.data_b;
+    }
+
+    uint64_t data_a;
+    uint64_t data_b;
+};
+
 template <typename T>
 class ServiceRequestResponseTest : public ::testing::Test {
   public:
@@ -358,6 +373,86 @@ TYPED_TEST(ServiceRequestResponseTest, loan_send_receive_works) {
     ASSERT_TRUE(received_response.has_value());
     EXPECT_THAT(received_response.value()->p, Eq(0));
     EXPECT_THAT((*received_response.value()).p, Eq(0));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_request_default_constructs_request_header) {
+    using UserHeader = CustomTestHeader<123, 456>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .template request_user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder().create().expect("");
+
+    auto sut = client.loan().expect("");
+    ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_uninit_request_default_constructs_request_header) {
+    using UserHeader = CustomTestHeader<78911, 123456>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .template request_user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder().create().expect("");
+
+    auto sut = client.loan_uninit().expect("");
+    ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_slice_request_default_constructs_request_header) {
+    using UserHeader = CustomTestHeader<17723, 43356>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
+                       .template request_user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder().create().expect("");
+
+    auto sut = client.loan_slice(1).expect("");
+    ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_request_default_constructs_request_header) {
+    using UserHeader = CustomTestHeader<1253, 4546>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<iox::Slice<uint64_t>, uint64_t>()
+                       .template request_user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder().create().expect("");
+
+    auto sut = client.loan_slice_uninit(1).expect("");
+    ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
 struct DummyData {
