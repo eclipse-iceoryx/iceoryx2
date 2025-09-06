@@ -17,6 +17,7 @@
 #include "iox/slice.hpp"
 #include "iox2/connection_failure.hpp"
 #include "iox2/iceoryx2.h"
+#include "iox2/internal/helper.hpp"
 #include "iox2/internal/iceoryx2.hpp"
 #include "iox2/publisher_error.hpp"
 #include "iox2/sample_mut.hpp"
@@ -206,6 +207,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_uninit()
     SampleMutUninit<S, Payload, UserHeader> sample;
 
     auto result = iox2_publisher_loan_slice_uninit(&m_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle, 1);
+    internal::EmplaceNew<UserHeader>::emplace(sample);
 
     if (result == IOX2_OK) {
         return iox::ok(std::move(sample));
@@ -254,6 +256,7 @@ inline auto Publisher<S, Payload, UserHeader>::loan_slice_uninit(const uint64_t 
 
     auto result = iox2_publisher_loan_slice_uninit(
         &m_handle, &sample.m_sample.m_sample, &sample.m_sample.m_handle, number_of_elements);
+    internal::EmplaceNew<UserHeader>::emplace(sample);
 
     if (result == IOX2_OK) {
         return iox::ok(std::move(sample));
