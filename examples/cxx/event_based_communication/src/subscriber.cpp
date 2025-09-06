@@ -13,11 +13,7 @@
 #include <iostream>
 
 #include "custom_subscriber.hpp"
-#include "iox/duration.hpp"
-#include "iox2/log.hpp"
-#include "iox2/node.hpp"
-#include "iox2/service_type.hpp"
-#include "iox2/waitset.hpp"
+#include "iox2/iceoryx2.hpp"
 
 constexpr iox::units::Duration DEADLINE = iox::units::Duration::fromSeconds(2);
 

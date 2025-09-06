@@ -14,14 +14,7 @@
 #include <map>
 
 #include "iox/cli_definition.hpp"
-#include "iox/duration.hpp"
-#include "iox/string.hpp"
-#include "iox/vector.hpp"
-#include "iox2/log.hpp"
-#include "iox2/node.hpp"
-#include "iox2/service_name.hpp"
-#include "iox2/service_type.hpp"
-#include "iox2/waitset.hpp"
+#include "iox2/iceoryx2.hpp"
 
 // NOLINTBEGIN
 struct Args {

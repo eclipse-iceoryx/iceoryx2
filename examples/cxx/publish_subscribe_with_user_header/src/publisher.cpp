@@ -11,12 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 #include "custom_header.hpp"
-#include "iox/duration.hpp"
-#include "iox2/log.hpp"
-#include "iox2/node.hpp"
-#include "iox2/sample_mut.hpp"
-#include "iox2/service_name.hpp"
-#include "iox2/service_type.hpp"
+#include "iox2/iceoryx2.hpp"
 
 #include <cstdint>
 #include <iostream>
