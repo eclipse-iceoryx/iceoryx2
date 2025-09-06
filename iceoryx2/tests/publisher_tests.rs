@@ -19,7 +19,7 @@ mod publisher {
 
     use iceoryx2::port::{publisher::PublisherCreateError, LoanError};
     use iceoryx2::prelude::*;
-    use iceoryx2::service::builder::CustomPayloadMarker;
+    use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{service_name::ServiceName, Service};
     use iceoryx2::testing;
@@ -455,6 +455,7 @@ mod publisher {
         let service = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
+                .user_header::<CustomHeaderMarker>()
                 .__internal_set_payload_type_details(&type_detail)
                 .create()?
         };
@@ -506,6 +507,7 @@ mod publisher {
         let service = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
+                .user_header::<CustomHeaderMarker>()
                 .__internal_set_payload_type_details(&type_details)
                 .create()
                 .unwrap()

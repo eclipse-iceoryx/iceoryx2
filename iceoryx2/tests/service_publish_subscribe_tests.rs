@@ -43,6 +43,14 @@ mod service_publish_subscribe {
         value: [u64; 1024],
     }
 
+    impl Default for SomeUserHeader {
+        fn default() -> Self {
+            Self {
+                value: [0u64; 1024],
+            }
+        }
+    }
+
     fn generate_name() -> ServiceName {
         ServiceName::new(&format!(
             "service_tests_{}",
@@ -2921,6 +2929,7 @@ mod service_publish_subscribe {
         let sut = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
+                .user_header::<CustomHeaderMarker>()
                 .__internal_set_payload_type_details(&type_details)
                 .create()
                 .unwrap()
@@ -2956,6 +2965,7 @@ mod service_publish_subscribe {
         let sut = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
+                .user_header::<CustomHeaderMarker>()
                 .__internal_set_payload_type_details(&type_details)
                 .create()
                 .unwrap()
