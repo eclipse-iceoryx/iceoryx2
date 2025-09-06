@@ -21,26 +21,25 @@ namespace {
 using namespace iox2;
 
 struct TestHeader {
-    TestHeader() {
-    }
-
     static constexpr uint64_t CAPACITY = 1024;
     std::array<uint64_t, CAPACITY> value;
 };
 
 template <uint64_t A, uint32_t B>
-struct CustomTestHeader {
+class CustomTestHeader {
+  public:
     CustomTestHeader()
-        : data_a { A }
-        , data_b { B } {
+        : m_data_a { A }
+        , m_data_b { B } {
     }
 
     auto operator==(const CustomTestHeader& rhs) const -> bool {
-        return data_a == rhs.data_a && data_b == rhs.data_b;
+        return m_data_a == rhs.m_data_a && m_data_b == rhs.m_data_b;
     }
 
-    uint64_t data_a;
-    uint64_t data_b;
+  private:
+    uint64_t m_data_a;
+    uint64_t m_data_b;
 };
 
 template <typename T>
@@ -749,7 +748,9 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, loan_has_default_constructed_user_header) {
-    using UserHeader = CustomTestHeader<123, 456>;
+    constexpr uint64_t RAND_A = 123;
+    constexpr uint32_t RAND_B = 456;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -767,7 +768,9 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_has_default_constructed_user_header
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_has_default_constructed_user_header) {
-    using UserHeader = CustomTestHeader<4561, 7891>;
+    constexpr uint64_t RAND_A = 4123;
+    constexpr uint32_t RAND_B = 4456;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -785,7 +788,9 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_has_default_constructed_user
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, loan_slice_has_default_constructed_user_header) {
-    using UserHeader = CustomTestHeader<18723, 4596>;
+    constexpr uint64_t RAND_A = 41231;
+    constexpr uint32_t RAND_B = 44561;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();
@@ -803,7 +808,9 @@ TYPED_TEST(ServicePublishSubscribeTest, loan_slice_has_default_constructed_user_
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_has_default_constructed_user_header) {
-    using UserHeader = CustomTestHeader<1628723, 114596>;
+    constexpr uint64_t RAND_A = 641231;
+    constexpr uint32_t RAND_B = 644561;
+    using UserHeader = CustomTestHeader<RAND_A, RAND_B>;
     constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
 
     const auto service_name = iox2_testing::generate_service_name();

@@ -15,17 +15,17 @@
 
 namespace iox2::internal {
 template <typename T>
-struct EmplaceNew {
+struct PlacementDefault {
     template <typename S>
-    static void emplace(S& payload) {
+    static void placement_default(S& payload) {
         new (&payload.user_header_mut()) T();
     }
 };
 
 template <>
-struct EmplaceNew<void> {
+struct PlacementDefault<void> {
     template <typename S>
-    static void emplace(S& payload) {
+    static void placement_default(S& payload) {
         static_cast<void>(payload);
     }
 };
