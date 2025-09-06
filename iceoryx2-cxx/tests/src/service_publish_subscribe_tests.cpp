@@ -21,8 +21,26 @@ namespace {
 using namespace iox2;
 
 struct TestHeader {
+    TestHeader() {
+    }
+
     static constexpr uint64_t CAPACITY = 1024;
     std::array<uint64_t, CAPACITY> value;
+};
+
+template <uint64_t A, uint32_t B>
+struct CustomTestHeader {
+    CustomTestHeader()
+        : data_a { A }
+        , data_b { B } {
+    }
+
+    auto operator==(const CustomTestHeader& rhs) const -> bool {
+        return data_a == rhs.data_a && data_b == rhs.data_b;
+    }
+
+    uint64_t data_a;
+    uint64_t data_b;
 };
 
 template <typename T>
@@ -728,6 +746,78 @@ TYPED_TEST(ServicePublishSubscribeTest, send_receive_with_user_header_works) {
     for (uint64_t idx = 0; idx < TestHeader::CAPACITY; ++idx) {
         ASSERT_THAT(recv_sample->user_header().value.at(idx), Eq((4 * idx) + 3));
     }
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_has_default_constructed_user_header) {
+    using UserHeader = CustomTestHeader<123, 456>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<uint64_t>()
+                       .template user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto publisher = service.publisher_builder().create().expect("");
+    auto sample = publisher.loan().expect("");
+    ASSERT_THAT(sample.user_header(), Eq(UserHeader()));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_uninit_has_default_constructed_user_header) {
+    using UserHeader = CustomTestHeader<4561, 7891>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<uint64_t>()
+                       .template user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto publisher = service.publisher_builder().create().expect("");
+    auto sample = publisher.loan_uninit().expect("");
+    ASSERT_THAT(sample.user_header(), Eq(UserHeader()));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_slice_has_default_constructed_user_header) {
+    using UserHeader = CustomTestHeader<18723, 4596>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<iox::Slice<uint64_t>>()
+                       .template user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto publisher = service.publisher_builder().create().expect("");
+    auto sample = publisher.loan_slice(1).expect("");
+    ASSERT_THAT(sample.user_header(), Eq(UserHeader()));
+}
+
+TYPED_TEST(ServicePublishSubscribeTest, loan_slice_uninit_has_default_constructed_user_header) {
+    using UserHeader = CustomTestHeader<1628723, 114596>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template publish_subscribe<iox::Slice<uint64_t>>()
+                       .template user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto publisher = service.publisher_builder().create().expect("");
+    auto sample = publisher.loan_slice_uninit(1).expect("");
+    ASSERT_THAT(sample.user_header(), Eq(UserHeader()));
 }
 
 TYPED_TEST(ServicePublishSubscribeTest, has_sample_works) {
