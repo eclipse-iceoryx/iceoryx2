@@ -111,7 +111,7 @@ use crate::prelude::UnableToDeliverStrategy;
 use crate::raw_sample::RawSampleMut;
 use crate::sample_mut::SampleMut;
 use crate::sample_mut_uninit::SampleMutUninit;
-use crate::service::builder::CustomPayloadMarker;
+use crate::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use crate::service::dynamic_config::publish_subscribe::{PublisherDetails, SubscriberDetails};
 use crate::service::header::publish_subscribe::Header;
 use crate::service::naming_scheme::data_segment_name;
@@ -528,7 +528,7 @@ impl<
 impl<
         Service: service::Service,
         Payload: Debug + ZeroCopySend + Sized,
-        UserHeader: Debug + ZeroCopySend,
+        UserHeader: Default + Debug + ZeroCopySend,
     > Publisher<Service, Payload, UserHeader>
 {
     /// Copies the input `value` into a [`crate::sample_mut::SampleMut`] and delivers it.
@@ -597,10 +597,12 @@ impl<
             .allocate(shared_state.sender.sample_layout(1))?;
         let node_id = shared_state.sender.service_state.shared_node.id();
         let header_ptr = chunk.header as *mut Header;
+        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), 1)) };
+        unsafe { user_header_ptr.write(UserHeader::default()) };
 
         let sample = unsafe {
-            RawSampleMut::new_unchecked(header_ptr, chunk.user_header.cast(), chunk.payload.cast())
+            RawSampleMut::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
         };
         Ok(
             SampleMutUninit::<Service, MaybeUninit<Payload>, UserHeader>::new(
@@ -616,7 +618,7 @@ impl<
 impl<
         Service: service::Service,
         Payload: Default + Debug + ZeroCopySend + Sized,
-        UserHeader: Debug + ZeroCopySend,
+        UserHeader: Default + Debug + ZeroCopySend,
     > Publisher<Service, Payload, UserHeader>
 {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
@@ -660,7 +662,7 @@ impl<
 impl<
         Service: service::Service,
         Payload: Default + Debug + ZeroCopySend,
-        UserHeader: Debug + ZeroCopySend,
+        UserHeader: Default + Debug + ZeroCopySend,
     > Publisher<Service, [Payload], UserHeader>
 {
     /// Loans/allocates a [`crate::sample_mut::SampleMut`] from the underlying data segment of the [`Publisher`]
@@ -716,7 +718,14 @@ impl<
             .config
             .initial_max_slice_len
     }
+}
 
+impl<
+        Service: service::Service,
+        Payload: Debug + ZeroCopySend,
+        UserHeader: Default + Debug + ZeroCopySend,
+    > Publisher<Service, [Payload], UserHeader>
+{
     /// Loans/allocates a [`SampleMutUninit`] from the underlying data segment of the [`Publisher`].
     /// The user has to initialize the payload before it can be sent.
     ///
@@ -751,10 +760,10 @@ impl<
         // required since Rust does not support generic specializations or negative traits
         debug_assert!(TypeId::of::<Payload>() != TypeId::of::<CustomPayloadMarker>());
 
-        unsafe { self.loan_slice_uninit_impl(slice_len, slice_len) }
+        self.loan_slice_uninit_impl(slice_len, slice_len)
     }
 
-    unsafe fn loan_slice_uninit_impl(
+    fn loan_slice_uninit_impl(
         &self,
         slice_len: usize,
         underlying_number_of_slice_elements: usize,
@@ -771,14 +780,16 @@ impl<
 
         let sample_layout = shared_state.sender.sample_layout(slice_len);
         let chunk = shared_state.sender.allocate(sample_layout)?;
+        let user_header_ptr: *mut UserHeader = chunk.user_header.cast();
         let header_ptr = chunk.header as *mut Header;
         let node_id = shared_state.sender.service_state.shared_node.id();
         unsafe { header_ptr.write(Header::new(*node_id, self.id(), slice_len as _)) };
+        unsafe { user_header_ptr.write(UserHeader::default()) };
 
         let sample = unsafe {
             RawSampleMut::new_unchecked(
                 header_ptr,
-                chunk.user_header.cast(),
+                user_header_ptr,
                 core::slice::from_raw_parts_mut(
                     chunk.payload.cast(),
                     underlying_number_of_slice_elements,
@@ -797,9 +808,7 @@ impl<
     }
 }
 
-impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
-    Publisher<Service, [CustomPayloadMarker], UserHeader>
-{
+impl<Service: service::Service> Publisher<Service, [CustomPayloadMarker], CustomHeaderMarker> {
     /// # Safety
     ///
     ///  * slice_len != 1 only when payload TypeVariant == Dynamic
@@ -811,8 +820,10 @@ impl<Service: service::Service, UserHeader: Debug + ZeroCopySend>
     pub unsafe fn loan_custom_payload(
         &self,
         slice_len: usize,
-    ) -> Result<SampleMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], UserHeader>, LoanError>
-    {
+    ) -> Result<
+        SampleMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>,
+        LoanError,
+    > {
         let shared_state = self.publisher_shared_state.lock();
 
         // TypeVariant::Dynamic == slice and only here it makes sense to loan more than one element

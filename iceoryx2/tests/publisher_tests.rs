@@ -19,7 +19,7 @@ mod publisher {
 
     use iceoryx2::port::{publisher::PublisherCreateError, LoanError};
     use iceoryx2::prelude::*;
-    use iceoryx2::service::builder::CustomPayloadMarker;
+    use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::{service_name::ServiceName, Service};
     use iceoryx2::testing;
@@ -337,6 +337,104 @@ mod publisher {
         Ok(())
     }
 
+    #[derive(Debug, ZeroCopySend, Eq, PartialEq)]
+    #[repr(C)]
+    struct CustomUserHeader<const A: u32, const B: u64> {
+        data_a: u32,
+        data_b: u64,
+    }
+
+    impl<const A: u32, const B: u64> Default for CustomUserHeader<A, B> {
+        fn default() -> Self {
+            Self {
+                data_a: A,
+                data_b: B,
+            }
+        }
+    }
+
+    #[test]
+    fn loaned_sample_has_default_constructed_user_header<Sut: Service>() -> TestResult<()> {
+        type UserHeader = CustomUserHeader<89123, 98123891>;
+        let service_name = generate_name()?;
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .user_header::<UserHeader>()
+            .create()?;
+
+        let sut = service.publisher_builder().create()?;
+        let sample = sut.loan()?;
+
+        assert_that!(*sample.user_header(), eq UserHeader::default());
+
+        Ok(())
+    }
+
+    #[test]
+    fn uninitialized_loaned_sample_has_default_constructed_user_header<Sut: Service>(
+    ) -> TestResult<()> {
+        type UserHeader = CustomUserHeader<87718, 9851291>;
+        let service_name = generate_name()?;
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<u64>()
+            .user_header::<UserHeader>()
+            .create()?;
+
+        let sut = service.publisher_builder().create()?;
+        let sample = sut.loan_uninit()?;
+
+        assert_that!(*sample.user_header(), eq UserHeader::default());
+
+        Ok(())
+    }
+
+    #[test]
+    fn loaned_slice_sample_has_default_constructed_user_header<Sut: Service>() -> TestResult<()> {
+        type UserHeader = CustomUserHeader<3387718, 985129331>;
+        let service_name = generate_name()?;
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u64]>()
+            .user_header::<UserHeader>()
+            .create()?;
+
+        let sut = service.publisher_builder().create()?;
+        let sample = sut.loan_slice(1)?;
+
+        assert_that!(*sample.user_header(), eq UserHeader::default());
+
+        Ok(())
+    }
+
+    #[test]
+    fn uninitialized_loaned_slice_sample_has_default_constructed_user_header<Sut: Service>(
+    ) -> TestResult<()> {
+        type UserHeader = CustomUserHeader<312312, 92221>;
+        let service_name = generate_name()?;
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u64]>()
+            .user_header::<UserHeader>()
+            .create()?;
+
+        let sut = service.publisher_builder().create()?;
+        let sample = sut.loan_slice_uninit(1)?;
+
+        assert_that!(*sample.user_header(), eq UserHeader::default());
+
+        Ok(())
+    }
+
     #[test]
     fn publisher_block_when_unable_to_deliver_blocks<Sut: Service>() -> TestResult<()> {
         let _watchdog = Watchdog::new();
@@ -455,6 +553,7 @@ mod publisher {
         let service = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
+                .user_header::<CustomHeaderMarker>()
                 .__internal_set_payload_type_details(&type_detail)
                 .create()?
         };
@@ -506,6 +605,7 @@ mod publisher {
         let service = unsafe {
             node.service_builder(&service_name)
                 .publish_subscribe::<[CustomPayloadMarker]>()
+                .user_header::<CustomHeaderMarker>()
                 .__internal_set_payload_type_details(&type_details)
                 .create()
                 .unwrap()

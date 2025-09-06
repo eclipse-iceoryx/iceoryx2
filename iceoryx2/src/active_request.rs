@@ -65,7 +65,9 @@ use crate::{
     response_mut::ResponseMut,
     response_mut_uninit::ResponseMutUninit,
     service::{
-        self, builder::CustomPayloadMarker, static_config::message_type_details::TypeVariant,
+        self,
+        builder::{CustomHeaderMarker, CustomPayloadMarker},
+        static_config::message_type_details::TypeVariant,
     },
 };
 
@@ -258,7 +260,7 @@ impl<
         RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
         ResponsePayload: Debug + ZeroCopySend + Sized,
-        ResponseHeader: Debug + ZeroCopySend,
+        ResponseHeader: Default + Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Loans uninitialized memory for a [`ResponseMut`] where the user can write its payload to.
@@ -297,28 +299,26 @@ impl<
             .response_sender
             .allocate(shared_state.response_sender.sample_layout(1))?;
 
+        let header_ptr: *mut service::header::request_response::ResponseHeader =
+            chunk.header.cast();
+        let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
         unsafe {
-            (chunk.header as *mut service::header::request_response::ResponseHeader).write(
-                service::header::request_response::ResponseHeader {
-                    server_id: UniqueServerId(UniqueSystemId::from(
-                        shared_state.response_sender.sender_port_id,
-                    )),
-                    request_id: self.request_id,
-                    number_of_elements: 1,
-                },
-            )
+            header_ptr.write(service::header::request_response::ResponseHeader {
+                server_id: UniqueServerId(UniqueSystemId::from(
+                    shared_state.response_sender.sender_port_id,
+                )),
+                request_id: self.request_id,
+                number_of_elements: 1,
+            })
         };
+        unsafe { user_header_ptr.write(ResponseHeader::default()) };
 
         let ptr = unsafe {
             RawSampleMut::<
                 service::header::request_response::ResponseHeader,
                 ResponseHeader,
                 MaybeUninit<ResponsePayload>,
-            >::new_unchecked(
-                chunk.header.cast(),
-                chunk.user_header.cast(),
-                chunk.payload.cast(),
-            )
+            >::new_unchecked(header_ptr, user_header_ptr, chunk.payload.cast())
         };
 
         Ok(ResponseMutUninit {
@@ -378,7 +378,7 @@ impl<
         RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
         ResponsePayload: Debug + Default + ZeroCopySend + Sized,
-        ResponseHeader: Debug + ZeroCopySend,
+        ResponseHeader: Default + Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, ResponsePayload, ResponseHeader>
 {
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
@@ -426,7 +426,7 @@ impl<
         RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
         ResponsePayload: Debug + Default + ZeroCopySend + 'static,
-        ResponseHeader: Debug + ZeroCopySend,
+        ResponseHeader: Default + Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
     /// Loans/allocates a [`ResponseMut`] from the underlying data segment of the
@@ -476,7 +476,7 @@ impl<
         RequestPayload: Debug + ZeroCopySend + ?Sized,
         RequestHeader: Debug + ZeroCopySend,
         ResponsePayload: Debug + ZeroCopySend + 'static,
-        ResponseHeader: Debug + ZeroCopySend,
+        ResponseHeader: Default + Debug + ZeroCopySend,
     > ActiveRequest<Service, RequestPayload, RequestHeader, [ResponsePayload], ResponseHeader>
 {
     /// Loans/allocates a [`ResponseMutUninit`] from the underlying data segment of the
@@ -545,17 +545,19 @@ impl<
         let response_layout = shared_state.response_sender.sample_layout(slice_len);
         let chunk = shared_state.response_sender.allocate(response_layout)?;
 
+        let header_ptr: *mut service::header::request_response::ResponseHeader =
+            chunk.header.cast();
+        let user_header_ptr: *mut ResponseHeader = chunk.user_header.cast();
         unsafe {
-            (chunk.header as *mut service::header::request_response::ResponseHeader).write(
-                service::header::request_response::ResponseHeader {
-                    server_id: UniqueServerId(UniqueSystemId::from(
-                        shared_state.response_sender.sender_port_id,
-                    )),
-                    request_id: self.request_id,
-                    number_of_elements: slice_len as _,
-                },
-            )
+            header_ptr.write(service::header::request_response::ResponseHeader {
+                server_id: UniqueServerId(UniqueSystemId::from(
+                    shared_state.response_sender.sender_port_id,
+                )),
+                request_id: self.request_id,
+                number_of_elements: slice_len as _,
+            })
         };
+        unsafe { user_header_ptr.write(ResponseHeader::default()) };
 
         let ptr = unsafe {
             RawSampleMut::<
@@ -563,8 +565,8 @@ impl<
                 ResponseHeader,
                 [MaybeUninit<ResponsePayload>],
             >::new_unchecked(
-                chunk.header.cast(),
-                chunk.user_header.cast(),
+                header_ptr,
+                user_header_ptr,
                 core::slice::from_raw_parts_mut(
                     chunk.payload.cast(),
                     underlying_number_of_slice_elements,
@@ -588,17 +590,13 @@ impl<
     }
 }
 
-impl<
-        Service: crate::service::Service,
-        RequestHeader: Debug + ZeroCopySend,
-        ResponseHeader: Debug + ZeroCopySend,
-    >
+impl<Service: crate::service::Service>
     ActiveRequest<
         Service,
         [CustomPayloadMarker],
-        RequestHeader,
+        CustomHeaderMarker,
         [CustomPayloadMarker],
-        ResponseHeader,
+        CustomHeaderMarker,
     >
 {
     #[doc(hidden)]
@@ -606,7 +604,7 @@ impl<
         &self,
         slice_len: usize,
     ) -> Result<
-        ResponseMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], ResponseHeader>,
+        ResponseMutUninit<Service, [MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>,
         LoanError,
     > {
         let shared_state = self.shared_state.lock();

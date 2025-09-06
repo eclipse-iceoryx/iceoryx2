@@ -69,7 +69,7 @@ enum ServiceState {
 }
 
 #[repr(C)]
-#[derive(Debug, ZeroCopySend, Clone)]
+#[derive(Debug, ZeroCopySend, Clone, Default)]
 #[doc(hidden)]
 pub struct CustomHeaderMarker {}
 
