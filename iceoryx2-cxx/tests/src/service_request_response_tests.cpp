@@ -455,6 +455,94 @@ TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_request_default_constru
     ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
 }
 
+TYPED_TEST(ServiceRequestResponseTest, loan_response_default_constructs_response_header) {
+    using UserHeader = CustomTestHeader<13, 56>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .template response_user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder().create().expect("");
+
+    auto pending_response = client.send_copy(123);
+    auto active_request = server.receive().expect("").value();
+    auto sut = active_request.loan().expect("");
+    ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_uninit_response_default_constructs_response_header) {
+    using UserHeader = CustomTestHeader<11233, 5856>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, uint64_t>()
+                       .template response_user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder().create().expect("");
+
+    auto pending_response = client.send_copy(123);
+    auto active_request = server.receive().expect("").value();
+    auto sut = active_request.loan_uninit().expect("");
+    ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_slice_response_default_constructs_response_header) {
+    using UserHeader = CustomTestHeader<112133, 556856>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                       .template response_user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder().create().expect("");
+
+    auto pending_response = client.send_copy(123);
+    auto active_request = server.receive().expect("").value();
+    auto sut = active_request.loan_slice(1).expect("");
+    ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
+}
+
+TYPED_TEST(ServiceRequestResponseTest, loan_slice_uninit_response_default_constructs_response_header) {
+    using UserHeader = CustomTestHeader<90112133, 556899>;
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service = node.service_builder(service_name)
+                       .template request_response<uint64_t, iox::Slice<uint64_t>>()
+                       .template response_user_header<UserHeader>()
+                       .create()
+                       .expect("");
+
+    auto client = service.client_builder().create().expect("");
+    auto server = service.server_builder().create().expect("");
+
+    auto pending_response = client.send_copy(123);
+    auto active_request = server.receive().expect("").value();
+    auto sut = active_request.loan_slice_uninit(1).expect("");
+    ASSERT_THAT(sut.user_header(), Eq(UserHeader()));
+}
+
 struct DummyData {
     static constexpr uint64_t DEFAULT_VALUE_A = 42;
     static constexpr bool DEFAULT_VALUE_Z { false };
