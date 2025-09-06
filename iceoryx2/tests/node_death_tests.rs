@@ -70,6 +70,7 @@ mod node_death_tests {
 
     #[test]
     fn dead_node_is_marked_as_dead_and_can_be_cleaned_up<S: Test>() {
+        let _watchdog = Watchdog::new();
         const NUMBER_OF_DEAD_NODES_LIMIT: usize = 5;
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -477,6 +478,7 @@ mod node_death_tests {
 
     #[test]
     fn opened_blackboard_can_be_accessed_after_creator_node_crash<S: Test>() {
+        let _watchdog = Watchdog::new();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
         let service_name = generate_service_name();
@@ -521,6 +523,7 @@ mod node_death_tests {
 
     #[test]
     fn event_service_is_removed_when_last_node_dies<S: Test>() {
+        let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -554,6 +557,7 @@ mod node_death_tests {
 
     #[test]
     fn pubsub_service_is_removed_when_last_node_dies<S: Test>() {
+        let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -587,6 +591,7 @@ mod node_death_tests {
 
     #[test]
     fn request_response_service_is_removed_when_last_node_dies<S: Test>() {
+        let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -620,6 +625,7 @@ mod node_death_tests {
 
     #[test]
     fn blackboard_service_is_removed_when_last_node_dies<S: Test>() {
+        let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -654,6 +660,7 @@ mod node_death_tests {
 
     #[test]
     fn writer_and_reader_resources_are_removed_after_crash<S: Test>() {
+        let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -693,6 +700,7 @@ mod node_death_tests {
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn blackboard_resources_are_removed_when_key_has_user_defined_name<S: Test>() {
+        let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -745,6 +753,7 @@ mod node_death_tests {
     #[cfg(not(target_os = "windows"))]
     #[test]
     fn blackboard_resources_are_removed_when_last_node_dies<S: Test>() {
+        let _watchdog = Watchdog::new();
         let service_name = generate_service_name();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
@@ -790,6 +799,7 @@ mod node_death_tests {
 
     #[test]
     fn node_cleanup_option_works_on_node_creation<S: Test>() {
+        let _watchdog = Watchdog::new();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_creation = false;
 
@@ -833,6 +843,7 @@ mod node_death_tests {
 
     #[test]
     fn node_cleanup_option_works_on_node_destruction<S: Test>() {
+        let _watchdog = Watchdog::new();
         let mut config = generate_isolated_config();
         config.global.node.cleanup_dead_nodes_on_destruction = true;
         let node_with_cleanup = NodeBuilder::new()
