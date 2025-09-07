@@ -548,7 +548,7 @@ jobs:
             arg: "--release"
           - name: "debug"
             arg: ""
-    timeout-minutes: 60
+    timeout-minutes: 90
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
