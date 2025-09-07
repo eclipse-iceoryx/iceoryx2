@@ -15,8 +15,8 @@
   [#419](https://github.com/eclipse-iceoryx/iceoryx2/issues/419)
 * Tunnel over zenoh for publish-subscribe and event services
   [#593](https://github.com/eclipse-iceoryx/iceoryx2/issues/593)
-* `iox2 tunnel zenoh`
-  [#593](https://github.com/eclipse-iceoryx/iceoryx2/issues/593)
+* Provide Official Yocto Recipe
+  [#663](https://github.com/eclipse-iceoryx/iceoryx2/issues/663)
 * All port factories implement `Send`
   [#768](https://github.com/eclipse-iceoryx/iceoryx2/issues/768)
 * `RequestResponse` for entire current discovery state
