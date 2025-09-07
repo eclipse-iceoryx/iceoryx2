@@ -13,6 +13,8 @@
 #ifndef IOX2_ACTIVE_REQUEST_HPP
 #define IOX2_ACTIVE_REQUEST_HPP
 
+#include "internal/helper.hpp"
+#include "iox2/internal/helper.hpp"
 #include "iox2/payload_info.hpp"
 #include "iox2/response_mut_uninit.hpp"
 #include "iox2/service_type.hpp"
@@ -175,6 +177,7 @@ ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, Respo
     ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader> response;
     auto result = iox2_active_request_loan_slice_uninit(
         &m_handle, &response.m_response.m_response, &response.m_response.m_handle, NUMBER_OF_ELEMENTS);
+    internal::PlacementDefault<ResponseUserHeader>::placement_default(response);
     if (result == IOX2_OK) {
         return iox::ok(std::move(response));
     }
@@ -194,6 +197,7 @@ ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, Respo
     ResponseMutUninit<Service, ResponsePayload, ResponseUserHeader> response;
     auto result = iox2_active_request_loan_slice_uninit(
         &m_handle, &response.m_response.m_response, &response.m_response.m_handle, number_of_elements);
+    internal::PlacementDefault<ResponseUserHeader>::placement_default(response);
     if (result == IOX2_OK) {
         return iox::ok(std::move(response));
     }

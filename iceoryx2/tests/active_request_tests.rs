@@ -18,6 +18,7 @@ mod active_request {
     use iceoryx2::testing::*;
     use iceoryx2::{
         node::{Node, NodeBuilder},
+        prelude::ZeroCopySend,
         service::Service,
     };
     use iceoryx2_bb_testing::assert_that;
@@ -168,6 +169,114 @@ mod active_request {
         loan.send().unwrap();
 
         assert_that!(pending_response.has_response(), eq true);
+    }
+
+    #[derive(Debug, ZeroCopySend, Eq, PartialEq)]
+    #[repr(C)]
+    struct CustomUserHeader<const A: u32, const B: u64> {
+        data_a: u32,
+        data_b: u64,
+    }
+
+    impl<const A: u32, const B: u64> Default for CustomUserHeader<A, B> {
+        fn default() -> Self {
+            Self {
+                data_a: A,
+                data_b: B,
+            }
+        }
+    }
+
+    #[test]
+    fn loaned_response_has_default_constructed_header<Sut: Service>() {
+        type UserHeader = CustomUserHeader<44491, 55592>;
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .response_user_header::<UserHeader>()
+            .create()
+            .unwrap();
+        let client = service.client_builder().create().unwrap();
+        let server = service.server_builder().create().unwrap();
+
+        let _pending_response = client.send_copy(123).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let sut = active_request.loan().unwrap();
+
+        assert_that!(*sut.user_header(), eq UserHeader::default());
+    }
+
+    #[test]
+    fn loaned_uninitialized_response_has_default_constructed_header<Sut: Service>() {
+        type UserHeader = CustomUserHeader<1144491, 1155592>;
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .response_user_header::<UserHeader>()
+            .create()
+            .unwrap();
+        let client = service.client_builder().create().unwrap();
+        let server = service.server_builder().create().unwrap();
+
+        let _pending_response = client.send_copy(123).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let sut = active_request.loan_uninit().unwrap();
+
+        assert_that!(*sut.user_header(), eq UserHeader::default());
+    }
+
+    #[test]
+    fn loaned_slice_response_has_default_constructed_header<Sut: Service>() {
+        type UserHeader = CustomUserHeader<474491, 575592>;
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u64]>()
+            .response_user_header::<UserHeader>()
+            .create()
+            .unwrap();
+        let client = service.client_builder().create().unwrap();
+        let server = service.server_builder().create().unwrap();
+
+        let _pending_response = client.send_copy(123).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let sut = active_request.loan_slice(1).unwrap();
+
+        assert_that!(*sut.user_header(), eq UserHeader::default());
+    }
+
+    #[test]
+    fn loaned_uninitialized_slice_response_has_default_constructed_header<Sut: Service>() {
+        type UserHeader = CustomUserHeader<47774491, 57577592>;
+        let config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, [u64]>()
+            .response_user_header::<UserHeader>()
+            .create()
+            .unwrap();
+        let client = service.client_builder().create().unwrap();
+        let server = service.server_builder().create().unwrap();
+
+        let _pending_response = client.send_copy(123).unwrap();
+
+        let active_request = server.receive().unwrap().unwrap();
+        let sut = active_request.loan_slice_uninit(1).unwrap();
+
+        assert_that!(*sut.user_header(), eq UserHeader::default());
     }
 
     #[test]

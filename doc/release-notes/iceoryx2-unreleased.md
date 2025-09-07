@@ -97,6 +97,8 @@
     [#992](https://github.com/eclipse-iceoryx/iceoryx2/issues/992)
 * Fix deadlock when system time changes and `wait` is called
     [#1000](https://github.com/eclipse-iceoryx/iceoryx2/issues/1000)
+* Fix uninitialized user header in publisher, client, active request
+    [#1014](https://github.com/eclipse-iceoryx/iceoryx2/issues/1014)
 
 ### Refactoring
 
@@ -191,3 +193,6 @@
 1. The `iceoryx2-ffi` crate is renamed to `iceoryx2-ffi-c` due to now also
    having a Python FFI package. The change should be transparent since the
    recommended way to use the C bindings is via the `iceoryx2-c` cmake package.
+
+2. The custom `UserHeader`, `RequestHeader`, `ResponseHeader` must implement
+   `Default`.

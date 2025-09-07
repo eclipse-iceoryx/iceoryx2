@@ -319,6 +319,98 @@ mod client {
         assert_that!(request2, is_ok);
     }
 
+    #[derive(Debug, ZeroCopySend, Eq, PartialEq)]
+    #[repr(C)]
+    struct CustomUserHeader<const A: u32, const B: u64> {
+        data_a: u32,
+        data_b: u64,
+    }
+
+    impl<const A: u32, const B: u64> Default for CustomUserHeader<A, B> {
+        fn default() -> Self {
+            Self {
+                data_a: A,
+                data_b: B,
+            }
+        }
+    }
+
+    #[test]
+    fn loaned_requests_has_default_constructed_request_header<Sut: Service>() {
+        type UserHeader = CustomUserHeader<89123, 98123891>;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .request_user_header::<UserHeader>()
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let sut = client.loan().unwrap();
+
+        assert_that!(*sut.user_header(), eq UserHeader::default());
+    }
+
+    #[test]
+    fn uninitialized_loaned_requests_has_default_constructed_request_header<Sut: Service>() {
+        type UserHeader = CustomUserHeader<789123, 798123891>;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<u64, u64>()
+            .request_user_header::<UserHeader>()
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let sut = client.loan_uninit().unwrap();
+
+        assert_that!(*sut.user_header(), eq UserHeader::default());
+    }
+
+    #[test]
+    fn loaned_slice_requests_has_default_constructed_request_header<Sut: Service>() {
+        type UserHeader = CustomUserHeader<9889123, 4598123891>;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .request_user_header::<UserHeader>()
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let sut = client.loan_slice(1).unwrap();
+
+        assert_that!(*sut.user_header(), eq UserHeader::default());
+    }
+
+    #[test]
+    fn uninitialized_loaned_slice_requests_has_default_constructed_request_header<Sut: Service>() {
+        type UserHeader = CustomUserHeader<5557832, 2341>;
+        let service_name = generate_service_name();
+        let node = create_node::<Sut>();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<[u64], u64>()
+            .request_user_header::<UserHeader>()
+            .create()
+            .unwrap();
+
+        let client = service.client_builder().create().unwrap();
+        let sut = client.loan_slice_uninit(1).unwrap();
+
+        assert_that!(*sut.user_header(), eq UserHeader::default());
+    }
+
     #[test]
     fn request_is_correctly_aligned<Sut: Service>() {
         const MAX_LOAN: usize = 9;
