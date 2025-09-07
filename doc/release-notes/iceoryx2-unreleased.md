@@ -142,8 +142,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
-* Added brief cross-compile documentation [#70](https://github.com/eclipse-iceoryx/iceoryx2/issues/70)
+* Added brief cross-compile documentation
+  [#70](https://github.com/eclipse-iceoryx/iceoryx2/issues/70)
 
 ### New API features
 
@@ -160,6 +160,8 @@
   [#795](https://github.com/eclipse-iceoryx/iceoryx2/issues/795)
 * Remove `impl Drop` restriction from `ZeroCopySend` trait
   [#908](https://github.com/eclipse-iceoryx/iceoryx2/issues/908)
+* Introduce convenience `iceoryx2.hpp` header
+  [#1016](https://github.com/eclipse-iceoryx/iceoryx2/issues/1016)
 
 ### Config Breaking Changes
 

@@ -13,13 +13,7 @@
 #ifndef IOX2_EXAMPLES_CUSTOM_PUBLISHER_HPP
 #define IOX2_EXAMPLES_CUSTOM_PUBLISHER_HPP
 
-#include "iox2/file_descriptor.hpp"
-#include "iox2/listener.hpp"
-#include "iox2/node.hpp"
-#include "iox2/notifier.hpp"
-#include "iox2/publisher.hpp"
-#include "iox2/sample_mut.hpp"
-#include "iox2/service_name.hpp"
+#include "iox2/iceoryx2.hpp"
 #include "pubsub_event.hpp"
 #include "transmission_data.hpp"
 

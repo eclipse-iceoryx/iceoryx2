@@ -14,7 +14,7 @@
 #define IOX2_EXAMPLES_PUBSUB_EVENT_HPP
 
 #include "iox/into.hpp"
-#include "iox2/event_id.hpp"
+#include "iox2/iceoryx2.hpp"
 
 #include <cstdint>
 

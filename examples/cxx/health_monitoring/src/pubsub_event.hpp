@@ -14,9 +14,7 @@
 #define IOX2_EXAMPLE_HEALTH_MONITORING_PUBSUB_EVENT_HPP
 
 #include "iox/into.hpp"
-#include "iox2/event_id.hpp"
-#include "iox2/node.hpp"
-#include "iox2/service_name.hpp"
+#include "iox2/iceoryx2.hpp"
 
 #include <cstdint>
 

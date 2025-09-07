@@ -10,11 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#include "iox2/callback_progression.hpp"
-#include "iox2/config.hpp"
-#include "iox2/log.hpp"
-#include "iox2/service.hpp"
-#include "iox2/service_type.hpp"
+#include "iox2/iceoryx2.hpp"
 
 #include <iostream>
 
