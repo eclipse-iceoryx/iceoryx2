@@ -411,6 +411,10 @@ The support levels can be adjusted when required.
 * **tier 2** - Works with a restricted security and safety feature set.
 * **tier 3** - Work in progress. Might compile and run or not.
 
+> [!NOTE]
+> The Yocto recipes are in the [meta-iceoryx2](https://github.com/eclipse-iceoryx/meta-iceoryx2)
+> repository.
+
 ## Language Bindings
 
 | Language |   State |
