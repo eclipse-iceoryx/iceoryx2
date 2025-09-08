@@ -1283,6 +1283,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-bb-conformance-test-macros"
+version = "0.7.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
 name = "iceoryx2-bb-container"
 version = "0.7.0"
 dependencies = [
