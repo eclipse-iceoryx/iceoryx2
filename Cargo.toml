@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "iceoryx2-bb/lock-free/",
     "iceoryx2-bb/threadsafe/",
+    "iceoryx2-bb/conformance-test-macros",
     "iceoryx2-bb/container",
     "iceoryx2-bb/derive-macros",
     "iceoryx2-bb/elementary",
@@ -21,6 +22,7 @@ members = [
 
     "iceoryx2-cal",
     "iceoryx2",
+
     "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal/posix/",
     "iceoryx2-pal/configuration/",
@@ -67,6 +69,7 @@ version = "0.7.0"
 [workspace.dependencies]
 iceoryx2-bb-threadsafe = { version = "0.7.0", path = "iceoryx2-bb/threadsafe/" }
 iceoryx2-bb-lock-free = { version = "0.7.0", path = "iceoryx2-bb/lock-free/" }
+iceoryx2-bb-conformance-test-macros = { version = "0.7.0", path = "iceoryx2-bb/conformance-test-macros"}
 iceoryx2-bb-container = { version = "0.7.0", path = "iceoryx2-bb/container/" }
 iceoryx2-bb-derive-macros = { version = "0.7.0", path = "iceoryx2-bb/derive-macros/" }
 iceoryx2-bb-elementary = { version = "0.7.0", path = "iceoryx2-bb/elementary/" }
