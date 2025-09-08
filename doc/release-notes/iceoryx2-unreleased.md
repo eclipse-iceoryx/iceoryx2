@@ -97,6 +97,8 @@
     [#992](https://github.com/eclipse-iceoryx/iceoryx2/issues/992)
 * Fix deadlock when system time changes and `wait` is called
     [#1000](https://github.com/eclipse-iceoryx/iceoryx2/issues/1000)
+* Improve performance of the `fill` method of `FixedSizeVec`
+    [#1006](https://github.com/eclipse-iceoryx/iceoryx2/issues/1006)
 * Fix uninitialized user header in publisher, client, active request
     [#1014](https://github.com/eclipse-iceoryx/iceoryx2/issues/1014)
 

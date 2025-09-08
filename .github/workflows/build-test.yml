@@ -548,7 +548,7 @@ jobs:
             arg: "--release"
           - name: "debug"
             arg: ""
-    timeout-minutes: 60
+    timeout-minutes: 90
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout sources
@@ -621,12 +621,12 @@ jobs:
     timeout-minutes: 60
     strategy:
       matrix:
-        freebsd_version: [ "14.0" ] 
+        freebsd_version: [ "14.3" ]
         toolchain: [ "stable", "1.81.0" ] # [stable, 1.81.0, beta, nightly]
         mode: ["debug"] # ["release", "debug"]
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-      - uses: vmactions/freebsd-vm@8873d98fd1413b5977cb2f7348fe329775159892 # ratchet:vmactions/freebsd-vm@v1
+      - uses: vmactions/freebsd-vm@05856381fab64eeee9b038a0818f6cec649ca17a # ratchet:vmactions/freebsd-vm@v1
         with:
           release: ${{ matrix.freebsd_version }}
           mem: 16384
