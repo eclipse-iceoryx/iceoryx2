@@ -21,6 +21,7 @@ members = [
     "iceoryx2-ffi/ffi-macros",
 
     "iceoryx2-cal",
+    "iceoryx2-cal/conformance-tests",
     "iceoryx2",
     "iceoryx2/conformance-tests",
 
@@ -88,6 +89,7 @@ iceoryx2-pal-os-api = { version = "0.7.0", path = "iceoryx2-pal/os-api/" }
 iceoryx2-pal-configuration = { version = "0.7.0", path = "iceoryx2-pal/configuration/" }
 iceoryx2-pal-testing = { version = "0.7.0", path = "iceoryx2-pal/testing/" }
 iceoryx2-cal = { version = "0.7.0", path = "iceoryx2-cal" }
+iceoryx2-cal-conformance-tests = { version = "0.7.0", path = "iceoryx2-cal/conformance-tests"}
 iceoryx2 = { version = "0.7.0", path = "iceoryx2/" }
 iceoryx2-conformance-tests = { version = "0.7.0", path = "iceoryx2/conformance-tests"}
 iceoryx2-cli = { version = "0.7.0", path = "iceoryx2_cli/"}

@@ -1497,6 +1497,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-cal-conformance-tests"
+version = "0.7.0"
+dependencies = [
+ "cdr",
+ "iceoryx2-bb-conformance-test-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-cal",
+ "iceoryx2-pal-concurrency-sync",
+ "postcard",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "iceoryx2-cli"
 version = "0.7.0"
 dependencies = [
