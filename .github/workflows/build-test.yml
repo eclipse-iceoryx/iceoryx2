@@ -499,7 +499,7 @@ jobs:
       - name: Print native libs of FFI target
         if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
         run: |
-          cd iceoryx2-ffi/ffi
+          cd iceoryx2-ffi/c
           cargo rustc -q -- --print=native-static-libs
 
       - name: Build language bindings
