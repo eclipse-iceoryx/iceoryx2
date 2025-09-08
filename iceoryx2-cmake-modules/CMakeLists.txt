@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 set(IOX2_VERSION 0.6.1)
-project(iceoryx2-cmake-modules VERSION ${IOX2_VERSION} LANGUAGES NONE)
+project(iceoryx2-cmake-modules VERSION ${IOX2_VERSION})
 
 #
 ########## select correct platform ##########
@@ -40,7 +40,7 @@ set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
 #
 ########## set variables for export ##########
 #
-set(CMAKE_INSTALL_LIBDIR "lib" CACHE PATH "Library install directory")
+
 include(GNUInstallDirs)
 
 # set variables for library export
