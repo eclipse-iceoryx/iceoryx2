@@ -1533,6 +1533,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-conformance-tests"
+version = "0.7.0"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-conformance-test-macros",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-cal",
+]
+
+[[package]]
 name = "iceoryx2-ffi-c"
 version = "0.7.0"
 dependencies = [

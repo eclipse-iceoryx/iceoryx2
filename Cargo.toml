@@ -22,6 +22,7 @@ members = [
 
     "iceoryx2-cal",
     "iceoryx2",
+    "iceoryx2/conformance-tests",
 
     "iceoryx2-pal/concurrency-sync",
     "iceoryx2-pal/posix/",
@@ -88,6 +89,7 @@ iceoryx2-pal-configuration = { version = "0.7.0", path = "iceoryx2-pal/configura
 iceoryx2-pal-testing = { version = "0.7.0", path = "iceoryx2-pal/testing/" }
 iceoryx2-cal = { version = "0.7.0", path = "iceoryx2-cal" }
 iceoryx2 = { version = "0.7.0", path = "iceoryx2/" }
+iceoryx2-conformance-tests = { version = "0.7.0", path = "iceoryx2/conformance-tests"}
 iceoryx2-cli = { version = "0.7.0", path = "iceoryx2_cli/"}
 iceoryx2-ffi-c = { version = "0.7.0", path = "iceoryx2-ffi/c" }
 iceoryx2-ffi-python = { version = "0.7.0", path = "iceoryx2-ffi/python" }
