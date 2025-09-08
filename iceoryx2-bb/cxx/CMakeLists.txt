@@ -29,14 +29,10 @@ include(Iceoryx2PlatformSettings)
 add_library(iceoryx2-bb-containers-cxx INTERFACE)
 add_library(iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx ALIAS iceoryx2-bb-containers-cxx)
 
-# TODO is this required? We install the full include directory anyway and
-# the natvis file has the build path in the iceoryx2-bb-cxxTargets.cmake file,
-# which probably will cause issues on Windows since I was not able to restrict
-# it to the BUILD_INTERFACE
 target_sources(iceoryx2-bb-containers-cxx INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/config.hpp>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp>
-    $<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx.natvis>
+    $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx.natvis>>
 )
 
 target_include_directories(iceoryx2-bb-containers-cxx
