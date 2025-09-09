@@ -28,17 +28,48 @@ pub(crate) trait ChannelManagement: ZeroCopyPortDetails {
             .is_ok()
     }
 
-    fn get_channel_state(&self, channel_id: ChannelId) -> u64 {
-        self.channel_state(channel_id).load(Ordering::Relaxed)
+    fn set_channel_to_graceful_disconnect(&self, channel_id: ChannelId, expected_state: u64) {
+        let graceful_disconnect_state = expected_state | (1u64 << 63);
+
+        let _ = self.channel_state(channel_id).compare_exchange(
+            expected_state,
+            graceful_disconnect_state,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+        );
+    }
+
+    fn in_graceful_disconnect_state(&self, channel_id: ChannelId, expected_state: u64) -> bool {
+        let graceful_disconnect_state = expected_state | (1u64 << 63);
+        graceful_disconnect_state == self.channel_state(channel_id).load(Ordering::Relaxed)
+    }
+
+    fn has_channel_state(&self, channel_id: ChannelId, expected_state: u64) -> bool {
+        let state = self.channel_state(channel_id).load(Ordering::Relaxed);
+        let state_without_graceful_disconnect_bit = (state << 1) >> 1;
+        expected_state == state_without_graceful_disconnect_bit
     }
 
     fn invalidate_channel_state(&self, channel_id: ChannelId, expected_state: u64) {
-        let _ = self.channel_state(channel_id).compare_exchange(
+        match self.channel_state(channel_id).compare_exchange(
             expected_state,
             INVALID_CHANNEL_STATE,
             Ordering::Relaxed,
             Ordering::Relaxed,
-        );
+        ) {
+            Ok(_) => return,
+            Err(v) => {
+                let graceful_disconnect_state = expected_state | (1u64 << 63);
+                if v == graceful_disconnect_state {
+                    let _ = self.channel_state(channel_id).compare_exchange(
+                        graceful_disconnect_state,
+                        INVALID_CHANNEL_STATE,
+                        Ordering::Relaxed,
+                        Ordering::Relaxed,
+                    );
+                }
+            }
+        }
     }
 }
 

@@ -178,6 +178,22 @@ impl<
             .invalidate_channel_state(self.request.channel_id, self.request.header().request_id);
     }
 
+    /// Marks the connection state that the [`Client`](crate::port::client::Client) wants to gracefully
+    /// disconnect. When [`Server`] reads this, it can send the last [`Response`] and drop the
+    /// corresponding [`ActiveRequest`](crate::active_request::ActiveRequest) to terminate the
+    /// connection ensuring that no [`Response`] is lost on [`Client`](crate::port::client::Client)
+    /// side.
+    pub fn request_graceful_disconnect(&self) {
+        self.request
+            .client_shared_state
+            .lock()
+            .response_receiver
+            .set_channel_state_to_graceful_disconnect(
+                self.request.channel_id,
+                self.request.header().request_id,
+            );
+    }
+
     /// Returns [`true`] until the [`ActiveRequest`](crate::active_request::ActiveRequest)
     /// goes out of scope on the [`Server`](crate::port::server::Server)s side indicating that the
     /// [`Server`](crate::port::server::Server) will no longer send [`Response`]s.

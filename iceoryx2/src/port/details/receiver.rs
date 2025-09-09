@@ -157,13 +157,26 @@ impl<Service: service::Service> Receiver<Service> {
         let mut ret_val = false;
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (_, connection) in connection_storage.iter() {
-            ret_val |= connection.receiver.get_channel_state(channel_id) == state;
+            ret_val |= connection.receiver.has_channel_state(channel_id, state);
             if ret_val {
                 break;
             }
         }
 
         ret_val
+    }
+
+    pub(crate) fn set_channel_state_to_graceful_disconnect(
+        &self,
+        channel_id: ChannelId,
+        expected_state: u64,
+    ) {
+        let connection_storage = unsafe { &mut *self.connection_storage.get() };
+        for (_, connection) in connection_storage.iter() {
+            connection
+                .receiver
+                .set_channel_to_graceful_disconnect(channel_id, expected_state);
+        }
     }
 
     pub(crate) fn invalidate_channel_state(&self, channel_id: ChannelId, expected_state: u64) {
