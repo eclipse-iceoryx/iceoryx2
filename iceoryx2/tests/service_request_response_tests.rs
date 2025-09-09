@@ -1572,6 +1572,40 @@ mod service_request_response {
         assert_that!(active_request, is_ok);
     }
 
+    #[test]
+    fn client_can_request_graceful_disconnect<S: Service>() {
+        let service_name = testing::generate_service_name();
+        let config = testing::generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
+
+        let service = node
+            .service_builder(&service_name)
+            .request_response::<usize, usize>()
+            .create()
+            .unwrap();
+
+        let server = service.server_builder().create().unwrap();
+        let client = service.client_builder().create().unwrap();
+
+        let pending_response = client.send_copy(123).unwrap();
+        let active_request = server.receive().unwrap().unwrap();
+
+        assert_that!(pending_response.is_connected(), eq true);
+        assert_that!(active_request.is_connected(), eq true);
+        assert_that!(active_request.has_requested_graceful_disconnect(), eq false);
+
+        pending_response.request_graceful_disconnect();
+
+        assert_that!(pending_response.is_connected(), eq true);
+        assert_that!(active_request.is_connected(), eq true);
+        assert_that!(active_request.has_requested_graceful_disconnect(), eq true);
+
+        drop(pending_response);
+
+        assert_that!(active_request.is_connected(), eq false);
+        assert_that!(active_request.has_requested_graceful_disconnect(), eq false);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

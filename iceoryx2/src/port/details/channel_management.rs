@@ -57,7 +57,7 @@ pub(crate) trait ChannelManagement: ZeroCopyPortDetails {
             Ordering::Relaxed,
             Ordering::Relaxed,
         ) {
-            Ok(_) => return,
+            Ok(_) => (),
             Err(v) => {
                 let graceful_disconnect_state = expected_state | (1u64 << 63);
                 if v == graceful_disconnect_state {
