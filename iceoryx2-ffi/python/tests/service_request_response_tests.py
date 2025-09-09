@@ -478,17 +478,17 @@ def test_client_can_request_graceful_disconnect(
     pending_response = client.send_copy(Payload(data=0))
     active_request = server.receive()
 
-    assert pending_response.is_connected == True
-    assert active_request.is_connected == True
-    assert active_request.has_requested_graceful_disconnect == False
+    assert pending_response.is_connected is True
+    assert active_request.is_connected is True
+    assert active_request.has_requested_graceful_disconnect is False
 
     pending_response.request_graceful_disconnect()
 
-    assert pending_response.is_connected == True
-    assert active_request.is_connected == True
-    assert active_request.has_requested_graceful_disconnect == True
+    assert pending_response.is_connected is True
+    assert active_request.is_connected is True
+    assert active_request.has_requested_graceful_disconnect is True
 
     pending_response.delete()
 
-    assert active_request.is_connected == False
-    assert active_request.has_requested_graceful_disconnect == False
+    assert active_request.is_connected is False
+    assert active_request.has_requested_graceful_disconnect is False

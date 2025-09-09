@@ -15,6 +15,7 @@ use core::sync::atomic::Ordering;
 use iceoryx2_cal::zero_copy_connection::{ChannelId, ZeroCopyPortDetails};
 
 pub(crate) const INVALID_CHANNEL_STATE: u64 = u64::MAX;
+const GRACEFUL_DISCONNECT_BIT: u64 = 1u64 << 63;
 
 pub(crate) trait ChannelManagement: ZeroCopyPortDetails {
     fn set_channel_state(&self, channel_id: ChannelId, state: u64) -> bool {
@@ -29,7 +30,7 @@ pub(crate) trait ChannelManagement: ZeroCopyPortDetails {
     }
 
     fn set_channel_to_graceful_disconnect(&self, channel_id: ChannelId, expected_state: u64) {
-        let graceful_disconnect_state = expected_state | (1u64 << 63);
+        let graceful_disconnect_state = expected_state | GRACEFUL_DISCONNECT_BIT;
 
         let _ = self.channel_state(channel_id).compare_exchange(
             expected_state,
@@ -40,13 +41,13 @@ pub(crate) trait ChannelManagement: ZeroCopyPortDetails {
     }
 
     fn in_graceful_disconnect_state(&self, channel_id: ChannelId, expected_state: u64) -> bool {
-        let graceful_disconnect_state = expected_state | (1u64 << 63);
+        let graceful_disconnect_state = expected_state | GRACEFUL_DISCONNECT_BIT;
         graceful_disconnect_state == self.channel_state(channel_id).load(Ordering::Relaxed)
     }
 
     fn has_channel_state(&self, channel_id: ChannelId, expected_state: u64) -> bool {
         let state = self.channel_state(channel_id).load(Ordering::Relaxed);
-        let state_without_graceful_disconnect_bit = (state << 1) >> 1;
+        let state_without_graceful_disconnect_bit = state & !(GRACEFUL_DISCONNECT_BIT);
         expected_state == state_without_graceful_disconnect_bit
     }
 
@@ -59,7 +60,7 @@ pub(crate) trait ChannelManagement: ZeroCopyPortDetails {
         ) {
             Ok(_) => (),
             Err(v) => {
-                let graceful_disconnect_state = expected_state | (1u64 << 63);
+                let graceful_disconnect_state = expected_state | GRACEFUL_DISCONNECT_BIT;
                 if v == graceful_disconnect_state {
                     let _ = self.channel_state(channel_id).compare_exchange(
                         graceful_disconnect_state,
