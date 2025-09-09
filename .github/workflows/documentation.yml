@@ -1,0 +1,493 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, release* ]
+    types: [ opened, ready_for_review, reopened, synchronize ]
+  schedule:
+    # nightly at 02:00 UTC - prevents artifact expiration
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+        - deploy
+        - delete
+      version:
+        description: 'Version to deploy or delete (e.g., "main", "v1.2.3")'
+        required: true
+        default: 'main'
+        type: string
+
+jobs:
+
+  changes:
+    if: github.event.pull_request.draft == false || github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    outputs:
+      source-code: ${{ steps.filter.outputs.source-code }}
+      api-docs: ${{ steps.filter.outputs.api-docs }}
+    steps:
+      - name: Checkout sources
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Check for changed file types
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36
+        id: filter
+        with:
+          filters: |
+            source-code:
+              - '**'
+              - '!**/*.md'
+            api-docs:
+              - 'doc/api/**/*'
+
+  build-api-reference-python:
+    needs: changes
+    if: |
+      needs.changes.result == 'success' &&
+      (github.event_name != 'pull_request' || 
+       needs.changes.outputs.source-code == 'true' || 
+       needs.changes.outputs.api-docs == 'true') &&
+      !(github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'delete')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@76e04a911780d5b312d89783f7b1cd627778900a # v1
+        with:
+          version: 2.1.3
+
+      - name: Build Python Bindings
+        run: |
+          poetry --project iceoryx2-ffi/python install
+          poetry --project iceoryx2-ffi/python build-into-venv
+
+      - name: Build Python API Documentation
+        run: |
+          poetry --project doc/api/python install
+          poetry --project doc/api/python build-docs
+
+      - name: Upload Python Documentation Artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: documentation-api-python-${{ github.sha }}
+          path: doc/api/python/target/html
+          retention-days: 90
+
+  build-api-reference-c:
+    needs: changes
+    if: |
+      needs.changes.result == 'success' &&
+      (github.event_name != 'pull_request' || 
+       needs.changes.outputs.source-code == 'true' || 
+       needs.changes.outputs.api-docs == 'true') &&
+      !(github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'delete')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Build C Bindings
+        run: |
+          cargo build --release --package iceoryx2-ffi-c
+
+      - name: Build C API Documentation
+        run: |
+          cd doc/api/c && make html && cd -
+
+      - name: Upload C Documentation Artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: documentation-api-c-${{ github.sha }}
+          path: doc/api/c/target/html
+          retention-days: 90
+
+  build-api-reference-cxx:
+    needs: changes
+    if: |
+      needs.changes.result == 'success' &&
+      (github.event_name != 'pull_request' || 
+       needs.changes.outputs.source-code == 'true' || 
+       needs.changes.outputs.api-docs == 'true') &&
+      !(github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'delete')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Prepare Linux
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Build C++ API Documentation
+        run: |
+          cd doc/api/cxx && make html && cd -
+
+      - name: Upload C++ Documentation Artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: documentation-api-cxx-${{ github.sha }}
+          path: doc/api/cxx/target/html
+          retention-days: 90
+
+  deploy:
+    needs: [build-api-reference-python, build-api-reference-c, build-api-reference-cxx]
+    if: |
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'delete') ||
+      (!cancelled() && !failure() && github.event_name != 'pull_request')
+    runs-on: ubuntu-latest
+    
+    permissions:
+      pages: write
+      id-token: write
+      actions: read
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Build and cache tera
+        uses: ./.github/actions/build-and-cache-rust-tool
+        with:
+          rust-toolchain: stable
+          check-and-install-cmd: tera --version > /dev/null || cargo install tera-cli --version 0.5.0 --locked
+          print-version-cmd: tera --version
+          cache-key: cache-1-${{ runner.os }}-tera-cli-0.5.0
+          artifact-bin-name: tera
+          artifact-upload-name: ${{ runner.os }}-tera-cli
+
+      - name: Find previous successful deployment
+        id: find-previous
+        run: |
+          echo "Looking for most recent successful Pages deployment..."
+
+          # Find successful runs of this workflow
+          RUNS=$(gh run list \
+            --workflow="${{ github.workflow }}" \
+            --status=success \
+            --limit=20 \
+            --json databaseId)
+
+          FOUND_RUN_ID=""
+
+          # Make sure the artifact exists
+          for run_id in $(echo "$RUNS" | jq -r '.[].databaseId'); do
+            if [ "$run_id" = "${{ github.run_id }}" ]; then
+              continue
+            fi
+
+            echo "Checking run $run_id for github-pages artifact..."
+            ARTIFACTS=$(gh api "repos/${{ github.repository }}/actions/runs/$run_id/artifacts" --jq '.artifacts[] | select(.name == "github-pages" and .expired == false)')
+
+            if [ -n "$ARTIFACTS" ]; then
+              echo "Found valid github-pages artifact in run $run_id"
+              FOUND_RUN_ID="$run_id"
+              break
+            fi
+          done
+
+          # Set output
+          if [ -n "$FOUND_RUN_ID" ]; then
+            echo "Previous deployment found: $FOUND_RUN_ID"
+            echo "run-id=$FOUND_RUN_ID" >> $GITHUB_OUTPUT
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "No previous deployment found, starting fresh"
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Download deployed GitHub Pages artifact
+        if: steps.find-previous.outputs.found == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: ./old-artifacts
+          run-id: ${{ steps.find-previous.outputs.run-id }}
+          github-token: ${{ github.token }}
+
+      - name: Download newly-built Python documentation artifact
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.action != 'delete'
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: documentation-api-python-${{ github.sha }}
+          path: ./new-artifacts/python
+
+      - name: Download newly-built C documentation artifact
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.action != 'delete'
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: documentation-api-c-${{ github.sha }}
+          path: ./new-artifacts/c
+
+      - name: Download newly-built C++ documentation artifact
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.action != 'delete'
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: documentation-api-cxx-${{ github.sha }}
+          path: ./new-artifacts/cxx
+
+      - name: Prepare new artifact for GitHub Pages
+        run: |
+          # Determine version/branch name and action
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            INPUT_VERSION="${{ github.event.inputs.version }}"
+            ACTION="${{ github.event.inputs.action }}"
+            
+            # Workflow dispatch should only run for 'main' or existing tags
+            if [[ "$INPUT_VERSION" == "main" ]]; then
+              VERSION="main"
+            elif [[ "$INPUT_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+              if git tag -l | grep -q "^$INPUT_VERSION$"; then
+                VERSION="$INPUT_VERSION"
+              else
+                echo "Error: Tag '$INPUT_VERSION' does not exist"
+                exit 1
+              fi
+            else
+              echo "Error: Invalid version '$INPUT_VERSION'. Only 'main' or existing version tags (e.g., v1.2.3) are allowed."
+              exit 1
+            fi
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            VERSION="main"
+            ACTION="deploy"
+          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
+            VERSION="main"
+            ACTION="deploy"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            VERSION="main"
+            ACTION="deploy"
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION="${{ github.ref_name }}"
+            ACTION="deploy"
+          else
+            VERSION="${{ github.ref_name }}"
+            ACTION="deploy"
+          fi
+          
+          mkdir -p ./staged-artifacts
+
+          # Retrieve previous artifacts if available
+          if [ "${{ steps.find-previous.outputs.found }}" = "true" ] && [ -f "./old-artifacts/artifact.tar" ]; then
+            tar -xf ./old-artifacts/artifact.tar -C ./staged-artifacts
+            echo "Using old artifacts as starting point"
+          else
+            echo "No old artifacts found, starting fresh"
+          fi
+
+          if [[ "$ACTION" == "delete" ]]; then
+            # For deletion, check if version exists in current documentation
+            if [ -d "./staged-artifacts/python/$VERSION" ] || [ -d "./staged-artifacts/c/$VERSION" ] || [ -d "./staged-artifacts/cxx/$VERSION" ]; then
+              echo "Deleting documentation for version: $VERSION"
+              rm -rf "./staged-artifacts/python/$VERSION" "./staged-artifacts/c/$VERSION" "./staged-artifacts/cxx/$VERSION" 2>/dev/null || true
+            else
+              echo "Error: Version '$VERSION' not found in existing documentation"
+              exit 1
+            fi
+          elif [[ "$ACTION" == "deploy" ]]; then
+            echo "Deploying documentation for version: $VERSION"
+            
+            # Remove existing artifact for this version and create fresh directories
+            echo "Setting up directories for version: $VERSION"
+            rm -rf "./staged-artifacts/python/$VERSION" "./staged-artifacts/c/$VERSION" "./staged-artifacts/cxx/$VERSION" 2>/dev/null || true
+            mkdir -p "./staged-artifacts/python/$VERSION" "./staged-artifacts/c/$VERSION" "./staged-artifacts/cxx/$VERSION"
+
+            # Copy new artifacts
+            echo "Staging new artifacts for version: $VERSION"
+            cp -r ./new-artifacts/python/* "./staged-artifacts/python/$VERSION/"
+            cp -r ./new-artifacts/c/* "./staged-artifacts/c/$VERSION/"
+            cp -r ./new-artifacts/cxx/* "./staged-artifacts/cxx/$VERSION/"
+          else
+            echo "Error: Unknown action '$ACTION'"
+            exit 1
+          fi
+
+      - name: Generate pages from templates
+        run: |
+          # Fetch the available Rust documentation
+          # NOTE: Since docs.rs blocks github actions from hitting its API,
+          # only a link to the latest version is added
+          fetch_rust_versions_json() {
+            local versions_array='[{
+              "name": "docs.rs",
+              "url": "https://docs.rs/iceoryx2/latest/iceoryx2/",
+              "isLatest": true
+            }]'
+            
+            echo "$versions_array"
+          }
+          
+          # Generate JSON for the available versions in the staged artifacts
+          generate_bindings_versions_json() {
+            local lang_path=$1
+            local versions_array="[]"
+            
+            if [ -d "./staged-artifacts/$lang_path" ]; then
+              echo "[]" > temp_versions.json
+              
+              # Retrieve all versions from the path, excluding the latest redirect
+              local all_versions=($(find "./staged-artifacts/$lang_path" -maxdepth 1 -type d -exec basename {} \; | grep -v "^$(basename "./staged-artifacts/$lang_path")$" | grep -v "^latest$"))
+              
+              # Separate main from version tags
+              local main_version=""
+              local tag_versions=()
+              for v in "${all_versions[@]}"; do
+                if [ "$v" = "main" ]; then
+                  main_version="main"
+                else
+                  tag_versions+=("$v")
+                fi
+              done
+              
+              # Sort version tags by semver
+              local sorted_tag_versions=()
+              if [ ${#tag_versions[@]} -gt 0 ]; then
+                IFS=$'\n' sorted_tag_versions=($(printf '%s\n' "${tag_versions[@]}" | sort -V -r))
+              fi
+              
+              # Build final sorted list
+              local final_versions=()
+              if [ -n "$main_version" ]; then
+                final_versions+=("$main_version")
+              fi
+              final_versions+=("${sorted_tag_versions[@]}")
+              
+              # Build JSON
+              for version in "${final_versions[@]}"; do
+                if [ -d "./staged-artifacts/$lang_path/$version" ]; then
+                  if [ "$version" = "main" ]; then
+                    versions_array=$(jq --argjson new '{
+                      "name": "'$version'",
+                      "url": "'$lang_path'/'$version'/", 
+                      "isLatest": true
+                    }' '. + [$new]' temp_versions.json)
+                  else
+                    versions_array=$(jq --argjson new '{
+                      "name": "'$version'",
+                      "url": "'$lang_path'/'$version'/",
+                      "isLatest": false
+                    }' '. + [$new]' temp_versions.json)
+                  fi
+                  echo "$versions_array" > temp_versions.json
+                fi
+              done
+              
+              versions_array=$(cat temp_versions.json)
+              rm -f temp_versions.json
+            fi
+            
+            echo "$versions_array"
+          }
+          
+          # Generate JSON context for templates
+          RUST_VERSIONS=$(fetch_rust_versions_json)
+          PYTHON_VERSIONS=$(generate_bindings_versions_json 'python')
+          C_VERSIONS=$(generate_bindings_versions_json 'c')
+          CXX_VERSIONS=$(generate_bindings_versions_json 'cxx')
+          
+          jq -n \
+            --arg buildDate "$(date '+%Y-%m-%d %H:%M UTC')" \
+            --argjson pythonVersions "$PYTHON_VERSIONS" \
+            --argjson cVersions "$C_VERSIONS" \
+            --argjson cxxVersions "$CXX_VERSIONS" \
+            --argjson rustVersions "$RUST_VERSIONS" \
+            '{
+              buildDate: $buildDate,
+              languages: [
+                {
+                  name: "Rust",
+                  path: "rust",
+                  icon: "Rs",
+                  className: "rust-icon", 
+                  versions: $rustVersions
+                },
+                {
+                  name: "Python",
+                  path: "python",
+                  icon: "Py",
+                  className: "python-icon", 
+                  versions: $pythonVersions
+                },
+                {
+                  name: "C++", 
+                  path: "cxx",
+                  icon: "C++",
+                  className: "cxx-icon",
+                  versions: $cxxVersions
+                },
+                {
+                  name: "C",
+                  path: "c",
+                  icon: "C",
+                  className: "c-icon",
+                  versions: $cVersions
+                }
+              ]
+            }' > landing_context.json
+          
+          # Generate landing page
+          tera --file doc/api/templates/landing-page/index.html.tera --json landing_context.json > ./staged-artifacts/index.html
+          cp doc/api/templates/landing-page/styles.css ./staged-artifacts/
+          
+          # Generate redirect for latest
+          declare -A VERSIONS_MAP=([python]="$PYTHON_VERSIONS" [c]="$C_VERSIONS" [cxx]="$CXX_VERSIONS")
+          declare -A NAMES_MAP=([python]="Python" [c]="C" [cxx]="C++")
+          
+          for lang_path in "${!VERSIONS_MAP[@]}"; do
+            LATEST_URL=$(echo "${VERSIONS_MAP[$lang_path]}" | jq -r '.[] | select(.isLatest == true) | .url')
+            if [ -n "$LATEST_URL" ] && [ "$LATEST_URL" != "null" ]; then
+              # Select the version specified as 'isLatest'
+              jq -n --arg language "${NAMES_MAP[$lang_path]}" --arg url "$LATEST_URL" '{language: $language, url: $url}' > redirect_context.json
+
+              # Generate the page
+              mkdir -p "./staged-artifacts/$lang_path/latest"
+              tera --file doc/api/templates/latest/index.html.tera --json redirect_context.json > "./staged-artifacts/$lang_path/latest/index.html"
+            fi
+          done
+
+      - name: Upload artifact to GitHub Pages
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: ./staged-artifacts
+          retention-days: 90
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

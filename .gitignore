@@ -10,7 +10,7 @@ Cargo.lock
 *.pdb
 **/rusty-tags.vi
 **/*.png
-**/Doxyfile*
+**/Doxyfile.global
 **/compile_commands.json
 **/*.pyc
 **/*.so

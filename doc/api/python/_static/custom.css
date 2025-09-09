@@ -1,0 +1,52 @@
+/*
+Copyright (c) 2025 Contributors to the Eclipse Foundation
+
+See the NOTICE file(s) distributed with this work for additional
+information regarding copyright ownership.
+
+This program and the accompanying materials are made available under the
+terms of the Apache Software License 2.0 which is available at
+https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+which is available at https://opensource.org/licenses/MIT.
+
+SPDX-License-Identifier: Apache-2.0 OR MIT
+*/
+
+
+:root {
+  --color-foreground-primary: #2f4153 !important;
+  --color-foreground-secondary: #6f7e8e !important;
+  --color-background: #ffffff !important;
+  --color-background-secondary: #fbfbfb !important;
+  --color-background-border: #dedede !important;
+  --color-brand-primary: #1779c4 !important;
+  --color-accent: #1779c4 !important;
+}
+
+[data-theme="dark"] {
+  --color-foreground-primary: #d2dbde !important;
+  --color-foreground-secondary: #859399 !important;
+  --color-background: #1C1D1F !important;
+  --color-background-secondary: #252628 !important;
+  --color-background-border: #38393b !important;
+  --color-brand-primary: #1982d2 !important;
+  --color-accent: #1982d2 !important;
+}
+
+/* API Functions */
+.sig-name {
+  color: #1779c4 !important;
+}
+
+[data-theme="dark"] .sig-name {
+  color: #1982d2 !important;
+}
+
+/* Modules/namespaces */
+.sig-prename {
+  color: #5383d6 !important;
+}
+
+[data-theme="dark"] .sig-prename {
+  color: #98c0e3 !important;
+}
