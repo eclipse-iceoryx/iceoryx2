@@ -2104,4 +2104,37 @@ TYPED_TEST(ServiceRequestResponseTest, only_max_servers_can_be_created) {
     auto sut = service.server_builder().create();
     ASSERT_FALSE(sut.has_error());
 }
+
+TYPED_TEST(ServiceRequestResponseTest, client_can_request_graceful_disconnect) {
+    constexpr ServiceType SERVICE_TYPE = TestFixture::TYPE;
+
+    const auto service_name = iox2_testing::generate_service_name();
+
+    auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
+    auto service =
+        node.service_builder(service_name).template request_response<uint64_t, uint64_t>().create().expect("");
+
+    auto sut_client = service.client_builder().create().expect("");
+    auto sut_server = service.server_builder().create().expect("");
+
+    auto pending_response = iox::make_optional<iox2::PendingResponse<SERVICE_TYPE, uint64_t, void, uint64_t, void>>(
+        sut_client.send_copy(0).expect(""));
+    auto active_request = sut_server.receive().expect("").value();
+
+    ASSERT_TRUE(pending_response->is_connected());
+    ASSERT_TRUE(active_request.is_connected());
+    ASSERT_FALSE(active_request.has_requested_graceful_disconnect());
+
+    pending_response->request_graceful_disconnect();
+
+    ASSERT_TRUE(pending_response->is_connected());
+    ASSERT_TRUE(active_request.is_connected());
+    ASSERT_TRUE(active_request.has_requested_graceful_disconnect());
+
+    pending_response.reset();
+
+    ASSERT_FALSE(active_request.is_connected());
+    ASSERT_FALSE(active_request.has_requested_graceful_disconnect());
+}
+
 } // namespace
