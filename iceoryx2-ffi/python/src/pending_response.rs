@@ -80,6 +80,7 @@ impl PendingResponse {
     /// Returns `True` until the `ActiveRequest` goes out of scope on the `Server`s side
     /// indicating that the `Server` will no longer send `Response`s.
     /// It also returns `False` when there are no `Server`.
+    #[getter]
     pub fn is_connected(&self) -> bool {
         match &*self.value.lock() {
             PendingResponseType::Ipc(Some(v)) => v.is_connected(),
@@ -91,6 +92,7 @@ impl PendingResponse {
 
     /// Returns a reference to the iceoryx2 internal `RequestHeader` of the corresponding
     /// `RequestMut`
+    #[getter]
     pub fn header(&self) -> RequestHeader {
         match &*self.value.lock() {
             PendingResponseType::Ipc(Some(v)) => RequestHeader(*v.header()),
@@ -102,6 +104,7 @@ impl PendingResponse {
 
     /// Returns a pointer to the user defined request header of the corresponding
     /// `RequestMut`
+    #[getter]
     pub fn user_header_ptr(&self) -> usize {
         match &*self.value.lock() {
             PendingResponseType::Ipc(Some(v)) => {
@@ -117,6 +120,7 @@ impl PendingResponse {
 
     /// Returns a pointer to the request payload of the corresponding
     /// `RequestMut`
+    #[getter]
     pub fn payload_ptr(&self) -> usize {
         match &*self.value.lock() {
             PendingResponseType::Ipc(Some(v)) => v.payload().as_ptr() as usize,
@@ -127,6 +131,7 @@ impl PendingResponse {
     }
 
     /// Returns how many `Server`s received the corresponding `RequestMut` initially.
+    #[getter]
     pub fn number_of_server_connections(&self) -> usize {
         match &*self.value.lock() {
             PendingResponseType::Ipc(Some(v)) => v.number_of_server_connections(),
@@ -137,6 +142,7 @@ impl PendingResponse {
     }
 
     /// Returns `True` when a `Server` has sent a `Response` otherwise `False`.
+    #[getter]
     pub fn has_response(&self) -> bool {
         match &*self.value.lock() {
             PendingResponseType::Ipc(Some(v)) => v.has_response(),
@@ -183,6 +189,20 @@ impl PendingResponse {
                     })
             }),
             _ => fatal_panic!(from "PendingResponse::receive()",
+                    "Accessing a released pending response."),
+        }
+    }
+
+    /// Marks the connection state that the `Client` wants to gracefully
+    /// disconnect. When the `Server` reads this, it can send the last `Response` and drop the
+    /// corresponding `ActiveRequest` to terminate the
+    /// connection ensuring that no [`Response`] is lost on the `Client`
+    /// side.
+    pub fn request_graceful_disconnect(&self) {
+        match &*self.value.lock() {
+            PendingResponseType::Ipc(Some(v)) => v.request_graceful_disconnect(),
+            PendingResponseType::Local(Some(v)) => v.request_graceful_disconnect(),
+            _ => fatal_panic!(from "PendingResponse::is_connected()",
                     "Accessing a released pending response."),
         }
     }

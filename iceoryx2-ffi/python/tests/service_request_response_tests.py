@@ -107,7 +107,7 @@ def test_send_and_receive_responses_with_memmove_works(
         response.send()
 
     for i in range(0, number_of_responses):
-        assert pending_response.has_response()
+        assert pending_response.has_response
         response = pending_response.receive()
         payload = Payload(data=0)
         ctypes.memmove(
@@ -115,7 +115,7 @@ def test_send_and_receive_responses_with_memmove_works(
         )
         assert payload.data == 3 + 2 * i
 
-    assert not pending_response.has_response()
+    assert not pending_response.has_response
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -458,3 +458,37 @@ def test_non_slice_type_forbids_use_of_slice_api(
 
     with pytest.raises(AssertionError):
         active_request.loan_slice_uninit(1)
+
+
+@pytest.mark.parametrize("service_type", service_types)
+def test_client_can_request_graceful_disconnect(
+    service_type: iox2.ServiceType,
+) -> None:
+    config = iox2.testing.generate_isolated_config()
+    node = iox2.NodeBuilder.new().config(config).create(service_type)
+
+    service_name = iox2.testing.generate_service_name()
+    service = (
+        node.service_builder(service_name).request_response(Payload, Payload).create()
+    )
+
+    client = service.client_builder().create()
+    server = service.server_builder().create()
+
+    pending_response = client.send_copy(Payload(data=0))
+    active_request = server.receive()
+
+    assert pending_response.is_connected == True
+    assert active_request.is_connected == True
+    assert active_request.has_requested_graceful_disconnect == False
+
+    pending_response.request_graceful_disconnect()
+
+    assert pending_response.is_connected == True
+    assert active_request.is_connected == True
+    assert active_request.has_requested_graceful_disconnect == True
+
+    pending_response.delete()
+
+    assert active_request.is_connected == False
+    assert active_request.has_requested_graceful_disconnect == False

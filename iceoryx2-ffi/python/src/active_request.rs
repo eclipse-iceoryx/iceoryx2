@@ -146,6 +146,20 @@ impl ActiveRequest {
         }
     }
 
+    #[getter]
+    /// Returns `True` if the `Client` wants to gracefully disconnect.
+    /// This allows the `Server` to send its last response and then
+    /// drop the `ActiveRequest` to signal the `Client` that no more
+    /// `ResponseMut` will be sent.
+    pub fn has_requested_graceful_disconnect(&self) -> bool {
+        match &*self.value.lock() {
+            ActiveRequestType::Ipc(Some(v)) => v.has_requested_graceful_disconnect(),
+            ActiveRequestType::Local(Some(v)) => v.has_requested_graceful_disconnect(),
+            _ => fatal_panic!(from "ActiveRequest::has_requested_graceful_disconnect()",
+                    "Accessing a released active request"),
+        }
+    }
+
     /// Releases the `ActiveRequest` and terminates the connection.
     ///
     /// After this call the `ActiveRequest` is no longer usable!
