@@ -30,9 +30,9 @@ add_library(iceoryx2-bb-containers-cxx INTERFACE)
 add_library(iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx ALIAS iceoryx2-bb-containers-cxx)
 
 target_sources(iceoryx2-bb-containers-cxx INTERFACE
-    ${PROJECT_SOURCE_DIR}/include/iox2/container/config.hpp
-    ${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp
-    $<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx.natvis>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/config.hpp>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include/iox2/container/optional.hpp>
+    $<BUILD_INTERFACE:$<$<CXX_COMPILER_ID:MSVC>:${PROJECT_SOURCE_DIR}/iceoryx2-bb-containers-cxx.natvis>>
 )
 
 target_include_directories(iceoryx2-bb-containers-cxx
@@ -54,7 +54,10 @@ set(${PROJECT_NAME}_DIR ${PROJECT_SOURCE_DIR}/cmake
     "${PROJECT_NAME}Config.cmake to make find_package(${PROJECT_NAME}) work in source tree!"
     FORCE
 )
-# @todo - install, export and packaging
+
+# include install setup
+
+include(${CMAKE_CURRENT_LIST_DIR}/cmake/install.cmake)
 
 # add tests
 
