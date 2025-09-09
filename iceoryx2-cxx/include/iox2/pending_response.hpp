@@ -288,7 +288,7 @@ template <ServiceType Service,
           typename ResponseUserHeader>
 inline void PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
     request_graceful_disconnect() {
-    return iox2_pending_response_request_graceful_disconnect(&m_handle);
+    iox2_pending_response_request_graceful_disconnect(&m_handle);
 }
 
 template <ServiceType Service,

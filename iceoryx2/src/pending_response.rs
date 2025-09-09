@@ -179,10 +179,10 @@ impl<
     }
 
     /// Marks the connection state that the [`Client`](crate::port::client::Client) wants to gracefully
-    /// disconnect. When the [`Server`] reads this, it can send the last [`Response`] and drop the
-    /// corresponding [`ActiveRequest`](crate::active_request::ActiveRequest) to terminate the
-    /// connection ensuring that no [`Response`] is lost on the [`Client`](crate::port::client::Client)
-    /// side.
+    /// disconnect. When the [`Server`](crate::port::server::Server) reads this, it can send the last
+    /// [`Response`] and drop the corresponding [`ActiveRequest`](crate::active_request::ActiveRequest) to
+    /// terminate the connection ensuring that no [`Response`] is lost on the
+    /// [`Client`](crate::port::client::Client) side.
     pub fn request_graceful_disconnect(&self) {
         self.request
             .client_shared_state
