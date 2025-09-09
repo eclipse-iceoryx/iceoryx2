@@ -26,13 +26,13 @@ deps:
 
 # Clean only documentation, keep dependencies
 clean:
-	rm -rf target/html
-	rm -f Doxyfile.global
+	rm -r --interactive=never target/html
+	rm Doxyfile.global
 
 # Clean all generated files including dependencies
 clean-all:
-	rm -rf target
-	rm -f Doxyfile.global
+	rm -r --interactive=never target
+	rm Doxyfile.global
 
 help:
 	@echo "Available targets:"

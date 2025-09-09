@@ -23,12 +23,12 @@ deps:
 	fi
 
 clean:
-	rm -rf target/html
-	rm -f Doxyfile.global
+	rm -r --interactive=never target/html
+	rm Doxyfile.global
 
 clean-all:
-	rm -rf target
-	rm -f Doxyfile.global
+	rm -r --interactive=never target
+	rm Doxyfile.global
 
 help:
 	@echo "Available targets:"
