@@ -161,6 +161,41 @@ pub unsafe extern "C" fn iox2_pending_response_is_connected(
     }
 }
 
+/// Marks the connection state that the Client wants to gracefully disconnect. When the
+/// server reads it, it can send the last response and drop the
+/// corresponding active request to terminate the connection ensuring that no response
+/// is lost on the client side.
+///
+/// # Arguments
+///
+/// * `handle` - Must be a valid [`iox2_pending_response_h_ref`]
+///   obtained by [`iox2_request_mut_send`](crate::iox2_request_mut_send).
+///
+/// # Safety
+///
+/// * `handle` must be valid a handle
+#[no_mangle]
+pub unsafe extern "C" fn iox2_pending_response_request_graceful_disconnect(
+    handle: iox2_pending_response_h_ref,
+) {
+    handle.assert_non_null();
+
+    let pending_response = &mut *handle.as_type();
+
+    match pending_response.service_type {
+        iox2_service_type_e::IPC => pending_response
+            .value
+            .as_ref()
+            .ipc
+            .request_graceful_disconnect(),
+        iox2_service_type_e::LOCAL => pending_response
+            .value
+            .as_ref()
+            .local
+            .request_graceful_disconnect(),
+    }
+}
+
 /// Returns how many servers received the corresponding request initially.
 ///
 /// # Arguments
