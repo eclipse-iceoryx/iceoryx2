@@ -630,7 +630,7 @@ jobs:
       - uses: vmactions/freebsd-vm@05856381fab64eeee9b038a0818f6cec649ca17a # ratchet:vmactions/freebsd-vm@v1
         with:
           release: ${{ matrix.freebsd_version }}
-          mem: 16384
+          mem: 8192
           copyback: false
           prepare: pkg install -y cmake curl gcc git llvm
           run: |
