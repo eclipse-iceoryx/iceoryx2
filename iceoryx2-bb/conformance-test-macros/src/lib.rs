@@ -32,8 +32,11 @@ pub fn conformance_test_module(_attr: TokenStream, item: TokenStream) -> TokenSt
 
     // collect all functions with #[conformance_test] attribute
     let conformance_test_fns = collect_conformance_test_functions(&input, &mod_ident);
+    let conformance_test_fns_2 = collect_conformance_test_functions_alt(&input, &mod_ident);
 
     let macro_name = syn::Ident::new(&format!("{}_tests", mod_ident), mod_ident.span());
+    let macro_name_2 = syn::Ident::new(&format!("{}_tests_alt", mod_ident), mod_ident.span());
+    let macro_name_3 = syn::Ident::new(&format!("{}", mod_ident), mod_ident.span());
     // generate the declarative macro
     let output = quote! {
         #input
@@ -46,6 +49,30 @@ pub fn conformance_test_module(_attr: TokenStream, item: TokenStream) -> TokenSt
                 }
             };
         }
+
+        #[macro_export]
+        macro_rules! #macro_name_2 {
+            ($module_path:path, $service_type:ty) => {
+                // mod $module_name {
+                    mod #mod_ident {
+                        use $module_path::*;
+                        #(#conformance_test_fns_2)*
+                    }
+                // }
+            };
+        }
+
+        #[macro_export]
+        macro_rules! #macro_name_3 {
+            ($module_path:path, $service_type:ty) => {
+                // mod $module_name {
+                mod #mod_ident {
+                    use $module_path::*;
+                    #(#conformance_test_fns_2)*
+                }
+                // }
+            };
+        }
     };
 
     // eprintln!("Generated code:\n{}", output);
@@ -56,7 +83,7 @@ pub fn conformance_test_module(_attr: TokenStream, item: TokenStream) -> TokenSt
 /// Collect all functions with #[conformance_test] attribute
 fn collect_conformance_test_functions(
     module: &ItemMod,
-    mod_path: &syn::Ident,
+    mod_ident: &syn::Ident,
 ) -> Vec<proc_macro2::TokenStream> {
     let mut conformance_test_fns = Vec::new();
 
@@ -72,12 +99,40 @@ fn collect_conformance_test_functions(
                         // let num_generics = generics.params.len();
 
                         conformance_test_fns.push(quote! {
-                                #[test]
-                                fn #fn_ident() {
-                                    super::super::#mod_path::#mod_path::#fn_ident::<
-                                    $service_type
-                                    >();
-                                }
+                            #[test]
+                            fn #fn_ident() {
+                                super::super::#mod_ident::#mod_ident::#fn_ident::<
+                                $service_type
+                                >();
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    conformance_test_fns
+}
+
+fn collect_conformance_test_functions_alt(
+    module: &ItemMod,
+    mod_ident: &syn::Ident,
+) -> Vec<proc_macro2::TokenStream> {
+    let mut conformance_test_fns = Vec::new();
+
+    if let Some((_brace, items)) = &module.content {
+        for item in items {
+            if let syn::Item::Fn(func) = item {
+                for attr in &func.attrs {
+                    if attr.path().is_ident("conformance_test") {
+                        let fn_ident = func.sig.ident.clone();
+                        conformance_test_fns.push(quote! {
+                            #[test]
+                            #[test]
+                            fn #fn_ident() {
+                                #mod_ident::#fn_ident::<$service_type>();
+                            }
                         });
                     }
                 }
