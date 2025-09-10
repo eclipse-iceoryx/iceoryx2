@@ -1283,6 +1283,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-bb-conformance-test-macros"
+version = "0.6.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
 name = "iceoryx2-bb-container"
 version = "0.6.1"
 dependencies = [
@@ -1472,6 +1481,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "iceoryx2-cal-conformance-tests"
+version = "0.6.1"
+dependencies = [
+ "cdr",
+ "iceoryx2-bb-conformance-test-macros",
+ "iceoryx2-bb-testing",
+ "iceoryx2-cal",
+ "iceoryx2-pal-concurrency-sync",
+ "postcard",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "iceoryx2-cli"
 version = "0.6.1"
 dependencies = [
@@ -1504,6 +1527,17 @@ dependencies = [
  "tempfile",
  "toml",
  "zenoh",
+]
+
+[[package]]
+name = "iceoryx2-conformance-tests"
+version = "0.6.1"
+dependencies = [
+ "iceoryx2",
+ "iceoryx2-bb-conformance-test-macros",
+ "iceoryx2-bb-posix",
+ "iceoryx2-bb-testing",
+ "iceoryx2-cal",
 ]
 
 [[package]]
