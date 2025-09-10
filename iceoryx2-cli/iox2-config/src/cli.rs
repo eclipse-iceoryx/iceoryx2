@@ -91,4 +91,6 @@ pub enum Action {
         #[clap(subcommand)]
         subcommand: Option<GenerateSubcommand>,
     },
+    #[clap(about = "Explain the configuration parameters and there descriptions", help_template = help_template(HelpOptions::DontPrintCommandSection))]
+    Explain,
 }
