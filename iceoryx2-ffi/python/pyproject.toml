@@ -23,9 +23,9 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
+    "Operating System :: POSIX :: BSD",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
-    "Operating System :: BSD :: FreeBSD",
 ]
 
 [project.optional-dependencies]
@@ -35,7 +35,7 @@ test = [
 
 [project.urls]
 homepage = "https://iceoryx.io"
-documentation = "https://iceoryx2.readthedocs.org/"
+documentation = "https://ekxide.github.io/iceoryx2-book"
 repository = "https://github.com/eclipse-iceoryx/iceoryx2"
 changelog = "https://github.com/eclipse-iceoryx/iceoryx2/blob/main/CHANGELOG.md"
 
@@ -73,6 +73,15 @@ poetry_command = ""
 
 [tool.poe.tasks.build-into-venv]
 shell = "maturin develop --manifest-path Cargo.toml --target-dir ../../target/ff/python"
+
+[tool.poe.tasks.build-wheel]
+shell = "maturin build --release"
+
+[tool.poe.tasks.upload-to-pypi]
+shell = "maturin publish"
+
+[tool.poe.tasks.upload-to-pypi-test]
+shell = "maturin publish --repository testpypi"
 
 [tool.poe.tasks.check-imports]
 sequence = [

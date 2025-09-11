@@ -1,5 +1,20 @@
 # Installation Instructions
 
+This article contains instructions for running examples on `main`.
+
+For released versions of `iceoryx2`, you may use `pip` to install the released
+Python bindings. e.g.
+
+```console
+pip install iceoryx2==0.7.0
+```
+
+Be sure to switch to the matching release tag to ensure compatability:
+
+```console
+git checkout v0.7.0
+```
+
 ## Install Dependencies
 
 Since iceoryx2 is written in Rust we need to install that first. We recommend
