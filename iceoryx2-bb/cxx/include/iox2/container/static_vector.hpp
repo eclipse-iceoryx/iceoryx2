@@ -163,6 +163,18 @@ class StaticVector {
         }
     }
 
+    template <typename... Args>
+    constexpr auto try_emplace_at(SizeType index, Args&&... args) ->
+        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+        std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
+        if ((m_storage.size() < N) && (index <= m_storage.size())) {
+            m_storage.emplace_at(index, std::forward<Args>(args)...);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     constexpr auto try_push_back(T const& value) -> bool {
         return try_emplace_back(value);
     }
@@ -173,7 +185,7 @@ class StaticVector {
 
     constexpr auto try_pop_back() -> bool {
         if (m_storage.size() > 0) {
-            m_storage.resize_from_back(m_storage.size() - 1);
+            m_storage.shrink_from_back(m_storage.size() - 1);
             return true;
         } else {
             return false;
