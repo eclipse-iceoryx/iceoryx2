@@ -75,7 +75,7 @@ class StaticVector {
         }
 
         constexpr auto end() const noexcept -> ConstIterator {
-            return m_parent->m_storage.pointer_from_index(m_parent->m_storage.size);
+            return m_parent->m_storage.pointer_from_index(m_parent->m_storage.size());
         }
 
         constexpr auto data() const noexcept -> ConstPointer {
