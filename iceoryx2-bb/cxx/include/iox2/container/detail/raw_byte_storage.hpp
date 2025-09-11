@@ -93,32 +93,42 @@ class RawByteStorage {
         return m_size;
     }
 
+    // @pre size() < (N - 1)
     template <typename... Args>
     constexpr void emplace_back(Args&&... args) {
         new (pointer_from_index(size())) T(std::forward<Args>(args)...);
         ++m_size;
     }
 
-    constexpr void resize_from_back(uint64_t target_size) {
+    template <typename... Args>
+    constexpr auto emplace_at(uint64_t index, Args&&... args) {
+        make_room_at(index, 1);
+        T& target = *pointer_from_index(index);
+        target = T(std::forward<Args>(args)...);
+    }
+
+    // @pre (index < size()) && (size() + gap_size < N)
+    void make_room_at(uint64_t index, uint64_t gap_size) {
+        uint64_t const old_size = m_size;
+        // construct new elements at the back
+        for (uint64_t i = 0; i < gap_size; ++i) {
+            T& source = *pointer_from_index(m_size - gap_size);
+            emplace_back(std::move(source));
+        }
+        // move remaining elements up
+        for (uint64_t i = old_size; i != index; --i) {
+            T& source = *pointer_from_index(i - 1);
+            T& target = *pointer_from_index(i + gap_size - 1);
+            target = std::move(source);
+        }
+    }
+
+    // @pre target_size < size()
+    constexpr void shrink_from_back(uint64_t target_size) {
         for (uint64_t i = m_size; i != target_size; --i) {
             uint64_t const index = i - 1;
             pointer_from_index(index)->~T();
         }
-        m_size = target_size;
-    }
-
-    // @pre size() < (N - 1)
-    constexpr void increment_size() {
-        ++m_size;
-    }
-
-    // @pre size() > 0
-    constexpr void decrement_size() {
-        --m_size;
-    }
-
-    // @pre (target_size >= 0) && (target_size < N)
-    constexpr void adjust_size_to(uint64_t target_size) {
         m_size = target_size;
     }
 
