@@ -151,6 +151,40 @@ class StaticVector {
     auto operator=(StaticVector const&) -> StaticVector& = delete;
     auto operator=(StaticVector&&) -> StaticVector& = delete;
 
+    static constexpr auto from_value(SizeType count)
+        // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+        -> std::enable_if_t<std::is_default_constructible<T>::value, StaticVector> {
+        return from_value(count, T {});
+    }
+
+    static constexpr auto from_value(SizeType count, T const& value) -> Optional<StaticVector> {
+        if (count < N) {
+            StaticVector ret;
+            ret.m_storage.insert_at(0, count, value);
+            return ret;
+        } else {
+            return nullopt;
+        }
+    }
+
+    template <typename Iter,
+              typename Sentinel,
+              std::enable_if_t<
+                  // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+                  std::is_constructible<T, decltype(*std::declval<Iter>())>::value
+                      // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+                      && std::is_convertible<decltype(std::declval<Iter>() == std::declval<Sentinel>()), bool>::value,
+                  bool> = true>
+    static constexpr auto from_range_unchecked(Iter it_begin, Sentinel it_end) -> Optional<StaticVector> {
+        StaticVector ret;
+        for (auto it = it_begin; it != it_end; ++it) {
+            if (!ret.try_push_back(*it)) {
+                return nullopt;
+            }
+        }
+        return ret;
+    }
+
     template <typename... Args>
     constexpr auto try_emplace_back(Args&&... args) ->
         // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
@@ -317,6 +351,10 @@ class StaticVector {
             }
             return true;
         }
+    }
+
+    friend auto operator!=(StaticVector const& lhs, StaticVector const& rhs) -> bool {
+        return !(lhs == rhs);
     }
 };
 

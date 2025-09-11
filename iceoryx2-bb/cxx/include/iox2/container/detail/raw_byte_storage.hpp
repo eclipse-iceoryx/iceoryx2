@@ -108,6 +108,7 @@ class RawByteStorage {
         target = T(std::forward<Args>(args)...);
     }
 
+    // @pre (index <= size()) && (size() + count < N)
     constexpr void insert_at(uint64_t index, uint64_t count, T const& value) {
         make_room_at(index, count);
         for (uint64_t i = 0; i < count; ++i) {
