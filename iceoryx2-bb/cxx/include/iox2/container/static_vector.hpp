@@ -193,6 +193,23 @@ class StaticVector {
         }
     }
 
+    constexpr auto try_insert_at(SizeType index, T const& value) -> bool {
+        return try_emplace(index, value);
+    }
+
+    constexpr auto try_insert_at(SizeType index, T&& value) -> bool {
+        return try_emplace(index, std::move(value));
+    }
+
+    constexpr auto try_insert_at(SizeType index, SizeType count, T const& value) -> bool {
+        if ((index <= m_storage.size()) && (m_storage.size() + count <= N)) {
+            m_storage.insert_at(index, count, value);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     constexpr void clear() {
         m_storage.erase_at(0, m_storage.size());
     }
