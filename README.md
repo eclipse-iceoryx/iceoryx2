@@ -20,13 +20,10 @@
     * [Comparision Of Mechanisms](#comparision-of-mechanisms)
         * [Benchmark-System](#benchmark-system)
     * [Comparision Of Architectures](#comparision-of-architectures)
-* [Getting Started](#getting-started)
-    * [Documentation](#documentation)
-    * [Publish Subscribe](#publish-subscribe)
-    * [Request Response](#request-response)
-    * [Events](#events)
-    * [Custom Configuration](#custom-configuration)
-    * [FAQ](#faq)
+* [Documentation](#documentation)
+    * [User Documentation](#user-documentation)
+    * [Contributer Documentation](#contributor-documentation)
+    * [API References](#api-references)
 * [Supported Platforms](#supported-platforms)
 * [Language Bindings](#language-bindings)
 * [Commercial Support](#commercial-support)
@@ -89,331 +86,65 @@ your answer.
 
 ![benchmark on different systems](https://raw.githubusercontent.com/eclipse-iceoryx/iceoryx2/refs/heads/main/internal/plots/benchmark_architecture.svg)
 
-## Getting Started
+## Documentation
 
-### Documentation
+### User Documentation
 
-The documentation can be found at:
+* [The iceoryx2 Book](https://ekxide.github.io/iceoryx2-book) (by [ekxide](https://ekxide.io))
+* [Examples](examples)
+* [Release Notes](doc/release-notes)
+* [User FAQ](FAQ.md)
 
-| language |                                                                                           |
-| :------: | ----------------------------------------------------------------------------------------: |
-|    C     |                [Documentation Link](https://eclipse-iceoryx.github.io/iceoryx2/c/latest/) |
-|   C++    |              [Documentation Link](https://eclipse-iceoryx.github.io/iceoryx2/cxx/latest/) |
-|  Python  |           [Documentation Link](https://eclipse-iceoryx.github.io/iceoryx2/python/latest/) |
-|   Rust   |                           [Documentation Link](https://docs.rs/iceoryx2/latest/iceoryx2/) |
+### Contributor Documentation
 
-### Publish Subscribe
+* [Contributor FAQ](FAQ_ICEORYX_DEVS.md)
 
-This minimal example showcases a publisher sending the number 1234 every second,
-while a subscriber efficiently receives and prints the data.
+### API References
 
-#### publisher.rs
-
-```rust
-use core::time::Duration;
-use iceoryx2::prelude::*;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-        .publish_subscribe::<usize>()
-        .open_or_create()?;
-
-    let publisher = service.publisher_builder().create()?;
-
-    while node.wait(CYCLE_TIME).is_ok() {
-        let sample = publisher.loan_uninit()?;
-        let sample = sample.write_payload(1234);
-        sample.send()?;
-    }
-
-    Ok(())
-}
-```
-
-#### subscriber.rs
-
-```rust
-use core::time::Duration;
-use iceoryx2::prelude::*;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let service = node.service_builder(&"My/Funk/ServiceName".try_into()?)
-        .publish_subscribe::<usize>()
-        .open_or_create()?;
-
-    let subscriber = service.subscriber_builder().create()?;
-
-    while node.wait(CYCLE_TIME).is_ok() {
-        while let Some(sample) = subscriber.receive()? {
-            println!("received: {:?}", *sample);
-        }
-    }
-
-    Ok(())
-}
-```
-
-This example is a simplified version of the
-[publish-subscribe example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/publish_subscribe/).
-You can execute it by opening two terminals and calling:
-
-**Terminal 1:**
-
-```sh
-cargo run --example publish_subscribe_publisher
-```
-
-**Terminal 2:**
-
-```sh
-cargo run --example publish_subscribe_subscriber
-```
-
-### Request Response
-
-This example showcases a client sending a request with the number 123 every
-second, while a server responds with the number 456 as soon as it receives
-the request.
-
-#### client.rs
-
-```rust
-use core::time::Duration;
-use iceoryx2::prelude::*;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .request_response::<u64, u64>()
-        .open_or_create()?;
-
-    let client = service.client_builder().create()?;
-
-    // send first request
-    let request = client.loan_uninit()?;
-    let request = request.write_payload(1234);
-    let mut pending_response = request.send()?;
-
-    while node.wait(CYCLE_TIME).is_ok() {
-        // acquire all responses to our request from our buffer that were sent by the servers
-        while let Some(response) = pending_response.receive()? {
-            println!("  received response: {:?}", *response);
-        }
-
-        // send another request
-        let request = client.loan_uninit()?;
-        let request = request.write_payload(123);
-        pending_response = request.send()?;
-   }
-
-    Ok(())
-}
-```
-
-#### server.rs
-
-```rust
-use core::time::Duration;
-use iceoryx2::prelude::*;
-
-const CYCLE_TIME: Duration = Duration::from_millis(100);
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let service = node
-        .service_builder(&"My/Funk/ServiceName".try_into()?)
-        .request_response::<u64, u64>()
-        .open_or_create()?;
-
-    let server = service.server_builder().create()?;
-
-    while node.wait(CYCLE_TIME).is_ok() {
-        while let Some(active_request) = server.receive()? {
-            let response = active_request.loan_uninit()?;
-            let response = response.write_payload(456);
-            response.send()?;
-        }
-    }
-
-    Ok(())
-}
-```
-
-This example is a simplified version of the
-[request response example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/request_response/).
-You can execute it by opening two terminals and calling:
-
-**Terminal 1:**
-
-```sh
-cargo run --example request_response_client
-```
-
-**Terminal 2:**
-
-```sh
-cargo run --example request_response_server
-```
-
-### Events
-
-This minimal example showcases how push-notifications can be realized by using
-services with event messaging pattern between two processes. The `listener.rs`
-hereby waits for a notification from the `notifier.rs`.
-
-#### notifier.rs
-
-```rust
-use core::time::Duration;
-use iceoryx2::prelude::*;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let event = node.service_builder(&"MyEventName".try_into()?)
-        .event()
-        .open_or_create()?;
-
-    let notifier = event.notifier_builder().create()?;
-
-    let id = EventId::new(12);
-    while node.wait(CYCLE_TIME).is_ok() {
-        notifier.notify_with_custom_event_id(id)?;
-
-        println!("Trigger event with id {:?} ...", id);
-    }
-
-    Ok(())
-}
-```
-
-#### listener.rs
-
-```rust
-use core::time::Duration;
-use iceoryx2::prelude::*;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let event = node.service_builder(&"MyEventName".try_into()?)
-        .event()
-        .open_or_create()?;
-
-    let listener = event.listener_builder().create()?;
-
-    while node.wait(Duration::ZERO).is_ok() {
-        if let Ok(Some(event_id)) = listener.timed_wait_one(CYCLE_TIME) {
-            println!("event was triggered with id: {:?}", event_id);
-        }
-    }
-
-    Ok(())
-}
-```
-
-#### listener.rs (grabbing all events at once)
-
-```rust
-use core::time::Duration;
-use iceoryx2::prelude::*;
-
-const CYCLE_TIME: Duration = Duration::from_secs(1);
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    let node = NodeBuilder::new().create::<ipc::Service>()?;
-
-    let event = node.service_builder(&"MyEventName".try_into()?)
-        .event()
-        .open_or_create()?;
-
-    let listener = event.listener_builder().create()?;
-
-    while node.wait(Duration::ZERO).is_ok() {
-        listener.timed_wait_all(
-            |event_id| {
-                println!("event was triggered with id: {:?}", event_id);
-            },
-            CYCLE_TIME,
-        )?;
-    }
-
-    Ok(())
-}
-```
-
-This example is a simplified version of the
-[event example](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/examples/rust/event/).
-You can execute it by opening two terminals and calling:
-
-**Terminal 1:**
-
-```sh
-cargo run --example event_notifier
-```
-
-**Terminal 2:**
-
-```sh
-cargo run --example event_listener
-```
-
-### Custom Configuration
-
-It is possible to configure default quality of service settings, paths and file
-suffixes in a custom configuration file. For more details visit the
-[configuration directory](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/config/).
-
-### FAQ
-
-* [End-User FAQ](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/FAQ.md)
-* [Developer FAQ](https://github.com/eclipse-iceoryx/iceoryx2/tree/main/FAQ_ICEORYX_DEVS.md)
+* [Rust API Reference](https://docs.rs/iceoryx2/latest/iceoryx2/)
+* [Python API Reference](https://eclipse-iceoryx.github.io/iceoryx2/python/latest/)
+* [C++ API Reference](https://eclipse-iceoryx.github.io/iceoryx2/cxx/latest/)
+* [C API Reference](https://eclipse-iceoryx.github.io/iceoryx2/c/latest/)
 
 ## Supported Platforms
 
 The support levels can be adjusted when required.
 
-| Operating System | State       | Current Support Level | Target Support Level |
-| ---------------- | :------     | :-------------------: | -------------------: |
-| Android          | planned     |           -           |               tier 1 |
-| FreeBSD          | done        |        tier 2         |               tier 1 |
-| FreeRTOS         | planned     |           -           |               tier 2 |
-| ThreadX          | planned     |           -           |               tier 2 |
-| iOS              | planned     |           -           |               tier 2 |
-| Linux (x86_64)   | done        |        tier 2         |               tier 1 |
-| Linux (aarch64)  | done        |        tier 2         |               tier 1 |
-| Linux (32-bit)   | done        |        tier 2         |               tier 1 |
-| Mac OS           | done        |        tier 2         |               tier 2 |
-| QNX 7.1          | done        |        tier 3         |               tier 1 |
-| QNX 8.0          | in-progress |           -           |               tier 1 |
-| VxWorks          | planned     |           -           |               tier 1 |
-| WatchOS          | planned     |           -           |               tier 2 |
-| Windows          | done        |        tier 2         |               tier 2 |
+| Operating System | State                    | Current Support Level | Target Support Level |
+| ---------------- | :----------------------- | :-------------------: | -------------------: |
+| Android          | planned                  |           -           |               tier 1 |
+| FreeBSD          | done                     |        tier 2         |               tier 1 |
+| FreeRTOS         | planned                  |           -           |               tier 2 |
+| ThreadX          | planned                  |           -           |               tier 2 |
+| iOS              | planned                  |           -           |               tier 2 |
+| Linux (x86_64)   | done                     |        tier 2         |               tier 1 |
+| Linux (aarch64)  | done                     |        tier 2         |               tier 1 |
+| Linux (32-bit)   | done                     |        tier 2         |               tier 1 |
+| Mac OS           | done                     |        tier 2         |               tier 2 |
+| QNX 7.1          | done                     |        tier 3         |               tier 1 |
+| QNX 8.0          | in-progress              |           -           |               tier 1 |
+| VxWorks          | proof-of-concept[^1]     |           -           |               tier 1 |
+| WatchOS          | planned                  |           -           |               tier 2 |
+| Windows          | done                     |        tier 2         |               tier 2 |
+
+[^1]: A proof-of-concept for VxWorks platform support is available on [this
+      branch](https://github.com/ekxide/iceoryx2/blob/vxworks-mvp/doc/development-setup/vxworks.md)
+      on the [ekxide](https://ekxide.io) fork
 
 * **tier 1** - All safety and security features are working.
 * **tier 2** - Works with a restricted security and safety feature set.
-* **tier 3** - Work in progress. Might compile and run or not.
+* **tier 3** - Not tested in our CI, so might compile and run or not.
 
+<!-- markdownlint-disable MD027 -->
 > [!NOTE]
-> The Yocto recipes are in the [meta-iceoryx2](https://github.com/eclipse-iceoryx/meta-iceoryx2)
-> repository.
+> Some commercial OS require expensive licenses and the support for these
+> platforms rely on funding of the license costs.
+<!-- markdownlint-enable MD027 -->
+
+<!-- markdownlint-disable MD027 -->
+> [!NOTE]
+> Yocto recipes are available at [meta-iceoryx2](https://github.com/eclipse-iceoryx/meta-iceoryx2)
+<!-- markdownlint-enable MD027 -->
 
 ## Language Bindings
 
