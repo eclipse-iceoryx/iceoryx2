@@ -100,6 +100,7 @@ class RawByteStorage {
         ++m_size;
     }
 
+    // @pre (size() < (N - 1)) && (index <= size())
     template <typename... Args>
     constexpr auto emplace_at(uint64_t index, Args&&... args) {
         make_room_at(index, 1);
@@ -107,8 +108,8 @@ class RawByteStorage {
         target = T(std::forward<Args>(args)...);
     }
 
-    // @pre (index < size()) && (size() + gap_size < N)
-    void make_room_at(uint64_t index, uint64_t gap_size) {
+    // @pre (index <= size()) && (size() + gap_size < N)
+    constexpr void make_room_at(uint64_t index, uint64_t gap_size) {
         uint64_t const old_size = m_size;
         // construct new elements at the back
         for (uint64_t i = 0; i < gap_size; ++i) {
@@ -119,6 +120,21 @@ class RawByteStorage {
         for (uint64_t i = old_size; i != index; --i) {
             T& source = *pointer_from_index(i - 1);
             T& target = *pointer_from_index(i + gap_size - 1);
+            target = std::move(source);
+        }
+    }
+
+    // @pre (index < size())
+    constexpr void erase_at(uint64_t index) {
+        remove_at(index, 1);
+        shrink_from_back(m_size - 1);
+    }
+
+    // @pre (index + range_size <= size())
+    constexpr void remove_at(uint64_t index, uint64_t range_size) {
+        for (uint64_t i = index; i < m_size - range_size; ++i) {
+            T& source = *pointer_from_index(i + range_size);
+            T& target = *pointer_from_index(i);
             target = std::move(source);
         }
     }
