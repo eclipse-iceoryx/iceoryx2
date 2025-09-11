@@ -108,7 +108,7 @@ pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
             std::io::stdout().flush()?;
         }
 
-        if options.repetitions < n {
+        if options.repetitions <= n {
             break;
         }
     }
