@@ -184,6 +184,19 @@ class StaticVector {
         }
     }
 
+    constexpr auto try_erase_at(SizeType begin_index, SizeType end_index) -> bool {
+        if ((end_index <= m_storage.size()) && (begin_index <= end_index)) {
+            m_storage.erase_at(begin_index, end_index);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    constexpr void clear() {
+        m_storage.erase_at(0, m_storage.size());
+    }
+
     constexpr auto try_push_back(T const& value) -> bool {
         return try_emplace_back(value);
     }
