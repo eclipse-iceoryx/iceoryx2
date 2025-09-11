@@ -104,15 +104,7 @@ class StaticVector {
             return *m_parent->m_storage.pointer_from_index(index);
         }
 
-        constexpr auto operator[](SizeType index) const -> ConstReference {
-            return *m_parent->m_storage.pointer_from_index(index);
-        }
-
         constexpr auto begin() noexcept -> Iterator {
-            return m_parent->m_storage.pointer_from_index(0);
-        }
-
-        constexpr auto begin() const noexcept -> ConstIterator {
             return m_parent->m_storage.pointer_from_index(0);
         }
 
@@ -120,15 +112,7 @@ class StaticVector {
             return m_parent->m_storage.pointer_from_index(this->m_parent->m_storage.size());
         }
 
-        constexpr auto end() const noexcept -> ConstIterator {
-            return m_parent->m_storage.pointer_from_index(this->m_parent->m_storage.size());
-        }
-
         constexpr auto data() noexcept -> Pointer {
-            return m_parent->m_storage.pointer_from_index(0);
-        }
-
-        constexpr auto data() const noexcept -> ConstPointer {
             return m_parent->m_storage.pointer_from_index(0);
         }
     };
@@ -172,8 +156,7 @@ class StaticVector {
         // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
         std::enable_if_t<std::is_constructible<T, Args...>::value, bool> {
         if (m_storage.size() < N) {
-            new (m_storage.pointer_from_index(m_storage.size())) T(std::forward<Args>(args)...);
-            m_storage.increment_size();
+            m_storage.emplace_back(std::forward<Args>(args)...);
             return true;
         } else {
             return false;
@@ -190,8 +173,7 @@ class StaticVector {
 
     constexpr auto try_pop_back() -> bool {
         if (m_storage.size() > 0) {
-            m_storage.pointer_from_index(m_storage.size() - 1)->~T();
-            m_storage.decrement_size();
+            m_storage.resize_from_back(m_storage.size() - 1);
             return true;
         } else {
             return false;

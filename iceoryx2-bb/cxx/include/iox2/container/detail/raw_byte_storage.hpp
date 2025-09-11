@@ -93,6 +93,20 @@ class RawByteStorage {
         return m_size;
     }
 
+    template <typename... Args>
+    constexpr void emplace_back(Args&&... args) {
+        new (pointer_from_index(size())) T(std::forward<Args>(args)...);
+        ++m_size;
+    }
+
+    constexpr void resize_from_back(uint64_t target_size) {
+        for (uint64_t i = m_size; i != target_size; --i) {
+            uint64_t const index = i - 1;
+            pointer_from_index(index)->~T();
+        }
+        m_size = target_size;
+    }
+
     // @pre size() < (N - 1)
     constexpr void increment_size() {
         ++m_size;
