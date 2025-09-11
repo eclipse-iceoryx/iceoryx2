@@ -102,10 +102,17 @@ class RawByteStorage {
 
     // @pre (size() < (N - 1)) && (index <= size())
     template <typename... Args>
-    constexpr auto emplace_at(uint64_t index, Args&&... args) {
+    constexpr void emplace_at(uint64_t index, Args&&... args) {
         make_room_at(index, 1);
         T& target = *pointer_from_index(index);
         target = T(std::forward<Args>(args)...);
+    }
+
+    constexpr void insert_at(uint64_t index, uint64_t count, T const& value) {
+        make_room_at(index, count);
+        for (uint64_t i = 0; i < count; ++i) {
+            *pointer_from_index(index + i) = value;
+        }
     }
 
     // @pre (index <= size()) && (size() + gap_size < N)
