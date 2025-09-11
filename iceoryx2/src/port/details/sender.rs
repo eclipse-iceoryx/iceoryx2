@@ -209,16 +209,14 @@ impl<Service: service::Service> Sender<Service> {
         Ok(number_of_recipients)
     }
 
-    pub(crate) fn has_requested_graceful_disconnect(
+    pub(crate) fn has_disconnect_hint(
         &self,
         channel_id: ChannelId,
         connection_id: usize,
         state: u64,
     ) -> bool {
         if let Some(ref connection) = self.get(connection_id) {
-            connection
-                .sender
-                .in_graceful_disconnect_state(channel_id, state)
+            connection.sender.has_disconnect_hint(channel_id, state)
         } else {
             false
         }

@@ -147,7 +147,7 @@ impl HandleToType for iox2_active_request_h_ref {
 ///
 /// * `handle` must be a valid handle
 #[no_mangle]
-pub unsafe extern "C" fn iox2_active_request_has_requested_graceful_disconnect(
+pub unsafe extern "C" fn iox2_active_request_has_disconnect_hint(
     handle: iox2_active_request_h_ref,
 ) -> bool {
     handle.assert_non_null();
@@ -155,16 +155,8 @@ pub unsafe extern "C" fn iox2_active_request_has_requested_graceful_disconnect(
     let active_request = &mut *handle.as_type();
 
     match active_request.service_type {
-        iox2_service_type_e::IPC => active_request
-            .value
-            .as_mut()
-            .ipc
-            .has_requested_graceful_disconnect(),
-        iox2_service_type_e::LOCAL => active_request
-            .value
-            .as_mut()
-            .local
-            .has_requested_graceful_disconnect(),
+        iox2_service_type_e::IPC => active_request.value.as_mut().ipc.has_disconnect_hint(),
+        iox2_service_type_e::LOCAL => active_request.value.as_mut().local.has_disconnect_hint(),
     }
 }
 

@@ -1573,7 +1573,7 @@ mod service_request_response {
     }
 
     #[test]
-    fn client_can_request_graceful_disconnect<S: Service>() {
+    fn client_can_set_disconnect_hint<S: Service>() {
         let service_name = testing::generate_service_name();
         let config = testing::generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
@@ -1592,18 +1592,18 @@ mod service_request_response {
 
         assert_that!(pending_response.is_connected(), eq true);
         assert_that!(active_request.is_connected(), eq true);
-        assert_that!(active_request.has_requested_graceful_disconnect(), eq false);
+        assert_that!(active_request.has_disconnect_hint(), eq false);
 
-        pending_response.request_graceful_disconnect();
+        pending_response.set_disconnect_hint();
 
         assert_that!(pending_response.is_connected(), eq true);
         assert_that!(active_request.is_connected(), eq true);
-        assert_that!(active_request.has_requested_graceful_disconnect(), eq true);
+        assert_that!(active_request.has_disconnect_hint(), eq true);
 
         drop(pending_response);
 
         assert_that!(active_request.is_connected(), eq false);
-        assert_that!(active_request.has_requested_graceful_disconnect(), eq false);
+        assert_that!(active_request.has_disconnect_hint(), eq false);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

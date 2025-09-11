@@ -175,7 +175,7 @@ pub unsafe extern "C" fn iox2_pending_response_is_connected(
 ///
 /// * `handle` must be valid a handle
 #[no_mangle]
-pub unsafe extern "C" fn iox2_pending_response_request_graceful_disconnect(
+pub unsafe extern "C" fn iox2_pending_response_set_disconnect_hint(
     handle: iox2_pending_response_h_ref,
 ) {
     handle.assert_non_null();
@@ -183,16 +183,8 @@ pub unsafe extern "C" fn iox2_pending_response_request_graceful_disconnect(
     let pending_response = &mut *handle.as_type();
 
     match pending_response.service_type {
-        iox2_service_type_e::IPC => pending_response
-            .value
-            .as_ref()
-            .ipc
-            .request_graceful_disconnect(),
-        iox2_service_type_e::LOCAL => pending_response
-            .value
-            .as_ref()
-            .local
-            .request_graceful_disconnect(),
+        iox2_service_type_e::IPC => pending_response.value.as_ref().ipc.set_disconnect_hint(),
+        iox2_service_type_e::LOCAL => pending_response.value.as_ref().local.set_disconnect_hint(),
     }
 }
 

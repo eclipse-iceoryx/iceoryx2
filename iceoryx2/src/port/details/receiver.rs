@@ -166,16 +166,12 @@ impl<Service: service::Service> Receiver<Service> {
         ret_val
     }
 
-    pub(crate) fn set_channel_state_to_graceful_disconnect(
-        &self,
-        channel_id: ChannelId,
-        expected_state: u64,
-    ) {
+    pub(crate) fn set_disconnect_hint(&self, channel_id: ChannelId, expected_state: u64) {
         let connection_storage = unsafe { &mut *self.connection_storage.get() };
         for (_, connection) in connection_storage.iter() {
             connection
                 .receiver
-                .set_channel_to_graceful_disconnect(channel_id, expected_state);
+                .set_disconnect_hint(channel_id, expected_state);
         }
     }
 

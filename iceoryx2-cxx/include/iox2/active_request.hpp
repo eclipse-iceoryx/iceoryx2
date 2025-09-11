@@ -88,7 +88,7 @@ class ActiveRequest {
     /// This allows the [`Server`] to send its last response and then
     /// drop the [`ActiveRequest`] to signal the [`Client`] that no more
     /// [`ResponseMut`] will be sent.
-    auto has_requested_graceful_disconnect() const -> bool;
+    auto has_disconnect_hint() const -> bool;
 
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
@@ -333,9 +333,10 @@ template <ServiceType Service,
           typename RequestUserHeader,
           typename ResponsePayload,
           typename ResponseUserHeader>
-inline auto ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
-    has_requested_graceful_disconnect() const -> bool {
-    return iox2_active_request_has_requested_graceful_disconnect(&m_handle);
+inline auto
+ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::has_disconnect_hint()
+    const -> bool {
+    return iox2_active_request_has_disconnect_hint(&m_handle);
 }
 
 template <ServiceType Service,

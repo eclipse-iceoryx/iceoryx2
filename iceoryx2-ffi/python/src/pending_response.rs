@@ -198,10 +198,10 @@ impl PendingResponse {
     /// corresponding `ActiveRequest` to terminate the
     /// connection ensuring that no [`Response`] is lost on the `Client`
     /// side.
-    pub fn request_graceful_disconnect(&self) {
+    pub fn set_disconnect_hint(&self) {
         match &*self.value.lock() {
-            PendingResponseType::Ipc(Some(v)) => v.request_graceful_disconnect(),
-            PendingResponseType::Local(Some(v)) => v.request_graceful_disconnect(),
+            PendingResponseType::Ipc(Some(v)) => v.set_disconnect_hint(),
+            PendingResponseType::Local(Some(v)) => v.set_disconnect_hint(),
             _ => fatal_panic!(from "PendingResponse::is_connected()",
                     "Accessing a released pending response."),
         }

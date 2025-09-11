@@ -2123,18 +2123,18 @@ TYPED_TEST(ServiceRequestResponseTest, client_can_request_graceful_disconnect) {
 
     ASSERT_TRUE(pending_response->is_connected());
     ASSERT_TRUE(active_request.is_connected());
-    ASSERT_FALSE(active_request.has_requested_graceful_disconnect());
+    ASSERT_FALSE(active_request.has_disconnect_hint());
 
-    pending_response->request_graceful_disconnect();
+    pending_response->set_disconnect_hint();
 
     ASSERT_TRUE(pending_response->is_connected());
     ASSERT_TRUE(active_request.is_connected());
-    ASSERT_TRUE(active_request.has_requested_graceful_disconnect());
+    ASSERT_TRUE(active_request.has_disconnect_hint());
 
     pending_response.reset();
 
     ASSERT_FALSE(active_request.is_connected());
-    ASSERT_FALSE(active_request.has_requested_graceful_disconnect());
+    ASSERT_FALSE(active_request.has_disconnect_hint());
 }
 
 } // namespace

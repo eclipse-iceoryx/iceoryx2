@@ -183,15 +183,12 @@ impl<
     /// [`Response`] and drop the corresponding [`ActiveRequest`](crate::active_request::ActiveRequest) to
     /// terminate the connection ensuring that no [`Response`] is lost on the
     /// [`Client`](crate::port::client::Client) side.
-    pub fn request_graceful_disconnect(&self) {
+    pub fn set_disconnect_hint(&self) {
         self.request
             .client_shared_state
             .lock()
             .response_receiver
-            .set_channel_state_to_graceful_disconnect(
-                self.request.channel_id,
-                self.request.header().request_id,
-            );
+            .set_disconnect_hint(self.request.channel_id, self.request.header().request_id);
     }
 
     /// Returns [`true`] until the [`ActiveRequest`](crate::active_request::ActiveRequest)

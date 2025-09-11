@@ -151,10 +151,10 @@ impl ActiveRequest {
     /// This allows the `Server` to send its last response and then
     /// drop the `ActiveRequest` to signal the `Client` that no more
     /// `ResponseMut` will be sent.
-    pub fn has_requested_graceful_disconnect(&self) -> bool {
+    pub fn has_disconnect_hint(&self) -> bool {
         match &*self.value.lock() {
-            ActiveRequestType::Ipc(Some(v)) => v.has_requested_graceful_disconnect(),
-            ActiveRequestType::Local(Some(v)) => v.has_requested_graceful_disconnect(),
+            ActiveRequestType::Ipc(Some(v)) => v.has_disconnect_hint(),
+            ActiveRequestType::Local(Some(v)) => v.has_disconnect_hint(),
             _ => fatal_panic!(from "ActiveRequest::has_requested_graceful_disconnect()",
                     "Accessing a released active request"),
         }

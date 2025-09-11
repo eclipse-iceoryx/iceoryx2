@@ -194,16 +194,12 @@ impl<
     /// This allows the [`Server`](crate::port::server::Server) to send its last response and then
     /// drop the [`ActiveRequest`] to signal the [`Client`](crate::port::client::Client) that no more
     /// [`ResponseMut`] will be sent.
-    pub fn has_requested_graceful_disconnect(&self) -> bool {
+    pub fn has_disconnect_hint(&self) -> bool {
         if self.connection_id != INVALID_CONNECTION_ID {
             self.shared_state
                 .lock()
                 .response_sender
-                .has_requested_graceful_disconnect(
-                    self.channel_id,
-                    self.connection_id,
-                    self.request_id,
-                )
+                .has_disconnect_hint(self.channel_id, self.connection_id, self.request_id)
         } else {
             false
         }

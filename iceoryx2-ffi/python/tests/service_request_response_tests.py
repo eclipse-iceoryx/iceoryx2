@@ -480,15 +480,15 @@ def test_client_can_request_graceful_disconnect(
 
     assert pending_response.is_connected is True
     assert active_request.is_connected is True
-    assert active_request.has_requested_graceful_disconnect is False
+    assert active_request.has_disconnect_hint is False
 
-    pending_response.request_graceful_disconnect()
+    pending_response.set_disconnect_hint()
 
     assert pending_response.is_connected is True
     assert active_request.is_connected is True
-    assert active_request.has_requested_graceful_disconnect is True
+    assert active_request.has_disconnect_hint is True
 
     pending_response.delete()
 
     assert active_request.is_connected is False
-    assert active_request.has_requested_graceful_disconnect is False
+    assert active_request.has_disconnect_hint is False

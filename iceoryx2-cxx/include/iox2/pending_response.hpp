@@ -92,7 +92,7 @@ class PendingResponse {
     /// corresponding [`ActiveRequest`] to terminate the
     /// connection ensuring that no [`Response`] is lost on the [`Client`]
     /// side.
-    void request_graceful_disconnect();
+    void set_disconnect_hint();
 
   private:
     template <ServiceType, typename, typename, typename, typename>
@@ -287,8 +287,8 @@ template <ServiceType Service,
           typename ResponsePayload,
           typename ResponseUserHeader>
 inline void PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
-    request_graceful_disconnect() {
-    iox2_pending_response_request_graceful_disconnect(&m_handle);
+    set_disconnect_hint() {
+    iox2_pending_response_set_disconnect_hint(&m_handle);
 }
 
 template <ServiceType Service,
