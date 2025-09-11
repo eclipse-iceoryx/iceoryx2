@@ -175,6 +175,15 @@ class StaticVector {
         }
     }
 
+    constexpr auto try_erase_at(SizeType index) -> bool {
+        if (index < m_storage.size()) {
+            m_storage.erase_at(index);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     constexpr auto try_push_back(T const& value) -> bool {
         return try_emplace_back(value);
     }
