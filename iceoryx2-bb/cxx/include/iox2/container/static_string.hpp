@@ -35,7 +35,7 @@ namespace container {
 /// UTF-8. The code point U+1F4A9 requires four 8-bit code units in the UTF-8 encoding.
 ///
 /// @attention The NUL code point (U+0000) is not allowed anywhere in the string.
-/// @note Currently only Unicode code points less than 128 (0x80) are supported.
+/// @note Currently only Unicode code points less than 128 (U+0080) are supported.
 ///       This restricts the valid contents of a string to those UTF8 strings
 ///       that are also valid 7-bit ASCII strings. Full Unicode support will get added later.
 /// @tparam N Maximum number of UTF-8 code units that the string can store, excluding the terminating NUL character.
@@ -188,7 +188,7 @@ class StaticString {
             return try_erase_at(index, index + 1);
         }
 
-        auto try_erase_at(SizeType begin_index, SizeType end_index) -> bool {
+        auto try_erase_at(SizeType begin_index, SizeType end_index) noexcept -> bool {
             if ((begin_index <= end_index) && (end_index <= m_parent->m_size)) {
                 auto const range_size = end_index - begin_index;
                 char* const string_end = std::end(m_parent->m_string);
@@ -354,6 +354,18 @@ class StaticString {
         }
     }
 
+    constexpr auto try_erase_at(SizeType index) noexcept -> bool {
+        // index needs to be a valid cut point for the string
+        // this is trivially true for strings restricted to code points < U+0080
+        return unchecked_code_units().try_erase_at(index);
+    }
+
+    constexpr auto try_erase_at(SizeType begin_index, SizeType end_index) noexcept -> bool {
+        // begin_index and end_index need to be valid cut points for the string
+        // this is trivially true for strings restricted to code points < U+0080
+        return unchecked_code_units().try_erase_at(begin_index, end_index);
+    }
+
     static constexpr auto capacity() noexcept -> SizeType {
         return N;
     }
@@ -399,7 +411,7 @@ class StaticString {
     }
 
   private:
-    auto is_valid_next(char character) noexcept -> bool {
+    auto is_valid_next(char character) const noexcept -> bool {
         constexpr char const CODE_UNIT_UPPER_BOUND = 127;
         return (character > 0) && (character <= CODE_UNIT_UPPER_BOUND);
     }
