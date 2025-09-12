@@ -20,13 +20,17 @@ C_YELLOW='\033[1;33m'
 C_BLUE='\033[1;34m'
 
 UPDATE_ICEORYX_HOOFS_VERSION=false
-OLD_ICEORYX_HOOFS_VERSION='2.95.7'
+CURRENT_ICEORYX_HOOFS_VERSION='2.95.7'
 
 UPDATE_ICEORYX2_VERSION=false
-OLD_ICEORYX2_VERSION='0.6.1'
+CURRENT_ICEORYX2_VERSION='0.6.1'
 
 while (( "$#" )); do
     case "$1" in
+        get-current-iceoryx2-version)
+            echo ${CURRENT_ICEORYX2_VERSION}
+            exit 0;
+            ;;
         --iceoryx2)
             NEW_ICEORYX2_VERSION=$2
             UPDATE_ICEORYX2_VERSION=true
@@ -42,7 +46,11 @@ while (( "$#" )); do
             echo -e ""
             echo -e ""
             echo -e "Usage: ${C_GREEN}$(basename $0)${C_OFF} ${C_BLUE}SCRIPT-OPTION${C_OFF}"
+            echo -e "Command:"
+            echo -e "    get-current-iceoryx2-version  Print the current iceoryx2 version"
+            echo -e "    help                          Print this help"
             echo -e "Options:"
+            echo -e "    "
             echo -e "    --iceoryx2 <VERSION>          Change all iceoryx2 versions to <VERSION>"
             echo -e "    --iceoryx-hoofs <VERSION>     Change all iceoryx-hoofs versions to <VERSION>"
             echo -e ""
@@ -65,7 +73,7 @@ cd $(git rev-parse --show-toplevel)
 if [[ ${UPDATE_ICEORYX_HOOFS_VERSION} == true ]]; then
     echo -e "Updating ${C_BLUE}iceoryx-hoofs${C_OFF} version to: ${C_BLUE}${NEW_ICEORYX_HOOFS_VERSION}${C_OFF}!"
 
-    OLD_VERSION=${OLD_ICEORYX_HOOFS_VERSION}
+    OLD_VERSION=${CURRENT_ICEORYX_HOOFS_VERSION}
     NEW_VERSION=${NEW_ICEORYX_HOOFS_VERSION}
 
     sed -i 's/ICEORYX_HOOFS_VERSION '"${OLD_VERSION}"'/ICEORYX_HOOFS_VERSION '"${NEW_VERSION}"'/g' \
@@ -110,11 +118,11 @@ if [[ ${UPDATE_ICEORYX_HOOFS_VERSION} == true ]]; then
         exit 1
     fi
 
-    sed -i 's/OLD_ICEORYX_HOOFS_VERSION='"'${OLD_VERSION}'"'/OLD_ICEORYX_HOOFS_VERSION='"'${NEW_VERSION}'"'/g' \
+    sed -i 's/CURRENT_ICEORYX_HOOFS_VERSION='"'${OLD_VERSION}'"'/CURRENT_ICEORYX_HOOFS_VERSION='"'${NEW_VERSION}'"'/g' \
         internal/scripts/update_versions.sh
 
     if grep ${OLD_VERSION} internal/scripts/update_versions.sh; then
-        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'OLD_ICEORYX_HOOFS_VERSION' in 'update_versions.sh'"
+        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'CURRENT_ICEORYX_HOOFS_VERSION' in 'update_versions.sh'"
 
         exit 1
     fi
@@ -126,7 +134,7 @@ fi
 if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
     echo -e "Updating ${C_BLUE}iceoryx2${C_OFF} version to: ${C_BLUE}${NEW_ICEORYX2_VERSION}${C_OFF}!"
 
-    OLD_VERSION=${OLD_ICEORYX2_VERSION}
+    OLD_VERSION=${CURRENT_ICEORYX2_VERSION}
     NEW_VERSION=${NEW_ICEORYX2_VERSION}
 
     sed -i 's/^version = "'"${OLD_VERSION}"'"/version = "'"${NEW_VERSION}"'"/g' \
@@ -182,17 +190,16 @@ if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
         exit 1
     fi
 
-    sed -i 's/OLD_ICEORYX2_VERSION='"'${OLD_VERSION}'"'/OLD_ICEORYX2_VERSION='"'${NEW_VERSION}'"'/g' \
+    sed -i 's/CURRENT_ICEORYX2_VERSION='"'${OLD_VERSION}'"'/CURRENT_ICEORYX2_VERSION='"'${NEW_VERSION}'"'/g' \
         internal/scripts/update_versions.sh
 
     if grep ${OLD_VERSION} internal/scripts/update_versions.sh; then
-        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'OLD_ICEORYX2_VERSION' in 'update_versions.sh'"
+        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'CURRENT_ICEORYX2_VERSION' in 'update_versions.sh'"
 
         exit 1
     fi
 
     echo -e "${C_GREEN}Successuflly updated the iceoryx2 version to '${NEW_VERSION}'${C_OFF}!"
-    echo -e "${C_YELLOW}Please also update the sha256 sum for iceoryx in 'doc/bazel/README.md' and 'WORKSPACE.bazel'!${C_OFF}"
     echo -e "${C_YELLOW}Please also build iceoryx2 with cargo and bazel and the python bindings to update the lock files!${C_OFF}"
 
 fi
