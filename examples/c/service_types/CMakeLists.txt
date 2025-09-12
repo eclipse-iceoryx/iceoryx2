@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(example_c_service_variants LANGUAGES C)
 
-find_package(iceoryx2-c 0.6.1 REQUIRED)
+find_package(iceoryx2-c 0.7.0 REQUIRED)
 
 add_executable(example_c_service_types_ipc_publisher src/ipc_publisher.c)
 target_link_libraries(example_c_service_types_ipc_publisher iceoryx2-c::static-lib)

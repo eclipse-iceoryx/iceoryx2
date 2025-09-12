@@ -34,7 +34,7 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.addIncludePath(
-        b.path("../path/to/iceoryx2/target/ff/cc/install/include/iceoryx2/v0.6.1/iox2/") // replace with your own relative path, this is where iceoryx2.h lives
+        b.path("../path/to/iceoryx2/target/ff/cc/install/include/iceoryx2/v0.7.0/iox2/") // replace with your own relative path, this is where iceoryx2.h lives
     );
     // This line exe.linkSystemLibrary("gcc_s"); is needed for Rust unwind
     exe.linkSystemLibrary("gcc_s"); // Link to libgcc_s runtime resident on target
@@ -67,7 +67,7 @@ const zig_proj_root = "/full/path/to/.../src";
 const std = @import("std");
 
 const iox2 = @cImport({
-    @cInclude(iox2_root ++ "/include/iceoryx2/v0.6.1/iox2/iceoryx2.h");
+    @cInclude(iox2_root ++ "/include/iceoryx2/v0.7.0/iox2/iceoryx2.h");
     @cInclude(zig_proj_root ++ "/transmission_data.h");
 });
 

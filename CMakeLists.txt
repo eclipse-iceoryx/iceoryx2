@@ -12,7 +12,7 @@
 
 cmake_minimum_required(VERSION 3.22)
 
-set(IOX2_VERSION 0.6.1)
+set(IOX2_VERSION 0.7.0)
 project(iceoryx2-workspace VERSION ${IOX2_VERSION})
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON) # "Create compile_commands.json file"

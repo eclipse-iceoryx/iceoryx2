@@ -22,7 +22,7 @@
     * [Comparision Of Architectures](#comparision-of-architectures)
 * [Documentation](#documentation)
     * [User Documentation](#user-documentation)
-    * [Contributer Documentation](#contributor-documentation)
+    * [Contributor Documentation](#contributor-documentation)
     * [API References](#api-references)
 * [Supported Platforms](#supported-platforms)
 * [Language Bindings](#language-bindings)

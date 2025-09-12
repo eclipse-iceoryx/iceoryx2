@@ -1,5 +1,5 @@
 {
-  "checksum": "c82ac939c49a11d7cedfeebc924bdcf9506b5c691a20d066b1c0548fe8d81a1f",
+  "checksum": "9ddf438edcf709b49f9c52ee04bf2d044cadb724099e0d8b46b81617dd7cb10a",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -1390,9 +1390,9 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "benchmark-event 0.6.1": {
+    "benchmark-event 0.7.0": {
       "name": "benchmark-event",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -1411,7 +1411,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -1420,9 +1420,9 @@
       ],
       "license_file": null
     },
-    "benchmark-publish-subscribe 0.6.1": {
+    "benchmark-publish-subscribe 0.7.0": {
       "name": "benchmark-publish-subscribe",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -1441,7 +1441,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -1450,9 +1450,9 @@
       ],
       "license_file": null
     },
-    "benchmark-queue 0.6.1": {
+    "benchmark-queue 0.7.0": {
       "name": "benchmark-queue",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -1471,7 +1471,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -1480,9 +1480,9 @@
       ],
       "license_file": null
     },
-    "benchmark-request-response 0.6.1": {
+    "benchmark-request-response 0.7.0": {
       "name": "benchmark-request-response",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -1501,7 +1501,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -1561,14 +1561,14 @@
       ],
       "license_file": "LICENSE"
     },
-    "bindgen 0.69.4": {
+    "bindgen 0.72.0": {
       "name": "bindgen",
-      "version": "0.69.4",
+      "version": "0.72.0",
       "package_url": "https://github.com/rust-lang/rust-bindgen",
       "repository": {
         "Http": {
-          "url": "https://static.crates.io/crates/bindgen/0.69.4/download",
-          "sha256": "a00dc851838a2120612785d195287475a3ac45514741da670b735818822129a0"
+          "url": "https://static.crates.io/crates/bindgen/0.72.0/download",
+          "sha256": "4f72209734318d0b619a5e0f5129918b848c416e122a3c4ce054e03cb87b726f"
         }
       },
       "targets": [
@@ -1607,15 +1607,14 @@
             "default",
             "logging",
             "prettyplease",
-            "runtime",
-            "which-rustfmt"
+            "runtime"
           ],
           "selects": {}
         },
         "deps": {
           "common": [
             {
-              "id": "bindgen 0.69.4",
+              "id": "bindgen 0.72.0",
               "target": "build_script_build"
             },
             {
@@ -1631,16 +1630,8 @@
               "target": "clang_sys"
             },
             {
-              "id": "itertools 0.12.1",
+              "id": "itertools 0.13.0",
               "target": "itertools"
-            },
-            {
-              "id": "lazy_static 1.5.0",
-              "target": "lazy_static"
-            },
-            {
-              "id": "lazycell 1.3.0",
-              "target": "lazycell"
             },
             {
               "id": "log 0.4.22",
@@ -1663,7 +1654,7 @@
               "target": "regex"
             },
             {
-              "id": "rustc-hash 1.1.0",
+              "id": "rustc-hash 2.1.1",
               "target": "rustc_hash"
             },
             {
@@ -1673,16 +1664,12 @@
             {
               "id": "syn 2.0.87",
               "target": "syn"
-            },
-            {
-              "id": "which 4.4.2",
-              "target": "which"
             }
           ],
           "selects": {}
         },
-        "edition": "2018",
-        "version": "0.69.4"
+        "edition": "2021",
+        "version": "0.72.0"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -1752,9 +1739,6 @@
               "std"
             ],
             "wasm32-wasip1": [
-              "std"
-            ],
-            "x86_64-pc-windows-msvc": [
               "std"
             ],
             "x86_64-unknown-linux-gnu": [
@@ -2693,6 +2677,8 @@
         ],
         "crate_features": {
           "common": [
+            "clang_10_0",
+            "clang_11_0",
             "clang_3_5",
             "clang_3_6",
             "clang_3_7",
@@ -2701,6 +2687,9 @@
             "clang_4_0",
             "clang_5_0",
             "clang_6_0",
+            "clang_7_0",
+            "clang_8_0",
+            "clang_9_0",
             "libloading",
             "runtime"
           ],
@@ -4969,23 +4958,7 @@
           "common": [
             "use_std"
           ],
-          "selects": {
-            "aarch64-apple-darwin": [
-              "default"
-            ],
-            "aarch64-unknown-linux-gnu": [
-              "default"
-            ],
-            "x86_64-pc-windows-msvc": [
-              "default"
-            ],
-            "x86_64-unknown-linux-gnu": [
-              "default"
-            ],
-            "x86_64-unknown-nixos-gnu": [
-              "default"
-            ]
-          }
+          "selects": {}
         },
         "edition": "2018",
         "version": "1.13.0"
@@ -5473,9 +5446,9 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "example 0.6.1": {
+    "example 0.7.0": {
       "name": "example",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -5507,7 +5480,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7720,9 +7693,9 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "iceoryx2 0.6.1": {
+    "iceoryx2 0.7.0": {
       "name": "iceoryx2",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -7771,7 +7744,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7780,9 +7753,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-container 0.6.1": {
+    "iceoryx2-bb-container 0.7.0": {
       "name": "iceoryx2-bb-container",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -7832,7 +7805,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7841,9 +7814,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-derive-macros 0.6.1": {
+    "iceoryx2-bb-derive-macros 0.7.0": {
       "name": "iceoryx2-bb-derive-macros",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -7883,7 +7856,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7892,9 +7865,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-elementary 0.6.1": {
+    "iceoryx2-bb-elementary 0.7.0": {
       "name": "iceoryx2-bb-elementary",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -7926,7 +7899,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7935,9 +7908,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-elementary-traits 0.6.1": {
+    "iceoryx2-bb-elementary-traits 0.7.0": {
       "name": "iceoryx2-bb-elementary-traits",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -7960,7 +7933,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -7969,9 +7942,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-lock-free 0.6.1": {
+    "iceoryx2-bb-lock-free 0.7.0": {
       "name": "iceoryx2-bb-lock-free",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8003,7 +7976,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8012,9 +7985,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-log 0.6.1": {
+    "iceoryx2-bb-log 0.7.0": {
       "name": "iceoryx2-bb-log",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8037,7 +8010,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8046,9 +8019,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-memory 0.6.1": {
+    "iceoryx2-bb-memory 0.7.0": {
       "name": "iceoryx2-bb-memory",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8071,7 +8044,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8080,9 +8053,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-posix 0.6.1": {
+    "iceoryx2-bb-posix 0.7.0": {
       "name": "iceoryx2-bb-posix",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8135,7 +8108,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8144,9 +8117,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-system-types 0.6.1": {
+    "iceoryx2-bb-system-types 0.7.0": {
       "name": "iceoryx2-bb-system-types",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8178,7 +8151,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8187,9 +8160,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-testing 0.6.1": {
+    "iceoryx2-bb-testing 0.7.0": {
       "name": "iceoryx2-bb-testing",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8212,7 +8185,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8221,9 +8194,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-threadsafe 0.6.1": {
+    "iceoryx2-bb-threadsafe 0.7.0": {
       "name": "iceoryx2-bb-threadsafe",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8246,7 +8219,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8255,9 +8228,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-bb-trait-tests 0.6.1": {
+    "iceoryx2-bb-trait-tests 0.7.0": {
       "name": "iceoryx2-bb-trait-tests",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8289,7 +8262,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8298,9 +8271,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-cal 0.6.1": {
+    "iceoryx2-cal 0.7.0": {
       "name": "iceoryx2-cal",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8374,7 +8347,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8383,9 +8356,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-cli 0.6.1": {
+    "iceoryx2-cli 0.7.0": {
       "name": "iceoryx2-cli",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8485,7 +8458,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8494,9 +8467,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-ffi-c 0.6.1": {
+    "iceoryx2-ffi-c 0.7.0": {
       "name": "iceoryx2-ffi-c",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8533,7 +8506,7 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-ffi-c 0.6.1",
+              "id": "iceoryx2-ffi-c 0.7.0",
               "target": "build_script_build"
             }
           ],
@@ -8549,7 +8522,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -8575,9 +8548,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-ffi-macros 0.6.1": {
+    "iceoryx2-ffi-macros 0.7.0": {
       "name": "iceoryx2-ffi-macros",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8617,7 +8590,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8626,9 +8599,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-ffi-python 0.6.1": {
+    "iceoryx2-ffi-python 0.7.0": {
       "name": "iceoryx2-ffi-python",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -8647,7 +8620,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8656,9 +8629,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-pal-concurrency-sync 0.6.1": {
+    "iceoryx2-pal-concurrency-sync 0.7.0": {
       "name": "iceoryx2-pal-concurrency-sync",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8690,7 +8663,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8699,9 +8672,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-pal-configuration 0.6.1": {
+    "iceoryx2-pal-configuration 0.7.0": {
       "name": "iceoryx2-pal-configuration",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8724,7 +8697,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8733,9 +8706,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-pal-posix 0.6.1": {
+    "iceoryx2-pal-posix 0.7.0": {
       "name": "iceoryx2-pal-posix",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8772,7 +8745,7 @@
         "deps": {
           "common": [
             {
-              "id": "iceoryx2-pal-posix 0.6.1",
+              "id": "iceoryx2-pal-posix 0.7.0",
               "target": "build_script_build"
             },
             {
@@ -8794,7 +8767,7 @@
           }
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "build_script_attrs": {
         "compile_data_glob": [
@@ -8806,7 +8779,7 @@
         "deps": {
           "common": [
             {
-              "id": "bindgen 0.69.4",
+              "id": "bindgen 0.72.0",
               "target": "bindgen"
             },
             {
@@ -8824,9 +8797,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-pal-testing 0.6.1": {
+    "iceoryx2-pal-testing 0.7.0": {
       "name": "iceoryx2-pal-testing",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8849,7 +8822,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8858,9 +8831,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-services-discovery 0.6.1": {
+    "iceoryx2-services-discovery 0.7.0": {
       "name": "iceoryx2-services-discovery",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8905,7 +8878,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8914,9 +8887,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnels-end-to-end-testing 0.6.1": {
+    "iceoryx2-tunnels-end-to-end-testing 0.7.0": {
       "name": "iceoryx2-tunnels-end-to-end-testing",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [],
@@ -8926,7 +8899,7 @@
           "**"
         ],
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8935,9 +8908,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnels-zenoh 0.6.1": {
+    "iceoryx2-tunnels-zenoh 0.7.0": {
       "name": "iceoryx2-tunnels-zenoh",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -8982,7 +8955,7 @@
           ],
           "selects": {}
         },
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -8991,9 +8964,9 @@
       ],
       "license_file": null
     },
-    "iceoryx2-userland-record-and-replay 0.6.1": {
+    "iceoryx2-userland-record-and-replay 0.7.0": {
       "name": "iceoryx2-userland-record-and-replay",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
@@ -9029,7 +9002,7 @@
           "selects": {}
         },
         "edition": "2021",
-        "version": "0.6.1"
+        "version": "0.7.0"
       },
       "license": "MIT OR Apache-2.0",
       "license_ids": [
@@ -10266,54 +10239,6 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "itertools 0.12.1": {
-      "name": "itertools",
-      "version": "0.12.1",
-      "package_url": "https://github.com/rust-itertools/itertools",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/itertools/0.12.1/download",
-          "sha256": "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "itertools",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "itertools",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "either 1.13.0",
-              "target": "either"
-            }
-          ],
-          "selects": {}
-        },
-        "edition": "2018",
-        "version": "0.12.1"
-      },
-      "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": "LICENSE-APACHE"
-    },
     "itertools 0.13.0": {
       "name": "itertools",
       "version": "0.13.0",
@@ -10788,45 +10713,6 @@
         "version": "1.5.0"
       },
       "license": "MIT OR Apache-2.0",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": "LICENSE-APACHE"
-    },
-    "lazycell 1.3.0": {
-      "name": "lazycell",
-      "version": "1.3.0",
-      "package_url": "https://github.com/indiv0/lazycell",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/lazycell/1.3.0/download",
-          "sha256": "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "lazycell",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "lazycell",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "edition": "2015",
-        "version": "1.3.0"
-      },
-      "license": "MIT/Apache-2.0",
       "license_ids": [
         "Apache-2.0",
         "MIT"
@@ -16643,52 +16529,6 @@
       ],
       "license_file": "LICENSE-APACHE"
     },
-    "rustc-hash 1.1.0": {
-      "name": "rustc-hash",
-      "version": "1.1.0",
-      "package_url": "https://github.com/rust-lang-nursery/rustc-hash",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/rustc-hash/1.1.0/download",
-          "sha256": "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "rustc_hash",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "rustc_hash",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "crate_features": {
-          "common": [
-            "default",
-            "std"
-          ],
-          "selects": {}
-        },
-        "edition": "2015",
-        "version": "1.1.0"
-      },
-      "license": "Apache-2.0/MIT",
-      "license_ids": [
-        "Apache-2.0",
-        "MIT"
-      ],
-      "license_file": "LICENSE-APACHE"
-    },
     "rustc-hash 2.1.1": {
       "name": "rustc-hash",
       "version": "2.1.1",
@@ -16875,32 +16715,13 @@
         "crate_features": {
           "common": [
             "alloc",
+            "default",
             "fs",
             "libc-extra-traits",
-            "std"
+            "std",
+            "use-libc-auxv"
           ],
-          "selects": {
-            "aarch64-apple-darwin": [
-              "default",
-              "use-libc-auxv"
-            ],
-            "aarch64-unknown-linux-gnu": [
-              "default",
-              "use-libc-auxv"
-            ],
-            "wasm32-wasip1": [
-              "default",
-              "use-libc-auxv"
-            ],
-            "x86_64-unknown-linux-gnu": [
-              "default",
-              "use-libc-auxv"
-            ],
-            "x86_64-unknown-nixos-gnu": [
-              "default",
-              "use-libc-auxv"
-            ]
-          }
+          "selects": {}
         },
         "deps": {
           "common": [
@@ -16968,13 +16789,6 @@
               {
                 "id": "libc 0.2.172",
                 "target": "libc"
-              }
-            ],
-            "x86_64-pc-windows-msvc": [
-              {
-                "id": "errno 0.3.9",
-                "target": "errno",
-                "alias": "libc_errno"
               }
             ]
           }
@@ -24026,70 +23840,6 @@
       ],
       "license_file": "LICENSE"
     },
-    "which 4.4.2": {
-      "name": "which",
-      "version": "4.4.2",
-      "package_url": "https://github.com/harryfei/which-rs.git",
-      "repository": {
-        "Http": {
-          "url": "https://static.crates.io/crates/which/4.4.2/download",
-          "sha256": "87ba24419a2078cd2b0f2ede2691b6c66d8e47836da3b6db8265ebad47afbfc7"
-        }
-      },
-      "targets": [
-        {
-          "Library": {
-            "crate_name": "which",
-            "crate_root": "src/lib.rs",
-            "srcs": {
-              "allow_empty": true,
-              "include": [
-                "**/*.rs"
-              ]
-            }
-          }
-        }
-      ],
-      "library_target_name": "which",
-      "common_attrs": {
-        "compile_data_glob": [
-          "**"
-        ],
-        "deps": {
-          "common": [
-            {
-              "id": "either 1.13.0",
-              "target": "either"
-            },
-            {
-              "id": "rustix 0.38.37",
-              "target": "rustix"
-            }
-          ],
-          "selects": {
-            "cfg(any(windows, unix, target_os = \"redox\"))": [
-              {
-                "id": "home 0.5.9",
-                "target": "home"
-              }
-            ],
-            "cfg(windows)": [
-              {
-                "id": "once_cell 1.20.2",
-                "target": "once_cell"
-              }
-            ]
-          }
-        },
-        "edition": "2021",
-        "version": "4.4.2"
-      },
-      "license": "MIT",
-      "license_ids": [
-        "MIT"
-      ],
-      "license_file": "LICENSE.txt"
-    },
     "winapi 0.3.9": {
       "name": "winapi",
       "version": "0.3.9",
@@ -24856,8 +24606,6 @@
             "Wdk_System_IO",
             "Win32",
             "Win32_Foundation",
-            "Win32_NetworkManagement",
-            "Win32_NetworkManagement_IpHelper",
             "Win32_Networking",
             "Win32_Networking_WinSock",
             "Win32_Security",
@@ -24866,8 +24614,6 @@
             "Win32_System",
             "Win32_System_Com",
             "Win32_System_Console",
-            "Win32_System_Diagnostics",
-            "Win32_System_Diagnostics_Debug",
             "Win32_System_IO",
             "Win32_System_LibraryLoader",
             "Win32_System_Pipes",
@@ -30180,37 +29926,37 @@
   },
   "binary_crates": [],
   "workspace_members": {
-    "benchmark-event 0.6.1": "benchmarks/event",
-    "benchmark-publish-subscribe 0.6.1": "benchmarks/publish-subscribe",
-    "benchmark-queue 0.6.1": "benchmarks/queue",
-    "benchmark-request-response 0.6.1": "benchmarks/request-response",
-    "example 0.6.1": "examples",
-    "iceoryx2 0.6.1": "iceoryx2",
-    "iceoryx2-bb-container 0.6.1": "iceoryx2-bb/container",
-    "iceoryx2-bb-derive-macros 0.6.1": "iceoryx2-bb/derive-macros",
-    "iceoryx2-bb-elementary 0.6.1": "iceoryx2-bb/elementary",
-    "iceoryx2-bb-elementary-traits 0.6.1": "iceoryx2-bb/elementary-traits",
-    "iceoryx2-bb-lock-free 0.6.1": "iceoryx2-bb/lock-free",
-    "iceoryx2-bb-log 0.6.1": "iceoryx2-bb/log",
-    "iceoryx2-bb-memory 0.6.1": "iceoryx2-bb/memory",
-    "iceoryx2-bb-posix 0.6.1": "iceoryx2-bb/posix",
-    "iceoryx2-bb-system-types 0.6.1": "iceoryx2-bb/system-types",
-    "iceoryx2-bb-testing 0.6.1": "iceoryx2-bb/testing",
-    "iceoryx2-bb-threadsafe 0.6.1": "iceoryx2-bb/threadsafe",
-    "iceoryx2-bb-trait-tests 0.6.1": "iceoryx2-bb/trait-tests",
-    "iceoryx2-cal 0.6.1": "iceoryx2-cal",
-    "iceoryx2-cli 0.6.1": "iceoryx2-cli",
-    "iceoryx2-ffi-c 0.6.1": "iceoryx2-ffi/c",
-    "iceoryx2-ffi-macros 0.6.1": "iceoryx2-ffi/ffi-macros",
-    "iceoryx2-ffi-python 0.6.1": "iceoryx2-ffi/python",
-    "iceoryx2-pal-concurrency-sync 0.6.1": "iceoryx2-pal/concurrency-sync",
-    "iceoryx2-pal-configuration 0.6.1": "iceoryx2-pal/configuration",
-    "iceoryx2-pal-posix 0.6.1": "iceoryx2-pal/posix",
-    "iceoryx2-pal-testing 0.6.1": "iceoryx2-pal/testing",
-    "iceoryx2-services-discovery 0.6.1": "iceoryx2-services/discovery",
-    "iceoryx2-tunnels-end-to-end-testing 0.6.1": "iceoryx2-tunnels/end-to-end-testing",
-    "iceoryx2-tunnels-zenoh 0.6.1": "iceoryx2-tunnels/zenoh",
-    "iceoryx2-userland-record-and-replay 0.6.1": "iceoryx2-userland/record-and-replay"
+    "benchmark-event 0.7.0": "benchmarks/event",
+    "benchmark-publish-subscribe 0.7.0": "benchmarks/publish-subscribe",
+    "benchmark-queue 0.7.0": "benchmarks/queue",
+    "benchmark-request-response 0.7.0": "benchmarks/request-response",
+    "example 0.7.0": "examples",
+    "iceoryx2 0.7.0": "iceoryx2",
+    "iceoryx2-bb-container 0.7.0": "iceoryx2-bb/container",
+    "iceoryx2-bb-derive-macros 0.7.0": "iceoryx2-bb/derive-macros",
+    "iceoryx2-bb-elementary 0.7.0": "iceoryx2-bb/elementary",
+    "iceoryx2-bb-elementary-traits 0.7.0": "iceoryx2-bb/elementary-traits",
+    "iceoryx2-bb-lock-free 0.7.0": "iceoryx2-bb/lock-free",
+    "iceoryx2-bb-log 0.7.0": "iceoryx2-bb/log",
+    "iceoryx2-bb-memory 0.7.0": "iceoryx2-bb/memory",
+    "iceoryx2-bb-posix 0.7.0": "iceoryx2-bb/posix",
+    "iceoryx2-bb-system-types 0.7.0": "iceoryx2-bb/system-types",
+    "iceoryx2-bb-testing 0.7.0": "iceoryx2-bb/testing",
+    "iceoryx2-bb-threadsafe 0.7.0": "iceoryx2-bb/threadsafe",
+    "iceoryx2-bb-trait-tests 0.7.0": "iceoryx2-bb/trait-tests",
+    "iceoryx2-cal 0.7.0": "iceoryx2-cal",
+    "iceoryx2-cli 0.7.0": "iceoryx2-cli",
+    "iceoryx2-ffi-c 0.7.0": "iceoryx2-ffi/c",
+    "iceoryx2-ffi-macros 0.7.0": "iceoryx2-ffi/ffi-macros",
+    "iceoryx2-ffi-python 0.7.0": "iceoryx2-ffi/python",
+    "iceoryx2-pal-concurrency-sync 0.7.0": "iceoryx2-pal/concurrency-sync",
+    "iceoryx2-pal-configuration 0.7.0": "iceoryx2-pal/configuration",
+    "iceoryx2-pal-posix 0.7.0": "iceoryx2-pal/posix",
+    "iceoryx2-pal-testing 0.7.0": "iceoryx2-pal/testing",
+    "iceoryx2-services-discovery 0.7.0": "iceoryx2-services/discovery",
+    "iceoryx2-tunnels-end-to-end-testing 0.7.0": "iceoryx2-tunnels/end-to-end-testing",
+    "iceoryx2-tunnels-zenoh 0.7.0": "iceoryx2-tunnels/zenoh",
+    "iceoryx2-userland-record-and-replay 0.7.0": "iceoryx2-userland/record-and-replay"
   },
   "conditions": {
     "aarch64-apple-darwin": [
@@ -30313,13 +30059,6 @@
       "aarch64-apple-darwin",
       "aarch64-unknown-linux-gnu",
       "wasm32-wasip1",
-      "x86_64-unknown-linux-gnu",
-      "x86_64-unknown-nixos-gnu"
-    ],
-    "cfg(any(windows, unix, target_os = \"redox\"))": [
-      "aarch64-apple-darwin",
-      "aarch64-unknown-linux-gnu",
-      "x86_64-pc-windows-msvc",
       "x86_64-unknown-linux-gnu",
       "x86_64-unknown-nixos-gnu"
     ],
@@ -30450,7 +30189,7 @@
   "direct_deps": [
     "anyhow 1.0.89",
     "better-panic 0.3.0",
-    "bindgen 0.69.4",
+    "bindgen 0.72.0",
     "cargo_metadata 0.18.1",
     "cbindgen 0.27.0",
     "cc 1.2.21",

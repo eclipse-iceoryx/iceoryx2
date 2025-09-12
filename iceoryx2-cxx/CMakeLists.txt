@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 set(ICEORYX_HOOFS_VERSION 2.95.7)
-set(IOX2_VERSION 0.6.1)
+set(IOX2_VERSION 0.7.0)
 project(iceoryx2-cxx VERSION ${IOX2_VERSION} LANGUAGES CXX)
 
 set(PREFIX iceoryx2/v${CMAKE_PROJECT_VERSION})
