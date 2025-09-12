@@ -531,6 +531,79 @@ TEST(StaticString, unchecked_code_unit_front_element_returns_nullopt_on_empty_st
     ASSERT_FALSE(sut.unchecked_code_units().front_element());
 }
 
+TEST(StaticString, unchecked_code_unit_try_erase_at_removes_a_single_character_from_string) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(2));
+    ASSERT_EQ(sut.size(), 4);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABDE");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "BDE");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(2));
+    ASSERT_EQ(sut.size(), 2);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "BD");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0));
+    ASSERT_EQ(sut.size(), 1);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "D");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0));
+    ASSERT_EQ(sut.size(), 0);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "");
+}
+
+TEST(StaticString, unchecked_code_unit_try_erase_at_fails_for_out_of_bounds_index) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    ASSERT_FALSE(sut.unchecked_code_units().try_erase_at(3));
+    ASSERT_FALSE(sut.unchecked_code_units().try_erase_at(4));
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(2));
+    ASSERT_FALSE(sut.unchecked_code_units().try_erase_at(2));
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0));
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0));
+    ASSERT_FALSE(sut.unchecked_code_units().try_erase_at(0));
+}
+
+TEST(StaticString, unchecked_code_unit_try_erase_at_removes_a_range_of_characters_from_string) {
+    constexpr uint64_t const STRING_SIZE = 32;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("AAAAABBBBBBBCCCCCCDDDDEEEEEFFFFF");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(12, 18));
+    ASSERT_EQ(sut.size(), 26);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAAAABBBBBBBDDDDEEEEEFFFFF");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0, 5));
+    ASSERT_EQ(sut.size(), 21);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "BBBBBBBDDDDEEEEEFFFFF");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(16, 21));
+    ASSERT_EQ(sut.size(), 16);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "BBBBBBBDDDDEEEEE");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0, 16));
+    ASSERT_EQ(sut.size(), 0);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "");
+}
+
+TEST(StaticString, unchecked_code_unit_try_erase_at_is_noop_for_empty_range) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0, 0));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(1, 1));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+    ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(2, 2));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+}
+
+TEST(StaticString, unchecked_code_unit_try_erase_at_fails_for_invalid_range) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    ASSERT_FALSE(sut.unchecked_code_units().try_erase_at(0, 5));
+    ASSERT_FALSE(sut.unchecked_code_units().try_erase_at(4, 5));
+    ASSERT_FALSE(sut.unchecked_code_units().try_erase_at(3, 0));
+    ASSERT_FALSE(sut.unchecked_code_units().try_erase_at(5, 5));
+}
+
+
 TEST(StaticString, unchecked_const_subscript_operator_allows_accessing_chars_by_index) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto const sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCD");
