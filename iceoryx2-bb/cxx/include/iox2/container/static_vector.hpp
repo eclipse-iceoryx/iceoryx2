@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <cstring>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <type_traits>
 
@@ -185,6 +186,21 @@ class StaticVector {
         return ret;
     }
 
+    template <typename Range>
+    static constexpr auto from_range_unchecked(Range const& rng) -> Optional<StaticVector> {
+        using std::begin;
+        using std::end;
+        return from_range_unchecked(begin(rng), end(rng));
+    }
+
+    static constexpr auto from_initializer_list(std::initializer_list<T> init_list) -> Optional<StaticVector> {
+        if (init_list.size() > N) {
+            return nullopt;
+        } else {
+            return from_range_unchecked(begin(init_list), end(init_list));
+        }
+    }
+
     template <typename... Args>
     constexpr auto try_emplace_back(Args&&... args) ->
         // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
@@ -242,6 +258,34 @@ class StaticVector {
         } else {
             return false;
         }
+    }
+
+    template <typename Iter,
+              typename Sentinel,
+              std::enable_if_t<
+                  // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+                  std::is_constructible<T, decltype(*std::declval<Iter>())>::value
+                      // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
+                      && std::is_convertible<decltype(std::declval<Iter>() == std::declval<Sentinel>()), bool>::value,
+                  bool> = true>
+    constexpr auto try_insert_at_unchecked(SizeType index, Iter it_begin, Sentinel it_end) -> bool {
+        if (index <= m_storage.size()) {
+            auto const old_size = size();
+            for (auto it = it_begin; it != it_end; ++it) {
+                if (!try_push_back(*it)) {
+                    m_storage.shrink_from_back(old_size);
+                    return false;
+                }
+            }
+            m_storage.rotate_from_back(index, old_size);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    constexpr auto try_insert_at_unchecked(SizeType index, std::initializer_list<T> init_list) {
+        return try_insert_at_unchecked(index, init_list.begin(), init_list.end());
     }
 
     constexpr void clear() {
