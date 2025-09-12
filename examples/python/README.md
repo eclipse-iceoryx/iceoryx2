@@ -29,6 +29,8 @@ environment:
 
 ```sh
 curl -sSL https://install.python-poetry.org | python3 -
+# ensure that ~/.local/bin is in the PATH environment variable
+which poetry # should show '$HOME/.local/bin/poetry'
 poetry self add poetry-plugin-shell
 ```
 

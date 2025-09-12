@@ -40,8 +40,6 @@ TYPED_TEST(ServiceTest, does_exist_works) {
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
             .expect(""));
-    ASSERT_FALSE(Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Blackboard)
-                     .expect(""));
 
     auto node = NodeBuilder().create<SERVICE_TYPE>().expect("");
 
@@ -56,9 +54,6 @@ TYPED_TEST(ServiceTest, does_exist_works) {
         ASSERT_FALSE(
             Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
                 .expect(""));
-        ASSERT_FALSE(
-            Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Blackboard)
-                .expect(""));
     }
 
     ASSERT_FALSE(
@@ -69,8 +64,6 @@ TYPED_TEST(ServiceTest, does_exist_works) {
     ASSERT_FALSE(
         Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::RequestResponse)
             .expect(""));
-    ASSERT_FALSE(Service<SERVICE_TYPE>::does_exist(service_name, Config::global_config(), MessagingPattern::Blackboard)
-                     .expect(""));
 }
 
 TYPED_TEST(ServiceTest, list_works) {
@@ -87,11 +80,6 @@ TYPED_TEST(ServiceTest, list_works) {
     auto sut_2 = node.service_builder(service_name_2).event().create().expect("");
     auto sut_3 =
         node.service_builder(service_name_3).template request_response<uint64_t, uint64_t>().create().expect("");
-    auto sut_4 = node.service_builder(service_name_4)
-                     .template blackboard_creator<uint64_t>()
-                     .template add_with_default<uint64_t>(0)
-                     .create()
-                     .expect("");
 
     //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by EXPECT_THAT
     auto verify = [&](auto details) -> CallbackProgression {
@@ -107,10 +95,6 @@ TYPED_TEST(ServiceTest, list_works) {
         case MessagingPattern::RequestResponse:
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_3.service_id().c_str()));
-            break;
-        case MessagingPattern::Blackboard:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().c_str()));
-            EXPECT_THAT(details.static_details.id(), StrEq(sut_4.service_id().c_str()));
             break;
         }
 
@@ -148,11 +132,6 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
                      .template request_response<uint64_t, uint64_t>()
                      .create_with_attributes(AttributeSpecifier().define(key_1, value_1).define(key_2, value_2))
                      .expect("");
-    auto sut_4 = node.service_builder(service_name_4)
-                     .template blackboard_creator<uint64_t>()
-                     .template add_with_default<uint64_t>(0)
-                     .create_with_attributes(AttributeSpecifier().define(key_1, value_1).define(key_2, value_2))
-                     .expect("");
 
     auto counter = 0;
     //NOLINTBEGIN(readability-function-cognitive-complexity), false positive caused by EXPECT_THAT
@@ -185,26 +164,6 @@ TYPED_TEST(ServiceTest, list_works_with_attributes) {
         case MessagingPattern::RequestResponse:
             EXPECT_THAT(details.static_details.name(), StrEq(service_name_3.to_string().c_str()));
             EXPECT_THAT(details.static_details.id(), StrEq(sut_3.service_id().c_str()));
-
-            counter = 0;
-            details.static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_1.c_str()));
-                counter++;
-                return CallbackProgression::Continue;
-            });
-            EXPECT_THAT(counter, Eq(1));
-
-            counter = 0;
-            details.static_details.attributes().iter_key_values(key_2, [&](auto& value) -> CallbackProgression {
-                EXPECT_THAT(value.c_str(), StrEq(value_2.c_str()));
-                counter++;
-                return CallbackProgression::Continue;
-            });
-            EXPECT_THAT(counter, Eq(1));
-            break;
-        case MessagingPattern::Blackboard:
-            EXPECT_THAT(details.static_details.name(), StrEq(service_name_4.to_string().c_str()));
-            EXPECT_THAT(details.static_details.id(), StrEq(sut_4.service_id().c_str()));
 
             counter = 0;
             details.static_details.attributes().iter_key_values(key_1, [&](auto& value) -> CallbackProgression {

@@ -13,7 +13,6 @@
 #ifndef IOX2_SERVICE_BUILDER_HPP
 #define IOX2_SERVICE_BUILDER_HPP
 
-#include "iox2/service_builder_blackboard.hpp"
 #include "iox2/service_builder_event.hpp"
 #include "iox2/service_builder_publish_subscribe.hpp"
 #include "iox2/service_builder_request_response.hpp"
@@ -44,16 +43,6 @@ class ServiceBuilder {
     /// [`MessagingPattern::RequestResponse`] [`Service`].
     template <typename RequestPayload, typename ResponsePayload>
     auto request_response() && -> ServiceBuilderRequestResponse<RequestPayload, void, ResponsePayload, void, S>;
-
-    /// Create a new builder to create a
-    /// [`MessagingPattern::Blackboard`] [`Service`].
-    template <typename KeyType>
-    auto blackboard_creator() && -> ServiceBuilderBlackboardCreator<KeyType, S>;
-
-    /// Create a new builder to open a
-    /// [`MessagingPattern::Blackboard`] [`Service`].
-    template <typename KeyType>
-    auto blackboard_opener() && -> ServiceBuilderBlackboardOpener<KeyType, S>;
 
   private:
     template <ServiceType>
@@ -86,16 +75,5 @@ inline auto ServiceBuilder<
     return ServiceBuilderRequestResponse<RequestPayload, void, ResponsePayload, void, S> { m_handle };
 }
 
-template <ServiceType S>
-template <typename KeyType>
-inline auto ServiceBuilder<S>::blackboard_creator() && -> ServiceBuilderBlackboardCreator<KeyType, S> {
-    return ServiceBuilderBlackboardCreator<KeyType, S> { m_handle };
-}
-
-template <ServiceType S>
-template <typename KeyType>
-inline auto ServiceBuilder<S>::blackboard_opener() && -> ServiceBuilderBlackboardOpener<KeyType, S> {
-    return ServiceBuilderBlackboardOpener<KeyType, S> { m_handle };
-}
 } // namespace iox2
 #endif
