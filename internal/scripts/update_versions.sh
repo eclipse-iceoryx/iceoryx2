@@ -129,7 +129,7 @@ if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
     OLD_VERSION=${OLD_ICEORYX2_VERSION}
     NEW_VERSION=${NEW_ICEORYX2_VERSION}
 
-    sed -i 's/version = "'"${OLD_VERSION}"'"/version = "'"${NEW_VERSION}"'"/g' \
+    sed -i 's/^version = "'"${OLD_VERSION}"'"/version = "'"${NEW_VERSION}"'"/g' \
         Cargo.toml
 
     find . -name "Cargo.toml" -type f -exec \
