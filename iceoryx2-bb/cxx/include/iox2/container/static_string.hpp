@@ -16,6 +16,7 @@
 #include "iox2/container/config.hpp"
 #include "iox2/container/optional.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -180,6 +181,23 @@ class StaticString {
                 return m_parent->m_string[m_parent->size() - 1];
             } else {
                 return nullopt;
+            }
+        }
+
+        auto try_erase_at(SizeType index) noexcept -> bool {
+            return try_erase_at(index, index + 1);
+        }
+
+        auto try_erase_at(SizeType begin_index, SizeType end_index) -> bool {
+            if ((begin_index <= end_index) && (end_index <= m_parent->m_size)) {
+                auto const range_size = end_index - begin_index;
+                char* const string_end = std::end(m_parent->m_string);
+                std::move(&m_parent->m_string[end_index], string_end, &m_parent->m_string[begin_index]);
+                std::fill(&m_parent->m_string[m_parent->m_size - range_size], string_end, '\0');
+                m_parent->m_size -= range_size;
+                return true;
+            } else {
+                return false;
             }
         }
     };
@@ -370,23 +388,10 @@ class StaticString {
 
     // comparison operators
     friend auto operator==(StaticString const& lhs, StaticString const& rhs) -> bool {
-        if (lhs.m_size != rhs.m_size) {
-            return false;
-        } else {
-            auto const lhs_unchecked = lhs.unchecked_access();
-            auto const rhs_unchecked = rhs.unchecked_access();
-            auto const lhs_it_end = lhs_unchecked.end();
-            auto lhs_it = lhs_unchecked.begin();
-            auto rhs_it = rhs_unchecked.begin();
-            while (lhs_it != lhs_it_end) {
-                if (!(*lhs_it == *rhs_it)) {
-                    return false;
-                }
-                ++lhs_it;
-                ++rhs_it;
-            }
-            return true;
-        }
+        return std::equal(lhs.unchecked_access().begin(),
+                          lhs.unchecked_access().end(),
+                          rhs.unchecked_access().begin(),
+                          rhs.unchecked_access().end());
     }
 
     friend auto operator!=(StaticString const& lhs, StaticString const& rhs) -> bool {
