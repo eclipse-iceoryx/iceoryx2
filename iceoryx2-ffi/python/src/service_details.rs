@@ -133,9 +133,6 @@ fn static_config_messaging_pattern_to_python(
         iceoryx2::service::static_config::messaging_pattern::MessagingPattern::Event(_) => {
             MessagingPattern::Event
         }
-        iceoryx2::service::static_config::messaging_pattern::MessagingPattern::Blackboard(_) => {
-            MessagingPattern::Blackboard
-        }
         _ => {
             fatal_panic!(from "ServiceDetails::messaging_pattern()", "Unknown messaging pattern in translation." )
         }

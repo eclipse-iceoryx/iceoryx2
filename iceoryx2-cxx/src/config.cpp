@@ -163,10 +163,6 @@ auto Defaults::event() && -> Event {
 auto Defaults::request_response() && -> RequestResponse {
     return RequestResponse(m_config);
 }
-
-auto Defaults::blackboard() && -> Blackboard {
-    return Blackboard(m_config);
-}
 /////////////////////////
 // END: Defaults
 /////////////////////////
@@ -638,32 +634,6 @@ void RequestResponse::set_enable_fire_and_forget_requests(bool value) && {
 }
 /////////////////////////
 // END: RequestResponse
-/////////////////////////
-
-/////////////////////////
-// BEGIN: Blackboard
-/////////////////////////
-Blackboard::Blackboard(iox2_config_h* config)
-    : m_config { config } {
-}
-
-auto Blackboard::max_readers() && -> size_t {
-    return iox2_config_defaults_blackboard_max_readers(m_config);
-}
-
-void Blackboard::set_max_readers(size_t value) && {
-    iox2_config_defaults_blackboard_set_max_readers(m_config, value);
-}
-
-auto Blackboard::max_nodes() && -> size_t {
-    return iox2_config_defaults_blackboard_max_nodes(m_config);
-}
-
-void Blackboard::set_max_nodes(size_t value) && {
-    iox2_config_defaults_blackboard_set_max_nodes(m_config, value);
-}
-/////////////////////////
-// END: Blackboard
 /////////////////////////
 } // namespace config
 } // namespace iox2

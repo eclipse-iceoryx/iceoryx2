@@ -43,8 +43,6 @@ class AttributeSpecifier {
     friend class ServiceBuilderPublishSubscribe;
     template <typename, typename, typename, typename, ServiceType>
     friend class ServiceBuilderRequestResponse;
-    template <typename, ServiceType>
-    friend class ServiceBuilderBlackboardCreator;
 
     void drop();
 

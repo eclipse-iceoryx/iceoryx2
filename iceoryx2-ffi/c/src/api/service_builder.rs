@@ -21,9 +21,7 @@ use crate::{
 
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::{
-    blackboard::Creator as ServiceBuilderBlackboardCreator,
-    blackboard::Opener as ServiceBuilderBlackboardOpener, event::Builder as ServiceBuilderEvent,
-    publish_subscribe::Builder as ServiceBuilderPubSub,
+    event::Builder as ServiceBuilderEvent, publish_subscribe::Builder as ServiceBuilderPubSub,
     request_response::Builder as ServiceBuilderRequestResponse, Builder as ServiceBuilderBase,
 };
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
@@ -38,7 +36,6 @@ use core::mem::MaybeUninit;
 pub(super) type UserHeaderFfi = CustomHeaderMarker;
 pub(super) type PayloadFfi = [CustomPayloadMarker];
 pub(super) type UninitPayloadFfi = [MaybeUninit<CustomPayloadMarker>];
-pub(super) type KeyFfi = u64;
 
 pub(super) union ServiceBuilderUnionNested<S: Service> {
     pub(super) base: ManuallyDrop<ServiceBuilderBase<S>>,
@@ -47,8 +44,6 @@ pub(super) union ServiceBuilderUnionNested<S: Service> {
     pub(super) request_response: ManuallyDrop<
         ServiceBuilderRequestResponse<PayloadFfi, UserHeaderFfi, PayloadFfi, UserHeaderFfi, S>,
     >,
-    pub(super) blackboard_creator: ManuallyDrop<ServiceBuilderBlackboardCreator<KeyFfi, S>>,
-    pub(super) blackboard_opener: ManuallyDrop<ServiceBuilderBlackboardOpener<KeyFfi, S>>,
 }
 
 pub(super) union ServiceBuilderUnion {
@@ -99,26 +94,6 @@ impl ServiceBuilderUnion {
         }
     }
 
-    pub(super) fn new_ipc_blackboard_creator(
-        service_builder: ServiceBuilderBlackboardCreator<KeyFfi, crate::IpcService>,
-    ) -> Self {
-        Self {
-            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::IpcService> {
-                blackboard_creator: ManuallyDrop::new(service_builder),
-            }),
-        }
-    }
-
-    pub(super) fn new_ipc_blackboard_opener(
-        service_builder: ServiceBuilderBlackboardOpener<KeyFfi, crate::IpcService>,
-    ) -> Self {
-        Self {
-            ipc: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::IpcService> {
-                blackboard_opener: ManuallyDrop::new(service_builder),
-            }),
-        }
-    }
-
     pub(super) fn new_local_base(service_builder: ServiceBuilderBase<crate::LocalService>) -> Self {
         Self {
             local: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::LocalService> {
@@ -159,26 +134,6 @@ impl ServiceBuilderUnion {
         Self {
             local: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::LocalService> {
                 request_response: ManuallyDrop::new(service_builder),
-            }),
-        }
-    }
-
-    pub(super) fn new_local_blackboard_creator(
-        service_builder: ServiceBuilderBlackboardCreator<KeyFfi, crate::LocalService>,
-    ) -> Self {
-        Self {
-            local: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::LocalService> {
-                blackboard_creator: ManuallyDrop::new(service_builder),
-            }),
-        }
-    }
-
-    pub(super) fn new_local_blackboard_opener(
-        service_builder: ServiceBuilderBlackboardOpener<KeyFfi, crate::LocalService>,
-    ) -> Self {
-        Self {
-            local: ManuallyDrop::new(ServiceBuilderUnionNested::<crate::LocalService> {
-                blackboard_opener: ManuallyDrop::new(service_builder),
             }),
         }
     }
@@ -236,20 +191,6 @@ pub type iox2_service_builder_request_response_h = *mut iox2_service_builder_req
 pub type iox2_service_builder_request_response_h_ref =
     *const iox2_service_builder_request_response_h;
 
-pub struct iox2_service_builder_blackboard_creator_h_t;
-/// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to a function transfers the ownership.
-pub type iox2_service_builder_blackboard_creator_h =
-    *mut iox2_service_builder_blackboard_creator_h_t;
-/// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to a function does not transfer the ownership.
-pub type iox2_service_builder_blackboard_creator_h_ref =
-    *const iox2_service_builder_blackboard_creator_h;
-pub struct iox2_service_builder_blackboard_opener_h_t;
-/// The owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to a function transfers the ownership.
-pub type iox2_service_builder_blackboard_opener_h = *mut iox2_service_builder_blackboard_opener_h_t;
-/// The non-owning handle for `iox2_service_builder_t` which is already configured as event. Passing the handle to a function does not transfer the ownership.
-pub type iox2_service_builder_blackboard_opener_h_ref =
-    *const iox2_service_builder_blackboard_opener_h;
-
 impl AssertNonNullHandle for iox2_service_builder_event_h {
     fn assert_non_null(self) {
         debug_assert!(!self.is_null());
@@ -287,36 +228,6 @@ impl AssertNonNullHandle for iox2_service_builder_request_response_h {
 }
 
 impl AssertNonNullHandle for iox2_service_builder_request_response_h_ref {
-    fn assert_non_null(self) {
-        debug_assert!(!self.is_null());
-        unsafe {
-            debug_assert!(!(*self).is_null());
-        }
-    }
-}
-
-impl AssertNonNullHandle for iox2_service_builder_blackboard_creator_h {
-    fn assert_non_null(self) {
-        debug_assert!(!self.is_null());
-    }
-}
-
-impl AssertNonNullHandle for iox2_service_builder_blackboard_creator_h_ref {
-    fn assert_non_null(self) {
-        debug_assert!(!self.is_null());
-        unsafe {
-            debug_assert!(!(*self).is_null());
-        }
-    }
-}
-
-impl AssertNonNullHandle for iox2_service_builder_blackboard_opener_h {
-    fn assert_non_null(self) {
-        debug_assert!(!self.is_null());
-    }
-}
-
-impl AssertNonNullHandle for iox2_service_builder_blackboard_opener_h_ref {
     fn assert_non_null(self) {
         debug_assert!(!self.is_null());
         unsafe {
@@ -382,38 +293,6 @@ impl HandleToType for iox2_service_builder_request_response_h {
 }
 
 impl HandleToType for iox2_service_builder_request_response_h_ref {
-    type Target = *mut iox2_service_builder_t;
-
-    fn as_type(self) -> Self::Target {
-        unsafe { *self as *mut _ as _ }
-    }
-}
-
-impl HandleToType for iox2_service_builder_blackboard_creator_h {
-    type Target = *mut iox2_service_builder_t;
-
-    fn as_type(self) -> Self::Target {
-        self as *mut _ as _
-    }
-}
-
-impl HandleToType for iox2_service_builder_blackboard_creator_h_ref {
-    type Target = *mut iox2_service_builder_t;
-
-    fn as_type(self) -> Self::Target {
-        unsafe { *self as *mut _ as _ }
-    }
-}
-
-impl HandleToType for iox2_service_builder_blackboard_opener_h {
-    type Target = *mut iox2_service_builder_t;
-
-    fn as_type(self) -> Self::Target {
-        self as *mut _ as _
-    }
-}
-
-impl HandleToType for iox2_service_builder_blackboard_opener_h_ref {
     type Target = *mut iox2_service_builder_t;
 
     fn as_type(self) -> Self::Target {
@@ -591,92 +470,6 @@ pub unsafe extern "C" fn iox2_service_builder_request_response(
         0,
         1,
     );
-
-    service_builder_handle as *mut _ as _
-}
-
-/// This function transforms the [`iox2_service_builder_h`] to a blackboard service creator.
-///
-/// # Arguments
-///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
-///
-/// Returns a [`iox2_service_builder_blackboard_creator_h`] for the blackboard service creator
-///
-/// # Safety
-///
-/// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_service_builder_blackboard_creator(
-    service_builder_handle: iox2_service_builder_h,
-) -> iox2_service_builder_blackboard_creator_h {
-    debug_assert!(!service_builder_handle.is_null());
-
-    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
-
-    match service_builders_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_ipc_blackboard_creator(
-                service_builder.blackboard_creator::<KeyFfi>(),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_local_blackboard_creator(
-                service_builder.blackboard_creator::<KeyFfi>(),
-            ));
-        }
-    }
-
-    service_builder_handle as *mut _ as _
-}
-
-/// This function transforms the [`iox2_service_builder_h`] to a blackboard service opener.
-///
-/// # Arguments
-///
-/// * `service_builder_handle` - Must be a valid [`iox2_service_builder_h`] obtained by [`iox2_node_service_builder`](crate::iox2_node_service_builder)
-///
-/// Returns a [`iox2_service_builder_blackboard_opener_h`] for the blackboard service opener
-///
-/// # Safety
-///
-/// * The `service_builder_handle` is invalid after this call; The corresponding `iox2_service_builder_t` is now owned by the returned handle.
-#[no_mangle]
-pub unsafe extern "C" fn iox2_service_builder_blackboard_opener(
-    service_builder_handle: iox2_service_builder_h,
-) -> iox2_service_builder_blackboard_opener_h {
-    debug_assert!(!service_builder_handle.is_null());
-
-    let service_builders_struct = unsafe { &mut *service_builder_handle.as_type() };
-
-    match service_builders_struct.service_type {
-        iox2_service_type_e::IPC => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().ipc);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_ipc_blackboard_opener(
-                service_builder.blackboard_opener::<KeyFfi>(),
-            ));
-        }
-        iox2_service_type_e::LOCAL => {
-            let service_builder =
-                ManuallyDrop::take(&mut service_builders_struct.value.as_mut().local);
-
-            let service_builder = ManuallyDrop::into_inner(service_builder.base);
-            service_builders_struct.set(ServiceBuilderUnion::new_local_blackboard_opener(
-                service_builder.blackboard_opener::<KeyFfi>(),
-            ));
-        }
-    }
 
     service_builder_handle as *mut _ as _
 }

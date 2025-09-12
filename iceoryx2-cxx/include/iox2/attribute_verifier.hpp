@@ -55,8 +55,6 @@ class AttributeVerifier {
     friend class ServiceBuilderPublishSubscribe;
     template <typename, typename, typename, typename, ServiceType>
     friend class ServiceBuilderRequestResponse;
-    template <typename, ServiceType>
-    friend class ServiceBuilderBlackboardOpener;
 
     void drop();
 

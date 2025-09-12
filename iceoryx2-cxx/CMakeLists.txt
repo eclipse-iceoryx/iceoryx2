@@ -50,7 +50,6 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/attribute_verifier.cpp
     src/client_details.cpp
     src/config.cpp
-    src/dynamic_config_blackboard.cpp
     src/dynamic_config_event.cpp
     src/dynamic_config_publish_subscribe.cpp
     src/dynamic_config_request_response.cpp
@@ -72,21 +71,18 @@ add_library(iceoryx2-cxx-object-lib OBJECT
     src/port_factory_event.cpp
     src/port_factory_notifier.cpp
     src/publisher_details.cpp
-    src/reader_details.cpp
     src/server_details.cpp
     src/service.cpp
     src/service_builder_event.cpp
     src/service_id.cpp
     src/service_name.cpp
     src/static_config.cpp
-    src/static_config_blackboard.cpp
     src/static_config_event.cpp
     src/static_config_publish_subscribe.cpp
     src/static_config_request_response.cpp
     src/subscriber_details.cpp
     src/unique_port_id.cpp
     src/waitset.cpp
-    src/writer_details.cpp
 )
 
 target_compile_options(
