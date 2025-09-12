@@ -13,6 +13,7 @@
 #ifndef IOX2_INCLUDE_GUARD_CONTAINER_DETAIL_RAW_BYTE_STORAGE_HPP
 #define IOX2_INCLUDE_GUARD_CONTAINER_DETAIL_RAW_BYTE_STORAGE_HPP
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <new>
@@ -125,11 +126,7 @@ class RawByteStorage {
             emplace_back(std::move(source));
         }
         // move remaining elements up
-        for (uint64_t i = old_size; i != index; --i) {
-            T& source = *pointer_from_index(i - 1);
-            T& target = *pointer_from_index(i + gap_size - 1);
-            target = std::move(source);
-        }
+        std::move_backward(pointer_from_index(index), pointer_from_index(old_size), pointer_from_index(m_size));
     }
 
     // @pre (index < size())
@@ -147,11 +144,7 @@ class RawByteStorage {
 
     // @pre (index + range_size <= size())
     constexpr void remove_at(uint64_t index, uint64_t range_size) {
-        for (uint64_t i = index; i < m_size - range_size; ++i) {
-            T& source = *pointer_from_index(i + range_size);
-            T& target = *pointer_from_index(i);
-            target = std::move(source);
-        }
+        std::move(pointer_from_index(index + range_size), pointer_from_index(m_size), pointer_from_index(index));
     }
 
     // @pre target_size < size()
@@ -161,6 +154,11 @@ class RawByteStorage {
             pointer_from_index(index)->~T();
         }
         m_size = target_size;
+    }
+
+    // @pre (index_first_from < size()) && (index_to < index_first_from)
+    constexpr void rotate_from_back(uint64_t index_to, uint64_t index_first_from) {
+        std::rotate(pointer_from_index(index_to), pointer_from_index(index_first_from), pointer_from_index(m_size));
     }
 
     // @pre (idx >= 0) && (idx < size())
