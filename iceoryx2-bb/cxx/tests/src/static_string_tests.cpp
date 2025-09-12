@@ -78,7 +78,6 @@ TEST(StaticString, from_utf8_fails_if_string_has_invalid_characters) {
     ASSERT_TRUE(!iox2::container::StaticString<STRING_SIZE>::from_utf8(input_array).has_value());
 }
 
-
 template <uint64_t, class = void>
 struct DetectInvalidFromUtf8WithStringABC : std::false_type { };
 template <uint64_t M>
@@ -228,7 +227,6 @@ TEST(StaticString, construction_from_smaller_capacity_copies_string_contents) {
     EXPECT_STREQ(sut.unchecked_access().c_str(), "ABCD");
 }
 
-
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers,readability-magic-numbers) capacity has no significance for this test
 template <uint64_t TargetCapacity,
           typename T,
@@ -243,7 +241,6 @@ template <uint64_t TargetCapacity,
 constexpr auto can_construct_from(T&& /* unused */) -> std::false_type {
     return {};
 }
-
 
 TEST(StaticString, construction_from_bigger_capacity_fails_regardless_of_content) {
     constexpr uint64_t const DESTINATION_STRING_SIZE = 5;
@@ -273,7 +270,6 @@ TEST(StaticString, assignment_from_smaller_capacity_returns_reference_to_self) {
     auto sut = *iox2::container::StaticString<DESTINATION_STRING_SIZE>::from_utf8("GHIJK");
     ASSERT_EQ(&(sut = test_string), &sut);
 }
-
 
 TEST(StaticString, try_push_back_appends_character_to_string_if_there_is_room) {
     constexpr uint64_t const STRING_SIZE = 5;
@@ -434,6 +430,70 @@ TEST(StaticString, code_unit_front_element_returns_first_element) {
     sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("P");
     ASSERT_TRUE(sut.code_units().front_element());
     ASSERT_EQ(sut.code_units().front_element().value(), 'P');
+}
+
+
+TEST(StaticString, try_erase_at_removes_a_single_character_from_string) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABCDE");
+    ASSERT_TRUE(sut.try_erase_at(2));
+    ASSERT_EQ(sut.size(), 4);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABDE");
+    ASSERT_TRUE(sut.try_erase_at(0));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "BDE");
+    ASSERT_TRUE(sut.try_erase_at(2));
+    ASSERT_EQ(sut.size(), 2);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "BD");
+    ASSERT_TRUE(sut.try_erase_at(0));
+    ASSERT_EQ(sut.size(), 1);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "D");
+    ASSERT_TRUE(sut.try_erase_at(0));
+    ASSERT_EQ(sut.size(), 0);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "");
+}
+
+TEST(StaticString, try_erase_at_fails_for_out_of_bounds_index) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    ASSERT_FALSE(sut.try_erase_at(3));
+    ASSERT_FALSE(sut.try_erase_at(4));
+    ASSERT_TRUE(sut.try_erase_at(2));
+    ASSERT_FALSE(sut.try_erase_at(2));
+    ASSERT_TRUE(sut.try_erase_at(0));
+    ASSERT_TRUE(sut.try_erase_at(0));
+    ASSERT_FALSE(sut.try_erase_at(0));
+}
+
+TEST(StaticString, try_erase_at_removes_a_range_of_characters_from_string) {
+    constexpr uint64_t const STRING_SIZE = 32;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("AAAAABBBBBBBCCCCCCDDDDEEEEEFFFFF");
+    ASSERT_TRUE(sut.try_erase_at(12, 18));
+    ASSERT_EQ(sut.size(), 26);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAAAABBBBBBBDDDDEEEEEFFFFF");
+    ASSERT_TRUE(sut.try_erase_at(0, 5));
+    ASSERT_EQ(sut.size(), 21);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "BBBBBBBDDDDEEEEEFFFFF");
+    ASSERT_TRUE(sut.try_erase_at(16, 21));
+    ASSERT_EQ(sut.size(), 16);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "BBBBBBBDDDDEEEEE");
+    ASSERT_TRUE(sut.try_erase_at(0, 16));
+    ASSERT_EQ(sut.size(), 0);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "");
+}
+
+TEST(StaticString, try_erase_at_is_noop_for_empty_range) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
+    ASSERT_TRUE(sut.try_erase_at(0, 0));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+    ASSERT_TRUE(sut.try_erase_at(1, 1));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+    ASSERT_TRUE(sut.try_erase_at(2, 2));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
 }
 
 TEST(StaticString, unchecked_code_unit_element_at_accesses_element_by_index) {
@@ -723,6 +783,5 @@ TEST(StaticString, not_equal_operator_checks_for_string_inequality) {
     // NOLINTNEXTLINE(readability-container-size-empty) testing
     EXPECT_FALSE(sut5 != iox2::container::StaticString<STRING_SIZE>());
 }
-
 
 } // namespace
