@@ -18,6 +18,7 @@
 
 #include "iox2/container/detail/raw_byte_storage.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -378,23 +379,10 @@ class StaticVector {
     }
 
     friend auto operator==(StaticVector const& lhs, StaticVector const& rhs) -> bool {
-        if (lhs.size() != rhs.size()) {
-            return false;
-        } else {
-            auto const lhs_unchecked = lhs.unchecked_access();
-            auto const rhs_unchecked = rhs.unchecked_access();
-            auto const lhs_it_end = lhs_unchecked.end();
-            auto lhs_it = lhs_unchecked.begin();
-            auto rhs_it = rhs_unchecked.begin();
-            while (lhs_it != lhs_it_end) {
-                if (!(*lhs_it == *rhs_it)) {
-                    return false;
-                }
-                ++lhs_it;
-                ++rhs_it;
-            }
-            return true;
-        }
+        return std::equal(lhs.unchecked_access().begin(),
+                          lhs.unchecked_access().end(),
+                          rhs.unchecked_access().begin(),
+                          rhs.unchecked_access().end());
     }
 
     friend auto operator!=(StaticVector const& lhs, StaticVector const& rhs) -> bool {
