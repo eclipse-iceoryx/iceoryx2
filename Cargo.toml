@@ -58,35 +58,35 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/eclipse-iceoryx/iceoryx2"
 rust-version = "1.81"
-version = "0.6.1"
+version = "0.7.0"
 
 [workspace.dependencies]
-iceoryx2-bb-threadsafe = { version = "0.6.1", path = "iceoryx2-bb/threadsafe/" }
-iceoryx2-bb-lock-free = { version = "0.6.1", path = "iceoryx2-bb/lock-free/" }
-iceoryx2-bb-container = { version = "0.6.1", path = "iceoryx2-bb/container/" }
-iceoryx2-bb-derive-macros = { version = "0.6.1", path = "iceoryx2-bb/derive-macros/" }
-iceoryx2-bb-elementary = { version = "0.6.1", path = "iceoryx2-bb/elementary/" }
-iceoryx2-bb-elementary-traits = { version = "0.6.1", path = "iceoryx2-bb/elementary-traits/" }
-iceoryx2-bb-log = { version = "0.6.1", path = "iceoryx2-bb/log/" }
-iceoryx2-bb-memory = { version = "0.6.1", path = "iceoryx2-bb/memory/" }
-iceoryx2-bb-posix = { version = "0.6.1", path = "iceoryx2-bb/posix/" }
-iceoryx2-bb-system-types = { version = "0.6.1", path = "iceoryx2-bb/system-types/" }
-iceoryx2-bb-trait-tests = { version = "0.6.1", path = "iceoryx2-bb/trait-tests/" }
-iceoryx2-bb-testing = { version = "0.6.1", path = "iceoryx2-bb/testing/" }
-iceoryx2-pal-concurrency-sync = { version = "0.6.1", path = "iceoryx2-pal/concurrency-sync/" }
-iceoryx2-pal-posix = { version = "0.6.1", path = "iceoryx2-pal/posix/" }
-iceoryx2-pal-configuration = { version = "0.6.1", path = "iceoryx2-pal/configuration/" }
-iceoryx2-pal-testing = { version = "0.6.1", path = "iceoryx2-pal/testing/" }
-iceoryx2-cal = { version = "0.6.1", path = "iceoryx2-cal" }
-iceoryx2 = { version = "0.6.1", path = "iceoryx2/" }
-iceoryx2-cli = { version = "0.6.1", path = "iceoryx2_cli/"}
-iceoryx2-ffi-c = { version = "0.6.1", path = "iceoryx2-ffi/c" }
-iceoryx2-ffi-python = { version = "0.6.1", path = "iceoryx2-ffi/python" }
-iceoryx2-ffi-macros = { version = "0.6.1", path = "iceoryx2-ffi/ffi-macros" }
-iceoryx2-services-discovery = { version = "0.6.1", path = "iceoryx2-services/discovery"}
-iceoryx2-tunnels-end-to-end-testing = { version = "0.6.1", path = "iceoryx2-tunnels/end-to-end-testing" }
-iceoryx2-tunnels-zenoh = { version = "0.6.1", path = "iceoryx2-tunnels/zenoh" }
-iceoryx2-userland-record-and-replay = { version = "0.6.1", path = "iceoryx2-userland/record-and-replay" }
+iceoryx2-bb-threadsafe = { version = "0.7.0", path = "iceoryx2-bb/threadsafe/" }
+iceoryx2-bb-lock-free = { version = "0.7.0", path = "iceoryx2-bb/lock-free/" }
+iceoryx2-bb-container = { version = "0.7.0", path = "iceoryx2-bb/container/" }
+iceoryx2-bb-derive-macros = { version = "0.7.0", path = "iceoryx2-bb/derive-macros/" }
+iceoryx2-bb-elementary = { version = "0.7.0", path = "iceoryx2-bb/elementary/" }
+iceoryx2-bb-elementary-traits = { version = "0.7.0", path = "iceoryx2-bb/elementary-traits/" }
+iceoryx2-bb-log = { version = "0.7.0", path = "iceoryx2-bb/log/" }
+iceoryx2-bb-memory = { version = "0.7.0", path = "iceoryx2-bb/memory/" }
+iceoryx2-bb-posix = { version = "0.7.0", path = "iceoryx2-bb/posix/" }
+iceoryx2-bb-system-types = { version = "0.7.0", path = "iceoryx2-bb/system-types/" }
+iceoryx2-bb-trait-tests = { version = "0.7.0", path = "iceoryx2-bb/trait-tests/" }
+iceoryx2-bb-testing = { version = "0.7.0", path = "iceoryx2-bb/testing/" }
+iceoryx2-pal-concurrency-sync = { version = "0.7.0", path = "iceoryx2-pal/concurrency-sync/" }
+iceoryx2-pal-posix = { version = "0.7.0", path = "iceoryx2-pal/posix/" }
+iceoryx2-pal-configuration = { version = "0.7.0", path = "iceoryx2-pal/configuration/" }
+iceoryx2-pal-testing = { version = "0.7.0", path = "iceoryx2-pal/testing/" }
+iceoryx2-cal = { version = "0.7.0", path = "iceoryx2-cal" }
+iceoryx2 = { version = "0.7.0", path = "iceoryx2/" }
+iceoryx2-cli = { version = "0.7.0", path = "iceoryx2_cli/"}
+iceoryx2-ffi-c = { version = "0.7.0", path = "iceoryx2-ffi/c" }
+iceoryx2-ffi-python = { version = "0.7.0", path = "iceoryx2-ffi/python" }
+iceoryx2-ffi-macros = { version = "0.7.0", path = "iceoryx2-ffi/ffi-macros" }
+iceoryx2-services-discovery = { version = "0.7.0", path = "iceoryx2-services/discovery"}
+iceoryx2-tunnels-end-to-end-testing = { version = "0.7.0", path = "iceoryx2-tunnels/end-to-end-testing" }
+iceoryx2-tunnels-zenoh = { version = "0.7.0", path = "iceoryx2-tunnels/zenoh" }
+iceoryx2-userland-record-and-replay = { version = "0.7.0", path = "iceoryx2-userland/record-and-replay" }
 
 anyhow = { version = "1.0.86" }
 bindgen = { version = "0.72.0" }
