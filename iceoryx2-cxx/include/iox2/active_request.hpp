@@ -84,6 +84,12 @@ class ActiveRequest {
     /// [`Client`] side indicating that the [`Client`] no longer receives the [`ResponseMut`].
     auto is_connected() const -> bool;
 
+    /// Returns [`true`] if the [`Client`] wants to gracefully disconnect.
+    /// This allows the [`Server`] to send its last response and then
+    /// drop the [`ActiveRequest`] to signal the [`Client`] that no more
+    /// [`ResponseMut`] will be sent.
+    auto has_disconnect_hint() const -> bool;
+
     /// Loans default initialized memory for a [`ResponseMut`] where the user can write its
     /// payload to.
     template <typename T = ResponsePayload, typename = std::enable_if_t<!iox::IsSlice<T>::VALUE, void>>
@@ -320,6 +326,17 @@ inline auto
 ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::is_connected() const
     -> bool {
     return iox2_active_request_is_connected(&m_handle);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline auto
+ActiveRequest<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::has_disconnect_hint()
+    const -> bool {
+    return iox2_active_request_has_disconnect_hint(&m_handle);
 }
 
 template <ServiceType Service,

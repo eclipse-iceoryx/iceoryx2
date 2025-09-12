@@ -135,6 +135,31 @@ impl HandleToType for iox2_active_request_h_ref {
 
 // BEGIN C API
 
+/// Returns true if the client wants to gracefully disconnect. This allows the Server to send its last
+/// response and then drop the active request to signal the client that no more response will be sent.
+///
+/// # Arguments
+///
+/// * `handle` - Must be a valid [`iox2_active_request_h_ref`]
+///   obtained by [`iox2_server_receive`](crate::iox2_server_receive).
+///
+/// # Safety
+///
+/// * `handle` must be a valid handle
+#[no_mangle]
+pub unsafe extern "C" fn iox2_active_request_has_disconnect_hint(
+    handle: iox2_active_request_h_ref,
+) -> bool {
+    handle.assert_non_null();
+
+    let active_request = &mut *handle.as_type();
+
+    match active_request.service_type {
+        iox2_service_type_e::IPC => active_request.value.as_mut().ipc.has_disconnect_hint(),
+        iox2_service_type_e::LOCAL => active_request.value.as_mut().local.has_disconnect_hint(),
+    }
+}
+
 /// Returns true if the corresponding pending response is still connected anc can receive responses.
 ///
 /// # Arguments

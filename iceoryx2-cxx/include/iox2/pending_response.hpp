@@ -87,6 +87,13 @@ class PendingResponse {
     /// It also returns [`false`] when there are no [`Server`]s.
     auto is_connected() const -> bool;
 
+    /// Marks the connection state that the [`Client`] wants to gracefully
+    /// disconnect. When the [`Server`] reads this, it can send the last [`Response`] and drop the
+    /// corresponding [`ActiveRequest`] to terminate the
+    /// connection ensuring that no [`Response`] is lost on the [`Client`]
+    /// side.
+    void set_disconnect_hint();
+
   private:
     template <ServiceType, typename, typename, typename, typename>
     friend class Client;
@@ -272,6 +279,16 @@ inline auto
 PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::is_connected() const
     -> bool {
     return iox2_pending_response_is_connected(&m_handle);
+}
+
+template <ServiceType Service,
+          typename RequestPayload,
+          typename RequestUserHeader,
+          typename ResponsePayload,
+          typename ResponseUserHeader>
+inline void PendingResponse<Service, RequestPayload, RequestUserHeader, ResponsePayload, ResponseUserHeader>::
+    set_disconnect_hint() {
+    iox2_pending_response_set_disconnect_hint(&m_handle);
 }
 
 template <ServiceType Service,
