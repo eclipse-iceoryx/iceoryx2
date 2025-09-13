@@ -13,7 +13,7 @@
 
 <!-- markdownlint-enable -->
 
-# iceoryx2 - Zero-Copy Lock-Free IPC Purely Written In Rust
+# iceoryx2 - Zero-Copy Lock-Free IPC with a Rust Core
 
 * [Introduction](#introduction)
 * [Performance](#performance)
