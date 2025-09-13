@@ -1,7 +1,7 @@
 [project]
 name = "iceoryx2"
 version = "0.7.0"
-description = "Python bindings for iceoryx2"
+description = "Lock-Free Zero-Copy Inter-process Communication"
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
 license = "Apache-2.0 OR MIT"
@@ -23,7 +23,7 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "License :: OSI Approved :: MIT License",
     "Operating System :: POSIX :: Linux",
-    "Operating System :: POSIX :: BSD",
+    "Operating System :: POSIX :: BSD :: FreeBSD",
     "Operating System :: MacOS :: MacOS X",
     "Operating System :: Microsoft :: Windows",
 ]
@@ -83,11 +83,12 @@ shell = "python -m build --sdist --outdir ../../target/ff/python/dist"
 [tool.poe.tasks.build-wheel]
 shell = "maturin build --release --target-dir ../../target/ff/python --out ../../target/ff/python/dist"
 
-[tool.poe.tasks.upload-to-pypi]
-shell = "maturin publish"
-
-[tool.poe.tasks.upload-to-pypi-test]
-shell = "maturin publish --repository testpypi"
+[tool.poe.tasks.upload-dist]
+shell = "twine upload ${dist}/* -r ${repo}"
+args = [
+  { name = "dist", help = "Path to dist directory", default = "dist" },
+  { name = "repo", help = "Repository to upload to (pypi-personal, pypi-org, etc.)", default = "pypi-personal" }
+]
 
 [tool.poe.tasks.check-imports]
 sequence = [
