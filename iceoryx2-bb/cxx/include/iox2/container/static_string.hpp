@@ -160,6 +160,8 @@ class StaticString {
         auto operator=(UncheckedAccessorCodeUnits const&) -> UncheckedAccessorCodeUnits& = delete;
         auto operator=(UncheckedAccessorCodeUnits&&) -> UncheckedAccessorCodeUnits& = delete;
 
+        /// Retrieve a reference to the single code unit at `index`.
+        /// @return A reference to the code unit or `nullopt` if the index is out of bounds.
         auto element_at(SizeType index) noexcept -> OptionalCodeUnitReference {
             if (index < m_parent->m_size) {
                 return m_parent->m_string[index];
@@ -168,6 +170,8 @@ class StaticString {
             }
         }
 
+        /// Retrieve a reference to the first code unit at the beginning of the string.
+        /// @return A reference to the front code unit or `nullopt` if the string is empty.
         auto front_element() noexcept -> OptionalCodeUnitReference {
             if (!m_parent->empty()) {
                 return m_parent->m_string[0];
@@ -176,6 +180,8 @@ class StaticString {
             }
         }
 
+        /// Retrieve a reference to the last code unit at the end of the string.
+        /// @return A reference to the back code unit or `nullopt` if the string is empty.
         auto back_element() noexcept -> OptionalCodeUnitReference {
             if (!m_parent->empty()) {
                 return m_parent->m_string[m_parent->size() - 1];
@@ -184,10 +190,12 @@ class StaticString {
             }
         }
 
+        /// Removes a single code unit at `index`.
         auto try_erase_at(SizeType index) noexcept -> bool {
             return try_erase_at(index, index + 1);
         }
 
+        /// Removes the range of code units at [`begin_index`, `end_index`).
         auto try_erase_at(SizeType begin_index, SizeType end_index) noexcept -> bool {
             if ((begin_index <= end_index) && (end_index <= m_parent->m_size)) {
                 auto const range_size = end_index - begin_index;
@@ -220,6 +228,8 @@ class StaticString {
         auto operator=(ConstAccessorCodeUnits const&) -> ConstAccessorCodeUnits& = delete;
         auto operator=(ConstAccessorCodeUnits&&) -> ConstAccessorCodeUnits& = delete;
 
+        /// Retrieve the single code unit at `index`.
+        /// @return A reference to the code unit or `nullopt` if the index is out of bounds.
         auto element_at(SizeType index) const noexcept -> OptionalConstCodeUnitReference {
             if (index < m_parent->m_size) {
                 return m_parent->m_string[index];
@@ -228,6 +238,8 @@ class StaticString {
             }
         }
 
+        /// Retrieve the first code unit at the beginning of the string.
+        /// @return A reference to the front code unit or `nullopt` if the string is empty.
         auto front_element() const noexcept -> OptionalConstCodeUnitReference {
             if (!m_parent->empty()) {
                 return m_parent->m_string[0];
@@ -236,6 +248,8 @@ class StaticString {
             }
         }
 
+        /// Retrieve the last code unit at the end of the string.
+        /// @return A reference to the back code unit or `nullopt` if the string is empty.
         auto back_element() const noexcept -> OptionalConstCodeUnitReference {
             if (!m_parent->empty()) {
                 return m_parent->m_string[m_parent->size() - 1];
