@@ -368,6 +368,39 @@ class StaticString {
         }
     }
 
+    /// Attempt to append `count` instances of `character` to the back of the string.
+    /// @return true on success.
+    ///         false if the action would exceed the string's capacity or put the string content into a state that is
+    ///         not a valid UTF-8 encoded string.
+    constexpr auto try_append(SizeType count, CodeUnitValueType character) noexcept -> bool {
+        if ((m_size + count <= N) && (is_valid_next(character))) {
+            std::fill(&(m_string[m_size]), &(m_string[m_size + count]), character);
+            m_size += count;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /// Appends a null terminated C-style string.
+    /// This unchecked function allows for uncontrolled memory access. Users of this must ensure that the input string
+    /// is properly null terminated.
+    /// @return true on success.
+    ///         false if the input string does not represent a valid UTF-8 encoding.
+    constexpr auto try_append_utf8_null_terminated_unchecked(char const* utf8_str) -> bool {
+        auto const old_size = size();
+        while (*utf8_str != '\0') {
+            if (!try_push_back(*utf8_str)) {
+                std::fill(&m_string[old_size], &m_string[m_size], '\0');
+                m_size = old_size;
+                return false;
+            }
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-pointer-arithmetic), unchecked access into c-style string
+            ++utf8_str;
+        }
+        return true;
+    }
+
     static constexpr auto capacity() noexcept -> SizeType {
         return N;
     }

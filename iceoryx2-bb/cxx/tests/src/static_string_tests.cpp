@@ -25,6 +25,13 @@ namespace {
 template <class...>
 using DetectT = void;
 
+template <uint64_t N>
+inline auto free_space_is_all_zeroes(iox2::container::StaticString<N> const& str) -> bool {
+    return std::all_of(str.unchecked_access().data() + str.size(),
+                       str.unchecked_access().data() + str.capacity() + 1,
+                       [](char character) -> bool { return character == '\0'; });
+}
+
 constexpr uint64_t const G_ARBITRARY_CAPACITY = 55;
 // NOLINTNEXTLINE(modernize-type-traits), _v requires C++17
 static_assert(std::is_standard_layout<iox2::container::StaticString<G_ARBITRARY_CAPACITY>>::value,
@@ -37,6 +44,7 @@ TEST(StaticString, default_constructor_initializes_to_empty) {
     iox2::container::StaticString<STRING_SIZE> const sut;
     ASSERT_TRUE(sut.empty());
     ASSERT_EQ(sut.size(), 0);
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, from_utf8_construction_from_c_style_ascii_string) {
@@ -45,6 +53,7 @@ TEST(StaticString, from_utf8_construction_from_c_style_ascii_string) {
     ASSERT_TRUE(opt_sut.has_value());
     auto const& sut = opt_sut.value();
     ASSERT_EQ(sut.size(), 12);
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, from_utf8_fails_if_string_is_not_null_terminated) {
@@ -121,6 +130,7 @@ TEST(StaticString, from_utf8_null_terminated_unchecked_construction_from_null_te
     ASSERT_TRUE(opt_sut.has_value());
     ASSERT_EQ(opt_sut->size(), 11);
     EXPECT_STREQ(opt_sut->unchecked_access().c_str(), test_string);
+    ASSERT_TRUE(free_space_is_all_zeroes(*opt_sut));
 }
 
 TEST(StaticString, from_utf8_null_terminated_unchecked_fails_if_string_has_invalid_characters) {
@@ -173,6 +183,7 @@ TEST(StaticString, copy_constructor_copies_string_contents) {
     ASSERT_EQ(test_string.size(), 4);
     EXPECT_STREQ(test_string.unchecked_access().c_str(), "ABCD");
     ASSERT_NE(sut.unchecked_access().c_str(), test_string.unchecked_access().c_str());
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, move_constructor_copies_string_contents) {
@@ -181,6 +192,7 @@ TEST(StaticString, move_constructor_copies_string_contents) {
     iox2::container::StaticString<STRING_SIZE> const sut { std::move(test_string) };
     ASSERT_EQ(sut.size(), 4);
     EXPECT_STREQ(sut.unchecked_access().c_str(), "ABCD");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, copy_assignment_copies_string_contents) {
@@ -207,6 +219,7 @@ TEST(StaticString, copy_assignment_does_not_change_value_on_self_assignment) {
     sut = *sut_again_but_we_confuse_the_compiler;
     ASSERT_EQ(sut.size(), 4);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABCD");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, copy_assignment_returns_reference_to_self) {
@@ -225,6 +238,7 @@ TEST(StaticString, move_assignment_copies_string_contents) {
     ASSERT_EQ(sut.size(), 4);
     ASSERT_EQ(sut.unchecked_access()[4], '\0');
     EXPECT_STREQ(sut.unchecked_access().c_str(), "ABCD");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, move_assignment_returns_reference_to_self) {
@@ -241,6 +255,7 @@ TEST(StaticString, construction_from_smaller_capacity_copies_string_contents) {
     iox2::container::StaticString<DESTINATION_STRING_SIZE> const sut { test_string };
     ASSERT_EQ(sut.size(), 4);
     EXPECT_STREQ(sut.unchecked_access().c_str(), "ABCD");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 template <uint64_t TargetCapacity,
@@ -276,6 +291,7 @@ TEST(StaticString, assignment_from_smaller_capacity_copies_string_contents) {
     ASSERT_EQ(sut.size(), 4);
     ASSERT_EQ(sut.unchecked_access()[4], '\0');
     EXPECT_STREQ(sut.unchecked_access().c_str(), "ABCD");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, assignment_from_smaller_capacity_returns_reference_to_self) {
@@ -315,6 +331,7 @@ TEST(StaticString, try_push_back_appends_character_to_string_if_there_is_room) {
     ASSERT_TRUE(sut.try_push_back('A'));
     ASSERT_EQ(sut.size(), 1);
     EXPECT_EQ(*sut.unchecked_code_units().back_element(), 'A');
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     EXPECT_STREQ(sut.unchecked_access().c_str(), "A");
     ASSERT_TRUE(sut.try_push_back('B'));
     ASSERT_EQ(sut.size(), 2);
@@ -332,6 +349,7 @@ TEST(StaticString, try_push_back_appends_character_to_string_if_there_is_room) {
     ASSERT_EQ(sut.size(), 5);
     EXPECT_EQ(*sut.unchecked_code_units().back_element(), 'E');
     EXPECT_STREQ(sut.unchecked_access().c_str(), "ABCDE");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, try_push_back_fails_if_there_is_no_room) {
@@ -377,6 +395,7 @@ TEST(StaticString, try_pop_removes_last_element_from_string) {
     ASSERT_TRUE(sut.try_pop_back());
     ASSERT_EQ(sut.size(), 0);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, try_pop_fails_on_empty_string) {
@@ -418,6 +437,127 @@ TEST(StaticString, empty_indicates_whether_the_string_is_empty) {
     ASSERT_TRUE(sut.empty());
 }
 
+TEST(StaticString, try_append_appends_count_times_a_character_to_the_string) {
+    constexpr uint64_t const STRING_SIZE = 15;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    ASSERT_TRUE(sut.try_append(3, 'A'));
+    ASSERT_EQ(sut.size(), 3);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAA");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    ASSERT_TRUE(sut.try_append(7, 'B'));
+    ASSERT_EQ(sut.size(), 10);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAABBBBBBB");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    ASSERT_TRUE(sut.try_append(2, 'C'));
+    ASSERT_EQ(sut.size(), 12);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAABBBBBBBCC");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    ASSERT_TRUE(sut.try_append(1, 'D'));
+    ASSERT_EQ(sut.size(), 13);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAABBBBBBBCCD");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    ASSERT_TRUE(sut.try_append(2, 'E'));
+    ASSERT_EQ(sut.size(), 15);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAABBBBBBBCCDEE");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+}
+
+TEST(StaticString, try_append_fails_if_character_count_exceeds_capacity) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    ASSERT_FALSE(sut.try_append(7, 'A'));
+    ASSERT_FALSE(sut.try_append(6, 'A'));
+    ASSERT_TRUE(sut.try_append(5, 'A'));
+    ASSERT_FALSE(sut.try_append(1, 'B'));
+    ASSERT_FALSE(sut.try_append(2, 'B'));
+    ASSERT_TRUE(sut.try_append(0, 'B'));
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "AAAAA");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+}
+
+TEST(StaticString, try_append_fails_for_invalid_characters) {
+    constexpr uint64_t const STRING_SIZE = 5;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    ASSERT_FALSE(sut.try_append(1, InvalidChar<>::value));
+    ASSERT_FALSE(sut.try_append(2, InvalidChar<>::value));
+}
+
+TEST(StaticString, try_append_utf8_null_terminated_unchecked_appends_a_c_style_string) {
+    constexpr uint64_t const STRING_SIZE = 12;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    ASSERT_TRUE(sut.try_append_utf8_null_terminated_unchecked("Hello"));
+    ASSERT_EQ(sut.size(), 5);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    ASSERT_TRUE(sut.try_append_utf8_null_terminated_unchecked(" "));
+    ASSERT_EQ(sut.size(), 6);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello ");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    ASSERT_TRUE(sut.try_append_utf8_null_terminated_unchecked("World"));
+    ASSERT_EQ(sut.size(), 11);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello World");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    ASSERT_TRUE(sut.try_append_utf8_null_terminated_unchecked("!"));
+    ASSERT_EQ(sut.size(), 12);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello World!");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+}
+
+TEST(StaticString, try_append_utf8_null_terminated_unchecked_fails_if_exceeding_capacity) {
+    constexpr uint64_t const STRING_SIZE = 10;
+    iox2::container::StaticString<STRING_SIZE> sut;
+    ASSERT_TRUE(sut.try_append_utf8_null_terminated_unchecked("Hello"));
+    ASSERT_EQ(sut.size(), 5);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_FALSE(sut.try_append_utf8_null_terminated_unchecked("This string is far too long"));
+    ASSERT_EQ(sut.size(), 5);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    ASSERT_FALSE(sut.try_append_utf8_null_terminated_unchecked("Almost"));
+    ASSERT_EQ(sut.size(), 5);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+}
+
+TEST(StaticString, try_append_utf8_null_terminated_unchecked_fails_if_input_contains_invalid_characters) {
+    // NOLINTBEGIN(clang-analyzer-security.insecureAPI.strcpy,cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay) testing
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) testing
+    char const test_string[] = " World!";
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays) testing
+    char mutable_string[sizeof(test_string)];
+    strcpy(mutable_string, test_string);
+    char const* str_ptr = mutable_string;
+    constexpr uint64_t const STRING_SIZE = 99;
+    auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("Hello");
+    ASSERT_EQ(sut.size(), 5);
+    mutable_string[0] = InvalidChar<>::value;
+    ASSERT_FALSE(sut.try_append_utf8_null_terminated_unchecked(str_ptr));
+    ASSERT_EQ(sut.size(), 5);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    strcpy(mutable_string, test_string);
+    mutable_string[1] = InvalidChar<>::value;
+    ASSERT_FALSE(sut.try_append_utf8_null_terminated_unchecked(str_ptr));
+    ASSERT_EQ(sut.size(), 5);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    strcpy(mutable_string, test_string);
+    mutable_string[sizeof(test_string) - 2] = InvalidChar<>::value;
+    ASSERT_FALSE(sut.try_append_utf8_null_terminated_unchecked(str_ptr));
+    ASSERT_EQ(sut.size(), 5);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    strcpy(mutable_string, test_string);
+    mutable_string[sizeof(test_string) - 1] = InvalidChar<>::value;
+    ASSERT_FALSE(sut.try_append_utf8_null_terminated_unchecked(str_ptr));
+    ASSERT_EQ(sut.size(), 5);
+    ASSERT_STREQ(sut.unchecked_access().c_str(), "Hello");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
+    strcpy(mutable_string, test_string);
+    ASSERT_TRUE(sut.try_append_utf8_null_terminated_unchecked(str_ptr));
+    // NOLINTEND(clang-analyzer-security.insecureAPI.strcpy,cppcoreguidelines-pro-bounds-array-to-pointer-decay,hicpp-no-array-decay)
+}
+
 TEST(StaticString, code_unit_element_at_accesses_element_by_index) {
     constexpr uint64_t const STRING_SIZE = 5;
     auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
@@ -430,6 +570,7 @@ TEST(StaticString, code_unit_element_at_accesses_element_by_index) {
     sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("x");
     ASSERT_TRUE(sut.code_units().element_at(0));
     ASSERT_EQ(sut.code_units().element_at(0).value(), 'x');
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, code_unit_element_at_returns_nullopt_if_index_out_of_bounds) {
@@ -456,6 +597,7 @@ TEST(StaticString, code_unit_back_element_returns_last_element) {
     sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("P");
     ASSERT_TRUE(sut.code_units().back_element());
     ASSERT_EQ(sut.code_units().back_element().value(), 'P');
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, code_unit_back_element_returns_nullopt_on_empty_string) {
@@ -475,6 +617,7 @@ TEST(StaticString, code_unit_front_element_returns_first_element) {
     sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("P");
     ASSERT_TRUE(sut.code_units().front_element());
     ASSERT_EQ(sut.code_units().front_element().value(), 'P');
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, code_unit_front_element_returns_nullopt_on_empty_string) {
@@ -509,6 +652,7 @@ TEST(StaticString, unchecked_code_unit_element_at_allows_modification_of_indexed
     ASSERT_TRUE(sut.unchecked_code_units().element_at(2));
     sut.unchecked_code_units().element_at(2).value().get() = 'Z';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "XYZ");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_code_unit_element_at_returns_nullopt_if_index_out_of_bounds) {
@@ -535,6 +679,7 @@ TEST(StaticString, unchecked_code_unit_back_element_returns_last_element) {
     sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("P");
     ASSERT_TRUE(sut.unchecked_code_units().back_element());
     ASSERT_EQ(sut.unchecked_code_units().back_element().value(), 'P');
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_code_unit_back_element_allows_modification_of_last_element) {
@@ -562,6 +707,7 @@ TEST(StaticString, unchecked_code_unit_front_element_returns_first_element) {
     sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("P");
     ASSERT_TRUE(sut.unchecked_code_units().front_element());
     ASSERT_EQ(sut.unchecked_code_units().front_element().value(), 'P');
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_code_unit_front_element_allows_modification_of_first_element) {
@@ -570,6 +716,7 @@ TEST(StaticString, unchecked_code_unit_front_element_allows_modification_of_firs
     ASSERT_TRUE(sut.unchecked_code_units().front_element());
     sut.unchecked_code_units().front_element().value().get() = '0';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "0BC");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_code_unit_front_element_returns_nullopt_on_empty_string) {
@@ -584,18 +731,23 @@ TEST(StaticString, unchecked_code_unit_try_erase_at_removes_a_single_character_f
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(2));
     ASSERT_EQ(sut.size(), 4);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABDE");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0));
     ASSERT_EQ(sut.size(), 3);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "BDE");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(2));
     ASSERT_EQ(sut.size(), 2);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "BD");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0));
     ASSERT_EQ(sut.size(), 1);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "D");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0));
     ASSERT_EQ(sut.size(), 0);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_code_unit_try_erase_at_fails_for_out_of_bounds_index) {
@@ -616,12 +768,15 @@ TEST(StaticString, unchecked_code_unit_try_erase_at_removes_a_range_of_character
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(12, 18));
     ASSERT_EQ(sut.size(), 26);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "AAAAABBBBBBBDDDDEEEEEFFFFF");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0, 5));
     ASSERT_EQ(sut.size(), 21);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "BBBBBBBDDDDEEEEEFFFFF");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(16, 21));
     ASSERT_EQ(sut.size(), 16);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "BBBBBBBDDDDEEEEE");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0, 16));
     ASSERT_EQ(sut.size(), 0);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "");
@@ -633,12 +788,15 @@ TEST(StaticString, unchecked_code_unit_try_erase_at_is_noop_for_empty_range) {
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(0, 0));
     ASSERT_EQ(sut.size(), 3);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(1, 1));
     ASSERT_EQ(sut.size(), 3);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     ASSERT_TRUE(sut.unchecked_code_units().try_erase_at(2, 2));
     ASSERT_EQ(sut.size(), 3);
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABC");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_code_unit_try_erase_at_fails_for_invalid_range) {
@@ -672,10 +830,13 @@ TEST(StaticString, unchecked_subscript_operator_allows_accessing_chars_by_index)
     auto sut = *iox2::container::StaticString<STRING_SIZE>::from_utf8("ABC");
     sut.unchecked_access()[0] = 'X';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "XBC");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     sut.unchecked_access()[1] = 'Y';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "XYC");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
     sut.unchecked_access()[2] = 'Z';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "XYZ");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_const_begin_returns_pointer_to_first_element) {
@@ -692,6 +853,7 @@ TEST(StaticString, unchecked_begin_returns_mutable_pointer_to_first_element) {
     ASSERT_EQ(sut.unchecked_access().begin(), &sut.unchecked_access()[0]);
     *sut.unchecked_access().begin() = 'X';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "XBC");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_const_end_returns_pointer_to_one_past_last_element) {
@@ -706,6 +868,7 @@ TEST(StaticString, unchecked_end_returns_mutable_pointer_to_one_past_last_elemen
     ASSERT_EQ(sut.unchecked_access().end(), &sut.unchecked_access()[sut.size()]);
     *(sut.unchecked_access().end() - 1) = 'X';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABX");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_const_data_returns_pointer_to_first_element) {
@@ -722,6 +885,7 @@ TEST(StaticString, unchecked_data_returns_mutable_pointer_to_first_element) {
     ASSERT_EQ(sut.unchecked_access().data(), &sut.unchecked_access()[0]);
     sut.unchecked_access().data()[0] = 'X';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "XBC");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_const_c_str_returns_pointer_to_string) {
