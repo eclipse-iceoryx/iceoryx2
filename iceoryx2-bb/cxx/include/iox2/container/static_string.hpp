@@ -354,18 +354,6 @@ class StaticString {
         }
     }
 
-    constexpr auto try_erase_at(SizeType index) noexcept -> bool {
-        // index needs to be a valid cut point for the string
-        // this is trivially true for strings restricted to code points < U+0080
-        return unchecked_code_units().try_erase_at(index);
-    }
-
-    constexpr auto try_erase_at(SizeType begin_index, SizeType end_index) noexcept -> bool {
-        // begin_index and end_index need to be valid cut points for the string
-        // this is trivially true for strings restricted to code points < U+0080
-        return unchecked_code_units().try_erase_at(begin_index, end_index);
-    }
-
     static constexpr auto capacity() noexcept -> SizeType {
         return N;
     }
