@@ -18,7 +18,7 @@ pub const TIMEOUT_DURATION: Duration = Duration::from_secs(5);
 pub const HISTORY_SIZE: usize = 10;
 
 pub trait Config {
-    type PayloadType: Send + Sync + std::fmt::Debug + PartialEq + Clone + ZeroCopySend + 'static;
+    type PayloadType: Send + Sync + core::fmt::Debug + PartialEq + ZeroCopySend + 'static;
 
     fn ping_service_name(&self) -> &str;
     fn pong_service_name(&self) -> &str;
