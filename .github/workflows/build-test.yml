@@ -88,7 +88,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macOS-latest]
+        os: [windows-2022, ubuntu-latest, macOS-latest] # todo (iox2-#1049): Use windows latest here
         cargo-features-flag: [""]
         include:
           - os: ubuntu-latest
@@ -175,7 +175,7 @@ jobs:
     needs: preflight-check
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
@@ -349,7 +349,7 @@ jobs:
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
       - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
         run: internal\scripts\ci_prepare_windows.ps1
 
       - name: Prepare Linux
@@ -415,7 +415,7 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
         # NOTE: enable for MinGW
         # toolchain: [stable, stable-gnu, 1.81.0]
         toolchain: [stable, 1.81.0]
@@ -433,7 +433,7 @@ jobs:
           # NOTE: enable for MinGW
           # - toolchain: stable-gnu
           #  cmake-build-system-generator: '-G "MinGW Makefiles"'
-          - os: windows-latest
+          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
             toolchain: stable
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
           - os: ubuntu-latest
@@ -444,7 +444,7 @@ jobs:
           #   toolchain: stable-gnu
           # - os: macos-latest
           #   toolchain: stable-gnu
-          - os: windows-latest
+          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
             cargo-features-flag: "--features libc_platform"
           - os: macos-latest
             cargo-features-flag: "--features libc_platform"
@@ -474,7 +474,7 @@ jobs:
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
       - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
         run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -489,10 +489,10 @@ jobs:
         run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
 
       - name: Build iceoryx_hoofs on Windows
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
         run: internal\scripts\ci_build_and_install_iceoryx_hoofs.ps1 -mode ${{ matrix.mode.name }} -toolchain ${{ matrix.toolchain }}
       - name: Build iceoryx_hoofs on non-Windows
-        if: ${{ matrix.os != 'windows-latest' }}
+        if: ${{ matrix.os != 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
         run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
 
       - name: Print native libs of FFI target
@@ -515,11 +515,11 @@ jobs:
         run: target/ff/cc/build/tests/iceoryx2-cxx-tests
 
       - name: Remove language binding build artifacts on Windows
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
         run: rm -r -force target/ff/cc/build
 
       - name: Remove language binding build artifacts on non-Windows
-        if: ${{ matrix.os != 'windows-latest' }}
+        if: ${{ matrix.os != 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
         run: rm -rf target/ff/cc/build
 
       - name: Build C language binding examples in out-of-tree configuration
@@ -540,7 +540,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
         toolchain: [beta, nightly]
         mode: 
           - name: "release"
@@ -573,7 +573,7 @@ jobs:
           artifact-upload-name: ${{ runner.os }}-cargo-nextest
 
       - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
         run: internal\scripts\ci_prepare_windows.ps1
       - name: Prepare Linux
         if: ${{ matrix.os == 'ubuntu-latest' }}
