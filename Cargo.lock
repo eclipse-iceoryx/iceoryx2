@@ -1612,6 +1612,7 @@ version = "0.7.0"
 dependencies = [
  "clap",
  "iceoryx2",
+ "iceoryx2-bb-container",
  "iceoryx2-bb-log",
 ]
 
