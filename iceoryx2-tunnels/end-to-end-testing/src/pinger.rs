@@ -10,88 +10,65 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::time::Duration;
+mod config;
+mod testing;
 
-use iceoryx2::prelude::*;
-use iceoryx2_bb_log::{error, info};
+use crate::config::*;
+use crate::testing::*;
+use iceoryx2::prelude::{ipc, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder};
 
-fn log(message: &str) {
-    info!("<< PINGER >> {}", message);
-}
+fn run_pinger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> {
+    let node = NodeBuilder::new().create::<ipc::Service>()?;
 
-fn pass_test() {
-    info!("<< TEST >> SUCCESS");
-    std::process::exit(0);
-}
+    let ping_publisher = node
+        .service_builder(&config.ping_service_name().try_into()?)
+        .publish_subscribe::<C::PayloadType>()
+        .history_size(HISTORY_SIZE)
+        .open_or_create()?
+        .publisher_builder()
+        .create()?;
 
-fn fail_test(message: &str) -> ! {
-    error!("<< TEST >> {}", message);
-    std::process::exit(-128);
-}
-
-fn main() -> Result<(), Box<dyn core::error::Error>> {
-    const PING_SERVICE_NAME: &str = "tunnel-end-to-end-test/ping";
-    const PONG_SERVICE_NAME: &str = "tunnel-end-to-end-test/pong";
-    type PayloadType = u64;
-    const PAYLOAD_DATA: PayloadType = 42;
-
-    log("STARTING Pinger");
-
-    let pinger_node = NodeBuilder::new().create::<ipc::Service>()?;
-    log("CREATED Pinger Node");
-
-    let ping_service = pinger_node
-        .service_builder(&PING_SERVICE_NAME.try_into()?)
-        .publish_subscribe::<PayloadType>()
-        .history_size(10)
-        .open_or_create()?;
-    let ping_publisher = ping_service.publisher_builder().create()?;
-    log("CREATED Ping Publisher");
-
-    let ping_service = pinger_node
-        .service_builder(&PING_SERVICE_NAME.try_into()?)
+    let ping_notifier = node
+        .service_builder(&config.ping_service_name().try_into()?)
         .event()
-        .open_or_create()?;
-    let ping_notifier = ping_service.notifier_builder().create()?;
-    log("CREATED Ping Notifier");
+        .open_or_create()?
+        .notifier_builder()
+        .create()?;
 
-    let pong_service = pinger_node
-        .service_builder(&PONG_SERVICE_NAME.try_into()?)
-        .publish_subscribe::<PayloadType>()
-        .history_size(10)
-        .open_or_create()?;
-    let pong_subscriber = pong_service.subscriber_builder().create()?;
-    log("CREATED Pong Subscriber");
+    let pong_subscriber = node
+        .service_builder(&config.pong_service_name().try_into()?)
+        .publish_subscribe::<C::PayloadType>()
+        .history_size(HISTORY_SIZE)
+        .open_or_create()?
+        .subscriber_builder()
+        .create()?;
 
-    let pong_service = pinger_node
-        .service_builder(&PONG_SERVICE_NAME.try_into()?)
+    let pong_listener = node
+        .service_builder(&config.pong_service_name().try_into()?)
         .event()
-        .open_or_create()?;
-    let pong_listener = pong_service.listener_builder().create()?;
-    log("CREATED Pong Listener");
+        .open_or_create()?
+        .listener_builder()
+        .create()?;
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
 
     let pong_guard = waitset.attach_notification(&pong_listener)?;
     let pong_id = WaitSetAttachmentId::from_guard(&pong_guard);
 
-    let timeout_guard = waitset.attach_interval(Duration::from_secs(5))?;
+    let timeout_guard = waitset.attach_interval(TIMEOUT_DURATION)?;
     let timeout_id = WaitSetAttachmentId::from_guard(&timeout_guard);
 
     let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
         if id == pong_id {
-            log("RECEIVED Pong Notification");
-
             match pong_subscriber.receive() {
                 Ok(sample) => match sample {
                     Some(sample) => {
-                        log("RECEIVED Pong Payload");
-                        if *sample.payload() == PAYLOAD_DATA {
+                        if *sample.payload() == config.payload() {
                             pass_test();
                         } else {
                             fail_test(&format!(
                                 "FAILED Unexpected sample received at subscriber. Sent: {:?}, Received: {:?}",
-                                PAYLOAD_DATA,
+                                config.payload(),
                                 *sample.payload()
                             ));
                         }
@@ -112,17 +89,16 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         fail_test("FAILED Unexpected Event");
     };
 
-    log("CREATED Waitset");
-    log("STARTED Pinger");
-
     let ping_sample = ping_publisher.loan_uninit()?;
-    let ping_sample = ping_sample.write_payload(PAYLOAD_DATA);
+    let ping_sample = ping_sample.write_payload(config.payload());
     ping_sample.send()?;
     ping_notifier.notify()?;
-
-    log("SENT Ping");
 
     waitset.wait_and_process(on_event)?;
 
     Ok(())
+}
+
+fn main() -> Result<(), Box<dyn core::error::Error>> {
+    run_pinger(&PrimitiveType)
 }
