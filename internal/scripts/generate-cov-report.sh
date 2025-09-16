@@ -21,17 +21,21 @@ COLOR_YELLOW='\033[1;33m'
 LLVM_PATH=$(dirname $(which llvm-profdata))
 LLVM_PROFILE_PATH="target/debug/llvm-profile-files"
 export LLVM_PROFILE_FILE="${LLVM_PROFILE_PATH}/iceoryx2-%p-%m.profraw"
+export DEBUGINFOD_URLS=/dev/null
 
-if [[ "$(rustc --version | grep nightly | wc -l)" == "1" ]]
-then
-    echo -e "${COLOR_GREEN}rust nightly compiler found, activating MC/DC coverage check${COLOR_OFF}"
-    export RUSTFLAGS="-C instrument-coverage -Z coverage-options=mcdc"
-else
-    echo -e "${COLOR_YELLOW}no rust nightly compiler found, MC/DC coverage is not available only line coverage${COLOR_OFF}"
-    export RUSTFLAGS="-C instrument-coverage"
-fi
+set_rustc_flags() {
+    if [[ "$(rustc --version | grep nightly | wc -l)" == "1" ]]
+    then
+        echo -e "${COLOR_GREEN}rust nightly compiler found, activating MC/DC coverage check${COLOR_OFF}"
+        export RUSTFLAGS="-C instrument-coverage -Z coverage-options=condition" # Todo (iox2-#1052) use mcdc here
+    else
+        echo -e "${COLOR_YELLOW}no rust nightly compiler found, MC/DC coverage is not available only line coverage${COLOR_OFF}"
+        export RUSTFLAGS="-C instrument-coverage"
+    fi
+}
 
 COVERAGE_DIR="target/debug/coverage"
+CMAKE_COV_DIR="target/ff/cc/coverage"
 
 CLEAN=0
 GENERATE=0
@@ -48,11 +52,24 @@ dependency_check() {
 
 cleanup() {
     find . -name "*profraw" -exec rm {} \;
-    if [[ -d "./${COVERAGE_DIR}" ]]; then rm -rf ./${COVERAGE_DIR}; fi
+    if [[ -d "./${COVERAGE_DIR}" ]]; then rm -r --interactive=never ./${COVERAGE_DIR}; fi
+    if [[ -d "./${CMAKE_COV_DIR}" ]]; then rm -r --interactive=never ./${CMAKE_COV_DIR}; fi
 }
 
 generate_profile() {
+    mkdir -p ${CMAKE_COV_DIR}
+    generate_cmake_profile
+    #set_rustc_flags # set rustc only after CMake Build to avoid interferences
+    set_rustc_flags
     cargo test --workspace --all-targets -- --test-threads=1
+}
+
+generate_cmake_profile() {
+    # Build with Coverage to generate .gcno files
+    cmake . -B${CMAKE_COV_DIR} -DCOVERAGE=ON -DBUILD_TESTING=ON
+    cmake --build ${CMAKE_COV_DIR} -j
+    # Execute all tests to generate .gcda files
+    ctest --test-dir ${CMAKE_COV_DIR} --output-on-failure
 }
 
 merge_report() {
@@ -94,7 +111,7 @@ show_overview() {
     local FILES=$(find ./target/debug/deps/ -type f -executable)
     CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${COVERAGE_DIR}/json5format.profdata"
 
-    for FILE in $FILES 
+    for FILE in $FILES
     do
         CMD="$CMD --object $FILE"
     done
@@ -111,7 +128,7 @@ show_report() {
     local FILES=$(find ./target/debug/deps/ -type f -executable)
     CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${COVERAGE_DIR}/json5format.profdata"
 
-    for FILE in $FILES 
+    for FILE in $FILES
     do
         CMD="$CMD --object $FILE"
     done
@@ -127,7 +144,7 @@ generate_html_report() {
     grcov \
           **/${LLVM_PROFILE_PATH} \
           **/**/${LLVM_PROFILE_PATH} \
-          --binary-path ./target/debug \
+          --binary-path ./target/debug ${CMAKE_COV_DIR} \
           --source-dir . \
           --output-type html \
           --branch \
@@ -136,6 +153,7 @@ generate_html_report() {
           --ignore "**/iceoryx2-ffi/*" \
           --ignore "**/build.rs" \
           --ignore "**/tests/*" \
+          --ignore "**/testing/*" \
           --ignore "**/examples/*" \
           --ignore "**/benchmarks/*" \
           --ignore "**/target/*" \
@@ -153,7 +171,7 @@ generate_lcov_report() {
     grcov \
           **/${LLVM_PROFILE_PATH} \
           **/**/${LLVM_PROFILE_PATH} \
-          --binary-path ./target/debug \
+          --binary-path ./target/debug ${CMAKE_COV_DIR} \
           --source-dir . \
           --output-type lcov \
           --branch \
@@ -162,6 +180,7 @@ generate_lcov_report() {
           --ignore "**/iceoryx2-ffi/*" \
           --ignore "**/build.rs" \
           --ignore "**/tests/*" \
+          --ignore "**/testing/*" \
           --ignore "**/examples/*" \
           --ignore "**/benchmarks/*" \
           --ignore "**/target/*" \
