@@ -10,11 +10,14 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod cli;
 mod config;
 mod testing;
 
+use crate::cli::*;
 use crate::config::*;
 use crate::testing::*;
+use clap::Parser;
 use iceoryx2::prelude::{ipc, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder};
 
 fn run_pinger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> {
@@ -67,26 +70,26 @@ fn run_pinger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
                             pass_test();
                         } else {
                             fail_test(&format!(
-                                "FAILED Unexpected sample received at subscriber. Sent: {:?}, Received: {:?}",
+                                "Unexpected sample received at subscriber. Sent: {:?}, Received: {:?}",
                                 config.payload(),
                                 *sample.payload()
                             ));
                         }
                     }
                     None => {
-                        fail_test("FAILED None sample at Pong Subscriber");
+                        fail_test("None sample at Pong Subscriber");
                     }
                 },
                 Err(e) => {
-                    fail_test(&format!("FAILED Error receiving from Pong Subscriber: {e}"));
+                    fail_test(&format!("Error receiving from Pong Subscriber: {e}"));
                 }
             }
         }
         if id == timeout_id {
-            fail_test("FAILED Timed out");
+            fail_test("Timed out");
         }
 
-        fail_test("FAILED Unexpected Event");
+        fail_test("Unexpected Event");
     };
 
     let ping_sample = ping_publisher.loan_uninit()?;
@@ -100,5 +103,10 @@ fn run_pinger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
 }
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
-    run_pinger(&PrimitiveType)
+    let args = Args::parse();
+
+    match args.payload_type {
+        PayloadType::Primitive => run_pinger(&PrimitiveType),
+        PayloadType::Complex => todo!(),
+    }
 }

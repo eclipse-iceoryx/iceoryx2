@@ -22,3 +22,5 @@ path = "src/ponger.rs"
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
+
+clap = { workspace = true }

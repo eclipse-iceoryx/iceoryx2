@@ -298,9 +298,13 @@ jobs:
       - name: Build test docker image
         run: docker build -f iceoryx2-tunnels/end-to-end-testing/Dockerfile -t end-to-end-testing:latest .
 
-      - name: Run end-to-end test
+      - name: Run end-to-end tests
         run: |
-          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
+          PAYLOAD_TYPE=primitive docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
+            --abort-on-container-exit \
+            --exit-code-from pinger
+
+          PAYLOAD_TYPE=complex docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
 

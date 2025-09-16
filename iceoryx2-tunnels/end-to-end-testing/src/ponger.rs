@@ -10,10 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod cli;
 mod config;
 mod testing;
 
+use crate::cli::*;
 use crate::config::*;
+use clap::Parser;
 use iceoryx2::prelude::{
     ipc, CallbackProgression, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder,
 };
@@ -75,5 +78,10 @@ fn run_ponger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
 }
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
-    run_ponger(&PrimitiveType)
+    let args = Args::parse();
+
+    match args.payload_type {
+        PayloadType::Primitive => run_ponger(&PrimitiveType),
+        PayloadType::Complex => todo!(),
+    }
 }
