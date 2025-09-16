@@ -44,6 +44,7 @@ target_link_libraries(
     iceoryx2-bb-cxx::iceoryx2-bb-containers-cxx
     GTest::gtest GTest::gmock
     ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS}
 )
 target_compile_options(
     iceoryx2-bb-containers-tests
@@ -51,6 +52,7 @@ target_compile_options(
     ${ICEORYX2_TEST_CXX_FLAGS}
     ${ICEORYX2_CXX_WARNINGS}
     ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS}
 )
 target_compile_features(iceoryx2-bb-containers-tests PRIVATE ${ICEORYX2_CXX_STD})
 
