@@ -11,7 +11,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Add a C++ string container type with fixed compile-time capacity
+  [#938](https://github.com/eclipse-iceoryx/iceoryx2/issues/938)
 
 ### Bugfixes
 
