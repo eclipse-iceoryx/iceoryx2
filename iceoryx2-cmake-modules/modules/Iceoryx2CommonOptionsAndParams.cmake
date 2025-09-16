@@ -17,9 +17,19 @@ if(NOT ICEORYX2_COMMON_OPTIONS_AND_PARAMS_LISTED)
 
     message(STATUS "[i] iceoryx2 common options and params:")
 
+if(COVERAGE)
+    set(BUILD_TESTING ON CACHE INTERNAL "")
+endif()
+
     add_option(
         NAME BUILD_TESTING
         DESCRIPTION "Build tests"
+        DEFAULT_VALUE OFF
+    )
+
+    add_option(
+        NAME COVERAGE
+        DESCRIPTION "Build tests with code coverage"
         DEFAULT_VALUE OFF
     )
 
