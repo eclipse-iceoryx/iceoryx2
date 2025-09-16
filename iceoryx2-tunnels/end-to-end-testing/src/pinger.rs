@@ -65,14 +65,14 @@ fn run_pinger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
         if id == pong_id {
             match pong_subscriber.receive() {
                 Ok(sample) => match sample {
-                    Some(sample) => {
-                        if *sample.payload() == config.payload() {
+                    Some(pong_sample) => {
+                        if *pong_sample.payload() == config.payload() {
                             pass_test();
                         } else {
                             fail_test(&format!(
                                 "Unexpected sample received at subscriber. Sent: {:?}, Received: {:?}",
                                 config.payload(),
-                                *sample.payload()
+                                *pong_sample.payload()
                             ));
                         }
                     }

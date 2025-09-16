@@ -62,9 +62,19 @@ fn run_ponger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
         if id == ping_id {
             ping_listener.try_wait_all(|_| {}).unwrap();
 
-            while let Ok(Some(sample)) = ping_subscriber.receive() {
+            while let Ok(Some(ping_sample)) = ping_subscriber.receive() {
                 let pong_sample = pong_publisher.loan_uninit().unwrap();
-                let pong_sample = pong_sample.write_payload(sample.payload().clone());
+
+                // copy the received ping payload to the pong payload
+                unsafe {
+                    std::ptr::copy_nonoverlapping(
+                        ping_sample.payload() as *const C::PayloadType as *const u8,
+                        pong_sample.payload().as_ptr() as *mut u8,
+                        std::mem::size_of::<C::PayloadType>(),
+                    );
+                }
+
+                let pong_sample = unsafe { pong_sample.assume_init() };
                 pong_sample.send().unwrap();
                 pong_notifier.notify().unwrap();
             }
