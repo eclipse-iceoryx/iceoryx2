@@ -21,34 +21,34 @@ use iceoryx2::prelude::{
     ipc, CallbackProgression, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder,
 };
 
-fn run_ponger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> {
+fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let ping_subscriber = node
-        .service_builder(&config.ping_service_name().try_into()?)
-        .publish_subscribe::<C::PayloadType>()
+        .service_builder(&PING_SERVICE_NAME.try_into()?)
+        .publish_subscribe::<P::PayloadType>()
         .history_size(HISTORY_SIZE)
         .open_or_create()?
         .subscriber_builder()
         .create()?;
 
     let ping_listener = node
-        .service_builder(&config.ping_service_name().try_into()?)
+        .service_builder(&PING_SERVICE_NAME.try_into()?)
         .event()
         .open_or_create()?
         .listener_builder()
         .create()?;
 
     let pong_publisher = node
-        .service_builder(&config.pong_service_name().try_into()?)
-        .publish_subscribe::<C::PayloadType>()
+        .service_builder(&PONG_SERVICE_NAME.try_into()?)
+        .publish_subscribe::<P::PayloadType>()
         .history_size(HISTORY_SIZE)
         .open_or_create()?
         .publisher_builder()
         .create()?;
 
     let pong_notifier = node
-        .service_builder(&config.pong_service_name().try_into()?)
+        .service_builder(&PONG_SERVICE_NAME.try_into()?)
         .event()
         .open_or_create()?
         .notifier_builder()
@@ -65,12 +65,12 @@ fn run_ponger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
             while let Ok(Some(ping_sample)) = ping_subscriber.receive() {
                 let pong_sample = pong_publisher.loan_uninit().unwrap();
 
-                // copy the received ping payload to the pong payload
+                // Copy the received ping payload directly into the pong payload, by-passing stack
                 unsafe {
                     std::ptr::copy_nonoverlapping(
-                        ping_sample.payload() as *const C::PayloadType as *const u8,
+                        ping_sample.payload() as *const P::PayloadType as *const u8,
                         pong_sample.payload().as_ptr() as *mut u8,
-                        std::mem::size_of::<C::PayloadType>(),
+                        std::mem::size_of::<P::PayloadType>(),
                     );
                 }
 
@@ -90,8 +90,10 @@ fn run_ponger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     let args = Args::parse();
 
+    println!("Running with payload type: {:?}", args.payload_type);
+
     match args.payload_type {
-        PayloadType::Primitive => run_ponger(&PrimitiveType),
-        PayloadType::Complex => todo!(),
+        PayloadType::Primitive => run_ponger::<PrimitivePayload>(),
+        PayloadType::Complex => run_ponger::<ComplexPayload>(),
     }
 }

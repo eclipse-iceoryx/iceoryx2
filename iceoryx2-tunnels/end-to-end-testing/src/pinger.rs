@@ -14,40 +14,42 @@ mod cli;
 mod config;
 mod testing;
 
+use std::rc::Rc;
+
 use crate::cli::*;
 use crate::config::*;
 use crate::testing::*;
 use clap::Parser;
 use iceoryx2::prelude::{ipc, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder};
 
-fn run_pinger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> {
+fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
 
     let ping_publisher = node
-        .service_builder(&config.ping_service_name().try_into()?)
-        .publish_subscribe::<C::PayloadType>()
+        .service_builder(&PING_SERVICE_NAME.try_into()?)
+        .publish_subscribe::<P::PayloadType>()
         .history_size(HISTORY_SIZE)
         .open_or_create()?
         .publisher_builder()
         .create()?;
 
     let ping_notifier = node
-        .service_builder(&config.ping_service_name().try_into()?)
+        .service_builder(&PING_SERVICE_NAME.try_into()?)
         .event()
         .open_or_create()?
         .notifier_builder()
         .create()?;
 
     let pong_subscriber = node
-        .service_builder(&config.pong_service_name().try_into()?)
-        .publish_subscribe::<C::PayloadType>()
+        .service_builder(&PONG_SERVICE_NAME.try_into()?)
+        .publish_subscribe::<P::PayloadType>()
         .history_size(HISTORY_SIZE)
         .open_or_create()?
         .subscriber_builder()
         .create()?;
 
     let pong_listener = node
-        .service_builder(&config.pong_service_name().try_into()?)
+        .service_builder(&PONG_SERVICE_NAME.try_into()?)
         .event()
         .open_or_create()?
         .listener_builder()
@@ -61,17 +63,33 @@ fn run_pinger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
     let timeout_guard = waitset.attach_interval(TIMEOUT_DURATION)?;
     let timeout_id = WaitSetAttachmentId::from_guard(&timeout_guard);
 
+    // Create the payload on the heap
+    let mut payload_bytes = vec![0u8; std::mem::size_of::<P::PayloadType>()];
+    let payload_ptr = payload_bytes.as_mut_ptr() as *mut P::PayloadType;
+    unsafe {
+        P::write_payload(&mut *payload_ptr);
+    }
+
+    // Relinquish ownership of the bytes
+    std::mem::forget(payload_bytes);
+
+    // Claim ownership with a Box and to use with Rc API
+    let payload_box = unsafe { Box::from_raw(payload_ptr) };
+
+    // Wrap in Rc since on_event required to be FnMut as closure technically can run N times
+    let payload = Rc::from(payload_box);
+
     let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
         if id == pong_id {
             match pong_subscriber.receive() {
                 Ok(sample) => match sample {
                     Some(pong_sample) => {
-                        if *pong_sample.payload() == config.payload() {
+                        if *pong_sample.payload() == *payload {
                             pass_test();
                         } else {
                             fail_test(&format!(
                                 "Unexpected sample received at subscriber. Sent: {:?}, Received: {:?}",
-                                config.payload(),
+                                *payload,
                                 *pong_sample.payload()
                             ));
                         }
@@ -93,7 +111,17 @@ fn run_pinger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
     };
 
     let ping_sample = ping_publisher.loan_uninit()?;
-    let ping_sample = ping_sample.write_payload(config.payload());
+
+    // The bytes of the payload are copied directly into shared memory, by-passing stack
+    unsafe {
+        std::ptr::copy_nonoverlapping(
+            payload.as_ref() as *const P::PayloadType as *const u8,
+            ping_sample.payload().as_ptr() as *mut u8,
+            std::mem::size_of::<P::PayloadType>(),
+        );
+    }
+
+    let ping_sample = unsafe { ping_sample.assume_init() };
     ping_sample.send()?;
     ping_notifier.notify()?;
 
@@ -105,8 +133,10 @@ fn run_pinger<C: Config>(config: &C) -> Result<(), Box<dyn core::error::Error>> 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
     let args = Args::parse();
 
+    println!("Running with payload type: {:?}", args.payload_type);
+
     match args.payload_type {
-        PayloadType::Primitive => run_pinger(&PrimitiveType),
-        PayloadType::Complex => todo!(),
+        PayloadType::Primitive => run_pinger::<PrimitivePayload>(),
+        PayloadType::Complex => run_pinger::<ComplexPayload>(),
     }
 }
