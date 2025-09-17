@@ -10,16 +10,15 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod cli;
-mod config;
-mod testing;
-
-use crate::cli::*;
-use crate::config::*;
 use clap::Parser;
 use iceoryx2::prelude::{
-    ipc, CallbackProgression, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder,
+    ipc, set_log_level_from_env_or, CallbackProgression, LogLevel, NodeBuilder,
+    WaitSetAttachmentId, WaitSetBuilder,
 };
+use iceoryx2_bb_log::info;
+use iceoryx2_tunnels_end_to_end_testing::cli::*;
+use iceoryx2_tunnels_end_to_end_testing::config::*;
+use iceoryx2_tunnels_end_to_end_testing::payload::*;
 
 fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -88,9 +87,11 @@ fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_log_level_from_env_or(LogLevel::Warn);
+
     let args = Args::parse();
 
-    println!("Running with payload type: {:?}", args.payload_type);
+    info!("Running with payload type: {:?}", args.payload_type);
 
     match args.payload_type {
         PayloadType::Primitive => run_ponger::<PrimitivePayload>(),

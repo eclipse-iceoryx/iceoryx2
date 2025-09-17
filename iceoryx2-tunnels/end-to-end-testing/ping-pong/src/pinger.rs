@@ -10,17 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod cli;
-mod config;
-mod testing;
-
 use std::rc::Rc;
 
-use crate::cli::*;
-use crate::config::*;
-use crate::testing::*;
 use clap::Parser;
-use iceoryx2::prelude::{ipc, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder};
+use iceoryx2::prelude::{
+    ipc, set_log_level_from_env_or, LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder,
+};
+use iceoryx2_bb_log::info;
+use iceoryx2_tunnels_end_to_end_testing::cli::*;
+use iceoryx2_tunnels_end_to_end_testing::config::*;
+use iceoryx2_tunnels_end_to_end_testing::payload::*;
+use iceoryx2_tunnels_end_to_end_testing::testing::*;
 
 fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
@@ -131,9 +131,11 @@ fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
 }
 
 fn main() -> Result<(), Box<dyn core::error::Error>> {
+    set_log_level_from_env_or(LogLevel::Warn);
+
     let args = Args::parse();
 
-    println!("Running with payload type: {:?}", args.payload_type);
+    info!("Running with payload type: {:?}", args.payload_type);
 
     match args.payload_type {
         PayloadType::Primitive => run_pinger::<PrimitivePayload>(),

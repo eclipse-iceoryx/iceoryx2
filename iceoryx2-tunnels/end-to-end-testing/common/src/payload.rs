@@ -14,13 +14,6 @@ use iceoryx2::prelude::{PlacementDefault, ZeroCopySend};
 use iceoryx2_bb_container::{
     byte_string::FixedSizeByteString, queue::FixedSizeQueue, vec::FixedSizeVec,
 };
-use std::time::Duration;
-
-#[allow(dead_code)]
-pub const TIMEOUT_DURATION: Duration = Duration::from_secs(5);
-pub const HISTORY_SIZE: usize = 10;
-pub const PING_SERVICE_NAME: &str = "tunnel-end-to-end-test/ping";
-pub const PONG_SERVICE_NAME: &str = "tunnel-end-to-end-test/pong";
 
 pub trait PayloadWriter {
     type PayloadType: Send
@@ -31,8 +24,14 @@ pub trait PayloadWriter {
         + PlacementDefault
         + 'static;
 
+    /// # Safety
+    ///
+    /// Ensure that:
+    /// - `ptr` is a valid, non-null pointer to an allocated memory location of size `std::mem::size_of::<Self::PayloadType>()`
+    /// - The memory pointed to by `ptr` is properly aligned for `Self::PayloadType`
+    /// - The memory location will remain valid for the lifetime of any data written to it
     #[allow(dead_code)]
-    fn write_payload(ptr: *mut Self::PayloadType);
+    unsafe fn write_payload(ptr: *mut Self::PayloadType);
 }
 
 pub struct PrimitivePayload;
@@ -40,10 +39,8 @@ pub struct PrimitivePayload;
 impl PayloadWriter for PrimitivePayload {
     type PayloadType = u64;
 
-    fn write_payload(ptr: *mut Self::PayloadType) {
-        unsafe {
-            *ptr = 42;
-        }
+    unsafe fn write_payload(ptr: *mut Self::PayloadType) {
+        *ptr = 42;
     }
 }
 
@@ -69,23 +66,21 @@ pub struct ComplexPayload;
 impl PayloadWriter for ComplexPayload {
     type PayloadType = ComplexType;
 
-    fn write_payload(ptr: *mut Self::PayloadType) {
-        unsafe {
-            Self::PayloadType::placement_default(ptr);
-            (*ptr).plain_old_data = 0;
-            (*ptr).text = FixedSizeByteString::from_bytes(b"hello").unwrap();
-            (*ptr).vec_of_data.push(42);
-            (*ptr).vec_of_complex_data.push(ComplexData {
-                name: FixedSizeByteString::from_bytes(b"bla").unwrap(),
-                data: {
-                    let mut v = FixedSizeVec::new();
-                    v.fill(42);
-                    v
-                },
-            });
-            (*ptr)
-                .a_queue_of_things
-                .push(FixedSizeByteString::from_bytes(b"buh").unwrap());
-        }
+    unsafe fn write_payload(ptr: *mut Self::PayloadType) {
+        Self::PayloadType::placement_default(ptr);
+        (*ptr).plain_old_data = 0;
+        (*ptr).text = FixedSizeByteString::from_bytes(b"hello").unwrap();
+        (*ptr).vec_of_data.push(42);
+        (*ptr).vec_of_complex_data.push(ComplexData {
+            name: FixedSizeByteString::from_bytes(b"bla").unwrap(),
+            data: {
+                let mut v = FixedSizeVec::new();
+                v.fill(42);
+                v
+            },
+        });
+        (*ptr)
+            .a_queue_of_things
+            .push(FixedSizeByteString::from_bytes(b"buh").unwrap());
     }
 }
