@@ -52,6 +52,14 @@ proc expect_output_from { SPAWN_ID EXPECTED_OUTPUT } {
     }
 }
 
+proc expect_pattern_from { SPAWN_ID REGEX_PATTERN DESCRIPTION } {
+    expect {
+        -i ${SPAWN_ID} -re ${REGEX_PATTERN} { }
+        timeout { handle_timeout ${DESCRIPTION} }
+        eof { handle_end_of_file ${DESCRIPTION} }
+    }
+}
+
 proc show_test_passed { } {
     global C_GREEN C_OFF
     puts "${C_GREEN}Test passed!${C_OFF}"

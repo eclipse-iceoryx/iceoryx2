@@ -126,7 +126,6 @@ impl core::error::Error for ConfigCreationError {}
 /// All configurable settings of a [`Service`](crate::service::Service).
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct Service {
     /// The directory in which all service files are stored
@@ -169,7 +168,6 @@ impl Default for Service {
 /// All configurable settings of a [`Node`](crate::node::Node).
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct Node {
     /// The directory in which all node files are stored
@@ -206,7 +204,6 @@ impl Default for Node {
 /// The global settings
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct Global {
     root_path: Path,
@@ -258,7 +255,6 @@ impl Global {
 /// else.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct Defaults {
     /// Default settings for the messaging pattern publish-subscribe
@@ -275,7 +271,6 @@ pub struct Defaults {
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct PublishSubscribe {
     /// The maximum amount of supported [`Subscriber`](crate::port::subscriber::Subscriber)
@@ -333,7 +328,6 @@ impl Default for PublishSubscribe {
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct Event {
     /// The maximum amount of supported [`Listener`](crate::port::listener::Listener)
@@ -376,7 +370,6 @@ impl Default for Event {
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct RequestResonse {
     /// Defines if the request buffer of the [`Service`](crate::service::Service) safely overflows.
@@ -469,7 +462,6 @@ impl Default for RequestResonse {
 /// the user specifies custom QoS or port settings.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct Blackboard {
     /// The maximum amount of supported [`Reader`](crate::port::reader::Reader)s.
@@ -494,7 +486,6 @@ impl Default for Blackboard {
 /// flexibility to override both sections.
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, Eq, PartialEq)]
-#[serde(rename_all = "kebab-case")]
 #[serde(default)]
 pub struct Config {
     /// Global settings for the iceoryx2 instance
