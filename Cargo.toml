@@ -28,7 +28,7 @@ members = [
 
     "iceoryx2-services/discovery",
 
-    "iceoryx2-tunnels/end-to-end-testing",
+    "iceoryx2-tunnels/end-to-end-tests",
     "iceoryx2-tunnels/zenoh",
 
     "iceoryx2-userland/record-and-replay",
@@ -86,7 +86,7 @@ iceoryx2-ffi-c = { version = "0.7.0", path = "iceoryx2-ffi/c" }
 iceoryx2-ffi-python = { version = "0.7.0", path = "iceoryx2-ffi/python" }
 iceoryx2-ffi-macros = { version = "0.7.0", path = "iceoryx2-ffi/ffi-macros" }
 iceoryx2-services-discovery = { version = "0.7.0", path = "iceoryx2-services/discovery"}
-iceoryx2-tunnels-end-to-end-testing = { version = "0.7.0", path = "iceoryx2-tunnels/end-to-end-testing" }
+iceoryx2-tunnels-end-to-end-tests = { version = "0.7.0", path = "iceoryx2-tunnels/end-to-end-tests" }
 iceoryx2-tunnels-zenoh = { version = "0.7.0", path = "iceoryx2-tunnels/zenoh" }
 iceoryx2-userland-record-and-replay = { version = "0.7.0", path = "iceoryx2-userland/record-and-replay" }
 

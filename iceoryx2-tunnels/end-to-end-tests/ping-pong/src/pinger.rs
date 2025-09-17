@@ -17,10 +17,10 @@ use iceoryx2::prelude::{
     ipc, set_log_level_from_env_or, LogLevel, NodeBuilder, WaitSetAttachmentId, WaitSetBuilder,
 };
 use iceoryx2_bb_log::info;
-use iceoryx2_tunnels_end_to_end_testing::cli::*;
-use iceoryx2_tunnels_end_to_end_testing::config::*;
-use iceoryx2_tunnels_end_to_end_testing::payload::*;
-use iceoryx2_tunnels_end_to_end_testing::testing::*;
+use iceoryx2_tunnels_end_to_end_tests::cli::*;
+use iceoryx2_tunnels_end_to_end_tests::config::*;
+use iceoryx2_tunnels_end_to_end_tests::payload::*;
+use iceoryx2_tunnels_end_to_end_tests::testing::*;
 
 fn run_pinger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;

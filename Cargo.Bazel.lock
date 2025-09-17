@@ -1,5 +1,5 @@
 {
-  "checksum": "05630706026b8b95a6993f55f2a5ea4a73ebd0ae5a7cd57cd6c984a475a91eae",
+  "checksum": "6ce7792b45fe0de9ef2ec355002a12affab598c9f511fcb462cd03b4b7ae0990",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8959,15 +8959,15 @@
       ],
       "license_file": null
     },
-    "iceoryx2-tunnels-end-to-end-testing 0.7.0": {
-      "name": "iceoryx2-tunnels-end-to-end-testing",
+    "iceoryx2-tunnels-end-to-end-tests 0.7.0": {
+      "name": "iceoryx2-tunnels-end-to-end-tests",
       "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
       "targets": [
         {
           "Library": {
-            "crate_name": "iceoryx2_tunnels_end_to_end_testing",
+            "crate_name": "iceoryx2_tunnels_end_to_end_tests",
             "crate_root": "common/src/lib.rs",
             "srcs": {
               "allow_empty": true,
@@ -8978,7 +8978,7 @@
           }
         }
       ],
-      "library_target_name": "iceoryx2_tunnels_end_to_end_testing",
+      "library_target_name": "iceoryx2_tunnels_end_to_end_tests",
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -30049,7 +30049,7 @@
     "iceoryx2-pal-posix 0.7.0": "iceoryx2-pal/posix",
     "iceoryx2-pal-testing 0.7.0": "iceoryx2-pal/testing",
     "iceoryx2-services-discovery 0.7.0": "iceoryx2-services/discovery",
-    "iceoryx2-tunnels-end-to-end-testing 0.7.0": "iceoryx2-tunnels/end-to-end-testing",
+    "iceoryx2-tunnels-end-to-end-tests 0.7.0": "iceoryx2-tunnels/end-to-end-tests",
     "iceoryx2-tunnels-zenoh 0.7.0": "iceoryx2-tunnels/zenoh",
     "iceoryx2-userland-record-and-replay 0.7.0": "iceoryx2-userland/record-and-replay"
   },
