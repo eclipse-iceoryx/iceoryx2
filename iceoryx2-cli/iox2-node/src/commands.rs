@@ -31,7 +31,7 @@ pub fn list(filter: OutputFilter, format: Format) -> Result<()> {
     })
     .context("failed to retrieve nodes")?;
 
-    print!(
+    println!(
         "{}",
         format.as_string(&NodeList {
             num: nodes.len(),
@@ -49,7 +49,7 @@ pub fn details(identifier: NodeIdentifier, filter: OutputFilter, format: Format)
         if identifier.matches(&node) && filter.matches(&node) {
             match format.as_string(&NodeDescription::from(&node)) {
                 Ok(output) => {
-                    print!("{output}");
+                    println!("{output}");
                 }
                 Err(e) => {
                     error = Some(e);
