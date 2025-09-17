@@ -13,11 +13,15 @@ version = { workspace = true }
 
 [[bin]]
 name = "iceoryx2-tunnels-end-to-end-testing-pinger"
-path = "src/pinger.rs"
+path = "ping-pong/src/pinger.rs"
 
 [[bin]]
 name = "iceoryx2-tunnels-end-to-end-testing-ponger"
-path = "src/ponger.rs"
+path = "ping-pong/src/ponger.rs"
+
+[lib]
+name = "iceoryx2_tunnels_end_to_end_testing"
+path = "common/src/lib.rs"
 
 [dependencies]
 iceoryx2 = { workspace = true }
