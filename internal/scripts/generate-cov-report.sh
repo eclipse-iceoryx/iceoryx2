@@ -149,15 +149,15 @@ generate_html_report() {
           --output-type html \
           --branch \
           --ignore-not-existing \
-          --ignore "**/iceoryx2-cli/*" \
-          --ignore "**/iceoryx2-ffi/*" \
-          --ignore "**/build.rs" \
-          --ignore "**/tests/*" \
-          --ignore "**/testing/*" \
-          --ignore "**/examples/*" \
-          --ignore "**/benchmarks/*" \
-          --ignore "**/target/*" \
-          --ignore "**/.cargo/*" \
+          --ignore "*iceoryx2-cli*" \
+          --ignore "*iceoryx2-ffi*" \
+          --ignore "*build.rs" \
+          --ignore "*tests*" \
+          --ignore "*testing*" \
+          --ignore "*examples*" \
+          --ignore "*benchmarks*" \
+          --ignore "*target*" \
+          --ignore "*.cargo*" \
           --llvm-path ${LLVM_PATH} \
           --output-path ./${COVERAGE_DIR}/html
     sed -i 's/coverage/grcov/' ${COVERAGE_DIR}/html/coverage.json
@@ -176,15 +176,15 @@ generate_lcov_report() {
           --output-type lcov \
           --branch \
           --ignore-not-existing \
-          --ignore "**/iceoryx2-cli/*" \
-          --ignore "**/iceoryx2-ffi/*" \
-          --ignore "**/build.rs" \
-          --ignore "**/tests/*" \
-          --ignore "**/testing/*" \
-          --ignore "**/examples/*" \
-          --ignore "**/benchmarks/*" \
-          --ignore "**/target/*" \
-          --ignore "**/.cargo/*" \
+          --ignore "*iceoryx2-cli*" \
+          --ignore "*iceoryx2-ffi*" \
+          --ignore "*build.rs" \
+          --ignore "*tests*" \
+          --ignore "*testing*" \
+          --ignore "*examples*" \
+          --ignore "*benchmarks*" \
+          --ignore "*target*" \
+          --ignore "*.cargo*" \
           --llvm-path ${LLVM_PATH} \
           --output-path ./${COVERAGE_DIR}/lcov.info
 }
