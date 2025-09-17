@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod cli;
-mod commands;
+mod command;
 
 use anyhow::Result;
 use clap::CommandFactory;
@@ -50,12 +50,12 @@ fn main() -> Result<()> {
         match action {
             Action::Show { subcommand } => match subcommand {
                 Some(ShowSubcommand::System) => {
-                    if let Err(e) = commands::show_system_config() {
+                    if let Err(e) = command::show_system_config() {
                         eprintln!("Failed to show options: {e}");
                     }
                 }
                 Some(ShowSubcommand::Current) => {
-                    if let Err(e) = commands::show_current_config() {
+                    if let Err(e) = command::show_current_config() {
                         eprintln!("Failed to show options: {e}");
                     }
                 }
@@ -67,12 +67,12 @@ fn main() -> Result<()> {
             },
             Action::Generate { subcommand } => match subcommand {
                 Some(GenerateSubcommand::Local) => {
-                    if let Err(e) = commands::generate_local() {
+                    if let Err(e) = command::generate_local() {
                         eprintln!("Failed to generate configuration file: {e}");
                     }
                 }
                 Some(GenerateSubcommand::Global) => {
-                    if let Err(e) = commands::generate_global() {
+                    if let Err(e) = command::generate_global() {
                         eprintln!("Failed to generate configuration file: {e}");
                     }
                 }
@@ -83,7 +83,7 @@ fn main() -> Result<()> {
                 }
             },
             Action::Explain => {
-                if let Err(e) = commands::print_config_description() {
+                if let Err(e) = command::explain() {
                     eprintln!("Failed to display configuration description: {e}");
                 }
             }
