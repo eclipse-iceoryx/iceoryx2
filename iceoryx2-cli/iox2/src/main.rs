@@ -17,7 +17,7 @@ use human_panic::setup_panic;
 extern crate better_panic;
 
 mod cli;
-mod commands;
+mod command;
 
 use anyhow::Result;
 use clap::CommandFactory;
@@ -43,11 +43,11 @@ fn main() -> Result<()> {
 
     let cli = Cli::parse();
     if cli.list {
-        if let Err(e) = commands::list() {
+        if let Err(e) = command::list() {
             eprintln!("Failed to list commands: {e}");
         }
     } else if cli.paths {
-        if let Err(e) = commands::paths() {
+        if let Err(e) = command::paths() {
             eprintln!("Failed to list search paths: {e}");
         }
     } else if !cli.external_command.is_empty() {
@@ -57,7 +57,7 @@ fn main() -> Result<()> {
         } else {
             None
         };
-        if let Err(e) = commands::execute(command_name, command_args) {
+        if let Err(e) = command::execute(command_name, command_args) {
             eprintln!("Failed to execute command: {e}");
         }
     } else {
