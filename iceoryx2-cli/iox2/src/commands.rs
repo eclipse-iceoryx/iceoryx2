@@ -67,13 +67,17 @@ impl HostEnvironment {
 
 impl Environment for HostEnvironment {
     fn install_paths() -> Result<Vec<PathBuf>> {
-        env::var("PATH")
+        let mut paths: Vec<PathBuf> = env::var("PATH")
             .context("Failed to read PATH environment variable")?
             .split(PATH_ENV_VAR_SEPARATOR)
             .map(PathBuf::from)
             .filter(|p| p.is_dir())
-            .map(Ok)
-            .collect()
+            .collect();
+
+        paths.sort();
+        paths.dedup();
+
+        Ok(paths)
     }
 
     fn build_paths() -> Result<Vec<PathBuf>> {
