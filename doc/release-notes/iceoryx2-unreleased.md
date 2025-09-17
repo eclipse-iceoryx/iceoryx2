@@ -20,7 +20,9 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* Remove duplicate entries in `iox2` command search path to prevent discovered
+  commands from being listed multiple times
+    [#1045](https://github.com/eclipse-iceoryx/iceoryx2/issues/1045)
 
 ### Refactoring
 
