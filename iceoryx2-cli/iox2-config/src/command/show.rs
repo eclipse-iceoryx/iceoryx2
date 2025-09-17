@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,11 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod cli;
-mod format;
+use crate::command::print_system_configuration;
+use anyhow::Result;
+use iceoryx2::config::Config;
 
-pub mod filter;
-pub mod output;
+pub fn show_system_config() -> Result<()> {
+    print_system_configuration();
 
-pub use cli::*;
-pub use format::Format;
+    Ok(())
+}
+
+pub fn show_current_config() -> Result<()> {
+    let config = Config::global_config();
+    let toml_config = toml::to_string_pretty(&config)?;
+    println!("{toml_config}");
+
+    Ok(())
+}

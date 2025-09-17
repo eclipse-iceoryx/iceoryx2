@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 mod cli;
-mod commands;
+mod command;
 mod filter;
 
 use anyhow::Result;
@@ -46,12 +46,12 @@ fn main() -> Result<()> {
     if let Some(action) = cli.action {
         match action {
             Action::List(options) => {
-                if let Err(e) = commands::list(options.filter, cli.format) {
+                if let Err(e) = command::list(options.filter, cli.format) {
                     eprintln!("Failed to list nodes: {e}");
                 }
             }
             Action::Details(options) => {
-                if let Err(e) = commands::details(options.node, options.filter, cli.format) {
+                if let Err(e) = command::details(options.node, options.filter, cli.format) {
                     eprintln!("Failed to retrieve node details: {e}");
                 }
             }

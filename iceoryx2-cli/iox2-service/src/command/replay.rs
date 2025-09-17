@@ -15,7 +15,8 @@ use core::time::Duration;
 use std::io::Write;
 use std::time::Instant;
 
-use crate::{cli::ReplayOptions, helper_functions::get_pubsub_service_types};
+use crate::cli::ReplayOptions;
+use crate::command::get_pubsub_service_types;
 use anyhow::Result;
 use iceoryx2::prelude::*;
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
@@ -26,7 +27,7 @@ use iceoryx2_userland_record_and_replay::record_header::{
     RecordHeaderDetails, FILE_FORMAT_HUMAN_READABLE_VERSION, FILE_FORMAT_IOX2_DUMP_VERSION,
 };
 
-pub fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
+pub(crate) fn replay(options: ReplayOptions, _format: Format) -> Result<()> {
     let node = NodeBuilder::new()
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;
