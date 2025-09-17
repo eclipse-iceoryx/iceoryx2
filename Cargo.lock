@@ -1623,7 +1623,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-tunnels-end-to-end-testing"
+name = "iceoryx2-tunnels-end-to-end-tests"
 version = "0.7.0"
 dependencies = [
  "clap",

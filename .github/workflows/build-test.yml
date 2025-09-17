@@ -293,20 +293,20 @@ jobs:
         run: cargo build --release -p iceoryx2-cli --bin iox2-tunnel
 
       - name: Build test binaries
-        run: cargo build --release -p iceoryx2-tunnels-end-to-end-testing
+        run: cargo build --release -p iceoryx2-tunnels-end-to-end-tests
 
       - name: Build test docker image
-        run: docker build -f iceoryx2-tunnels/end-to-end-testing/Dockerfile -t end-to-end-testing:latest .
+        run: docker build -f iceoryx2-tunnels/end-to-end-tests/Dockerfile -t end-to-end-tests:latest .
 
       - name: Run end-to-end tests
         run: |
           export PAYLOAD_TYPE=primitive
-          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
+          docker compose -f iceoryx2-tunnels/end-to-end-tests/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
 
           export PAYLOAD_TYPE=complex
-          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
+          docker compose -f iceoryx2-tunnels/end-to-end-tests/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
 

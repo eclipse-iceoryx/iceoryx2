@@ -1,6 +1,6 @@
 services:
   ponger:
-    image: end-to-end-testing:latest
+    image: end-to-end-tests:latest
     networks:
       test-network:
         ipv4_address: 172.20.0.10
@@ -13,10 +13,10 @@ services:
       interval: 1s
       timeout: 3s
       retries: 3
-    command: ["sh", "-c", "iox2-tunnel zenoh & iceoryx2-tunnels-end-to-end-testing-ponger --payload-type ${PAYLOAD_TYPE:?PAYLOAD_TYPE environment variable must be set}"]
+    command: ["sh", "-c", "iox2-tunnel zenoh & iceoryx2-tunnels-end-to-end-tests-ponger --payload-type ${PAYLOAD_TYPE:?PAYLOAD_TYPE environment variable must be set}"]
 
   pinger:
-    image: end-to-end-testing:latest
+    image: end-to-end-tests:latest
     networks:
       test-network:
         ipv4_address: 172.20.0.11
@@ -27,7 +27,7 @@ services:
     depends_on:
       ponger:
         condition: service_healthy
-    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 1 && iceoryx2-tunnels-end-to-end-testing-pinger --payload-type ${PAYLOAD_TYPE:?PAYLOAD_TYPE environment variable must be set}"]
+    command: ["sh", "-c", "iox2-tunnel zenoh & sleep 1 && iceoryx2-tunnels-end-to-end-tests-pinger --payload-type ${PAYLOAD_TYPE:?PAYLOAD_TYPE environment variable must be set}"]
 
 networks:
   test-network:

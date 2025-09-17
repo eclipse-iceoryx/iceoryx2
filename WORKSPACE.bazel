@@ -90,7 +90,7 @@ maybe(
         "//:benchmarks/queue/Cargo.toml",
         "//:benchmarks/request-response/Cargo.toml",
         "//:examples/Cargo.toml",
-        "//:iceoryx2-tunnels/end-to-end-testing/Cargo.toml",
+        "//:iceoryx2-tunnels/end-to-end-tests/Cargo.toml",
         "//:iceoryx2-tunnels/zenoh/Cargo.toml",
         "//:iceoryx2-services/discovery/Cargo.toml",
         "//:iceoryx2/Cargo.toml",

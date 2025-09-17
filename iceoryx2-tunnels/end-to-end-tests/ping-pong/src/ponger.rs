@@ -16,9 +16,9 @@ use iceoryx2::prelude::{
     WaitSetAttachmentId, WaitSetBuilder,
 };
 use iceoryx2_bb_log::info;
-use iceoryx2_tunnels_end_to_end_testing::cli::*;
-use iceoryx2_tunnels_end_to_end_testing::config::*;
-use iceoryx2_tunnels_end_to_end_testing::payload::*;
+use iceoryx2_tunnels_end_to_end_tests::cli::*;
+use iceoryx2_tunnels_end_to_end_tests::config::*;
+use iceoryx2_tunnels_end_to_end_tests::payload::*;
 
 fn run_ponger<P: PayloadWriter>() -> Result<(), Box<dyn core::error::Error>> {
     let node = NodeBuilder::new().create::<ipc::Service>()?;
