@@ -300,18 +300,15 @@ jobs:
 
       - name: Run end-to-end tests
         run: |
-          PAYLOAD_TYPE=primitive docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
+          export PAYLOAD_TYPE=primitive
+          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
 
-          PAYLOAD_TYPE=complex docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
+          export PAYLOAD_TYPE=complex
+          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml up \
             --abort-on-container-exit \
             --exit-code-from pinger
-
-      - name: Clean up containers
-        if: always()
-        run: |
-          docker compose -f iceoryx2-tunnels/end-to-end-testing/docker-compose.yml down -v
 
   x86_32:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
