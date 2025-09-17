@@ -12,31 +12,46 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_library")
 
 filegroup(
     name = "all_srcs",
     srcs = glob(["**"]),
 )
 
+rust_library(
+    name = "iceoryx2-tunnels-end-to-end-testing",
+    srcs = glob(["common/src/*.rs"]),
+    deps = [
+        "//iceoryx2:iceoryx2",
+        "//iceoryx2-bb/log:iceoryx2-bb-log",
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
+        "@crate_index//:clap",
+    ],
+)
+
 rust_binary(
     name = "iceoryx2-tunnels-end-to-end-testing-pinger",
     srcs = [
-        "src/pinger.rs",
+        "ping-pong/src/pinger.rs",
     ],
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
+        ":iceoryx2-tunnels-end-to-end-testing",
+        "@crate_index//:clap",
     ],
 )
 
 rust_binary(
     name = "iceoryx2-tunnels-end-to-end-testing-ponger",
     srcs = [
-        "src/ponger.rs",
+        "ping-pong/src/ponger.rs",
     ],
     deps = [
         "//iceoryx2:iceoryx2",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
+        ":iceoryx2-tunnels-end-to-end-testing",
+        "@crate_index//:clap",
     ],
 )

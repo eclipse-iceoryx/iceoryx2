@@ -1,5 +1,5 @@
 {
-  "checksum": "1eb768cd72a2be8411401b03505283aa66061840b35396cdabf74d5c56cc0e00",
+  "checksum": "05630706026b8b95a6993f55f2a5ea4a73ebd0ae5a7cd57cd6c984a475a91eae",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -8964,12 +8964,34 @@
       "version": "0.7.0",
       "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
       "repository": null,
-      "targets": [],
-      "library_target_name": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_tunnels_end_to_end_testing",
+            "crate_root": "common/src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_tunnels_end_to_end_testing",
       "common_attrs": {
         "compile_data_glob": [
           "**"
         ],
+        "deps": {
+          "common": [
+            {
+              "id": "clap 4.5.19",
+              "target": "clap"
+            }
+          ],
+          "selects": {}
+        },
         "edition": "2021",
         "version": "0.7.0"
       },
