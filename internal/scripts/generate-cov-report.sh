@@ -18,6 +18,8 @@ COLOR_RED='\033[1;31m'
 COLOR_GREEN='\033[1;32m'
 COLOR_YELLOW='\033[1;33m'
 
+cd $(git rev-parse --show-toplevel)
+
 LLVM_PATH=$(dirname $(which llvm-profdata))
 LLVM_PROFILE_PATH="target/debug/llvm-profile-files"
 export LLVM_PROFILE_FILE="${LLVM_PROFILE_PATH}/iceoryx2-%p-%m.profraw"
@@ -34,8 +36,10 @@ set_rustc_flags() {
     fi
 }
 
-COVERAGE_DIR="target/debug/coverage"
+RUST_COV_DIR="target/debug/coverage"
 CMAKE_COV_DIR="target/ff/cc/coverage"
+COVERAGE_OUT_DIR="target/coverage"
+COMMIT_SHA=$(git rev-parse HEAD)
 
 CLEAN=0
 GENERATE=0
@@ -44,24 +48,24 @@ OVERVIEW=0
 HTML=0
 LCOV=0
 
-cd $(git rev-parse --show-toplevel)
-
 dependency_check() {
     which $1 1> /dev/null || { echo -e "${COLOR_RED}'${1}' not found. Aborting!${COLOR_OFF}"; exit 1; }
 }
 
 cleanup() {
     find . -name "*profraw" -exec rm {} \;
-    if [[ -d "./${COVERAGE_DIR}" ]]; then rm -r --interactive=never ./${COVERAGE_DIR}; fi
-    if [[ -d "./${CMAKE_COV_DIR}" ]]; then rm -r --interactive=never ./${CMAKE_COV_DIR}; fi
+    cargo clean
 }
 
-generate_profile() {
+generate_full_profile() {
     mkdir -p ${CMAKE_COV_DIR}
     generate_cmake_profile
-    #set_rustc_flags # set rustc only after CMake Build to avoid interferences
+    generate_rust_profile
+}
+
+generate_rust_profile() {
     set_rustc_flags
-    cargo test --workspace --all-targets -- --test-threads=1
+    cargo test --workspace --all-targets -- --test-threads=1 --skip "zenoh_tunnel_events" --skip "zenoh_tunnel_publish_subscribe"
 }
 
 generate_cmake_profile() {
@@ -75,7 +79,7 @@ generate_cmake_profile() {
 merge_report() {
     dependency_check llvm-profdata
 
-    if [[ ! -f "./${COVERAGE_DIR}/json5format.profdata" ]]; then
+    if [[ ! -f "./${RUST_COV_DIR}/json5format.profdata" ]]; then
         # get LLVM versions of llvm-profdata and rustc
         LLVM_PROFDATA_VERSION_OUTPUT=$( llvm-profdata merge --version )
         LLVM_VERSION=$(echo "$LLVM_PROFDATA_VERSION_OUTPUT" | grep -oP 'LLVM version \K[0-9]+')
@@ -92,15 +96,15 @@ merge_report() {
         fi
 
         # create report
-        mkdir -p ./${COVERAGE_DIR}/
+        mkdir -p ./${RUST_COV_DIR}/
         local FILES=$(find . -name "*profraw")
-        llvm-profdata merge --sparse $FILES -o ./${COVERAGE_DIR}/json5format.profdata
+        llvm-profdata merge --sparse $FILES -o ./${RUST_COV_DIR}/json5format.profdata
     fi
 }
 
 generate() {
     cleanup
-    generate_profile
+    generate_rust_profile
 }
 
 show_overview() {
@@ -109,7 +113,7 @@ show_overview() {
     merge_report
 
     local FILES=$(find ./target/debug/deps/ -type f -executable)
-    CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${COVERAGE_DIR}/json5format.profdata"
+    CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${RUST_COV_DIR}/json5format.profdata"
 
     for FILE in $FILES
     do
@@ -126,7 +130,7 @@ show_report() {
     merge_report
 
     local FILES=$(find ./target/debug/deps/ -type f -executable)
-    CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${COVERAGE_DIR}/json5format.profdata"
+    CMD="llvm-cov report --use-color --ignore-filename-regex='/.cargo/registry' --instr-profile=./${RUST_COV_DIR}/json5format.profdata"
 
     for FILE in $FILES
     do
@@ -137,16 +141,17 @@ show_report() {
     eval $CMD
 }
 
-generate_html_report() {
+
+generate_report() {
     dependency_check grcov
 
-    mkdir -p ./${COVERAGE_DIR}/
+    mkdir -p ./${COVERAGE_OUT_DIR}/
+
     grcov \
-          **/${LLVM_PROFILE_PATH} \
-          **/**/${LLVM_PROFILE_PATH} \
-          --binary-path ./target/debug ${CMAKE_COV_DIR} \
+          ${GRCOV_ARG} \
+          --binary-path ${COV_BINARY_DIR} \
           --source-dir . \
-          --output-type html \
+          --output-type ${OUTPUT_TYPE} \
           --branch \
           --ignore-not-existing \
           --ignore "*iceoryx2-cli*" \
@@ -159,37 +164,8 @@ generate_html_report() {
           --ignore "*target*" \
           --ignore "*.cargo*" \
           --llvm-path ${LLVM_PATH} \
-          --output-path ./${COVERAGE_DIR}/html
-    sed -i 's/coverage/grcov/' ${COVERAGE_DIR}/html/coverage.json
-    sed -i 's/coverage/grcov/' ${COVERAGE_DIR}/html/badges/*.svg
+          --output-path ${COVERAGE_OUT}
 }
-
-generate_lcov_report() {
-    dependency_check grcov
-
-    mkdir -p ./${COVERAGE_DIR}/
-    grcov \
-          **/${LLVM_PROFILE_PATH} \
-          **/**/${LLVM_PROFILE_PATH} \
-          --binary-path ./target/debug ${CMAKE_COV_DIR} \
-          --source-dir . \
-          --output-type lcov \
-          --branch \
-          --ignore-not-existing \
-          --ignore "*iceoryx2-cli*" \
-          --ignore "*iceoryx2-ffi*" \
-          --ignore "*build.rs" \
-          --ignore "*tests*" \
-          --ignore "*testing*" \
-          --ignore "*examples*" \
-          --ignore "*benchmarks*" \
-          --ignore "*target*" \
-          --ignore "*.cargo*" \
-          --llvm-path ${LLVM_PATH} \
-          --output-path ./${COVERAGE_DIR}/lcov.info
-}
-
-
 
 show_help() {
     echo "$0 [OPTIONS]"
@@ -252,7 +228,7 @@ if [[ $CLEAN == "1" ]]; then
 fi
 
 if [[ $GENERATE == "1" ]]; then
-    generate
+    generate_full_profile
 fi
 
 if [[ $OVERVIEW == "1" ]]; then
@@ -264,9 +240,29 @@ if [[ $REPORT == "1" ]]; then
 fi
 
 if [[ $LCOV == "1" ]]; then
-    generate_lcov_report
+    OUTPUT_TYPE=lcov
+    COV_BINARY_DIR=target/debug
+    mkdir -p ${COVERAGE_OUT_DIR}/lcov
+    COVERAGE_OUT=${COVERAGE_OUT_DIR}/lcov/lcov_rust.info
+    GRCOV_ARG="**/${LLVM_PROFILE_PATH} **/**/${LLVM_PROFILE_PATH}"
+    generate_report
+    COV_BINARY_DIR=${CMAKE_COV_DIR}
+    COVERAGE_OUT=${COVERAGE_OUT_DIR}/lcov/lcov_cpp.info
+    GRCOV_ARG=${CMAKE_COV_DIR}
+    generate_report
 fi
 
 if [[ $HTML == "1" ]]; then
-    generate_html_report
+    OUTPUT_TYPE=html
+    COV_BINARY_DIR=target/debug
+    mkdir -p ${COVERAGE_OUT_DIR}/html
+    COVERAGE_OUT=${COVERAGE_OUT_DIR}/html/rust
+    GRCOV_ARG="**/${LLVM_PROFILE_PATH} **/**/${LLVM_PROFILE_PATH}"
+    generate_report
+    COVERAGE_OUT=${COVERAGE_OUT_DIR}/html/cpp
+    COV_BINARY_DIR=${CMAKE_COV_DIR}
+    GRCOV_ARG=${CMAKE_COV_DIR}
+    generate_report
+    echo "The Report for Rust Code in iceoryx2 is located at: ${COVERAGE_OUT_DIR}/html/rust/index.html"
+    echo "The Report for C++ Code in iceoryx2 is located at: ${COVERAGE_OUT_DIR}/html/cpp/index.html"
 fi

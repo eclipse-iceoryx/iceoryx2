@@ -730,15 +730,26 @@ jobs:
       uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # ratchet:actions/upload-artifact@v4
       with:
         name: coverage-html
-        path: target/debug/coverage/html/*
+        path: target/coverage/html/*
         retention-days: 90
 
-    - name: Generate coverage report for Codecov
+    - name: Generate coverage reports for Codecov
       run: ./internal/scripts/generate-cov-report.sh --lcov
 
-    - name: Upload coverage to Codecov
+    - name: Upload Rust coverage to Codecov
       uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
       with:
-        file: target/debug/coverage/lcov.info
+        file: target/coverage/lcov/lcov_rust.info
+        name: iceoryx2
+        flags: rust
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Upload C++ coverage to Codecov
+      uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
+      with:
+        file: target/coverage/lcov/lcov_cpp.info
+        name: iceoryx2
+        flags: CPP
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
