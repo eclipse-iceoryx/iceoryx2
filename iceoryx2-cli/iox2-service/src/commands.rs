@@ -147,7 +147,7 @@ pub fn list(filter: OutputFilter, format: Format) -> Result<()> {
         ServiceDescriptor::Undefined(name) => (name.to_string(), 3),
     });
 
-    print!("{}", format.as_string(&services)?);
+    println!("{}", format.as_string(&services)?);
 
     Ok(())
 }
@@ -159,7 +159,7 @@ pub fn details(service_name: String, filter: OutputFilter, format: Format) -> Re
         if service_name == service.static_details.name().to_string() && filter.matches(&service) {
             match format.as_string(&ServiceDescription::from(&service)) {
                 Ok(output) => {
-                    print!("{output}");
+                    println!("{output}");
                     CallbackProgression::Continue
                 }
                 Err(e) => {
