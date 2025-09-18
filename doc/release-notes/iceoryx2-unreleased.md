@@ -23,6 +23,8 @@
 * Remove duplicate entries in `iox2` command search path to prevent discovered
   commands from being listed multiple times
     [#1045](https://github.com/eclipse-iceoryx/iceoryx2/issues/1045)
+* LocalService in C language binding uses IPC configuration
+    [#1059](https://github.com/eclipse-iceoryx/iceoryx2/issues/1059)
 
 ### Refactoring
 
