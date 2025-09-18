@@ -22,8 +22,6 @@ source ${REPO_ROOT}/iceoryx2-testing/end-to-end-testing/common.exp
 
 set timeout 10
 
-exec cargo build -p iceoryx2-cli 2>@1
-
 #### Test
 
 spawn cargo run --bin iox2-config -- show current
