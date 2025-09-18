@@ -167,7 +167,7 @@ pub unsafe extern "C" fn iox2_entry_handle_mut_loan_uninit(
             *entry_value_handle_ptr = (*entry_value_struct_ptr).as_handle();
         }
         iox2_service_type_e::LOCAL => {
-            let entry_handle_mut = ManuallyDrop::into_inner(entry_handle_mut.ipc);
+            let entry_handle_mut = ManuallyDrop::into_inner(entry_handle_mut.local);
             let entry_value_uninit = entry_handle_mut.loan_uninit(value_size, value_alignment);
             let (entry_value_struct_ptr, deleter) =
                 init_entry_value_struct_ptr(entry_value_struct_ptr);
