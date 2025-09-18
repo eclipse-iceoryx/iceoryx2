@@ -13,7 +13,6 @@
 #ifndef IOX2_ENTRY_HANDLE_HPP
 #define IOX2_ENTRY_HANDLE_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox2/event_id.hpp"
 #include "iox2/service_type.hpp"
 
