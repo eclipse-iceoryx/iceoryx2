@@ -13,13 +13,16 @@
 use anyhow::anyhow;
 use anyhow::Result;
 use iceoryx2::prelude::*;
+use iceoryx2_cli::output::DiscoveryEvent;
+use iceoryx2_cli::output::ServiceDescription;
+use iceoryx2_cli::output::ServiceDescriptor;
 use iceoryx2_cli::Format;
 use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
-use iceoryx2_services_discovery::service_discovery::Discovery;
 use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
 
 pub(crate) fn discovery(
     rate: u64,
+    detailed: bool,
     publish_events: bool,
     max_subscribers: usize,
     send_notifications: bool,
@@ -39,31 +42,49 @@ pub(crate) fn discovery(
         DiscoveryService::<ipc::Service>::create(&discovery_config, Config::global_config())
             .map_err(|e| anyhow::anyhow!("failed to create service: {:?}", e))?;
 
-    println!("=== Service Started (rate: {rate}ms) ===");
+    println!("Discovering Services (rate: {rate}ms)");
 
     let waitset = WaitSetBuilder::new().create::<ipc::Service>()?;
     let guard = waitset
         .attach_interval(core::time::Duration::from_millis(rate))
         .map_err(|e| anyhow!("failed to attach interval to waitset: {:?}", e))?;
-    let attachment = WaitSetAttachmentId::from_guard(&guard);
+    let tick = WaitSetAttachmentId::from_guard(&guard);
 
-    let on_event = |attachment_id: WaitSetAttachmentId<ipc::Service>| {
-        if attachment_id == attachment {
+    let on_event = |id: WaitSetAttachmentId<ipc::Service>| {
+        if id == tick {
             let on_added = |service: &ServiceDetails<ipc::Service>| {
-                println!(
-                    "{}",
-                    format
-                        .as_string(&Discovery::Added(service.static_details.clone()))
-                        .unwrap_or_default()
-                )
+                if detailed {
+                    println!(
+                        "{}",
+                        format
+                            .as_string(&DiscoveryEvent::Added(ServiceDescription::from(service)))
+                            .unwrap_or_default()
+                    )
+                } else {
+                    println!(
+                        "{}",
+                        format
+                            .as_string(&DiscoveryEvent::Added(ServiceDescriptor::from(service)))
+                            .unwrap_or_default()
+                    )
+                }
             };
             let on_removed = |service: &ServiceDetails<ipc::Service>| {
-                println!(
-                    "{}",
-                    format
-                        .as_string(&Discovery::Removed(service.static_details.clone()))
-                        .unwrap_or_default()
-                )
+                if detailed {
+                    println!(
+                        "{}",
+                        format
+                            .as_string(&DiscoveryEvent::Removed(ServiceDescription::from(service)))
+                            .unwrap_or_default()
+                    )
+                } else {
+                    println!(
+                        "{}",
+                        format
+                            .as_string(&DiscoveryEvent::Removed(ServiceDescriptor::from(service)))
+                            .unwrap_or_default()
+                    )
+                }
             };
             if let Err(e) = service.spin(on_added, on_removed) {
                 eprintln!("error while spinning service: {e:?}");
