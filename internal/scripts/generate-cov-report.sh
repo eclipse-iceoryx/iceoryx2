@@ -36,9 +36,9 @@ set_rustc_flags() {
     fi
 }
 
-RUST_COV_DIR="target/debug/coverage"
-CMAKE_COV_DIR="target/ff/cc/coverage"
-COVERAGE_OUT_DIR="target/coverage"
+RUST_COV_DIR="target/debug/rust_cov_build"
+CMAKE_COV_DIR="target/ff/cc/cmake_cov_build"
+COVERAGE_OUT_DIR="target/ff/coverage"
 COMMIT_SHA=$(git rev-parse HEAD)
 
 CLEAN=0
@@ -65,7 +65,7 @@ generate_full_profile() {
 
 generate_rust_profile() {
     set_rustc_flags
-    cargo test --workspace --all-targets -- --test-threads=1 --skip "zenoh_tunnel_events" --skip "zenoh_tunnel_publish_subscribe"
+    cargo test --workspace --all-targets -- --test-threads=1
 }
 
 generate_cmake_profile() {
@@ -102,11 +102,6 @@ merge_report() {
     fi
 }
 
-generate() {
-    cleanup
-    generate_rust_profile
-}
-
 show_overview() {
     dependency_check llvm-cov
 
@@ -141,30 +136,42 @@ show_report() {
     eval $CMD
 }
 
-
+# Signature: generate_report(OUTPUT_TYPE, RUST_COVERAGE_OUT, CPP_COVERAGE_OUT)
 generate_report() {
+    local OUTPUT_TYPE=$1
+    local GRCOV_OUTPUT_PATH=$2
+    local GCOVR_OUTPUT_PATH=$3
     dependency_check grcov
+    dependency_check gcovr
 
-    mkdir -p ./${COVERAGE_OUT_DIR}/
+    mkdir -p ./${COVERAGE_OUT_DIR}
 
+    # Generate Coverage files for Rust Code
     grcov \
-          ${GRCOV_ARG} \
-          --binary-path ${COV_BINARY_DIR} \
-          --source-dir . \
-          --output-type ${OUTPUT_TYPE} \
-          --branch \
-          --ignore-not-existing \
-          --ignore "*iceoryx2-cli*" \
-          --ignore "*iceoryx2-ffi*" \
-          --ignore "*build.rs" \
-          --ignore "*tests*" \
-          --ignore "*testing*" \
-          --ignore "*examples*" \
-          --ignore "*benchmarks*" \
-          --ignore "*target*" \
-          --ignore "*.cargo*" \
-          --llvm-path ${LLVM_PATH} \
-          --output-path ${COVERAGE_OUT}
+        **/${LLVM_PROFILE_PATH} \
+        **/**/${LLVM_PROFILE_PATH} \
+        --binary-path target/debug \
+        --source-dir . \
+        --output-type ${OUTPUT_TYPE} \
+        --branch \
+        --ignore-not-existing \
+        --ignore "*iceoryx2-cli*" \
+        --ignore "*iceoryx2-ffi*" \
+        --ignore "*build.rs" \
+        --ignore "*tests*" \
+        --ignore "*testing*" \
+        --ignore "*examples*" \
+        --ignore "*benchmarks*" \
+        --ignore "*target*" \
+        --ignore "*.cargo*" \
+        --llvm-path ${LLVM_PATH} \
+        --output-path ${GRCOV_OUTPUT_PATH}
+
+    # Generate Coverage files for C++ Code
+    # We use here https://github.com/gcovr/gcovr to handle the generated files by gcov and can be installed with `pip install gcovr`
+    # License: https://github.com/gcovr/gcovr/blob/main/LICENSE.txt
+    gcovr ${GCOVR_OUTPUT_PATH} ${CMAKE_COV_DIR} -e '/.*/_deps/' -e '/.*/tests/' -e '/.*/testing/'
+
 }
 
 show_help() {
@@ -240,29 +247,13 @@ if [[ $REPORT == "1" ]]; then
 fi
 
 if [[ $LCOV == "1" ]]; then
-    OUTPUT_TYPE=lcov
-    COV_BINARY_DIR=target/debug
     mkdir -p ${COVERAGE_OUT_DIR}/lcov
-    COVERAGE_OUT=${COVERAGE_OUT_DIR}/lcov/lcov_rust.info
-    GRCOV_ARG="**/${LLVM_PROFILE_PATH} **/**/${LLVM_PROFILE_PATH}"
-    generate_report
-    COV_BINARY_DIR=${CMAKE_COV_DIR}
-    COVERAGE_OUT=${COVERAGE_OUT_DIR}/lcov/lcov_cpp.info
-    GRCOV_ARG=${CMAKE_COV_DIR}
-    generate_report
+    generate_report "lcov" "${COVERAGE_OUT_DIR}/lcov/iceoryx2_lcov_rust.info" "--lcov ${COVERAGE_OUT_DIR}/lcov/iceoryx2_lcov_cpp.info"
 fi
 
 if [[ $HTML == "1" ]]; then
-    OUTPUT_TYPE=html
-    COV_BINARY_DIR=target/debug
-    mkdir -p ${COVERAGE_OUT_DIR}/html
-    COVERAGE_OUT=${COVERAGE_OUT_DIR}/html/rust
-    GRCOV_ARG="**/${LLVM_PROFILE_PATH} **/**/${LLVM_PROFILE_PATH}"
-    generate_report
-    COVERAGE_OUT=${COVERAGE_OUT_DIR}/html/cpp
-    COV_BINARY_DIR=${CMAKE_COV_DIR}
-    GRCOV_ARG=${CMAKE_COV_DIR}
-    generate_report
+    mkdir -p $COVERAGE_OUT_DIR/html/cpp
+    generate_report "html" "${COVERAGE_OUT_DIR}/html/rust" "--html-details ${COVERAGE_OUT_DIR}/html/cpp/index.html"
     echo "The Report for Rust Code in iceoryx2 is located at: ${COVERAGE_OUT_DIR}/html/rust/index.html"
     echo "The Report for C++ Code in iceoryx2 is located at: ${COVERAGE_OUT_DIR}/html/cpp/index.html"
 fi

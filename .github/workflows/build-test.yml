@@ -714,6 +714,13 @@ jobs:
         toolchain: 1.86.0
         components: llvm-tools
 
+    - name: Setup gcovr
+      uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # ratchet:actions/setup-python@v6
+      with:
+        python-version: '3.13'
+        cache: 'pip' # caching pip dependencies
+    - run: pip install gcovr
+
     - name: Download artifact grcov
       uses: ./.github/actions/download-cached-rust-tool
       with:
@@ -730,7 +737,7 @@ jobs:
       uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # ratchet:actions/upload-artifact@v4
       with:
         name: coverage-html
-        path: target/coverage/html/*
+        path: target/ff/coverage/html/*
         retention-days: 90
 
     - name: Generate coverage reports for Codecov
@@ -739,16 +746,16 @@ jobs:
     - name: Upload Rust coverage to Codecov
       uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
       with:
-        file: target/coverage/lcov/lcov_rust.info
+        file: target/ff/coverage/lcov/iceoryx2_lcov_rust.info
         name: iceoryx2
-        flags: rust
+        flags: Rust
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Upload C++ coverage to Codecov
       uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # ratchet:codecov/codecov-action@v4
       with:
-        file: target/coverage/lcov/lcov_cpp.info
+        file: target/ff/coverage/lcov/iceoryx2_lcov_cpp.info
         name: iceoryx2
         flags: CPP
         fail_ci_if_error: false
