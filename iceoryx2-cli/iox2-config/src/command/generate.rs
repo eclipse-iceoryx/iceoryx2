@@ -20,7 +20,7 @@ use iceoryx2_bb_posix::*;
 use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_bb_system_types::path::Path;
 
-pub(crate) fn generate_global() -> Result<()> {
+pub(crate) fn generate_global(force: bool) -> Result<()> {
     let mut global_config_path = get_global_config_path();
     global_config_path.add_path_entry(&iceoryx2::config::Config::relative_config_path())?;
     let filepath = FilePath::from_path_and_file(
@@ -29,10 +29,10 @@ pub(crate) fn generate_global() -> Result<()> {
     )
     .unwrap();
 
-    generate(global_config_path, filepath)
+    generate(global_config_path, filepath, force)
 }
 
-pub(crate) fn generate_local() -> Result<()> {
+pub(crate) fn generate_local(force: bool) -> Result<()> {
     let user = iceoryx2_bb_posix::user::User::from_self().unwrap();
     let mut user_config_path = match user.details() {
         Some(details) => details.config_dir().clone(),
@@ -49,12 +49,12 @@ pub(crate) fn generate_local() -> Result<()> {
     )
     .unwrap();
 
-    generate(user_config_path, filepath)
+    generate(user_config_path, filepath, force)
 }
 
-fn generate(config_dir: Path, filepath: FilePath) -> Result<()> {
+fn generate(config_dir: Path, filepath: FilePath, force: bool) -> Result<()> {
     if let Ok(exists) = file::File::does_exist(&filepath) {
-        if exists {
+        if exists && !force {
             let proceed = Confirm::new()
                 .with_prompt("Configuration file already exists. Do you want to overwrite it?")
                 .default(false)
@@ -93,7 +93,7 @@ fn generate(config_dir: Path, filepath: FilePath) -> Result<()> {
     file.write(toml_string.as_bytes())
         .expect("Failed to write to file");
 
-    println!("Default configuration is generated at {filepath}");
+    println!("Default configuration generated at {filepath}");
 
     Ok(())
 }
