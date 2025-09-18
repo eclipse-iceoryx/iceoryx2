@@ -27,23 +27,30 @@ exec cargo build -p iceoryx2-cli 2>@1
 
 #### Test
 
-# Spawn a process that creates a service
+spawn cargo run --bin iox2-service discovery --detailed
+set id_iox2_discovery $spawn_id
+
+sleep 1
+
 spawn cargo run --example publish_subscribe_subscriber
 set id_subscriber $spawn_id
-spawn cargo run --example event_listener
-set id_listener $spawn_id
 
-# Get the service details
-spawn cargo run --bin iox2-service -- details "My/Funk/ServiceName"
-set id_iox2_service_details_subscriber $spawn_id
-spawn cargo run --bin iox2-service -- details "MyEventName"
-set id_iox2_service_details_listener $spawn_id
+sleep 1
+send -i $id_subscriber $SIGINT
+expect -i $id_subscriber eof
 
 #### Test Assertion
 
-expect_output_from $id_iox2_service_details_subscriber {service_name: "My/Funk/ServiceName"}
-expect_output_from $id_iox2_service_details_subscriber {pattern: PublishSubscribe}
-expect_output_from $id_iox2_service_details_listener {service_name: "MyEventName"}
-expect_output_from $id_iox2_service_details_listener {pattern: Event}
+expect_output_from $id_iox2_discovery "Discovering Services (rate: 100ms)"
+expect_output_from $id_iox2_discovery "Added"
+expect_output_from $id_iox2_discovery "service_id"
+expect_output_from $id_iox2_discovery "service_name"
+expect_output_from $id_iox2_discovery "pattern"
+expect_output_from $id_iox2_discovery "nodes"
+expect_output_from $id_iox2_discovery "Removed"
+expect_output_from $id_iox2_discovery "service_id"
+expect_output_from $id_iox2_discovery "service_name"
+expect_output_from $id_iox2_discovery "pattern"
+expect_output_from $id_iox2_discovery "nodes"
 
 show_test_passed

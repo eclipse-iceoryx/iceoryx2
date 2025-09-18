@@ -27,23 +27,15 @@ exec cargo build -p iceoryx2-cli 2>@1
 
 #### Test
 
-# Spawn a process that creates a service
-spawn cargo run --example publish_subscribe_subscriber
-set id_subscriber $spawn_id
 spawn cargo run --example event_listener
 set id_listener $spawn_id
 
-# Get the service details
-spawn cargo run --bin iox2-service -- details "My/Funk/ServiceName"
-set id_iox2_service_details_subscriber $spawn_id
-spawn cargo run --bin iox2-service -- details "MyEventName"
-set id_iox2_service_details_listener $spawn_id
+spawn cargo run --bin iox2-service -- notify MyEventName
+set id_iox2_service_notify $spawn_id
 
 #### Test Assertion
 
-expect_output_from $id_iox2_service_details_subscriber {service_name: "My/Funk/ServiceName"}
-expect_output_from $id_iox2_service_details_subscriber {pattern: PublishSubscribe}
-expect_output_from $id_iox2_service_details_listener {service_name: "MyEventName"}
-expect_output_from $id_iox2_service_details_listener {pattern: Event}
+expect_output_from $id_iox2_service_notify "NotificationSent"
+expect_output_from $id_listener "event was triggered with id: TriggerId(0)"
 
 show_test_passed
