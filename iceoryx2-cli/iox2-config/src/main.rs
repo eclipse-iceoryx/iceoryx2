@@ -62,14 +62,14 @@ fn main() -> Result<()> {
                     Cli::command().print_help().expect("Failed to print help");
                 }
             },
-            Action::Generate { config } => match config {
+            Action::Generate { config, force } => match config {
                 Some(GenerateSubcommand::Local) => {
-                    if let Err(e) = command::generate_local() {
+                    if let Err(e) = command::generate_local(force) {
                         eprintln!("Failed to generate configuration file: {e}");
                     }
                 }
                 Some(GenerateSubcommand::Global) => {
-                    if let Err(e) = command::generate_global() {
+                    if let Err(e) = command::generate_global(force) {
                         eprintln!("Failed to generate configuration file: {e}");
                     }
                 }
