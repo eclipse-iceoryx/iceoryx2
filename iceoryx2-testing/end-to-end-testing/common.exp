@@ -19,6 +19,10 @@ set C_YELLOW "\033\[1;33m"
 set C_BLUE "\033\[1;34m"
 set C_OFF "\033\[0m"
 
+#### Define Signals
+
+set SIGINT "\003"
+
 #### Helper Functions
 
 proc handle_timeout { EXPECTED_OUTPUT } {
