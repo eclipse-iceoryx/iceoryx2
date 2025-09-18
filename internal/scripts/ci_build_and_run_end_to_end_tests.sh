@@ -63,7 +63,15 @@ if [[ ${BUILD_END_TO_END_TESTS} == true ]]; then
 
     cargo build --bin component-tests_rust
     cargo build --examples
+
+    # for some reason, cargo run --bin will rebuild these binaries
+    # if not built directly here ... cargo build -p iceoryx2-cli is
+    # not sufficient
+    cargo build --bin iox2
+    cargo build --bin iox2-config
     cargo build --bin iox2-service
+    cargo build --bin iox2-node
+    cargo build --bin iox2-tunnel
 
     NUM_JOBS=1
     if [[ "$OSTYPE" == "linux-gnu"* ]] || [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]]; then
