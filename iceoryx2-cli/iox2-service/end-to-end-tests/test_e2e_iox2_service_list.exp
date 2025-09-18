@@ -22,18 +22,22 @@ source ${REPO_ROOT}/iceoryx2-testing/end-to-end-testing/common.exp
 
 set timeout 10
 
+exec cargo build -p example 2>@1
 exec cargo build -p iceoryx2-cli 2>@1
 
 #### Test
 
 spawn cargo run --example publish_subscribe_subscriber
 set id_subscriber $spawn_id
+spawn cargo run --example event_listener
+set id_listener $spawn_id
 
 spawn cargo run --bin iox2-service list
-set id_iox_service $spawn_id
+set id_iox2_service_list $spawn_id
 
 #### Test Assertion
 
-expect_output_from $id_iox_service {PublishSubscribe("My/Funk/ServiceName")}
+expect_output_from $id_iox2_service_list {PublishSubscribe("My/Funk/ServiceName")}
+expect_output_from $id_iox2_service_list {Event("MyEventName")}
 
 show_test_passed
