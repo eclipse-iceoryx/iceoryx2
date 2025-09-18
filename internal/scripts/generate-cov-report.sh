@@ -65,7 +65,7 @@ generate_full_profile() {
 
 generate_rust_profile() {
     set_rustc_flags
-    cargo test --workspace --all-targets -- --test-threads=1 --skip "zenoh_tunnel_events" --skip "zenoh_tunnel_publish_subscribe"
+    cargo test --workspace --all-targets -- --test-threads=1
 }
 
 generate_cmake_profile() {
@@ -100,11 +100,6 @@ merge_report() {
         local FILES=$(find . -name "*profraw")
         llvm-profdata merge --sparse $FILES -o ./${RUST_COV_DIR}/json5format.profdata
     fi
-}
-
-generate() {
-    cleanup
-    generate_rust_profile
 }
 
 show_overview() {
@@ -144,27 +139,36 @@ show_report() {
 
 generate_report() {
     dependency_check grcov
+    dependency_check gcovr
 
-    mkdir -p ./${COVERAGE_OUT_DIR}/
+    mkdir -p ./${COVERAGE_OUT_DIR}
 
+    # Generate Coverage files for Rust Code
     grcov \
-          ${GRCOV_ARG} \
-          --binary-path ${COV_BINARY_DIR} \
-          --source-dir . \
-          --output-type ${OUTPUT_TYPE} \
-          --branch \
-          --ignore-not-existing \
-          --ignore "*iceoryx2-cli*" \
-          --ignore "*iceoryx2-ffi*" \
-          --ignore "*build.rs" \
-          --ignore "*tests*" \
-          --ignore "*testing*" \
-          --ignore "*examples*" \
-          --ignore "*benchmarks*" \
-          --ignore "*target*" \
-          --ignore "*.cargo*" \
-          --llvm-path ${LLVM_PATH} \
-          --output-path ${COVERAGE_OUT}
+        **/${LLVM_PROFILE_PATH} \
+        **/**/${LLVM_PROFILE_PATH} \
+        --binary-path target/debug \
+        --source-dir . \
+        --output-type ${OUTPUT_TYPE} \
+        --branch \
+        --ignore-not-existing \
+        --ignore "*iceoryx2-cli*" \
+        --ignore "*iceoryx2-ffi*" \
+        --ignore "*build.rs" \
+        --ignore "*tests*" \
+        --ignore "*testing*" \
+        --ignore "*examples*" \
+        --ignore "*benchmarks*" \
+        --ignore "*target*" \
+        --ignore "*.cargo*" \
+        --llvm-path ${LLVM_PATH} \
+        --output-path ${RUST_COVERAGE_OUT}
+
+    # Generate Coverage files for C++ Code
+    # We use here https://github.com/gcovr/gcovr to handle the generated files by gcov and can be installed with `pip install gcovr`
+    # License: https://github.com/gcovr/gcovr/blob/main/LICENSE.txt
+    gcovr ${CPP_COVERAGE_OUT} ${CMAKE_COV_DIR} -e '/.*/_deps/' -e '/.*/tests/' -e '/.*/testing/'
+
 }
 
 show_help() {
@@ -240,28 +244,18 @@ if [[ $REPORT == "1" ]]; then
 fi
 
 if [[ $LCOV == "1" ]]; then
-    OUTPUT_TYPE=lcov
-    COV_BINARY_DIR=target/debug
     mkdir -p ${COVERAGE_OUT_DIR}/lcov
-    COVERAGE_OUT=${COVERAGE_OUT_DIR}/lcov/lcov_rust.info
-    GRCOV_ARG="**/${LLVM_PROFILE_PATH} **/**/${LLVM_PROFILE_PATH}"
-    generate_report
-    COV_BINARY_DIR=${CMAKE_COV_DIR}
-    COVERAGE_OUT=${COVERAGE_OUT_DIR}/lcov/lcov_cpp.info
-    GRCOV_ARG=${CMAKE_COV_DIR}
+    OUTPUT_TYPE=lcov
+    RUST_COVERAGE_OUT=${COVERAGE_OUT_DIR}/lcov/iceoryx2_lcov_rust.info
+    CPP_COVERAGE_OUT="--lcov ${COVERAGE_OUT_DIR}/lcov/iceoryx2_lcov_cpp.info"
     generate_report
 fi
 
 if [[ $HTML == "1" ]]; then
+    mkdir -p $COVERAGE_OUT_DIR/html/cpp
     OUTPUT_TYPE=html
-    COV_BINARY_DIR=target/debug
-    mkdir -p ${COVERAGE_OUT_DIR}/html
-    COVERAGE_OUT=${COVERAGE_OUT_DIR}/html/rust
-    GRCOV_ARG="**/${LLVM_PROFILE_PATH} **/**/${LLVM_PROFILE_PATH}"
-    generate_report
-    COVERAGE_OUT=${COVERAGE_OUT_DIR}/html/cpp
-    COV_BINARY_DIR=${CMAKE_COV_DIR}
-    GRCOV_ARG=${CMAKE_COV_DIR}
+    RUST_COVERAGE_OUT=${COVERAGE_OUT_DIR}/html/rust
+    CPP_COVERAGE_OUT="--html-details ${COVERAGE_OUT_DIR}/html/cpp/index.html"
     generate_report
     echo "The Report for Rust Code in iceoryx2 is located at: ${COVERAGE_OUT_DIR}/html/rust/index.html"
     echo "The Report for C++ Code in iceoryx2 is located at: ${COVERAGE_OUT_DIR}/html/cpp/index.html"
