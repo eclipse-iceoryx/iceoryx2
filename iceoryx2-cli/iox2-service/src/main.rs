@@ -91,6 +91,7 @@ fn main() -> Result<()> {
                 let should_notify = !options.disable_notify;
                 if let Err(e) = command::discovery(
                     options.rate,
+                    options.detailed,
                     should_publish,
                     options.max_subscribers,
                     should_notify,

@@ -70,6 +70,9 @@ pub struct DiscoveryOptions {
     )]
     pub rate: u64,
 
+    #[clap(long, help = "Show detailed information about discovered services")]
+    pub detailed: bool,
+
     #[clap(long, help = "Do not publish discovered services")]
     pub disable_publish: bool,
 
