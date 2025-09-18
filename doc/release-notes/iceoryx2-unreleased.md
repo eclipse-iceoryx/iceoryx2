@@ -69,6 +69,8 @@
 
 * Print new line after CLI output to prevent '%' from being inserted by terminal
     [#709](https://github.com/eclipse-iceoryx/iceoryx2/issues/709)
+* Print help for positional arguments in CLI
+    [#709](https://github.com/eclipse-iceoryx/iceoryx2/issues/709)
 * Remove duplicate entries in `iox2` command search path to prevent discovered
   commands from being listed multiple times
     [#1045](https://github.com/eclipse-iceoryx/iceoryx2/issues/1045)
@@ -123,14 +125,11 @@
 
 ### Workflow
 
-1. **iceoryx_hoofs** dependency
-
-The `iceoryx_hoofs` dependency was removed by importing the relevant files to
-the iceoryx2 repository. This simplifies the build process makes it trivial to
-add iceoryx2 specific features to the base lib.
-
-The files from the `iceoryx_hoofs` subset are available via the `iceoryx2-bb-cxx`
-CMake package.
+* Removed `iceoryx2_hoofs` dependency by importing relevant files into
+  a new `iceoryx2-bb-cxx` CMake package to simplify the build process.
+    [#301](https://github.com/eclipse-iceoryx/iceoryx2/issues/301)
+* Add end-to-end tests for `iceoryx2-cli`
+    [#709](https://github.com/eclipse-iceoryx/iceoryx2/issues/709)
 
 ### New API features
 
@@ -142,6 +141,8 @@ CMake package.
 * Add `list_keys()` to list all keys stored in the blackboard,
   `EntryHandle::is_up_to_date()` to check for value updates
   [#1189](https://github.com/eclipse-iceoryx/iceoryx2/issues/1189)
+* Add option to force overwrite configuration with `iox2 config generate`
+    [#709](https://github.com/eclipse-iceoryx/iceoryx2/issues/709)
 
 ### API Breaking Changes
 
