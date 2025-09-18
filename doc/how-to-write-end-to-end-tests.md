@@ -27,7 +27,7 @@ See following links for more information regarding `expect`:
 set REPO_ROOT [exec git rev-parse --show-toplevel]
 cd ${REPO_ROOT}
 
-source examples/cross-language-end-to-end-tests/common.exp
+source ${REPO_ROOT}/iceoryx2-testing/end-to-end-testing/common.exp
 ```
 
 Here, `git rev-parse --show-toplevel` is used to find the root directory of the
@@ -49,9 +49,14 @@ The `common.exp` file also contains the following functions:
 * `expect_output`: A simple check for the output of the most recently spawned
   process. `*` can be used as a wildcard, and `\` to escape special characters
   like `"`.
-* `expect_output_from`: Used when checking the output of a process that is not
+* `expect_output_from`: Used to check the output of a process that is not
   the most recently spawned. The first parameter of this function is the
   `spawn_id` of the process to check for output.
+  `expect_pattern_from`: Used to check the output of a process that is not the
+  the most recently spawned against a regex. The first parameter of this
+  function is the `spawn_id` of the process to check against the regex, the
+  second is the regex, and the third is a description of the regex used for
+  error handling.
 * `show_test_passed`: Should be placed at the end of the `test_e2e_*.exp` file
   to indicate a successful test run.
 
@@ -76,7 +81,7 @@ that the most recently spawned one outputs the expected string.
 set REPO_ROOT [exec git rev-parse --show-toplevel]
 cd ${REPO_ROOT}
 
-source examples/cross-language-end-to-end-tests/common.exp
+source ${REPO_ROOT}/iceoryx2-testing/end-to-end-testing/common.exp
 
 #### Test Setup
 
@@ -117,7 +122,7 @@ certain processes are terminated.
 set REPO_ROOT [exec git rev-parse --show-toplevel]
 cd ${REPO_ROOT}
 
-source examples/cross-language-end-to-end-tests/common.exp
+source ${REPO_ROOT}/iceoryx2-testing/end-to-end-testing/common.exp
 
 #### Test Setup and Assertion
 
