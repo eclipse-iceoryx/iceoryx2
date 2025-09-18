@@ -30,11 +30,13 @@ use iceoryx2_cli::HelpOptions;
 pub struct Cli {
     #[clap(subcommand)]
     pub transport: Option<Transport>,
+}
 
+#[derive(Parser)]
+pub struct CommonOptions {
     #[clap(
         long,
         short = 'd',
-        global = true,
         help = "Optionally provide the name of a service providing discovery updates to connect to"
     )]
     pub discovery_service: Option<String>,
@@ -42,7 +44,6 @@ pub struct Cli {
     #[clap(
         long,
         value_name = "RATE",
-        global = true,
         conflicts_with = "reactive",
         help = "Periodically poll for discovery updates and samples at the provided rate (in milliseconds) [default]"
     )]
@@ -50,7 +51,6 @@ pub struct Cli {
 
     #[clap(
         long,
-        global = true,
         conflicts_with = "poll",
         help = "Reactively process discovery updates and samples"
     )]
@@ -63,16 +63,19 @@ pub struct ZenohOptions {
         short,
         long,
         value_name = "PATH",
-        help = "Path to a Zenoh configuration file to use to configure the Zenoh session used by the tunnel"
+        help = "Path to a zenoh configuration file to use to configure the zenoh session used by the tunnel"
     )]
     pub zenoh_config: Option<String>,
+
+    #[clap(flatten)]
+    pub common: CommonOptions,
 }
 
 #[derive(Subcommand)]
 pub enum Transport {
     #[clap(
         about = "Use Zenoh as the transport",
-        help_template = help_template(HelpOptions::DontPrintCommandSection)
+        help_template = help_template(HelpOptions::DontPrintCommandSection),
     )]
     Zenoh(ZenohOptions),
 }
