@@ -24,17 +24,18 @@ mod command;
 #[cfg(not(target_os = "freebsd"))]
 mod supported_platform {
 
+    use clap::CommandFactory;
     #[cfg(not(debug_assertions))]
     use human_panic::setup_panic;
     #[cfg(debug_assertions)]
     extern crate better_panic;
 
     use crate::cli;
+    use crate::cli::Transport;
     use crate::command;
 
     use clap::Parser;
     use cli::Cli;
-    use cli::Transport;
 
     use iceoryx2_bb_log::set_log_level_from_env_or;
     use iceoryx2_bb_log::LogLevel;
@@ -68,12 +69,14 @@ mod supported_platform {
         if let Some(transport) = cli.transport {
             match transport {
                 Transport::Zenoh(zenoh_options) => command::zenoh(
-                    zenoh_options,
-                    cli.reactive == true,
-                    cli.discovery_service,
-                    cli.poll,
+                    zenoh_options.zenoh_config,
+                    zenoh_options.common.reactive,
+                    zenoh_options.common.discovery_service,
+                    zenoh_options.common.poll,
                 )?,
             }
+        } else {
+            Cli::command().print_help().expect("Failed to print help");
         }
 
         Ok(())

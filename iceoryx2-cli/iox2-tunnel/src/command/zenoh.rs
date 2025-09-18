@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::cli::ZenohOptions;
-
 use iceoryx2::prelude::*;
 
 use iceoryx2_bb_log::info;
@@ -22,7 +20,7 @@ use iceoryx2_tunnels_zenoh::Tunnel;
 use iceoryx2_tunnels_zenoh::TunnelConfig;
 
 pub(crate) fn zenoh(
-    zenoh_options: ZenohOptions,
+    zenoh_config: Option<String>,
     reactive: bool,
     discovery_service: Option<String>,
     rate_ms: Option<u64>,
@@ -33,7 +31,7 @@ pub(crate) fn zenoh(
 
     let iox_config = iceoryx2::config::Config::default();
 
-    let zenoh_config = match zenoh_options.zenoh_config {
+    let zenoh_config = match zenoh_config {
         Some(path) => zenoh::Config::from_file(&path)
             .map_err(|e| anyhow::anyhow!("failed to read zenoh config file '{path}': {e}"))?,
         None => zenoh::Config::default(),
