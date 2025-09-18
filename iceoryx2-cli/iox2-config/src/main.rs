@@ -18,14 +18,13 @@ use clap::CommandFactory;
 use clap::Parser;
 use cli::Action;
 use cli::Cli;
-use cli::ConfigGenerate;
-use cli::ConfigShow;
-use cli::GenerateSubcommand;
-use cli::ShowSubcommand;
 use iceoryx2_log::{set_log_level_from_env_or, LogLevel};
 
 #[cfg(not(debug_assertions))]
 use human_panic::setup_panic;
+
+use crate::cli::GenerateSubcommand;
+use crate::cli::ShowSubcommand;
 #[cfg(debug_assertions)]
 extern crate better_panic;
 
@@ -48,7 +47,7 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     if let Some(action) = cli.action {
         match action {
-            Action::Show { subcommand } => match subcommand {
+            Action::Show { config } => match config {
                 Some(ShowSubcommand::System) => {
                     if let Err(e) = command::show_system_config() {
                         eprintln!("Failed to show options: {e}");
@@ -60,12 +59,10 @@ fn main() -> Result<()> {
                     }
                 }
                 None => {
-                    ConfigShow::command()
-                        .print_help()
-                        .expect("Failed to print help");
+                    Cli::command().print_help().expect("Failed to print help");
                 }
             },
-            Action::Generate { subcommand } => match subcommand {
+            Action::Generate { config } => match config {
                 Some(GenerateSubcommand::Local) => {
                     if let Err(e) = command::generate_local() {
                         eprintln!("Failed to generate configuration file: {e}");
@@ -77,9 +74,7 @@ fn main() -> Result<()> {
                     }
                 }
                 None => {
-                    ConfigGenerate::command()
-                        .print_help()
-                        .expect("Failed to print help");
+                    Cli::command().print_help().expect("Failed to print help");
                 }
             },
             Action::Explain => {
