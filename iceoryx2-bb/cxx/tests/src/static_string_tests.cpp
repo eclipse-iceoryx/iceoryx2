@@ -688,6 +688,7 @@ TEST(StaticString, unchecked_code_unit_back_element_allows_modification_of_last_
     ASSERT_TRUE(sut.unchecked_code_units().back_element());
     sut.unchecked_code_units().back_element().value().get() = 'Z';
     ASSERT_STREQ(sut.unchecked_access().c_str(), "ABZ");
+    ASSERT_TRUE(free_space_is_all_zeroes(sut));
 }
 
 TEST(StaticString, unchecked_code_unit_back_element_returns_nullopt_on_empty_string) {
