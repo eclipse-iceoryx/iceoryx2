@@ -51,7 +51,7 @@ pub const PROT_EXEC: int = 8;
 pub const MCL_CURRENT: int = 16;
 pub const MCL_FUTURE: int = 32;
 pub const MAP_SHARED: int = 64;
-pub const MAP_FAILED: *mut void = 0 as *mut void;
+pub const MAP_FAILED: *mut void = core::ptr::null_mut::<void>();
 
 pub const PTHREAD_MUTEX_NORMAL: int = 1;
 pub const PTHREAD_MUTEX_RECURSIVE: int = 2;
@@ -99,7 +99,7 @@ pub const SEEK_SET: int = crate::internal::SEEK_SET as _;
 pub const SEEK_CUR: int = crate::internal::SEEK_CUR as _;
 pub const SEEK_END: int = crate::internal::SEEK_END as _;
 
-pub const SEM_FAILED: *mut sem_t = 0 as *mut sem_t;
+pub const SEM_FAILED: *mut sem_t = core::ptr::null_mut::<sem_t>();
 
 pub const MAX_SIGNAL_VALUE: usize = 27;
 pub const SIGABRT: int = 0;

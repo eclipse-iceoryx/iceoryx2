@@ -20,7 +20,8 @@
     conflicts when merging.
 -->
 
-* Example text [#1](https://github.com/eclipse-iceoryx/iceoryx2/issues/1)
+* LocalService in C language binding uses IPC configuration
+    [#1059](https://github.com/eclipse-iceoryx/iceoryx2/issues/1059)
 
 ### Refactoring
 

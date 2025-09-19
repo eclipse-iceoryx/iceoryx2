@@ -131,7 +131,7 @@ pub const SEEK_SET: int = crate::internal::SEEK_SET as _;
 pub const SEEK_CUR: int = crate::internal::SEEK_CUR as _;
 pub const SEEK_END: int = crate::internal::SEEK_END as _;
 
-pub const SEM_FAILED: *mut sem_t = 0 as *mut sem_t;
+pub const SEM_FAILED: *mut sem_t = core::ptr::null_mut::<sem_t>();
 
 pub const SIGABRT: int = crate::internal::SIGABRT as _;
 pub const SIGALRM: int = crate::internal::SIGALRM as _;
