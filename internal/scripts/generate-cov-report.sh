@@ -70,7 +70,7 @@ generate_rust_profile() {
 
 generate_cmake_profile() {
     # Build with Coverage to generate .gcno files
-    cmake . -B${CMAKE_COV_DIR} -DCOVERAGE=ON -DBUILD_TESTING=ON
+    cmake . -B${CMAKE_COV_DIR} -DCOVERAGE=ON -DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug
     cmake --build ${CMAKE_COV_DIR} -j
     # Execute all tests to generate .gcda files
     ctest --test-dir ${CMAKE_COV_DIR} --output-on-failure
