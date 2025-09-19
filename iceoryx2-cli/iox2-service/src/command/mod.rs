@@ -10,6 +10,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod details;
+mod discovery;
+mod list;
+mod listen;
+mod notify;
+mod publish;
+mod record;
+mod replay;
+mod subscribe;
+
+pub(crate) use details::*;
+pub(crate) use discovery::*;
+pub(crate) use list::*;
+pub(crate) use listen::*;
+pub(crate) use notify::*;
+pub(crate) use publish::*;
+pub(crate) use record::*;
+pub(crate) use replay::*;
+pub(crate) use subscribe::*;
+
 use anyhow::{anyhow, Result};
 use iceoryx2::service::builder::{CustomHeaderMarker, CustomPayloadMarker};
 use iceoryx2::{
@@ -21,8 +41,26 @@ use iceoryx2::{
     },
 };
 use iceoryx2_userland_record_and_replay::prelude::ServiceTypes;
+use serde::Serialize;
 
-pub fn get_pubsub_service_types(
+// explicitly allow same prefix Notification since it shall
+// be human readable on command line
+#[allow(clippy::enum_variant_names)]
+#[derive(Serialize)]
+enum EventType {
+    NotificationSent,
+    NotificationReceived,
+    NotificationTimeoutExceeded,
+}
+
+#[derive(Serialize)]
+struct EventFeedback {
+    event_type: EventType,
+    service: String,
+    event_id: Option<usize>,
+}
+
+pub(crate) fn get_pubsub_service_types(
     service_name: &ServiceName,
     node: &Node<ipc::Service>,
 ) -> Result<ServiceTypes> {
@@ -68,7 +106,7 @@ pub fn get_pubsub_service_types(
     })
 }
 
-pub fn extract_pubsub_payload<'a>(
+pub(crate) fn extract_pubsub_payload<'a>(
     sample: &'a Sample<ipc::Service, [CustomPayloadMarker], CustomHeaderMarker>,
     user_header_type: &TypeDetail,
 ) -> (&'a [u8], &'a [u8], &'a [u8]) {
