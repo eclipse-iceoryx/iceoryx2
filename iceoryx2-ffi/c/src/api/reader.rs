@@ -272,7 +272,7 @@ pub unsafe extern "C" fn iox2_reader_entry(
         iox2_service_type_e::LOCAL => match reader
             .value
             .as_ref()
-            .ipc
+            .local
             .__internal_entry(&key, &value_type_details)
         {
             Ok(handle) => {

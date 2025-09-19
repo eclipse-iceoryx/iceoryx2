@@ -49,7 +49,7 @@ pub enum iox2_messaging_pattern_e {
 }
 
 pub(crate) type IpcService = iceoryx2::prelude::ipc_threadsafe::Service;
-pub(crate) type LocalService = iceoryx2::prelude::ipc_threadsafe::Service;
+pub(crate) type LocalService = iceoryx2::prelude::local_threadsafe::Service;
 
 impl From<iox2_messaging_pattern_e> for MessagingPattern {
     fn from(value: iox2_messaging_pattern_e) -> Self {

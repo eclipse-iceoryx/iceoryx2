@@ -134,7 +134,7 @@ pub const SEEK_SET: int = libc::SEEK_SET as _;
 pub const SEEK_CUR: int = libc::SEEK_CUR as _;
 pub const SEEK_END: int = libc::SEEK_END as _;
 
-pub const SEM_FAILED: *mut sem_t = 0 as *mut sem_t;
+pub const SEM_FAILED: *mut sem_t = core::ptr::null_mut::<sem_t>();
 
 pub const SIGABRT: int = libc::SIGABRT as _;
 pub const SIGALRM: int = libc::SIGALRM as _;
