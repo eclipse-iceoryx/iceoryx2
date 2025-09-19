@@ -95,6 +95,7 @@ target_compile_options(
     ${ICEORYX2_CXX_FLAGS}
     ${ICEORYX2_CXX_WARNINGS}
     ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS}
 )
 target_compile_features(iceoryx2-cxx-object-lib PRIVATE ${ICEORYX2_CXX_STD})
 
@@ -109,6 +110,7 @@ target_link_libraries(iceoryx2-cxx-object-lib
     iceoryx2-c::includes-only
     iceoryx2-cxx::includes-only-cxx
     ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS} 
 )
 
 # static lib

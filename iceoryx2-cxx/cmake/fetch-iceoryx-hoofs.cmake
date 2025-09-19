@@ -46,9 +46,14 @@ if(ICEORYX_WITH_FETCH_CONTENT)
     set(EXAMPLES OFF)
     set(BUILD_TEST OFF)
 
-    # use iceoryx platform and hoofs in source code version
-    add_subdirectory(${iceoryx_SOURCE_DIR}/iceoryx_platform  ${iceoryx_BINARY_DIR}/iceoryx_platform EXCLUDE_FROM_ALL)
-    add_subdirectory(${iceoryx_SOURCE_DIR}/iceoryx_hoofs ${iceoryx_BINARY_DIR}/iceoryx_hoofs EXCLUDE_FROM_ALL)
+    # We need to disable temporary the ${COVERAGE} variable here to avoid interference
+    # because it is a external dependency
+    block()
+      set(COVERAGE OFF)
+        # use iceoryx platform and hoofs in source code version
+        add_subdirectory(${iceoryx_SOURCE_DIR}/iceoryx_platform  ${iceoryx_BINARY_DIR}/iceoryx_platform EXCLUDE_FROM_ALL)
+        add_subdirectory(${iceoryx_SOURCE_DIR}/iceoryx_hoofs ${iceoryx_BINARY_DIR}/iceoryx_hoofs EXCLUDE_FROM_ALL)
+    endblock()
 
     find_package(iceoryx_platform ${ICEORYX_HOOFS_VERSION} REQUIRED)
     find_package(iceoryx_hoofs ${ICEORYX_HOOFS_VERSION} REQUIRED)

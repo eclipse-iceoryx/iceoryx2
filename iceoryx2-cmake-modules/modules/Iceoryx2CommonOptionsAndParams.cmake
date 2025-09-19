@@ -24,6 +24,12 @@ if(NOT ICEORYX2_COMMON_OPTIONS_AND_PARAMS_LISTED)
     )
 
     add_option(
+        NAME COVERAGE
+        DESCRIPTION "Build tests with code coverage"
+        DEFAULT_VALUE OFF
+    )
+
+    add_option(
         NAME SANITIZERS
         DESCRIPTION "Build with undefined-behavior- and address-sanitizer"
         DEFAULT_VALUE OFF
