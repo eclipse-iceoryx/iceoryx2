@@ -16,7 +16,6 @@
 use iceoryx2_pal_posix::posix;
 
 pub type EPOLL_EVENTS = crate::internal::EPOLL_EVENTS;
-pub type epoll_data = crate::internal::epoll_data;
 pub type epoll_event = crate::internal::epoll_event;
 pub type epoll_params = crate::internal::epoll_params;
 
