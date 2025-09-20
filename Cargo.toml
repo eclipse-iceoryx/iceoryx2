@@ -24,6 +24,7 @@ members = [
     "iceoryx2-pal/posix/",
     "iceoryx2-pal/configuration/",
     "iceoryx2-pal/testing/",
+    "iceoryx2-pal/os-api",
 
     "iceoryx2-services/discovery",
 
@@ -38,9 +39,9 @@ members = [
 
     "benchmarks/request-response",
     "benchmarks/publish-subscribe",
-    "benchmarks/event", 
+    "benchmarks/event",
     "benchmarks/queue"
-, "iceoryx2-pal/os-api"]
+]
 
 [workspace.package]
 categories = ["network-programming"]
@@ -75,6 +76,7 @@ iceoryx2-bb-trait-tests = { version = "0.7.0", path = "iceoryx2-bb/trait-tests/"
 iceoryx2-bb-testing = { version = "0.7.0", path = "iceoryx2-bb/testing/" }
 iceoryx2-pal-concurrency-sync = { version = "0.7.0", path = "iceoryx2-pal/concurrency-sync/" }
 iceoryx2-pal-posix = { version = "0.7.0", path = "iceoryx2-pal/posix/" }
+iceoryx2-pal-os-api = { version = "0.7.0", path = "iceoryx2-pal/os-api/" }
 iceoryx2-pal-configuration = { version = "0.7.0", path = "iceoryx2-pal/configuration/" }
 iceoryx2-pal-testing = { version = "0.7.0", path = "iceoryx2-pal/testing/" }
 iceoryx2-cal = { version = "0.7.0", path = "iceoryx2-cal" }
