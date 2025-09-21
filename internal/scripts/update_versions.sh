@@ -20,17 +20,10 @@ C_YELLOW='\033[1;33m'
 C_BLUE='\033[1;34m'
 
 UPDATE_ICEORYX_HOOFS_VERSION=false
-CURRENT_ICEORYX_HOOFS_VERSION='2.95.7'
-
 UPDATE_ICEORYX2_VERSION=false
-CURRENT_ICEORYX2_VERSION='0.7.0'
 
 while (( "$#" )); do
     case "$1" in
-        get-current-iceoryx2-version)
-            echo ${CURRENT_ICEORYX2_VERSION}
-            exit 0;
-            ;;
         --iceoryx2)
             NEW_ICEORYX2_VERSION=$2
             UPDATE_ICEORYX2_VERSION=true
@@ -73,7 +66,7 @@ cd $(git rev-parse --show-toplevel)
 if [[ ${UPDATE_ICEORYX_HOOFS_VERSION} == true ]]; then
     echo -e "Updating ${C_BLUE}iceoryx-hoofs${C_OFF} version to: ${C_BLUE}${NEW_ICEORYX_HOOFS_VERSION}${C_OFF}!"
 
-    OLD_VERSION=${CURRENT_ICEORYX_HOOFS_VERSION}
+    OLD_VERSION=$(grep 'ICEORYX_HOOFS' internal/VERSIONS | sed 's/ICEORYX_HOOFS: //')
     NEW_VERSION=${NEW_ICEORYX_HOOFS_VERSION}
 
     sed -i 's/ICEORYX_HOOFS_VERSION '"${OLD_VERSION}"'/ICEORYX_HOOFS_VERSION '"${NEW_VERSION}"'/g' \
@@ -109,7 +102,7 @@ if [[ ${UPDATE_ICEORYX_HOOFS_VERSION} == true ]]; then
         --exclude=CHANGELOG.md \
         --exclude=header.html \
         --exclude=poetry.lock \
-        --exclude=update_versions.sh \
+        --exclude=VERSIONS \
         ${OLD_VERSION}; then
 
         echo -e "${C_RED}ERROR:${C_OFF} Found the old iceoryx-hoofs version string!"
@@ -118,11 +111,11 @@ if [[ ${UPDATE_ICEORYX_HOOFS_VERSION} == true ]]; then
         exit 1
     fi
 
-    sed -i 's/CURRENT_ICEORYX_HOOFS_VERSION='"'${OLD_VERSION}'"'/CURRENT_ICEORYX_HOOFS_VERSION='"'${NEW_VERSION}'"'/g' \
-        internal/scripts/update_versions.sh
+    sed -i 's/ICEORYX_HOOFS: '"${OLD_VERSION}"'/ICEORYX_HOOFS: '"${NEW_VERSION}"'/g' \
+        internal/VERSIONS
 
-    if grep ${OLD_VERSION} internal/scripts/update_versions.sh; then
-        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'CURRENT_ICEORYX_HOOFS_VERSION' in 'update_versions.sh'"
+    if grep -q "ICEORYX_HOOFS: ${OLD_VERSION}" internal/VERSIONS; then
+        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'ICEORYX_HOOFS' version in 'internal/VERSIONS'"
 
         exit 1
     fi
@@ -149,7 +142,7 @@ update_package_version_rs() {
 if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
     echo -e "Updating ${C_BLUE}iceoryx2${C_OFF} version to: ${C_BLUE}${NEW_ICEORYX2_VERSION}${C_OFF}!"
 
-    OLD_VERSION=${CURRENT_ICEORYX2_VERSION}
+    OLD_VERSION=$(grep 'CURRENT:' internal/VERSIONS | sed 's/CURRENT: //')
     NEW_VERSION=${NEW_ICEORYX2_VERSION}
 
     update_package_version_rs ${OLD_VERSION} ${NEW_VERSION}
@@ -198,7 +191,7 @@ if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
         --exclude=CHANGELOG.md \
         --exclude=header.html \
         --exclude=poetry.lock \
-        --exclude=update_versions.sh \
+        --exclude=VERSIONS \
         ${OLD_VERSION}; then
 
         echo -e "${C_RED}ERROR:${C_OFF} Found the old iceoryx2 version string!"
@@ -207,11 +200,11 @@ if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
         exit 1
     fi
 
-    sed -i 's/CURRENT_ICEORYX2_VERSION='"'${OLD_VERSION}'"'/CURRENT_ICEORYX2_VERSION='"'${NEW_VERSION}'"'/g' \
-        internal/scripts/update_versions.sh
+    sed -i 's/CURRENT: '"${OLD_VERSION}"'/CURRENT: '"${NEW_VERSION}"'/g' \
+        internal/VERSIONS
 
-    if grep ${OLD_VERSION} internal/scripts/update_versions.sh; then
-        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'CURRENT_ICEORYX2_VERSION' in 'update_versions.sh'"
+    if grep -q "CURRENT: ${OLD_VERSION}" internal/VERSIONS; then
+        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'CURRENT' version in 'internal/VERSIONS'"
 
         exit 1
     fi
