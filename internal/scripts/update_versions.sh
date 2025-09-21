@@ -131,11 +131,28 @@ if [[ ${UPDATE_ICEORYX_HOOFS_VERSION} == true ]]; then
     echo -e "${C_YELLOW}Please also update the sha256 sum for iceoryx in 'doc/bazel/README.md' and 'WORKSPACE.bazel'!${C_OFF}"
 fi
 
+update_package_version_rs() {
+    OLD=$1
+    NEW=$2
+
+    IFS='.' read -r OLD_MAJOR OLD_MINOR OLD_PATCH <<< ${OLD}
+    IFS='.' read -r NEW_MAJOR NEW_MINOR NEW_PATCH <<< ${NEW}
+
+    sed -i 's/const MAJOR: u16 = '"${OLD_MAJOR}"';/const MAJOR: u16 = '"${NEW_MAJOR}"';/g' \
+    iceoryx2-bb/elementary/src/package_version.rs
+    sed -i 's/const MINOR: u16 = '"${OLD_MINOR}"';/const MINOR: u16 = '"${NEW_MINOR}"';/g' \
+    iceoryx2-bb/elementary/src/package_version.rs
+    sed -i 's/const PATCH: u16 = '"${OLD_PATCH}"';/const PATCH: u16 = '"${NEW_PATCH}"';/g' \
+    iceoryx2-bb/elementary/src/package_version.rs
+}
+
 if [[ ${UPDATE_ICEORYX2_VERSION} == true ]]; then
     echo -e "Updating ${C_BLUE}iceoryx2${C_OFF} version to: ${C_BLUE}${NEW_ICEORYX2_VERSION}${C_OFF}!"
 
     OLD_VERSION=${CURRENT_ICEORYX2_VERSION}
     NEW_VERSION=${NEW_ICEORYX2_VERSION}
+
+    update_package_version_rs ${OLD_VERSION} ${NEW_VERSION}
 
     sed -i 's/^version = "'"${OLD_VERSION}"'"/version = "'"${NEW_VERSION}"'"/g' \
         Cargo.toml
