@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+set -e
+
+C_OFF='\033[0m'
+C_BOLD='\033[1m'
+C_RED='\033[1;31m'
+C_GREEN='\033[1;32m'
+C_YELLOW='\033[1;33m'
+C_BLUE='\033[1;34m'
+
+YES=1
+SKIP=2
+
+STEP_COUNTER=0
+
+# NOTE: 'PREVIOUS_RELEASE' in 'internal/VERSIONS' was already updated and contains the version to be released
+NEW_VERSION=$(grep 'PREVIOUS_RELEASE:' internal/VERSIONS | sed 's/PREVIOUS_RELEASE: //')
+IFS='.' read -r NEW_MAJOR NEW_MINOR NEW_PATCH <<< ${NEW_VERSION}
+
+print_step() {
+    echo -e ""
+    echo -e "${C_BLUE}# ${STEP_COUNTER}: ${1}${C_OFF}"
+    echo -e ""
+    STEP_COUNTER=$((STEP_COUNTER+1))
+}
+
+print_preparations_hint() {
+    echo -e "* Run internal/scripts/release_preparation.sh"
+    echo -e "* Test on QNX and Yocto"
+    echo -e "* Port reference system to new iceoryx2 version"
+    echo -e "* Check if new features are marked as done"
+}
+
+print_release_branch() {
+    echo -e "* Create a release branch for the new release"
+    echo -e "* format: 'release_X.Y' -> release_${NEW_MAJOR}.${NEW_MINOR}"
+}
+
+print_release_branch() {
+    echo -e "* Create a tag from the release_${NEW_MAJOR}.${NEW_MINOR} branch"
+    echo -e "* format: 'vX.Y.Z' -> v${NEW_VERSION}"
+}
+
+print_publish_release() {
+    echo -e "* push release branch"
+    echo -e "  ${C_YELLOW}git push -u origin release_${NEW_MAJOR}.${NEW_MINOR}${C_OFF}"
+    echo -e "* push tag"
+    echo -e "  ${C_YELLOW}git push origin --tag v${NEW_VERSION}${C_OFF}"
+
+    echo -e "* create release on github"
+    echo -e "  * go to https://github.com/eclipse-iceoryx/iceoryx2/releases/tag/v${NEW_VERSION}${C_OFF}"
+    echo -e "  * click on 'Create release from tag' button"
+    echo -e "  * select correct 'Previous tag'"
+    echo -e "  * add the content from 'doc/release-notes/iceoryx2-v.${NEW_VERSION}md', beginning at '[Full Changelog]', to 'Release notes'"
+    echo -e "* continue with '\$GIT_ROOT$/internal/scripts/crates_io_publish_script.sh'"
+}
+
+print_howto() {
+    STEP_COUNTER=0
+
+    print_step "Release Preparation"
+    print_preparations_hint
+
+    print_step "Release Branch"
+    print_release_branch
+
+    print_step "Release Tag"
+    print_release_tag
+
+    print_step "Publish Release"
+    print_publish_release
+}
+
+while (( "$#" )); do
+    case "$1" in
+        "howto")
+            print_howto
+            exit 0
+            ;;
+        "help")
+            echo -e "Script to automate parts of the iceoryx2 release process"
+            echo -e ""
+            echo -e "Usage: ${C_GREEN}$(basename $0)${C_OFF}"
+            echo -e ""
+            exit 0
+            ;;
+        *)
+            echo -e "${C_RED}ERROR:${C_OFF} Invalid argument '$1'. Try 'help' for options."
+            exit 1
+            ;;
+    esac
+done
+
+SELECTION=-1
+function show_default_selector() {
+    EXIT_HINT=$1
+    while true; do
+        read -p "Yes, Cancel or Skip (Y/C/S) [default=Y]: " yns
+        yns=${yns:-Y}
+        case $yns in
+            [Yy]*)
+                SELECTION=${YES}
+                break;
+                ;;
+            [Cc]*)
+                $EXIT_HINT
+                exit 1
+                ;;
+            [Ss]*)
+                SELECTION=${SKIP}
+                break;
+                ;;
+            *) echo -e "${C_YELLOW}Please use either 'Y', 'N' or 'S'.${C_OFF}";;
+        esac
+    done
+}
+
+function show_completion() {
+    echo -e ${C_GREEN}DONE!${C_OFF} Continue to next step with 'enter'
+    read # blocks until enter is pressed
+}
+
+cd $(git rev-parse --show-toplevel)
+
+echo -e "${C_BLUE}Hello walking water bag. I will assist you in the iceoryx2 release process!${C_OFF}"
+
+STEP_COUNTER=0
+
+print_step "Did you do the release preparation"
+print_preparations_hint
+show_default_selector
+
+print_step "Release branch"
+echo -e "Shall I create ${C_YELLOW}release_${NEW_MAJOR}.${NEW_MINOR}${C_OFF} branch?"
+show_default_selector
+if [[ ${SELECTION} == ${YES} ]]; then
+    git checkout -b release_${NEW_MAJOR}.${NEW_MINOR}
+
+    show_completion
+fi
+
+print_step "Create tag"
+echo -e "Shall I create ${C_YELLOW}v${NEW_VERSION}${C_OFF} branch?"
+show_default_selector
+if [[ ${SELECTION} == ${YES} ]]; then
+    git checkout release_${NEW_MAJOR}.${NEW_MINOR}
+    git tag v${NEW_VERSION}
+
+    show_completion
+fi
+
+print_step "Continue with publishing the release"
+print_publish_release
+
+echo -e "${C_GREEN}FINISHED${C_OFF}"
