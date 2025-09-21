@@ -1,0 +1,57 @@
+# Copyright (c) 2024 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Apache Software License 2.0 which is available at
+# https://www.apache.org/licenses/LICENSE-2.0, or the MIT license
+# which is available at https://opensource.org/licenses/MIT.
+#
+# SPDX-License-Identifier: Apache-2.0 OR MIT
+
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_rust//cargo:defs.bzl", "cargo_build_script")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test_suite")
+
+filegroup(
+    name = "all_srcs",
+    srcs = glob(["**"]),
+)
+
+# Generate the Rust binding file
+genrule(
+    name = "iceoryx2-pal-os-api-bindgen",
+    srcs = [
+        "src/c/linux.h",
+        "@bindgen//:bindgen-cli",
+    ],
+    outs = ["os_api_generated.rs"],
+    cmd = "$(execpath @bindgen//:bindgen-cli) --use-core $(location src/c/linux.h) --output $(OUTS)",
+)
+
+cargo_build_script(
+    name = "bazel_bindgen_workaround",
+    srcs = ["bazel_bindgen_workaround.rs"],
+)
+
+# Create the actual crate
+rust_library(
+    name = "iceoryx2-pal-os-api",
+    srcs = glob(["src/**/*.rs"]),
+    compile_data = [ "os_api_generated.rs" ],
+    deps = [
+        "//iceoryx2-pal/posix:iceoryx2-pal-posix",
+        "@crate_index//:lazy_static",
+        ":bazel_bindgen_workaround",
+    ],
+    rustc_env = {
+        # - 'lib.rs' expects the location at 'env!("OUT_DIR")/os_api_generated.rs'
+        # - 'OUT_DIR' is set by 'bazel_bindgen_workaround' and points to the same
+        #   folder where 'os_api_generated.rs' is preset
+        # - therefore the path needs to be corrected
+        "BAZEL_BINDGEN_PATH_CORRECTION": "/.."
+    },
+)
