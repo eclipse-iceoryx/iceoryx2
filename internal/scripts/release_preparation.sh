@@ -193,6 +193,11 @@ function show_default_selector() {
     done
 }
 
+function show_completion() {
+    echo -e ${C_GREEN}DONE!${C_OFF} Continue to next step with 'enter'
+    read # blocks until enter is pressed
+}
+
 if [[ ${ICEORYX2_RELEASE_VERSION_SET} == false ]];then
     echo -e "${C_RED}ERROR:${C_OFF} No new-version set! Please provide a release version with '--new-version 0.8.15'" >&2
     exit 1
@@ -225,7 +230,8 @@ if [[ ${SELECTION} == ${YES} ]]; then
     git checkout main
     git pull
     git checkout -b iox2-77-release-v${ICEORYX2_RELEASE_VERSION}
-    ${C_GREEN}DONE${C_OFF}
+
+    show_completion
 fi
 
 print_step "Finalizing The Release Notes"
@@ -262,7 +268,8 @@ if [[ ${SELECTION} == ${YES} ]]; then
         git add doc/release-notes/iceoryx2-v${ICEORYX2_RELEASE_VERSION}.md
         git commit -m"[#77] Finalize release notes for v${ICEORYX2_RELEASE_VERSION}"
     fi
-    echo -e "${C_GREEN}DONE${C_OFF}"
+
+    show_completion
 fi
 
 
@@ -290,7 +297,8 @@ if [[ ${SELECTION} == ${YES} ]]; then
     if [[ ${SELECTION} == ${YES} ]]; then
         git commit -m"[#77] Update version number to v${ICEORYX2_RELEASE_VERSION}"
     fi
-    echo -e "${C_GREEN}DONE${C_OFF}"
+
+    show_completion
 fi
 
 print_step "Continue With Release Tagging And Publishing"
