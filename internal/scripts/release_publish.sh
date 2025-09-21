@@ -38,57 +38,34 @@ print_step() {
 
 print_preparations_hint() {
     echo -e "* Run internal/scripts/release_preparation.sh"
-    echo -e "* Test on QNX and Yocto"
-    echo -e "* Port reference system to new iceoryx2 version"
-    echo -e "* Check if new features are marked as done"
+    echo -e "* Run internal/scripts/release_tagging.sh"
 }
 
 print_sanity_checks() {
-    echo -e "The sanity-checks from the 'crates_io_publish_script.sh' are run"
+    echo -e "* Check for new crates to be published"
+    echo -e "* Check for cyclic dependencies"
+    echo -e "* Run 'internal/scripts/crates_io_publish_script.sh sanity-checks'"
 }
 
-print_release_branch() {
-    echo -e "* Create a release branch for the new release"
-    echo -e "* format: 'release_X.Y' -> release_${NEW_MAJOR}.${NEW_MINOR}"
-}
-
-print_release_branch() {
-    echo -e "* Create a tag from the release_${NEW_MAJOR}.${NEW_MINOR} branch"
-    echo -e "* format: 'vX.Y.Z' -> v${NEW_VERSION}"
-}
-
-print_publish_release() {
-    echo -e "* Push release branch"
-    echo -e "  ${C_YELLOW}git push -u origin release_${NEW_MAJOR}.${NEW_MINOR}${C_OFF}"
-    echo -e "* Push tag"
-    echo -e "  ${C_YELLOW}git push origin --tag v${NEW_VERSION}${C_OFF}"
-
-    echo -e "* Create release on github"
-    echo -e "  * Go to https://github.com/eclipse-iceoryx/iceoryx2/releases/tag/v${NEW_VERSION}${C_OFF}"
-    echo -e "  * Click on 'Create release from tag' button"
-    echo -e "  * Select correct 'Previous tag'"
-    echo -e "  * Add the content from 'doc/release-notes/iceoryx2-v.${NEW_VERSION}md', beginning at '[Full Changelog]', to 'Release notes'"
-
-    echo -e "* For the publishing, the '\$GIT_ROOT$/internal/scripts/release_publish.sh' script can be used!"
+print_publish_crates_io() {
+    echo -e "* All crates, including dev-dependencies, must be published"
+    echo -e "* The crates must be published in the correct order"
+    echo -e "  * When calling 'cargo publish -p crate-name', it's dependencies must already be published"
+    echo -e "* If the crates.io publish script fails before finishing, a new release must be done"
+    echo -e "* Run 'internal/scripts/crates_io_publish_script.sh publish'"
 }
 
 print_howto() {
     STEP_COUNTER=0
 
-    print_step "Release Preparation"
+    print_step "Release Preparation And Tagging"
     print_preparations_hint
 
-    print_step "Sanity checks for crates.io release"
+    print_step "Sanity Checks"
     print_sanity_checks
 
-    print_step "Release Branch"
-    print_release_branch
-
-    print_step "Release Tag"
-    print_release_tag
-
-    print_step "Publish Release"
-    print_publish_release
+    print_step "Publish To crates.io"
+    print_publish_crates_io
 }
 
 while (( "$#" )); do
@@ -146,12 +123,12 @@ echo -e "${C_BLUE}Hello walking water bag. I will assist you in the iceoryx2 rel
 
 STEP_COUNTER=0
 
-print_step "Did you do the release preparation"
+print_step "Did you do the release preparation and tagging"
 print_preparations_hint
 show_default_selector
 
 print_step "Sanity checks"
-echo -e "Shall I run the sanity checks for the crates.io release?"
+echo -e "Shall I run the sanity checks?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
     internal/scripts/crates_io_publish_script.sh sanity-checks
@@ -159,26 +136,16 @@ if [[ ${SELECTION} == ${YES} ]]; then
     show_completion
 fi
 
-print_step "Release branch"
-echo -e "Shall I create ${C_YELLOW}release_${NEW_MAJOR}.${NEW_MINOR}${C_OFF} branch?"
+print_step "Publish to crates.io"
+echo -e "Shall I publish to crates.io?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    git checkout -b release_${NEW_MAJOR}.${NEW_MINOR}
+    internal/scripts/crates_io_publish_script.sh publish
+
+    echo -e "Please check whether the release looks fine on 'docs.rs'."
+    echo -e "(click through the documentation to check if everything was generated correctly)"
 
     show_completion
 fi
-
-print_step "Create tag"
-echo -e "Shall I create ${C_YELLOW}v${NEW_VERSION}${C_OFF} branch?"
-show_default_selector
-if [[ ${SELECTION} == ${YES} ]]; then
-    git checkout release_${NEW_MAJOR}.${NEW_MINOR}
-    git tag v${NEW_VERSION}
-
-    show_completion
-fi
-
-print_step "Continue with publishing the release"
-print_publish_release
 
 echo -e "${C_GREEN}FINISHED${C_OFF}"

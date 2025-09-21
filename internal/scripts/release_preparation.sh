@@ -91,6 +91,10 @@ print_check_code_examples() {
     echo -e "* '\$GIT_ROOT$/internal/cpp_doc_generator/*.rst'"
 }
 
+print_sanity_checks() {
+    echo -e "The sanity-checks from the 'crates_io_publish_script.sh' are run"
+}
+
 print_create_branch() {
     echo -e "The branch name follows the format 'iox2-77-release-X.Y.Z'"
 }
@@ -136,6 +140,9 @@ print_howto() {
 
     print_step "Check the Code examples in the documentation"
     print_check_code_examples
+
+    print_step "Sanity checks for crates.io release"
+    print_sanity_checks
 
     print_step "Use generic release issue ([#77]) and create a new branch"
     print_create_branch
@@ -235,12 +242,19 @@ print_step "Did you check the Code examples in the documentation?"
 print_check_code_examples
 show_default_selector
 
+print_step "Sanity checks"
+echo -e "Shall I run the sanity checks for the crates.io release?"
+show_default_selector
+if [[ ${SELECTION} == ${YES} ]]; then
+    internal/scripts/crates_io_publish_script.sh sanity-checks
+
+    show_completion
+fi
+
 print_step "Release Version and Branch"
 echo -e "Shall I create ${C_YELLOW}iox2-77-release-v${ICEORYX2_RELEASE_VERSION}${C_OFF} branch?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    git checkout main
-    git pull
     git checkout -b iox2-77-release-v${ICEORYX2_RELEASE_VERSION}
 
     show_completion
