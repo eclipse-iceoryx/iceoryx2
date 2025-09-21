@@ -173,14 +173,14 @@ SELECTION=-1
 function show_default_selector() {
     EXIT_HINT=$1
     while true; do
-        read -p "Yes, No or Skip (Y/N/S) [default=Y]: " yns
+        read -p "Yes, Cancel or Skip (Y/C/S) [default=Y]: " yns
         yns=${yns:-Y}
         case $yns in
             [Yy]*)
                 SELECTION=${YES}
                 break;
                 ;;
-            [Nn]*)
+            [Cc]*)
                 $EXIT_HINT
                 exit 1
                 ;;
