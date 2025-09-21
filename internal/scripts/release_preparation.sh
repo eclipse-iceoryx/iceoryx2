@@ -79,6 +79,13 @@ print_article_hint() {
     echo -e "   * https://news.ycombinator.com/show"
 }
 
+print_manual_steps_hint() {
+    echo -e "* Test if QNX buids and runs with the current codebase"
+    echo -e "* Test if Yocto builds and runs with the current codebase"
+    echo -e "* check if the new features are marked as done, e.g. README, ROADMAP, etc."
+    echo -e "* grep for 'planned'"
+}
+
 print_check_code_examples() {
     echo -e "* '\$GIT_ROOT$/README.MD'"
     echo -e "* '\$GIT_ROOT$/internal/cpp_doc_generator/*.rst'"
@@ -125,6 +132,9 @@ print_howto() {
     STEP_COUNTER=0
     print_step "Start Always With Writing The Articles"
     print_article_hint
+
+    print_step "Check Manual Steps"
+    print_manual_steps_hint
 
     print_step "Check the Code examples in the documentation"
     print_check_code_examples
@@ -218,6 +228,10 @@ STEP_COUNTER=0
 
 print_step "Did you wrote the articles? (Release announcement, social media post, etc.)"
 show_default_selector print_article_hint
+
+print_step "Check Manual Steps"
+print_manual_steps_hint
+show_default_selector
 
 print_step "Did you check the Code examples in the documentation?"
 print_check_code_examples
