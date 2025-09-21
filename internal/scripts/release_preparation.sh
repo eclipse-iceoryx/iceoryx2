@@ -121,9 +121,7 @@ print_merge_all_changes_to_main_and_create_release_branch() {
     echo -e "Congratulations! You made it!"
     echo -e "Please commit all the changes and create a pull request to 'main'!"
     echo -e "Once the pull request is merged, a release branch should be created!"
-    echo -e "The tag should be set on the release branch!"
-    echo -e "The tag shoud have the release document as note in the description and also a link to the file!"
-    echo -e "For the actual release, the '\$GIT_ROOT$/internal/scripts/crates_io_publish_script.sh' can be used!"
+    echo -e "For the tag, the '\$GIT_ROOT$/internal/scripts/release_tagging.sh' script can be used!"
     echo -e "${C_YELLOW}But before creating the tag, port the reference system${C_OFF}"
     echo -e "${C_YELLOW}to the new iceoryx2 version to catch last minute bugs${C_OFF}"
 }
