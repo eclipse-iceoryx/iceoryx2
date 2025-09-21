@@ -26,9 +26,6 @@ SKIP=2
 ICEORYX2_RELEASE_VERSION_SET=false
 ICEORYX2_RELEASE_VERSION='X.Y.Z'
 
-ICEORYX2_PREVIOUS_VERSION_SET=false
-ICEORYX2_PREVIOUS_VERSION='X.Y.Z'
-
 STEP_COUNTER=0
 
 print_step() {
@@ -110,6 +107,7 @@ print_set_new_version_number() {
     echo -e "  * all pyproject.toml"
     echo -e "  * all BUILD.bazel"
     echo -e "  * all markdown files where appropriate"
+    echo -e "  * internal/VERSIONS"
 }
 
 print_merge_all_changes_to_main_and_create_release_branch() {
@@ -155,19 +153,12 @@ while (( "$#" )); do
             ICEORYX2_RELEASE_VERSION_SET=true
             shift 2
             ;;
-        "--previous-version")
-            ICEORYX2_PREVIOUS_VERSION=$2
-            ICEORYX2_PREVIOUS_VERSION_SET=true
-            shift 2
-            ;;
         "help")
             echo -e "Script to automate parts of the iceoryx2 release process"
             echo -e ""
-            echo -e "Usage: ${C_GREEN}$(basename $0)${C_OFF} --new-version 0.8.15 --previous-version 0.8.14"
+            echo -e "Usage: ${C_GREEN}$(basename $0)${C_OFF} --new-version 0.8.15"
             echo -e "Options:"
             echo -e "    --new-version <VERSION>        The release <VERSION> in the format X.Y.Z"
-            echo -e "    --previous-version <VERSION>   The previous <VERSION> in the format X.Y.Z"
-            echo -e "                                   This is required for the release notes"
             echo -e ""
             exit 0
             ;;
@@ -212,17 +203,7 @@ if ! [[ ${ICEORYX2_RELEASE_VERSION} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     exit 1
 fi
 
-if [[ ${ICEORYX2_PREVIOUS_VERSION_SET} == false ]];then
-    echo -e "${C_RED}ERROR:${C_OFF} No previous-version set! Please provide a release version with '--new-version 0.8.15'" >&2
-    exit 1
-fi
-echo ${ICEORYX2_PREVIOUS_VERSION}
-
-if ! [[ ${ICEORYX2_PREVIOUS_VERSION} =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo -e "${C_RED}ERROR:${C_OFF} Invalid version format previous version!"
-    echo -e "Expected X.Y.Z (e.g., 1.2.3)! but got '${ICEORYX2_PREVIOUS_VERSION}'" >&2
-    exit 1
-fi
+ICEORYX2_PREVIOUS_VERSION=$(grep 'PREVIOUS_RELEASE:' internal/VERSIONS | sed 's/PREVIOUS_RELEASE: //')
 
 cd $(git rev-parse --show-toplevel)
 
@@ -269,14 +250,16 @@ if [[ ${SELECTION} == ${YES} ]]; then
 '"* \[v${ICEORYX2_RELEASE_VERSION}\](doc\/release-notes\/iceoryx2-v${ICEORYX2_RELEASE_VERSION}.md)" \
         CHANGELOG.md
 
+    git add doc/release-notes/iceoryx2-unreleased.md
+    git add doc/release-notes/iceoryx2-v${ICEORYX2_RELEASE_VERSION}.md
+    git add CHANGELOG.md
+
     echo -e "Did you check the release notes for dummy entries and cleaned it up?"
     show_default_selector
     echo -e "Shall the changes be commited?"
     show_default_selector
     if [[ ${SELECTION} == ${YES} ]]; then
-        git add doc/release-notes/iceoryx2-unreleased.md
         git add doc/release-notes/iceoryx2-v${ICEORYX2_RELEASE_VERSION}.md
-        git add CHANGELOG.md
         git commit -m"[#77] Finalize release notes for v${ICEORYX2_RELEASE_VERSION}"
     fi
     echo -e "${C_GREEN}DONE${C_OFF}"
@@ -289,13 +272,22 @@ show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
     internal/scripts/update_versions.sh --iceoryx2 ${ICEORYX2_RELEASE_VERSION}
 
+    sed -i 's/PREVIOUS_RELEASE: '"${ICEORYX2_PREVIOUS_VERSION}"'/PREVIOUS_RELEASE: '"${ICEORYX2_RELEASE_VERSION}"'/g' \
+        internal/VERSIONS
+    if grep -q "PREVIOUS_RELEASE: ${ICEORYX2_PREVIOUS_VERSION}" internal/VERSIONS; then
+        echo -e "${C_RED}ERROR:${C_OFF} Could not update 'PREVIOUS_RELEASE' version in 'internal/VERSIONS'"
+
+        exit 1
+    fi
+
+    git add .
+
     echo -e "Did you build with cargo, bazel and also the python bindings to update the corresponding lock files?"
     show_default_selector
 
     echo -e "Shall the changes be commited?"
     show_default_selector
     if [[ ${SELECTION} == ${YES} ]]; then
-        git add .
         git commit -m"[#77] Update version number to v${ICEORYX2_RELEASE_VERSION}"
     fi
     echo -e "${C_GREEN}DONE${C_OFF}"
