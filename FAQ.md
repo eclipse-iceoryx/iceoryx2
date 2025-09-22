@@ -176,6 +176,9 @@ By default, a Docker container has a shared memory size of 64 MB. This can be
 exceeded quickly, since iceoryx2 always pre-allocates memory for the worst-case
 scenario.
 
+The shared memory size can be adjusted with the `--shm-size=` parameter, see:
+[https://docs.docker.com/engine/containers/run/#runtime-constraints-on-resources](https://docs.docker.com/engine/containers/run/#runtime-constraints-on-resources)
+
 ## Does iceoryx2 Offer an Async API?
 
 No, but it is
