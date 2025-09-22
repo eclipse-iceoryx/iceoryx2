@@ -1549,7 +1549,7 @@ dependencies = [
  "iceoryx2-tunnel",
  "iceoryx2-tunnel-zenoh",
  "iceoryx2-userland-record-and-replay",
- "ron",
+ "ron 0.11.0",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -2899,6 +2899,19 @@ dependencies = [
  "bitflags",
  "serde",
  "serde_derive",
+]
+
+[[package]]
+name = "ron"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db09040cc89e461f1a265139777a2bde7f8d8c67c4936f700c63ce3e2904d468"
+dependencies = [
+ "base64 0.22.1",
+ "bitflags",
+ "serde",
+ "serde_derive",
+ "unicode-ident",
 ]
 
 [[package]]
@@ -4952,7 +4965,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3a108f59311a215ce4c5e0dc0d172865c8856eb03148ee86933da3e15d05e5d"
 dependencies = [
  "lazy_static",
- "ron",
+ "ron 0.8.1",
  "serde",
  "tokio",
  "tracing",
