@@ -80,10 +80,11 @@ print_article_hint() {
 }
 
 print_manual_steps_hint() {
-    echo -e "* Test if QNX buids and runs with the current codebase"
+    echo -e "* Test if QNX builds and runs with the current codebase"
     echo -e "* Test if Yocto builds and runs with the current codebase"
     echo -e "* check if the new features are marked as done, e.g. README, ROADMAP, etc."
     echo -e "* grep for 'planned'"
+    echo -e "* verify to be on the right branch"
 }
 
 print_check_code_examples() {
