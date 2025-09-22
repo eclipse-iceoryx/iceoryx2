@@ -676,6 +676,23 @@ jobs:
           USE_BAZEL_VERSION: "7.4.1"
         run: bazel test //...
 
+  cargo-publish-dry-run:
+    needs: [preflight-check, static-code-analysis]
+    if: ${{ needs.changes.outputs.source-code == 'true' }}
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+
+      - name: Cargo Publish Dry-Run
+        run: ./internal/scripts/crates_io_publish_script.sh dry-run
+
   grcov:
     needs: [preflight-check, static-code-analysis]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
