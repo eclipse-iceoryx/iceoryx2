@@ -23,7 +23,7 @@ pub mod linux;
 #[path = "linux-libc/mod.rs"]
 pub mod linux;
 
-#[cfg(not(feature = "libc_platform"))]
+#[cfg(all(not(feature = "libc_platform"), target_os = "linux"))]
 pub(crate) mod internal {
     #![allow(non_upper_case_globals)]
     #![allow(non_camel_case_types)]

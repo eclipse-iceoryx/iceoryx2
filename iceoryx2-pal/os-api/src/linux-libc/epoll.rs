@@ -17,7 +17,6 @@ use iceoryx2_pal_posix::posix;
 
 pub type EPOLL_EVENTS = posix::int;
 pub type epoll_event = libc::epoll_event;
-pub type epoll_params = libc::epoll_params;
 
 pub const EPOLL_CLOEXEC: usize = libc::EPOLL_CLOEXEC as _;
 pub const EPOLL_EVENTS_EPOLLIN: EPOLL_EVENTS = libc::EPOLLIN;
