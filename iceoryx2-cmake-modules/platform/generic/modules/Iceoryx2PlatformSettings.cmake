@@ -41,10 +41,16 @@ if(SANITIZERS)
 endif()
 
 set(ICEORYX2_COVERAGE_FLAGS CACHE INTERNAL "")
+
 if(COVERAGE)
+
+    if (NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+        message( FATAL_ERROR "You need to set -DCMAKE_BUILD_TYPE=Debug to run with Coverage" )
+    endif()
+
     set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        set(ICEORYX2_COVERAGE_FLAGS -g -O0 --coverage -fprofile-abs-path CACHE INTERNAL "")
+        set(ICEORYX2_COVERAGE_FLAGS --coverage -fprofile-abs-path CACHE INTERNAL "")
     else()
         message( FATAL_ERROR "You need to run gcov with gcc compiler." )
     endif()

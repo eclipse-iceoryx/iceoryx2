@@ -50,7 +50,7 @@ if(ICEORYX_WITH_FETCH_CONTENT)
     # because it is a external dependency
     if(COVERAGE)
         set(IOX2_COVERAGE_PREVIOUSLY_DISABLED ON)     
-        set(COVERAGE OFF CACHE INTERNAL "")
+        set(COVERAGE OFF)
     endif()
 
     # use iceoryx platform and hoofs in source code version
@@ -58,7 +58,7 @@ if(ICEORYX_WITH_FETCH_CONTENT)
     add_subdirectory(${iceoryx_SOURCE_DIR}/iceoryx_hoofs ${iceoryx_BINARY_DIR}/iceoryx_hoofs EXCLUDE_FROM_ALL)
 
     if(IOX2_COVERAGE_PREVIOUSLY_DISABLED)
-        set(COVERAGE ON CACHE INTERNAL "")
+        set(COVERAGE ON)
     endif()
 
     find_package(iceoryx_platform ${ICEORYX_HOOFS_VERSION} REQUIRED)
