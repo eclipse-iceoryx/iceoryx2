@@ -1,0 +1,18 @@
+[package]
+name = "iceoryx2-bb-linux"
+description = "iceoryx2: [internal] high level safe abstractions for low level unsafe linux constructs"
+categories = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+keywords = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+version = { workspace = true }
+
+[dependencies]
+iceoryx2-pal-os-api = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }
+
+[dev-dependencies]
+iceoryx2-bb-testing = { workspace = true }
