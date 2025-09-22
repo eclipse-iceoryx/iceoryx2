@@ -149,6 +149,33 @@ has something to read. If you do not handle all notifications, for example, with
 `Listener::try_wait_one()`, the WaitSet will wake up immediately again,
 potentially causing an infinite loop and resulting in 100% CPU usage.
 
+## `SIGBUS` Error
+
+This error is usually caused by insufficient memory. When iceoryx2 allocates
+shared memory, the operating system can overcommit by allocating more memory
+than is physically available. As soon as the process actually accesses this
+overcommitted memory, a `SIGBUS` signal is raised. This can occur with both
+fixed-size and dynamic messages such as slices.
+
+When using dynamic messages, the error may appear later, once your data size
+grows and iceoryx2 needs to reallocate memory. For this reason, you should
+avoid relying on dynamic memory in critical systems.
+
+### Check
+
+You can check how much memory iceoryx2 is currently using by inspecting the
+shared memory objects in /dev/shm:
+
+```sh
+du -sh /dev/shm
+```
+
+### Docker
+
+By default, a Docker container has a shared memory size of 64 MB. This can be
+exceeded quickly, since iceoryx2 always pre-allocates memory for the worst-case
+scenario.
+
 ## Does iceoryx2 Offer an Async API?
 
 No, but it is
