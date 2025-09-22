@@ -52,7 +52,7 @@ print_release_branch() {
     echo -e "* format: 'release_X.Y' -> release_${NEW_MAJOR}.${NEW_MINOR}"
 }
 
-print_release_branch() {
+print_release_tag() {
     echo -e "* Create a tag from the release_${NEW_MAJOR}.${NEW_MINOR} branch"
     echo -e "* format: 'vX.Y.Z' -> v${NEW_VERSION}"
 }
@@ -161,6 +161,7 @@ fi
 
 print_step "Release branch"
 echo -e "Shall I create ${C_YELLOW}release_${NEW_MAJOR}.${NEW_MINOR}${C_OFF} branch?"
+echo -e "${C_YELLOW}Please verify to be on the right commit on the right branch!${C_OFF}"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
     git checkout -b release_${NEW_MAJOR}.${NEW_MINOR}
@@ -169,7 +170,8 @@ if [[ ${SELECTION} == ${YES} ]]; then
 fi
 
 print_step "Create tag"
-echo -e "Shall I create ${C_YELLOW}v${NEW_VERSION}${C_OFF} branch?"
+echo -e "Shall I create git tag ${C_YELLOW}v${NEW_VERSION}${C_OFF}?"
+echo -e "${C_YELLOW}Please verify to be on the right commit on the right branch!${C_OFF}"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
     git checkout release_${NEW_MAJOR}.${NEW_MINOR}
