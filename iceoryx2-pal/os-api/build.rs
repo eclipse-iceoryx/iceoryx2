@@ -13,6 +13,9 @@
 #[cfg(feature = "libc_platform")]
 fn main() {}
 
+#[cfg(all(not(feature = "libc_platform"), not(target_os = "linux")))]
+fn main() {}
+
 #[cfg(all(not(feature = "libc_platform"), target_os = "linux"))]
 fn main() {
     extern crate bindgen;
