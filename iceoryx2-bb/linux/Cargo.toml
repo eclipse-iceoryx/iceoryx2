@@ -12,6 +12,7 @@ version = { workspace = true }
 
 [dependencies]
 iceoryx2-pal-os-api = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }
 iceoryx2-bb-posix = { workspace = true }
 
 [dev-dependencies]
