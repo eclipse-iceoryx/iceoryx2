@@ -115,7 +115,7 @@ The list is sorted by priority
 * [ ] Multi Publisher without history (except there is a brilliant idea on how
       to realize it with history)
 * [x] Request Response Messaging Pattern
-* [ ] Blackboard Messaging Pattern
+* [x] Blackboard Messaging Pattern
 * [ ] Log messaging pattern
 * [ ] Pipeline Messaging Pattern
 * [ ] PubSub, ReqRes, Pipeline variant that works with copies (poor mans mixed
@@ -126,6 +126,8 @@ The list is sorted by priority
       <https://www.qemu.org/docs/master/system/devices/ivshmem.html>
 * [ ] dmabuf support, see:
       <https://blaztinn.gitlab.io/post/dmabuf-texture-sharing/>
+* [ ] Support `memfd` for data-flow messaging patterns
+* [ ] Support `eventfd` for event-flow messaging patterns
 * [ ] Support dynamic sized types in a memory efficient manner
     * Buddy allocator for sender data-segment
     * Introduce runtime fixed-size types
@@ -160,7 +162,7 @@ The list is sorted by priority
 * [ ] WatchOS
 * [x] FreeBSD
 * [ ] FreeRTOS
-* [ ] QNX
+* [x] QNX
 * [ ] VxWorks
 * [ ] BareMetal
 * [ ] Sandbox Mode (only process internal communication)
