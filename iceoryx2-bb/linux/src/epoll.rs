@@ -12,12 +12,24 @@
 
 use std::time::Duration;
 
-use iceoryx2_bb_posix::{file_descriptor::FileDescriptor, signal::FetchableSignal};
+use iceoryx2_bb_log::fail;
+use iceoryx2_bb_posix::{
+    file_descriptor::FileDescriptor, signal::FetchableSignal, signal_set::FetchableSignalSet,
+};
 use iceoryx2_pal_os_api::linux;
-use iceoryx2_pal_posix::posix::{self, MemZeroedStruct};
+use iceoryx2_pal_posix::posix;
+
+use crate::signalfd::{SignalFd, SignalFdBuilder};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum EpollCreateError {}
+pub enum EpollCreateError {
+    PerProcessFileHandleLimitReached,
+    SystemWideFileHandleLimitReached,
+    InsufficientMemory,
+    SysCallReturnedInvalidFileDescriptor,
+    UnableToEnableSignalHandling,
+    UnknownError(i32),
+}
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EpollAttachmentError {}
@@ -51,39 +63,112 @@ impl Drop for EpollGuard<'_, '_> {
     }
 }
 
+#[derive(Debug)]
 pub struct EpollBuilder {
     has_close_on_exec_flag: bool,
-    signal_set: posix::sigset_t,
+    signal_set: FetchableSignalSet,
+    has_enabled_signal_handling: bool,
 }
 
 impl EpollBuilder {
     pub fn new() -> Self {
         Self {
             has_close_on_exec_flag: false,
-            signal_set: posix::sigset_t::new_zeroed(),
+            signal_set: FetchableSignalSet::new_empty(),
+            has_enabled_signal_handling: false,
         }
     }
 
-    pub fn set_close_on_exec_flag(mut self) -> Self {
-        self.has_close_on_exec_flag = true;
+    pub fn set_close_on_exec(mut self, value: bool) -> Self {
+        self.has_close_on_exec_flag = value;
         self
     }
 
     pub fn handle_signal(mut self, signal: FetchableSignal) -> Self {
-        todo!()
+        self.signal_set.add(signal);
+        self.has_enabled_signal_handling = true;
+        self
     }
 
     pub fn create(self) -> Result<Epoll, EpollCreateError> {
-        todo!()
+        let msg = "Unable to create epoll file descriptor";
+        let mut flags = 0;
+        if self.has_close_on_exec_flag {
+            flags |= linux::EPOLL_CLOEXEC;
+        }
+
+        let epoll_fd = unsafe { linux::epoll_create1(flags as _) };
+        if epoll_fd == -1 {
+            match posix::Errno::get() {
+                posix::Errno::EMFILE => {
+                    fail!(from self, with EpollCreateError::PerProcessFileHandleLimitReached,
+                        "{msg} since it would exceed the process limit for file descriptors.");
+                }
+                posix::Errno::ENFILE => {
+                    fail!(from self, with EpollCreateError::SystemWideFileHandleLimitReached,
+                        "{msg} since it would exceed the system limit for file descriptors.");
+                }
+                posix::Errno::ENOMEM => {
+                    fail!(from self, with EpollCreateError::InsufficientMemory,
+                        "{msg} due to insufficient memory.");
+                }
+                e => {
+                    fail!(from self, with EpollCreateError::UnknownError(e as i32),
+                        "{msg} since an unknown error occurred ({e:?}).");
+                }
+            }
+        }
+
+        let epoll_fd = match FileDescriptor::new(epoll_fd) {
+            Some(fd) => fd,
+            None => {
+                fail!(from self, with EpollCreateError::SysCallReturnedInvalidFileDescriptor,
+                        "{msg} since the epoll_create1() syscall returned an invalid file descriptor.");
+            }
+        };
+
+        if !self.has_enabled_signal_handling {
+            return Ok(Epoll {
+                epoll_fd,
+                signal_fd: None,
+            });
+        }
+
+        let origin = format!("{self:?}");
+        let signal_fd = match SignalFdBuilder::new(self.signal_set)
+            .set_close_on_exec(self.has_close_on_exec_flag)
+            .create_non_blocking()
+        {
+            Ok(signal_fd) => signal_fd,
+            Err(e) => {
+                fail!(from origin, with EpollCreateError::UnableToEnableSignalHandling,
+                        "{msg} since the signal fd, required for signal handling, could not be created ({e:?}).");
+            }
+        };
+
+        Ok(Epoll {
+            epoll_fd,
+            signal_fd: Some(signal_fd),
+        })
     }
 }
 
 pub struct Epoll {
     epoll_fd: FileDescriptor,
+    signal_fd: Option<SignalFd>,
 }
 
 impl Epoll {
     fn remove(&self, fd_value: i32) {
+        unsafe {
+            linux::epoll_ctl(
+                self.epoll_fd.native_handle(),
+                linux::EPOLL_CTL_DEL as _,
+                fd_value,
+                core::ptr::null_mut(),
+            )
+        };
+
         todo!()
     }
 

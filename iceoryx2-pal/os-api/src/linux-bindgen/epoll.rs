@@ -35,6 +35,10 @@ pub const EPOLL_EVENTS_EPOLLWAKEUP: EPOLL_EVENTS = crate::internal::EPOLL_EVENTS
 pub const EPOLL_EVENTS_EPOLLONESHOT: EPOLL_EVENTS = crate::internal::EPOLL_EVENTS_EPOLLONESHOT;
 pub const EPOLL_EVENTS_EPOLLET: EPOLL_EVENTS = crate::internal::EPOLL_EVENTS_EPOLLET;
 
+pub const EPOLL_CTL_ADD: u32 = crate::internal::EPOLL_CTL_ADD;
+pub const EPOLL_CTL_DEL: u32 = crate::internal::EPOLL_CTL_DEL;
+pub const EPOLL_CTL_MOD: u32 = crate::internal::EPOLL_CTL_MOD;
+
 pub unsafe fn epoll_create(size: posix::int) -> posix::int {
     crate::internal::epoll_create(size)
 }

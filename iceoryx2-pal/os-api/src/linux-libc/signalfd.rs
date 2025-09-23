@@ -16,8 +16,8 @@
 use iceoryx2_pal_posix::posix::{self, MemZeroedStruct};
 
 pub type signalfd_siginfo = libc::signalfd_siginfo;
-pub const SFD_NONBLOCK: u32 = libc::SFD_NONBLOCK;
-pub const SFD_CLOEXEC: u32 = libc::SFD_CLOEXEC;
+pub const SFD_NONBLOCK: u32 = libc::SFD_NONBLOCK as _;
+pub const SFD_CLOEXEC: u32 = libc::SFD_CLOEXEC as _;
 
 impl MemZeroedStruct for signalfd_siginfo {}
 

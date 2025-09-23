@@ -75,7 +75,7 @@ fn blocking_read_blocks() {
     let sut = SignalFdBuilder::new(signals).create_blocking().unwrap();
 
     std::thread::scope(|s| {
-        s.spawn(|| {
+        let t = s.spawn(|| {
             barrier.wait();
 
             let signal = sut.blocking_read().unwrap().unwrap();
@@ -89,10 +89,12 @@ fn blocking_read_blocks() {
         std::thread::sleep(core::time::Duration::from_millis(50));
         assert_that!(counter.load(Ordering::Relaxed), eq 0);
 
-        SignalHandler::call_and_fetch(|| {
-            Process::from_self()
-                .send_signal(FetchableSignal::UserDefined2.into())
-                .unwrap();
-        });
+        while !t.is_finished() {
+            SignalHandler::call_and_fetch(|| {
+                Process::from_self()
+                    .send_signal(FetchableSignal::UserDefined2.into())
+                    .unwrap();
+            });
+        }
     });
 }

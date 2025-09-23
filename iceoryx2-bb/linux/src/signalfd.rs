@@ -116,8 +116,8 @@ impl SignalFdBuilder {
 
     /// Defines if the underlying [`FileDescriptor`] shall be closed when the
     /// [`Process`](iceoryx2_bb_posix::process::Process) is forked.
-    pub fn set_close_on_exec(mut self) -> Self {
-        self.close_on_exec = true;
+    pub fn set_close_on_exec(mut self, value: bool) -> Self {
+        self.close_on_exec = value;
         self
     }
 

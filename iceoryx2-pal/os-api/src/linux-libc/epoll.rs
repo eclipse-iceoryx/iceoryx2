@@ -35,6 +35,10 @@ pub const EPOLL_EVENTS_EPOLLWAKEUP: EPOLL_EVENTS = libc::EPOLLWAKEUP;
 pub const EPOLL_EVENTS_EPOLLONESHOT: EPOLL_EVENTS = libc::EPOLLONESHOT;
 pub const EPOLL_EVENTS_EPOLLET: EPOLL_EVENTS = libc::EPOLLET;
 
+pub const EPOLL_CTL_ADD: u32 = libc::EPOLL_CTL_ADD as _;
+pub const EPOLL_CTL_DEL: u32 = libc::EPOLL_CTL_DEL as _;
+pub const EPOLL_CTL_MOD: u32 = libc::EPOLL_CTL_MOD as _;
+
 pub unsafe fn epoll_create(size: posix::int) -> posix::int {
     libc::epoll_create(size)
 }
