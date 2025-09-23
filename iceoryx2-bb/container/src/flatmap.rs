@@ -107,7 +107,7 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         &mut self,
         id: K,
         value: V,
-        eq_func: &mut F,
+        eq_func: &mut F, // TODO: can this be Fn?
     ) -> Result<(), FlatMapError>
     where
         F: FnMut(&K, &K) -> bool,
@@ -133,13 +133,21 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     pub(crate) unsafe fn get_impl(&self, id: &K) -> Option<V> {
         self.verify_init("get()");
 
-        self.get_ref_impl(id).cloned()
+        // TODO: change
+        self.get_ref_impl(id, &mut __internal_default_eq_comparison)
+            .cloned()
     }
 
-    pub(crate) unsafe fn get_ref_impl(&self, id: &K) -> Option<&V> {
+    pub(crate) unsafe fn get_ref_impl<F>(&self, id: &K, eq_func: &mut F) -> Option<&V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
         self.verify_init("get_ref()");
 
-        let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != *id);
+        let mut iter = self
+            .map
+            .iter_impl()
+            .skip_while(|kv| !eq_func(&kv.1.id, &id));
         iter.next().map(|kv| &kv.1.value)
     }
 
@@ -172,10 +180,13 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         self.map.is_full_impl()
     }
 
-    pub(crate) unsafe fn contains_impl(&self, id: &K) -> bool {
+    pub(crate) unsafe fn contains_impl<F>(&self, id: &K, eq_func: &mut F) -> bool
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
         self.verify_init("contains()");
 
-        self.get_ref_impl(id).is_some()
+        self.get_ref_impl(id, eq_func).is_some()
     }
 
     pub(crate) fn len_impl(&self) -> usize {
@@ -183,7 +194,6 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     }
 }
 
-// TODO: better name
 fn __internal_default_eq_comparison<T: Eq>(lhs: &T, rhs: &T) -> bool {
     lhs == rhs
 }
@@ -213,7 +223,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     //  * eq_func must be the same for every call to insert/get*/remove/contains for the
     //    [`FlatMap`] instance and from every process that uses the [`FlatMap`] instance
     //
-    unsafe fn __internal_insert<F>(
+    pub unsafe fn __internal_insert<F>(
         &mut self,
         id: K,
         value: V,
@@ -234,7 +244,8 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     /// Returns a reference to the value corresponding to the given key. If there is no such
     /// key, [`None`] is returned.
     pub fn get_ref(&self, id: &K) -> Option<&V> {
-        unsafe { self.get_ref_impl(id) }
+        // TODO
+        unsafe { self.get_ref_impl(id, &mut __internal_default_eq_comparison) }
     }
 
     /// Returns a mutable reference to the value corresponding to the given key. If there is
@@ -261,7 +272,23 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
 
     /// Returns true if the [`FlatMap`] contains the given key, otherwise false.
     pub fn contains(&self, id: &K) -> bool {
-        unsafe { self.contains_impl(id) }
+        unsafe { self.contains_impl(id, &mut __internal_default_eq_comparison) }
+    }
+
+    #[doc(hidden)]
+    // Returns true if the [`FlatMap`] contains the given key using a provided equality
+    // compare function, otherwise false.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`FlatMap`] instance and from every process that uses the [`FlatMap`] instance
+    //
+    pub unsafe fn __internal_contains<F>(&self, id: &K, eq_func: &mut F) -> bool
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.contains_impl(id, eq_func)
     }
 
     /// Returns the number of stored key-value pairs.
@@ -330,6 +357,7 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     //
     // # Safety
     //
+    //  * [`RelocatableFlatMap::init()`] must be called once before
     //  * eq_func must be the same for every call to insert/get*/remove/contains for the
     //    [`RelocatableFlatMap`] instance and from every process that uses the
     //    [`RelocatableFlatMap`] instance
@@ -365,7 +393,8 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn get_ref(&self, id: &K) -> Option<&V> {
-        self.get_ref_impl(id)
+        // TODO
+        self.get_ref_impl(id, &mut __internal_default_eq_comparison)
     }
 
     /// Returns a mutable reference to the value corresponding to the given key. If there is
@@ -406,7 +435,25 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn contains(&self, id: &K) -> bool {
-        self.contains_impl(id)
+        self.contains_impl(id, &mut __internal_default_eq_comparison)
+    }
+
+    #[doc(hidden)]
+    // Returns true if the [`RelocatableFlatMap`] contains the given key using a provided equality
+    // compare function, otherwise false.
+    //
+    // # Safety
+    //
+    //  * [`RelocatableFlatMap::init()`] must be called once before
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`RelocatableFlatMap`] instance and from every process that uses the
+    //    [`RelocatableFlatMap`] instance
+    //
+    pub unsafe fn __internal_contains<F>(&self, id: &K, eq_func: &mut F) -> bool
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.contains_impl(id, eq_func)
     }
 
     /// Returns the number of stored key-value pairs.
@@ -548,6 +595,22 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
     /// Returns true if the [`FixedSizeFlatMap`] contains the given key, otherwise false.
     pub fn contains(&self, id: &K) -> bool {
         unsafe { self.map.contains(id) }
+    }
+
+    #[doc(hidden)]
+    // Returns true if the [`FixedSizeFlatMap`] contains the given key using a provided equality
+    // compare function, otherwise false.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the [`FixedSizeFlatMap`]
+    //    instance and from every process that uses the [`FixedSizeFlatMap`] instance
+    //
+    pub unsafe fn __internal_contains<F>(&self, id: &K, eq_func: &mut F) -> bool
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.map.__internal_contains(id, eq_func)
     }
 
     /// Returns the number of stored key-value pairs.

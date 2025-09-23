@@ -244,16 +244,16 @@ mod flat_map {
         unsafe {
             let res = map.__internal_insert(key, -9, &mut cmp_for_foo);
             assert_that!(res, is_ok);
+            assert_that!(map.__internal_contains(&key, &mut cmp_for_foo), eq true);
         }
         assert_that!(map, len 1);
-        // assert_that!(map.contains(&key), eq true);
 
         unsafe {
             let res = map.__internal_insert(key, 19, &mut cmp_for_foo);
             assert_that!(res, is_err);
+            assert_that!(map.__internal_contains(&key, &mut cmp_for_foo), eq true);
         }
         assert_that!(map, len 1);
-        //assert_that!(map.contains(&key), eq true);
     }
 
     #[test]
@@ -264,7 +264,7 @@ mod flat_map {
                 unsafe { map.__internal_insert(Foo { a: i }, i, &mut cmp_for_foo) },
                 is_ok
             );
-            // assert_that!(map.contains(&i), eq true);
+            assert_that!(unsafe{map.__internal_contains(&Foo { a: i }, &mut cmp_for_foo)}, eq true);
         }
         assert_that!(map.is_full(), eq true);
         unsafe {
@@ -275,8 +275,8 @@ mod flat_map {
             );
             assert_that!(res, is_err);
             assert_that!(res.unwrap_err(), eq FlatMapError::IsFull);
+            assert_that!(map.__internal_contains(&Foo { a: CAPACITY as u32 }, &mut cmp_for_foo), eq false);
         }
-        // assert_that!(map.contains(&(CAPACITY as u32)), eq false);
         assert_that!(map, len CAPACITY);
     }
 }
