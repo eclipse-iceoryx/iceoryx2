@@ -164,10 +164,13 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
             .map(|flat_map_entry| &mut flat_map_entry.value)
     }
 
-    pub(crate) unsafe fn remove_impl(&mut self, id: &K) -> Option<V> {
+    pub(crate) unsafe fn remove_impl<F>(&mut self, id: &K, eq_func: &mut F) -> Option<V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
         self.verify_init("remove()");
 
-        let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != *id);
+        let mut iter = self.map.iter_impl().skip_while(|kv| !eq_func(&kv.1.id, id));
         if let Some(kv) = iter.next() {
             let key = kv.0;
             self.map.remove_impl(key).map(|e| e.value)
@@ -308,7 +311,24 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     /// Removes a key (`id`) from the [`FlatMap`], returning the Some(value) at the key if the key
     /// was previously in the map or [`None`] otherwise.
     pub fn remove(&mut self, id: &K) -> Option<V> {
-        unsafe { self.remove_impl(id) }
+        unsafe { self.remove_impl(id, &mut __internal_default_eq_comparison) }
+    }
+
+    #[doc(hidden)]
+    // Removes a key (`id`) from the [`FlatMap`] using a provided equality compare function,
+    // returning the Some(value) at the key if the key was previously in the map or [`None`]
+    // otherwise.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`FlatMap`] instance and from every process that uses the [`FlatMap`] instance
+    //
+    pub unsafe fn __internal_remove<F>(&mut self, id: &K, eq_func: &mut F) -> Option<V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.remove_impl(id, eq_func)
     }
 
     /// Returns true if the [`FlatMap`] is empty, otherwise false.
@@ -519,7 +539,26 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn remove(&mut self, id: &K) -> Option<V> {
-        self.remove_impl(id)
+        self.remove_impl(id, &mut __internal_default_eq_comparison)
+    }
+
+    #[doc(hidden)]
+    // Removes a key (`id`) from the [`RelocatableFlatMap`] using a provided equality compare
+    // function, returning the Some(value) at the key if the key was previously in the map or
+    // [`None`] otherwise.
+    //
+    // # Safety
+    //
+    //  * [`RelocatableFlatMap::init()`] must be called once before
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`RelocatableFlatMap`] instance and from every process that uses the
+    //    [`RelocatableFlatMap`] instance
+    //
+    pub unsafe fn __internal_remove<F>(&mut self, id: &K, eq_func: &mut F) -> Option<V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.remove_impl(id, eq_func)
     }
 
     /// Returns true if the map is empty, otherwise false.
@@ -734,6 +773,24 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
     /// if the key was previously in the map or [`None`] otherwise.
     pub fn remove(&mut self, id: &K) -> Option<V> {
         unsafe { self.map.remove(id) }
+    }
+
+    #[doc(hidden)]
+    // Removes a key (`id`) from the [`FixedSizeFlatMap`] using a provided equality compare
+    // function, returning the Some(value) at the key if the key was previously in the map or
+    // [`None`] otherwise.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`FixedSizeFlatMap`] instance and from every process that uses the
+    //    [`FixedSizeFlatMap`] instance
+    //
+    pub unsafe fn __internal_remove<F>(&mut self, id: &K, eq_func: &mut F) -> Option<V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.map.__internal_remove(id, eq_func)
     }
 
     /// Returns true if the [`FixedSizeFlatMap`] is empty, otherwise false.

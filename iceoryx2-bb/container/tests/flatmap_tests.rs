@@ -334,4 +334,58 @@ mod flat_map {
             assert_that!(res, is_none);
         }
     }
+
+    #[test]
+    fn remove_keys_from_flat_map_works_with_custom_cmp_func() {
+        let mut map = FixedSizeFlatMap::<Foo, u8, CAPACITY>::new();
+        assert_that!(map, is_empty);
+
+        let key_0 = Foo { a: 0 };
+        let key_1 = Foo { a: 1 };
+
+        unsafe {
+            assert_eq!(map.__internal_remove(&key_0, &mut cmp_for_foo), None);
+            assert_that!(map, is_empty);
+
+            assert_that!(map.__internal_insert(key_1, 1, &mut cmp_for_foo), is_ok);
+            assert_that!(map.__internal_contains(&key_1, &mut cmp_for_foo), eq true);
+
+            assert_eq!(map.__internal_remove(&key_0, &mut cmp_for_foo), None);
+            assert_that!(map, is_not_empty);
+            assert_eq!(map.__internal_remove(&key_1, &mut cmp_for_foo), Some(1));
+            assert_that!(map, is_empty);
+            assert_that!(map.__internal_contains(&key_1, &mut cmp_for_foo), eq false);
+        }
+    }
+
+    #[test]
+    fn remove_until_empty_and_reinsert_works_with_custom_cmp_func() {
+        let mut map = FixedSizeFlatMap::<Foo, u32, CAPACITY>::new();
+        // insert until full
+        for i in 0..CAPACITY as u32 {
+            assert_that!(
+                unsafe { map.__internal_insert(Foo { a: i }, i, &mut cmp_for_foo) },
+                is_ok
+            );
+        }
+        assert_that!(map.is_full(), eq true);
+
+        // remove until empty
+        for i in 0..CAPACITY as u32 {
+            assert_eq!(
+                unsafe { map.__internal_remove(&Foo { a: i }, &mut cmp_for_foo) },
+                Some(i)
+            );
+        }
+        assert_that!(map, is_empty);
+
+        // reinsert until full
+        for i in 0..CAPACITY as u32 {
+            assert_that!(
+                unsafe { map.__internal_insert(Foo { a: i }, i, &mut cmp_for_foo) },
+                is_ok
+            );
+        }
+        assert_that!(map.is_full(), eq true);
+    }
 }
