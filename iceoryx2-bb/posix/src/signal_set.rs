@@ -22,6 +22,11 @@ pub struct SignalSet {
 }
 
 impl SignalSet {
+    /// Returns a reference to the underlying native handle.
+    pub unsafe fn native_handle(&self) -> &posix::sigset_t {
+        &self.signal_set
+    }
+
     /// Creates a new [`SignalSet`] that contains all pending signals, e.g.
     /// signals that are blocked from delivery, for the calling
     /// [`Thread`](crate::posix::thread::Thread).

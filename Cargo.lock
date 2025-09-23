@@ -1333,6 +1333,7 @@ dependencies = [
 name = "iceoryx2-bb-linux"
 version = "0.7.0"
 dependencies = [
+ "iceoryx2-bb-log",
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-pal-os-api",

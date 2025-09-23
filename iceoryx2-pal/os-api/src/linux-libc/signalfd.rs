@@ -13,9 +13,13 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use iceoryx2_pal_posix::posix;
+use iceoryx2_pal_posix::posix::{self, MemZeroedStruct};
 
 pub type signalfd_siginfo = libc::signalfd_siginfo;
+pub const SFD_NONBLOCK: u32 = libc::SFD_NONBLOCK;
+pub const SFD_CLOEXEC: u32 = libc::SFD_CLOEXEC;
+
+impl MemZeroedStruct for signalfd_siginfo {}
 
 pub unsafe fn signalfd(
     fd: posix::int,

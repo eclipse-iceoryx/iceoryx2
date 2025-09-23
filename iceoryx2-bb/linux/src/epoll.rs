@@ -56,13 +56,8 @@ pub struct EpollBuilder {
     signal_set: posix::sigset_t,
 }
 
-// POSIX add signal set
-//   sigaddset() - add new signal
-//   sigdelset() - delete attached signal
-//   sigismember() - check if signal is contained in sigset
-//   sigfillset() - initialise signal set, every signal is included
-//   sigemptyset() - initialises signal set, so thet every signal is excluded
-//   sigpending() - creates a signal set, contains signals that are blocked from delivery
+// POSIX
+//   * FetchableSignalSet
 //
 // LINUX add signalfd
 //   signalfd() - creates signalfd
