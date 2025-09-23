@@ -56,13 +56,6 @@ pub struct EpollBuilder {
     signal_set: posix::sigset_t,
 }
 
-// POSIX
-//   * FetchableSignalSet
-//
-// LINUX add signalfd
-//   signalfd() - creates signalfd
-//   close() - remove
-//   read() - read signal -> use struct signalfd_siginfo
 impl EpollBuilder {
     pub fn new() -> Self {
         Self {

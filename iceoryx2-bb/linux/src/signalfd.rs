@@ -15,7 +15,7 @@ use std::fmt::Debug;
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptor, process::ProcessId, signal::FetchableSignal,
-    signal_set::SignalSet, user::Uid,
+    signal_set::FetchableSignalSet, user::Uid,
 };
 use iceoryx2_pal_os_api::linux;
 use iceoryx2_pal_posix::posix::{self, MemZeroedStruct};
@@ -41,12 +41,12 @@ pub enum SignalFdReadError {
 
 #[derive(Debug)]
 pub struct SignalFdBuilder {
-    signal_set: SignalSet,
+    signal_set: FetchableSignalSet,
     close_on_exec: bool,
 }
 
 impl SignalFdBuilder {
-    pub fn new(signal_set: SignalSet) -> Self {
+    pub fn new(signal_set: FetchableSignalSet) -> Self {
         Self {
             signal_set,
             close_on_exec: false,
