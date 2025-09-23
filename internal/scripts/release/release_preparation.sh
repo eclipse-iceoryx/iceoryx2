@@ -210,8 +210,8 @@ function show_default_selector() {
 }
 
 function show_completion() {
-    echo -e ${C_GREEN}DONE!${C_OFF} Continue to next step with 'enter'
-    read # blocks until enter is pressed
+    # NOTE: read does not support to use variables for color codes
+    read -p $'\033[32mDONE!\033[0m Continue to next step with \'enter\'' # blocks until enter is pressed
 }
 
 if [[ ${ICEORYX2_RELEASE_VERSION_SET} == false ]];then
