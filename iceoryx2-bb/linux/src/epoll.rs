@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::mem::MaybeUninit;
 use std::time::Duration;
 
 use iceoryx2_bb_log::fail;
@@ -33,6 +34,12 @@ pub enum EpollCreateError {
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EpollAttachmentError {}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum EpollWaitError {
+    Interrupt,
+    UnknownError(i32),
+}
 
 #[repr(u32)]
 pub enum EventType {
@@ -153,6 +160,11 @@ impl EpollBuilder {
     }
 }
 
+pub struct EpollEvent<'a> {
+    data: &'a linux::epoll_event,
+}
+
+#[derive(Debug)]
 pub struct Epoll {
     epoll_fd: FileDescriptor,
     signal_fd: Option<SignalFd>,
@@ -168,29 +180,77 @@ impl Epoll {
                 core::ptr::null_mut(),
             )
         };
-
-        todo!()
     }
 
     pub fn add<'epoll, 'fd>(
         &'epoll mut self,
         fd: &'fd FileDescriptor,
     ) -> EpollAttachmentBuilder<'epoll, 'fd> {
-        todo!()
+        EpollAttachmentBuilder { epoll: self, fd }
     }
 
-    pub fn try_wait(&self) {
-        //epoll_pwait2
-        //when signal was specified then use sigwaitinfo()
-        todo!()
+    pub fn try_wait<F: FnMut(EpollEvent)>(
+        &self,
+        event_call: &mut F,
+    ) -> Result<usize, EpollWaitError> {
+        self.wait_impl(0, event_call)
     }
 
-    pub fn timed_wait(&self, timeout: Duration) {
-        todo!()
+    pub fn timed_wait<F: FnMut(EpollEvent)>(
+        &self,
+        event_call: &mut F,
+        timeout: Duration,
+    ) -> Result<usize, EpollWaitError> {
+        self.wait_impl(timeout.as_millis().max(i32::MAX as _) as i32, event_call)
     }
 
-    pub fn blocking_wait(&self) {
-        todo!()
+    pub fn blocking_wait<F: FnMut(EpollEvent)>(
+        &self,
+        event_call: &mut F,
+    ) -> Result<usize, EpollWaitError> {
+        self.wait_impl(-1, event_call)
+    }
+
+    fn wait_impl<F: FnMut(EpollEvent)>(
+        &self,
+        timeout: posix::int,
+        event_call: &mut F,
+    ) -> Result<usize, EpollWaitError> {
+        let msg = "Unable to wait on epoll";
+        const MAX_EVENTS: usize = 512;
+        let mut events: [MaybeUninit<linux::epoll_event>; 512] = [MaybeUninit::uninit(); 512];
+
+        let number_of_fds = unsafe {
+            linux::epoll_wait(
+                self.epoll_fd.native_handle(),
+                events.as_mut_ptr().cast(),
+                MAX_EVENTS as _,
+                timeout,
+            )
+        };
+
+        if number_of_fds == -1 {
+            match posix::Errno::get() {
+                posix::Errno::EINTR => {
+                    fail!(from self, with EpollWaitError::Interrupt,
+                        "{msg} with a timeout of {timeout}ms since an interrupt signal was raised."
+                    );
+                }
+                e => {
+                    fail!(from self, with EpollWaitError::UnknownError(e as i32),
+                        "{msg} with a timeout of {timeout}ms due to an unknown failure ({e:?})."
+                    );
+                }
+            }
+        }
+
+        for i in 0..number_of_fds {
+            event_call(EpollEvent {
+                data: unsafe { events[i as usize].assume_init_ref() },
+            });
+        }
+
+        Ok(number_of_fds as usize)
     }
 }
 
