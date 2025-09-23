@@ -10,10 +10,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use enum_iterator::all;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_pal_posix::posix::{self, Errno, MemZeroedStruct};
 
-use crate::signal::Signal;
+use crate::signal::{FetchableSignal, Signal};
 
 /// Represents a posix signal set.
 #[derive(Debug)]
@@ -61,7 +62,7 @@ impl SignalSet {
         new_self
     }
 
-    /// Initializes a [`SignalSet`] so that every signal is included.
+    /// Initializes a [`SignalSet`] so that every [`Signal`] is included.
     pub fn new_filled() -> Self {
         let mut new_self = SignalSet {
             signal_set: MemZeroedStruct::new_zeroed(),
@@ -111,5 +112,61 @@ impl SignalSet {
                 "This should never happen! Unable to remove the signal {signal:?} from the signal set ({:?}).",
                 Errno::get());
         }
+    }
+}
+
+/// Represents a posix [`SignalSet`] that contains only [`FetchableSignals`].
+#[derive(Debug)]
+pub struct FetchableSignalSet {
+    signal_set: SignalSet,
+}
+
+impl FetchableSignalSet {
+    /// Returns a reference to the underlying native handle.
+    pub unsafe fn native_handle(&self) -> &posix::sigset_t {
+        self.signal_set.native_handle()
+    }
+
+    /// Creates a new [`SignalSet`] that contains all pending signals, e.g.
+    /// signals that are blocked from delivery, for the calling
+    /// [`Thread`](crate::posix::thread::Thread).
+    pub fn from_pending() -> Self {
+        Self {
+            signal_set: SignalSet::from_pending(),
+        }
+    }
+
+    /// Initializes an empty [`SignalSet`].
+    pub fn new_empty() -> Self {
+        Self {
+            signal_set: SignalSet::new_empty(),
+        }
+    }
+
+    /// Initializes a [`SignalSet`] so that every [`FetchableSignal`] is included.
+    pub fn new_filled() -> Self {
+        let mut new_self = Self::new_empty();
+
+        for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
+            new_self.add(signal)
+        }
+
+        new_self
+    }
+
+    /// Returns [`true`] if the provided [`Signal`] is contained in the
+    /// [`SignalSet`], otherwise [`false`].
+    pub fn contains(&self, signal: FetchableSignal) -> bool {
+        self.signal_set.contains(signal.into())
+    }
+
+    /// Adds a [`Signal`] to the [`SignalSet`].
+    pub fn add(&mut self, signal: FetchableSignal) {
+        self.signal_set.add(signal.into())
+    }
+
+    /// Removes a [`Signal`] from the [`SignalSet`]
+    pub fn remove(&mut self, signal: FetchableSignal) {
+        self.signal_set.remove(signal.into())
     }
 }
