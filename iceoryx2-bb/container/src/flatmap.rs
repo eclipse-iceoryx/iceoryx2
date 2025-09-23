@@ -107,10 +107,10 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         &mut self,
         id: K,
         value: V,
-        eq_func: &mut F, // TODO: can this be Fn?
+        eq_func: &mut F,
     ) -> Result<(), FlatMapError>
     where
-        F: FnMut(&K, &K) -> bool,
+        F: FnMut(&K, &K) -> bool, // TODO: can this be Fn?
     {
         self.verify_init("insert()");
 
@@ -130,12 +130,13 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         Ok(())
     }
 
-    pub(crate) unsafe fn get_impl(&self, id: &K) -> Option<V> {
+    pub(crate) unsafe fn get_impl<F>(&self, id: &K, eq_func: &mut F) -> Option<V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
         self.verify_init("get()");
 
-        // TODO: change
-        self.get_ref_impl(id, &mut __internal_default_eq_comparison)
-            .cloned()
+        self.get_ref_impl(id, eq_func).cloned()
     }
 
     pub(crate) unsafe fn get_ref_impl<F>(&self, id: &K, eq_func: &mut F) -> Option<&V>
@@ -151,10 +152,13 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
         iter.next().map(|kv| &kv.1.value)
     }
 
-    pub(crate) unsafe fn get_mut_ref_impl(&mut self, id: &K) -> Option<&mut V> {
+    pub(crate) unsafe fn get_mut_ref_impl<F>(&mut self, id: &K, eq_func: &mut F) -> Option<&mut V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
         self.verify_init("get_mut_ref()");
 
-        let slot_map_entry = self.map.iter_impl().find(|kv| kv.1.id == *id)?;
+        let slot_map_entry = self.map.iter_impl().find(|kv| eq_func(&kv.1.id, id))?;
         self.map
             .get_mut_impl(slot_map_entry.0)
             .map(|flat_map_entry| &mut flat_map_entry.value)
@@ -238,20 +242,67 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     /// Returns a copy of the value corresponding to the given key. If there is no such key,
     /// [`None`] is returned.
     pub fn get(&self, id: &K) -> Option<V> {
-        unsafe { self.get_impl(id) }
+        unsafe { self.get_impl(id, &mut __internal_default_eq_comparison) }
+    }
+
+    #[doc(hidden)]
+    // Returns a copy of the value corresponding to the given key using a provided equality compare
+    // function. If there is no such key, [`None`] is returned.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`FlatMap`] instance and from every process that uses the [`FlatMap`] instance
+    //
+    pub unsafe fn __internal_get<F>(&self, id: &K, eq_func: &mut F) -> Option<V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.get_impl(id, eq_func)
     }
 
     /// Returns a reference to the value corresponding to the given key. If there is no such
     /// key, [`None`] is returned.
     pub fn get_ref(&self, id: &K) -> Option<&V> {
-        // TODO
         unsafe { self.get_ref_impl(id, &mut __internal_default_eq_comparison) }
+    }
+
+    #[doc(hidden)]
+    // Returns a reference to the value corresponding to the given key using a provided equality
+    // compare function. If there is no such key, [`None`] is returned.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`FlatMap`] instance and from every process that uses the [`FlatMap`] instance
+    //
+    pub unsafe fn __internal_get_ref<F>(&self, id: &K, eq_func: &mut F) -> Option<&V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.get_ref_impl(id, eq_func)
     }
 
     /// Returns a mutable reference to the value corresponding to the given key. If there is
     /// no such key, [`None`] is returned.
     pub fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
-        unsafe { self.get_mut_ref_impl(id) }
+        unsafe { self.get_mut_ref_impl(id, &mut __internal_default_eq_comparison) }
+    }
+
+    #[doc(hidden)]
+    // Returns a mutable reference to the value corresponding to the given key using a provided
+    // equality compare function. If there is no such key, [`None`] is returned.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`FlatMap`] instance and from every process that uses the [`FlatMap`] instance
+    //
+    pub unsafe fn __internal_get_mut_ref<F>(&mut self, id: &K, eq_func: &mut F) -> Option<&mut V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.get_mut_ref_impl(id, eq_func)
     }
 
     /// Removes a key (`id`) from the [`FlatMap`], returning the Some(value) at the key if the key
@@ -382,7 +433,25 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn get(&self, id: &K) -> Option<V> {
-        self.get_impl(id)
+        self.get_impl(id, &mut __internal_default_eq_comparison)
+    }
+
+    #[doc(hidden)]
+    // Returns a copy of the value corresponding to the given key using a provided equality compare
+    // function. If there is no such key, [`None`] is returned.
+    //
+    // # Safety
+    //
+    //  * [`RelocatableFlatMap::init()`] must be called once before
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`RelocatableFlatMap`] instance and from every process that uses the
+    //    [`RelocatableFlatMap`] instance
+    //
+    pub unsafe fn __internal_get<F>(&self, id: &K, eq_func: &mut F) -> Option<V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.get_impl(id, eq_func)
     }
 
     /// Returns a reference to the value corresponding to the given key. If there is no such
@@ -393,8 +462,25 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn get_ref(&self, id: &K) -> Option<&V> {
-        // TODO
         self.get_ref_impl(id, &mut __internal_default_eq_comparison)
+    }
+
+    #[doc(hidden)]
+    // Returns a reference to the value corresponding to the given key using a provided equality
+    // compare function. If there is no such key, [`None`] is returned.
+    //
+    // # Safety
+    //
+    //  * [`RelocatableFlatMap::init()`] must be called once before
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`RelocatableFlatMap`] instance and from every process that uses the [`RelocatableFlatMap`]
+    //    instance
+    //
+    pub unsafe fn __internal_get_ref<F>(&self, id: &K, eq_func: &mut F) -> Option<&V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.get_ref_impl(id, eq_func)
     }
 
     /// Returns a mutable reference to the value corresponding to the given key. If there is
@@ -405,7 +491,25 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
-        self.get_mut_ref_impl(id)
+        self.get_mut_ref_impl(id, &mut __internal_default_eq_comparison)
+    }
+
+    #[doc(hidden)]
+    // Returns a mutable reference to the value corresponding to the given key using a provided
+    // equality compare function. If there is no such key, [`None`] is returned.
+    //
+    // # Safety
+    //
+    //  * [`RelocatableFlatMap::init()`] must be called once before
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`RelocatableFlatMap`] instance and from every process that uses the
+    //    [`RelocatableFlatMap`] instance
+    //
+    pub unsafe fn __internal_get_mut_ref<F>(&mut self, id: &K, eq_func: &mut F) -> Option<&mut V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.get_mut_ref_impl(id, eq_func)
     }
 
     /// Removes a key (`id`) from the map, returning the Some(value) at the key if the key
@@ -564,16 +668,66 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
         unsafe { self.map.get(id) }
     }
 
+    #[doc(hidden)]
+    // Returns a copy of the value corresponding to the given key using a provided equality compare
+    // function. If there is no such key, [`None`] is returned.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the [`FixedSizeFlatMap`]
+    //    instance and from every process that uses the [`FixedSizeFlatMap`] instance
+    //
+    pub unsafe fn __internal_get<F>(&self, id: &K, eq_func: &mut F) -> Option<V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.map.__internal_get(id, eq_func)
+    }
+
     /// Returns a reference to the value corresponding to the given key. If there is no such
     /// key, [`None`] is returned.
     pub fn get_ref(&self, id: &K) -> Option<&V> {
         unsafe { self.map.get_ref(id) }
     }
 
+    #[doc(hidden)]
+    // Returns a reference to the value corresponding to the given key using a provided equality
+    // compare function. If there is no such key, [`None`] is returned.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`FixedSizeFlatMap`] instance and from every process that uses the [`FixedSizeFlatMap`]
+    //    instance
+    //
+    pub unsafe fn __internal_get_ref<F>(&self, id: &K, eq_func: &mut F) -> Option<&V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.map.__internal_get_ref(id, eq_func)
+    }
+
     /// Returns a mutable reference to the value corresponding to the given key. If there is
     /// no such key, [`None`] is returned.
     pub fn get_mut_ref(&mut self, id: &K) -> Option<&mut V> {
         unsafe { self.map.get_mut_ref(id) }
+    }
+
+    #[doc(hidden)]
+    // Returns a mutable reference to the value corresponding to the given key using a provided
+    // equality compare function. If there is no such key, [`None`] is returned.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`FixedSizeFlatMap`] instance and from every process that uses the
+    //    [`FixedSizeFlatMap`] instance
+    //
+    pub unsafe fn __internal_get_mut_ref<F>(&mut self, id: &K, eq_func: &mut F) -> Option<&mut V>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.map.__internal_get_mut_ref(id, eq_func)
     }
 
     /// Removes a key (`id`) from the [`FixedSizeFlatMap`], returning the Some(value) at the key

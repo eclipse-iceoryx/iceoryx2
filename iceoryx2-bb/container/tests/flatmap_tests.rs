@@ -279,4 +279,59 @@ mod flat_map {
         }
         assert_that!(map, len CAPACITY);
     }
+
+    #[test]
+    fn get_value_from_flat_map_works_with_custom_cmp_func() {
+        let mut map = FixedSizeFlatMap::<Foo, u8, CAPACITY>::new();
+        let key = Foo { a: 34 };
+
+        unsafe {
+            assert_that!(map.__internal_insert(key, 40, &mut cmp_for_foo), is_ok);
+
+            let res = map.__internal_get(&key, &mut cmp_for_foo);
+            assert_that!(res, is_some);
+            assert_that!(res.unwrap(), eq 40);
+
+            let res = map.__internal_get(&Foo { a: 35 }, &mut cmp_for_foo);
+            assert_that!(res, is_none);
+        }
+    }
+
+    #[test]
+    fn get_ref_value_from_flat_map_works_with_custom_cmp_func() {
+        let mut map = FixedSizeFlatMap::<Foo, u8, CAPACITY>::new();
+        let key = Foo { a: 34 };
+
+        unsafe {
+            assert_that!(map.__internal_insert(key, 40, &mut cmp_for_foo), is_ok);
+
+            let res = map.__internal_get_ref(&key, &mut cmp_for_foo);
+            assert_that!(res, is_some);
+            assert_that!(*res.unwrap(), eq 40);
+
+            let res = map.__internal_get_ref(&Foo { a: 35 }, &mut cmp_for_foo);
+            assert_that!(res, is_none);
+        }
+    }
+
+    #[test]
+    fn get_mut_ref_value_from_flat_map_works_with_custom_cmp_func() {
+        let mut map = FixedSizeFlatMap::<Foo, u8, CAPACITY>::new();
+        let key = Foo { a: 34 };
+
+        unsafe {
+            assert_that!(map.__internal_insert(key, 40, &mut cmp_for_foo), is_ok);
+
+            let res = map.__internal_get_mut_ref(&key, &mut cmp_for_foo);
+            assert_that!(res, is_some);
+
+            *res.unwrap() = 41;
+            let res = map.__internal_get_ref(&key, &mut cmp_for_foo);
+            assert_that!(res, is_some);
+            assert_that!(*res.unwrap(), eq 41);
+
+            let res = map.__internal_get_mut_ref(&Foo { a: 35 }, &mut cmp_for_foo);
+            assert_that!(res, is_none);
+        }
+    }
 }
