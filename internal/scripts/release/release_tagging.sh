@@ -61,7 +61,7 @@ print_publish_release() {
     echo -e "* Push release branch"
     echo -e "  ${C_YELLOW}git push -u origin release_${NEW_MAJOR}.${NEW_MINOR}${C_OFF}"
     echo -e "* Push tag"
-    echo -e "  ${C_YELLOW}git push origin --tag v${NEW_VERSION}${C_OFF}"
+    echo -e "  ${C_YELLOW}git push origin tag v${NEW_VERSION}${C_OFF}"
 
     echo -e "* Create release on github"
     echo -e "  * Go to https://github.com/eclipse-iceoryx/iceoryx2/releases/tag/v${NEW_VERSION}${C_OFF}"
