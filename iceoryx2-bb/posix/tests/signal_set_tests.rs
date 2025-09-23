@@ -12,7 +12,8 @@
 
 use enum_iterator::all;
 use iceoryx2_bb_posix::{
-    signal::{FetchableSignal, Signal},
+    process::Process,
+    signal::{FetchableSignal, Signal, SignalHandler},
     signal_set::{FetchableSignalSet, SignalSet},
 };
 use iceoryx2_bb_testing::assert_that;
@@ -58,7 +59,7 @@ fn removing_signals_works() {
 }
 
 #[test]
-fn create_from_pending_signals_works() {
+fn create_from_pending_signals_with_no_pending_signals_is_empty() {
     let sut = SignalSet::from_pending();
 
     for signal in all::<Signal>().collect::<Vec<Signal>>() {

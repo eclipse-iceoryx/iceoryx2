@@ -60,13 +60,13 @@ impl SignalFdBuilder {
 
     pub fn create_non_blocking(self) -> Result<SignalFd, SignalFdCreationError> {
         Ok(SignalFd {
-            file_descriptor: self.create(false)?,
+            file_descriptor: self.create(true)?,
         })
     }
 
     pub fn create_blocking(self) -> Result<BlockingSignalFd, SignalFdCreationError> {
         Ok(BlockingSignalFd {
-            file_descriptor: self.create(true)?,
+            file_descriptor: self.create(false)?,
         })
     }
 
@@ -132,11 +132,11 @@ impl SignalInfo {
         (self.signal_info.ssi_signo as i32).into()
     }
 
-    pub fn signal_origin_pid(&self) -> ProcessId {
+    pub fn origin_pid(&self) -> ProcessId {
         ProcessId::new(self.signal_info.ssi_pid as _)
     }
 
-    pub fn signal_origin_uid(&self) -> Uid {
+    pub fn origin_uid(&self) -> Uid {
         Uid::new_from_native(self.signal_info.ssi_uid)
     }
 }
