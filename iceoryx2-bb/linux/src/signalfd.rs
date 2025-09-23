@@ -74,7 +74,7 @@ impl SignalFdBuilder {
         let msg = "Unable to create SignalFd";
         let mut flags = 0;
         if self.close_on_exec {
-            flags |= linux::SFD_NONBLOCK;
+            flags |= linux::SFD_CLOEXEC;
         }
 
         if is_non_blocking {
