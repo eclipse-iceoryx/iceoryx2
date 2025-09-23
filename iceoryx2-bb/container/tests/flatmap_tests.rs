@@ -225,4 +225,58 @@ mod flat_map {
         let mut sut = unsafe { RelocatableFlatMap::<u8, u8>::new_uninit(CAPACITY) };
         unsafe { sut.remove(&1) };
     }
+
+    // tests for passing custom compare function
+    #[derive(PartialEq, Eq, Copy, Clone)]
+    struct Foo {
+        a: u32,
+    }
+
+    fn cmp_for_foo(lhs: &Foo, rhs: &Foo) -> bool {
+        lhs.a == rhs.a
+    }
+
+    #[test]
+    fn insert_the_same_key_fails_with_custom_cmp_func() {
+        let mut map = FixedSizeFlatMap::<Foo, i16, CAPACITY>::new();
+        let key = Foo { a: 2023 };
+
+        unsafe {
+            let res = map.__internal_insert(key, -9, &mut cmp_for_foo);
+            assert_that!(res, is_ok);
+        }
+        assert_that!(map, len 1);
+        // assert_that!(map.contains(&key), eq true);
+
+        unsafe {
+            let res = map.__internal_insert(key, 19, &mut cmp_for_foo);
+            assert_that!(res, is_err);
+        }
+        assert_that!(map, len 1);
+        //assert_that!(map.contains(&key), eq true);
+    }
+
+    #[test]
+    fn insert_until_full_works_with_custom_cmp_func() {
+        let mut map = FixedSizeFlatMap::<Foo, u32, CAPACITY>::new();
+        for i in 0..CAPACITY as u32 {
+            assert_that!(
+                unsafe { map.__internal_insert(Foo { a: i }, i, &mut cmp_for_foo) },
+                is_ok
+            );
+            // assert_that!(map.contains(&i), eq true);
+        }
+        assert_that!(map.is_full(), eq true);
+        unsafe {
+            let res = map.__internal_insert(
+                Foo { a: CAPACITY as u32 },
+                CAPACITY as u32,
+                &mut cmp_for_foo,
+            );
+            assert_that!(res, is_err);
+            assert_that!(res.unwrap_err(), eq FlatMapError::IsFull);
+        }
+        // assert_that!(map.contains(&(CAPACITY as u32)), eq false);
+        assert_that!(map, len CAPACITY);
+    }
 }

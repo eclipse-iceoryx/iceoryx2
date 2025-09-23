@@ -103,13 +103,24 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
             );
     }
 
-    pub(crate) unsafe fn insert_impl(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
+    pub(crate) unsafe fn insert_impl<F>(
+        &mut self,
+        id: K,
+        value: V,
+        eq_func: &mut F,
+    ) -> Result<(), FlatMapError>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
         self.verify_init("insert()");
 
         let msg = "Unable to insert key-value pair into FlatMap";
         let origin = "MetaFlatMap::insert_impl()";
 
-        let mut iter = self.map.iter_impl().skip_while(|kv| kv.1.id != id);
+        let mut iter = self
+            .map
+            .iter_impl()
+            .skip_while(|kv| !eq_func(&kv.1.id, &id));
         if iter.next().is_some() {
             fail!(from origin, with FlatMapError::KeyAlreadyExists, "{msg} since the passed key already exists.");
         }
@@ -172,6 +183,11 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
     }
 }
 
+// TODO: better name
+fn __internal_default_eq_comparison<T: Eq>(lhs: &T, rhs: &T) -> bool {
+    lhs == rhs
+}
+
 impl<K: Eq, V: Clone> FlatMap<K, V> {
     /// Creates a new runtime-fixed size [`FlatMap`] on the heap with the given capacity.
     pub fn new(capacity: usize) -> Self {
@@ -184,7 +200,29 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     /// Inserts a new key-value pair into the [`FlatMap`]. On success, the method returns [`Ok`],
     /// otherwise a [`FlatMapError`] describing the failure.
     pub fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
-        unsafe { self.insert_impl(id, value) }
+        unsafe { self.insert_impl(id, value, &mut __internal_default_eq_comparison) }
+    }
+
+    #[doc(hidden)]
+    // Inserts a new key-value pair into the [`FlatMap`] using a provided equality compare
+    // function. On success, the method returns [`Ok`], otherwise a [`FlatMapError`] describing
+    // the failure.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`FlatMap`] instance and from every process that uses the [`FlatMap`] instance
+    //
+    unsafe fn __internal_insert<F>(
+        &mut self,
+        id: K,
+        value: V,
+        eq_func: &mut F,
+    ) -> Result<(), FlatMapError>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.insert_impl(id, value, eq_func)
     }
 
     /// Returns a copy of the value corresponding to the given key. If there is no such key,
@@ -282,7 +320,30 @@ impl<K: Eq, V: Clone> RelocatableFlatMap<K, V> {
     ///  * [`RelocatableFlatMap::init()`] must be called once before
     ///
     pub unsafe fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
-        self.insert_impl(id, value)
+        self.insert_impl(id, value, &mut __internal_default_eq_comparison)
+    }
+
+    #[doc(hidden)]
+    // Inserts a new key-value pair into the [`RelocatableFlatMap`] using a provided equality
+    // compare function. On success, the method returns [`Ok`], otherwise a [`FlatMapError`]
+    // describing the failure.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the
+    //    [`RelocatableFlatMap`] instance and from every process that uses the
+    //    [`RelocatableFlatMap`] instance
+    //
+    pub unsafe fn __internal_insert<F>(
+        &mut self,
+        id: K,
+        value: V,
+        eq_func: &mut F,
+    ) -> Result<(), FlatMapError>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.insert_impl(id, value, eq_func)
     }
 
     /// Returns a copy of the value corresponding to the given key. If there is no such key,
@@ -426,6 +487,28 @@ impl<K: Eq, V: Clone, const CAPACITY: usize> FixedSizeFlatMap<K, V, CAPACITY> {
     /// otherwise a [`FlatMapError`] describing the failure.
     pub fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
         unsafe { self.map.insert(id, value) }
+    }
+
+    #[doc(hidden)]
+    // Inserts a new key-value pair into the [`FixedSizeFlatMap`] using a provided equality compare
+    // function. On success, the method returns [`Ok`], otherwise a [`FlatMapError`] describing the
+    // failure.
+    //
+    // # Safety
+    //
+    //  * eq_func must be the same for every call to insert/get*/remove/contains for the [`FixedSizeFlatMap`]
+    //    instance and from every process that uses the [`FixedSizeFlatMap`] instance
+    //
+    pub unsafe fn __internal_insert<F>(
+        &mut self,
+        id: K,
+        value: V,
+        eq_func: &mut F,
+    ) -> Result<(), FlatMapError>
+    where
+        F: FnMut(&K, &K) -> bool,
+    {
+        self.map.__internal_insert(id, value, eq_func)
     }
 
     /// Returns a copy of the value corresponding to the given key. If there is no such key,
