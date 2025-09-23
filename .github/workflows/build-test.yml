@@ -691,7 +691,7 @@ jobs:
           toolchain: nightly
 
       - name: Cargo Publish Dry-Run
-        run: ./internal/scripts/crates_io_publish_script.sh dry-run
+        run: ./internal/scripts/release/crates_io_publish_script.sh dry-run
 
   grcov:
     needs: [preflight-check, static-code-analysis]

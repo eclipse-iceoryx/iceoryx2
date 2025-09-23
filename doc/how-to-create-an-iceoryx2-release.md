@@ -2,9 +2,9 @@
 
 There are three scripts to perform the iceoryx2 release
 
-* internal/scripts/release_preparation.sh
-* internal/scripts/release_tagging.sh
-* internal/scripts/release_publish.sh
+* internal/scripts/release/release_preparation.sh
+* internal/scripts/release/release_tagging.sh
+* internal/scripts/release/release_publish.sh
 
 Each script has a `howto` parameter which prints the steps that are performed.
 

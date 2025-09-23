@@ -37,7 +37,7 @@ print_step() {
 }
 
 print_preparations_hint() {
-    echo -e "* Run internal/scripts/release_preparation.sh"
+    echo -e "* Run internal/scripts/release/release_preparation.sh"
     echo -e "* Test on QNX and Yocto"
     echo -e "* Port reference system to new iceoryx2 version"
     echo -e "* Check if new features are marked as done"
@@ -69,7 +69,7 @@ print_publish_release() {
     echo -e "  * Select correct 'Previous tag'"
     echo -e "  * Add the content from 'doc/release-notes/iceoryx2-v.${NEW_VERSION}md', beginning at '[Full Changelog]', to 'Release notes'"
 
-    echo -e "* For the publishing, the '\$GIT_ROOT$/internal/scripts/release_publish.sh' script can be used!"
+    echo -e "* For the publishing, the '\$GIT_ROOT$/internal/scripts/release/release_publish.sh' script can be used!"
 }
 
 print_howto() {
@@ -154,7 +154,7 @@ print_step "Sanity checks"
 echo -e "Shall I run the sanity checks for the crates.io release?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    internal/scripts/crates_io_publish_script.sh sanity-checks
+    internal/scripts/release/crates_io_publish_script.sh sanity-checks
 
     show_completion
 fi
