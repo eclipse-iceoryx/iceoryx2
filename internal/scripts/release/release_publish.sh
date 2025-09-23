@@ -37,14 +37,14 @@ print_step() {
 }
 
 print_preparations_hint() {
-    echo -e "* Run internal/scripts/release_preparation.sh"
-    echo -e "* Run internal/scripts/release_tagging.sh"
+    echo -e "* Run internal/scripts/release/release_preparation.sh"
+    echo -e "* Run internal/scripts/release/release_tagging.sh"
 }
 
 print_sanity_checks() {
     echo -e "* Check for new crates to be published"
     echo -e "* Check for cyclic dependencies"
-    echo -e "* Run 'internal/scripts/crates_io_publish_script.sh sanity-checks'"
+    echo -e "* Run 'internal/scripts/release/crates_io_publish_script.sh sanity-checks'"
 }
 
 print_publish_crates_io() {
@@ -52,7 +52,7 @@ print_publish_crates_io() {
     echo -e "* The crates must be published in the correct order"
     echo -e "  * When calling 'cargo publish -p crate-name', it's dependencies must already be published"
     echo -e "* If the crates.io publish script fails before finishing, a new release must be done"
-    echo -e "* Run 'internal/scripts/crates_io_publish_script.sh publish'"
+    echo -e "* Run 'internal/scripts/release/crates_io_publish_script.sh publish'"
 }
 
 print_howto() {
@@ -131,7 +131,7 @@ print_step "Sanity checks"
 echo -e "Shall I run the sanity checks?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    internal/scripts/crates_io_publish_script.sh sanity-checks
+    internal/scripts/release/crates_io_publish_script.sh sanity-checks
 
     show_completion
 fi
@@ -140,7 +140,7 @@ print_step "Publish to crates.io"
 echo -e "Shall I publish to crates.io?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    internal/scripts/crates_io_publish_script.sh publish
+    internal/scripts/release/crates_io_publish_script.sh publish
 
     echo -e "Please check whether the release looks fine on 'docs.rs'."
     echo -e "(click through the documentation to check if everything was generated correctly)"

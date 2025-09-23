@@ -126,7 +126,7 @@ print_merge_all_changes_to_main_and_create_release_branch() {
     echo -e "Congratulations! You made it!"
     echo -e "Please commit all the changes and create a pull request to 'main'!"
     echo -e "Once the pull request is merged, a release branch should be created!"
-    echo -e "For the tag, the '\$GIT_ROOT$/internal/scripts/release_tagging.sh' script can be used!"
+    echo -e "For the tag, the '\$GIT_ROOT$/internal/scripts/release/release_tagging.sh' script can be used!"
     echo -e "${C_YELLOW}But before creating the tag, port the reference system${C_OFF}"
     echo -e "${C_YELLOW}to the new iceoryx2 version to catch last minute bugs${C_OFF}"
 }
@@ -247,7 +247,7 @@ print_step "Sanity checks"
 echo -e "Shall I run the sanity checks for the crates.io release?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
-    internal/scripts/crates_io_publish_script.sh sanity-checks
+    internal/scripts/release/crates_io_publish_script.sh sanity-checks
 
     show_completion
 fi
