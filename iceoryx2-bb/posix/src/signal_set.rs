@@ -127,7 +127,7 @@ impl FetchableSignalSet {
         self.signal_set.native_handle()
     }
 
-    /// Creates a new [`SignalSet`] that contains all pending signals, e.g.
+    /// Creates a new [`FetchableSignalSet`] that contains all pending signals, e.g.
     /// signals that are blocked from delivery, for the calling
     /// [`Thread`](crate::posix::thread::Thread).
     pub fn from_pending() -> Self {
@@ -136,14 +136,14 @@ impl FetchableSignalSet {
         }
     }
 
-    /// Initializes an empty [`SignalSet`].
+    /// Initializes an empty [`FetchableSignalSet`].
     pub fn new_empty() -> Self {
         Self {
             signal_set: SignalSet::new_empty(),
         }
     }
 
-    /// Initializes a [`SignalSet`] so that every [`FetchableSignal`] is included.
+    /// Initializes a [`FetchableSignalSet`] so that every [`FetchableSignal`] is included.
     pub fn new_filled() -> Self {
         let mut new_self = Self::new_empty();
 
@@ -154,18 +154,18 @@ impl FetchableSignalSet {
         new_self
     }
 
-    /// Returns [`true`] if the provided [`Signal`] is contained in the
-    /// [`SignalSet`], otherwise [`false`].
+    /// Returns [`true`] if the provided [`FetchableSignal`] is contained in the
+    /// [`FetchableSignalSet`], otherwise [`false`].
     pub fn contains(&self, signal: FetchableSignal) -> bool {
         self.signal_set.contains(signal.into())
     }
 
-    /// Adds a [`Signal`] to the [`SignalSet`].
+    /// Adds a [`FetchableSignal`] to the [`FetchableSignalSet`].
     pub fn add(&mut self, signal: FetchableSignal) {
         self.signal_set.add(signal.into())
     }
 
-    /// Removes a [`Signal`] from the [`SignalSet`]
+    /// Removes a [`FetchableSignal`] from the [`SignalSet`]
     pub fn remove(&mut self, signal: FetchableSignal) {
         self.signal_set.remove(signal.into())
     }

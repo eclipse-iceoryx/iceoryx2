@@ -11,7 +11,10 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use enum_iterator::all;
-use iceoryx2_bb_posix::{signal::Signal, signal_set::SignalSet};
+use iceoryx2_bb_posix::{
+    signal::{FetchableSignal, Signal},
+    signal_set::{FetchableSignalSet, SignalSet},
+};
 use iceoryx2_bb_testing::assert_that;
 
 #[test]
@@ -59,6 +62,55 @@ fn create_from_pending_signals_works() {
     let sut = SignalSet::from_pending();
 
     for signal in all::<Signal>().collect::<Vec<Signal>>() {
+        assert_that!(sut.contains(signal), eq false);
+    }
+}
+
+#[test]
+fn new_empty_fetchable_signal_set_does_not_contain_a_signal() {
+    let sut = FetchableSignalSet::new_empty();
+
+    for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
+        assert_that!(sut.contains(signal), eq false);
+    }
+}
+
+#[test]
+fn new_filled_fetchable_signal_set_does_contain_all_signals() {
+    let sut = FetchableSignalSet::new_filled();
+
+    for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
+        assert_that!(sut.contains(signal), eq true);
+    }
+}
+
+#[test]
+fn adding_new_fetchable_signals_works() {
+    let mut sut = FetchableSignalSet::new_empty();
+
+    for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
+        assert_that!(sut.contains(signal), eq false);
+        sut.add(signal);
+        assert_that!(sut.contains(signal), eq true);
+    }
+}
+
+#[test]
+fn removing_fetchable_signals_works() {
+    let mut sut = FetchableSignalSet::new_filled();
+
+    for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
+        assert_that!(sut.contains(signal), eq true);
+        sut.remove(signal);
+        assert_that!(sut.contains(signal), eq false);
+    }
+}
+
+#[test]
+fn create_from_pending_fetchable_signals_works() {
+    let sut = FetchableSignalSet::from_pending();
+
+    for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
         assert_that!(sut.contains(signal), eq false);
     }
 }
