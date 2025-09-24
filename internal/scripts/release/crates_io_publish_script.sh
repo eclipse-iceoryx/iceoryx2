@@ -87,7 +87,7 @@ while (( "$#" )); do
             echo -e "Usage: ${C_GREEN}$(basename $0)${C_OFF} publish"
             echo -e "Options:"
             echo -e "    dry-run            Simulate publishing to crates.io"
-            echo -e "                       Only works with nightly"
+            echo -e "                       Only works with Rust >= 1.90"
             echo -e "    publish            Publish to crates.io"
             echo -e "    sanity-checks      Sanity checks for cyclic dependencies and new crates"
             echo -e ""
