@@ -1,6 +1,6 @@
 [package]
-name = "iceoryx2-pal-posix"
-description = "iceoryx2: [internal] A posix layer that ensures uniform posix behavior on all platforms according to https://posix.opengroup.org"
+name = "iceoryx2-pal-os-api"
+description = "iceoryx2: [internal] OS api layer for OS specific features"
 categories = { workspace = true }
 edition = { workspace = true }
 homepage = { workspace = true }
@@ -23,13 +23,5 @@ cc = { workspace = true }
 bindgen = { workspace = true }
 
 [dependencies]
-iceoryx2-pal-concurrency-sync = { workspace = true }
-iceoryx2-pal-configuration = { workspace = true }
-lazy_static = { workspace = true }
+iceoryx2-pal-posix = { workspace = true }
 libc = { workspace = true, optional = true }
-
-[target.'cfg(windows)'.dependencies]
-windows-sys = { workspace = true }
-
-[dev-dependencies]
-iceoryx2-pal-testing = { workspace = true }

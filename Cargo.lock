@@ -1561,6 +1561,16 @@ name = "iceoryx2-pal-configuration"
 version = "0.7.0"
 
 [[package]]
+name = "iceoryx2-pal-os-api"
+version = "0.7.0"
+dependencies = [
+ "bindgen",
+ "cc",
+ "iceoryx2-pal-posix",
+ "libc",
+]
+
+[[package]]
 name = "iceoryx2-pal-posix"
 version = "0.7.0"
 dependencies = [
