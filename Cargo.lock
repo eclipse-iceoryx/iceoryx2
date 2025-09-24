@@ -1339,6 +1339,7 @@ dependencies = [
  "iceoryx2-pal-concurrency-sync",
  "iceoryx2-pal-os-api",
  "iceoryx2-pal-posix",
+ "iceoryx2-pal-testing",
 ]
 
 [[package]]

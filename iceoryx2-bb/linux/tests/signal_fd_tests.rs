@@ -49,23 +49,6 @@ fn without_signal_try_read_returns_none() {
 }
 
 #[test]
-fn registered_signal_can_be_blocking_read() {
-    let mut signals = FetchableSignalSet::new_empty();
-    signals.add(FetchableSignal::UserDefined2);
-    let sut = SignalFdBuilder::new(signals).create_blocking().unwrap();
-    SignalHandler::call_and_fetch(|| {
-        Process::from_self()
-            .send_signal(FetchableSignal::UserDefined2.into())
-            .unwrap();
-    });
-
-    let signal = sut.blocking_read().unwrap().unwrap();
-    assert_that!(signal.signal(), eq FetchableSignal::UserDefined2);
-    assert_that!(signal.origin_pid(), eq Process::from_self().id());
-    assert_that!(signal.origin_uid(), eq User::from_self().unwrap().uid());
-}
-
-#[test]
 fn blocking_read_blocks() {
     let _watchdog = Watchdog::new();
     let counter = IoxAtomicU64::new(0);

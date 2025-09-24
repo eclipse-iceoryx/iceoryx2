@@ -11,14 +11,16 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
-use std::{any::Any, time::Duration};
+use core::time::Duration;
+use std::sync::atomic::Ordering;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptor, signal::FetchableSignal, signal_set::FetchableSignalSet,
 };
+use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_os_api::linux;
-use iceoryx2_pal_posix::posix::{self, MemZeroedStruct};
+use iceoryx2_pal_posix::posix::{self};
 
 use crate::signalfd::{SignalFd, SignalFdBuilder};
 
@@ -33,7 +35,13 @@ pub enum EpollCreateError {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum EpollAttachmentError {}
+pub enum EpollAttachmentError {
+    AlreadyAttached,
+    InsufficientMemory,
+    ExceedsMaxSupportedAttachments,
+    ProvidedFileDescriptorDoesNotSupportEventMultiplexing,
+    UnknownError(i32),
+}
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EpollWaitError {
@@ -136,6 +144,7 @@ impl EpollBuilder {
 
         if !self.has_enabled_signal_handling {
             return Ok(Epoll {
+                len: IoxAtomicUsize::new(0),
                 epoll_fd,
                 signal_fd: None,
             });
@@ -156,6 +165,7 @@ impl EpollBuilder {
         Ok(Epoll {
             epoll_fd,
             signal_fd: Some(signal_fd),
+            len: IoxAtomicUsize::new(0),
         })
     }
 }
@@ -164,10 +174,29 @@ pub struct EpollEvent<'a> {
     data: &'a linux::epoll_event,
 }
 
+impl EpollEvent<'_> {
+    pub fn file_descriptor_native_handle(&self) -> i32 {
+        let mut fd_value: i32 = 0;
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                core::ptr::addr_of!(self.data.data) as *const u8,
+                (&mut fd_value as *mut i32) as *mut u8,
+                core::mem::size_of::<i32>(),
+            )
+        };
+        fd_value
+    }
+
+    pub fn has_event(&self, event_type: EventType) -> bool {
+        self.data.events & event_type as u32 != 0
+    }
+}
+
 #[derive(Debug)]
 pub struct Epoll {
     epoll_fd: FileDescriptor,
     signal_fd: Option<SignalFd>,
+    len: IoxAtomicUsize,
 }
 
 impl Epoll {
@@ -180,10 +209,15 @@ impl Epoll {
                 core::ptr::null_mut(),
             )
         };
+        self.len.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    pub fn len(&self) -> usize {
+        self.len.load(Ordering::Relaxed)
     }
 
     pub fn add<'epoll, 'fd>(
-        &'epoll mut self,
+        &'epoll self,
         fd: &'fd FileDescriptor,
     ) -> EpollAttachmentBuilder<'epoll, 'fd> {
         EpollAttachmentBuilder {
@@ -193,24 +227,21 @@ impl Epoll {
         }
     }
 
-    pub fn try_wait<F: FnMut(EpollEvent)>(
-        &self,
-        event_call: &mut F,
-    ) -> Result<usize, EpollWaitError> {
+    pub fn try_wait<F: FnMut(EpollEvent)>(&self, event_call: F) -> Result<usize, EpollWaitError> {
         self.wait_impl(0, event_call)
     }
 
     pub fn timed_wait<F: FnMut(EpollEvent)>(
         &self,
-        event_call: &mut F,
+        event_call: F,
         timeout: Duration,
     ) -> Result<usize, EpollWaitError> {
-        self.wait_impl(timeout.as_millis().max(i32::MAX as _) as i32, event_call)
+        self.wait_impl(timeout.as_millis().min(i32::MAX as _) as i32, event_call)
     }
 
     pub fn blocking_wait<F: FnMut(EpollEvent)>(
         &self,
-        event_call: &mut F,
+        event_call: F,
     ) -> Result<usize, EpollWaitError> {
         self.wait_impl(-1, event_call)
     }
@@ -218,7 +249,7 @@ impl Epoll {
     fn wait_impl<F: FnMut(EpollEvent)>(
         &self,
         timeout: posix::int,
-        event_call: &mut F,
+        mut event_call: F,
     ) -> Result<usize, EpollWaitError> {
         let msg = "Unable to wait on epoll";
         const MAX_EVENTS: usize = 512;
@@ -258,6 +289,7 @@ impl Epoll {
     }
 }
 
+#[derive(Debug)]
 pub struct EpollAttachmentBuilder<'epoll, 'fd> {
     epoll: &'epoll Epoll,
     fd: &'fd FileDescriptor,
@@ -277,8 +309,53 @@ impl<'epoll, 'fd> EpollAttachmentBuilder<'epoll, 'fd> {
         self
     }
 
-    pub fn attach(mut self) -> Result<EpollGuard<'epoll, 'fd>, EpollAttachmentError> {
+    pub fn attach(self) -> Result<EpollGuard<'epoll, 'fd>, EpollAttachmentError> {
+        let msg = "Unable to attach file descriptor to epoll";
         let mut epoll_event: linux::epoll_event = unsafe { core::mem::zeroed() };
+
+        epoll_event.events = self.events_flag;
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                (&self.fd.native_handle() as *const _) as *const u8,
+                core::ptr::addr_of!(epoll_event.data) as *mut u8,
+                core::mem::size_of::<i32>(),
+            )
+        }
+
+        if unsafe {
+            linux::epoll_ctl(
+                self.epoll.epoll_fd.native_handle(),
+                linux::EPOLL_CTL_ADD as _,
+                self.fd.native_handle(),
+                &mut epoll_event,
+            )
+        } == -1
+        {
+            match posix::Errno::get() {
+                posix::Errno::EEXIST => {
+                    fail!(from self, with EpollAttachmentError::AlreadyAttached,
+                        "{msg} since it is already attached.");
+                }
+                posix::Errno::ENOMEM => {
+                    fail!(from self, with EpollAttachmentError::InsufficientMemory,
+                        "{msg} due to insufficient memory.");
+                }
+                posix::Errno::ENOSPC => {
+                    fail!(from self, with EpollAttachmentError::ExceedsMaxSupportedAttachments,
+                        "{msg} since it would exceed the system limit of the number of attachments.");
+                }
+                posix::Errno::EPERM => {
+                    fail!(from self, with EpollAttachmentError::ProvidedFileDescriptorDoesNotSupportEventMultiplexing,
+                        "{msg} since the provided file descriptor does not support event multiplexing.");
+                }
+                e => {
+                    fail!(from self, with EpollAttachmentError::UnknownError(e as i32),
+                        "{msg} due to an unknown error ({e:?}).");
+                }
+            }
+        }
+
+        self.epoll.len.fetch_add(1, Ordering::Relaxed);
 
         Ok(EpollGuard {
             epoll: self.epoll,
