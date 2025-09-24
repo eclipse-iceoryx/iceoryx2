@@ -14,7 +14,7 @@ use core::mem::MaybeUninit;
 use core::time::Duration;
 use std::sync::atomic::Ordering;
 
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::{
     file_descriptor::{FileDescriptor, FileDescriptorBased},
     signal::FetchableSignal,
@@ -24,7 +24,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_os_api::linux;
 use iceoryx2_pal_posix::posix::{self};
 
-use crate::signalfd::{SignalFd, SignalFdBuilder, SignalInfo};
+use crate::signalfd::{SignalFd, SignalFdBuilder, SignalFdReadError, SignalInfo};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EpollCreateError {
@@ -339,7 +339,17 @@ impl Epoll {
                     };
 
                     if fd_event.file_descriptor_native_handle() == signal_fd_native_handle {
-                        while let Some(signal) = signal_fd.try_read().unwrap() {
+                        while let Some(signal) = match signal_fd.try_read() {
+                            Ok(v) => v,
+                            Err(SignalFdReadError::Interrupt) => {
+                                fail!(from self, with EpollWaitError::Interrupt,
+                                    "{msg} with a timeout of {timeout}ms since an interrupt signal was raised while acquiring the raised signals.");
+                            }
+                            Err(e) => {
+                                warn!("Epoll wait will continue but a failure occurred while reading the raised signal ({e:?}).");
+                                None
+                            }
+                        } {
                             event_call(EpollEvent::Signal(signal));
                         }
                     } else {

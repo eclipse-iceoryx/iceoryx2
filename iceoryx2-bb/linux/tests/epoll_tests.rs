@@ -314,7 +314,7 @@ fn signals_can_be_received() {
     let callback_was_called = IoxAtomicBool::new(false);
     let barrier = Barrier::new(2);
     std::thread::scope(|s| {
-        s.spawn(|| {
+        let t = s.spawn(|| {
             barrier.wait();
             assert_that!(sut.blocking_wait(|event| {
                 if let EpollEvent::Signal(signal) = event {
@@ -332,11 +332,13 @@ fn signals_can_be_received() {
         std::thread::sleep(TIMEOUT);
         assert_that!(callback_was_called.load(Ordering::Relaxed), eq false);
 
-        SignalHandler::call_and_fetch(|| {
-            Process::from_self()
-                .send_signal(FetchableSignal::UserDefined1.into())
-                .unwrap();
-        });
+        while !t.is_finished() {
+            SignalHandler::call_and_fetch(|| {
+                Process::from_self()
+                    .send_signal(FetchableSignal::UserDefined1.into())
+                    .unwrap();
+            });
+        }
 
         // thread should wake up now, if not the watchdog will let the unit test fail
     });
