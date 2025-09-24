@@ -176,7 +176,7 @@ impl EpollBuilder {
         unsafe {
             core::ptr::copy_nonoverlapping(
                 (&signal_fd_native_handle as *const i32) as *const u8,
-                core::ptr::addr_of!(epoll_event.data) as *mut u8,
+                linux::epoll_addr_of_event_data_mut(&mut epoll_event),
                 core::mem::size_of::<i32>(),
             )
         };
@@ -224,7 +224,7 @@ impl FileDescriptorEvent<'_> {
         let mut fd_value: i32 = 0;
         unsafe {
             core::ptr::copy_nonoverlapping(
-                core::ptr::addr_of!(self.data.data) as *const u8,
+                linux::epoll_addr_of_event_data(self.data),
                 (&mut fd_value as *mut i32) as *mut u8,
                 core::mem::size_of::<i32>(),
             )
@@ -388,7 +388,7 @@ impl<'epoll, 'fd> EpollAttachmentBuilder<'epoll, 'fd> {
         unsafe {
             core::ptr::copy_nonoverlapping(
                 (&self.fd.native_handle() as *const _) as *const u8,
-                core::ptr::addr_of!(epoll_event.data) as *mut u8,
+                linux::epoll_addr_of_event_data_mut(&mut epoll_event),
                 core::mem::size_of::<i32>(),
             )
         }

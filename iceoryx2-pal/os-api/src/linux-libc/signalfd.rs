@@ -13,7 +13,7 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use iceoryx2_pal_posix::posix::{self, MemZeroedStruct};
+use iceoryx2_pal_posix::posix::{self};
 
 pub type signalfd_siginfo = libc::signalfd_siginfo;
 pub const SFD_NONBLOCK: u32 = libc::SFD_NONBLOCK as _;
