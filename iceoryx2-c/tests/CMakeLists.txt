@@ -34,6 +34,7 @@ target_link_libraries(
     GTest::gtest
     GTest::gmock
     ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS}
 )
 target_compile_options(
     ${PROJECT_NAME}
@@ -41,6 +42,7 @@ target_compile_options(
     ${ICEORYX2_TEST_CXX_FLAGS}
     ${ICEORYX2_CXX_WARNINGS}
     ${ICEORYX2_SANITIZER_FLAGS}
+    ${ICEORYX2_COVERAGE_FLAGS}
 )
 target_compile_features(${PROJECT_NAME} PRIVATE ${ICEORYX2_CXX_STD})
 
@@ -51,3 +53,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/tests"
     RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/tests"
 )
+
+add_test(NAME "iceoryx2 C FFI Tests" COMMAND ${PROJECT_NAME})

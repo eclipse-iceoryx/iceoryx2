@@ -74,9 +74,9 @@ fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
             .spawn(move || {
                 barrier.wait();
                 let handle = ThreadHandle::from_self();
-                let affinity = handle.get_affinity().unwrap();
+                let affinity_result = handle.get_affinity();
                 barrier.wait();
-
+                let affinity = affinity_result.unwrap();
                 for core in 0..number_of_cpu_cores {
                     assert_that!(affinity, contains core);
                 }
