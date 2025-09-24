@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
-use std::time::Duration;
+use std::{any::Any, time::Duration};
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
@@ -61,12 +61,12 @@ pub enum InputFlag {
 
 pub struct EpollGuard<'epoll, 'file_descriptor> {
     epoll: &'epoll Epoll,
-    fd_value: &'file_descriptor FileDescriptor,
+    fd: &'file_descriptor FileDescriptor,
 }
 
 impl Drop for EpollGuard<'_, '_> {
     fn drop(&mut self) {
-        self.epoll.remove(unsafe { self.fd_value.native_handle() })
+        self.epoll.remove(unsafe { self.fd.native_handle() })
     }
 }
 
@@ -186,7 +186,12 @@ impl Epoll {
         &'epoll mut self,
         fd: &'fd FileDescriptor,
     ) -> EpollAttachmentBuilder<'epoll, 'fd> {
-        EpollAttachmentBuilder { epoll: self, fd }
+        EpollAttachmentBuilder {
+            epoll: self,
+            fd,
+            data: None,
+            events_flag: 0,
+        }
     }
 
     pub fn try_wait<F: FnMut(EpollEvent)>(
@@ -257,25 +262,28 @@ impl Epoll {
 pub struct EpollAttachmentBuilder<'epoll, 'fd> {
     epoll: &'epoll Epoll,
     fd: &'fd FileDescriptor,
+    events_flag: u32,
 }
 
 impl<'epoll, 'fd> EpollAttachmentBuilder<'epoll, 'fd> {
-    // data that the kernel provides when triggered
-    pub fn data<T>(mut self, value: T) -> Self {
-        todo!()
-    }
-
     // can be multiple
     pub fn event_type(mut self, event_type: EventType) -> Self {
-        todo!()
+        self.events_flag |= event_type as u32;
+        self
     }
 
     // can be multiple
     pub fn flags(mut self, input_flag: InputFlag) -> Self {
-        todo!()
+        self.events_flag |= input_flag as u32;
+        self
     }
 
     pub fn attach(mut self) -> Result<EpollGuard<'epoll, 'fd>, EpollAttachmentError> {
-        todo!()
+        let mut epoll_event = linux::epoll_event;
+
+        Ok(EpollGuard {
+            epoll: self.epoll,
+            fd: self.fd,
+        })
     }
 }
