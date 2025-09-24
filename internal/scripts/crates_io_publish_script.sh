@@ -28,6 +28,7 @@ cargo publish -p iceoryx2-bb-derive-macros
 cargo publish -p iceoryx2-bb-container
 cargo publish -p iceoryx2-bb-system-types
 cargo publish -p iceoryx2-bb-posix
+cargo publish -p iceoryx2-bb-linux
 cargo publish -p iceoryx2-bb-lock-free
 cargo publish -p iceoryx2-bb-threadsafe
 cargo publish -p iceoryx2-bb-memory

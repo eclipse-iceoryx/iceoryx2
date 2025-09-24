@@ -10,6 +10,43 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! [`Epoll`] is a safe abstraction over the event file descriptor in linux. It allows user to
+//! attach [`FileDescriptor`]s with a set of [`EventType`]s and [`InputFlag`]s. Additionally,
+//! [`Epoll`] can also handle [`FetchableSignal`]s via a wakeup and informing the user what
+//! [`FetchableSignal`] was raised.
+//!
+//! # Example
+//!
+//! ## Handle Events
+//!
+//! ```
+//! use iceoryx2_bb_linux::epoll::*;
+//! use iceoryx2_bb_posix::socket_pair::StreamingSocket;
+//!
+//! # fn main() -> Result<(), Box<dyn core::error::Error> {
+//!
+//! let epoll = EpollBuilder::new().create()?;
+//! let (socket_1, socket_2) = StreamingSocket::create_pair()?;
+//!
+//! let epoll_guard = epoll
+//!     .add(socket_1.file_descriptor())
+//!     .event_type(EventType::ReadyToRead)
+//!     .attach()?;
+//!
+//! socket_2.try_send(b"hello world")?;
+//!
+//! let number_of_triggers = epoll.blocking_wait(|event| {
+//!     if let EpollEvent::FileDescriptor(fd_event) = event {
+//!         if fd_event.originates_from(socket_1.file_descriptor()) {
+//!             let mut raw_data = [0u8; 20];
+//!             socket_1.try_receive(&raw_data);
+//!         }
+//!     }
+//! })?;
+//!
+//! # Ok(())
+//! # }
+//! ```
 use core::mem::MaybeUninit;
 use core::time::Duration;
 use std::sync::atomic::Ordering;
@@ -26,31 +63,76 @@ use iceoryx2_pal_posix::posix::{self};
 
 use crate::signalfd::{SignalFd, SignalFdBuilder, SignalFdReadError, SignalInfo};
 
+/// Errors that can occur when [`EpollBuilder::create()`] creates a new [`Epoll`].
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EpollCreateError {
+    /// The process file handle limit has been reached.
     PerProcessFileHandleLimitReached,
+    /// The system wide file handle limit has been reached.
     SystemWideFileHandleLimitReached,
+    /// The system has not enough memory to create the [`Epoll`]
     InsufficientMemory,
+    /// The syscall [`linux::epoll_create()`] returned a broken [`FileDescriptor`].
     SysCallReturnedInvalidFileDescriptor,
+    /// [`EpollBuilder`] was configured to handle some [`FetchableSignal`]s but the underlying
+    /// [`SignalFd`] could not be created.
     UnableToEnableSignalHandling,
+    /// An error occurred that was not described in the linux man-page.
     UnknownError(i32),
 }
 
+impl core::fmt::Display for EpollCreateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "EpollCreateError::{self:?}")
+    }
+}
+
+impl core::error::Error for EpollCreateError {}
+
+/// Can be emitted by [`Epoll::add()`] when a new [`FileDescriptor`] shall be attached.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EpollAttachmentError {
+    /// The [`FileDescriptor`] is already attached.
     AlreadyAttached,
+    /// The system has not enough memory to attach the [`FileDescriptor`].
     InsufficientMemory,
+    /// The maximum supported amount of [`FileDescriptor`]s are already attached to [`Epoll`].
     ExceedsMaxSupportedAttachments,
+    /// A [`FileDescriptor`] that does not support event multiplexing was given. For instance a
+    /// [`FileDescriptor`] of a [`File`](iceoryx2_bb_posix::file::File) or a
+    /// [`UnnamedSemaphore`](iceoryx2_bb_posix::semaphore::UnnamedSemaphore).
     ProvidedFileDescriptorDoesNotSupportEventMultiplexing,
+    /// An error occurred that was not described in the linux man-page.
     UnknownError(i32),
 }
 
+impl core::fmt::Display for EpollAttachmentError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "EpollAttachmentError::{self:?}")
+    }
+}
+
+impl core::error::Error for EpollAttachmentError {}
+
+/// Errors that can be returned by [`Epoll::try_wait()`], [`Epoll::timed_wait()`] or
+/// [`Epoll::blocking_wait()`].
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EpollWaitError {
+    /// [`FetchableSignal::Interrupt`] was received (SIGINT).
     Interrupt,
+    /// An error occurred that was not described in the linux man-page.
     UnknownError(i32),
 }
 
+impl core::fmt::Display for EpollWaitError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "EpollWaitError::{self:?}")
+    }
+}
+
+impl core::error::Error for EpollWaitError {}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u32)]
 pub enum EventType {
     ReadyToRead = linux::EPOLL_EVENTS_EPOLLIN as _,
@@ -61,6 +143,7 @@ pub enum EventType {
     Hangup = linux::EPOLL_EVENTS_EPOLLHUP as _,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u32)]
 pub enum InputFlag {
     EdgeTriggeredNotification = linux::EPOLL_EVENTS_EPOLLET as _,
@@ -69,6 +152,8 @@ pub enum InputFlag {
     ExclusiveWakeup = linux::EPOLL_EVENTS_EPOLLEXCLUSIVE as _,
 }
 
+/// Returned by [`EpollAttachmentBuilder::attach()`] and represents an [`Epoll`] attachment. As
+/// soon as the [`EpollGuard`] goes out of scope the attachment is detached.
 pub struct EpollGuard<'epoll, 'file_descriptor> {
     epoll: &'epoll Epoll,
     fd: &'file_descriptor FileDescriptor,
@@ -80,6 +165,7 @@ impl Drop for EpollGuard<'_, '_> {
     }
 }
 
+/// The builder to create a new [`Epoll`].
 #[derive(Debug)]
 pub struct EpollBuilder {
     has_close_on_exec_flag: bool,
@@ -94,6 +180,7 @@ impl Default for EpollBuilder {
 }
 
 impl EpollBuilder {
+    /// Creates a new builder instance.
     pub fn new() -> Self {
         Self {
             has_close_on_exec_flag: false,
@@ -102,17 +189,24 @@ impl EpollBuilder {
         }
     }
 
+    /// Defines if the underlying [`FileDescriptor`] shall be closed when the
+    /// [`Process`](iceoryx2_bb_posix::process::Process) is forked.
     pub fn set_close_on_exec(mut self, value: bool) -> Self {
         self.has_close_on_exec_flag = value;
         self
     }
 
+    /// Defines all [`FetchableSignal`]s the [`Epoll`] shall handle. When one of the defined
+    /// [`FetchableSignal`]s is raised [`Epoll::try_wait()`], [`Epoll::timed_wait()`] or
+    /// [`Epoll::blocking_wait()`] will wake up and provide the signal details in
+    /// [`EventType`] as [`SignalInfo`].
     pub fn handle_signal(mut self, signal: FetchableSignal) -> Self {
         self.signal_set.add(signal);
         self.has_enabled_signal_handling = true;
         self
     }
 
+    /// Creates a new [`Epoll`].
     pub fn create(self) -> Result<Epoll, EpollCreateError> {
         let msg = "Unable to create epoll file descriptor";
         let mut flags = 0;
@@ -210,17 +304,23 @@ impl EpollBuilder {
     }
 }
 
+/// Represents an event that activated the [`Epoll`].
 pub enum EpollEvent<'a> {
+    /// A [`FileDescriptor`] was activated.
     FileDescriptor(FileDescriptorEvent<'a>),
+    /// A [`FetchableSignal`] was raised.
     Signal(SignalInfo),
 }
 
+/// Describes an event on a [`FileDescriptor`].
 pub struct FileDescriptorEvent<'a> {
     data: &'a linux::epoll_event,
 }
 
 impl FileDescriptorEvent<'_> {
-    pub fn file_descriptor_native_handle(&self) -> i32 {
+    /// Returns `true` if the [`FileDescriptorEvent`] originated from the provided
+    /// [`FileDescriptor`], otherwise `false`.
+    pub fn originates_from(&self, file_descriptor: &FileDescriptor) -> bool {
         let mut fd_value: i32 = 0;
         unsafe {
             core::ptr::copy_nonoverlapping(
@@ -229,14 +329,18 @@ impl FileDescriptorEvent<'_> {
                 core::mem::size_of::<i32>(),
             )
         };
-        fd_value
+
+        fd_value == unsafe { file_descriptor.native_handle() }
     }
 
+    /// Returns `true` if the [`FileDescriptorEvent`] was caused by the provided [`EventType`],
+    /// otherwise `false`.
     pub fn has_event(&self, event_type: EventType) -> bool {
         self.data.events & event_type as u32 != 0
     }
 }
 
+/// Abstraction of the event multiplexer epoll.
 #[derive(Debug)]
 pub struct Epoll {
     epoll_fd: FileDescriptor,
@@ -257,14 +361,17 @@ impl Epoll {
         self.len.fetch_sub(1, Ordering::Relaxed);
     }
 
+    /// Returns `true` when [`Epoll`] has no attached [`FileDescriptor`]s, otherwise `false`.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Returns the number of attached [`FileDescriptor`]s.
     pub fn len(&self) -> usize {
         self.len.load(Ordering::Relaxed)
     }
 
+    /// Returns an [`EpollAttachmentBuilder`] to attach a new [`FileDescriptor`] to [`Epoll`].
     pub fn add<'epoll, 'fd>(
         &'epoll self,
         fd: &'fd FileDescriptor,
@@ -276,10 +383,17 @@ impl Epoll {
         }
     }
 
+    /// Non-blocking call, that returns the number of activated attachments and calls the provided
+    /// callback for every activated attachment and with [`EpollEvent`] as callback argument
+    /// that contains the information about the activated attachment.
     pub fn try_wait<F: FnMut(EpollEvent)>(&self, event_call: F) -> Result<usize, EpollWaitError> {
         self.wait_impl(0, event_call)
     }
 
+    /// Blocking call, that returns the number of activated attachments and calls the provided
+    /// callback for every activated attachment and with [`EpollEvent`] as callback argument
+    /// that contains the information about the activated attachment.
+    /// If the timeout has passed and no activation has happened it will return 0.
     pub fn timed_wait<F: FnMut(EpollEvent)>(
         &self,
         event_call: F,
@@ -288,6 +402,9 @@ impl Epoll {
         self.wait_impl(timeout.as_millis().min(i32::MAX as _) as i32, event_call)
     }
 
+    /// Blocking call, that returns the number of activated attachments and calls the provided
+    /// callback for every activated attachment and with [`EpollEvent`] as callback argument
+    /// that contains the information about the activated attachment.
     pub fn blocking_wait<F: FnMut(EpollEvent)>(
         &self,
         event_call: F,
@@ -330,15 +447,12 @@ impl Epoll {
 
         match self.signal_fd.as_ref() {
             Some(signal_fd) => {
-                let signal_fd_native_handle =
-                    unsafe { signal_fd.file_descriptor().native_handle() };
-
                 for i in 0..number_of_fds {
                     let fd_event = FileDescriptorEvent {
                         data: unsafe { events[i as usize].assume_init_ref() },
                     };
 
-                    if fd_event.file_descriptor_native_handle() == signal_fd_native_handle {
+                    if fd_event.originates_from(signal_fd.file_descriptor()) {
                         while let Some(signal) = match signal_fd.try_read() {
                             Ok(v) => v,
                             Err(SignalFdReadError::Interrupt) => {
@@ -370,6 +484,8 @@ impl Epoll {
     }
 }
 
+/// Builder created by [`Epoll::add()`] that configures the [`EventType`]s and the [`InputFlag`]s
+/// of the attachment.
 #[derive(Debug)]
 pub struct EpollAttachmentBuilder<'epoll, 'fd> {
     epoll: &'epoll Epoll,
@@ -378,18 +494,21 @@ pub struct EpollAttachmentBuilder<'epoll, 'fd> {
 }
 
 impl<'epoll, 'fd> EpollAttachmentBuilder<'epoll, 'fd> {
-    // can be multiple
+    /// The user can call this multiple times to define multiple [`EventType`]s for the attachment.
+    /// It defines the [`EventType`] that shall cause a wakeup in [`Epoll`].
     pub fn event_type(mut self, event_type: EventType) -> Self {
         self.events_flag |= event_type as u32;
         self
     }
 
-    // can be multiple
+    /// The user can call this multiple times to attach multiple [`InputFlag`]s for the attachment.
     pub fn flags(mut self, input_flag: InputFlag) -> Self {
         self.events_flag |= input_flag as u32;
         self
     }
 
+    /// Attaches the [`FileDescriptor`] to [`Epoll`] and returns an [`EpollGuard`]. As soon as the
+    /// [`EpollGuard`] goes out-of-scope the attachment is released.
     pub fn attach(self) -> Result<EpollGuard<'epoll, 'fd>, EpollAttachmentError> {
         let msg = "Unable to attach file descriptor to epoll";
         let mut epoll_event: linux::epoll_event = unsafe { core::mem::zeroed() };

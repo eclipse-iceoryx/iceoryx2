@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 //! The [`SignalFd`] is a safe abstraction over the linux signal fd api. It
-//! allows users to receive a signal via a file descriptor that can be attached
+//! allows users to receive a [`FetchableSignal`] via a [`FileDescriptor`] that can be attached
 //! to a
 //! [`FileDescriptorSet`](iceoryx2_bb_posix::file_descriptor_set::FileDescriptorSet)
 //! or via [`Epoll`](crate::epoll::Epoll).
