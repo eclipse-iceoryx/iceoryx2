@@ -259,7 +259,7 @@ fn read_from_fd<T: Debug>(
     }
 
     match posix::Errno::get() {
-        posix::Errno::EAGAIN => return Ok(None),
+        posix::Errno::EAGAIN => Ok(None),
         posix::Errno::EINTR => {
             fail!(from this,
                 with SignalFdReadError::Interrupt,

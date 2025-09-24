@@ -16,7 +16,13 @@ use std::{
 };
 
 use iceoryx2_bb_linux::epoll::*;
-use iceoryx2_bb_posix::{file_descriptor::FileDescriptorBased, socket_pair::StreamingSocket};
+use iceoryx2_bb_posix::{
+    file_descriptor::FileDescriptorBased,
+    process::Process,
+    signal::{FetchableSignal, SignalHandler},
+    socket_pair::StreamingSocket,
+    user::User,
+};
 use iceoryx2_bb_testing::{assert_that, watchdog::Watchdog};
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicBool;
 
@@ -86,9 +92,13 @@ fn attaching_one_fd_and_triggering_ready_to_read_works() {
 
     let mut callback_was_called = false;
     let number_of_triggers = sut.try_wait(|event| {
-        assert_that!(event.file_descriptor_native_handle(), eq unsafe { socket_1.file_descriptor().native_handle()} );
-        assert_that!(event.has_event(EventType::ReadyToRead), eq true);
-        assert_that!(event.has_event(EventType::ConnectionClosed), eq false);
+        if let EpollEvent::FileDescriptor(fdev) = event {
+            assert_that!(fdev.file_descriptor_native_handle(), eq unsafe { socket_1.file_descriptor().native_handle()} );
+            assert_that!(fdev.has_event(EventType::ReadyToRead), eq true);
+            assert_that!(fdev.has_event(EventType::ConnectionClosed), eq false);
+        } else {
+            assert_that!(true, eq false);
+        }
         callback_was_called = true;}).unwrap();
 
     assert_that!(number_of_triggers, eq 1);
@@ -120,9 +130,13 @@ fn attaching_one_fd_and_triggering_connection_closed_works() {
 
     let mut callback_was_called = false;
     let number_of_triggers = sut.try_wait(|event| {
-        assert_that!(event.file_descriptor_native_handle(), eq unsafe { socket_1.file_descriptor().native_handle()} );
-        assert_that!(event.has_event(EventType::ConnectionClosed), eq true);
-        assert_that!(event.has_event(EventType::ReadyToRead), eq false);
+        if let EpollEvent::FileDescriptor(fdev) = event {
+            assert_that!(fdev.file_descriptor_native_handle(), eq unsafe { socket_1.file_descriptor().native_handle()} );
+            assert_that!(fdev.has_event(EventType::ConnectionClosed), eq true);
+            assert_that!(fdev.has_event(EventType::ReadyToRead), eq false);
+        } else {
+            assert_that!(true, eq false);
+        }
         callback_was_called = true;}).unwrap();
 
     assert_that!(number_of_triggers, eq 1);
@@ -279,6 +293,51 @@ fn blocking_wait_wakes_up_by_trigger() {
         assert_that!(callback_was_called.load(Ordering::Relaxed), eq false);
 
         socket_2.try_send(b"hello").unwrap();
+        // thread should wake up now, if not the watchdog will let the unit test fail
+    });
+}
+
+#[test]
+fn signals_can_be_received() {
+    let _watchdog = Watchdog::new();
+    let (socket_1, _socket_2) = StreamingSocket::create_pair().unwrap();
+    let sut = EpollBuilder::new()
+        .handle_signal(FetchableSignal::UserDefined1)
+        .create()
+        .unwrap();
+    let _guard = sut
+        .add(socket_1.file_descriptor())
+        .event_type(EventType::ReadyToRead)
+        .attach()
+        .unwrap();
+
+    let callback_was_called = IoxAtomicBool::new(false);
+    let barrier = Barrier::new(2);
+    std::thread::scope(|s| {
+        s.spawn(|| {
+            barrier.wait();
+            assert_that!(sut.blocking_wait(|event| {
+                if let EpollEvent::Signal(signal) = event {
+                    assert_that!(signal.signal(), eq FetchableSignal::UserDefined1);
+                    assert_that!(signal.origin_uid(), eq User::from_self().unwrap().uid());
+                    assert_that!(signal.origin_pid(), eq Process::from_self().id());
+                } else {
+                    assert_that!(true, eq false);
+                }
+                callback_was_called.store(true, Ordering::Relaxed);
+            }).unwrap(), eq 1);
+        });
+
+        barrier.wait();
+        std::thread::sleep(TIMEOUT);
+        assert_that!(callback_was_called.load(Ordering::Relaxed), eq false);
+
+        SignalHandler::call_and_fetch(|| {
+            Process::from_self()
+                .send_signal(FetchableSignal::UserDefined1.into())
+                .unwrap();
+        });
+
         // thread should wake up now, if not the watchdog will let the unit test fail
     });
 }

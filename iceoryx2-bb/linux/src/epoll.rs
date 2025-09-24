@@ -24,7 +24,7 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_os_api::linux;
 use iceoryx2_pal_posix::posix::{self};
 
-use crate::signalfd::{SignalFd, SignalFdBuilder};
+use crate::signalfd::{SignalFd, SignalFdBuilder, SignalInfo};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum EpollCreateError {
@@ -85,6 +85,12 @@ pub struct EpollBuilder {
     has_close_on_exec_flag: bool,
     signal_set: FetchableSignalSet,
     has_enabled_signal_handling: bool,
+}
+
+impl Default for EpollBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl EpollBuilder {
@@ -204,11 +210,16 @@ impl EpollBuilder {
     }
 }
 
-pub struct EpollEvent<'a> {
+pub enum EpollEvent<'a> {
+    FileDescriptor(FileDescriptorEvent<'a>),
+    Signal(SignalInfo),
+}
+
+pub struct FileDescriptorEvent<'a> {
     data: &'a linux::epoll_event,
 }
 
-impl EpollEvent<'_> {
+impl FileDescriptorEvent<'_> {
     pub fn file_descriptor_native_handle(&self) -> i32 {
         let mut fd_value: i32 = 0;
         unsafe {
@@ -244,6 +255,10 @@ impl Epoll {
             )
         };
         self.len.fetch_sub(1, Ordering::Relaxed);
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn len(&self) -> usize {
@@ -313,10 +328,32 @@ impl Epoll {
             }
         }
 
-        for i in 0..number_of_fds {
-            event_call(EpollEvent {
-                data: unsafe { events[i as usize].assume_init_ref() },
-            });
+        match self.signal_fd.as_ref() {
+            Some(signal_fd) => {
+                let signal_fd_native_handle =
+                    unsafe { signal_fd.file_descriptor().native_handle() };
+
+                for i in 0..number_of_fds {
+                    let fd_event = FileDescriptorEvent {
+                        data: unsafe { events[i as usize].assume_init_ref() },
+                    };
+
+                    if fd_event.file_descriptor_native_handle() == signal_fd_native_handle {
+                        while let Some(signal) = signal_fd.try_read().unwrap() {
+                            event_call(EpollEvent::Signal(signal));
+                        }
+                    } else {
+                        event_call(EpollEvent::FileDescriptor(fd_event));
+                    }
+                }
+            }
+            None => {
+                for i in 0..number_of_fds {
+                    event_call(EpollEvent::FileDescriptor(FileDescriptorEvent {
+                        data: unsafe { events[i as usize].assume_init_ref() },
+                    }));
+                }
+            }
         }
 
         Ok(number_of_fds as usize)

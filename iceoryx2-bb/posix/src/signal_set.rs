@@ -24,6 +24,13 @@ pub struct SignalSet {
 
 impl SignalSet {
     /// Returns a reference to the underlying native handle.
+    ///
+    /// # Safety
+    ///
+    ///  * the user shall not store the value in a variable otherwise lifetime issues may be
+    ///    encountered
+    ///  * do not manually close the file descriptor with a sys call
+    ///
     pub unsafe fn native_handle(&self) -> &posix::sigset_t {
         &self.signal_set
     }
@@ -123,6 +130,13 @@ pub struct FetchableSignalSet {
 
 impl FetchableSignalSet {
     /// Returns a reference to the underlying native handle.
+    ///
+    /// # Safety
+    ///
+    ///  * the user shall not store the value in a variable otherwise lifetime issues may be
+    ///    encountered
+    ///  * do not manually close the file descriptor with a sys call
+    ///
     pub unsafe fn native_handle(&self) -> &posix::sigset_t {
         self.signal_set.native_handle()
     }
