@@ -24,19 +24,26 @@ use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicU64;
 
 #[test]
 fn registered_signal_can_be_try_read() {
+    let _watchdog = Watchdog::new();
     let mut signals = FetchableSignalSet::new_empty();
     signals.add(FetchableSignal::UserDefined1);
     let sut = SignalFdBuilder::new(signals).create_non_blocking().unwrap();
-    SignalHandler::call_and_fetch(|| {
-        Process::from_self()
-            .send_signal(FetchableSignal::UserDefined1.into())
-            .unwrap();
-    });
 
-    let signal = sut.try_read().unwrap().unwrap();
-    assert_that!(signal.signal(), eq FetchableSignal::UserDefined1);
-    assert_that!(signal.origin_pid(), eq Process::from_self().id());
-    assert_that!(signal.origin_uid(), eq User::from_self().unwrap().uid());
+    loop {
+        SignalHandler::call_and_fetch(|| {
+            Process::from_self()
+                .send_signal(FetchableSignal::UserDefined1.into())
+                .unwrap();
+        });
+
+        let signal = sut.try_read().unwrap();
+        if let Some(signal) = signal {
+            assert_that!(signal.signal(), eq FetchableSignal::UserDefined1);
+            assert_that!(signal.origin_pid(), eq Process::from_self().id());
+            assert_that!(signal.origin_uid(), eq User::from_self().unwrap().uid());
+            break;
+        }
+    }
 }
 
 #[test]

@@ -37,7 +37,7 @@ impl SignalSet {
 
     /// Creates a new [`SignalSet`] that contains all pending signals, e.g.
     /// signals that are blocked from delivery, for the calling
-    /// [`Thread`](crate::posix::thread::Thread).
+    /// [`Thread`](crate::thread::Thread).
     pub fn from_pending() -> Self {
         let mut new_self = SignalSet {
             signal_set: MemZeroedStruct::new_zeroed(),
@@ -122,7 +122,7 @@ impl SignalSet {
     }
 }
 
-/// Represents a posix [`SignalSet`] that contains only [`FetchableSignals`].
+/// Represents a posix [`SignalSet`] that contains only [`FetchableSignal`]s.
 #[derive(Debug)]
 pub struct FetchableSignalSet {
     signal_set: SignalSet,
@@ -143,7 +143,7 @@ impl FetchableSignalSet {
 
     /// Creates a new [`FetchableSignalSet`] that contains all pending signals, e.g.
     /// signals that are blocked from delivery, for the calling
-    /// [`Thread`](crate::posix::thread::Thread).
+    /// [`Thread`](crate::thread::Thread).
     pub fn from_pending() -> Self {
         Self {
             signal_set: SignalSet::from_pending(),

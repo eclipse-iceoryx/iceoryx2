@@ -91,15 +91,18 @@ fn attaching_one_fd_and_triggering_ready_to_read_works() {
     socket_2.try_send(b"hello").unwrap();
 
     let mut callback_was_called = false;
-    let number_of_triggers = sut.try_wait(|event| {
-        if let EpollEvent::FileDescriptor(fdev) = event {
-            assert_that!(fdev.file_descriptor_native_handle(), eq unsafe { socket_1.file_descriptor().native_handle()} );
-            assert_that!(fdev.has_event(EventType::ReadyToRead), eq true);
-            assert_that!(fdev.has_event(EventType::ConnectionClosed), eq false);
-        } else {
-            assert_that!(true, eq false);
-        }
-        callback_was_called = true;}).unwrap();
+    let number_of_triggers = sut
+        .try_wait(|event| {
+            if let EpollEvent::FileDescriptor(fdev) = event {
+                assert_that!(fdev.originates_from(socket_1.file_descriptor()), eq true );
+                assert_that!(fdev.has_event(EventType::ReadyToRead), eq true);
+                assert_that!(fdev.has_event(EventType::ConnectionClosed), eq false);
+            } else {
+                assert_that!(true, eq false);
+            }
+            callback_was_called = true;
+        })
+        .unwrap();
 
     assert_that!(number_of_triggers, eq 1);
     assert_that!(callback_was_called, eq true);
@@ -129,15 +132,18 @@ fn attaching_one_fd_and_triggering_connection_closed_works() {
     drop(socket_2);
 
     let mut callback_was_called = false;
-    let number_of_triggers = sut.try_wait(|event| {
-        if let EpollEvent::FileDescriptor(fdev) = event {
-            assert_that!(fdev.file_descriptor_native_handle(), eq unsafe { socket_1.file_descriptor().native_handle()} );
-            assert_that!(fdev.has_event(EventType::ConnectionClosed), eq true);
-            assert_that!(fdev.has_event(EventType::ReadyToRead), eq false);
-        } else {
-            assert_that!(true, eq false);
-        }
-        callback_was_called = true;}).unwrap();
+    let number_of_triggers = sut
+        .try_wait(|event| {
+            if let EpollEvent::FileDescriptor(fdev) = event {
+                assert_that!(fdev.originates_from(socket_1.file_descriptor()), eq true );
+                assert_that!(fdev.has_event(EventType::ConnectionClosed), eq true);
+                assert_that!(fdev.has_event(EventType::ReadyToRead), eq false);
+            } else {
+                assert_that!(true, eq false);
+            }
+            callback_was_called = true;
+        })
+        .unwrap();
 
     assert_that!(number_of_triggers, eq 1);
     assert_that!(callback_was_called, eq true);

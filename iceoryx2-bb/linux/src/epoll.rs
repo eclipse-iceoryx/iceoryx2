@@ -22,8 +22,9 @@
 //! ```
 //! use iceoryx2_bb_linux::epoll::*;
 //! use iceoryx2_bb_posix::socket_pair::StreamingSocket;
+//! use iceoryx2_bb_posix::file_descriptor::FileDescriptorBased;
 //!
-//! # fn main() -> Result<(), Box<dyn core::error::Error> {
+//! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //!
 //! let epoll = EpollBuilder::new().create()?;
 //! let (socket_1, socket_2) = StreamingSocket::create_pair()?;
@@ -39,7 +40,7 @@
 //!     if let EpollEvent::FileDescriptor(fd_event) = event {
 //!         if fd_event.originates_from(socket_1.file_descriptor()) {
 //!             let mut raw_data = [0u8; 20];
-//!             socket_1.try_receive(&raw_data);
+//!             socket_1.try_receive(&mut raw_data);
 //!         }
 //!     }
 //! })?;

@@ -12,8 +12,7 @@
 
 use enum_iterator::all;
 use iceoryx2_bb_posix::{
-    process::Process,
-    signal::{FetchableSignal, Signal, SignalHandler},
+    signal::{FetchableSignal, Signal},
     signal_set::{FetchableSignalSet, SignalSet},
 };
 use iceoryx2_bb_testing::assert_that;
