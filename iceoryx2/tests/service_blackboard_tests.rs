@@ -16,7 +16,9 @@ mod service_blackboard {
     use iceoryx2::port::reader::*;
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
-    use iceoryx2::service::builder::blackboard::{BlackboardCreateError, BlackboardOpenError};
+    use iceoryx2::service::builder::blackboard::{
+        BlackboardCreateError, BlackboardOpenError, KeyMemory,
+    };
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
@@ -1805,6 +1807,39 @@ mod service_blackboard {
         }
 
         assert_that!(entry_handle.get(), eq write_value);
+    }
+
+    #[test]
+    fn key_memory_creation_fails_when_value_size_is_too_big<Sut: Service>() {
+        let key: u16 = 256;
+
+        let sut_value = KeyMemory::<1>::try_from(&key);
+        assert_that!(sut_value, is_err);
+
+        let sut_ptr = KeyMemory::<1>::try_from_ptr((&key as *const u16).cast(), size_of_val(&key));
+        assert_that!(sut_ptr, is_err);
+    }
+
+    #[test]
+    fn key_memory_creation_works_when_value_size_fits<Sut: Service>() {
+        let key: u16 = 256;
+
+        let sut_value = KeyMemory::<2>::try_from(&key);
+        assert_that!(sut_value, is_ok);
+
+        let sut_ptr = KeyMemory::<2>::try_from_ptr((&key as *const u16).cast(), size_of_val(&key));
+        assert_that!(sut_ptr, is_ok);
+    }
+
+    #[test]
+    fn keys_can_be_written_to_key_memory<Sut: Service>() {
+        let key: u8 = 0;
+
+        let mut sut_value = KeyMemory::<1>::try_from(&key).unwrap();
+        assert_that!(sut_value.data[0], eq key);
+
+        sut_value.data[0] = 1;
+        assert_that!(sut_value.data[0], eq 1);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]

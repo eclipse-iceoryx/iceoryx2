@@ -155,6 +155,48 @@ impl From<ServiceAvailabilityState> for BlackboardCreateError {
 }
 
 #[doc(hidden)]
+#[repr(C)]
+#[repr(align(8))] // TODO: align with Service::MAX_ALIGNMENT
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub struct KeyMemory<const CAPACITY: usize> {
+    pub data: [u8; CAPACITY],
+}
+
+impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
+    pub fn try_from<T: Copy>(value: &T) -> Result<Self, &'static str> {
+        if size_of::<T>() > CAPACITY {
+            // TODO: introduce KeyMemoryError?
+            return Err("KeyMemory only accepts values with a size <= {CAPACITY}.");
+        }
+
+        let mut new_self = Self {
+            data: [0; CAPACITY],
+        };
+        unsafe { core::ptr::copy_nonoverlapping(value, new_self.data.as_mut_ptr() as *mut T, 1) };
+        Ok(new_self)
+    }
+
+    pub fn try_from_ptr(ptr: *const u8, len: usize) -> Result<Self, &'static str> {
+        if len > CAPACITY {
+            // TODO: introduce KeyMemoryError?
+            return Err("KeyMemory only accepts values with a size <= {CAPACITY}.");
+        }
+
+        let mut new_self = Self {
+            data: [0; CAPACITY],
+        };
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                ptr,
+                new_self.data.as_mut_ptr(),
+                core::cmp::min(len, CAPACITY),
+            )
+        };
+        Ok(new_self)
+    }
+}
+
+#[doc(hidden)]
 pub struct BuilderInternals<KeyType> {
     key: KeyType,
     value_type_details: TypeDetail,

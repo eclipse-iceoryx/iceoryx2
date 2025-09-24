@@ -58,6 +58,8 @@ impl crate::service::Service for Service {
     type BlackboardMgmt<KeyType: Send + Sync + Debug + 'static> =
         dynamic_storage::recommended::Ipc<KeyType>;
     type BlackboardPayload = shared_memory::recommended::Ipc<BumpAllocator>;
+    const BLACKBOARD_MAX_KEY_SIZE: usize = 64;
+    const BLACKBOARD_MAX_KEY_ALIGNMENT: usize = 8;
 }
 
 impl crate::service::internal::ServiceInternal<Service> for Service {}
