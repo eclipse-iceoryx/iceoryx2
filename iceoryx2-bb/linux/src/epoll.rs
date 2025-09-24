@@ -18,7 +18,7 @@ use iceoryx2_bb_posix::{
     file_descriptor::FileDescriptor, signal::FetchableSignal, signal_set::FetchableSignalSet,
 };
 use iceoryx2_pal_os_api::linux;
-use iceoryx2_pal_posix::posix;
+use iceoryx2_pal_posix::posix::{self, MemZeroedStruct};
 
 use crate::signalfd::{SignalFd, SignalFdBuilder};
 
@@ -43,20 +43,20 @@ pub enum EpollWaitError {
 
 #[repr(u32)]
 pub enum EventType {
-    ReadyToRead = linux::EPOLL_EVENTS_EPOLLIN,
-    ReadyToWrite = linux::EPOLL_EVENTS_EPOLLOUT,
-    ConnectionClosed = linux::EPOLL_EVENTS_EPOLLRDHUP,
-    ExceptionalCondition = linux::EPOLL_EVENTS_EPOLLPRI,
-    ErrorCondition = linux::EPOLL_EVENTS_EPOLLERR,
-    Hangup = linux::EPOLL_EVENTS_EPOLLHUP,
+    ReadyToRead = linux::EPOLL_EVENTS_EPOLLIN as _,
+    ReadyToWrite = linux::EPOLL_EVENTS_EPOLLOUT as _,
+    ConnectionClosed = linux::EPOLL_EVENTS_EPOLLRDHUP as _,
+    ExceptionalCondition = linux::EPOLL_EVENTS_EPOLLPRI as _,
+    ErrorCondition = linux::EPOLL_EVENTS_EPOLLERR as _,
+    Hangup = linux::EPOLL_EVENTS_EPOLLHUP as _,
 }
 
 #[repr(u32)]
 pub enum InputFlag {
-    EdgeTriggeredNotification = linux::EPOLL_EVENTS_EPOLLET,
-    OneShotNotification = linux::EPOLL_EVENTS_EPOLLONESHOT,
-    BlockSuspension = linux::EPOLL_EVENTS_EPOLLWAKEUP,
-    ExclusiveWakeup = linux::EPOLL_EVENTS_EPOLLEXCLUSIVE,
+    EdgeTriggeredNotification = linux::EPOLL_EVENTS_EPOLLET as _,
+    OneShotNotification = linux::EPOLL_EVENTS_EPOLLONESHOT as _,
+    BlockSuspension = linux::EPOLL_EVENTS_EPOLLWAKEUP as _,
+    ExclusiveWakeup = linux::EPOLL_EVENTS_EPOLLEXCLUSIVE as _,
 }
 
 pub struct EpollGuard<'epoll, 'file_descriptor> {
@@ -189,7 +189,6 @@ impl Epoll {
         EpollAttachmentBuilder {
             epoll: self,
             fd,
-            data: None,
             events_flag: 0,
         }
     }
@@ -279,7 +278,7 @@ impl<'epoll, 'fd> EpollAttachmentBuilder<'epoll, 'fd> {
     }
 
     pub fn attach(mut self) -> Result<EpollGuard<'epoll, 'fd>, EpollAttachmentError> {
-        let mut epoll_event = linux::epoll_event;
+        let mut epoll_event: linux::epoll_event = unsafe { core::mem::zeroed() };
 
         Ok(EpollGuard {
             epoll: self.epoll,

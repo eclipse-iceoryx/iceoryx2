@@ -47,7 +47,7 @@ use iceoryx2_bb_posix::{
     signal_set::FetchableSignalSet, user::Uid,
 };
 use iceoryx2_pal_os_api::linux;
-use iceoryx2_pal_posix::posix::{self, MemZeroedStruct};
+use iceoryx2_pal_posix::posix::{self};
 
 /// Error emitted when creating a new [`SignalFd`].
 #[derive(Debug, Clone, Copy, Eq, Hash, PartialEq)]
@@ -233,7 +233,7 @@ fn read_from_fd<T: Debug>(
     fd: &FileDescriptor,
 ) -> Result<Option<SignalInfo>, SignalFdReadError> {
     let msg = "Unable to read signal from SignalFd";
-    let mut signal_info = linux::signalfd_siginfo::new_zeroed();
+    let mut signal_info: linux::signalfd_siginfo = unsafe { core::mem::zeroed() };
 
     let number_of_bytes = unsafe {
         posix::read(

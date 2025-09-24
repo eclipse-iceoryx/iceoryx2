@@ -13,10 +13,9 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use iceoryx2_pal_posix::posix;
+use iceoryx2_pal_posix::posix::{self};
 
 pub type EPOLL_EVENTS = crate::internal::EPOLL_EVENTS;
-pub type epoll_event = crate::internal::epoll_event;
 
 pub const EPOLL_CLOEXEC: usize = crate::internal::EPOLL_CLOEXEC as _;
 pub const EPOLL_EVENTS_EPOLLIN: EPOLL_EVENTS = crate::internal::EPOLL_EVENTS_EPOLLIN;
@@ -38,6 +37,8 @@ pub const EPOLL_EVENTS_EPOLLET: EPOLL_EVENTS = crate::internal::EPOLL_EVENTS_EPO
 pub const EPOLL_CTL_ADD: u32 = crate::internal::EPOLL_CTL_ADD;
 pub const EPOLL_CTL_DEL: u32 = crate::internal::EPOLL_CTL_DEL;
 pub const EPOLL_CTL_MOD: u32 = crate::internal::EPOLL_CTL_MOD;
+
+pub type epoll_event = crate::internal::epoll_event;
 
 pub unsafe fn epoll_create(size: posix::int) -> posix::int {
     crate::internal::epoll_create(size)
