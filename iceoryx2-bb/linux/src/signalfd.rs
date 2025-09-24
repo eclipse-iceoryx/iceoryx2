@@ -43,8 +43,12 @@ use std::fmt::Debug;
 
 use iceoryx2_bb_log::{fail, fatal_panic};
 use iceoryx2_bb_posix::{
-    file_descriptor::FileDescriptor, process::ProcessId, signal::FetchableSignal,
-    signal_set::FetchableSignalSet, user::Uid,
+    file_descriptor::{FileDescriptor, FileDescriptorBased},
+    file_descriptor_set::SynchronousMultiplexing,
+    process::ProcessId,
+    signal::FetchableSignal,
+    signal_set::FetchableSignalSet,
+    user::Uid,
 };
 use iceoryx2_pal_os_api::linux;
 use iceoryx2_pal_posix::posix::{self};
@@ -292,6 +296,14 @@ impl SignalFd {
     }
 }
 
+impl FileDescriptorBased for SignalFd {
+    fn file_descriptor(&self) -> &FileDescriptor {
+        &self.file_descriptor
+    }
+}
+
+impl SynchronousMultiplexing for SignalFd {}
+
 /// Blocking version of the signal fd
 #[derive(Debug)]
 pub struct BlockingSignalFd {
@@ -305,3 +317,11 @@ impl BlockingSignalFd {
         read_from_fd(self, &self.file_descriptor)
     }
 }
+
+impl FileDescriptorBased for BlockingSignalFd {
+    fn file_descriptor(&self) -> &FileDescriptor {
+        &self.file_descriptor
+    }
+}
+
+impl SynchronousMultiplexing for BlockingSignalFd {}

@@ -16,7 +16,9 @@ use std::sync::atomic::Ordering;
 
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::{
-    file_descriptor::FileDescriptor, signal::FetchableSignal, signal_set::FetchableSignalSet,
+    file_descriptor::{FileDescriptor, FileDescriptorBased},
+    signal::FetchableSignal,
+    signal_set::FetchableSignalSet,
 };
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_os_api::linux;
@@ -161,6 +163,38 @@ impl EpollBuilder {
                         "{msg} since the signal fd, required for signal handling, could not be created ({e:?}).");
             }
         };
+
+        let signal_fd_native_handle = unsafe { signal_fd.file_descriptor().native_handle() };
+        let mut epoll_event: linux::epoll_event = unsafe { core::mem::zeroed() };
+        epoll_event.events = EventType::ReadyToRead as _;
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                (&signal_fd_native_handle as *const i32) as *const u8,
+                core::ptr::addr_of!(epoll_event.data) as *mut u8,
+                core::mem::size_of::<i32>(),
+            )
+        };
+
+        if unsafe {
+            linux::epoll_ctl(
+                epoll_fd.native_handle(),
+                linux::EPOLL_CTL_ADD as _,
+                signal_fd.file_descriptor().native_handle(),
+                &mut epoll_event,
+            )
+        } == -1
+        {
+            match posix::Errno::get() {
+                posix::Errno::ENOMEM => {
+                    fail!(from origin, with EpollCreateError::InsufficientMemory,
+                        "{msg} since there is not enough memory available to attach the signalfd for signal handling.");
+                }
+                e => {
+                    fail!(from origin, with EpollCreateError::UnknownError(e as i32),
+                        "{msg} due to an unknown error while attaching the signalfd for signal handling.");
+                }
+            }
+        }
 
         Ok(Epoll {
             epoll_fd,
