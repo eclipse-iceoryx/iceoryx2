@@ -13,8 +13,8 @@ All the other scripts can be called without arguments.
 
 After the `release_preparation.sh` script is run, a PR needs to be created and
 merged to the main branch. Once merged, the `release_tagging.sh` can be used
-to crate the persistent release branch and the tag. The branch and tag needs to
-be pushed manually to github. After the tag is pushed to github, the release on
-github can be created.
+to create the persistent release branch and the tag. The branch and tag needs to
+be pushed manually to GitHub. After the tag is pushed, the release can be created
+on GitHub.
 
 The `release_publish.sh` script performs the actual publishing to crates.io.

@@ -36,6 +36,10 @@ print_step() {
     STEP_COUNTER=$((STEP_COUNTER+1))
 }
 
+print_default_user_exit_hint() {
+    echo -e "Canceled script execution!"
+}
+
 print_preparations_hint() {
     echo -e "* Run internal/scripts/release/release_preparation.sh"
     echo -e "* Test on QNX and Yocto"
@@ -112,8 +116,8 @@ while (( "$#" )); do
 done
 
 SELECTION=-1
-function show_default_selector() {
-    EXIT_HINT=$1
+show_default_selector() {
+    EXIT_HINT=${1:-print_default_user_exit_hint}
     while true; do
         read -p "Yes, Cancel or Skip (Y/C/S) [default=Y]: " yns
         yns=${yns:-Y}
@@ -135,7 +139,7 @@ function show_default_selector() {
     done
 }
 
-function show_completion() {
+show_completion() {
     # NOTE: read does not support to use variables for color codes
     read -p $'\033[32mDONE!\033[0m Continue to next step with \'enter\'' # blocks until enter is pressed
 }
