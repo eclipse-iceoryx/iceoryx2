@@ -109,8 +109,9 @@ done
 cd $(git rev-parse --show-toplevel)
 
 sanity_check_completeness() {
-    local ICEORYX2_CRATES=$(grep -E '^iceoryx2' Cargo.toml 2>/dev/null | awk '{print $1}' | sort -u)
+    local ICEORYX2_CRATES=$(cargo tree --workspace --depth 1 --prefix none | grep -v '(\*)' | grep -E '^(iceoryx2|benchmark|example)' | awk '{print $1}' | sort | uniq)
 
+    local HAS_ERROR=false
     for CRATE in ${ICEORYX2_CRATES}; do
         if [[ " ${CRATES_TO_IGNORE[@]} " =~ ${CRATE} ]]; then
             continue
@@ -120,9 +121,13 @@ sanity_check_completeness() {
             continue
         fi
 
-        echo -c "${C_RED}ERROR:${C_OFF} Crate '$CRATE' is neither in the publish nor ignore list."
-        exit 1
+        echo -e "${C_RED}ERROR:${C_OFF} Crate '$CRATE' is neither in the publish nor ignore list."
+        HAS_ERROR=true
     done
+
+    if [[ ${HAS_ERROR} == true ]]; then
+        exit 1
+    fi
 }
 
 sanity_check_cyclic_dependencies() {
@@ -132,7 +137,7 @@ sanity_check_cyclic_dependencies() {
     for CRATE in "${CRATES_TO_PUBLISH[@]}"; do
         ALLOWED_CRATE_DEPENDENCIES+=("${CRATE}")
 
-        local CRATE_DEPENDENCIES=$(cargo tree --package "${CRATE}" --depth 1 --prefix none | grep -v '(\*)' | grep '^iceoryx2' | awk '{print $1}' | sort | uniq)
+        local CRATE_DEPENDENCIES=$(cargo tree --package "${CRATE}" --depth 1 --prefix none | grep -v '(\*)' | grep -e '^iceoryx2' | awk '{print $1}' | sort | uniq)
         for DEP in ${CRATE_DEPENDENCIES}; do
             if [[ " ${ALLOWED_CRATE_DEPENDENCIES[@]} " =~ " ${DEP} " ]]; then
                 continue
