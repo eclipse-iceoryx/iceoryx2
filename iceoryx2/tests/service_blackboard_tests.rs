@@ -1817,12 +1817,15 @@ mod service_blackboard {
         assert_that!(sut_value, is_err);
         assert_that!(sut_value.err().unwrap(), eq KeyMemoryError::ValueTooLarge);
 
-        let sut_ptr = KeyMemory::<1>::try_from_ptr(
-            (&key as *const u16).cast(),
-            size_of_val(&key),
-            align_of_val(&key),
-        );
+        let sut_ptr = unsafe {
+            KeyMemory::<1>::try_from_ptr(
+                (&key as *const u16).cast(),
+                size_of_val(&key),
+                align_of_val(&key),
+            )
+        };
         assert_that!(sut_ptr, is_err);
+        assert_that!(sut_ptr.err().unwrap(), eq KeyMemoryError::ValueTooLarge);
     }
 
     #[test]
@@ -1836,11 +1839,13 @@ mod service_blackboard {
         assert_that!(sut_value, is_err);
         assert_that!(sut_value.err().unwrap(), eq KeyMemoryError::ValueAlignmentTooLarge);
 
-        let sut_ptr = KeyMemory::<1>::try_from_ptr(
-            (&key as *const Key).cast(),
-            size_of_val(&key),
-            align_of_val(&key),
-        );
+        let sut_ptr = unsafe {
+            KeyMemory::<1>::try_from_ptr(
+                (&key as *const Key).cast(),
+                size_of_val(&key),
+                align_of_val(&key),
+            )
+        };
         assert_that!(sut_ptr, is_err);
         assert_that!(sut_ptr.err().unwrap(), eq KeyMemoryError::ValueAlignmentTooLarge);
     }
@@ -1853,11 +1858,13 @@ mod service_blackboard {
         assert_that!(sut_value, is_ok);
         assert_that!(unsafe { *(sut_value.unwrap().data.as_ptr() as *const u16) }, eq key);
 
-        let sut_ptr = KeyMemory::<2>::try_from_ptr(
-            (&key as *const u16).cast(),
-            size_of_val(&key),
-            align_of_val(&key),
-        );
+        let sut_ptr = unsafe {
+            KeyMemory::<2>::try_from_ptr(
+                (&key as *const u16).cast(),
+                size_of_val(&key),
+                align_of_val(&key),
+            )
+        };
         assert_that!(sut_ptr, is_ok);
         assert_that!(unsafe { *(sut_ptr.unwrap().data.as_ptr() as *const u16) }, eq key);
     }

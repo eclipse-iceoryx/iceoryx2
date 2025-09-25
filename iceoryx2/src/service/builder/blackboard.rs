@@ -155,7 +155,7 @@ impl From<ServiceAvailabilityState> for BlackboardCreateError {
 }
 
 #[doc(hidden)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum KeyMemoryError {
     ValueTooLarge,
     ValueAlignmentTooLarge,
@@ -192,7 +192,10 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
         Ok(new_self)
     }
 
-    pub fn try_from_ptr(
+    /// # Safety
+    ///
+    ///   * see Safety section of core::ptr::copy_nonoverlapping
+    pub unsafe fn try_from_ptr(
         ptr: *const u8,
         value_size: usize,
         value_alignment: usize,
