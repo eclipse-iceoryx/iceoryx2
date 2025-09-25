@@ -13,7 +13,6 @@
 #ifndef IOX2_SUBSCRIBER_HPP
 #define IOX2_SUBSCRIBER_HPP
 
-#include "iox/assertions_addendum.hpp"
 #include "iox/expected.hpp"
 #include "iox/optional.hpp"
 #include "iox2/connection_failure.hpp"
