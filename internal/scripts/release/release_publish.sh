@@ -141,7 +141,8 @@ if [[ ${SELECTION} == ${YES} ]]; then
 fi
 
 print_step "Publish to crates.io"
-echo -e "Shall I publish to crates.io?"
+internal/scripts/release/crates_io_publish_script.sh list-crates-to-publish
+echo -e "Shall I publish the listed crates to crates.io?"
 show_default_selector
 if [[ ${SELECTION} == ${YES} ]]; then
     internal/scripts/release/crates_io_publish_script.sh publish
