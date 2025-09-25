@@ -11,6 +11,8 @@
     conflicts when merging.
 -->
 
+* `iox2 config explain` cli command for config descriptions
+  [#832](https://github.com/eclipse-iceoryx/iceoryx2/issues/832)
 * Add a C++ string container type with fixed compile-time capacity
   [#938](https://github.com/eclipse-iceoryx/iceoryx2/issues/938)
 
