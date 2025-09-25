@@ -173,6 +173,9 @@ list_crates_to_publish() {
 }
 
 publish() {
+    # NOTE: while 'cargo publish --workspace' is now stable, we still publish
+    #       the crates separately from a known list pro prevent accidentally
+    #       publishing a crate not intended to be published
     for CRATE in ${CRATES_TO_PUBLISH[@]}; do
         echo -e "${C_BLUE}${CRATE}${C_OFF}"
         cargo publish -p ${CRATE}
