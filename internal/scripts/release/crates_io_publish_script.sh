@@ -21,6 +21,7 @@ C_YELLOW='\033[1;33m'
 C_BLUE='\033[1;34m'
 
 DO_DRY_RUN=false
+DO_LIST_CRATES_TO_PUBLISH=false
 DO_PUBLISH=false
 DO_SANITY_CHECKS=false
 
@@ -73,6 +74,10 @@ while (( "$#" )); do
             DO_DRY_RUN=true
             shift 1
             ;;
+        "list-crates-to-publish")
+            DO_LIST_CRATES_TO_PUBLISH=true
+            shift 1
+            ;;
         "publish")
             DO_PUBLISH=true
             shift 1
@@ -86,10 +91,11 @@ while (( "$#" )); do
             echo -e ""
             echo -e "Usage: ${C_GREEN}$(basename $0)${C_OFF} publish"
             echo -e "Options:"
-            echo -e "    dry-run            Simulate publishing to crates.io"
-            echo -e "                       Only works with Rust >= 1.90"
-            echo -e "    publish            Publish to crates.io"
-            echo -e "    sanity-checks      Sanity checks for cyclic dependencies and new crates"
+            echo -e "    dry-run                 Simulate publishing to crates.io"
+            echo -e "                            Only works with Rust >= 1.90"
+            echo -e "    publish                 Publish to crates.io"
+            echo -e "    list-crates-to-publish  List crates to publish to crates.io"
+            echo -e "    sanity-checks           Sanity checks for cyclic dependencies and new crates"
             echo -e ""
             exit 0
             ;;
@@ -155,6 +161,12 @@ dry_run() {
     cargo publish --dry-run --workspace ${EXCLUDE_ARGS}
 }
 
+list_crates_to_publish() {
+    for CRATE in ${CRATES_TO_PUBLISH[@]}; do
+        echo -e "${C_BOLD}${CRATE}${C_OFF}"
+    done
+}
+
 publish() {
     for CRATE in ${CRATES_TO_PUBLISH[@]}; do
         echo -e "${C_BLUE}${CRATE}${C_OFF}"
@@ -164,6 +176,10 @@ publish() {
 
 if [[ ${DO_SANITY_CHECKS} == true ]]; then
     sanity_checks
+fi
+
+if [[ ${DO_LIST_CRATES_TO_PUBLISH} == true ]]; then
+    list_crates_to_publish
 fi
 
 if [[ ${DO_DRY_RUN} == true ]]; then
