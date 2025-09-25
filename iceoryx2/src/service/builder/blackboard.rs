@@ -155,43 +155,66 @@ impl From<ServiceAvailabilityState> for BlackboardCreateError {
 }
 
 #[doc(hidden)]
+#[derive(Debug, PartialEq, Eq)]
+pub enum KeyMemoryError {
+    ValueTooLarge,
+    ValueAlignmentTooLarge,
+}
+
+#[doc(hidden)]
 #[repr(C)]
-#[repr(align(8))] // TODO: align with Service::MAX_ALIGNMENT
-#[derive(Clone, Copy, Eq, PartialEq)]
+#[repr(align(8))]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct KeyMemory<const CAPACITY: usize> {
     pub data: [u8; CAPACITY],
 }
 
 impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
-    pub fn try_from<T: Copy>(value: &T) -> Result<Self, &'static str> {
+    pub fn try_from<T: Copy>(value: T) -> Result<Self, KeyMemoryError> {
+        let origin = "KeyMemory::try_from()";
+        let msg = "Unable to create KeyMemory";
+
         if size_of::<T>() > CAPACITY {
-            // TODO: introduce KeyMemoryError?
-            return Err("KeyMemory only accepts values with a size <= {CAPACITY}.");
+            fail!(from origin, with KeyMemoryError::ValueTooLarge,
+                "{} since the passed value is too large. Its size must be <= {}.", msg, CAPACITY);
+        }
+        const MAX_ALIGNMENT: usize = 8;
+        if align_of::<T>() > MAX_ALIGNMENT {
+            fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
+                "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
+                msg, MAX_ALIGNMENT);
         }
 
         let mut new_self = Self {
             data: [0; CAPACITY],
         };
-        unsafe { core::ptr::copy_nonoverlapping(value, new_self.data.as_mut_ptr() as *mut T, 1) };
+        unsafe { core::ptr::copy_nonoverlapping(&value, new_self.data.as_mut_ptr() as *mut T, 1) };
         Ok(new_self)
     }
 
-    pub fn try_from_ptr(ptr: *const u8, len: usize) -> Result<Self, &'static str> {
-        if len > CAPACITY {
-            // TODO: introduce KeyMemoryError?
-            return Err("KeyMemory only accepts values with a size <= {CAPACITY}.");
+    pub fn try_from_ptr(
+        ptr: *const u8,
+        value_size: usize,
+        value_alignment: usize,
+    ) -> Result<Self, KeyMemoryError> {
+        let origin = "KeyMemory::try_from_ptr()";
+        let msg = "Unable to create KeyMemory";
+
+        if value_size > CAPACITY {
+            fail!(from origin, with KeyMemoryError::ValueTooLarge,
+                "{} since the passed value size is too large. The size must be <= {}.", msg, CAPACITY);
+        }
+        const MAX_ALIGNMENT: usize = 8;
+        if value_alignment > MAX_ALIGNMENT {
+            fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
+                "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
+                msg, MAX_ALIGNMENT);
         }
 
         let mut new_self = Self {
             data: [0; CAPACITY],
         };
-        unsafe {
-            core::ptr::copy_nonoverlapping(
-                ptr,
-                new_self.data.as_mut_ptr(),
-                core::cmp::min(len, CAPACITY),
-            )
-        };
+        unsafe { core::ptr::copy_nonoverlapping(ptr, new_self.data.as_mut_ptr(), value_size) };
         Ok(new_self)
     }
 }

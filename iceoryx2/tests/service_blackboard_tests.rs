@@ -17,7 +17,7 @@ mod service_blackboard {
     use iceoryx2::port::writer::*;
     use iceoryx2::prelude::*;
     use iceoryx2::service::builder::blackboard::{
-        BlackboardCreateError, BlackboardOpenError, KeyMemory,
+        BlackboardCreateError, BlackboardOpenError, KeyMemory, KeyMemoryError,
     };
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
@@ -1810,36 +1810,56 @@ mod service_blackboard {
     }
 
     #[test]
-    fn key_memory_creation_fails_when_value_size_is_too_big<Sut: Service>() {
+    fn key_memory_creation_fails_when_value_is_too_large<Sut: Service>() {
         let key: u16 = 256;
 
-        let sut_value = KeyMemory::<1>::try_from(&key);
+        let sut_value = KeyMemory::<1>::try_from(key);
         assert_that!(sut_value, is_err);
+        assert_that!(sut_value.err().unwrap(), eq KeyMemoryError::ValueTooLarge);
 
-        let sut_ptr = KeyMemory::<1>::try_from_ptr((&key as *const u16).cast(), size_of_val(&key));
+        let sut_ptr = KeyMemory::<1>::try_from_ptr(
+            (&key as *const u16).cast(),
+            size_of_val(&key),
+            align_of_val(&key),
+        );
         assert_that!(sut_ptr, is_err);
     }
 
     #[test]
-    fn key_memory_creation_works_when_value_size_fits<Sut: Service>() {
-        let key: u16 = 256;
+    fn key_memory_creation_fails_when_alignment_is_too_large<Sut: Service>() {
+        #[derive(Clone, Copy)]
+        #[repr(align(16))]
+        struct Key {}
+        let key = Key {};
 
-        let sut_value = KeyMemory::<2>::try_from(&key);
-        assert_that!(sut_value, is_ok);
+        let sut_value = KeyMemory::<1>::try_from(key);
+        assert_that!(sut_value, is_err);
+        assert_that!(sut_value.err().unwrap(), eq KeyMemoryError::ValueAlignmentTooLarge);
 
-        let sut_ptr = KeyMemory::<2>::try_from_ptr((&key as *const u16).cast(), size_of_val(&key));
-        assert_that!(sut_ptr, is_ok);
+        let sut_ptr = KeyMemory::<1>::try_from_ptr(
+            (&key as *const Key).cast(),
+            size_of_val(&key),
+            align_of_val(&key),
+        );
+        assert_that!(sut_ptr, is_err);
+        assert_that!(sut_ptr.err().unwrap(), eq KeyMemoryError::ValueAlignmentTooLarge);
     }
 
     #[test]
-    fn keys_can_be_written_to_key_memory<Sut: Service>() {
-        let key: u8 = 0;
+    fn key_memory_creation_works_when_value_size_and_alignment_fit<Sut: Service>() {
+        let key: u16 = 256;
 
-        let mut sut_value = KeyMemory::<1>::try_from(&key).unwrap();
-        assert_that!(sut_value.data[0], eq key);
+        let sut_value = KeyMemory::<2>::try_from(key);
+        assert_that!(sut_value, is_ok);
+        assert_that!(unsafe { *(sut_value.unwrap().data.as_ptr() as *const u16) }, eq key);
 
-        sut_value.data[0] = 1;
-        assert_that!(sut_value.data[0], eq 1);
+        let sut_ptr = KeyMemory::<2>::try_from_ptr(
+            (&key as *const u16).cast(),
+            size_of_val(&key),
+            align_of_val(&key),
+        );
+        assert_that!(sut_ptr, is_ok);
+        assert_that!(unsafe { *(sut_ptr.unwrap().data.as_ptr() as *const u16) }, eq key);
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
