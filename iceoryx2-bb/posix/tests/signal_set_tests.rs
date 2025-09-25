@@ -16,9 +16,12 @@ use iceoryx2_bb_posix::{
     signal_set::{FetchableSignalSet, SignalSet},
 };
 use iceoryx2_bb_testing::assert_that;
+use iceoryx2_bb_testing::test_requires;
+use iceoryx2_pal_posix::posix::POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING;
 
 #[test]
 fn new_empty_signal_set_does_not_contain_a_signal() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = SignalSet::new_empty();
 
     for signal in all::<Signal>().collect::<Vec<Signal>>() {
@@ -28,6 +31,7 @@ fn new_empty_signal_set_does_not_contain_a_signal() {
 
 #[test]
 fn new_filled_signal_set_does_contain_all_signals() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = SignalSet::new_filled();
 
     for signal in all::<Signal>().collect::<Vec<Signal>>() {
@@ -37,6 +41,7 @@ fn new_filled_signal_set_does_contain_all_signals() {
 
 #[test]
 fn adding_new_signals_works() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let mut sut = SignalSet::new_empty();
 
     for signal in all::<Signal>().collect::<Vec<Signal>>() {
@@ -48,6 +53,7 @@ fn adding_new_signals_works() {
 
 #[test]
 fn removing_signals_works() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let mut sut = SignalSet::new_filled();
 
     for signal in all::<Signal>().collect::<Vec<Signal>>() {
@@ -59,6 +65,7 @@ fn removing_signals_works() {
 
 #[test]
 fn create_from_pending_signals_with_no_pending_signals_is_empty() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = SignalSet::from_pending();
 
     for signal in all::<Signal>().collect::<Vec<Signal>>() {
@@ -68,6 +75,7 @@ fn create_from_pending_signals_with_no_pending_signals_is_empty() {
 
 #[test]
 fn new_empty_fetchable_signal_set_does_not_contain_a_signal() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = FetchableSignalSet::new_empty();
 
     for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
@@ -77,6 +85,7 @@ fn new_empty_fetchable_signal_set_does_not_contain_a_signal() {
 
 #[test]
 fn new_filled_fetchable_signal_set_does_contain_all_signals() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = FetchableSignalSet::new_filled();
 
     for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
@@ -86,6 +95,7 @@ fn new_filled_fetchable_signal_set_does_contain_all_signals() {
 
 #[test]
 fn adding_new_fetchable_signals_works() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let mut sut = FetchableSignalSet::new_empty();
 
     for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
@@ -97,6 +107,7 @@ fn adding_new_fetchable_signals_works() {
 
 #[test]
 fn removing_fetchable_signals_works() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let mut sut = FetchableSignalSet::new_filled();
 
     for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
@@ -108,6 +119,7 @@ fn removing_fetchable_signals_works() {
 
 #[test]
 fn create_from_pending_fetchable_signals_works() {
+    test_requires!(POSIX_SUPPORT_ADVANCED_SIGNAL_HANDLING);
     let sut = FetchableSignalSet::from_pending();
 
     for signal in all::<FetchableSignal>().collect::<Vec<FetchableSignal>>() {
