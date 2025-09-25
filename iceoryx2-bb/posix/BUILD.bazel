@@ -56,6 +56,7 @@ rust_test_suite(
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
         "//iceoryx2-pal/configuration:iceoryx2-pal-configuration",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",
+        "@crate_index//:enum-iterator",
     ],
     tags = ["exclusive"],
     proc_macro_deps = [
