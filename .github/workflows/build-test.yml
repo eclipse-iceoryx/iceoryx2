@@ -7,9 +7,6 @@ on:
     branches: [main, release*]
     types: [opened, ready_for_review, reopened, synchronize]
 
-# env:
-# RUSTFLAGS: "-C debug-assertions"
-
 jobs:
   changes:
     if: github.event.pull_request.draft == false
@@ -537,58 +534,21 @@ jobs:
           cmake -S examples/cxx -B target/ff/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install;${{ github.workspace }}/target/ff/iceoryx/install"
           cmake --build target/ff/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
 
-  x86_64_unstable:
+  call-x86_64_unstable-pr:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
-    continue-on-error: true
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
-        toolchain: [beta, nightly]
-        mode:
-          - name: "release"
-            arg: "--release"
+        os: [ubuntu-latest] # todo (iox2-#1049): Use windows latest here
+        toolchain: [nightly]
+        mode: 
           - name: "debug"
             arg: ""
-    timeout-minutes: 90
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: "3.31.x"
-      - name: Use cmake
-        run: cmake --version
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          components: rustfmt, clippy
-
-      - name: Download artifact cargo-nextest
-        uses: ./.github/actions/download-cached-rust-tool
-        with:
-          artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
-
-      - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: internal\scripts\ci_prepare_windows.ps1
-      - name: Prepare Linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          internal/scripts/ci_prepare_ubuntu.sh
-          uname -a
-
-      - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }}
-
-      - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }}
+    uses: ./.github/workflows/x86_64_unstable_workflow.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode: ${{ matrix.mode }}
 
   ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
   ###       current alternative is a cirrus.yml aarch64 target
