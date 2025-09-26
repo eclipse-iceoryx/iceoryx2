@@ -1,0 +1,105 @@
+name: Reusable workflow for x86_32
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      toolchain:
+        required: true
+        type: string
+      mode:
+        required: true
+        type: string
+
+jobs:
+  x86_32:
+    timeout-minutes: 60
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # ratchet: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+
+      - name: Use cmake
+        run: cmake --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ inputs.toolchain }}
+          targets: i686-unknown-linux-gnu
+          components: rustfmt, clippy
+
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+      - name: Prepare Windows
+        if: ${{ inputs.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        run: internal\scripts\ci_prepare_windows.ps1
+
+      - name: Prepare Linux
+        if: ${{ inputs.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Run cargo build
+        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ inputs.mode.arg }} --target i686-unknown-linux-gnu
+
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ inputs.mode.arg }} --target i686-unknown-linux-gnu
+
+      - name: Build iceoryx_hoofs
+        run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh 32-bit-x86
+
+      - name: Build language bindings
+        run: |
+          cmake -S . \
+                -B target/ff/cc/build \
+                -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
+                -DBUILD_EXAMPLES=ON \
+                -DBUILD_TESTING=ON \
+                -DCMAKE_C_FLAGS="-m32 -malign-double" \
+                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" \
+                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ inputs.mode.name }}" \
+                ${{ inputs.mode.cmake-build-type }}
+          cmake --build target/ff/cc/build
+          cmake --install target/ff/cc/build
+
+      - name: Run C language binding tests
+        run: target/ff/cc/build/tests/iceoryx2-c-tests
+
+      - name: Run C++ language binding tests
+        # TODO: [#262] the skipped tests trigger an unaligned pointer access
+        run: target/ff/cc/build/tests/iceoryx2-cxx-tests --gtest_filter="-ServiceTest/*.list_works:ServiceTest/*.list_works_with_attributes:ServiceTest/*.details_works"
+
+      - name: Build C language binding examples in out-of-tree configuration
+        run: |
+          rm -rf target/ff/cc/build
+          cmake -S examples/c \
+                -B target/ff/out-of-tree-c \
+                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
+                -DCMAKE_C_FLAGS="-m32 -malign-double" \
+                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                ${{ inputs.mode.cmake-build-type }}
+          cmake --build target/ff/out-of-tree-c
+
+      - name: Build C++ language binding examples in out-of-tree configuration
+        run: |
+          cmake -S examples/cxx \
+                -B target/ff/out-of-tree-cxx \
+                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install;${{ github.workspace }}/target/ff/iceoryx/install" \
+                -DCMAKE_C_FLAGS="-m32 -malign-double" \
+                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
+                ${{ inputs.mode.cmake-build-type }}
+          cmake --build target/ff/out-of-tree-cxx
