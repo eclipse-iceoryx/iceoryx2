@@ -88,14 +88,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         cargo-features-flag: [""]
-        includes:
+        include:
           - os: ubuntu-latest
             cargo-features-flag: "--features libc_platform"
     uses: ./.github/workflows/static_code_analysis_workflow.yml
     with: 
       os: ${{ matrix.os }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
-      include: ${{ matrix.includes }}
 
   static-code-analysis-cpp:
     needs: preflight-check
@@ -309,7 +308,7 @@ jobs:
             cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
             cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
         cargo-features-flag: ["", "--features libc_platform"]
-        includes:
+        include:
           # NOTE: enable for MinGW
           # - toolchain: stable-gnu
           #  cmake-build-system-generator: '-G "MinGW Makefiles"'
@@ -318,7 +317,7 @@ jobs:
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
           - os: ubuntu-latest
             toolchain: stable
-        excludes:
+        exclude:
           # NOTE: enable for MinGW
           # - os: ubuntu-latest
           #   toolchain: stable-gnu
@@ -334,8 +333,6 @@ jobs:
       toolchain: ${{ matrix.toolchain }}
       mode: ${{ matrix.mode }}
       cargo-features-flag: ${{ matrix.cargo-features-flag }}
-      include: ${{ matrix.includes }}
-      exclude: ${{ matrix.excludes }}
 
   x86_64_unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
