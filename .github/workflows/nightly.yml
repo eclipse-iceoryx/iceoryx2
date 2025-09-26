@@ -6,7 +6,21 @@ on:
   workflow_dispatch:
 
 jobs:
-  call-x86_32-nightly:
+  static-code-analysis-rust-nightly:
+    strategy:
+      matrix:
+        os: [windows-2022] # todo (iox2-#1049): Use windows latest here
+        cargo-features-flag: [""]
+        includes:
+          - os: ubuntu-latest
+            cargo-features-flag: "--features libc_platform"
+    uses: ./.github/workflows/x86_32_workflow.yml
+    with: 
+      os: ${{ matrix.os }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+      include: ${{ matrix.includes }}
+
+  x86_32-nightly:
     strategy:
       matrix:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
@@ -21,7 +35,7 @@ jobs:
       toolchain: ${{ matrix.toolchain }}
       mode: ${{ matrix.mode }}
 
-  call-x86_64-stable-nightly:
+  x86_64-stable-nightly:
     strategy:
       matrix:
         os: [windows-2022] # todo (iox2-#1049): Use windows latest here
@@ -66,7 +80,7 @@ jobs:
       include: ${{ matrix.includes }}
       exclude: ${{ matrix.excludes }}
 
-  call-x86_64_unstable-nightly:
+  x86_64_unstable-nightly:
     strategy:
       matrix:
         os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here

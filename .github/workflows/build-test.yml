@@ -86,50 +86,16 @@ jobs:
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-latest, macOS-latest] # todo (iox2-#1049): Use windows latest here
+        os: [ubuntu-latest, macOS-latest]
         cargo-features-flag: [""]
-        include:
+        includes:
           - os: ubuntu-latest
             cargo-features-flag: "--features libc_platform"
-
-    timeout-minutes: 40
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c # ratchet:tj-actions/changed-files@v45
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-
-      - name: Run cargo fmt
-        run: cargo fmt --all -- --check
-
-      - name: Run cargo clippy
-        run: cargo clippy ${{ matrix.cargo-features-flag }} -- -D warnings
-
-      - name: Run code examples in documentation
-        run: cargo test --workspace --doc ${{ matrix.cargo-features-flag }}
-
-      - name: Build documentation
-        run: cargo doc ${{ matrix.cargo-features-flag }}
-
-      - name: Setup miri
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: nightly
-          components: miri
-
-      - name: Run cargo miri
-        env:
-          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-        run: ./internal/scripts/ci_run_miri.sh
+    uses: ./.github/workflows/static_code_analysis_workflow.yml
+    with: 
+      os: ${{ matrix.os }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+      include: ${{ matrix.includes }}
 
   static-code-analysis-cpp:
     needs: preflight-check
@@ -307,7 +273,7 @@ jobs:
             --abort-on-container-exit \
             --exit-code-from pinger
 
-  call-x86_32-pr:
+  x86_32:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -324,7 +290,7 @@ jobs:
       toolchain: ${{ matrix.toolchain }}
       mode: ${{ matrix.mode }}
 
-  call-x86_64-stable-pr:
+  x86_64-stable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -371,7 +337,7 @@ jobs:
       include: ${{ matrix.includes }}
       exclude: ${{ matrix.excludes }}
 
-  call-x86_64_unstable-pr:
+  x86_64_unstable:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' && github.ref != 'refs/heads/main' }}
     strategy:
@@ -533,9 +499,9 @@ jobs:
   mandatory-checks:
     needs: [
             static-code-analysis,
-            call-x86_64-stable-pr,
+            x86_64-stable,
             x86_64_bazel,
-            call-x86_32-pr,
+            x86_32,
             python-bindings,
             end-to-end-tests,
             ]
