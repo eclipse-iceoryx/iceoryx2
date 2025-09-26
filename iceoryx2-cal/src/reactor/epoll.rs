@@ -14,7 +14,7 @@ pub use iceoryx2_bb_linux::epoll::{
     Epoll, EpollBuilder, EpollCreateError, EpollEvent, EpollGuard, EventType,
 };
 use iceoryx2_bb_linux::epoll::{EpollAttachmentError, EpollWaitError};
-use iceoryx2_bb_log::fail;
+use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::file_descriptor::FileDescriptor;
 
 use crate::reactor::{
@@ -52,7 +52,13 @@ impl Reactor for Epoll {
     type Builder = EpollBuilder;
 
     fn capacity(&self) -> usize {
-        Self::capacity()
+        match Self::capacity() {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(from self, "Unable to acquire the epoll capacity ({e:?}). Falling back to Epoll::max_wait_events().");
+                Self::max_wait_events()
+            }
+        }
     }
 
     fn len(&self) -> usize {
@@ -81,7 +87,7 @@ impl Reactor for Epoll {
             Ok(guard) => Ok(guard),
             Err(EpollAttachmentError::ExceedsMaxSupportedAttachments) => {
                 fail!(from self, with ReactorAttachError::CapacityExceeded,
-                    "{msg} since it would exceed the maximum capacity of {}.", Self::capacity());
+                    "{msg} since it would exceed the maximum capacity of {}.", self.capacity());
             }
             Err(EpollAttachmentError::AlreadyAttached) => {
                 fail!(from self, with ReactorAttachError::AlreadyAttached,
