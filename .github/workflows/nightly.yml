@@ -6,6 +6,66 @@ on:
   workflow_dispatch:
 
 jobs:
+  call-x86_32-nightly:
+    strategy:
+      matrix:
+        os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
+        toolchain: [stable] # [stable, 1.81.0, beta, nightly]
+        mode:
+          - name: "release"
+            arg: "--release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
+    uses: ./.github/workflows/x86_32_workflow.yml
+    with: 
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode: ${{ matrix.mode }}
+
+  call-x86_64-stable-nightly:
+    strategy:
+      matrix:
+        os: [windows-2022] # todo (iox2-#1049): Use windows latest here
+        # NOTE: enable for MinGW
+        # toolchain: [stable, stable-gnu, 1.81.0]
+        toolchain: [stable, 1.81.0]
+        mode:
+          - name: "release"
+            arg: "--release"
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release" # required for Makefile Generators at config time
+            cmake-build-config: "--config Release" # required for Visual Studio at build and install time
+          - name: "debug"
+            arg: ""
+            cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
+            cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
+        cargo-features-flag: ["", "--features libc_platform"]
+        includes:
+          # NOTE: enable for MinGW
+          # - toolchain: stable-gnu
+          #  cmake-build-system-generator: '-G "MinGW Makefiles"'
+          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
+            toolchain: stable
+            cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
+          - os: ubuntu-latest
+            toolchain: stable
+        excludes:
+          # NOTE: enable for MinGW
+          # - os: ubuntu-latest
+          #   toolchain: stable-gnu
+          # - os: macos-latest
+          #   toolchain: stable-gnu
+          - os: windows-2022 # todo (iox2-#1049): Use windows latest here
+            cargo-features-flag: "--features libc_platform"
+          - os: macos-latest
+            cargo-features-flag: "--features libc_platform"
+    uses: ./.github/workflows/x86_64_stable_workflow.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode: ${{ matrix.mode }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+      include: ${{ matrix.includes }}
+      exclude: ${{ matrix.excludes }}
+
   call-x86_64_unstable-nightly:
     strategy:
       matrix:
