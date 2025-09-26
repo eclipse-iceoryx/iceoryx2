@@ -1,0 +1,57 @@
+name: Reusable workflow for x86_64_unstable
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      toolchain:
+        required: true
+        type: string
+      mode:
+        required: true
+        type: string
+
+jobs:
+  x86_64_unstable:
+    continue-on-error: true
+    timeout-minutes: 90
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # ratchet: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+      - name: Use cmake
+        run: cmake --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ inputs.toolchain }}
+          components: rustfmt, clippy
+
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+      - name: Prepare Windows
+        if: ${{ inputs.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        run: internal\scripts\ci_prepare_windows.ps1
+      - name: Prepare Linux
+        if: ${{ inputs.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets ${{ inputs.mode.arg }}
+
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.mode.arg }}
