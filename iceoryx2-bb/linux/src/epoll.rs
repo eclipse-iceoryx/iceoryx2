@@ -52,12 +52,15 @@ use core::mem::MaybeUninit;
 use core::time::Duration;
 use std::sync::atomic::Ordering;
 
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::{
+    file::{AccessMode, FileBuilder},
     file_descriptor::{FileDescriptor, FileDescriptorBased},
     signal::FetchableSignal,
     signal_set::FetchableSignalSet,
 };
+use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_os_api::linux;
 use iceoryx2_pal_posix::posix::{self};
@@ -158,6 +161,13 @@ pub enum InputFlag {
 pub struct EpollGuard<'epoll, 'file_descriptor> {
     epoll: &'epoll Epoll,
     fd: &'file_descriptor FileDescriptor,
+}
+
+impl<'epoll, 'file_descriptor> EpollGuard<'epoll, 'file_descriptor> {
+    /// Returns a reference of the attached [`FileDescriptor`]
+    pub fn file_descriptor(&self) -> &'file_descriptor FileDescriptor {
+        self.fd
+    }
 }
 
 impl Drop for EpollGuard<'_, '_> {
@@ -265,14 +275,13 @@ impl EpollBuilder {
             }
         };
 
-        let signal_fd_native_handle = unsafe { signal_fd.file_descriptor().native_handle() };
         let mut epoll_event: linux::epoll_event = unsafe { core::mem::zeroed() };
         epoll_event.events = EventType::ReadyToRead as _;
         unsafe {
             core::ptr::copy_nonoverlapping(
-                (&signal_fd_native_handle as *const i32) as *const u8,
+                (signal_fd.file_descriptor() as *const _) as *const u8,
                 linux::epoll_addr_of_event_data_mut(&mut epoll_event),
-                core::mem::size_of::<i32>(),
+                core::mem::size_of::<FileDescriptor>(),
             )
         };
 
@@ -322,16 +331,11 @@ impl FileDescriptorEvent<'_> {
     /// Returns `true` if the [`FileDescriptorEvent`] originated from the provided
     /// [`FileDescriptor`], otherwise `false`.
     pub fn originates_from(&self, file_descriptor: &FileDescriptor) -> bool {
-        let mut fd_value: i32 = 0;
-        unsafe {
-            core::ptr::copy_nonoverlapping(
-                linux::epoll_addr_of_event_data(self.data),
-                (&mut fd_value as *mut i32) as *mut u8,
-                core::mem::size_of::<i32>(),
-            )
-        };
+        unsafe { file_descriptor.native_handle() == self.file_descriptor().native_handle() }
+    }
 
-        fd_value == unsafe { file_descriptor.native_handle() }
+    pub fn file_descriptor(&self) -> &FileDescriptor {
+        unsafe { &*linux::epoll_addr_of_event_data(self.data).cast() }
     }
 
     /// Returns `true` if the [`FileDescriptorEvent`] was caused by the provided [`EventType`],
@@ -366,6 +370,22 @@ impl Epoll {
         } else {
             self.len.fetch_sub(1, Ordering::Relaxed);
         }
+    }
+
+    /// Returns the maximum supported [`Epoll`] capacity for the current system.
+    pub fn capacity() -> usize {
+        let file_path = FilePath::new(b"/proc/sys/fs/epoll/max_user_watches").unwrap();
+        let proc_stat_file = FileBuilder::new(&file_path)
+            .has_ownership(false)
+            .open_existing(AccessMode::Read)
+            .unwrap();
+
+        let mut buffer = [0u8; 32];
+        let bytes_read = proc_stat_file.read(&mut buffer).unwrap();
+        core::str::from_utf8(&buffer[0..bytes_read as usize])
+            .unwrap()
+            .parse::<usize>()
+            .unwrap()
     }
 
     /// Returns `true` when [`Epoll`] has no attached [`FileDescriptor`]s, otherwise `false`.
@@ -525,9 +545,9 @@ impl<'epoll, 'fd> EpollAttachmentBuilder<'epoll, 'fd> {
         epoll_event.events = self.events_flag;
         unsafe {
             core::ptr::copy_nonoverlapping(
-                (&self.fd.native_handle() as *const _) as *const u8,
+                (self.fd as *const _) as *const u8,
                 linux::epoll_addr_of_event_data_mut(&mut epoll_event),
-                core::mem::size_of::<i32>(),
+                core::mem::size_of::<FileDescriptor>(),
             )
         }
 
