@@ -470,7 +470,7 @@ impl Epoll {
 
         let mut buffer = [0u8; 32];
         let bytes_read = proc_stat_file.read(&mut buffer).unwrap();
-        let file_content = match core::str::from_utf8(&buffer[0..bytes_read as usize]) {
+        let file_content = match core::str::from_utf8(&buffer[0..bytes_read as usize - 1]) {
             Ok(v) => v,
             Err(e) => {
                 fail!(from origin, with EpollGetCapacityError::InvalidProcFileContent,
