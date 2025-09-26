@@ -15,12 +15,6 @@ on:
       cargo-features-flag:
         required: true
         type: string
-      include:
-        required: true
-        type: string
-      exclude:
-        required: true
-        type: string
 
 jobs:
   x86_64:
