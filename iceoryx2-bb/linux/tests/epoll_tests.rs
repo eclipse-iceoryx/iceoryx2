@@ -265,9 +265,9 @@ pub mod tests {
         let barrier = Barrier::new(2);
         std::thread::scope(|s| {
             s.spawn(|| {
-            barrier.wait();
-            assert_that!(sut.timed_wait(|_| {callback_was_called.store(true, Ordering::Relaxed);}, core::time::Duration::from_secs(12300)).unwrap(), eq 1);
-        });
+                barrier.wait();
+                assert_that!(sut.timed_wait(|_| {callback_was_called.store(true, Ordering::Relaxed);}, core::time::Duration::from_secs(12300)).unwrap(), eq 1);
+            });
 
             barrier.wait();
             std::thread::sleep(TIMEOUT);
@@ -293,9 +293,9 @@ pub mod tests {
         let barrier = Barrier::new(2);
         std::thread::scope(|s| {
             s.spawn(|| {
-            barrier.wait();
-            assert_that!(sut.blocking_wait(|_| {callback_was_called.store(true, Ordering::Relaxed);}).unwrap(), eq 1);
-        });
+                barrier.wait();
+                assert_that!(sut.blocking_wait(|_| {callback_was_called.store(true, Ordering::Relaxed);}).unwrap(), eq 1);
+            });
 
             barrier.wait();
             std::thread::sleep(TIMEOUT);

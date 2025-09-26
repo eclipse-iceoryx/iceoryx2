@@ -62,7 +62,7 @@ impl SignalSet {
         if unsafe { posix::sigemptyset(&mut new_self.signal_set) } == -1 {
             fatal_panic!(
                 from new_self,
-                "This should never happen! Failed to initialized empty signal set ({:?}).",
+                "This should never happen! Failed to initialize empty signal set ({:?}).",
                 Errno::get());
         }
 
@@ -78,7 +78,7 @@ impl SignalSet {
         if unsafe { posix::sigfillset(&mut new_self.signal_set) } == -1 {
             fatal_panic!(
                 from new_self,
-                "This should never happen! Failed to initialized filled signal set ({:?}).",
+                "This should never happen! Failed to initialize filled signal set ({:?}).",
                 Errno::get());
         }
 

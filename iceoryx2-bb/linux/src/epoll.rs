@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! [`Epoll`] is a safe abstraction over the event file descriptor in linux. It allows user to
+//! [`Epoll`] is a safe abstraction over the event file descriptor in linux. It allows users to
 //! attach [`FileDescriptor`]s with a set of [`EventType`]s and [`InputFlag`]s. Additionally,
 //! [`Epoll`] can also handle [`FetchableSignal`]s via a wakeup and informing the user what
 //! [`FetchableSignal`] was raised.
@@ -351,15 +351,21 @@ pub struct Epoll {
 
 impl Epoll {
     fn remove(&self, fd_value: i32) {
-        unsafe {
+        if unsafe {
             linux::epoll_ctl(
                 self.epoll_fd.native_handle(),
                 linux::EPOLL_CTL_DEL as _,
                 fd_value,
                 core::ptr::null_mut(),
             )
-        };
-        self.len.fetch_sub(1, Ordering::Relaxed);
+        } == -1
+        {
+            warn!(from self,
+                "This should never happen! Failed to detach {fd_value} from epoll due to ({:?}). This might cause unexpected behavior.",
+                posix::Errno::get());
+        } else {
+            self.len.fetch_sub(1, Ordering::Relaxed);
+        }
     }
 
     /// Returns `true` when [`Epoll`] has no attached [`FileDescriptor`]s, otherwise `false`.
@@ -420,7 +426,9 @@ impl Epoll {
     ) -> Result<usize, EpollWaitError> {
         let msg = "Unable to wait on epoll";
         const MAX_EVENTS: usize = 512;
-        let mut events: [MaybeUninit<linux::epoll_event>; 512] = [MaybeUninit::uninit(); 512];
+
+        let mut events: [MaybeUninit<linux::epoll_event>; MAX_EVENTS] =
+            [MaybeUninit::uninit(); MAX_EVENTS];
 
         let number_of_fds = unsafe {
             linux::epoll_wait(

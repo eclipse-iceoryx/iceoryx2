@@ -185,7 +185,7 @@ impl SignalFdBuilder {
         let file_descriptor = match FileDescriptor::new(fd) {
             Some(fd) => fd,
             None => fatal_panic!(from self,
-                "This should never happen! {msg} since the signalfd returned a broked file descriptor (fd)."),
+                "This should never happen! {msg} since the signalfd returned a broken file descriptor (fd)."),
         };
 
         Ok(file_descriptor)
@@ -215,12 +215,12 @@ impl SignalInfo {
         (self.signal_info.ssi_signo as i32).into()
     }
 
-    /// Returns the [`ProcessId`] of the origin that send the signal.
+    /// Returns the [`ProcessId`] of the origin that sent the signal.
     pub fn origin_pid(&self) -> ProcessId {
         ProcessId::new(self.signal_info.ssi_pid as _)
     }
 
-    /// Returns the [`Uid`] of the origin that send the signal.
+    /// Returns the [`Uid`] of the origin that sent the signal.
     pub fn origin_uid(&self) -> Uid {
         Uid::new_from_native(self.signal_info.ssi_uid)
     }
