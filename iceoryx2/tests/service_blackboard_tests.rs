@@ -12,6 +12,8 @@
 
 #[generic_tests::define]
 mod service_blackboard {
+    use core::alloc::Layout;
+    use core::ptr::copy_nonoverlapping;
     use core::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use iceoryx2::port::reader::*;
     use iceoryx2::port::writer::*;
@@ -27,7 +29,6 @@ mod service_blackboard {
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_bb_testing::watchdog::Watchdog;
-    use std::ptr::copy_nonoverlapping;
     use std::sync::Arc;
     use std::sync::Barrier;
 
@@ -1818,11 +1819,7 @@ mod service_blackboard {
         assert_that!(sut_value.err().unwrap(), eq KeyMemoryError::ValueTooLarge);
 
         let sut_ptr = unsafe {
-            KeyMemory::<1>::try_from_ptr(
-                (&key as *const u16).cast(),
-                size_of_val(&key),
-                align_of_val(&key),
-            )
+            KeyMemory::<1>::try_from_ptr((&key as *const u16).cast(), Layout::for_value(&key))
         };
         assert_that!(sut_ptr, is_err);
         assert_that!(sut_ptr.err().unwrap(), eq KeyMemoryError::ValueTooLarge);
@@ -1840,11 +1837,7 @@ mod service_blackboard {
         assert_that!(sut_value.err().unwrap(), eq KeyMemoryError::ValueAlignmentTooLarge);
 
         let sut_ptr = unsafe {
-            KeyMemory::<1>::try_from_ptr(
-                (&key as *const Key).cast(),
-                size_of_val(&key),
-                align_of_val(&key),
-            )
+            KeyMemory::<1>::try_from_ptr((&key as *const Key).cast(), Layout::for_value(&key))
         };
         assert_that!(sut_ptr, is_err);
         assert_that!(sut_ptr.err().unwrap(), eq KeyMemoryError::ValueAlignmentTooLarge);
@@ -1859,11 +1852,7 @@ mod service_blackboard {
         assert_that!(unsafe { *(sut_value.unwrap().data.as_ptr() as *const u16) }, eq key);
 
         let sut_ptr = unsafe {
-            KeyMemory::<2>::try_from_ptr(
-                (&key as *const u16).cast(),
-                size_of_val(&key),
-                align_of_val(&key),
-            )
+            KeyMemory::<2>::try_from_ptr((&key as *const u16).cast(), Layout::for_value(&key))
         };
         assert_that!(sut_ptr, is_ok);
         assert_that!(unsafe { *(sut_ptr.unwrap().data.as_ptr() as *const u16) }, eq key);

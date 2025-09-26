@@ -16,6 +16,7 @@
 //!
 use self::attribute::{AttributeSpecifier, AttributeVerifier};
 use super::{OpenDynamicStorageFailure, ServiceState};
+use crate::constants::MAX_BLACKBOARD_KEY_ALIGNMENT;
 use crate::service;
 use crate::service::config_scheme::{blackboard_data_config, blackboard_mgmt_config};
 use crate::service::dynamic_config::blackboard::DynamicConfigSettings;
@@ -32,6 +33,7 @@ use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::vec::RelocatableVec;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
+use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::spmc::unrestricted_atomic::UnrestrictedAtomic;
 use iceoryx2_bb_log::{error, fatal_panic};
@@ -171,6 +173,8 @@ pub struct KeyMemory<const CAPACITY: usize> {
 
 impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     pub fn try_from<T: Copy>(value: T) -> Result<Self, KeyMemoryError> {
+        static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
+
         let origin = "KeyMemory::try_from()";
         let msg = "Unable to create KeyMemory";
 
@@ -178,11 +182,10 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
             fail!(from origin, with KeyMemoryError::ValueTooLarge,
                 "{} since the passed value is too large. Its size must be <= {}.", msg, CAPACITY);
         }
-        const MAX_ALIGNMENT: usize = 8;
-        if align_of::<T>() > MAX_ALIGNMENT {
+        if align_of::<T>() > MAX_BLACKBOARD_KEY_ALIGNMENT {
             fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
                 "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
-                msg, MAX_ALIGNMENT);
+                msg, MAX_BLACKBOARD_KEY_ALIGNMENT);
         }
 
         let mut new_self = Self {
@@ -197,27 +200,29 @@ impl<const CAPACITY: usize> KeyMemory<CAPACITY> {
     ///   * see Safety section of core::ptr::copy_nonoverlapping
     pub unsafe fn try_from_ptr(
         ptr: *const u8,
-        value_size: usize,
-        value_alignment: usize,
+        value_layout: Layout,
     ) -> Result<Self, KeyMemoryError> {
+        static_assert_eq::<{ align_of::<KeyMemory<1>>() }, MAX_BLACKBOARD_KEY_ALIGNMENT>();
+
         let origin = "KeyMemory::try_from_ptr()";
         let msg = "Unable to create KeyMemory";
 
-        if value_size > CAPACITY {
+        if value_layout.size() > CAPACITY {
             fail!(from origin, with KeyMemoryError::ValueTooLarge,
                 "{} since the passed value size is too large. The size must be <= {}.", msg, CAPACITY);
         }
-        const MAX_ALIGNMENT: usize = 8;
-        if value_alignment > MAX_ALIGNMENT {
+        if value_layout.align() > MAX_BLACKBOARD_KEY_ALIGNMENT {
             fail!(from origin, with KeyMemoryError::ValueAlignmentTooLarge,
                 "{} since the alignment of the passed value is too large. The alignment must be <= {}.",
-                msg, MAX_ALIGNMENT);
+                msg, MAX_BLACKBOARD_KEY_ALIGNMENT);
         }
 
         let mut new_self = Self {
             data: [0; CAPACITY],
         };
-        unsafe { core::ptr::copy_nonoverlapping(ptr, new_self.data.as_mut_ptr(), value_size) };
+        unsafe {
+            core::ptr::copy_nonoverlapping(ptr, new_self.data.as_mut_ptr(), value_layout.size())
+        };
         Ok(new_self)
     }
 }
