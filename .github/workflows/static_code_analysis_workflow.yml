@@ -1,0 +1,55 @@
+name: Reusable workflow for static code analysis
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      cargo-features-flag:
+        required: true
+        type: string
+      include:
+        required: true
+        type: string
+
+jobs:
+  static-code-analysis-rust:
+    timeout-minutes: 20
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c # ratchet:tj-actions/changed-files@v45
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run cargo clippy
+        run: cargo clippy ${{ inputs.cargo-features-flag }} -- -D warnings
+
+      - name: Run code examples in documentation
+        run: cargo test --workspace --doc ${{ inputs.cargo-features-flag }}
+
+      - name: Build documentation
+        run: cargo doc ${{ inputs.cargo-features-flag }}
+  
+      - name: Setup miri
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: miri
+
+      - name: Run cargo miri
+        env:
+          ALL_CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
+        run: ./internal/scripts/ci_run_miri.sh
