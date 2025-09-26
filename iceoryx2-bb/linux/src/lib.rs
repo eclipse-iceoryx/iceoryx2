@@ -10,10 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_PAL_OS_API_LINUX_H
-#define IOX2_PAL_OS_API_LINUX_H
+#[cfg(target_os = "linux")]
+pub mod epoll;
 
-#include <sys/epoll.h>
-#include <sys/signalfd.h>
-
-#endif
+#[cfg(target_os = "linux")]
+pub mod signalfd;

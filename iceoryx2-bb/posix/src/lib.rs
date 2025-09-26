@@ -66,6 +66,7 @@ pub mod scheduler;
 pub mod semaphore;
 pub mod shared_memory;
 pub mod signal;
+pub mod signal_set;
 pub mod socket_ancillary;
 pub mod system_configuration;
 #[doc(hidden)]

@@ -35,6 +35,20 @@ pub const EPOLL_EVENTS_EPOLLWAKEUP: EPOLL_EVENTS = libc::EPOLLWAKEUP;
 pub const EPOLL_EVENTS_EPOLLONESHOT: EPOLL_EVENTS = libc::EPOLLONESHOT;
 pub const EPOLL_EVENTS_EPOLLET: EPOLL_EVENTS = libc::EPOLLET;
 
+pub const EPOLL_CTL_ADD: u32 = libc::EPOLL_CTL_ADD as _;
+pub const EPOLL_CTL_DEL: u32 = libc::EPOLL_CTL_DEL as _;
+pub const EPOLL_CTL_MOD: u32 = libc::EPOLL_CTL_MOD as _;
+
+pub unsafe fn epoll_addr_of_event_data(event: *const epoll_event) -> *const u8 {
+    let event_ref = &*event;
+    core::ptr::addr_of!(event_ref.u64).cast()
+}
+
+pub unsafe fn epoll_addr_of_event_data_mut(event: *mut epoll_event) -> *mut u8 {
+    let event_ref = &mut *event;
+    core::ptr::addr_of!(event_ref.u64).cast_mut().cast()
+}
+
 pub unsafe fn epoll_create(size: posix::int) -> posix::int {
     libc::epoll_create(size)
 }

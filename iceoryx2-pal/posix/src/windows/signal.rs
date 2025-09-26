@@ -177,3 +177,27 @@ pub unsafe fn kill(pid: pid_t, sig: int) -> int {
         }
     }
 }
+
+pub unsafe fn sigaddset(set: *mut sigset_t, signo: int) -> int {
+    unimplemented!("Windows does not support the sigset_t.");
+}
+
+pub unsafe fn sigdelset(set: *mut sigset_t, signo: int) -> int {
+    unimplemented!("Windows does not support the sigset_t.");
+}
+
+pub unsafe fn sigismember(set: *const sigset_t, signo: int) -> int {
+    unimplemented!("Windows does not support the sigset_t.");
+}
+
+pub unsafe fn sigfillset(set: *mut sigset_t) -> int {
+    unimplemented!("Windows does not support the sigset_t.");
+}
+
+pub unsafe fn sigemptyset(set: *mut sigset_t) -> int {
+    unimplemented!("Windows does not support the sigset_t.");
+}
+
+pub unsafe fn sigpending(set: *mut sigset_t) -> int {
+    unimplemented!("Windows does not support the sigset_t.");
+}

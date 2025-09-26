@@ -1,5 +1,5 @@
 {
-  "checksum": "1eb768cd72a2be8411401b03505283aa66061840b35396cdabf74d5c56cc0e00",
+  "checksum": "2a0004660419e088c4760bac1b18f8ae270e04eb03c94a110efd334d38492389",
   "crates": {
     "addr2line 0.24.2": {
       "name": "addr2line",
@@ -7928,6 +7928,40 @@
         }
       ],
       "library_target_name": "iceoryx2_bb_elementary_traits",
+      "common_attrs": {
+        "compile_data_glob": [
+          "**"
+        ],
+        "edition": "2021",
+        "version": "0.7.0"
+      },
+      "license": "MIT OR Apache-2.0",
+      "license_ids": [
+        "Apache-2.0",
+        "MIT"
+      ],
+      "license_file": null
+    },
+    "iceoryx2-bb-linux 0.7.0": {
+      "name": "iceoryx2-bb-linux",
+      "version": "0.7.0",
+      "package_url": "https://github.com/eclipse-iceoryx/iceoryx2",
+      "repository": null,
+      "targets": [
+        {
+          "Library": {
+            "crate_name": "iceoryx2_bb_linux",
+            "crate_root": "src/lib.rs",
+            "srcs": {
+              "allow_empty": true,
+              "include": [
+                "**/*.rs"
+              ]
+            }
+          }
+        }
+      ],
+      "library_target_name": "iceoryx2_bb_linux",
       "common_attrs": {
         "compile_data_glob": [
           "**"
@@ -30008,6 +30042,7 @@
     "iceoryx2-bb-derive-macros 0.7.0": "iceoryx2-bb/derive-macros",
     "iceoryx2-bb-elementary 0.7.0": "iceoryx2-bb/elementary",
     "iceoryx2-bb-elementary-traits 0.7.0": "iceoryx2-bb/elementary-traits",
+    "iceoryx2-bb-linux 0.7.0": "iceoryx2-bb/linux",
     "iceoryx2-bb-lock-free 0.7.0": "iceoryx2-bb/lock-free",
     "iceoryx2-bb-log 0.7.0": "iceoryx2-bb/log",
     "iceoryx2-bb-memory 0.7.0": "iceoryx2-bb/memory",

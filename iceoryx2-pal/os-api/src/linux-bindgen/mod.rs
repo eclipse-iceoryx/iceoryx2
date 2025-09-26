@@ -11,5 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 pub mod epoll;
+pub mod signalfd;
 
 pub use epoll::*;
+pub use signalfd::*;

@@ -13,10 +13,9 @@
 #![allow(non_camel_case_types)]
 #![allow(clippy::missing_safety_doc)]
 
-use iceoryx2_pal_posix::posix;
+use iceoryx2_pal_posix::posix::{self};
 
 pub type EPOLL_EVENTS = crate::internal::EPOLL_EVENTS;
-pub type epoll_event = crate::internal::epoll_event;
 
 pub const EPOLL_CLOEXEC: usize = crate::internal::EPOLL_CLOEXEC as _;
 pub const EPOLL_EVENTS_EPOLLIN: EPOLL_EVENTS = crate::internal::EPOLL_EVENTS_EPOLLIN;
@@ -34,6 +33,22 @@ pub const EPOLL_EVENTS_EPOLLEXCLUSIVE: EPOLL_EVENTS = crate::internal::EPOLL_EVE
 pub const EPOLL_EVENTS_EPOLLWAKEUP: EPOLL_EVENTS = crate::internal::EPOLL_EVENTS_EPOLLWAKEUP;
 pub const EPOLL_EVENTS_EPOLLONESHOT: EPOLL_EVENTS = crate::internal::EPOLL_EVENTS_EPOLLONESHOT;
 pub const EPOLL_EVENTS_EPOLLET: EPOLL_EVENTS = crate::internal::EPOLL_EVENTS_EPOLLET;
+
+pub const EPOLL_CTL_ADD: u32 = crate::internal::EPOLL_CTL_ADD;
+pub const EPOLL_CTL_DEL: u32 = crate::internal::EPOLL_CTL_DEL;
+pub const EPOLL_CTL_MOD: u32 = crate::internal::EPOLL_CTL_MOD;
+
+pub type epoll_event = crate::internal::epoll_event;
+
+pub unsafe fn epoll_addr_of_event_data(event: *const epoll_event) -> *const u8 {
+    let event_ref = &*event;
+    core::ptr::addr_of!(event_ref.data).cast()
+}
+
+pub unsafe fn epoll_addr_of_event_data_mut(event: *mut epoll_event) -> *mut u8 {
+    let event_ref = &mut *event;
+    core::ptr::addr_of!(event_ref.data).cast_mut().cast()
+}
 
 pub unsafe fn epoll_create(size: posix::int) -> posix::int {
     crate::internal::epoll_create(size)

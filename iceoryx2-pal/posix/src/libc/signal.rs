@@ -63,3 +63,27 @@ pub unsafe fn sigaction(sig: int, act: &sigaction_t, oact: &mut sigaction_t) -> 
 pub unsafe fn kill(pid: pid_t, sig: int) -> int {
     libc::kill(pid, sig)
 }
+
+pub unsafe fn sigaddset(set: *mut sigset_t, signo: int) -> int {
+    libc::sigaddset(set, signo)
+}
+
+pub unsafe fn sigdelset(set: *mut sigset_t, signo: int) -> int {
+    libc::sigdelset(set, signo)
+}
+
+pub unsafe fn sigismember(set: *const sigset_t, signo: int) -> int {
+    libc::sigismember(set, signo)
+}
+
+pub unsafe fn sigfillset(set: *mut sigset_t) -> int {
+    libc::sigfillset(set)
+}
+
+pub unsafe fn sigemptyset(set: *mut sigset_t) -> int {
+    libc::sigemptyset(set)
+}
+
+pub unsafe fn sigpending(set: *mut sigset_t) -> int {
+    libc::sigpending(set)
+}

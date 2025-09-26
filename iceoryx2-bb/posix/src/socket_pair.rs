@@ -60,6 +60,14 @@ impl From<FcntlError> for StreamingSocketDuplicateError {
     }
 }
 
+impl core::fmt::Display for StreamingSocketDuplicateError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StreamingSocketDuplicateError::{self:?}")
+    }
+}
+
+impl core::error::Error for StreamingSocketDuplicateError {}
+
 /// Defines the errors that can occur when a socket pair is created with
 /// [`StreamingSocket::create_pair()`].
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -82,6 +90,14 @@ impl From<FcntlError> for StreamingSocketPairCreationError {
         }
     }
 }
+
+impl core::fmt::Display for StreamingSocketPairCreationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StreamingSocketPairCreationError::{self:?}")
+    }
+}
+
+impl core::error::Error for StreamingSocketPairCreationError {}
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum FcntlError {
@@ -131,6 +147,14 @@ impl From<FcntlError> for StreamingSocketPairSendError {
     }
 }
 
+impl core::fmt::Display for StreamingSocketPairSendError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StreamingSocketPairSendError::{self:?}")
+    }
+}
+
+impl core::error::Error for StreamingSocketPairSendError {}
+
 /// Defines the errors that can occur when a [`StreamingSocket`] receives data via
 /// * [`StreamingSocket::try_receive()`]
 /// * [`StreamingSocket::timed_receive()`]
@@ -167,6 +191,14 @@ impl From<SetSockoptError> for StreamingSocketPairReceiveError {
         }
     }
 }
+
+impl core::fmt::Display for StreamingSocketPairReceiveError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "StreamingSocketPairReceiveError::{self:?}")
+    }
+}
+
+impl core::error::Error for StreamingSocketPairReceiveError {}
 
 /// A single socket in a [`StreamingSocket`] pair.
 #[derive(Debug)]

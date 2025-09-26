@@ -62,3 +62,27 @@ pub unsafe fn sigaction(sig: int, act: &sigaction_t, oact: &mut sigaction_t) -> 
 pub unsafe fn kill(pid: pid_t, sig: int) -> int {
     crate::internal::kill(pid, sig)
 }
+
+pub unsafe fn sigaddset(set: *mut sigset_t, signo: int) -> int {
+    crate::internal::sigaddset(set, signo)
+}
+
+pub unsafe fn sigdelset(set: *mut sigset_t, signo: int) -> int {
+    crate::internal::sigdelset(set, signo)
+}
+
+pub unsafe fn sigismember(set: *const sigset_t, signo: int) -> int {
+    crate::internal::sigismember(set, signo)
+}
+
+pub unsafe fn sigfillset(set: *mut sigset_t) -> int {
+    crate::internal::sigfillset(set)
+}
+
+pub unsafe fn sigemptyset(set: *mut sigset_t) -> int {
+    crate::internal::sigemptyset(set)
+}
+
+pub unsafe fn sigpending(set: *mut sigset_t) -> int {
+    crate::internal::sigpending(set)
+}

@@ -10,10 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-#ifndef IOX2_PAL_OS_API_LINUX_H
-#define IOX2_PAL_OS_API_LINUX_H
+#![allow(non_camel_case_types)]
+#![allow(clippy::missing_safety_doc)]
 
-#include <sys/epoll.h>
-#include <sys/signalfd.h>
+use iceoryx2_pal_posix::posix::{self};
 
-#endif
+pub type signalfd_siginfo = crate::internal::signalfd_siginfo;
+pub const SFD_NONBLOCK: u32 = crate::internal::SFD_NONBLOCK;
+pub const SFD_CLOEXEC: u32 = crate::internal::SFD_CLOEXEC;
+
+pub unsafe fn signalfd(
+    fd: posix::int,
+    mask: *const posix::sigset_t,
+    flags: posix::int,
+) -> posix::int {
+    crate::internal::signalfd(fd, mask.cast(), flags)
+}
