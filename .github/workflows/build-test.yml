@@ -307,7 +307,7 @@ jobs:
             --abort-on-container-exit \
             --exit-code-from pinger
 
-  x86_32:
+  call-x86_32-pr:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
@@ -315,107 +315,21 @@ jobs:
         os: [ubuntu-latest] # [windows-latest, ubuntu-latest, macos-latest]
         toolchain: [stable] # [stable, 1.83.0, beta, nightly]
         mode:
-          - name: "release"
-            arg: "--release"
-            cmake-build-type: "-DCMAKE_BUILD_TYPE=Release"
           - name: "debug"
             arg: ""
             cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug"
-    timeout-minutes: 60
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+    uses: ./.github/workflows/x86_32_workflow.yml
+    with: 
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode: ${{ matrix.mode }}
 
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: "3.31.x"
-
-      - name: Use cmake
-        run: cmake --version
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          targets: i686-unknown-linux-gnu
-          components: rustfmt, clippy
-
-      - name: Download artifact cargo-nextest
-        uses: ./.github/actions/download-cached-rust-tool
-        with:
-          artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
-
-      - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: internal\scripts\ci_prepare_windows.ps1
-
-      - name: Prepare Linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          internal/scripts/ci_prepare_ubuntu.sh
-          uname -a
-
-      - name: Run cargo build
-        run: cargo build --workspace --exclude iceoryx2-ffi-python --all-targets ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
-
-      - name: Run cargo nextest
-        run: cargo nextest run --workspace --exclude iceoryx2-ffi-python --all-targets --no-fail-fast ${{ matrix.mode.arg }} --target i686-unknown-linux-gnu
-
-      - name: Build iceoryx_hoofs
-        run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh 32-bit-x86
-
-      - name: Build language bindings
-        run: |
-          cmake -S . \
-                -B target/ff/cc/build \
-                -DCMAKE_INSTALL_PREFIX=target/ff/cc/install \
-                -DBUILD_EXAMPLES=ON \
-                -DBUILD_TESTING=ON \
-                -DCMAKE_C_FLAGS="-m32 -malign-double" \
-                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" \
-                -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/i686-unknown-linux-gnu/${{ matrix.mode.name }}" \
-                ${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ff/cc/build
-          cmake --install target/ff/cc/build
-
-      - name: Run C language binding tests
-        run: target/ff/cc/build/tests/iceoryx2-c-tests
-
-      - name: Run C++ language binding tests
-        # TODO: [#262] the skipped tests trigger an unaligned pointer access
-        run: target/ff/cc/build/tests/iceoryx2-cxx-tests --gtest_filter="-ServiceTest/*.list_works:ServiceTest/*.list_works_with_attributes:ServiceTest/*.details_works"
-
-      - name: Build C language binding examples in out-of-tree configuration
-        run: |
-          rm -rf target/ff/cc/build
-          cmake -S examples/c \
-                -B target/ff/out-of-tree-c \
-                -DCMAKE_PREFIX_PATH=${{ github.workspace }}/target/ff/cc/install \
-                -DCMAKE_C_FLAGS="-m32 -malign-double" \
-                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                ${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ff/out-of-tree-c
-
-      - name: Build C++ language binding examples in out-of-tree configuration
-        run: |
-          cmake -S examples/cxx \
-                -B target/ff/out-of-tree-cxx \
-                -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install;${{ github.workspace }}/target/ff/iceoryx/install" \
-                -DCMAKE_C_FLAGS="-m32 -malign-double" \
-                -DCMAKE_CXX_FLAGS="-m32 -malign-double" \
-                ${{ matrix.mode.cmake-build-type }}
-          cmake --build target/ff/out-of-tree-cxx
-
-  x86_64:
+  call-x86_64-stable-pr:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
     if: ${{ needs.changes.outputs.source-code == 'true' }}
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
+        os: [ubuntu-latest, macos-latest] # todo (iox2-#1049): Use windows latest here
         # NOTE: enable for MinGW
         # toolchain: [stable, stable-gnu, 1.83.0]
         toolchain: [stable, 1.83.0]
@@ -429,7 +343,7 @@ jobs:
             cmake-build-type: "-DCMAKE_BUILD_TYPE=Debug" # required for Makefile Generators at config time
             cmake-build-config: "--config Debug" # required for Visual Studio at build and install time
         cargo-features-flag: ["", "--features libc_platform"]
-        include:
+        includes:
           # NOTE: enable for MinGW
           # - toolchain: stable-gnu
           #  cmake-build-system-generator: '-G "MinGW Makefiles"'
@@ -438,7 +352,7 @@ jobs:
             cmake-cxx-flags: '-DCMAKE_CXX_FLAGS="/MP"'
           - os: ubuntu-latest
             toolchain: stable
-        exclude:
+        excludes:
           # NOTE: enable for MinGW
           # - os: ubuntu-latest
           #   toolchain: stable-gnu
@@ -448,91 +362,14 @@ jobs:
             cargo-features-flag: "--features libc_platform"
           - os: macos-latest
             cargo-features-flag: "--features libc_platform"
-    timeout-minutes: 90
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: "3.31.x"
-      - name: Use cmake
-        run: cmake --version
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
-        with:
-          toolchain: ${{ matrix.toolchain }}
-          components: rustfmt, clippy
-
-      - name: Download artifact cargo-nextest
-        uses: ./.github/actions/download-cached-rust-tool
-        with:
-          artifact-bin-name: cargo-nextest
-          artifact-upload-name: ${{ runner.os }}-cargo-nextest
-
-      - name: Prepare Windows
-        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: internal\scripts\ci_prepare_windows.ps1
-      - name: Prepare Linux
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          internal/scripts/ci_prepare_ubuntu.sh
-          uname -a
-
-      - name: Run cargo build
-        run: cargo build --workspace --all-targets ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
-
-      - name: Run cargo nextest
-        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ matrix.mode.arg }} ${{ matrix.cargo-features-flag }}
-
-      - name: Build iceoryx_hoofs on Windows
-        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: internal\scripts\ci_build_and_install_iceoryx_hoofs.ps1 -mode ${{ matrix.mode.name }} -toolchain ${{ matrix.toolchain }}
-      - name: Build iceoryx_hoofs on non-Windows
-        if: ${{ matrix.os != 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
-
-      - name: Print native libs of FFI target
-        if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
-        run: |
-          cd iceoryx2-ffi/c
-          cargo rustc -q -- --print=native-static-libs
-
-      - name: Build language bindings
-        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
-        run: |
-          cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ matrix.mode.name }}"
-          cmake --build target/ff/cc/build ${{ matrix.mode.cmake-build-config }}
-          cmake --install target/ff/cc/build ${{ matrix.mode.cmake-build-config }}
-
-      - name: Run C language binding tests
-        run: target/ff/cc/build/tests/iceoryx2-c-tests
-
-      - name: Run C++ language binding tests
-        run: target/ff/cc/build/tests/iceoryx2-cxx-tests
-
-      - name: Remove language binding build artifacts on Windows
-        if: ${{ matrix.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: rm -r -force target/ff/cc/build
-
-      - name: Remove language binding build artifacts on non-Windows
-        if: ${{ matrix.os != 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
-        run: rm -rf target/ff/cc/build
-
-      - name: Build C language binding examples in out-of-tree configuration
-        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
-        run: |
-          cmake -S examples/c -B target/ff/out-of-tree-c ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
-          cmake --build target/ff/out-of-tree-c ${{ matrix.mode.cmake-build-config }}
-
-      - name: Build C++ language binding examples in out-of-tree configuration
-        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
-        run: |
-          cmake -S examples/cxx -B target/ff/out-of-tree-cxx ${{ matrix.mode.cmake-build-type }} ${{ matrix.mode.cmake-cxx-flags }} ${{ matrix.cmake-build-system-generator }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install;${{ github.workspace }}/target/ff/iceoryx/install"
-          cmake --build target/ff/out-of-tree-cxx ${{ matrix.mode.cmake-build-config }}
+    uses: ./.github/workflows/x86_64_stable_workflow.yml
+    with:
+      os: ${{ matrix.os }}
+      toolchain: ${{ matrix.toolchain }}
+      mode: ${{ matrix.mode }}
+      cargo-features-flag: ${{ matrix.cargo-features-flag }}
+      include: ${{ matrix.includes }}
+      exclude: ${{ matrix.excludes }}
 
   call-x86_64_unstable-pr:
     needs: [preflight-check, static-code-analysis, cargo-nextest]
@@ -549,56 +386,6 @@ jobs:
       os: ${{ matrix.os }}
       toolchain: ${{ matrix.toolchain }}
       mode: ${{ matrix.mode }}
-
-  ### TODO: does not work yet reliable on the GitHub CI, seems to end up in an infinite loop
-  ###       current alternative is a cirrus.yml aarch64 target
-  # arm:
-  #   runs-on: ubuntu-latest
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   strategy:
-  #     matrix:
-  #       architecture: ["aarch64"] # ["aarch64", "armv7"]
-  #       toolchain: [ stable ] # [stable, 1.83.0, beta, nightly]
-  #       mode: ["--release", ""]
-  #   timeout-minutes: 30
-  #   steps:
-  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #     - uses: uraimo/run-on-arch-action@v2
-  #       name: Run commands
-  #       with:
-  #         arch: ${{ matrix.architecture }}
-  #         distro: archarm_latest
-  #         run: |
-  #           ./internal/scripts/ci_prepare_archlinux.sh
-  #           rustup default ${{ matrix.toolchain }}
-  #           cargo fmt --all -- --check
-  #           cargo clippy -- -D warnings
-  #           cargo build --workspace --all-targets ${{ matrix.mode }}
-  #           cargo test --workspace --all-targets --no-fail-fast ${{ matrix.mode }}
-
-  # todo(#347): Reenable FreeBSD once it got stabilized and update the config
-  # freebsd:
-  #   needs: [preflight-check, static-code-analysis]
-  #   if: ${{ needs.changes.outputs.source-code == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 60
-  #   strategy:
-  #     matrix:
-  #       freebsd_version: [ "14.3" ]
-  #       toolchain: [ "stable", "1.83.0" ] # [stable, 1.83.0, beta, nightly]
-  #       mode: ["debug"] # ["release", "debug"]
-  #   steps:
-  #     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-  #     - uses: vmactions/freebsd-vm@05856381fab64eeee9b038a0818f6cec649ca17a # ratchet:vmactions/freebsd-vm@v1
-  #       with:
-  #         release: ${{ matrix.freebsd_version }}
-  #         mem: 16384
-  #         copyback: false
-  #         prepare: pkg install -y cmake curl gcc git llvm
-  #         run: |
-  #           git config --global --add safe.directory /home/runner/work/iceoryx2/iceoryx2
-  #           ./internal/scripts/ci_prepare_freebsd.sh
-  #           ./internal/scripts/ci_build_and_test_freebsd.sh --toolchain ${{ matrix.toolchain }} --mode ${{ matrix.mode }}
 
   x86_64_bazel:
     needs: [preflight-check, static-code-analysis]
@@ -744,15 +531,14 @@ jobs:
 
   # Have a sync point for all CI jobs that need to pass, will be enforced by Otterdog
   mandatory-checks:
-    needs:
-      [
-        static-code-analysis,
-        x86_64,
-        x86_64_bazel,
-        x86_32,
-        python-bindings,
-        end-to-end-tests,
-      ]
+    needs: [
+            static-code-analysis,
+            call-x86_64-stable-pr,
+            x86_64_bazel,
+            call-x86_32-pr,
+            python-bindings,
+            end-to-end-tests,
+            ]
     runs-on: ubuntu-latest
     steps:
       - name: Mandatory Checks Sync

@@ -1,0 +1,111 @@
+name: Reusable workflow for x86_64_unstable
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      toolchain:
+        required: true
+        type: string
+      mode:
+        required: true
+        type: string
+      cargo-features-flag:
+        required: true
+        type: string
+      include:
+        required: true
+        type: string
+      exclude:
+        required: true
+        type: string
+
+jobs:
+  x86_64:
+    timeout-minutes: 90
+    runs-on: ${{ inputs.os }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@802fa1a2c4e212495c05bf94dba2704a92a472be # ratchet: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+      - name: Use cmake
+        run: cmake --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@888c2e1ea69ab0d4330cbf0af1ecc7b68f368cc1 # ratchet:dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ inputs.toolchain }}
+          components: rustfmt, clippy
+
+      - name: Download artifact cargo-nextest
+        uses: ./.github/actions/download-cached-rust-tool
+        with:
+          artifact-bin-name: cargo-nextest
+          artifact-upload-name: ${{ runner.os }}-cargo-nextest
+
+      - name: Prepare Windows
+        if: ${{ inputs.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        run: internal\scripts\ci_prepare_windows.ps1
+      - name: Prepare Linux
+        if: ${{ inputs.os == 'ubuntu-latest' }}
+        run: |
+          internal/scripts/ci_prepare_ubuntu.sh
+          uname -a
+
+      - name: Run cargo build
+        run: cargo build --workspace --all-targets ${{ inputs.mode.arg }} ${{ inputs.cargo-features-flag }}
+
+      - name: Run cargo nextest
+        run: cargo nextest run --workspace --all-targets --no-fail-fast ${{ inputs.mode.arg }} ${{ inputs.cargo-features-flag }}
+
+      - name: Build iceoryx_hoofs on Windows
+        if: ${{ inputs.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        run: internal\scripts\ci_build_and_install_iceoryx_hoofs.ps1 -mode ${{ inputs.mode.name }} -toolchain ${{ inputs.toolchain }}
+      - name: Build iceoryx_hoofs on non-Windows
+        if: ${{ inputs.os != 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        run: internal/scripts/ci_build_and_install_iceoryx_hoofs.sh
+
+      - name: Print native libs of FFI target
+        if: false # This step takes 1 to 2 minutes; only enable if there are linker issues with the FFI target
+        run: |
+          cd iceoryx2-ffi/c
+          cargo rustc -q -- --print=native-static-libs
+
+      - name: Build language bindings
+        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        run: |
+          cmake -S . -B target/ff/cc/build -DBUILD_EXAMPLES=ON -DBUILD_TESTING=ON -DWARNING_AS_ERROR=ON ${{ inputs.mode.cmake-build-type }} ${{ inputs.mode.cmake-cxx-flags }} -DCMAKE_INSTALL_PREFIX=target/ff/cc/install -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/iceoryx/install" -DRUST_BUILD_ARTIFACT_PATH="${{ github.workspace }}/target/${{ inputs.mode.name }}"
+          cmake --build target/ff/cc/build ${{ inputs.mode.cmake-build-config }}
+          cmake --install target/ff/cc/build ${{ inputs.mode.cmake-build-config }}
+
+      - name: Run C language binding tests
+        run: target/ff/cc/build/tests/iceoryx2-c-tests
+
+      - name: Run C++ language binding tests
+        run: target/ff/cc/build/tests/iceoryx2-cxx-tests
+
+      - name: Remove language binding build artifacts on Windows
+        if: ${{ inputs.os == 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        run: rm -r -force target/ff/cc/build
+
+      - name: Remove language binding build artifacts on non-Windows
+        if: ${{ inputs.os != 'windows-2022' }} # todo (iox2-#1049): Use windows latest here
+        run: rm -rf target/ff/cc/build
+
+      - name: Build C language binding examples in out-of-tree configuration
+        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        run: |
+          cmake -S examples/c -B target/ff/out-of-tree-c ${{ inputs.mode.cmake-build-type }} ${{ inputs.mode.cmake-cxx-flags }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install"
+          cmake --build target/ff/out-of-tree-c ${{ inputs.mode.cmake-build-config }}
+
+      - name: Build C++ language binding examples in out-of-tree configuration
+        # NOTE: the cmake command is in a single line since Windows complains about breaking up lines with '\'
+        run: |
+          cmake -S examples/cxx -B target/ff/out-of-tree-cxx ${{ inputs.mode.cmake-build-type }} ${{ inputs.mode.cmake-cxx-flags }} -DCMAKE_PREFIX_PATH="${{ github.workspace }}/target/ff/cc/install;${{ github.workspace }}/target/ff/iceoryx/install"
+          cmake --build target/ff/out-of-tree-cxx ${{ inputs.mode.cmake-build-config }}
