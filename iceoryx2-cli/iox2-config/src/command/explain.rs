@@ -411,7 +411,7 @@ pub(crate) fn describe_schema(config: &Config) -> Vec<Section> {
             ],
         },
         Section {
-            name: "Defaults: Blackboard",
+            name: "Defaults: Blackboard Messaging Pattern",
             fields: vec![
                 Field {
                     key: "defaults.blackboard.max-readers",
