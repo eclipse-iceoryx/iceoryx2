@@ -15,6 +15,8 @@
   [#832](https://github.com/eclipse-iceoryx/iceoryx2/issues/832)
 * Add a C++ string container type with fixed compile-time capacity
   [#938](https://github.com/eclipse-iceoryx/iceoryx2/issues/938)
+* Add a C++ vector container type with fixed compile-time capacity
+  [#951](https://github.com/eclipse-iceoryx/iceoryx2/issues/951)
 
 ### Bugfixes
 
