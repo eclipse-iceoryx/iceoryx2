@@ -82,6 +82,8 @@ pub enum iox2_blackboard_create_error_e {
     C_HANGS_IN_CREATION,
     #[CStr = "no entries provided"]
     C_NO_ENTRIES_PROVIDED,
+    #[CStr = "key alignment too large"]
+    C_KEY_ALIGNMENT_TOO_LARGE,
 }
 
 impl IntoCInt for BlackboardOpenError {
@@ -148,6 +150,9 @@ impl IntoCInt for BlackboardCreateError {
             }
             BlackboardCreateError::NoEntriesProvided => {
                 iox2_blackboard_create_error_e::C_NO_ENTRIES_PROVIDED
+            }
+            BlackboardCreateError::KeyAlignmentTooLarge => {
+                iox2_blackboard_create_error_e::C_KEY_ALIGNMENT_TOO_LARGE
             }
         }) as c_int
     }

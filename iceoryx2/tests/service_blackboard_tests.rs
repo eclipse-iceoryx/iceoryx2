@@ -1858,6 +1858,20 @@ mod service_blackboard {
         assert_that!(unsafe { *(sut_ptr.unwrap().data.as_ptr() as *const u16) }, eq key);
     }
 
+    #[test]
+    fn creation_fails_when_key_type_alignment_is_too_large<Sut: Service>() {
+        let service_name = generate_name();
+        let config = generate_isolated_config();
+        let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
+        let sut = node
+            .service_builder(&service_name)
+            .blackboard_creator::<u128>()
+            .add::<u8>(0, 0)
+            .create();
+        assert_that!(sut, is_err);
+        assert_that!(sut.err().unwrap(), eq BlackboardCreateError::KeyAlignmentTooLarge);
+    }
+
     #[instantiate_tests(<iceoryx2::service::ipc::Service>)]
     mod ipc {}
 

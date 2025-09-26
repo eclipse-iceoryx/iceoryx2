@@ -127,6 +127,8 @@ pub enum BlackboardCreateError {
     HangsInCreation,
     /// No key-value pairs have been provided. At least one is required.
     NoEntriesProvided,
+    /// The alignment of the key type is greater than the maximum allowed alignment.
+    KeyAlignmentTooLarge,
 }
 
 impl core::fmt::Display for BlackboardCreateError {
@@ -306,7 +308,7 @@ impl<
 
 #[derive(Debug)]
 struct Builder<
-    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
@@ -317,7 +319,7 @@ struct Builder<
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Builder<KeyType, ServiceType>
 {
@@ -411,14 +413,14 @@ impl<
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Creator<
-    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Creator<KeyType, ServiceType>
 {
@@ -529,9 +531,14 @@ impl<
         &mut self,
         attributes: &AttributeSpecifier,
     ) -> Result<blackboard::PortFactory<ServiceType, KeyType>, BlackboardCreateError> {
-        self.adjust_configuration_to_meaningful_values();
-
         let msg = "Unable to create blackboard service";
+
+        if align_of::<KeyType>() > MAX_BLACKBOARD_KEY_ALIGNMENT {
+            fail!(from self, with BlackboardCreateError::KeyAlignmentTooLarge,
+                "{} since the alignment of the key type is greater than {MAX_BLACKBOARD_KEY_ALIGNMENT}.", msg);
+        }
+
+        self.adjust_configuration_to_meaningful_values();
 
         match self.builder.is_service_available(msg)? {
             Some(_) => {
@@ -727,14 +734,14 @@ impl<ServiceType: service::Service> Creator<u64, ServiceType> {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Opener<
-    KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Debug + ZeroCopySend + Hash,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
         ServiceType: service::Service,
     > Opener<KeyType, ServiceType>
 {
