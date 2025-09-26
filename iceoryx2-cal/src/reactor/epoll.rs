@@ -13,16 +13,37 @@
 pub use iceoryx2_bb_linux::epoll::{
     Epoll, EpollBuilder, EpollCreateError, EpollEvent, EpollGuard, EventType,
 };
+use iceoryx2_bb_linux::epoll::{EpollAttachmentError, EpollWaitError};
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_posix::file_descriptor::FileDescriptor;
 
-use crate::reactor::{Reactor, ReactorBuilder, ReactorCreateError, ReactorGuard};
+use crate::reactor::{
+    Reactor, ReactorAttachError, ReactorBuilder, ReactorCreateError, ReactorGuard, ReactorWaitError,
+};
 
 impl<'reactor, 'attachment> ReactorGuard<'reactor, 'attachment>
     for EpollGuard<'reactor, 'attachment>
 {
     fn file_descriptor(&self) -> &FileDescriptor {
         self.file_descriptor()
+    }
+}
+
+fn handle_wait_error(
+    this: &Epoll,
+    msg: &str,
+    epoll_wait_state: Result<usize, EpollWaitError>,
+) -> Result<usize, ReactorWaitError> {
+    match epoll_wait_state {
+        Ok(value) => Ok(value),
+        Err(EpollWaitError::Interrupt) => {
+            fail!(from this, with ReactorWaitError::Interrupt,
+                "{msg} since an interrupt signal was raised.");
+        }
+        Err(EpollWaitError::UnknownError(value)) => {
+            fail!(from this, with ReactorWaitError::InternalError,
+                "{msg} due to an internal error ({value}).");
+        }
     }
 }
 
@@ -49,14 +70,31 @@ impl Reactor for Epoll {
     >(
         &'reactor self,
         value: &'attachment F,
-    ) -> Result<Self::Guard<'reactor, 'attachment>, super::ReactorAttachError> {
+    ) -> Result<Self::Guard<'reactor, 'attachment>, ReactorAttachError> {
+        let msg = "Unable to attach file descriptor to reactor::Epoll";
+
         match self
             .add(value.file_descriptor())
             .event_type(EventType::ReadyToRead)
             .attach()
         {
             Ok(guard) => Ok(guard),
-            Err(e) => todo!(),
+            Err(EpollAttachmentError::ExceedsMaxSupportedAttachments) => {
+                fail!(from self, with ReactorAttachError::CapacityExceeded,
+                    "{msg} since it would exceed the maximum capacity of {}.", Self::capacity());
+            }
+            Err(EpollAttachmentError::AlreadyAttached) => {
+                fail!(from self, with ReactorAttachError::AlreadyAttached,
+                    "{msg} since the file descriptor {:?} is already attached.", value);
+            }
+            Err(EpollAttachmentError::InsufficientMemory) => {
+                fail!(from self, with ReactorAttachError::InsufficientResources,
+                    "{msg} due to insufficient memory.");
+            }
+            Err(e) => {
+                fail!(from self, with ReactorAttachError::InternalError,
+                    "{msg} due to an internal error ({e:?}).");
+            }
         }
     }
 
@@ -64,14 +102,15 @@ impl Reactor for Epoll {
         &self,
         mut fn_call: F,
     ) -> Result<usize, super::ReactorWaitError> {
-        match self.try_wait(|event| {
-            if let EpollEvent::FileDescriptor(fdev) = event {
-                fn_call(fdev.file_descriptor());
-            }
-        }) {
-            Ok(n) => Ok(n),
-            Err(e) => todo!(),
-        }
+        handle_wait_error(
+            self,
+            "Unable to try wait on reactor::Epoll",
+            self.try_wait(|event| {
+                if let EpollEvent::FileDescriptor(fdev) = event {
+                    fn_call(fdev.file_descriptor());
+                }
+            }),
+        )
     }
 
     fn timed_wait<F: FnMut(&FileDescriptor)>(
@@ -79,31 +118,33 @@ impl Reactor for Epoll {
         mut fn_call: F,
         timeout: std::time::Duration,
     ) -> Result<usize, super::ReactorWaitError> {
-        match self.timed_wait(
-            |event| {
-                if let EpollEvent::FileDescriptor(fdev) = event {
-                    fn_call(fdev.file_descriptor());
-                }
-            },
-            timeout,
-        ) {
-            Ok(n) => Ok(n),
-            Err(e) => todo!(),
-        }
+        handle_wait_error(
+            self,
+            "Unable to wait with timeout on reactor::Epoll",
+            self.timed_wait(
+                |event| {
+                    if let EpollEvent::FileDescriptor(fdev) = event {
+                        fn_call(fdev.file_descriptor());
+                    }
+                },
+                timeout,
+            ),
+        )
     }
 
     fn blocking_wait<F: FnMut(&FileDescriptor)>(
         &self,
         mut fn_call: F,
     ) -> Result<usize, super::ReactorWaitError> {
-        match self.blocking_wait(|event| {
-            if let EpollEvent::FileDescriptor(fdev) = event {
-                fn_call(fdev.file_descriptor());
-            }
-        }) {
-            Ok(n) => Ok(n),
-            Err(e) => todo!(),
-        }
+        handle_wait_error(
+            self,
+            "Unable to blocking wait on reactor::Epoll",
+            self.blocking_wait(|event| {
+                if let EpollEvent::FileDescriptor(fdev) = event {
+                    fn_call(fdev.file_descriptor());
+                }
+            }),
+        )
     }
 }
 

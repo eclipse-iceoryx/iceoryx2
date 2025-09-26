@@ -61,7 +61,7 @@ impl Reactor {
                         msg);
                 }
                 Err(v) => {
-                    fail!(from self, with ReactorWaitError::UnknownError,
+                    fail!(from self, with ReactorWaitError::InternalError,
                         "{} since an unknown failure occurred while waiting ({:?}).",
                         msg, v);
                 }
@@ -80,7 +80,7 @@ impl Reactor {
                         msg);
                 }
                 Err(v) => {
-                    fail!(from self, with ReactorWaitError::UnknownError,
+                    fail!(from self, with ReactorWaitError::InternalError,
                         "{} since an unknown failure occurred in the underlying FileDescriptorSet ({:?}).",
                         msg, v);
                 }

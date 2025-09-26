@@ -32,14 +32,14 @@ pub enum ReactorAttachError {
     AlreadyAttached,
     CapacityExceeded,
     InsufficientResources,
-    UnknownError(i32),
+    InternalError,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactorWaitError {
     Interrupt,
     InsufficientPermissions,
-    UnknownError,
+    InternalError,
 }
 
 pub trait ReactorGuard<'reactor, 'attachment> {
