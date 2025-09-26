@@ -493,6 +493,24 @@ impl<T, const CAPACITY: usize> Default for FixedSizeQueue<T, CAPACITY> {
 
 unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeQueue<T, CAPACITY> {}
 
+impl<T: Send + Copy + core::fmt::Debug + core::cmp::PartialEq, const CAPACITY: usize> PartialEq
+    for FixedSizeQueue<T, CAPACITY>
+{
+    fn eq(&self, other: &Self) -> bool {
+        if self.len() != other.len() {
+            return false;
+        }
+
+        for i in 0..self.len() {
+            if self.get(i) != other.get(i) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
 impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     /// Creates a new queue.
     pub fn new() -> Self {
@@ -553,7 +571,7 @@ impl<T, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     }
 }
 
-impl<T: Copy + Debug, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
+impl<T: core::marker::Copy + core::fmt::Debug, const CAPACITY: usize> FixedSizeQueue<T, CAPACITY> {
     /// Returns a copy of the element stored at index. The index is starting by 0 for the first
     /// element until [`FixedSizeQueue::len()`].
     ///
