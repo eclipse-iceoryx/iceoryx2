@@ -70,6 +70,9 @@ pub struct DiscoveryOptions {
     )]
     pub rate: u64,
 
+    #[clap(long, help = "Show detailed information about discovered services")]
+    pub detailed: bool,
+
     #[clap(long, help = "Do not publish discovered services")]
     pub disable_publish: bool,
 
@@ -190,7 +193,7 @@ impl From<MessagingPattern> for iceoryx2::prelude::MessagingPattern {
 
 #[derive(Parser)]
 pub struct PublishOptions {
-    #[clap(help = "Name of the service which shall the message be sent to.")]
+    #[clap(help = "Name of the service which the message shall be sent to.")]
     pub service: String,
     #[clap(
         short,

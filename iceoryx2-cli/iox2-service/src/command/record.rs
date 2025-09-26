@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::helper_functions::extract_pubsub_payload;
-use crate::{cli::RecordOptions, helper_functions::get_pubsub_service_types};
+use crate::cli::RecordOptions;
+use crate::command::{extract_pubsub_payload, get_pubsub_service_types};
 use anyhow::Result;
 use core::time::Duration;
 use iceoryx2::prelude::*;
@@ -21,7 +21,7 @@ use iceoryx2_userland_record_and_replay::prelude::*;
 use std::io::Write;
 use std::time::Instant;
 
-pub fn record(options: RecordOptions, _format: Format) -> Result<()> {
+pub(crate) fn record(options: RecordOptions, _format: Format) -> Result<()> {
     let node = NodeBuilder::new()
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;

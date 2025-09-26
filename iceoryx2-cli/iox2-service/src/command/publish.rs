@@ -111,7 +111,7 @@ fn read_cli_msg_into_buffer(
     Ok(())
 }
 
-pub fn publish(options: PublishOptions, _format: Format) -> Result<()> {
+pub(crate) fn publish(options: PublishOptions, _format: Format) -> Result<()> {
     let node = NodeBuilder::new()
         .name(&NodeName::new(&options.node_name)?)
         .create::<ipc::Service>()?;

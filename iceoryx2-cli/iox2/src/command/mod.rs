@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Contributors to the Eclipse Foundation
+// Copyright (c) 2025 Contributors to the Eclipse Foundation
 //
 // See the NOTICE file(s) distributed with this work for additional
 // information regarding copyright ownership.
@@ -10,32 +10,21 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod execute;
+mod list;
+mod paths;
+
+pub(crate) use execute::*;
+pub(crate) use list::*;
+pub(crate) use paths::*;
+
 use anyhow::{anyhow, Context, Result};
 use cargo_metadata::MetadataCommand;
-use colored::*;
 use std::env;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum CommandType {
-    Installed,
-    Development,
-}
-
-#[derive(Clone, Debug)]
-pub struct CommandInfo {
-    pub name: String,
-    pub path: PathBuf,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PathsList {
-    build: Vec<PathBuf>,
-    install: Vec<PathBuf>,
-}
 
 #[cfg(windows)]
 const PATH_ENV_VAR_SEPARATOR: char = ';';
@@ -47,12 +36,30 @@ const PATH_ENV_VAR_SEPARATOR: char = ':';
 #[cfg(not(windows))]
 const COMMAND_EXT: &str = "";
 
-pub trait Environment {
+#[derive(Clone, Debug, PartialEq)]
+pub enum CommandType {
+    Installed,
+    Development,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct CommandInfo {
+    pub name: String,
+    pub path: PathBuf,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PathsList {
+    build: Vec<PathBuf>,
+    install: Vec<PathBuf>,
+}
+
+pub(crate) trait Environment {
     fn install_paths() -> Result<Vec<PathBuf>>;
     fn build_paths() -> Result<Vec<PathBuf>>;
 }
 
-pub struct HostEnvironment;
+pub(crate) struct HostEnvironment;
 
 impl HostEnvironment {
     pub fn target_dir() -> Result<PathBuf> {
@@ -67,22 +74,22 @@ impl HostEnvironment {
 
 impl Environment for HostEnvironment {
     fn install_paths() -> Result<Vec<PathBuf>> {
-        let mut paths: Vec<PathBuf> = env::var("PATH")
+        let mut install_paths: Vec<PathBuf> = env::var("PATH")
             .context("Failed to read PATH environment variable")?
             .split(PATH_ENV_VAR_SEPARATOR)
             .map(PathBuf::from)
             .filter(|p| p.is_dir())
             .collect();
 
-        paths.sort();
-        paths.dedup();
+        install_paths.sort();
+        install_paths.dedup();
 
-        Ok(paths)
+        Ok(install_paths)
     }
 
     fn build_paths() -> Result<Vec<PathBuf>> {
         let target_dir = Self::target_dir()?;
-        let paths: Vec<PathBuf> = fs::read_dir(target_dir)?
+        let build_paths: Vec<PathBuf> = fs::read_dir(target_dir)?
             .filter_map(|entry| {
                 if let Ok(entry) = entry {
                     if entry.path().is_dir() {
@@ -93,16 +100,16 @@ impl Environment for HostEnvironment {
             })
             .collect();
 
-        Ok(paths)
+        Ok(build_paths)
     }
 }
 
-pub trait CommandFinder<E: Environment> {
+pub(crate) trait CommandFinder<E: Environment> {
     fn paths() -> Result<PathsList>;
     fn commands() -> Result<Vec<CommandInfo>>;
 }
 
-pub struct IceoryxCommandFinder<E: Environment> {
+pub(crate) struct IceoryxCommandFinder<E: Environment> {
     _phantom: core::marker::PhantomData<E>,
 }
 
@@ -186,13 +193,13 @@ where
     }
 
     fn commands() -> Result<Vec<CommandInfo>> {
-        let paths = Self::paths().context("Failed to list paths")?;
+        let search_paths = Self::paths().context("Failed to list paths")?;
         let mut commands = Vec::new();
 
-        for path in &paths.build {
+        for path in &search_paths.build {
             commands.extend(Self::list_commands_in_path(path, CommandType::Development)?);
         }
-        for path in &paths.install {
+        for path in &search_paths.install {
             commands.extend(Self::list_commands_in_path(path, CommandType::Installed)?);
         }
         commands.sort_by_cached_key(|command| {
@@ -203,11 +210,11 @@ where
     }
 }
 
-pub trait CommandExecutor {
+pub(crate) trait CommandExecutor {
     fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<()>;
 }
 
-pub struct IceoryxCommandExecutor;
+pub(crate) struct IceoryxCommandExecutor;
 
 impl CommandExecutor for IceoryxCommandExecutor {
     fn execute(command_info: &CommandInfo, args: Option<&[String]>) -> Result<()> {
@@ -221,68 +228,4 @@ impl CommandExecutor for IceoryxCommandExecutor {
             .with_context(|| format!("Failed to execute command: {:?}", command_info.path))?;
         Ok(())
     }
-}
-
-fn paths_impl<E>() -> Result<()>
-where
-    E: Environment,
-{
-    let paths = IceoryxCommandFinder::<E>::paths().context("Failed to list search paths")?;
-
-    if !paths.build.is_empty() {
-        println!("{}", "Build Paths:".bright_green().bold());
-        for dir in &paths.build {
-            println!("  {}", dir.display().to_string().bold());
-        }
-        println!();
-    }
-    if !paths.install.is_empty() {
-        println!("{}", "Install Paths:".bright_green().bold());
-        for dir in &paths.install {
-            println!("  {}", dir.display().to_string().bold());
-        }
-    }
-
-    Ok(())
-}
-
-pub fn paths() -> Result<()> {
-    paths_impl::<HostEnvironment>()
-}
-
-fn list_impl<E>() -> Result<()>
-where
-    E: Environment,
-{
-    let commands = IceoryxCommandFinder::<E>::commands()?;
-
-    println!("{}", "Discovered Commands:".bright_green().bold());
-    for command in commands {
-        println!("  {}", command.name.bold());
-    }
-
-    Ok(())
-}
-
-pub fn list() -> Result<()> {
-    list_impl::<HostEnvironment>()
-}
-
-fn execute_impl<E>(command_name: &str, args: Option<&[String]>) -> Result<()>
-where
-    E: Environment,
-{
-    let all_commands =
-        IceoryxCommandFinder::<E>::commands().context("Failed to find command binaries")?;
-
-    let command = all_commands
-        .into_iter()
-        .find(|command| command.name == command_name)
-        .ok_or_else(|| anyhow!("Command not found: {}", command_name))?;
-
-    IceoryxCommandExecutor::execute(&command, args)
-}
-
-pub fn execute(command_name: &str, args: Option<&[String]>) -> Result<()> {
-    execute_impl::<HostEnvironment>(command_name, args)
 }
