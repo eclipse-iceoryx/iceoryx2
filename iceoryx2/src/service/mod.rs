@@ -867,6 +867,9 @@ pub trait Service: Debug + Sized + internal::ServiceInternal<Self> + Clone {
     /// Defines the construct used to store the payload data of the blackboard service.
     type BlackboardPayload: SharedMemory<BumpAllocator>;
 
+    /// Defines the maximum size of the key that is used in the blackboard service.
+    const BLACKBOARD_MAX_KEY_SIZE: usize;
+
     /// Checks if a service under a given [`config::Config`] does exist
     ///
     /// # Example
