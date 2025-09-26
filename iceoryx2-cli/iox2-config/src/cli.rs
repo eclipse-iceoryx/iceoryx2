@@ -66,6 +66,6 @@ pub enum Action {
         #[clap(short, long, help = "Force overwrite existing configuration file")]
         force: bool,
     },
-    #[clap(about = "Explain the configuration parameters and there descriptions", help_template = help_template(HelpOptions::DontPrintCommandSection))]
+    #[clap(about = "Explain the configuration parameters and their descriptions", help_template = help_template(HelpOptions::DontPrintCommandSection))]
     Explain,
 }
