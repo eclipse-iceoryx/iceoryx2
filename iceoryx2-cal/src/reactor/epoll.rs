@@ -72,7 +72,7 @@ impl Reactor for Epoll {
     fn attach<
         'reactor,
         'attachment,
-        F: iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing + std::fmt::Debug,
+        F: iceoryx2_bb_posix::file_descriptor_set::SynchronousMultiplexing + core::fmt::Debug,
     >(
         &'reactor self,
         value: &'attachment F,
@@ -122,7 +122,7 @@ impl Reactor for Epoll {
     fn timed_wait<F: FnMut(&FileDescriptor)>(
         &self,
         mut fn_call: F,
-        timeout: std::time::Duration,
+        timeout: core::time::Duration,
     ) -> Result<usize, super::ReactorWaitError> {
         handle_wait_error(
             self,
