@@ -573,4 +573,7 @@ mod reactor {
 
     #[instantiate_tests(<iceoryx2_cal::reactor::posix_select::Reactor>)]
     mod posix_select {}
+
+    #[instantiate_tests(<iceoryx2_cal::reactor::epoll::Epoll>)]
+    mod epoll {}
 }

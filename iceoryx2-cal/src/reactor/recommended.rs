@@ -13,9 +13,17 @@
 /// Provides the recommended inter-process
 /// [`Reactor`](crate::reactor::Reactor) concept
 /// implementation for the target.
+#[cfg(target_os = "linux")]
+pub type Ipc = crate::reactor::epoll::Epoll;
+
+#[cfg(not(target_os = "linux"))]
 pub type Ipc = crate::reactor::posix_select::Reactor;
 
 /// Provides the recommended process-local
 /// [`Reactor`](crate::reactor::Reactor) concept
 /// implementation for the target.
+#[cfg(target_os = "linux")]
+pub type Local = crate::reactor::epoll::Epoll;
+
+#[cfg(not(target_os = "linux"))]
 pub type Local = crate::reactor::posix_select::Reactor;

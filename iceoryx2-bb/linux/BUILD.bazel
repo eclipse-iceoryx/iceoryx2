@@ -23,8 +23,10 @@ rust_library(
     name = "iceoryx2-bb-linux",
     srcs = glob(["src/**/*.rs"]),
     deps = [
+        "//iceoryx2-bb/container:iceoryx2-bb-container",
         "//iceoryx2-bb/log:iceoryx2-bb-log",
         "//iceoryx2-bb/posix:iceoryx2-bb-posix",
+        "//iceoryx2-bb/system-types:iceoryx2-bb-system-types",
         "//iceoryx2-pal/os-api:iceoryx2-pal-os-api",
         "//iceoryx2-pal/posix:iceoryx2-pal-posix",
         "//iceoryx2-pal/concurrency-sync:iceoryx2-pal-concurrency-sync",

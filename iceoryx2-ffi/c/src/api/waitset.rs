@@ -85,6 +85,7 @@ pub enum iox2_waitset_attachment_error_e {
     INSUFFICIENT_CAPACITY = IOX2_OK as isize + 1,
     ALREADY_ATTACHED,
     INTERNAL_ERROR,
+    INSUFFICIENT_RESOURCES,
 }
 
 impl IntoCInt for WaitSetAttachmentError {
@@ -99,6 +100,9 @@ impl IntoCInt for WaitSetAttachmentError {
             WaitSetAttachmentError::InternalError => {
                 iox2_waitset_attachment_error_e::INTERNAL_ERROR
             }
+            WaitSetAttachmentError::InsufficientResources => {
+                iox2_waitset_attachment_error_e::INSUFFICIENT_RESOURCES
+            }
         }) as c_int
     }
 }
@@ -107,12 +111,16 @@ impl IntoCInt for WaitSetAttachmentError {
 #[derive(Copy, Clone, CStrRepr)]
 pub enum iox2_waitset_create_error_e {
     INTERNAL_ERROR = IOX2_OK as isize + 1,
+    INSUFFICIENT_RESOURCES,
 }
 
 impl IntoCInt for WaitSetCreateError {
     fn into_c_int(self) -> c_int {
         (match self {
             WaitSetCreateError::InternalError => iox2_waitset_create_error_e::INTERNAL_ERROR,
+            WaitSetCreateError::InsufficientResources => {
+                iox2_waitset_create_error_e::INSUFFICIENT_RESOURCES
+            }
         }) as c_int
     }
 }

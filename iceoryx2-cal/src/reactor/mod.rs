@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+#[cfg(target_os = "linux")]
+pub mod epoll;
 pub mod posix_select;
 pub mod recommended;
 
@@ -21,21 +23,23 @@ use iceoryx2_bb_posix::{
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactorCreateError {
-    UnknownError(i32),
+    InsufficientResources,
+    InternalError,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactorAttachError {
     AlreadyAttached,
     CapacityExceeded,
-    UnknownError(i32),
+    InsufficientResources,
+    InternalError,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReactorWaitError {
     Interrupt,
     InsufficientPermissions,
-    UnknownError,
+    InternalError,
 }
 
 pub trait ReactorGuard<'reactor, 'attachment> {

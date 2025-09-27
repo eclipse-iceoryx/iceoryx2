@@ -255,6 +255,8 @@ pub enum WaitSetAttachmentError {
     AlreadyAttached,
     /// An internal error has occurred.
     InternalError,
+    /// Insufficient resources to add another attachment to the [`WaitSet`].
+    InsufficientResources,
 }
 
 impl core::fmt::Display for WaitSetAttachmentError {
@@ -289,6 +291,8 @@ impl core::error::Error for WaitSetRunError {}
 pub enum WaitSetCreateError {
     /// An internal error has occurred.
     InternalError,
+    /// Insufficient resources to create a [`WaitSet`].
+    InsufficientResources,
 }
 
 impl core::fmt::Display for WaitSetCreateError {
@@ -505,9 +509,13 @@ impl WaitSetBuilder {
                 attachment_counter: IoxAtomicUsize::new(0),
                 signal_handling_mode: self.signal_handling_mode,
             }),
-            Err(ReactorCreateError::UnknownError(e)) => {
+            Err(ReactorCreateError::InternalError) => {
                 fail!(from self, with WaitSetCreateError::InternalError,
-                    "{msg} due to an internal error (error code = {})", e);
+                    "{msg} due to an internal error.");
+            }
+            Err(ReactorCreateError::InsufficientResources) => {
+                fail!(from self, with WaitSetCreateError::InsufficientResources,
+                    "{msg} due to insufficient resources.");
             }
         }
     }
@@ -911,7 +919,7 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                 fail!(from self, with WaitSetRunError::InsufficientPermissions,
                     "{msg} due to insufficient permissions.");
             }
-            Err(ReactorWaitError::UnknownError) => {
+            Err(ReactorWaitError::InternalError) => {
                 fail!(from self, with WaitSetRunError::InternalError,
                     "{msg} due to an internal error.");
             }
@@ -956,9 +964,13 @@ impl<Service: crate::service::Service> WaitSet<Service> {
                     "{msg} {:?} since it would exceed the capacity of {} of the waitset.",
                     attachment, self.capacity());
             }
-            Err(ReactorAttachError::UnknownError(e)) => {
+            Err(ReactorAttachError::InternalError) => {
                 fail!(from self, with WaitSetAttachmentError::InternalError,
-                    "{msg} {:?} due to an internal error (error code = {})", attachment, e);
+                    "{msg} {:?} due to an internal error", attachment);
+            }
+            Err(ReactorAttachError::InsufficientResources) => {
+                fail!(from self, with WaitSetAttachmentError::InsufficientResources,
+                    "{msg} {:?} due to insufficient resources", attachment);
             }
         }
     }
