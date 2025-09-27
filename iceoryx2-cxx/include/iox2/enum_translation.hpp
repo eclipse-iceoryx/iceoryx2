@@ -46,7 +46,6 @@
 #include "iox2/unable_to_deliver_strategy.hpp"
 #include "iox2/waitset_enums.hpp"
 #include "iox2/writer_error.hpp"
-#include "waitset_enums.hpp"
 
 namespace iox {
 template <>

@@ -55,7 +55,7 @@ use std::sync::atomic::Ordering;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::{
-    file::{AccessMode, FileBuilder, FileOpenError},
+    file::{AccessMode, FileBuilder, FileOpenError, FileReadError},
     file_descriptor::{FileDescriptor, FileDescriptorBased},
     signal::FetchableSignal,
     signal_set::FetchableSignalSet,
@@ -126,6 +126,8 @@ impl core::error::Error for EpollAttachmentError {}
 pub enum EpollGetCapacityError {
     /// The proc file containing the capacity does not exist.
     ProcFileDoesNotExist,
+    /// The content of the proc file could not be read.
+    ProcFileReadFailure,
     /// The process does not have the permission to open the proc file for reading.
     InsufficientPermissions,
     /// Insufficient memory to read from the proc file.
@@ -469,7 +471,18 @@ impl Epoll {
         };
 
         let mut buffer = [0u8; 32];
-        let bytes_read = proc_stat_file.read(&mut buffer).unwrap();
+        let bytes_read = match proc_stat_file.read(&mut buffer) {
+            Ok(v) => v,
+            Err(FileReadError::Interrupt) => {
+                fail!(from origin, with EpollGetCapacityError::Interrupt,
+                    "{msg} since an interrupt signal was raised while reading the file {MAX_USER_WATCHES_FILE}.");
+            }
+            Err(e) => {
+                fail!(from origin, with EpollGetCapacityError::ProcFileReadFailure,
+                    "{msg} since the content of the file {MAX_USER_WATCHES_FILE} could not be read ({e:?}).");
+            }
+        };
+
         let file_content = match core::str::from_utf8(&buffer[0..bytes_read as usize - 1]) {
             Ok(v) => v,
             Err(e) => {
