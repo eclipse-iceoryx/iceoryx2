@@ -525,7 +525,10 @@ impl Epoll {
         event_call: F,
         timeout: Duration,
     ) -> Result<usize, EpollWaitError> {
-        self.wait_impl(timeout.as_millis().min(i32::MAX as _) as i32, event_call)
+        // the smallest time period epoll can wait is 1ms, to introduce some waiting for
+        // smaller time periods we always round the timeout up to the next millisecond
+        let timeout_in_ms = (timeout.as_nanos() as f64 / 1_000_000.0f64).ceil() as i32;
+        self.wait_impl(timeout_in_ms.min(i32::MAX), event_call)
     }
 
     /// Blocking call, that returns the number of activated attachments and calls the provided
