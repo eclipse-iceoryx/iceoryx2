@@ -10,7 +10,20 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-// TODO: document, drop order is from last element to first (reverse order)
+//! Relocatable shared-memory compaitble vector with compile time fixed size
+//! capacity. It is memory-layout compatible to the C++ container in the
+//! iceoryx2-bb-container C++ library and can be used for zero-copy
+//! cross-language communication.
+//!
+//! # Example
+//!
+//! ```
+//! use iceoryx2_bb_container::static_vec::StaticVec;
+//!
+//! let mut my_vec = StaticVec::<usize, 123>::new();
+//!
+//! my_vec.push(123); // returns false, when capacity of 123 is exceeded
+//! ```
 
 use core::{fmt::Debug, mem::MaybeUninit};
 use core::{
@@ -23,7 +36,12 @@ use iceoryx2_bb_elementary_traits::{
 };
 use serde::{de::Visitor, Deserialize, Serialize};
 
-/// Relocatable vector with compile time fixed size capacity.
+/// Relocatable shared-memory compaitble vector with compile time fixed size
+/// capacity. It is memory-layout compatible to the C++ container in the
+/// iceoryx2-bb-container C++ library and can be used for zero-copy
+/// cross-language communication.
+///
+/// In contrast to the Rust [`Vec`] it has a defined reverse drop order.
 #[repr(C)]
 pub struct StaticVec<T, const CAPACITY: usize> {
     data: [MaybeUninit<T>; CAPACITY],
