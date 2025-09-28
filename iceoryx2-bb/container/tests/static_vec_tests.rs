@@ -148,3 +148,24 @@ fn clone_clones_filled_vec() {
         assert_that!(sut2[i], eq element);
     }
 }
+
+#[test]
+fn serialization_works() {
+    let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
+    sut.push(44617);
+    sut.push(123123);
+    sut.push(89712);
+    sut.push(99101);
+
+    assert_tokens(
+        &sut,
+        &[
+            Token::Seq { len: Some(4) },
+            Token::U64(44617),
+            Token::U64(123123),
+            Token::U64(89712),
+            Token::U64(99101),
+            Token::SeqEnd,
+        ],
+    );
+}

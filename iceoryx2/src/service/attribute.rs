@@ -99,7 +99,7 @@
 
 use core::ops::Deref;
 
-use iceoryx2_bb_container::{semantic_string::SemanticString, vector::static_vec::*};
+use iceoryx2_bb_container::{semantic_string::SemanticString, static_vec::StaticVec};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
