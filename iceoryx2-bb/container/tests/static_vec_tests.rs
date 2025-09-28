@@ -10,7 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use std::mem::MaybeUninit;
+
 use iceoryx2_bb_container::static_vec::StaticVec;
+use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
 
 const SUT_CAPACITY: usize = 10;
@@ -439,5 +442,99 @@ fn as_mut_slice_contains_mutable_elements() {
 
     for number in 0..SUT_CAPACITY {
         assert_that!(sut[number].value, eq number * 2);
+    }
+}
+
+#[test]
+fn adding_a_slice_to_empty_vec_that_exceeds_the_capacity_fails() {
+    let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
+
+    assert_that!(sut.extend_from_slice(&[0usize; 11]), eq false);
+}
+
+#[test]
+fn adding_a_slice_to_empty_vec_that_has_the_same_capacity_works() {
+    const TEST_VALUE: usize = 819212;
+    let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
+
+    assert_that!(sut.extend_from_slice(&[TEST_VALUE; SUT_CAPACITY]), eq true);
+    for value in sut.iter() {
+        assert_that!(*value, eq TEST_VALUE);
+    }
+}
+
+#[test]
+fn adding_a_slice_to_filled_vec_appends_elements() {
+    const HALF_CAPACITY: usize = SUT_CAPACITY / 2;
+    const TEST_VALUE: usize = 9102;
+    let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
+
+    for n in 0..HALF_CAPACITY {
+        sut.push(n);
+    }
+
+    assert_that!(sut.extend_from_slice(&[TEST_VALUE; HALF_CAPACITY]), eq true);
+    for n in 0..HALF_CAPACITY {
+        assert_that!(sut[n], eq n);
+    }
+
+    for n in HALF_CAPACITY..SUT_CAPACITY {
+        assert_that!(sut[n], eq TEST_VALUE);
+    }
+}
+
+#[test]
+fn two_vectors_with_same_content_are_equal() {
+    let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
+    let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
+
+    for n in 0..SUT_CAPACITY {
+        sut1.push(4 * n + 3);
+        sut2.insert(n, 4 * n + 3);
+    }
+
+    assert_that!(sut1, eq sut2);
+}
+
+#[test]
+fn two_vectors_with_different_content_are_not_equal() {
+    let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
+    let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
+
+    for n in 0..SUT_CAPACITY {
+        sut1.push(4 * n + 3);
+        sut2.insert(n, 4 * n + 3);
+    }
+
+    sut2[5] = 0;
+
+    assert_that!(sut1, ne sut2);
+}
+
+#[test]
+fn placement_default_works() {
+    let mut sut = MaybeUninit::<StaticVec<usize, SUT_CAPACITY>>::uninit();
+
+    unsafe { PlacementDefault::placement_default(sut.as_mut_ptr()) };
+    let sut = unsafe { sut.assume_init() };
+
+    assert_that!(sut.len(), eq 0);
+    assert_that!(sut.is_empty(), eq true);
+}
+
+#[test]
+fn when_vec_is_dropped_all_elements_are_dropped_in_reverse_order() {
+    let tracker = LifetimeTracker::start_tracking();
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        sut.push(LifetimeTracker::new_with_value(number));
+    }
+
+    drop(sut);
+
+    assert_that!(tracker.number_of_living_instances(), eq 0);
+    for (n, element) in tracker.drop_order().iter().rev().enumerate() {
+        assert_that!(*element, eq n);
     }
 }

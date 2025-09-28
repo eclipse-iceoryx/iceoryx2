@@ -13,7 +13,7 @@
 // TODO: document, drop order is from last element to first (reverse order)
 
 use core::{fmt::Debug, mem::MaybeUninit};
-use std::{
+use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
@@ -168,11 +168,11 @@ impl<T: Eq, const CAPACITY: usize> Eq for StaticVec<T, CAPACITY> {}
 impl<T: Clone, const CAPACITY: usize> Clone for StaticVec<T, CAPACITY> {
     fn clone(&self) -> Self {
         Self {
-            len: self.len.clone(),
+            len: self.len,
             data: {
                 let mut data = [const { MaybeUninit::uninit() }; CAPACITY];
-                for idx in 0..self.len() {
-                    data[idx].write(unsafe { self.data[idx].assume_init_ref() }.clone());
+                for (idx, item) in data.iter_mut().enumerate().take(self.len()) {
+                    item.write(unsafe { self.data[idx].assume_init_ref() }.clone());
                 }
                 data
             },
@@ -239,13 +239,8 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         }
 
         if index != self.len() {
-            unsafe {
-                core::ptr::copy(
-                    self.data[index].as_ptr(),
-                    self.data[index + 1].as_mut_ptr(),
-                    self.len() - index,
-                )
-            };
+            let ptr = self.data.as_mut_ptr();
+            unsafe { core::ptr::copy(ptr.add(index), ptr.add(index + 1), self.len() - index) };
         }
 
         self.data[index].write(element);
@@ -305,13 +300,8 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
 
         let value = unsafe { core::ptr::read(self.data[index].as_ptr()) };
 
-        unsafe {
-            core::ptr::copy(
-                self.data[index + 1].as_ptr(),
-                self.data[index].as_mut_ptr(),
-                self.len() - index - 1,
-            )
-        };
+        let ptr = self.data.as_mut_ptr();
+        unsafe { core::ptr::copy(ptr.add(index + 1), ptr.add(index), self.len() - index - 1) };
 
         self.len -= 1;
 
