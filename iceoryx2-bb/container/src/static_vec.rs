@@ -35,16 +35,30 @@ impl<T: Debug, const CAPACITY: usize> Debug for StaticVec<T, CAPACITY> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "StaticVec<{}, {}> {{ {:?} }}",
+            "StaticVec<{}, {}> {{ ",
             core::any::type_name::<T>(),
             CAPACITY,
-            //todo
-            self.data
-        )
+        )?;
+
+        if !self.is_empty() {
+            write!(f, "{:?}", self[0])?;
+        }
+
+        for idx in 1..self.len() {
+            write!(f, ", {:?}", self[idx])?;
+        }
+
+        write!(f, " }}")
     }
 }
 
 unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for StaticVec<T, CAPACITY> {}
+
+impl<T, const CAPACITY: usize> Drop for StaticVec<T, CAPACITY> {
+    fn drop(&mut self) {
+        self.clear();
+    }
+}
 
 impl<'de, T: Serialize + Deserialize<'de>, const CAPACITY: usize> Serialize
     for StaticVec<T, CAPACITY>
@@ -218,21 +232,31 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         true
     }
 
-    /// Fill the remaining space of the vector with value.
-    pub fn fill(&mut self, value: T)
-    where
-        T: Clone,
-    {
-        for idx in self.len()..Self::capacity() {
-            self.data[idx].write(value.clone());
+    /// Inserts an element at the provided index and shifting all elements
+    /// after the index to the right.
+    pub fn insert(&mut self, index: usize, element: T) {
+        if index > self.len() {
+            let origin = format!(
+                "StaticVec::<{}, {}>::insert({}, ...)",
+                core::any::type_name::<T>(),
+                CAPACITY,
+                index
+            );
+            fatal_panic!(from origin,
+                "Trying to insert element at {} beyond the len {} of the vector",
+                index,
+                self.len());
         }
-    }
 
-    /// Fill the remaining space of the vector with value.
-    pub fn fill_with<F: FnMut() -> T>(&mut self, mut f: F) {
-        for idx in self.len()..Self::capacity() {
-            self.data[idx].write(f());
-        }
+        unsafe {
+            core::ptr::copy(
+                self.data[index].as_ptr(),
+                self.data[index + 1].as_mut_ptr(),
+                self.len() - index - 1,
+            )
+        };
+
+        self.data[index].write(element);
     }
 
     /// Returns true if the vector is empty, otherwise false
@@ -303,5 +327,57 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         };
 
         value
+    }
+
+    /// Fill the remaining space of the vector with value.
+    pub fn resize(&mut self, new_len: usize, value: T)
+    where
+        T: Clone,
+    {
+        self.resize_impl("resize", new_len, || value.clone());
+    }
+
+    /// Fill the remaining space of the vector with value.
+    pub fn resize_with<F: FnMut() -> T>(&mut self, new_len: usize, f: F) {
+        self.resize_impl("resize_with", new_len, f);
+    }
+
+    fn resize_impl<F: FnMut() -> T>(&mut self, origin: &str, new_len: usize, mut f: F) {
+        if CAPACITY < new_len {
+            let origin = format!(
+                "StaticVec::<{}, {}>::{}({}, ...)",
+                core::any::type_name::<T>(),
+                CAPACITY,
+                origin,
+                new_len
+            );
+
+            fatal_panic!(from origin,
+                "Trying to resize to {new_len} which exceeds the maximum capacity {CAPACITY}.");
+        }
+
+        if new_len < self.len() {
+            self.truncate(new_len);
+        } else {
+            for idx in self.len()..Self::capacity() {
+                self.data[idx].write(f());
+            }
+
+            self.len = new_len as u64;
+        }
+    }
+
+    /// Truncates the vector to `len` and drops all elements right of `len`
+    /// in reverse order.
+    pub fn truncate(&mut self, len: usize) {
+        if self.len() <= len {
+            return;
+        }
+
+        for idx in (len..self.len()).rev() {
+            unsafe { self.data[idx].assume_init_drop() };
+        }
+
+        self.len = len as u64;
     }
 }

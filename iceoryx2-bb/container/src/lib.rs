@@ -105,6 +105,6 @@ pub mod semantic_string;
 pub mod flatmap;
 /// A shared memory compatible vector similar to [`std::vec::Vec`] that has the same memory layout then
 /// its C++ counterpart
-pub mod static_vector;
+pub mod static_vec;
 /// A vector similar to [`std::vec::Vec`]
 pub mod vec;
