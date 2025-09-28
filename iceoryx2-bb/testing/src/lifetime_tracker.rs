@@ -73,7 +73,9 @@ impl LifetimeTracker {
 
 impl Clone for LifetimeTracker {
     fn clone(&self) -> Self {
-        Self::new()
+        let mut new_self = Self::new();
+        new_self.value = self.value;
+        new_self
     }
 }
 

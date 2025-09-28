@@ -21,7 +21,6 @@ use std::{
 use iceoryx2_bb_elementary_traits::{
     placement_default::PlacementDefault, zero_copy_send::ZeroCopySend,
 };
-use iceoryx2_bb_log::fatal_panic;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 /// Relocatable vector with compile time fixed size capacity.
@@ -234,29 +233,24 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
 
     /// Inserts an element at the provided index and shifting all elements
     /// after the index to the right.
-    pub fn insert(&mut self, index: usize, element: T) {
+    pub fn insert(&mut self, index: usize, element: T) -> bool {
         if index > self.len() {
-            let origin = format!(
-                "StaticVec::<{}, {}>::insert({}, ...)",
-                core::any::type_name::<T>(),
-                CAPACITY,
-                index
-            );
-            fatal_panic!(from origin,
-                "Trying to insert element at {} beyond the len {} of the vector",
-                index,
-                self.len());
+            return false;
         }
 
-        unsafe {
-            core::ptr::copy(
-                self.data[index].as_ptr(),
-                self.data[index + 1].as_mut_ptr(),
-                self.len() - index - 1,
-            )
-        };
+        if index != self.len() {
+            unsafe {
+                core::ptr::copy(
+                    self.data[index].as_ptr(),
+                    self.data[index + 1].as_mut_ptr(),
+                    self.len() - index,
+                )
+            };
+        }
 
         self.data[index].write(element);
+        self.len += 1;
+        true
     }
 
     /// Returns true if the vector is empty, otherwise false
@@ -304,16 +298,9 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
     }
 
     /// Removes the element at the provided index and returns it.
-    pub fn remove(&mut self, index: usize) -> T {
+    pub fn remove(&mut self, index: usize) -> Option<T> {
         if self.len() <= index {
-            let origin = format!(
-                "StaticVec::<{}, {}>::remove()",
-                core::any::type_name::<T>(),
-                CAPACITY
-            );
-            fatal_panic!(from origin,
-                "Out-of-bounds access of index {index} while the size of the vector is {}",
-                self.len());
+            return None;
         }
 
         let value = unsafe { core::ptr::read(self.data[index].as_ptr()) };
@@ -326,34 +313,23 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
             )
         };
 
-        value
+        self.len -= 1;
+
+        Some(value)
     }
 
     /// Fill the remaining space of the vector with value.
-    pub fn resize(&mut self, new_len: usize, value: T)
+    pub fn resize(&mut self, new_len: usize, value: T) -> bool
     where
         T: Clone,
     {
-        self.resize_impl("resize", new_len, || value.clone());
+        self.resize_with(new_len, || value.clone())
     }
 
     /// Fill the remaining space of the vector with value.
-    pub fn resize_with<F: FnMut() -> T>(&mut self, new_len: usize, f: F) {
-        self.resize_impl("resize_with", new_len, f);
-    }
-
-    fn resize_impl<F: FnMut() -> T>(&mut self, origin: &str, new_len: usize, mut f: F) {
+    pub fn resize_with<F: FnMut() -> T>(&mut self, new_len: usize, mut f: F) -> bool {
         if CAPACITY < new_len {
-            let origin = format!(
-                "StaticVec::<{}, {}>::{}({}, ...)",
-                core::any::type_name::<T>(),
-                CAPACITY,
-                origin,
-                new_len
-            );
-
-            fatal_panic!(from origin,
-                "Trying to resize to {new_len} which exceeds the maximum capacity {CAPACITY}.");
+            return false;
         }
 
         if new_len < self.len() {
@@ -365,6 +341,8 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
 
             self.len = new_len as u64;
         }
+
+        true
     }
 
     /// Truncates the vector to `len` and drops all elements right of `len`

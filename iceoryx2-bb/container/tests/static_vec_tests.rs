@@ -47,6 +47,24 @@ fn push_adds_element_at_the_end() {
 }
 
 #[test]
+fn push_until_full_works() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    assert_that!(sut.is_empty(), eq true);
+    assert_that!(sut.is_full(), eq false);
+    for n in 0..SUT_CAPACITY {
+        assert_that!(sut.len(), eq n);
+        assert_that!(sut.is_full(), eq false);
+
+        sut.push(LifetimeTracker::new());
+
+        assert_that!(sut.is_empty(), eq false);
+    }
+
+    assert_that!(sut.is_full(), eq true);
+}
+
+#[test]
 fn push_more_elements_than_capacity_fails() {
     let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
 
@@ -137,5 +155,289 @@ fn truncate_drops_elements_in_reverse_order() {
 
     for (n, drop_value) in tracker.drop_order().iter().enumerate() {
         assert_that!(*drop_value, eq SUT_CAPACITY - n - 1);
+    }
+}
+
+#[test]
+fn resize_increases_len_with_provided_value() {
+    let half_capacity = SUT_CAPACITY / 2;
+    const TEST_VALUE: usize = 871828;
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    assert_that!(sut.resize(half_capacity, LifetimeTracker::new_with_value(TEST_VALUE)), eq true);
+
+    assert_that!(sut.len(), eq half_capacity);
+
+    for element in sut.iter() {
+        assert_that!(element.value, eq TEST_VALUE);
+    }
+}
+
+#[test]
+fn resize_reduces_len_and_drops_element_in_reverse_order() {
+    let half_capacity = SUT_CAPACITY / 2;
+    let tracker = LifetimeTracker::start_tracking();
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        sut.push(LifetimeTracker::new_with_value(number));
+    }
+
+    let stub_element = LifetimeTracker::new_with_value(0);
+    assert_that!(sut.resize(half_capacity, stub_element), eq true);
+    assert_that!(tracker.number_of_living_instances(), eq half_capacity);
+
+    assert_that!(sut.len(), eq half_capacity);
+
+    for (n, element) in sut.iter().enumerate() {
+        assert_that!(element.value, eq n);
+    }
+
+    let mut drop_order = tracker.drop_order();
+    // first element is the dropped stub_element, skip it
+    drop_order.pop();
+
+    for (n, dropped_element) in drop_order.iter().enumerate() {
+        assert_that!(*dropped_element, eq SUT_CAPACITY - n - 1);
+    }
+}
+
+#[test]
+fn resize_fails_if_len_greater_than_capacity() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+    assert_that!(sut.resize(SUT_CAPACITY + 1, LifetimeTracker::new()), eq false);
+}
+
+#[test]
+fn resize_with_increases_len_with_provided_value() {
+    let half_capacity = SUT_CAPACITY / 2;
+    const TEST_VALUE: usize = 918293;
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    assert_that!(sut.resize_with(half_capacity, || {
+        LifetimeTracker::new_with_value(TEST_VALUE)
+    }), eq true);
+
+    assert_that!(sut.len(), eq half_capacity);
+
+    for element in sut.iter() {
+        assert_that!(element.value, eq TEST_VALUE);
+    }
+}
+
+#[test]
+fn resize_with_reduces_len_and_drops_element_in_reverse_order() {
+    let half_capacity = SUT_CAPACITY / 2;
+    let tracker = LifetimeTracker::start_tracking();
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        sut.push(LifetimeTracker::new_with_value(number));
+    }
+
+    assert_that!(sut.resize_with(half_capacity, || LifetimeTracker::new()), eq true);
+    assert_that!(tracker.number_of_living_instances(), eq half_capacity);
+
+    assert_that!(sut.len(), eq half_capacity);
+
+    for (n, element) in sut.iter().enumerate() {
+        assert_that!(element.value, eq n);
+    }
+
+    for (n, dropped_element) in tracker.drop_order().iter().enumerate() {
+        assert_that!(*dropped_element, eq SUT_CAPACITY - n - 1);
+    }
+}
+
+#[test]
+fn resize_with_fails_if_len_greater_than_capacity() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+    assert_that!(sut.resize_with(SUT_CAPACITY + 1, || LifetimeTracker::new()), eq false);
+}
+
+#[test]
+fn remove_first_element_of_empty_vec_returns_none() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+    assert_that!(sut.remove(0), is_none);
+}
+
+#[test]
+fn remove_element_out_of_bounds_returns_none() {
+    let half_capacity = SUT_CAPACITY / 2;
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for _ in 0..half_capacity {
+        sut.push(LifetimeTracker::new());
+    }
+
+    assert_that!(sut.remove(half_capacity), is_none);
+}
+
+#[test]
+fn remove_first_element_until_empty_works() {
+    let tracker = LifetimeTracker::start_tracking();
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        sut.push(LifetimeTracker::new_with_value(number * 13));
+    }
+
+    for number in 0..SUT_CAPACITY {
+        for k in 0..SUT_CAPACITY - number {
+            assert_that!(sut[k].value, eq((k + number) * 13));
+        }
+        assert_that!(sut.remove(0).unwrap().value, eq number * 13);
+        assert_that!(sut.len(), eq SUT_CAPACITY - number - 1);
+    }
+
+    assert_that!(sut.is_empty(), eq true);
+    assert_that!(tracker.number_of_living_instances(), eq 0);
+}
+
+#[test]
+fn remove_middle_element_works() {
+    let half_capacity = SUT_CAPACITY / 2;
+    let tracker = LifetimeTracker::start_tracking();
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        sut.push(LifetimeTracker::new_with_value(number * 17));
+    }
+
+    assert_that!(sut.remove(half_capacity).unwrap().value, eq half_capacity * 17 );
+    assert_that!(sut.len(), eq SUT_CAPACITY - 1);
+    assert_that!(tracker.number_of_living_instances(), eq SUT_CAPACITY - 1);
+
+    for number in 0..half_capacity - 1 {
+        assert_that!(sut[number].value, eq number * 17);
+    }
+
+    for number in half_capacity + 1..SUT_CAPACITY - 1 {
+        assert_that!(sut[number].value, eq(number + 1) * 17);
+    }
+}
+
+#[test]
+fn insert_first_element_of_empty_vec_works() {
+    const TEST_VALUE: usize = 91782389;
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+    assert_that!(sut.insert(0, LifetimeTracker::new_with_value(TEST_VALUE)), eq true);
+
+    assert_that!(sut[0].value, eq TEST_VALUE);
+}
+
+#[test]
+fn insert_second_element_of_empty_vec_fails() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+    assert_that!(sut.insert(1, LifetimeTracker::new()), eq false);
+}
+
+#[test]
+fn insert_at_position_zero_fills_vector_in_reverse_order() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        assert_that!(sut.insert(0, LifetimeTracker::new_with_value(number)), eq true);
+        assert_that!(sut.len(), eq number + 1);
+    }
+
+    for (n, element) in sut.iter().enumerate() {
+        assert_that!(element.value, eq SUT_CAPACITY - n - 1);
+    }
+}
+
+#[test]
+fn insert_at_end_fills_vector_in_order() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        assert_that!(sut.insert(number, LifetimeTracker::new_with_value(number)), eq true);
+        assert_that!(sut.len(), eq number + 1);
+    }
+
+    for (n, element) in sut.iter().enumerate() {
+        assert_that!(element.value, eq n);
+    }
+}
+
+#[test]
+fn insert_at_center_move_elements_to_the_rights() {
+    let half_capacity = SUT_CAPACITY / 2;
+    const TEST_VALUE: usize = 565612334;
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY - 1 {
+        sut.push(LifetimeTracker::new_with_value(number));
+    }
+
+    assert_that!(sut.insert(half_capacity, LifetimeTracker::new_with_value(TEST_VALUE)), eq true);
+    assert_that!(sut.len(), eq SUT_CAPACITY);
+
+    for number in 0..half_capacity {
+        assert_that!(sut[number].value, eq number);
+    }
+
+    assert_that!(sut[half_capacity].value, eq TEST_VALUE);
+
+    for number in half_capacity + 1..SUT_CAPACITY {
+        assert_that!(sut[number].value, eq number - 1);
+    }
+}
+
+#[test]
+fn clearing_empty_vector_does_nothing() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    sut.clear();
+    assert_that!(sut.is_empty(), eq true);
+}
+
+#[test]
+fn clear_drops_elements_in_reverse_order() {
+    let tracker = LifetimeTracker::start_tracking();
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        sut.push(LifetimeTracker::new_with_value(number));
+    }
+
+    sut.clear();
+
+    assert_that!(sut.is_empty(), eq true);
+    assert_that!(sut.len(), eq 0);
+    assert_that!(sut.is_full(), eq false);
+
+    for (n, element) in tracker.drop_order().iter().rev().enumerate() {
+        assert_that!(*element, eq n);
+    }
+}
+
+#[test]
+fn as_slice_contains_elements() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        sut.push(LifetimeTracker::new_with_value(number));
+    }
+
+    for (n, element) in sut.as_slice().iter().enumerate() {
+        assert_that!(element.value, eq n);
+    }
+}
+
+#[test]
+fn as_mut_slice_contains_mutable_elements() {
+    let mut sut = StaticVec::<LifetimeTracker, SUT_CAPACITY>::new();
+
+    for number in 0..SUT_CAPACITY {
+        sut.push(LifetimeTracker::new_with_value(number));
+    }
+
+    for element in sut.as_mut_slice() {
+        element.value *= 2
+    }
+
+    for number in 0..SUT_CAPACITY {
+        assert_that!(sut[number].value, eq number * 2);
     }
 }
