@@ -63,12 +63,14 @@
 
 ### API Breaking Changes
 
-1. Example
+1. Replaced the `FixedSizeVec` with the `StaticVec`
 
    ```rust
    // old
-   let fuu = hello().is_it_me_you_re_looking_for()
+   const VEC_CAPACITY: usize = 1234;
+   let my_vec = FixedSizeVec::<MyType, VEC_CAPACITY>::new();
 
    // new
-   let fuu = hypnotoad().all_glory_to_the_hypnotoad()
+   const VEC_CAPACITY: usize = 1234;
+   let my_vec = StaticVec::<MyType, VEC_CAPACITY>::new();
    ```
