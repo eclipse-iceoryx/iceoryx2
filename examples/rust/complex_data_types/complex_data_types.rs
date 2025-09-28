@@ -14,7 +14,7 @@ use core::time::Duration;
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::{
-    byte_string::FixedSizeByteString, queue::FixedSizeQueue, vec::FixedSizeVec,
+    byte_string::FixedSizeByteString, queue::FixedSizeQueue, static_vec::StaticVec,
 };
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
@@ -23,7 +23,7 @@ use iceoryx2_bb_container::{
 #[repr(C)]
 pub struct ComplexData {
     name: FixedSizeByteString<4>,
-    data: FixedSizeVec<u64, 4>,
+    data: StaticVec<u64, 4>,
 }
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
@@ -33,8 +33,8 @@ pub struct ComplexData {
 pub struct ComplexDataType {
     plain_old_data: u64,
     text: FixedSizeByteString<8>,
-    vec_of_data: FixedSizeVec<u64, 4>,
-    vec_of_complex_data: FixedSizeVec<ComplexData, 404857>,
+    vec_of_data: StaticVec<u64, 4>,
+    vec_of_complex_data: StaticVec<ComplexData, 404857>,
     a_queue_of_things: FixedSizeQueue<FixedSizeByteString<4>, 2>,
 }
 
@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         payload.vec_of_complex_data.push(ComplexData {
             name: FixedSizeByteString::from_bytes(b"bla")?,
             data: {
-                let mut v = FixedSizeVec::new();
+                let mut v = StaticVec::new();
                 v.fill(counter);
                 v
             },

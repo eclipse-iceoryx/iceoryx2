@@ -14,23 +14,7 @@
 //!
 //!  * [`Vec`](crate::vec::Vec), run-time fixed-size vector that is not shared-memory compatible
 //!     since the memory resides in the heap.
-//!  * [`FixedSizeVec`](crate::vec::FixedSizeVec), compile-time fixed size vector that is
-//!     self-contained.
 //!  * [`RelocatableVec`](crate::vec::RelocatableVec), run-time fixed size vector that uses by default heap memory.
-//!
-//! # User Examples
-//!
-//! ```
-//! use iceoryx2_bb_container::vec::FixedSizeVec;
-//!
-//! const VEC_CAPACITY: usize = 123;
-//! let mut my_vec = FixedSizeVec::<u64, VEC_CAPACITY>::new();
-//!
-//! my_vec.push(283);
-//! my_vec.push(787);
-//!
-//! println!("vec contents {:?}", my_vec);
-//! ```
 //!
 //! # Expert Examples
 //!
@@ -91,20 +75,16 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-use iceoryx2_bb_elementary::{
-    bump_allocator::BumpAllocator, relocatable_ptr::GenericRelocatablePointer,
-};
+use iceoryx2_bb_elementary::relocatable_ptr::GenericRelocatablePointer;
 use iceoryx2_bb_elementary_traits::{
     generic_pointer::GenericPointer, owning_pointer::GenericOwningPointer,
-    owning_pointer::OwningPointer, placement_default::PlacementDefault,
-    pointer_trait::PointerTrait, relocatable_container::RelocatableContainer,
-    zero_copy_send::ZeroCopySend,
+    owning_pointer::OwningPointer, pointer_trait::PointerTrait,
+    relocatable_container::RelocatableContainer, zero_copy_send::ZeroCopySend,
 };
 
 use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_ptr::RelocatablePointer};
 
 use iceoryx2_bb_log::{fail, fatal_panic};
-use serde::{de::Visitor, Deserialize, Serialize};
 
 /// Vector with run-time fixed size capacity. In contrast to its counterpart the
 /// [`RelocatableVec`] it is movable but is not shared memory compatible.
@@ -542,230 +522,5 @@ impl<T> RelocatableVec<T> {
     ///
     pub unsafe fn as_mut_slice(&mut self) -> &mut [T] {
         self.as_mut_slice_impl()
-    }
-}
-
-/// Relocatable vector with compile time fixed size capacity. In contrast to its counterpart the
-/// [`RelocatableVec`] it is movable.
-#[repr(C)]
-pub struct FixedSizeVec<T, const CAPACITY: usize> {
-    state: RelocatableVec<T>,
-    _data: [MaybeUninit<T>; CAPACITY],
-}
-
-impl<T: Debug, const CAPACITY: usize> Debug for FixedSizeVec<T, CAPACITY> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "FixedSizeVec<{}, {}> {{ {:?} }}",
-            core::any::type_name::<T>(),
-            CAPACITY,
-            self.state
-        )
-    }
-}
-
-unsafe impl<T: ZeroCopySend, const CAPACITY: usize> ZeroCopySend for FixedSizeVec<T, CAPACITY> {}
-
-impl<'de, T: Serialize + Deserialize<'de>, const CAPACITY: usize> Serialize
-    for FixedSizeVec<T, CAPACITY>
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        self.as_slice().serialize(serializer)
-    }
-}
-
-struct FixedSizeVecVisitor<T, const CAPACITY: usize> {
-    _value: PhantomData<T>,
-}
-
-impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Visitor<'de>
-    for FixedSizeVecVisitor<T, CAPACITY>
-{
-    type Value = FixedSizeVec<T, CAPACITY>;
-
-    fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-        let str = format!(
-            "an array of at most {} elements of type {}",
-            CAPACITY,
-            core::any::type_name::<T>()
-        );
-        formatter.write_str(&str)
-    }
-
-    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-    where
-        A: serde::de::SeqAccess<'de>,
-    {
-        let mut new_vec = Self::Value::new();
-
-        while let Some(element) = seq.next_element()? {
-            if !new_vec.push(element) {
-                return Err(<A::Error as serde::de::Error>::custom(format!(
-                    "the array can hold at most {CAPACITY} elements"
-                )));
-            }
-        }
-
-        Ok(new_vec)
-    }
-}
-
-impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Deserialize<'de>
-    for FixedSizeVec<T, CAPACITY>
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_seq(FixedSizeVecVisitor::<T, CAPACITY> {
-            _value: PhantomData,
-        })
-    }
-}
-
-impl<T, const CAPACITY: usize> PlacementDefault for FixedSizeVec<T, CAPACITY> {
-    unsafe fn placement_default(ptr: *mut Self) {
-        let state_ptr = core::ptr::addr_of_mut!((*ptr).state);
-        state_ptr.write(unsafe { RelocatableVec::new_uninit(CAPACITY) });
-        let allocator = BumpAllocator::new((*ptr)._data.as_mut_ptr().cast());
-        (*ptr)
-            .state
-            .init(&allocator)
-            .expect("All required memory is preallocated.");
-    }
-}
-
-impl<T, const CAPACITY: usize> Default for FixedSizeVec<T, CAPACITY> {
-    fn default() -> Self {
-        let mut new_self = Self {
-            state: unsafe { RelocatableVec::new_uninit(CAPACITY) },
-            _data: core::array::from_fn(|_| MaybeUninit::uninit()),
-        };
-
-        let allocator = BumpAllocator::new(new_self._data.as_mut_ptr().cast());
-        unsafe {
-            new_self
-                .state
-                .init(&allocator)
-                .expect("All required memory is preallocated.")
-        };
-
-        new_self
-    }
-}
-
-impl<T, const CAPACITY: usize> Deref for FixedSizeVec<T, CAPACITY> {
-    type Target = [T];
-
-    fn deref(&self) -> &Self::Target {
-        self.state.deref()
-    }
-}
-
-impl<T, const CAPACITY: usize> DerefMut for FixedSizeVec<T, CAPACITY> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.state.deref_mut()
-    }
-}
-
-impl<T: PartialEq, const CAPACITY: usize> PartialEq for FixedSizeVec<T, CAPACITY> {
-    fn eq(&self, other: &Self) -> bool {
-        self.state.eq(&other.state)
-    }
-}
-
-impl<T: Eq, const CAPACITY: usize> Eq for FixedSizeVec<T, CAPACITY> {}
-
-impl<T: Clone, const CAPACITY: usize> Clone for FixedSizeVec<T, CAPACITY> {
-    fn clone(&self) -> Self {
-        let mut new_self = Self::new();
-        new_self.extend_from_slice(self.deref());
-        new_self
-    }
-}
-
-unsafe impl<T: Send, const CAPACITY: usize> Send for FixedSizeVec<T, CAPACITY> {}
-
-impl<T, const CAPACITY: usize> FixedSizeVec<T, CAPACITY> {
-    /// Creates a new vector.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns true if the vector is empty, otherwise false
-    pub fn is_empty(&self) -> bool {
-        self.state.is_empty()
-    }
-
-    /// Returns true if the vector is full, otherwise false
-    pub fn is_full(&self) -> bool {
-        self.state.is_full()
-    }
-
-    /// Returns the capacity of the vector
-    pub const fn capacity() -> usize {
-        CAPACITY
-    }
-
-    /// Returns the number of elements stored inside the vector
-    pub fn len(&self) -> usize {
-        self.state.len()
-    }
-
-    /// Adds an element at the end of the vector. If the vector is full and the element cannot be
-    /// added it returns false, otherwise true.
-    pub fn push(&mut self, value: T) -> bool {
-        unsafe { self.state.push(value) }
-    }
-
-    /// Fill the remaining space of the vector with value.
-    pub fn fill(&mut self, value: T)
-    where
-        T: Clone,
-    {
-        unsafe { self.state.fill(value) }
-    }
-
-    /// Fill the remaining space of the vector with value.
-    pub fn fill_with<F: FnMut() -> T>(&mut self, f: F) {
-        unsafe { self.state.fill_with(f) }
-    }
-
-    /// Append all elements from other via [`Clone`].
-    pub fn extend_from_slice(&mut self, other: &[T]) -> bool
-    where
-        T: Clone,
-    {
-        unsafe { self.state.extend_from_slice(other) }
-    }
-
-    /// Removes the last element of the vector and returns it to the user. If the vector is empty
-    /// it returns [`None`].
-    pub fn pop(&mut self) -> Option<T> {
-        unsafe { self.state.pop() }
-    }
-
-    /// Removes the element at the provided index and returns it.
-    pub fn remove(&mut self, index: usize) -> T {
-        unsafe { self.state.remove(index) }
-    }
-
-    /// Removes all elements from the vector
-    pub fn clear(&mut self) {
-        unsafe { self.state.clear() }
-    }
-
-    /// Returns a slice to the contents of the vector
-    pub fn as_slice(&self) -> &[T] {
-        unsafe { self.state.as_slice() }
-    }
-
-    /// Returns a mutable slice to the contents of the vector
-    pub fn as_mut_slice(&mut self) -> &mut [T] {
-        unsafe { self.state.as_mut_slice() }
     }
 }

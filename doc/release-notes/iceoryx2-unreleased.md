@@ -17,6 +17,9 @@
   [#938](https://github.com/eclipse-iceoryx/iceoryx2/issues/938)
 * Use `epoll` instead of `select` for the `WaitSet` on Linux
   [#961](https://github.com/eclipse-iceoryx/iceoryx2/issues/961)
+* Add a Rust vector type with fixed compile-time capacity which has the same
+  memory layout as the C++ vector
+  [#1073](https://github.com/eclipse-iceoryx/iceoryx2/issues/1073)
 
 ### Bugfixes
 

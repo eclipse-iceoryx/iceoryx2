@@ -15,6 +15,7 @@ use std::mem::MaybeUninit;
 use iceoryx2_bb_container::static_vec::StaticVec;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
+use serde_test::{assert_tokens, Token};
 
 const SUT_CAPACITY: usize = 10;
 
@@ -537,4 +538,25 @@ fn when_vec_is_dropped_all_elements_are_dropped_in_reverse_order() {
     for (n, element) in tracker.drop_order().iter().rev().enumerate() {
         assert_that!(*element, eq n);
     }
+}
+
+#[test]
+fn serialization_works() {
+    let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
+    sut.push(44617);
+    sut.push(123123);
+    sut.push(89712);
+    sut.push(99101);
+
+    assert_tokens(
+        &sut,
+        &[
+            Token::Seq { len: Some(4) },
+            Token::U64(44617),
+            Token::U64(123123),
+            Token::U64(89712),
+            Token::U64(99101),
+            Token::SeqEnd,
+        ],
+    );
 }

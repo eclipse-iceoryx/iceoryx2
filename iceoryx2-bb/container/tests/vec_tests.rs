@@ -12,22 +12,19 @@
 
 use iceoryx2_bb_container::vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
-use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
 use iceoryx2_bb_testing::assert_that;
 use iceoryx2_bb_testing::lifetime_tracker::LifetimeTracker;
-use iceoryx2_bb_testing::memory::RawMemory;
-use serde_test::{assert_tokens, Token};
 
 mod fixed_size_vec {
     use super::*;
 
     const SUT_CAPACITY: usize = 128;
-    type Sut = FixedSizeVec<usize, SUT_CAPACITY>;
+    type Sut = iceoryx2_bb_container::vec::Vec<usize>;
 
     #[test]
     fn new_vector_is_empty() {
-        let mut sut = Sut::new();
+        let mut sut = Sut::new(SUT_CAPACITY);
 
         assert_that!(sut, is_empty);
         assert_that!(sut.is_full(), eq false);
@@ -37,14 +34,14 @@ mod fixed_size_vec {
 
     #[test]
     fn capacity_is_correct() {
-        assert_that!(Sut::capacity(), eq SUT_CAPACITY);
+        assert_that!(Sut::new(SUT_CAPACITY).capacity(), eq SUT_CAPACITY);
     }
 
     #[test]
     fn push_pop_works() {
-        let mut sut = Sut::new();
+        let mut sut = Sut::new(SUT_CAPACITY);
 
-        for i in 0..Sut::capacity() {
+        for i in 0..sut.capacity() {
             let element = i * 2 + 3;
             assert_that!(sut.is_full(), eq false);
             assert_that!(sut.push(element), eq true);
@@ -53,14 +50,14 @@ mod fixed_size_vec {
         }
         assert_that!(sut.is_full(), eq true);
 
-        for i in 0..Sut::capacity() {
+        for i in 0..sut.capacity() {
             assert_that!(*sut.get(i).unwrap(), eq i * 2 + 3);
             assert_that!(*sut.get_mut(i).unwrap(), eq i * 2 + 3);
             assert_that!(unsafe { *sut.get_unchecked(i) }, eq i * 2 + 3);
             assert_that!(unsafe { *sut.get_unchecked_mut(i) }, eq i * 2 + 3);
         }
 
-        for i in (0..Sut::capacity()).rev() {
+        for i in (0..sut.capacity()).rev() {
             assert_that!(sut, is_not_empty);
             assert_that!(sut, len i + 1);
             let result = sut.pop();
@@ -109,9 +106,9 @@ mod fixed_size_vec {
 
     #[test]
     fn clear_works() {
-        let mut sut = Sut::new();
+        let mut sut = Sut::new(SUT_CAPACITY);
 
-        for i in 0..Sut::capacity() {
+        for i in 0..sut.capacity() {
             assert_that!(sut.push(i), eq true);
         }
 
@@ -123,10 +120,10 @@ mod fixed_size_vec {
 
     #[test]
     fn push_pop_alteration_works() {
-        let mut sut = Sut::new();
+        let mut sut = Sut::new(SUT_CAPACITY);
 
         let mut push_counter: usize = 0;
-        for _ in 0..Sut::capacity() / 3 {
+        for _ in 0..sut.capacity() / 3 {
             for _ in 0..5 {
                 let element = push_counter * 4 + 1;
                 push_counter += 1;
@@ -142,25 +139,25 @@ mod fixed_size_vec {
 
     #[test]
     fn valid_after_move() {
-        let mut sut = Sut::new();
+        let mut sut = Sut::new(SUT_CAPACITY);
 
-        for i in 0..Sut::capacity() {
+        for i in 0..sut.capacity() {
             let element = i * 2 + 3;
             assert_that!(sut.push(element), eq true);
         }
 
         let mut sut2 = sut;
 
-        for i in 0..Sut::capacity() {
+        for i in 0..sut2.capacity() {
             let result = sut2.pop();
-            assert_that!(result, eq Some((Sut::capacity() - i - 1) * 2 + 3));
+            assert_that!(result, eq Some((sut2.capacity() - i - 1) * 2 + 3));
         }
     }
 
     #[test]
     fn eq_works() {
         let create_vec = |n| {
-            let mut sut = Sut::new();
+            let mut sut = Sut::new(SUT_CAPACITY);
             for i in 0..n {
                 sut.push(4 * i + 3);
             }
@@ -171,42 +168,28 @@ mod fixed_size_vec {
         let vec2 = create_vec(SUT_CAPACITY - 1);
         let vec3 = create_vec(SUT_CAPACITY);
 
-        assert_that!(Sut::new() == Sut::new(), eq true);
+        assert_that!(Sut::new(SUT_CAPACITY) == Sut::new(SUT_CAPACITY), eq true);
 
         assert_that!(vec1 == vec1, eq true);
         assert_that!(vec1 == vec2, eq false);
         assert_that!(vec1 == vec3, eq false);
-        assert_that!(vec1 == Sut::new(), eq false);
+        assert_that!(vec1 == Sut::new(SUT_CAPACITY), eq false);
 
         assert_that!(vec2 == vec1, eq false);
         assert_that!(vec2 == vec2, eq true);
         assert_that!(vec2 == vec3, eq false);
-        assert_that!(vec2 == Sut::new(), eq false);
+        assert_that!(vec2 == Sut::new(SUT_CAPACITY), eq false);
 
         assert_that!(vec3 == vec1, eq false);
         assert_that!(vec3 == vec2, eq false);
         assert_that!(vec3 == vec3, eq true);
-        assert_that!(vec3 == Sut::new(), eq false);
-    }
-
-    #[test]
-    fn clone_works() {
-        let mut sut = Sut::new();
-        let sut1 = sut.clone();
-        for i in 0..SUT_CAPACITY {
-            sut.push(8 * i + 6);
-        }
-
-        let sut2 = sut.clone();
-
-        assert_that!(Sut::new() == sut1, eq true);
-        assert_that!(sut == sut2, eq true);
+        assert_that!(vec3 == Sut::new(SUT_CAPACITY), eq false);
     }
 
     #[test]
     fn drops_all_objects_when_out_of_scope() {
         let state = LifetimeTracker::start_tracking();
-        let mut sut = FixedSizeVec::<LifetimeTracker, SUT_CAPACITY>::new();
+        let mut sut = Vec::<LifetimeTracker>::new(SUT_CAPACITY);
 
         for _ in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new()), eq true);
@@ -220,7 +203,7 @@ mod fixed_size_vec {
     #[test]
     fn drops_all_objects_with_clear() {
         let state = LifetimeTracker::start_tracking();
-        let mut sut = FixedSizeVec::<LifetimeTracker, SUT_CAPACITY>::new();
+        let mut sut = Vec::<LifetimeTracker>::new(SUT_CAPACITY);
 
         for _ in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new()), eq true);
@@ -234,7 +217,7 @@ mod fixed_size_vec {
     #[test]
     fn pop_releases_ownership() {
         let state = LifetimeTracker::start_tracking();
-        let mut sut = FixedSizeVec::<LifetimeTracker, SUT_CAPACITY>::new();
+        let mut sut = Vec::<LifetimeTracker>::new(SUT_CAPACITY);
 
         for _ in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new()), eq true);
@@ -249,22 +232,8 @@ mod fixed_size_vec {
     }
 
     #[test]
-    fn placement_default_works() {
-        type Sut = FixedSizeVec<usize, SUT_CAPACITY>;
-        let mut sut = RawMemory::<Sut>::new_filled(0xff);
-        unsafe { Sut::placement_default(sut.as_mut_ptr()) };
-
-        assert_that!(unsafe { sut.assume_init()}, len 0);
-        assert_that!(unsafe { sut.assume_init_mut()}.push(123), eq true);
-        assert_that!(unsafe { sut.assume_init_mut()}.push(456), eq true);
-
-        assert_that!(unsafe { sut.assume_init_mut()}.pop(), eq Some(456));
-        assert_that!(unsafe { sut.assume_init_mut()}.pop(), eq Some(123));
-    }
-
-    #[test]
     fn as_slice_works() {
-        let mut sut = Sut::new();
+        let mut sut = Sut::new(SUT_CAPACITY);
         for i in 0..12 {
             sut.push(2 * i * i + 3);
         }
@@ -276,7 +245,7 @@ mod fixed_size_vec {
 
     #[test]
     fn as_mut_slice_works() {
-        let mut sut = Sut::new();
+        let mut sut = Sut::new(SUT_CAPACITY);
         for i in 0..12 {
             sut.push(3 + 2 * i);
         }
@@ -289,27 +258,6 @@ mod fixed_size_vec {
         for (i, element) in sut.iter().enumerate() {
             assert_that!(*element, eq 3 * i);
         }
-    }
-
-    #[test]
-    fn serialization_works() {
-        let mut sut = Sut::new();
-        sut.push(44617);
-        sut.push(123123);
-        sut.push(89712);
-        sut.push(99101);
-
-        assert_tokens(
-            &sut,
-            &[
-                Token::Seq { len: Some(4) },
-                Token::U64(44617),
-                Token::U64(123123),
-                Token::U64(89712),
-                Token::U64(99101),
-                Token::SeqEnd,
-            ],
-        );
     }
 }
 
