@@ -138,7 +138,9 @@ impl<'de, T: Deserialize<'de>, const CAPACITY: usize> Deserialize<'de> for Stati
 impl<T, const CAPACITY: usize> PlacementDefault for StaticVec<T, CAPACITY> {
     unsafe fn placement_default(ptr: *mut Self) {
         core::ptr::addr_of_mut!((*ptr).len).write(0);
-        core::ptr::addr_of_mut!((*ptr).data).write([const { MaybeUninit::uninit() }; CAPACITY]);
+        // We do not have to initialize the `MaybeUninit` array at all, see:
+        // https://google.github.io/learn_unsafe_rust/advanced_unsafety/uninitialized.html
+        // core::ptr::addr_of_mut!((*ptr).data).write([const { MaybeUninit::uninit() }; CAPACITY]);
     }
 }
 
