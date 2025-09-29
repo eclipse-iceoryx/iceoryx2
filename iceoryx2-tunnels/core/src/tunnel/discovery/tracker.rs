@@ -16,14 +16,13 @@ use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
 use crate::Discovery;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum Error {
-    Creation,
-    Discovery,
+pub enum DiscoveryError {
+    FailedToSynchronizeTracker,
 }
 
-impl From<SyncError> for Error {
+impl From<SyncError> for DiscoveryError {
     fn from(_: SyncError) -> Self {
-        Error::Discovery
+        DiscoveryError::FailedToSynchronizeTracker
     }
 }
 
@@ -38,14 +37,14 @@ impl<S: Service> DiscoveryTracker<S> {
 
 impl<S: Service> Discovery<S> for DiscoveryTracker<S> {
     type Handle = Self;
-    type Error = Error;
+    type DiscoveryError = DiscoveryError;
 
     fn discover<
-        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::Error>,
+        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
     >(
         handle: &mut Self::Handle,
         process_discovery: &mut F,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), Self::DiscoveryError> {
         let tracker = &mut handle.0;
         let (added, _removed) = tracker.sync().unwrap();
 

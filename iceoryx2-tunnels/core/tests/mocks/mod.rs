@@ -22,9 +22,9 @@ pub struct MockRelayBuilder {}
 
 impl Transport for MockTransport {
     type Config = MockTransportConfig;
-    type Error = ();
+    type CreationError = ();
 
-    fn create(_config: &Self::Config) -> Result<Self, Self::Error> {
+    fn create(_config: &Self::Config) -> Result<Self, Self::CreationError> {
         Ok(MockTransport {})
     }
 }
@@ -38,9 +38,9 @@ impl Relay for MockRelay {
 }
 
 impl RelayBuilder for MockRelayBuilder {
-    type Error = ();
+    type CreationError = ();
 
-    fn create(self) -> Result<Box<dyn Relay>, Self::Error> {
+    fn create(self) -> Result<Box<dyn Relay>, Self::CreationError> {
         Ok(Box::from(MockRelay {}))
     }
 }

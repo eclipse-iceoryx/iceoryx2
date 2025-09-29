@@ -27,9 +27,9 @@ pub trait Relay {
 /// Allows for the transport to decide how to support
 /// propagation of data on different messaging patterns.
 pub trait RelayBuilder {
-    type Error: Debug;
+    type CreationError: Debug;
 
-    fn create(self) -> Result<Box<dyn Relay>, Self::Error>;
+    fn create(self) -> Result<Box<dyn Relay>, Self::CreationError>;
 }
 
 /// Retrieve the specific builder for different messaging patterns.

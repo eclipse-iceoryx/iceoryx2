@@ -12,13 +12,11 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::tunnel::discovery::subscriber::DiscoverySubscriber;
-use crate::tunnel::discovery::tracker::DiscoveryTracker;
-use crate::tunnel::ports::{publish_subscribe, Ports};
+use crate::tunnel::ports::Ports;
 use crate::tunnel::{discovery, ports};
 use crate::{Discovery, Relay, RelayBuilder, RelayFactory, Transport};
 
-use iceoryx2::node::{Node, NodeBuilder};
+use iceoryx2::node::{Node, NodeBuilder, NodeCreationFailure};
 use iceoryx2::prelude::PortFactory;
 use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
 use iceoryx2::service::builder::CustomHeaderMarker;
@@ -30,34 +28,65 @@ use iceoryx2::service::Service;
 use iceoryx2_bb_log::{debug, fail, warn};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum Error {
-    Creation,
-    Discovery,
-    Propagation,
-    ServiceCreation,
+pub enum CreationError {
+    FailedToCreateNodeNode,
+    FailedToCreateService,
+    FailedToCreateTransport,
+    FailedToCreateSubscriber,
+    FailedToCreateTracker,
 }
 
-impl From<discovery::subscriber::Error> for Error {
-    fn from(_: discovery::subscriber::Error) -> Self {
-        Error::Discovery
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum DiscoveryError {
+    FailedToDiscoverOverSubscriber,
+    FailedToDiscoverOverTracker,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum PropagationOrIngestionError {
+    FailedToPropagatePublishSubscribePayload,
+    FailedToIngestPublishSubscribePayload,
+}
+
+impl From<discovery::subscriber::CreationError> for CreationError {
+    fn from(_: discovery::subscriber::CreationError) -> Self {
+        CreationError::FailedToCreateSubscriber
     }
 }
 
-impl From<discovery::tracker::Error> for Error {
-    fn from(_: discovery::tracker::Error) -> Self {
-        Error::Discovery
+impl From<discovery::subscriber::DiscoveryError> for DiscoveryError {
+    fn from(_: discovery::subscriber::DiscoveryError) -> Self {
+        DiscoveryError::FailedToDiscoverOverSubscriber
     }
 }
 
-impl From<ports::publish_subscribe::Error> for Error {
-    fn from(_: ports::publish_subscribe::Error) -> Self {
-        Error::Propagation
+impl From<discovery::tracker::DiscoveryError> for DiscoveryError {
+    fn from(_: discovery::tracker::DiscoveryError) -> Self {
+        DiscoveryError::FailedToDiscoverOverTracker
     }
 }
 
-impl From<PublishSubscribeOpenOrCreateError> for Error {
+impl From<ports::publish_subscribe::PropagationError> for PropagationOrIngestionError {
+    fn from(_: ports::publish_subscribe::PropagationError) -> Self {
+        PropagationOrIngestionError::FailedToPropagatePublishSubscribePayload
+    }
+}
+
+impl From<ports::publish_subscribe::IngestionError> for PropagationOrIngestionError {
+    fn from(_: ports::publish_subscribe::IngestionError) -> Self {
+        PropagationOrIngestionError::FailedToIngestPublishSubscribePayload
+    }
+}
+
+impl From<NodeCreationFailure> for CreationError {
+    fn from(_: NodeCreationFailure) -> Self {
+        CreationError::FailedToCreateNodeNode
+    }
+}
+
+impl From<PublishSubscribeOpenOrCreateError> for CreationError {
     fn from(_: PublishSubscribeOpenOrCreateError) -> Self {
-        Error::ServiceCreation
+        CreationError::FailedToCreateService
     }
 }
 
@@ -73,8 +102,8 @@ pub struct Tunnel<S: Service, T: Transport> {
     services: HashSet<ServiceId>,
     ports: HashMap<ServiceId, Ports<S>>,
     relays: HashMap<ServiceId, Box<dyn Relay>>,
-    subscriber: Option<DiscoverySubscriber<S>>,
-    tracker: Option<DiscoveryTracker<S>>,
+    subscriber: Option<discovery::subscriber::DiscoverySubscriber<S>>,
+    tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
 }
 
 impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
@@ -83,33 +112,31 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
         tunnel_config: &Config,
         iceoryx_config: &iceoryx2::config::Config,
         transport_config: &T::Config,
-    ) -> Result<Self, Error> {
-        let node = NodeBuilder::new().config(iceoryx_config).create::<S>();
+    ) -> Result<Self, CreationError> {
         let node = fail!(
             from "Tunnel::<S, T>::create",
-            when node,
-            with Error::Creation,
+            when NodeBuilder::new().config(iceoryx_config).create::<S>(),
             "failed to create node"
         );
 
-        let transport = Transport::create(transport_config);
         let transport = fail!(
             from "Tunnel::<S, T>::create",
-            when transport,
-            with Error::Creation,
+            when Transport::create(transport_config),
+            with CreationError::FailedToCreateTransport,
             "failed to instantiate the transport"
         );
 
         let (subscriber, tracker) = match &tunnel_config.discovery_service {
             Some(service_name) => {
                 debug!("Discovery via Subscriber");
-                let subscriber = DiscoverySubscriber::new(&node, service_name)?;
+                let subscriber =
+                    discovery::subscriber::DiscoverySubscriber::new(&node, service_name)?;
                 (Some(subscriber), None)
             }
             None => {
                 debug!("Discovery via Tracker");
 
-                let tracker = DiscoveryTracker::new(iceoryx_config);
+                let tracker = discovery::tracker::DiscoveryTracker::new(iceoryx_config);
                 (None, Some(tracker))
             }
         };
@@ -126,11 +153,11 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
     }
 
     /// Discover services via iceoryx2 and the transport
-    pub fn discover(&mut self) -> Result<(), Error> {
+    pub fn discover(&mut self) -> Result<(), DiscoveryError> {
         if let Some(subscriber) = &mut self.subscriber {
             fail!(
                 from "Tunnel::<S, T>::discover",
-                when DiscoverySubscriber::discover(subscriber, &mut |static_config| {
+                when discovery::subscriber::DiscoverySubscriber::discover(subscriber, &mut |static_config| {
                     on_discovery::<S, T>(static_config, &mut self.node, &mut self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
@@ -140,7 +167,7 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
         if let Some(tracker) = &mut self.tracker {
             fail!(
                 from "Tunnel::<S, T>::discover",
-                when DiscoveryTracker::discover(tracker, &mut |static_config| {
+                when discovery::tracker::DiscoveryTracker::discover(tracker, &mut |static_config| {
                     on_discovery::<S, T>(static_config, &mut self.node, &mut self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
@@ -152,12 +179,12 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
     }
 
     /// Propagate payloads between iceoryx2 and the Transport
-    pub fn propagate(&mut self) -> Result<(), Error> {
+    pub fn propagate(&mut self) -> Result<(), PropagationOrIngestionError> {
         for (id, ports) in &self.ports {
             let relay = match self.relays.get(id) {
                 Some(relay) => relay,
                 None => {
-                    warn!("No relay available for id: {:?}", id);
+                    warn!("No relay available for id {:?}. Skipping.", id);
                     return Ok(());
                 }
             };
@@ -172,7 +199,7 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
                     fail!(
                         from "Tunnel::<S, T>::propagate",
                         when ports.ingest(relay),
-                        "Failed to propagate PublishSubscribe payload"
+                        "Failed to ingest PublishSubscribe payload"
                     );
                 }
                 Ports::Event(_) => todo!(),
@@ -194,7 +221,7 @@ fn on_discovery<S: Service, T: Transport + RelayFactory<T>>(
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
     relays: &mut HashMap<ServiceId, Box<dyn Relay>>,
-) -> Result<(), Error> {
+) -> Result<(), CreationError> {
     match static_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
             debug!("Discovered: PublishSubscribe({})", static_config.name());
@@ -223,7 +250,7 @@ fn setup_publish_subscribe<S: Service, T: Transport + RelayFactory<T>>(
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
     relays: &mut HashMap<ServiceId, Box<dyn Relay>>,
-) -> Result<(), Error> {
+) -> Result<(), CreationError> {
     let service_id = static_config.service_id();
 
     if services.contains(service_id) {
@@ -258,9 +285,9 @@ fn setup_publish_subscribe<S: Service, T: Transport + RelayFactory<T>>(
     };
 
     // TODO: Use fail!
-    let port = publish_subscribe::Ports::new(&service).unwrap();
+    let port = ports::publish_subscribe::Ports::new(&service).unwrap();
 
-    // TODO: How to use fail! when the concrete error type is not known?
+    // TODO: Use fail!
     let relay = transport
         .publish_subscribe(service.name())
         .create()

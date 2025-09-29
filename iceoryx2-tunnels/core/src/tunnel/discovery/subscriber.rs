@@ -19,25 +19,31 @@ use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryEvent;
 use crate::Discovery;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum Error {
-    Creation,
-    Discovery,
+pub enum CreationError {
+    FailedToCreateServiceName,
+    FailedToCreateService,
+    FailedToCreateSubscriber,
 }
 
-impl From<ReceiveError> for Error {
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum DiscoveryError {
+    FailedToReceiveDiscoveryEvent,
+}
+
+impl From<ReceiveError> for DiscoveryError {
     fn from(_: ReceiveError) -> Self {
-        Error::Discovery
+        DiscoveryError::FailedToReceiveDiscoveryEvent
     }
 }
 
 pub struct DiscoverySubscriber<S: Service>(pub Subscriber<S, DiscoveryEvent, ()>);
 
 impl<S: Service> DiscoverySubscriber<S> {
-    pub fn new(node: &Node<S>, service_name: &str) -> Result<Self, Error> {
+    pub fn new(node: &Node<S>, service_name: &str) -> Result<Self, CreationError> {
         let service_name = fail!(
             from "Tunnel::<S, T>::create_discovery_subscriber",
             when service_name.try_into(),
-            with Error::Creation,
+            with CreationError::FailedToCreateServiceName,
             "{}", &format!("Failed to create ServiceName '{}'", service_name)
         );
 
@@ -46,14 +52,14 @@ impl<S: Service> DiscoverySubscriber<S> {
             when node.service_builder(&service_name)
                     .publish_subscribe::<DiscoveryEvent>()
                     .open_or_create(),
-            with Error::Creation,
+            with CreationError::FailedToCreateService,
             "{}", &format!("Failed to open DiscoveryService with ServiceName '{}'", service_name)
         );
 
         let subscriber = fail!(
             from "Tunnel::<S, T>::create_discovery_subscriber",
             when service.subscriber_builder().create(),
-            with Error::Creation,
+            with CreationError::FailedToCreateSubscriber,
             "{}", &format!("Failed to create DiscoverySubscriber with ServiceName '{}'", service_name)
         );
 
@@ -63,14 +69,14 @@ impl<S: Service> DiscoverySubscriber<S> {
 
 impl<S: Service> Discovery<S> for DiscoverySubscriber<S> {
     type Handle = Self;
-    type Error = Error;
+    type DiscoveryError = DiscoveryError;
 
     fn discover<
-        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::Error>,
+        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
     >(
         handle: &mut Self::Handle,
         process_discovery: &mut F,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<(), Self::DiscoveryError> {
         let subscriber = &handle.0;
         loop {
             match subscriber.receive() {

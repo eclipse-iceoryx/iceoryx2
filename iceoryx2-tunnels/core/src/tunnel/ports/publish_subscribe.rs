@@ -29,26 +29,35 @@ use iceoryx2_bb_log::fatal_panic;
 use crate::Relay;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum Error {
-    Creation,
-    Propagation,
+pub enum CreationError {
+    Service,
+    Publisher,
+    Subscriber,
 }
 
-impl From<PublishSubscribeOpenOrCreateError> for Error {
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum PropagationError {}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum IngestionError {
+    FailedToSendSample,
+}
+
+impl From<PublishSubscribeOpenOrCreateError> for CreationError {
     fn from(_: PublishSubscribeOpenOrCreateError) -> Self {
-        Error::Creation
+        CreationError::Service
     }
 }
 
-impl From<PublisherCreateError> for Error {
+impl From<PublisherCreateError> for CreationError {
     fn from(_: PublisherCreateError) -> Self {
-        Error::Creation
+        CreationError::Publisher
     }
 }
 
-impl From<SubscriberCreateError> for Error {
+impl From<SubscriberCreateError> for CreationError {
     fn from(_: SubscriberCreateError) -> Self {
-        Error::Creation
+        CreationError::Subscriber
     }
 }
 
@@ -60,7 +69,7 @@ pub(crate) struct Ports<S: Service> {
 impl<S: Service> Ports<S> {
     pub(crate) fn new(
         service: &publish_subscribe::PortFactory<S, [CustomPayloadMarker], CustomHeaderMarker>,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, CreationError> {
         let publisher = fail!(
             from "PublishSubscribePorts<S>::new",
             when service
@@ -86,7 +95,7 @@ impl<S: Service> Ports<S> {
         &self,
         node_id: &iceoryx2::node::NodeId,
         relay: &Box<dyn Relay>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), PropagationError> {
         loop {
             match unsafe { self.subscriber.receive_custom_payload() } {
                 Ok(Some(sample)) => {
@@ -100,14 +109,17 @@ impl<S: Service> Ports<S> {
                     relay.propagate(ptr, len);
                 }
                 Ok(None) => break,
-                Err(e) => fatal_panic!("Failed to receive custom payload: {}", e),
+                Err(e) => {
+                    // TODO: Use fail!
+                    fatal_panic!("Failed to receive custom payload: {}", e)
+                }
             }
         }
 
         Ok(())
     }
 
-    pub(crate) fn ingest(&self, relay: &Box<dyn Relay>) -> Result<(), Error>
+    pub(crate) fn ingest(&self, relay: &Box<dyn Relay>) -> Result<(), IngestionError>
     where
         S: Service,
     {
@@ -144,7 +156,7 @@ impl<S: Service> Ports<S> {
                     fail!(
                         from "PublishSubscribePorts<S>::ingest",
                         when sample.send(),
-                        with Error::Propagation,
+                        with IngestionError::FailedToSendSample,
                         "Failed to send ingested payload"
                     );
                 }

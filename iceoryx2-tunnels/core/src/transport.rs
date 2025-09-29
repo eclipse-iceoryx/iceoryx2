@@ -17,7 +17,7 @@ use core::fmt::Debug;
 /// Enables implementations to define custom initialization logic.
 pub trait Transport: Sized {
     type Config: Default + Debug;
-    type Error;
+    type CreationError;
 
-    fn create(config: &Self::Config) -> Result<Self, Self::Error>;
+    fn create(config: &Self::Config) -> Result<Self, Self::CreationError>;
 }
