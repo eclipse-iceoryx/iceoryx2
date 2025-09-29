@@ -14,7 +14,9 @@
 mod vector {
     use std::cell::UnsafeCell;
 
-    use iceoryx2_bb_container::{relocatable_vec::*, static_vec::*};
+    use iceoryx2_bb_container::{
+        polymorphic_vec::PolymorphicVec, relocatable_vec::*, static_vec::*,
+    };
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
 
@@ -65,6 +67,41 @@ mod vector {
             unsafe { sut.init(&bump_allocator).unwrap() };
 
             sut
+        }
+    }
+
+    struct PolymorphicVecFactory {
+        raw_memory:
+            UnsafeCell<Box<[u8; core::mem::size_of::<LifetimeTracker>() * (SUT_CAPACITY + 1)]>>,
+        allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
+    }
+
+    impl VectorTestFactory for PolymorphicVecFactory {
+        type Sut = PolymorphicVec<'static, LifetimeTracker, BumpAllocator>;
+
+        fn new() -> Self {
+            Self {
+                raw_memory: UnsafeCell::new(Box::new(
+                    [0u8; core::mem::size_of::<LifetimeTracker>() * (SUT_CAPACITY + 1)],
+                )),
+                allocator: UnsafeCell::new(None),
+            }
+        }
+
+        fn create_sut(&self) -> Box<Self::Sut> {
+            unsafe {
+                *self.allocator.get() = Some(Box::new(BumpAllocator::new(
+                    (*self.raw_memory.get()).as_mut_ptr(),
+                )))
+            };
+
+            Box::new(
+                Self::Sut::new(
+                    unsafe { (*self.allocator.get()).as_ref().unwrap() },
+                    SUT_CAPACITY,
+                )
+                .unwrap(),
+            )
         }
     }
 
@@ -593,9 +630,12 @@ mod vector {
         }
     }
 
-    #[instantiate_tests(<StaticVecFactory>)]
-    mod static_vec {}
+    #[instantiate_tests(<PolymorphicVecFactory>)]
+    mod polymorphic_vec {}
 
     #[instantiate_tests(<RelocatableVecFactory>)]
     mod relocatable_vec {}
+
+    #[instantiate_tests(<StaticVecFactory>)]
+    mod static_vec {}
 }
