@@ -62,11 +62,11 @@
 //! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
 //! ```
 
-use core::{fmt::Debug, mem::MaybeUninit};
-use std::{
+use core::{
     alloc::Layout,
     ops::{Deref, DerefMut},
 };
+use core::{fmt::Debug, mem::MaybeUninit};
 
 use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_ptr::*};
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;

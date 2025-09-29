@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use std::{
+use core::{
     alloc::Layout,
     fmt::Debug,
     mem::MaybeUninit,
@@ -104,7 +104,7 @@ impl<T: Eq, Allocator: BaseAllocator> Eq for PolymorphicVec<'_, T, Allocator> {}
 unsafe impl<T: Send, Allocator: BaseAllocator> Send for PolymorphicVec<'_, T, Allocator> {}
 
 impl<'a, T, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
-    /// Creates a new vector.
+    /// Creates a new [`PolymorphicVec`].
     pub fn new(allocator: &'a Allocator, capacity: usize) -> Result<Self, AllocationError> {
         let layout = Layout::array::<MaybeUninit<T>>(capacity as _)
             .expect("Memory size for the array is smaller than isize::MAX");
@@ -128,6 +128,21 @@ impl<'a, T, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
             capacity: capacity as _,
             allocator,
         })
+    }
+
+    /// Creates a new [`PolymorphicVec`] with the provided capacity and fills it by using the provided callback
+    pub fn from_fn<F: FnMut(usize) -> T>(
+        allocator: &'a Allocator,
+        capacity: usize,
+        mut func: F,
+    ) -> Result<Self, AllocationError> {
+        let mut new_self = Self::new(allocator, capacity)?;
+
+        for n in 0..capacity {
+            new_self.push(func(n));
+        }
+
+        Ok(new_self)
     }
 }
 

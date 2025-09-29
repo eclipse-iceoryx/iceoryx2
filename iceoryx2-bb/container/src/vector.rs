@@ -10,8 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::mem::MaybeUninit;
 use core::ops::{Deref, DerefMut};
-use std::mem::MaybeUninit;
 
 pub(crate) mod internal {
     use super::*;
@@ -181,8 +181,8 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
         } else {
             let len = self.len();
             let data = unsafe { self.data_mut() };
-            for idx in len..capacity {
-                data[idx].write(f());
+            for item in data.iter_mut().take(capacity).skip(len) {
+                item.write(f());
             }
 
             unsafe { self.set_len(new_len as u64) };

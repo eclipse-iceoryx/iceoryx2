@@ -111,7 +111,7 @@ pub mod relocatable_vec;
 /// A shared memory compatible vector similar to [`std::vec::Vec`] that has the same memory layout then
 /// its C++ counterpart
 pub mod static_vec;
-/// A vector similar to [`std::vec::Vec`]
-pub mod vec;
+#[doc(hidden)]
+pub(crate) mod vec;
 /// A trait that defines the interface of a vector.
 pub mod vector;

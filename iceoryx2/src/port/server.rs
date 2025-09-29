@@ -76,9 +76,10 @@
 use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
+use iceoryx2_bb_container::polymorphic_vec::*;
 use iceoryx2_bb_container::slotmap::SlotMap;
-use iceoryx2_bb_container::vec::Vec;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
+use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::zero_copy_connection::ChannelId;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 
@@ -316,7 +317,12 @@ impl<
             number_of_to_be_removed_connections + number_of_active_connections;
 
         let request_receiver = Receiver {
-            connections: Vec::from_fn(number_of_active_connections, |_| UnsafeCell::new(None)),
+            connections: PolymorphicVec::from_fn(
+                HeapAllocator::global(),
+                number_of_active_connections,
+                |_| UnsafeCell::new(None),
+            )
+            .expect("Heap allocator provides memory."),
             receiver_port_id: server_id.value(),
             service_state: service.clone(),
             message_type_details: static_config.request_message_type_details.clone(),
@@ -325,9 +331,13 @@ impl<
             buffer_size: static_config.max_active_requests_per_client,
             tagger: CyclicTagger::new(),
             to_be_removed_connections: if static_config.enable_fire_and_forget_requests {
-                Some(UnsafeCell::new(Vec::new(
-                    number_of_to_be_removed_connections,
-                )))
+                Some(UnsafeCell::new(
+                    PolymorphicVec::new(
+                        HeapAllocator::global(),
+                        number_of_to_be_removed_connections,
+                    )
+                    .expect("Heap allocator provides memory."),
+                ))
             } else {
                 None
             },
