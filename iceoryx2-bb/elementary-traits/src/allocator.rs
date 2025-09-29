@@ -25,6 +25,14 @@ pub enum AllocationError {
     InternalError,
 }
 
+impl core::fmt::Display for AllocationError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "AllocationError::{self:?}")
+    }
+}
+
+impl core::error::Error for AllocationError {}
+
 /// Failures caused by [`Allocator::grow()`] or [`Allocator::grow_zeroed()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum AllocationGrowError {
@@ -35,6 +43,14 @@ pub enum AllocationGrowError {
     InternalError,
 }
 
+impl core::fmt::Display for AllocationGrowError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "AllocationGrowError::{self:?}")
+    }
+}
+
+impl core::error::Error for AllocationGrowError {}
+
 /// Failures caused by [`Allocator::shrink()`].
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum AllocationShrinkError {
@@ -43,6 +59,14 @@ pub enum AllocationShrinkError {
     AlignmentFailure,
     InternalError,
 }
+
+impl core::fmt::Display for AllocationShrinkError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "AllocationShrinkError::{self:?}")
+    }
+}
+
+impl core::error::Error for AllocationShrinkError {}
 
 /// The most minimalistic requirement for an allocator
 pub trait BaseAllocator {

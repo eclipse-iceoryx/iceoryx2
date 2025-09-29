@@ -18,11 +18,12 @@
 //! # Example
 //!
 //! ```
-//! use iceoryx2_bb_container::static_vec::StaticVec;
+//! use iceoryx2_bb_container::static_vec::*;
 //!
-//! let mut my_vec = StaticVec::<usize, 123>::new();
+//! const CAPACITY: usize = 123;
+//! let mut my_vec = StaticVec::<usize, CAPACITY>::new();
 //!
-//! my_vec.push(123); // returns false, when capacity of 123 is exceeded
+//! my_vec.push(123); // returns false, when capacity is exceeded
 //! ```
 
 use core::{fmt::Debug, mem::MaybeUninit};
