@@ -29,7 +29,7 @@ use crate::service::*;
 use builder::RETRY_LIMIT;
 use core::alloc::Layout;
 use core::hash::Hash;
-use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
+use iceoryx2_bb_container::flatmap::{RelocatableFlatMap, __internal_default_eq_comparison};
 use iceoryx2_bb_container::queue::RelocatableContainer;
 use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_container::vector::relocatable_vec::*;
@@ -259,7 +259,7 @@ impl<KeyType> BuilderInternals<KeyType> {
         value_writer: Box<dyn FnMut(*mut u8)>,
         value_size: usize,
         value_alignment: usize,
-        vale_cleanup_callback: Box<dyn FnMut()>,
+        value_cleanup_callback: Box<dyn FnMut()>,
     ) -> Self {
         Self {
             key,
@@ -267,7 +267,7 @@ impl<KeyType> BuilderInternals<KeyType> {
             value_writer,
             internal_value_size: value_size,
             internal_value_alignment: value_alignment,
-            internal_value_cleanup_callback: vale_cleanup_callback,
+            internal_value_cleanup_callback: value_cleanup_callback,
         }
     }
 }
@@ -306,9 +306,8 @@ impl<
     }
 }
 
-#[derive(Debug)]
 struct Builder<
-    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
     ServiceType: service::Service,
 > {
     base: builder::BuilderWithServiceType<ServiceType>,
@@ -316,10 +315,22 @@ struct Builder<
     verify_max_nodes: bool,
     internals: Vec<BuilderInternals<KeyType>>,
     override_key_type: Option<TypeDetail>,
+    key_eq_func: Box<dyn Fn(&KeyType, &KeyType) -> bool>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
+        ServiceType: service::Service,
+    > Debug for Builder<KeyType, ServiceType>
+{
+    // TODO
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "")
+    }
+}
+
+impl<
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
         ServiceType: service::Service,
     > Builder<KeyType, ServiceType>
 {
@@ -330,6 +341,7 @@ impl<
             verify_max_nodes: false,
             internals: Vec::<BuilderInternals<KeyType>>::new(),
             override_key_type: None,
+            key_eq_func: Box::new(__internal_default_eq_comparison),
         };
 
         new_self.base.service_config.messaging_pattern = MessagingPattern::Blackboard(
@@ -413,14 +425,14 @@ impl<
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Creator<
-    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
         ServiceType: service::Service,
     > Creator<KeyType, ServiceType>
 {
@@ -448,6 +460,28 @@ impl<
         key: KeyType,
         value: ValueType,
     ) -> Self {
+        self.add_impl(key, value, &__internal_default_eq_comparison)
+    }
+
+    #[doc(hidden)]
+    pub fn __internal_add(mut self, builder_internals: BuilderInternals<KeyType>) -> Self {
+        self.builder.internals.push(builder_internals);
+        self
+    }
+
+    // TODO: unsafe? eq_func must always be the same - doesn't matter, will be removed later in favor of eq_func member
+    fn add_impl<ValueType: ZeroCopySend + Copy + 'static, F>(
+        mut self,
+        key: KeyType,
+        value: ValueType,
+        eq_func: &'static F,
+    ) -> Self
+    where
+        F: Fn(&KeyType, &KeyType) -> bool,
+    {
+        // Builder has eq_func member; this must be set here (for now)
+        self.builder.key_eq_func = Box::new(eq_func);
+
         let internals = BuilderInternals {
             key,
             value_type_details: TypeDetail::new::<ValueType>(
@@ -462,35 +496,17 @@ impl<
             internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
             internal_value_cleanup_callback: Box::new(|| {}),
         };
-        self.__internal_add(internals)
-    }
+        self.builder.internals.push(internals);
 
-    #[doc(hidden)]
-    pub fn __internal_add(mut self, builder_internals: BuilderInternals<KeyType>) -> Self {
-        self.builder.internals.push(builder_internals);
         self
     }
 
     /// Adds key-value pairs to the blackboard where value is a default value.
     pub fn add_with_default<ValueType: ZeroCopySend + Copy + 'static + Default>(
-        mut self,
+        self,
         key: KeyType,
     ) -> Self {
-        self.builder.internals.push(BuilderInternals {
-            key,
-            value_type_details: TypeDetail::new::<ValueType>(
-                message_type_details::TypeVariant::FixedSize,
-            ),
-            value_writer: Box::new(move |mem: *mut u8| {
-                let mem: *mut UnrestrictedAtomic<ValueType> =
-                    mem as *mut UnrestrictedAtomic<ValueType>;
-                unsafe { mem.write(UnrestrictedAtomic::<ValueType>::new(ValueType::default())) };
-            }),
-            internal_value_size: core::mem::size_of::<UnrestrictedAtomic<ValueType>>(),
-            internal_value_alignment: core::mem::align_of::<UnrestrictedAtomic<ValueType>>(),
-            internal_value_cleanup_callback: Box::new(|| {}),
-        });
-        self
+        self.add_impl(key, ValueType::default(), &__internal_default_eq_comparison)
     }
 
     /// Validates configuration and overrides the invalid setting with meaningful values.
@@ -680,7 +696,7 @@ impl<
                                     return false
                                 }
                                 // write offset index to map
-                                let res = unsafe {entry.map.insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1)};
+                                let res = unsafe {entry.map.__internal_insert(self.builder.internals[i].key.clone(), entry.entries.len() - 1, &__internal_default_eq_comparison)};
                                 if res.is_err() {
                                     error!(from self, "Inserting the key-value pair into the blackboard management segment failed.");
                                     return false
@@ -734,14 +750,14 @@ impl<ServiceType: service::Service> Creator<u64, ServiceType> {
 /// See [`crate::service`]
 #[derive(Debug)]
 pub struct Opener<
-    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+    KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
     ServiceType: service::Service,
 > {
     builder: Builder<KeyType, ServiceType>,
 }
 
 impl<
-        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash,
+        KeyType: Send + Sync + Eq + Clone + Copy + Debug + ZeroCopySend + Hash + 'static,
         ServiceType: service::Service,
     > Opener<KeyType, ServiceType>
 {
