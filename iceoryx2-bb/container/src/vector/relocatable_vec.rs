@@ -10,12 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Contains the [`RelocatableVec`](crate::relocatable_vec::RelocatableVec), a
+//! Contains the [`RelocatableVec`], a
 //! run-time fixed size vector that is shared memory compatible
 //!
 //! # Expert Examples
 //!
-//! ## Create [`RelocatableVec`](crate::relocatable_vec::RelocatableVec) inside constructs which provides memory
+//! ## Create [`RelocatableVec`] inside constructs which provides memory
 //!
 //! ```
 //! use iceoryx2_bb_container::vector::*;
@@ -45,7 +45,7 @@
 //! }
 //! ```
 //!
-//! ## Create [`RelocatableVec`](crate::relocatable_vec::RelocatableVec) with allocator
+//! ## Create [`RelocatableVec`] with allocator
 //!
 //! ```
 //! use iceoryx2_bb_container::vector::*;
