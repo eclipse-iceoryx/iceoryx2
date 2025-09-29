@@ -13,9 +13,7 @@
 use core::time::Duration;
 
 use iceoryx2::prelude::*;
-use iceoryx2_bb_container::{
-    byte_string::FixedSizeByteString, queue::FixedSizeQueue, static_vec::*,
-};
+use iceoryx2_bb_container::{byte_string::FixedSizeByteString, queue::FixedSizeQueue, vector::*};
 
 // For both data types we derive from PlacementDefault to allow in memory initialization
 // without any copy. Avoids stack overflows when data type is larger than the available stack.

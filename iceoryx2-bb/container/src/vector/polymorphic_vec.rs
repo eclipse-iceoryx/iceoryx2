@@ -16,7 +16,7 @@
 //!
 //! ```no_run
 //! use iceoryx2_bb_elementary_traits::allocator::*;
-//! use iceoryx2_bb_container::polymorphic_vec::*;
+//! use iceoryx2_bb_container::vector::*;
 //!
 //! # struct SomeAllocator {}
 //!

@@ -18,7 +18,7 @@
 //! # Example
 //!
 //! ```
-//! use iceoryx2_bb_container::static_vec::*;
+//! use iceoryx2_bb_container::vector::*;
 //!
 //! const CAPACITY: usize = 123;
 //! let mut my_vec = StaticVec::<usize, CAPACITY>::new();

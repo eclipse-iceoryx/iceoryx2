@@ -76,8 +76,8 @@
 use alloc::sync::Arc;
 use core::{cell::UnsafeCell, sync::atomic::Ordering};
 use core::{fmt::Debug, marker::PhantomData};
-use iceoryx2_bb_container::polymorphic_vec::*;
 use iceoryx2_bb_container::slotmap::SlotMap;
+use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::zero_copy_connection::ChannelId;

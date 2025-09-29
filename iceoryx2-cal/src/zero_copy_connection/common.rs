@@ -27,7 +27,7 @@ pub mod details {
     use crate::named_concept::*;
     use crate::shared_memory::SegmentId;
     pub use crate::zero_copy_connection::*;
-    use iceoryx2_bb_container::relocatable_vec::*;
+    use iceoryx2_bb_container::vector::relocatable_vec::*;
     use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
     use iceoryx2_bb_lock_free::spsc::{
         index_queue::RelocatableIndexQueue,

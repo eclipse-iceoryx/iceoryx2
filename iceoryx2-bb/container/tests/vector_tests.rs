@@ -14,9 +14,7 @@
 mod vector {
     use std::cell::UnsafeCell;
 
-    use iceoryx2_bb_container::{
-        polymorphic_vec::PolymorphicVec, relocatable_vec::*, static_vec::*,
-    };
+    use iceoryx2_bb_container::vector::*;
     use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
 

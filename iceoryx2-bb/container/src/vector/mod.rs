@@ -13,6 +13,14 @@
 use core::mem::MaybeUninit;
 use core::ops::{Deref, DerefMut};
 
+pub mod polymorphic_vec;
+pub mod relocatable_vec;
+pub mod static_vec;
+
+pub use polymorphic_vec::*;
+pub use relocatable_vec::*;
+pub use static_vec::*;
+
 pub(crate) mod internal {
     use super::*;
 

@@ -12,7 +12,7 @@
 
 use std::cell::UnsafeCell;
 
-use iceoryx2_bb_container::polymorphic_vec::*;
+use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};

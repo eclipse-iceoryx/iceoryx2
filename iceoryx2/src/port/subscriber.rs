@@ -37,8 +37,8 @@ use core::fmt::Debug;
 use core::marker::PhantomData;
 use core::sync::atomic::Ordering;
 
-use iceoryx2_bb_container::polymorphic_vec::*;
 use iceoryx2_bb_container::slotmap::SlotMap;
+use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::cyclic_tagger::CyclicTagger;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;

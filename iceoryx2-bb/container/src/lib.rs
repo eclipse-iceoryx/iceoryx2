@@ -39,7 +39,7 @@
 //!
 //! ```
 //! use iceoryx2_bb_container::byte_string::*;
-//! use iceoryx2_bb_container::static_vec::*;
+//! use iceoryx2_bb_container::vector::*;
 //!
 //! const TEXT_CAPACITY: usize = 123;
 //! const DATA_CAPACITY: usize = 456;
@@ -104,14 +104,7 @@ pub mod semantic_string;
 /// A container to store key-value pairs.
 pub mod flatmap;
 
-/// Runtime fixed-capacity vector with a polymorphic allocator
-pub mod polymorphic_vec;
-/// Runtime fixed-capacity vector that is shared memory compatible
-pub mod relocatable_vec;
-/// A shared memory compatible vector similar to [`std::vec::Vec`] that has the same memory layout then
-/// its C++ counterpart
-pub mod static_vec;
 #[doc(hidden)]
 pub(crate) mod vec;
-/// A trait that defines the interface of a vector.
+/// A trait that defines the interface of a vector and several vector variants.
 pub mod vector;

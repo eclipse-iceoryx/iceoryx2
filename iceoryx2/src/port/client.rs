@@ -76,7 +76,7 @@ use core::{
     any::TypeId, cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit,
     sync::atomic::Ordering,
 };
-use iceoryx2_bb_container::{polymorphic_vec::*, queue::Queue, slotmap::SlotMap};
+use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;

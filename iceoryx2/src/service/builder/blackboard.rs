@@ -31,7 +31,7 @@ use core::alloc::Layout;
 use core::hash::Hash;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
-use iceoryx2_bb_container::relocatable_vec::*;
+use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;

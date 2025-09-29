@@ -18,7 +18,7 @@
 //! ## Create [`RelocatableVec`](crate::relocatable_vec::RelocatableVec) inside constructs which provides memory
 //!
 //! ```
-//! use iceoryx2_bb_container::relocatable_vec::*;
+//! use iceoryx2_bb_container::vector::*;
 //! use iceoryx2_bb_elementary::math::align_to;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use core::mem::MaybeUninit;
@@ -48,7 +48,7 @@
 //! ## Create [`RelocatableVec`](crate::relocatable_vec::RelocatableVec) with allocator
 //!
 //! ```
-//! use iceoryx2_bb_container::relocatable_vec::*;
+//! use iceoryx2_bb_container::vector::*;
 //! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
 //! use core::ptr::NonNull;
 //!
