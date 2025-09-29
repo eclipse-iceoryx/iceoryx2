@@ -12,6 +12,8 @@
 
 use crate::Transport;
 
+use core::fmt::Debug;
+
 /// Relays data between iceoryx2 and the transport.
 ///
 /// A relay should be created for each messaging pattern.
@@ -24,10 +26,10 @@ pub trait Relay {
 ///
 /// Allows for the transport to decide how to support
 /// propagation of data on different messaging patterns.
-pub trait RelayBuilder<T: Transport> {
-    type CreationError;
+pub trait RelayBuilder {
+    type Error: Debug;
 
-    fn create(self) -> Result<Box<dyn Relay>, Self::CreationError>;
+    fn create(self) -> Result<Box<dyn Relay>, Self::Error>;
 }
 
 /// Retrieve the specific builder for different messaging patterns.
@@ -35,19 +37,10 @@ pub trait RelayBuilder<T: Transport> {
 /// This also defines the messaging patterns which the transport must
 /// support.
 pub trait RelayFactory<T: Transport> {
-    fn publish_subscribe<'a>(
-        &'a self,
-        service: &'a str,
-        config: &'a T::PublishSubscribeConfig,
-    ) -> impl RelayBuilder<T> + 'a
-    where
-        Self: 'a;
+    type PublishSubscribeBuilder: RelayBuilder + Debug;
+    type EventBuilder: RelayBuilder + Debug;
 
-    fn event<'a>(
-        &'a self,
-        service: &'a str,
-        config: &'a T::EventConfig,
-    ) -> impl RelayBuilder<T> + 'a
-    where
-        Self: 'a;
+    fn publish_subscribe(&self, service: &str) -> Self::PublishSubscribeBuilder;
+
+    fn event(&self, service: &str) -> Self::EventBuilder;
 }
