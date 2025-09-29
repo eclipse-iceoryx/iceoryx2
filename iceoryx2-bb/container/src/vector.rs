@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::ops::{Deref, DerefMut};
+
 /// Defines the interface of a vector.
-pub trait Vector<T> {
+pub trait Vector<T>: Deref<Target = [T]> + DerefMut {
     /// Returns a mutable slice to the contents of the vector
     fn as_mut_slice(&mut self) -> &mut [T];
 

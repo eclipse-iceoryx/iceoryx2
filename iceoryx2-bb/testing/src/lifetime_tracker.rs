@@ -32,7 +32,7 @@ impl LifetimeTrackingState {
 }
 
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LifetimeTracker {
     pub value: usize,
 }
@@ -85,11 +85,3 @@ impl Drop for LifetimeTracker {
         DROP_ORDER.lock().unwrap().push(self.value);
     }
 }
-
-impl PartialEq for LifetimeTracker {
-    fn eq(&self, _: &Self) -> bool {
-        false
-    }
-}
-
-impl Eq for LifetimeTracker {}
