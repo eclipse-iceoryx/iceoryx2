@@ -12,7 +12,7 @@
 
 use std::mem::MaybeUninit;
 
-use iceoryx2_bb_container::static_vec::StaticVec;
+use iceoryx2_bb_container::static_vec::*;
 use iceoryx2_bb_elementary_traits::placement_default::PlacementDefault;
 use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
 use serde_test::{assert_tokens, Token};

@@ -14,7 +14,7 @@ use core::time::Duration;
 
 use iceoryx2::prelude::*;
 use iceoryx2_bb_container::{
-    byte_string::FixedSizeByteString, queue::FixedSizeQueue, static_vec::StaticVec,
+    byte_string::FixedSizeByteString, queue::FixedSizeQueue, static_vec::*,
 };
 
 // For both data types we derive from PlacementDefault to allow in memory initialization

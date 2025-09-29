@@ -36,6 +36,8 @@ use iceoryx2_bb_elementary_traits::{
 };
 use serde::{de::Visitor, Deserialize, Serialize};
 
+pub use crate::vector::Vector;
+
 /// Relocatable shared-memory compaitble vector with compile time fixed size
 /// capacity. It is memory-layout compatible to the C++ container in the
 /// iceoryx2-bb-container C++ library and can be used for zero-copy
@@ -203,8 +205,19 @@ impl<T: Clone, const CAPACITY: usize> Clone for StaticVec<T, CAPACITY> {
 unsafe impl<T: Send, const CAPACITY: usize> Send for StaticVec<T, CAPACITY> {}
 
 impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
-    /// Returns a mutable slice to the contents of the vector
-    pub fn as_mut_slice(&mut self) -> &mut [T] {
+    /// Creates a new vector.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Returns the capacity of the vector
+    pub const fn capacity() -> usize {
+        CAPACITY
+    }
+}
+
+impl<T, const CAPACITY: usize> Vector<T> for StaticVec<T, CAPACITY> {
+    fn as_mut_slice(&mut self) -> &mut [T] {
         let len = self.len();
         unsafe {
             core::mem::transmute::<&mut [MaybeUninit<T>], &mut [T]>(
@@ -213,19 +226,16 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         }
     }
 
-    /// Returns a slice to the contents of the vector
-    pub fn as_slice(&self) -> &[T] {
+    fn as_slice(&self) -> &[T] {
         let len = self.len();
         unsafe { core::mem::transmute::<&[MaybeUninit<T>], &[T]>(&self.data.as_slice()[0..len]) }
     }
 
-    /// Returns the capacity of the vector
-    pub const fn capacity() -> usize {
+    fn capacity(&self) -> usize {
         CAPACITY
     }
 
-    /// Removes all elements from the vector
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         for idx in (0..self.len()).rev() {
             unsafe { self.data[idx].assume_init_drop() };
         }
@@ -233,12 +243,11 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         self.len = 0;
     }
 
-    /// Append all elements from other via [`Clone`].
-    pub fn extend_from_slice(&mut self, other: &[T]) -> bool
+    fn extend_from_slice(&mut self, other: &[T]) -> bool
     where
         T: Clone,
     {
-        if Self::capacity() < self.len() + other.len() {
+        if self.capacity() < self.len() + other.len() {
             return false;
         }
 
@@ -251,9 +260,7 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         true
     }
 
-    /// Inserts an element at the provided index and shifting all elements
-    /// after the index to the right.
-    pub fn insert(&mut self, index: usize, element: T) -> bool {
+    fn insert(&mut self, index: usize, element: T) -> bool {
         if index > self.len() {
             return false;
         }
@@ -268,29 +275,19 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         true
     }
 
-    /// Returns true if the vector is empty, otherwise false
-    pub fn is_empty(&self) -> bool {
+    fn is_empty(&self) -> bool {
         self.len == 0
     }
 
-    /// Returns true if the vector is full, otherwise false
-    pub fn is_full(&self) -> bool {
+    fn is_full(&self) -> bool {
         self.len == CAPACITY as u64
     }
 
-    /// Returns the number of elements stored inside the vector
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.len as usize
     }
 
-    /// Creates a new vector.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Removes the last element of the vector and returns it to the user. If the vector is empty
-    /// it returns [`None`].
-    pub fn pop(&mut self) -> Option<T> {
+    fn pop(&mut self) -> Option<T> {
         if self.is_empty() {
             return None;
         }
@@ -300,9 +297,7 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         Some(unsafe { value.assume_init() })
     }
 
-    /// Adds an element at the end of the vector. If the vector is full and the element cannot be
-    /// added it returns false, otherwise true.
-    pub fn push(&mut self, value: T) -> bool {
+    fn push(&mut self, value: T) -> bool {
         if self.is_full() {
             return false;
         }
@@ -312,8 +307,7 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         true
     }
 
-    /// Removes the element at the provided index and returns it.
-    pub fn remove(&mut self, index: usize) -> Option<T> {
+    fn remove(&mut self, index: usize) -> Option<T> {
         if self.len() <= index {
             return None;
         }
@@ -328,16 +322,14 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         Some(value)
     }
 
-    /// Fill the remaining space of the vector with value.
-    pub fn resize(&mut self, new_len: usize, value: T) -> bool
+    fn resize(&mut self, new_len: usize, value: T) -> bool
     where
         T: Clone,
     {
         self.resize_with(new_len, || value.clone())
     }
 
-    /// Fill the remaining space of the vector with value.
-    pub fn resize_with<F: FnMut() -> T>(&mut self, new_len: usize, mut f: F) -> bool {
+    fn resize_with<F: FnMut() -> T>(&mut self, new_len: usize, mut f: F) -> bool {
         if CAPACITY < new_len {
             return false;
         }
@@ -345,7 +337,7 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         if new_len < self.len() {
             self.truncate(new_len);
         } else {
-            for idx in self.len()..Self::capacity() {
+            for idx in self.len()..self.capacity() {
                 self.data[idx].write(f());
             }
 
@@ -355,9 +347,7 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
         true
     }
 
-    /// Truncates the vector to `len` and drops all elements right of `len`
-    /// in reverse order.
-    pub fn truncate(&mut self, len: usize) {
+    fn truncate(&mut self, len: usize) {
         if self.len() <= len {
             return;
         }

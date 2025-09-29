@@ -108,3 +108,5 @@ pub mod flatmap;
 pub mod static_vec;
 /// A vector similar to [`std::vec::Vec`]
 pub mod vec;
+/// A trait that defines the interface of a vector.
+pub mod vector;
