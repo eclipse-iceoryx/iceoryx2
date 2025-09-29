@@ -90,9 +90,11 @@ mod vector {
 
         fn create_sut(&self) -> Box<Self::Sut> {
             unsafe {
-                *self.allocator.get() = Some(Box::new(BumpAllocator::new(
-                    (*self.raw_memory.get()).as_mut_ptr(),
-                )))
+                if (*self.allocator.get()).is_none() {
+                    *self.allocator.get() = Some(Box::new(BumpAllocator::new(
+                        (*self.raw_memory.get()).as_mut_ptr(),
+                    )))
+                }
             };
 
             Box::new(

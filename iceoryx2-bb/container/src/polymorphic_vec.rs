@@ -21,7 +21,8 @@ use std::{
 use iceoryx2_bb_elementary_traits::allocator::{AllocationError, BaseAllocator};
 use iceoryx2_bb_log::fail;
 
-use crate::vector::{internal, Vector};
+use crate::vector::internal;
+pub use crate::vector::Vector;
 
 /// Runtime fixed-size vector variant with a polymorphic allocator, meaning an
 /// allocator with a state can be attached to the vector instead of using a
@@ -152,7 +153,7 @@ impl<'a, T: Clone, Allocator: BaseAllocator> PolymorphicVec<'a, T, Allocator> {
 
         let mut new_self = Self {
             data_ptr: unsafe { data_ptr.as_mut() }.as_mut_ptr().cast(),
-            len: self.len,
+            len: 0,
             capacity: self.capacity,
             allocator: self.allocator,
         };
