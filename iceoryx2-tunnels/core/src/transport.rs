@@ -10,11 +10,13 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::fmt::Debug;
+
 /// Abstraction of the transport over which data in iceoryx2 is propagated.
 ///
 /// Enables implementations to define custom initialization logic.
 pub trait Transport: Sized {
-    type Config: Default;
+    type Config: Default + Debug;
     type Error;
 
     fn create(config: &Self::Config) -> Result<Self, Self::Error>;

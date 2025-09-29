@@ -16,10 +16,11 @@ use core::fmt::Debug;
 
 /// Enables implementation of discovery behaviour.
 pub trait Discovery<ServiceType: iceoryx2::service::Service> {
+    type Handle;
     type Error: Debug;
 
     fn discover<F: FnMut(&StaticConfig) -> Result<(), Self::Error>>(
-        &mut self,
+        handle: &mut Self::Handle,
         process_discovery: &mut F,
     ) -> Result<(), Self::Error>;
 }

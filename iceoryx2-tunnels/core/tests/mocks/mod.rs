@@ -12,7 +12,7 @@
 
 use iceoryx2_tunnels_core::{Relay, RelayBuilder, RelayFactory, Transport};
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct MockTransportConfig {}
 pub struct MockTransport {}
 pub struct MockRelay {}

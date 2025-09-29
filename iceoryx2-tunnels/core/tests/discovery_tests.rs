@@ -21,6 +21,8 @@ mod tunnel_discovery_tests {
     use iceoryx2::testing::*;
 
     use iceoryx2_bb_testing::assert_that;
+    use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
+    use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
     use iceoryx2_tunnels_core::RelayFactory;
     use iceoryx2_tunnels_core::Transport;
     use iceoryx2_tunnels_core::Tunnel;
@@ -37,14 +39,13 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_tracker<S: Service, T: Transport>()
+    fn discovers_services_via_subscriber<S: Service, T: Transport>()
     where
         T: RelayFactory<T>,
     {
+        set_log_level(LogLevel::Debug);
         // === SETUP ==
-        let tunnel_config = iceoryx2_tunnels_core::Config::default();
         let iceoryx_config = generate_isolated_config();
-
         let service_name = generate_service_name();
         let node = NodeBuilder::new()
             .config(&iceoryx_config)
@@ -58,10 +59,56 @@ mod tunnel_discovery_tests {
             .open_or_create()
             .unwrap();
 
-        // === TEST ===
+        let discovery_service_config = DiscoveryConfig {
+            sync_on_initialization: false,
+            include_internal: false,
+            publish_events: true,
+            enable_server: false,
+            ..Default::default()
+        };
+        let mut discovery_service =
+            DiscoveryService::<S>::create(&discovery_service_config, &iceoryx_config).unwrap();
+
+        let tunnel_config = iceoryx2_tunnels_core::Config {
+            discovery_service: Some("iox2://discovery/services/".into()),
+        };
         let mut tunnel =
             Tunnel::<S, T>::create(&tunnel_config, &iceoryx_config, &T::Config::default()).unwrap();
 
+        // === TEST ===
+        discovery_service.spin(|_| {}, |_| {}).unwrap();
+        tunnel.discovery().unwrap();
+
+        // === VALIDATE ===
+        assert_that!(tunnel.tunneled_services().len(), eq 1);
+        assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
+    }
+
+    #[test]
+    fn discovers_services_via_tracker<S: Service, T: Transport>()
+    where
+        T: RelayFactory<T>,
+    {
+        // === SETUP ==
+        let iceoryx_config = generate_isolated_config();
+        let service_name = generate_service_name();
+        let node = NodeBuilder::new()
+            .config(&iceoryx_config)
+            .create::<S>()
+            .unwrap();
+        let service = node
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        let tunnel_config = iceoryx2_tunnels_core::Config::default();
+        let mut tunnel =
+            Tunnel::<S, T>::create(&tunnel_config, &iceoryx_config, &T::Config::default()).unwrap();
+
+        // === TEST ===
         tunnel.discovery().unwrap();
 
         // === VALIDATE ===
