@@ -43,6 +43,7 @@ use crate::service::{self, ServiceState};
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::sync::atomic::Ordering;
+use iceoryx2_bb_container::flatmap::__internal_default_eq_comparison;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::ContainerHandle;
@@ -191,6 +192,7 @@ impl<
 
         let offset = self.get_entry_offset(
             key,
+            &__internal_default_eq_comparison,
             &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
             msg,
         )?;
@@ -206,12 +208,16 @@ impl<
         Ok(EntryHandle::new(self.shared_state.clone(), atomic, offset))
     }
 
-    fn get_entry_offset(
+    fn get_entry_offset<F>(
         &self,
         key: &KeyType,
+        key_eq_func: &F,
         type_details: &TypeDetail,
         msg: &str,
-    ) -> Result<u64, EntryHandleError> {
+    ) -> Result<u64, EntryHandleError>
+    where
+        F: Fn(&KeyType, &KeyType) -> bool,
+    {
         // check if key exists
         let index = match unsafe {
             self.shared_state
@@ -220,7 +226,7 @@ impl<
                 .mgmt
                 .get()
                 .map
-                .get(key)
+                .__internal_get(key, key_eq_func)
         } {
             Some(i) => i,
             None => {
@@ -349,8 +355,20 @@ impl<Service: service::Service> Reader<Service, u64> {
         key: &u64,
         type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
+        self.__internal_entry_impl(key, type_details, &__internal_default_eq_comparison)
+    }
+
+    fn __internal_entry_impl<F>(
+        &self,
+        key: &u64,
+        type_details: &TypeDetail,
+        eq_func: &F,
+    ) -> Result<__InternalEntryHandle<Service>, EntryHandleError>
+    where
+        F: Fn(&u64, &u64) -> bool,
+    {
         let msg = "Unable to create entry handle";
-        let offset = self.get_entry_offset(key, type_details, msg)?;
+        let offset = self.get_entry_offset(key, eq_func, type_details, msg)?;
 
         let atomic_mgmt_ptr = (self
             .shared_state
