@@ -43,7 +43,6 @@ mod tunnel_discovery_tests {
     where
         T: RelayFactory<T>,
     {
-        set_log_level(LogLevel::Debug);
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -77,7 +76,7 @@ mod tunnel_discovery_tests {
 
         // === TEST ===
         discovery_service.spin(|_| {}, |_| {}).unwrap();
-        tunnel.discovery().unwrap();
+        tunnel.discover().unwrap();
 
         // === VALIDATE ===
         assert_that!(tunnel.tunneled_services().len(), eq 1);
@@ -109,7 +108,7 @@ mod tunnel_discovery_tests {
             Tunnel::<S, T>::create(&tunnel_config, &iceoryx_config, &T::Config::default()).unwrap();
 
         // === TEST ===
-        tunnel.discovery().unwrap();
+        tunnel.discover().unwrap();
 
         // === VALIDATE ===
         assert_that!(tunnel.tunneled_services().len(), eq 1);

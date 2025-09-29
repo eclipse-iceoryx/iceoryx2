@@ -10,20 +10,16 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use core::mem::MaybeUninit;
 use std::collections::{HashMap, HashSet};
 
-use crate::tunnel::discovery::DiscoverySubscriber;
+use crate::tunnel::discovery::subscriber::DiscoverySubscriber;
+use crate::tunnel::discovery::tracker::DiscoveryTracker;
+use crate::tunnel::ports::{publish_subscribe, Ports};
+use crate::tunnel::{discovery, ports};
 use crate::{Discovery, Relay, RelayBuilder, RelayFactory, Transport};
 
 use iceoryx2::node::{Node, NodeBuilder};
-use iceoryx2::port::listener::Listener;
-use iceoryx2::port::notifier::Notifier;
-use iceoryx2::port::publisher::{Publisher, PublisherCreateError};
-use iceoryx2::port::subscriber::{Subscriber, SubscriberCreateError};
-use iceoryx2::port::ReceiveError;
-use iceoryx2::prelude::{AllocationStrategy, PortFactory};
-use iceoryx2::sample_mut_uninit::SampleMutUninit;
+use iceoryx2::prelude::PortFactory;
 use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
@@ -31,65 +27,43 @@ use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
-use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
-use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryEvent;
-use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
+use iceoryx2_bb_log::{debug, fail, warn};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Error {
+    Creation,
     Discovery,
-    Connection,
     Propagation,
-    Error,
+    ServiceCreation,
 }
 
-impl From<super::discovery::Error> for Error {
-    fn from(_: super::discovery::Error) -> Self {
+impl From<discovery::subscriber::Error> for Error {
+    fn from(_: discovery::subscriber::Error) -> Self {
         Error::Discovery
+    }
+}
+
+impl From<discovery::tracker::Error> for Error {
+    fn from(_: discovery::tracker::Error) -> Self {
+        Error::Discovery
+    }
+}
+
+impl From<ports::publish_subscribe::Error> for Error {
+    fn from(_: ports::publish_subscribe::Error) -> Self {
+        Error::Propagation
     }
 }
 
 impl From<PublishSubscribeOpenOrCreateError> for Error {
     fn from(_: PublishSubscribeOpenOrCreateError) -> Self {
-        Error::Connection
-    }
-}
-
-impl From<PublisherCreateError> for Error {
-    fn from(_: PublisherCreateError) -> Self {
-        Error::Connection
-    }
-}
-
-impl From<SubscriberCreateError> for Error {
-    fn from(_: SubscriberCreateError) -> Self {
-        Error::Connection
-    }
-}
-
-impl From<SyncError> for Error {
-    fn from(_: SyncError) -> Self {
-        Error::Discovery
-    }
-}
-
-impl From<ReceiveError> for Error {
-    fn from(_: ReceiveError) -> Self {
-        Error::Discovery
+        Error::ServiceCreation
     }
 }
 
 #[derive(Debug, Default)]
 pub struct Config {
     pub discovery_service: Option<String>,
-}
-
-pub(crate) enum Ports<S: Service> {
-    PublishSubscribe(
-        Publisher<S, [CustomPayloadMarker], CustomHeaderMarker>,
-        Subscriber<S, [CustomPayloadMarker], CustomHeaderMarker>,
-    ),
-    Event(Notifier<S>, Listener<S>),
 }
 
 /// A generic tunnel implementation that works with any implemented Transport.
@@ -100,7 +74,7 @@ pub struct Tunnel<S: Service, T: Transport> {
     ports: HashMap<ServiceId, Ports<S>>,
     relays: HashMap<ServiceId, Box<dyn Relay>>,
     subscriber: Option<DiscoverySubscriber<S>>,
-    tracker: Option<Tracker<S>>,
+    tracker: Option<DiscoveryTracker<S>>,
 }
 
 impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
@@ -114,7 +88,7 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
         let node = fail!(
             from "Tunnel::<S, T>::create",
             when node,
-            with Error::Error,
+            with Error::Creation,
             "failed to create node"
         );
 
@@ -122,20 +96,20 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
         let transport = fail!(
             from "Tunnel::<S, T>::create",
             when transport,
-            with Error::Error,
+            with Error::Creation,
             "failed to instantiate the transport"
         );
 
         let (subscriber, tracker) = match &tunnel_config.discovery_service {
             Some(service_name) => {
                 debug!("Discovery via Subscriber");
-                let subscriber = create_discovery_subscriber::<S>(&node, service_name)?;
+                let subscriber = DiscoverySubscriber::new(&node, service_name)?;
                 (Some(subscriber), None)
             }
             None => {
                 debug!("Discovery via Tracker");
 
-                let tracker = Tracker::new(iceoryx_config);
+                let tracker = DiscoveryTracker::new(iceoryx_config);
                 (None, Some(tracker))
             }
         };
@@ -152,18 +126,12 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
     }
 
     /// Discover services via iceoryx2 and the transport
-    pub fn discovery(&mut self) -> Result<(), Error> {
-        let node = &mut self.node;
-        let transport = &mut self.transport;
-        let services = &mut self.services;
-        let ports = &mut self.ports;
-        let relays = &mut self.relays;
-
+    pub fn discover(&mut self) -> Result<(), Error> {
         if let Some(subscriber) = &mut self.subscriber {
             fail!(
                 from "Tunnel::<S, T>::discover",
                 when DiscoverySubscriber::discover(subscriber, &mut |static_config| {
-                    on_discovery::<S, T>(static_config, node, transport, services, ports, relays).unwrap();
+                    on_discovery::<S, T>(static_config, &mut self.node, &mut self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
                 "Failed to discover services via Subscriber"
@@ -172,8 +140,8 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
         if let Some(tracker) = &mut self.tracker {
             fail!(
                 from "Tunnel::<S, T>::discover",
-                when Tracker::discover(tracker, &mut |static_config| {
-                    on_discovery::<S, T>(static_config, node, transport, services, ports, relays).unwrap();
+                when DiscoveryTracker::discover(tracker, &mut |static_config| {
+                    on_discovery::<S, T>(static_config, &mut self.node, &mut self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
                 "Failed to discover services via Tracker"
@@ -195,11 +163,19 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
             };
 
             match ports {
-                Ports::PublishSubscribe(publisher, subscriber) => {
-                    propagate_publish_subscribe_payload(self.node.id(), subscriber, relay).unwrap();
-                    ingest_publish_subscribe_payload(publisher, relay).unwrap();
+                Ports::PublishSubscribe(ports) => {
+                    fail!(
+                        from "Tunnel::<S, T>::propagate",
+                        when ports.propagate(self.node.id(), relay),
+                        "Failed to propagate PublishSubscribe payload"
+                    );
+                    fail!(
+                        from "Tunnel::<S, T>::propagate",
+                        when ports.ingest(relay),
+                        "Failed to propagate PublishSubscribe payload"
+                    );
                 }
-                Ports::Event(_, _) => todo!(),
+                Ports::Event(_) => todo!(),
             }
         }
 
@@ -209,37 +185,6 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
     pub fn tunneled_services(&self) -> &HashSet<ServiceId> {
         &self.services
     }
-}
-
-/// Create a discovery subscriber for the given service name
-fn create_discovery_subscriber<S: Service>(
-    node: &Node<S>,
-    service_name: &str,
-) -> Result<DiscoverySubscriber<S>, Error> {
-    let service_name = fail!(
-        from "Tunnel::<S, T>::create_discovery_subscriber",
-        when service_name.try_into(),
-        with Error::Error,
-        "{}", &format!("Failed to create ServiceName '{}'", service_name)
-    );
-
-    let service = fail!(
-        from "Tunnel::<S, T>::create_discovery_subscriber",
-        when node.service_builder(&service_name)
-                .publish_subscribe::<DiscoveryEvent>()
-                .open_or_create(),
-        with Error::Error,
-        "{}", &format!("Failed to open DiscoveryService with ServiceName '{}'", service_name)
-    );
-
-    let subscriber = fail!(
-        from "Tunnel::<S, T>::create_discovery_subscriber",
-        when service.subscriber_builder().create(),
-        with Error::Error,
-        "{}", &format!("Failed to create DiscoverySubscriber with ServiceName '{}'", service_name)
-    );
-
-    Ok(DiscoverySubscriber(subscriber))
 }
 
 fn on_discovery<S: Service, T: Transport + RelayFactory<T>>(
@@ -312,20 +257,8 @@ fn setup_publish_subscribe<S: Service, T: Transport + RelayFactory<T>>(
         )
     };
 
-    let publisher = fail!(
-        from "Tunnel::setup_publish_subscribe()",
-        when service
-            .publisher_builder()
-            .allocation_strategy(AllocationStrategy::PowerOfTwo)
-            .create(),
-        "{}", &format!("Failed to create Publisher for '{}'", service.name())
-    );
-
-    let subscriber = fail!(
-        from "Tunnel::setup_publish_subscribe()",
-        when service.subscriber_builder().create(),
-        "{}", &format!("Failed to create Subscriber for '{}'", service.name())
-    );
+    // TODO: Use fail!
+    let port = publish_subscribe::Ports::new(&service).unwrap();
 
     // TODO: How to use fail! when the concrete error type is not known?
     let relay = transport
@@ -334,76 +267,8 @@ fn setup_publish_subscribe<S: Service, T: Transport + RelayFactory<T>>(
         .unwrap();
 
     services.insert(service.service_id().clone());
-    ports.insert(
-        service.service_id().clone(),
-        Ports::PublishSubscribe(publisher, subscriber),
-    );
+    ports.insert(service.service_id().clone(), Ports::PublishSubscribe(port));
     relays.insert(service.service_id().clone(), relay);
-
-    Ok(())
-}
-
-fn propagate_publish_subscribe_payload<S: Service>(
-    node_id: &iceoryx2::node::NodeId,
-    subscriber: &Subscriber<S, [CustomPayloadMarker], CustomHeaderMarker>,
-    relay: &Box<dyn Relay>,
-) -> Result<bool, Error> {
-    match unsafe { subscriber.receive_custom_payload() } {
-        Ok(Some(sample)) => {
-            if sample.header().node_id() == *node_id {
-                // Ignore samples published by the gateway itself to prevent loopback.
-                return Ok(true);
-            }
-            let ptr = sample.payload().as_ptr() as *const u8;
-            let len = sample.len();
-
-            relay.propagate(ptr, len);
-            Ok(true)
-        }
-        Ok(None) => Ok(false),
-        Err(e) => fatal_panic!("Failed to receive custom payload: {}", e),
-    }
-}
-
-fn ingest_publish_subscribe_payload<S: Service>(
-    publisher: &Publisher<S, [CustomPayloadMarker], CustomHeaderMarker>,
-    relay: &Box<dyn Relay>,
-) -> Result<(), Error> {
-    let payload_size = 1; // TODO: Get from Service
-    let mut loaned_sample: Option<
-        SampleMutUninit<S, [MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>,
-    > = None;
-
-    let ingested = relay.ingest(&mut |number_of_bytes| {
-        let number_of_elements = number_of_bytes / payload_size;
-
-        let (ptr, len) = match unsafe { publisher.loan_custom_payload(number_of_elements) } {
-            Ok(mut sample) => {
-                let payload = sample.payload_mut();
-                let ptr = payload.as_mut_ptr() as *mut u8;
-                let len = payload.len();
-
-                loaned_sample = Some(sample);
-
-                (ptr, len)
-            }
-            Err(e) => fatal_panic!("Failed to loan custom payload: {e}"),
-        };
-
-        (ptr, len)
-    });
-
-    if ingested {
-        if let Some(sample) = loaned_sample {
-            let sample = unsafe { sample.assume_init() };
-            fail!(
-                from "ingest_publish_subscribe_payload",
-                when sample.send(),
-                with Error::Propagation,
-                "Failed to send ingested payload"
-            );
-        }
-    }
 
     Ok(())
 }

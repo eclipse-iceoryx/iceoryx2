@@ -10,18 +10,12 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::port::listener::Listener;
-use iceoryx2::port::notifier::Notifier;
-use iceoryx2::port::publisher::Publisher;
-use iceoryx2::port::subscriber::Subscriber;
-use iceoryx2::service::builder::CustomHeaderMarker;
-use iceoryx2::service::builder::CustomPayloadMarker;
+pub(crate) mod event;
+pub(crate) mod publish_subscribe;
+
 use iceoryx2::service::Service;
 
 pub(crate) enum Ports<S: Service> {
-    PublishSubscribe(
-        Publisher<S, [CustomPayloadMarker], CustomHeaderMarker>,
-        Subscriber<S, [CustomPayloadMarker], CustomHeaderMarker>,
-    ),
-    Event(Notifier<S>, Listener<S>),
+    PublishSubscribe(publish_subscribe::Ports<S>),
+    Event(event::Ports<S>),
 }
