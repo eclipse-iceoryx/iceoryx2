@@ -355,20 +355,20 @@ impl<Service: service::Service> Reader<Service, u64> {
         key: &u64,
         type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandle<Service>, EntryHandleError> {
-        self.__internal_entry_impl(key, type_details, &__internal_default_eq_comparison)
+        self.__internal_entry_impl(key, &__internal_default_eq_comparison, type_details)
     }
 
     fn __internal_entry_impl<F>(
         &self,
         key: &u64,
+        key_eq_func: &F,
         type_details: &TypeDetail,
-        eq_func: &F,
     ) -> Result<__InternalEntryHandle<Service>, EntryHandleError>
     where
         F: Fn(&u64, &u64) -> bool,
     {
         let msg = "Unable to create entry handle";
-        let offset = self.get_entry_offset(key, eq_func, type_details, msg)?;
+        let offset = self.get_entry_offset(key, key_eq_func, type_details, msg)?;
 
         let atomic_mgmt_ptr = (self
             .shared_state
