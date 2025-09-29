@@ -200,7 +200,7 @@ impl<
 
         let offset = self.get_entry_offset(
             key,
-            &__internal_default_eq_comparison,
+            __internal_default_eq_comparison::<KeyType>,
             &TypeDetail::new::<ValueType>(TypeVariant::FixedSize),
             msg,
         )?;
@@ -214,16 +214,13 @@ impl<
         }
     }
 
-    fn get_entry_offset<F>(
+    fn get_entry_offset(
         &self,
         key: &KeyType,
-        key_eq_func: &F,
+        key_eq_func: unsafe fn(*const u8, *const u8) -> bool,
         type_details: &TypeDetail,
         msg: &str,
-    ) -> Result<u64, EntryHandleMutError>
-    where
-        F: Fn(&KeyType, &KeyType) -> bool,
-    {
+    ) -> Result<u64, EntryHandleMutError> {
         // check if key exists
         let index = match unsafe {
             self.shared_state
@@ -584,6 +581,7 @@ impl<
 }
 
 // TODO [#817] replace u64 with CustomKeyMarker
+// TODO: replace key with key_ptr, replace __internal_default_eq_comparison with key_eq_func argument
 impl<Service: service::Service> Writer<Service, u64> {
     #[doc(hidden)]
     pub fn __internal_entry(
@@ -591,18 +589,16 @@ impl<Service: service::Service> Writer<Service, u64> {
         key: &u64,
         type_details: &TypeDetail,
     ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
-        self.__internal_entry_impl(key, &__internal_default_eq_comparison, type_details)
+        self.__internal_entry_impl(key, __internal_default_eq_comparison::<u64>, type_details)
     }
 
-    fn __internal_entry_impl<F>(
+    #[doc(hidden)]
+    fn __internal_entry_impl(
         &self,
         key: &u64,
-        key_eq_func: &F,
+        key_eq_func: unsafe fn(*const u8, *const u8) -> bool,
         type_details: &TypeDetail,
-    ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError>
-    where
-        F: Fn(&u64, &u64) -> bool,
-    {
+    ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
         let msg = "Unable to create entry handle";
         let offset = self.get_entry_offset(key, key_eq_func, type_details, msg)?;
 

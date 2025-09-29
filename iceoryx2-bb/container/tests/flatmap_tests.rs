@@ -235,8 +235,8 @@ mod flat_map {
         a: u32,
     }
 
-    fn cmp_for_foo(lhs: &Foo, rhs: &Foo) -> bool {
-        lhs.a == rhs.a
+    unsafe fn cmp_for_foo(lhs: *const u8, rhs: *const u8) -> bool {
+        (*lhs.cast::<Foo>()).a == (*rhs.cast::<Foo>()).a
     }
 
     #[test]
@@ -245,16 +245,16 @@ mod flat_map {
         let key = Foo { a: 2023 };
 
         unsafe {
-            let res = map.__internal_insert(key, -9, &cmp_for_foo);
+            let res = map.__internal_insert(key, -9, cmp_for_foo);
             assert_that!(res, is_ok);
-            assert_that!(map.__internal_contains(&key, & cmp_for_foo), eq true);
+            assert_that!(map.__internal_contains(&key, cmp_for_foo), eq true);
         }
         assert_that!(map, len 1);
 
         unsafe {
-            let res = map.__internal_insert(key, 19, &cmp_for_foo);
+            let res = map.__internal_insert(key, 19, cmp_for_foo);
             assert_that!(res, is_err);
-            assert_that!(map.__internal_contains(&key, & cmp_for_foo), eq true);
+            assert_that!(map.__internal_contains(&key, cmp_for_foo), eq true);
         }
         assert_that!(map, len 1);
     }
@@ -264,18 +264,18 @@ mod flat_map {
         let mut map = FixedSizeFlatMap::<Foo, u32, CAPACITY>::new();
         for i in 0..CAPACITY as u32 {
             assert_that!(
-                unsafe { map.__internal_insert(Foo { a: i }, i, &cmp_for_foo) },
+                unsafe { map.__internal_insert(Foo { a: i }, i, cmp_for_foo) },
                 is_ok
             );
-            assert_that!(unsafe{map.__internal_contains(&Foo { a: i }, & cmp_for_foo)}, eq true);
+            assert_that!(unsafe{map.__internal_contains(&Foo { a: i }, cmp_for_foo)}, eq true);
         }
         assert_that!(map.is_full(), eq true);
         unsafe {
             let res =
-                map.__internal_insert(Foo { a: CAPACITY as u32 }, CAPACITY as u32, &cmp_for_foo);
+                map.__internal_insert(Foo { a: CAPACITY as u32 }, CAPACITY as u32, cmp_for_foo);
             assert_that!(res, is_err);
             assert_that!(res.unwrap_err(), eq FlatMapError::IsFull);
-            assert_that!(map.__internal_contains(&Foo { a: CAPACITY as u32 }, & cmp_for_foo), eq false);
+            assert_that!(map.__internal_contains(&Foo { a: CAPACITY as u32 }, cmp_for_foo), eq false);
         }
         assert_that!(map, len CAPACITY);
     }
@@ -286,13 +286,13 @@ mod flat_map {
         let key = Foo { a: 34 };
 
         unsafe {
-            assert_that!(map.__internal_insert(key, 40, &cmp_for_foo), is_ok);
+            assert_that!(map.__internal_insert(key, 40, cmp_for_foo), is_ok);
 
-            let res = map.__internal_get(&key, &cmp_for_foo);
+            let res = map.__internal_get(&key, cmp_for_foo);
             assert_that!(res, is_some);
             assert_that!(res.unwrap(), eq 40);
 
-            let res = map.__internal_get(&Foo { a: 35 }, &cmp_for_foo);
+            let res = map.__internal_get(&Foo { a: 35 }, cmp_for_foo);
             assert_that!(res, is_none);
         }
     }
@@ -303,13 +303,13 @@ mod flat_map {
         let key = Foo { a: 34 };
 
         unsafe {
-            assert_that!(map.__internal_insert(key, 40, &cmp_for_foo), is_ok);
+            assert_that!(map.__internal_insert(key, 40, cmp_for_foo), is_ok);
 
-            let res = map.__internal_get_ref(&key, &cmp_for_foo);
+            let res = map.__internal_get_ref(&key, cmp_for_foo);
             assert_that!(res, is_some);
             assert_that!(*res.unwrap(), eq 40);
 
-            let res = map.__internal_get_ref(&Foo { a: 35 }, &cmp_for_foo);
+            let res = map.__internal_get_ref(&Foo { a: 35 }, cmp_for_foo);
             assert_that!(res, is_none);
         }
     }
@@ -320,17 +320,17 @@ mod flat_map {
         let key = Foo { a: 34 };
 
         unsafe {
-            assert_that!(map.__internal_insert(key, 40, &cmp_for_foo), is_ok);
+            assert_that!(map.__internal_insert(key, 40, cmp_for_foo), is_ok);
 
-            let res = map.__internal_get_mut_ref(&key, &cmp_for_foo);
+            let res = map.__internal_get_mut_ref(&key, cmp_for_foo);
             assert_that!(res, is_some);
 
             *res.unwrap() = 41;
-            let res = map.__internal_get_ref(&key, &cmp_for_foo);
+            let res = map.__internal_get_ref(&key, cmp_for_foo);
             assert_that!(res, is_some);
             assert_that!(*res.unwrap(), eq 41);
 
-            let res = map.__internal_get_mut_ref(&Foo { a: 35 }, &cmp_for_foo);
+            let res = map.__internal_get_mut_ref(&Foo { a: 35 }, cmp_for_foo);
             assert_that!(res, is_none);
         }
     }
@@ -344,17 +344,17 @@ mod flat_map {
         let key_1 = Foo { a: 1 };
 
         unsafe {
-            assert_eq!(map.__internal_remove(&key_0, &cmp_for_foo), None);
+            assert_eq!(map.__internal_remove(&key_0, cmp_for_foo), None);
             assert_that!(map, is_empty);
 
-            assert_that!(map.__internal_insert(key_1, 1, &cmp_for_foo), is_ok);
-            assert_that!(map.__internal_contains(&key_1, & cmp_for_foo), eq true);
+            assert_that!(map.__internal_insert(key_1, 1, cmp_for_foo), is_ok);
+            assert_that!(map.__internal_contains(&key_1, cmp_for_foo), eq true);
 
-            assert_eq!(map.__internal_remove(&key_0, &cmp_for_foo), None);
+            assert_eq!(map.__internal_remove(&key_0, cmp_for_foo), None);
             assert_that!(map, is_not_empty);
-            assert_eq!(map.__internal_remove(&key_1, &cmp_for_foo), Some(1));
+            assert_eq!(map.__internal_remove(&key_1, cmp_for_foo), Some(1));
             assert_that!(map, is_empty);
-            assert_that!(map.__internal_contains(&key_1, & cmp_for_foo), eq false);
+            assert_that!(map.__internal_contains(&key_1, cmp_for_foo), eq false);
         }
     }
 
@@ -364,7 +364,7 @@ mod flat_map {
         // insert until full
         for i in 0..CAPACITY as u32 {
             assert_that!(
-                unsafe { map.__internal_insert(Foo { a: i }, i, &cmp_for_foo) },
+                unsafe { map.__internal_insert(Foo { a: i }, i, cmp_for_foo) },
                 is_ok
             );
         }
@@ -373,7 +373,7 @@ mod flat_map {
         // remove until empty
         for i in 0..CAPACITY as u32 {
             assert_eq!(
-                unsafe { map.__internal_remove(&Foo { a: i }, &cmp_for_foo) },
+                unsafe { map.__internal_remove(&Foo { a: i }, cmp_for_foo) },
                 Some(i)
             );
         }
@@ -382,7 +382,7 @@ mod flat_map {
         // reinsert until full
         for i in 0..CAPACITY as u32 {
             assert_that!(
-                unsafe { map.__internal_insert(Foo { a: i }, i, &cmp_for_foo) },
+                unsafe { map.__internal_insert(Foo { a: i }, i, cmp_for_foo) },
                 is_ok
             );
         }
