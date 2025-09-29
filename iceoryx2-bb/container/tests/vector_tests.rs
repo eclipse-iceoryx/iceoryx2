@@ -130,6 +130,26 @@ mod vector {
     }
 
     #[test]
+    fn push_pop_alteration_works<Factory: VectorTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        let mut push_counter: usize = 0;
+        for _ in 0..sut.capacity() / 3 {
+            for _ in 0..5 {
+                let element = push_counter * 4 + 1;
+                push_counter += 1;
+                assert_that!(sut.push(LifetimeTracker::new_with_value(element)), eq true);
+            }
+
+            for i in 0..3 {
+                let result = sut.pop();
+                assert_that!(result.unwrap().value, eq(push_counter - i - 1) * 4 + 1);
+            }
+        }
+    }
+
+    #[test]
     fn pop_returns_none_on_empty_when_empty<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();

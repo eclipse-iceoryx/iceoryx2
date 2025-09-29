@@ -86,3 +86,20 @@ fn serialization_works() {
         ],
     );
 }
+
+#[test]
+fn valid_after_move() {
+    let mut sut = StaticVec::<usize, SUT_CAPACITY>::new();
+
+    for i in 0..sut.capacity() {
+        let element = i * 2 + 3;
+        assert_that!(sut.push(element), eq true);
+    }
+
+    let mut sut2 = sut;
+
+    for i in 0..sut2.capacity() {
+        let result = sut2.pop();
+        assert_that!(result, eq Some((sut2.capacity() - i - 1) * 2 + 3));
+    }
+}
