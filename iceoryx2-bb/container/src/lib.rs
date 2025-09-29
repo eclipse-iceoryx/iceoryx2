@@ -103,6 +103,8 @@ pub mod semantic_string;
 
 /// A container to store key-value pairs.
 pub mod flatmap;
+/// Runtime fixed-capacity vector that is shared memory compatible
+pub mod relocatable_vec;
 /// A shared memory compatible vector similar to [`std::vec::Vec`] that has the same memory layout then
 /// its C++ counterpart
 pub mod static_vec;

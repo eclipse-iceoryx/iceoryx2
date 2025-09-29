@@ -54,9 +54,10 @@ impl<T: Debug, const CAPACITY: usize> Debug for StaticVec<T, CAPACITY> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "StaticVec<{}, {}> {{ ",
+            "StaticVec<{}, {}> {{ len: {}, content: [ ",
             core::any::type_name::<T>(),
             CAPACITY,
+            self.len,
         )?;
 
         if !self.is_empty() {
@@ -67,7 +68,7 @@ impl<T: Debug, const CAPACITY: usize> Debug for StaticVec<T, CAPACITY> {
             write!(f, ", {:?}", self[idx])?;
         }
 
-        write!(f, " }}")
+        write!(f, " ] }}")
     }
 }
 

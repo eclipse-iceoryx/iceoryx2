@@ -12,7 +12,10 @@
 
 #[generic_tests::define]
 mod vector {
-    use iceoryx2_bb_container::static_vec::{StaticVec, *};
+    use std::cell::UnsafeCell;
+
+    use iceoryx2_bb_container::{relocatable_vec::*, static_vec::*};
+    use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
     use iceoryx2_bb_testing::{assert_that, lifetime_tracker::LifetimeTracker};
 
     const SUT_CAPACITY: usize = 10;
@@ -20,7 +23,8 @@ mod vector {
     trait VectorTestFactory {
         type Sut: Vector<LifetimeTracker>;
 
-        fn new() -> Self::Sut;
+        fn new() -> Self;
+        fn create_sut(&self) -> Box<Self::Sut>;
     }
 
     struct StaticVecFactory {}
@@ -28,14 +32,46 @@ mod vector {
     impl VectorTestFactory for StaticVecFactory {
         type Sut = StaticVec<LifetimeTracker, SUT_CAPACITY>;
 
-        fn new() -> Self::Sut {
-            Self::Sut::new()
+        fn new() -> Self {
+            Self {}
+        }
+
+        fn create_sut(&self) -> Box<Self::Sut> {
+            Box::new(Self::Sut::new())
+        }
+    }
+
+    struct RelocatableVecFactory {
+        raw_memory: UnsafeCell<
+            Box<[u8; RelocatableVec::<LifetimeTracker>::const_memory_size(SUT_CAPACITY)]>,
+        >,
+    }
+
+    impl VectorTestFactory for RelocatableVecFactory {
+        type Sut = RelocatableVec<LifetimeTracker>;
+
+        fn new() -> Self {
+            Self {
+                raw_memory: UnsafeCell::new(Box::new(
+                    [0u8; RelocatableVec::<LifetimeTracker>::const_memory_size(SUT_CAPACITY)],
+                )),
+            }
+        }
+
+        fn create_sut(&self) -> Box<Self::Sut> {
+            let mut sut = Box::new(unsafe { Self::Sut::new_uninit(SUT_CAPACITY) });
+            let bump_allocator =
+                BumpAllocator::new(unsafe { &mut *self.raw_memory.get() }.as_mut_ptr());
+            unsafe { sut.init(&bump_allocator).unwrap() };
+
+            sut
         }
     }
 
     #[test]
     fn new_created_vec_is_empty<Factory: VectorTestFactory>() {
-        let sut = Factory::new();
+        let factory = Factory::new();
+        let sut = factory.create_sut();
 
         assert_that!(sut.is_empty(), eq true);
         assert_that!(sut.len(), eq 0);
@@ -44,7 +80,8 @@ mod vector {
 
     #[test]
     fn push_adds_element_at_the_end<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new_with_value(number)), eq true);
@@ -57,7 +94,8 @@ mod vector {
 
     #[test]
     fn push_until_full_works<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         assert_that!(sut.is_empty(), eq true);
         assert_that!(sut.is_full(), eq false);
@@ -75,7 +113,8 @@ mod vector {
 
     #[test]
     fn push_more_elements_than_capacity_fails<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new_with_value(2 * number)), eq true);
@@ -92,14 +131,16 @@ mod vector {
 
     #[test]
     fn pop_returns_none_on_empty_when_empty<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         assert_that!(sut.pop(), is_none);
     }
 
     #[test]
     fn pop_removes_last_element<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new_with_value(4 * number + 1)), eq true);
@@ -117,7 +158,8 @@ mod vector {
     #[test]
     fn truncate_does_nothing_when_new_len_is_larger_than_current_len<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..half_capacity {
             assert_that!(sut.push(LifetimeTracker::new_with_value(4 * number + 3)), eq true);
@@ -134,7 +176,8 @@ mod vector {
     fn truncate_drops_all_elements_right_of_new_len<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let tracker = LifetimeTracker::start_tracking();
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new_with_value(5 * number + 7)), eq true);
@@ -154,7 +197,8 @@ mod vector {
     fn truncate_drops_elements_in_reverse_order<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let tracker = LifetimeTracker::start_tracking();
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             assert_that!(sut.push(LifetimeTracker::new_with_value(number)), eq true);
@@ -171,7 +215,8 @@ mod vector {
     fn resize_increases_len_with_provided_value<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         const TEST_VALUE: usize = 871828;
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         assert_that!(sut.resize(half_capacity, LifetimeTracker::new_with_value(TEST_VALUE)), eq true);
 
@@ -186,7 +231,8 @@ mod vector {
     fn resize_reduces_len_and_drops_element_in_reverse_order<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let tracker = LifetimeTracker::start_tracking();
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             sut.push(LifetimeTracker::new_with_value(number));
@@ -213,7 +259,8 @@ mod vector {
 
     #[test]
     fn resize_fails_if_len_greater_than_capacity<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
         assert_that!(sut.resize(SUT_CAPACITY + 1, LifetimeTracker::new()), eq false);
     }
 
@@ -221,7 +268,8 @@ mod vector {
     fn resize_with_increases_len_with_provided_value<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         const TEST_VALUE: usize = 918293;
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         assert_that!(sut.resize_with(half_capacity, || {
          LifetimeTracker::new_with_value(TEST_VALUE)
@@ -238,7 +286,8 @@ mod vector {
     fn resize_with_reduces_len_and_drops_element_in_reverse_order<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let tracker = LifetimeTracker::start_tracking();
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             sut.push(LifetimeTracker::new_with_value(number));
@@ -260,20 +309,23 @@ mod vector {
 
     #[test]
     fn resize_with_fails_if_len_greater_than_capacity<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
         assert_that!(sut.resize_with(SUT_CAPACITY + 1, || LifetimeTracker::new()), eq false);
     }
 
     #[test]
     fn remove_first_element_of_empty_vec_returns_none<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
         assert_that!(sut.remove(0), is_none);
     }
 
     #[test]
     fn remove_element_out_of_bounds_returns_none<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for _ in 0..half_capacity {
             sut.push(LifetimeTracker::new());
@@ -285,7 +337,8 @@ mod vector {
     #[test]
     fn remove_first_element_until_empty_works<Factory: VectorTestFactory>() {
         let tracker = LifetimeTracker::start_tracking();
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             sut.push(LifetimeTracker::new_with_value(number * 13));
@@ -307,7 +360,8 @@ mod vector {
     fn remove_middle_element_works<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         let tracker = LifetimeTracker::start_tracking();
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             sut.push(LifetimeTracker::new_with_value(number * 17));
@@ -329,7 +383,8 @@ mod vector {
     #[test]
     fn insert_first_element_of_empty_vec_works<Factory: VectorTestFactory>() {
         const TEST_VALUE: usize = 91782389;
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
         assert_that!(sut.insert(0, LifetimeTracker::new_with_value(TEST_VALUE)), eq true);
 
         assert_that!(sut[0].value, eq TEST_VALUE);
@@ -337,13 +392,15 @@ mod vector {
 
     #[test]
     fn insert_second_element_of_empty_vec_fails<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
         assert_that!(sut.insert(1, LifetimeTracker::new()), eq false);
     }
 
     #[test]
     fn insert_at_position_zero_fills_vector_in_reverse_order<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             assert_that!(sut.insert(0, LifetimeTracker::new_with_value(number)), eq true);
@@ -357,7 +414,8 @@ mod vector {
 
     #[test]
     fn insert_at_end_fills_vector_in_order<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             assert_that!(sut.insert(number, LifetimeTracker::new_with_value(number)), eq true);
@@ -373,7 +431,8 @@ mod vector {
     fn insert_at_center_move_elements_to_the_rights<Factory: VectorTestFactory>() {
         let half_capacity = SUT_CAPACITY / 2;
         const TEST_VALUE: usize = 565612334;
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY - 1 {
             sut.push(LifetimeTracker::new_with_value(number));
@@ -395,7 +454,8 @@ mod vector {
 
     #[test]
     fn clearing_empty_vector_does_nothing<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         sut.clear();
         assert_that!(sut.is_empty(), eq true);
@@ -404,7 +464,8 @@ mod vector {
     #[test]
     fn clear_drops_elements_in_reverse_order<Factory: VectorTestFactory>() {
         let tracker = LifetimeTracker::start_tracking();
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             sut.push(LifetimeTracker::new_with_value(number));
@@ -423,7 +484,8 @@ mod vector {
 
     #[test]
     fn as_slice_contains_elements<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             sut.push(LifetimeTracker::new_with_value(number));
@@ -436,7 +498,8 @@ mod vector {
 
     #[test]
     fn as_mut_slice_contains_mutable_elements<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             sut.push(LifetimeTracker::new_with_value(number));
@@ -453,7 +516,8 @@ mod vector {
 
     #[test]
     fn adding_a_slice_to_empty_vec_that_exceeds_the_capacity_fails<Factory: VectorTestFactory>() {
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         assert_that!(sut.extend_from_slice(&core::array::from_fn::<LifetimeTracker, {SUT_CAPACITY + 1}, _>(|_| LifetimeTracker::new())), eq false);
     }
@@ -461,7 +525,8 @@ mod vector {
     #[test]
     fn adding_a_slice_to_empty_vec_that_has_the_same_capacity_works<Factory: VectorTestFactory>() {
         const TEST_VALUE: usize = 819212;
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         assert_that!(sut.extend_from_slice(&core::array::from_fn::<LifetimeTracker, SUT_CAPACITY, _>(|_| LifetimeTracker::new_with_value(TEST_VALUE))), eq true);
         for value in sut.iter() {
@@ -473,7 +538,8 @@ mod vector {
     fn adding_a_slice_to_filled_vec_appends_elements<Factory: VectorTestFactory>() {
         const HALF_CAPACITY: usize = SUT_CAPACITY / 2;
         const TEST_VALUE: usize = 9102;
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for n in 0..HALF_CAPACITY {
             sut.push(LifetimeTracker::new_with_value(n));
@@ -492,7 +558,8 @@ mod vector {
     #[test]
     fn when_vec_is_dropped_all_elements_are_dropped_in_reverse_order<Factory: VectorTestFactory>() {
         let tracker = LifetimeTracker::start_tracking();
-        let mut sut = Factory::new();
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
 
         for number in 0..SUT_CAPACITY {
             sut.push(LifetimeTracker::new_with_value(number));
@@ -508,4 +575,7 @@ mod vector {
 
     #[instantiate_tests(<StaticVecFactory>)]
     mod static_vec {}
+
+    #[instantiate_tests(<RelocatableVecFactory>)]
+    mod relocatable_vec {}
 }
