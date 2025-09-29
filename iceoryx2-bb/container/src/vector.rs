@@ -18,8 +18,18 @@ pub(crate) mod internal {
 
     #[doc(hidden)]
     pub trait VectorView<T> {
-        unsafe fn data(&self) -> &[MaybeUninit<T>];
+        fn data(&self) -> &[MaybeUninit<T>];
+
+        /// # Safety
+        ///
+        /// * user must ensure that any modification keeps the initialized data contiguous
+        /// * user must update len with [`VectorView::set_len()`] when adding/removing elements
         unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<T>];
+
+        /// # Safety
+        ///
+        /// * user must ensure that the len defines the number of initialized contiguous
+        ///   elements in [`VectorView::data_mut()`] and [`VectorView::data()`]
         unsafe fn set_len(&mut self, len: u64);
     }
 }

@@ -209,9 +209,9 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
 }
 
 impl<T> internal::VectorView<T> for RelocatableVec<T> {
-    unsafe fn data(&self) -> &[MaybeUninit<T>] {
+    fn data(&self) -> &[MaybeUninit<T>] {
         self.verify_init("data()");
-        core::slice::from_raw_parts(self.data_ptr.as_ptr(), self.capacity())
+        unsafe { core::slice::from_raw_parts(self.data_ptr.as_ptr(), self.capacity()) }
     }
 
     unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<T>] {

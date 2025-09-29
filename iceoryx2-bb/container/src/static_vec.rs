@@ -219,7 +219,7 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
 }
 
 impl<T, const CAPACITY: usize> internal::VectorView<T> for StaticVec<T, CAPACITY> {
-    unsafe fn data(&self) -> &[MaybeUninit<T>] {
+    fn data(&self) -> &[MaybeUninit<T>] {
         &self.data
     }
 
