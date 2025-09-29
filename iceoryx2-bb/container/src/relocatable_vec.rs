@@ -10,6 +10,58 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+//! Contains the [`RelocatableVec`](crate::relocatable_vec::RelocatableVec), a
+//! run-time fixed size vector that is shared memory compatible
+//!
+//! # Expert Examples
+//!
+//! ## Create [`RelocatableVec`](crate::relocatable_vec::RelocatableVec) inside constructs which provides memory
+//!
+//! ```
+//! use iceoryx2_bb_container::relocatable_vec::*;
+//! use iceoryx2_bb_elementary::math::align_to;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use core::mem::MaybeUninit;
+//!
+//! const VEC_CAPACITY:usize = 12;
+//! struct MyConstruct {
+//!     vec: RelocatableVec<u128>,
+//!     vec_memory: [MaybeUninit<u128>; VEC_CAPACITY],
+//! }
+//!
+//! impl MyConstruct {
+//!     pub fn new() -> Self {
+//!         let mut new_self = Self {
+//!             vec: unsafe { RelocatableVec::new_uninit(VEC_CAPACITY) },
+//!             vec_memory: core::array::from_fn(|_| MaybeUninit::uninit()),
+//!         };
+//!
+//!         let allocator = BumpAllocator::new(new_self.vec_memory.as_mut_ptr().cast());
+//!         unsafe {
+//!             new_self.vec.init(&allocator).expect("Enough memory provided.")
+//!         };
+//!         new_self
+//!     }
+//! }
+//! ```
+//!
+//! ## Create [`RelocatableVec`](crate::relocatable_vec::RelocatableVec) with allocator
+//!
+//! ```
+//! use iceoryx2_bb_container::relocatable_vec::*;
+//! use iceoryx2_bb_elementary::bump_allocator::BumpAllocator;
+//! use core::ptr::NonNull;
+//!
+//! const VEC_CAPACITY:usize = 12;
+//! const MEM_SIZE: usize = RelocatableVec::<u128>::const_memory_size(VEC_CAPACITY);
+//! let mut memory = [0u8; MEM_SIZE];
+//!
+//! let bump_allocator = BumpAllocator::new(memory.as_mut_ptr());
+//!
+//! let mut vec = unsafe { RelocatableVec::<u128>::new_uninit(VEC_CAPACITY) };
+//! unsafe { vec.init(&bump_allocator).expect("vec init failed") };
+//! ```
+
 use core::{fmt::Debug, mem::MaybeUninit};
 use std::{
     alloc::Layout,
@@ -18,10 +70,12 @@ use std::{
 
 use iceoryx2_bb_elementary::{math::unaligned_mem_size, relocatable_ptr::*};
 pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContainer;
+use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, fatal_panic};
 
 use crate::vector::Vector;
 
+/// **Non-movable** relocatable shared-memory compatible vector with runtime fixed size capacity.
 pub struct RelocatableVec<T> {
     data_ptr: RelocatablePointer<MaybeUninit<T>>,
     capacity: u64,
@@ -35,6 +89,10 @@ impl<T> Drop for RelocatableVec<T> {
         }
     }
 }
+
+unsafe impl<T: Send> Send for RelocatableVec<T> {}
+
+unsafe impl<T: ZeroCopySend> ZeroCopySend for RelocatableVec<T> {}
 
 impl<T: Debug> Debug for RelocatableVec<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
