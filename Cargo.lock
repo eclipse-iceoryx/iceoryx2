@@ -1629,6 +1629,7 @@ dependencies = [
  "generic-tests",
  "iceoryx2",
  "iceoryx2-bb-log",
+ "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-services-discovery",
 ]

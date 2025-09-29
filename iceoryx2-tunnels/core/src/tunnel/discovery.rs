@@ -10,28 +10,31 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::{node::Node, service::Service};
+use iceoryx2::service::Service;
+use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
 
-use crate::{Discovery, Transport, Tunnel};
+use crate::Discovery;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Error {
     Error,
 }
 
-impl<S: Service, T: Transport> Discovery<S> for Tunnel<S, T> {
-    type Handle = Node<S>;
-    type Error = Error;
+impl<S: Service> Discovery<S> for Tracker<S> {
+    type Error = SyncError;
 
-    /// Retrieve discovery information from the transport and then call the provided
-    /// handler function to process it.
     fn discover<
-        OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::Error>,
+        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::Error>,
     >(
-        node: &Self::Handle,
-        on_discovered: &mut OnDiscovered,
+        &mut self,
+        process_discovery: &mut F,
     ) -> Result<(), Self::Error> {
-        // Here we should get discovery information from iceoryx2 itself.
-        todo!()
+        let (added, _removed) = self.sync().unwrap();
+
+        for id in added {
+            process_discovery(&self.get(&id).unwrap().static_details)?;
+        }
+
+        Ok(())
     }
 }

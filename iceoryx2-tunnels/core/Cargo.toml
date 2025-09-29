@@ -23,3 +23,4 @@ iceoryx2-services-discovery = { workspace = true }
 [dev-dependencies]
 iceoryx2-bb-testing = { workspace = true }
 generic-tests = { workspace = true }
+iceoryx2-bb-posix = { workspace = true }

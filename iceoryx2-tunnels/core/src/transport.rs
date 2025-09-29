@@ -14,8 +14,8 @@
 ///
 /// Enables implementations to define custom initialization logic.
 pub trait Transport: Sized {
-    type TransportConfig;
+    type Config: Default;
     type Error;
 
-    fn create(config: &Self::TransportConfig) -> Result<Self, Self::Error>;
+    fn create(config: &Self::Config) -> Result<Self, Self::Error>;
 }
