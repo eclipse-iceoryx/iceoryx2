@@ -52,21 +52,17 @@ impl From<ServiceListError> for SyncError {
 /// # Type Parameters
 ///
 /// * `S` - The type of service to track, which must implement the `Service` trait
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Tracker<S: Service> {
+    config: Config,
     services: HashMap<ServiceId, ServiceDetails<S>>,
-}
-
-impl<S: Service> Default for Tracker<S> {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl<S: Service> Tracker<S> {
     /// Create a new Monitor instance.
-    pub fn new() -> Self {
+    pub fn new(config: &Config) -> Self {
         Self {
+            config: config.clone(),
             services: HashMap::new(),
         }
     }
@@ -88,14 +84,11 @@ impl<S: Service> Tracker<S> {
     ///   retrievable with `Tracker::get()`
     /// * A vector of service details for services that are no longer available, these details are
     ///   no longer stored in the tracker
-    pub fn sync(
-        &mut self,
-        config: &Config,
-    ) -> Result<(Vec<ServiceId>, Vec<ServiceDetails<S>>), SyncError> {
+    pub fn sync(&mut self) -> Result<(Vec<ServiceId>, Vec<ServiceDetails<S>>), SyncError> {
         let mut discovered_ids = HashSet::<ServiceId>::new();
         let mut added_ids = Vec::<ServiceId>::new();
 
-        S::list(config, |service| {
+        S::list(&self.config, |service| {
             let id = service.static_details.service_id().clone();
             discovered_ids.insert(id.clone());
 

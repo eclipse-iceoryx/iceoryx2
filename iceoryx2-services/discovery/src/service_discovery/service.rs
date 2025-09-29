@@ -363,10 +363,10 @@ impl<S: ServiceType> Service<S> {
             notifier = Some(port);
         }
 
-        let mut tracker = Tracker::<S>::new();
+        let mut tracker = Tracker::<S>::new(iceoryx_config);
 
         if discovery_config.sync_on_initialization {
-            tracker.sync(iceoryx_config)?;
+            tracker.sync()?;
         }
 
         let (request_response, server) = if discovery_config.enable_server {
@@ -429,7 +429,7 @@ impl<S: ServiceType> Service<S> {
         mut on_removed: FRemovedService,
     ) -> Result<(), SpinError> {
         // Detect changes
-        let (added_ids, removed_services) = self.tracker.sync(&self.iceoryx_config)?;
+        let (added_ids, removed_services) = self.tracker.sync()?;
         let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
         // Publish
         for id in &added_ids {
