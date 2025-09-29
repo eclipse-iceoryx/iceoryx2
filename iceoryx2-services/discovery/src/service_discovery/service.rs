@@ -431,6 +431,7 @@ impl<S: ServiceType> Service<S> {
         // Detect changes
         let (added_ids, removed_services) = self.tracker.sync()?;
         let changes_detected = !added_ids.is_empty() || !removed_services.is_empty();
+
         // Publish
         for id in &added_ids {
             if let Some(service) = self.tracker.get(id) {
