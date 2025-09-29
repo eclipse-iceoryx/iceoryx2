@@ -32,11 +32,13 @@ impl Relay for PublishSubscribeRelay {
     }
 }
 
+#[derive(Debug)]
 pub struct PublishSubscribeRelayBuilder {}
 
-impl<T: Transport> RelayBuilder<T> for PublishSubscribeRelayBuilder {
-    type CreationError = Error;
-    fn create(self) -> Result<Box<dyn Relay>, Error> {
+impl RelayBuilder for PublishSubscribeRelayBuilder {
+    type Error = Error;
+
+    fn create(self) -> Result<Box<dyn Relay>, Self::Error> {
         todo!()
     }
 }
@@ -53,11 +55,13 @@ impl Relay for EventRelay {
     }
 }
 
+#[derive(Debug)]
 pub struct EventRelayBuilder {}
 
-impl<T: Transport> RelayBuilder<T> for EventRelayBuilder {
-    type CreationError = Error;
-    fn create(self) -> Result<Box<dyn Relay>, Error> {
+impl RelayBuilder for EventRelayBuilder {
+    type Error = Error;
+
+    fn create(self) -> Result<Box<dyn Relay>, Self::Error> {
         todo!()
     }
 }
@@ -67,13 +71,10 @@ pub struct Zenoh {
 }
 
 impl Transport for Zenoh {
-    type TransportConfig = zenoh::Config;
-    type PublishSubscribeConfig = zenoh::Config;
-    type EventConfig = zenoh::Config;
+    type Config = zenoh::Config;
+    type Error = Error;
 
-    type CreationError = Error;
-
-    fn create(config: &Self::TransportConfig) -> Result<Self, Self::CreationError> {
+    fn create(config: &Self::Config) -> Result<Self, Self::Error> {
         let session = zenoh::open(config.clone()).wait();
         let session = fail!(
             from "ZenohTransport::create()",
@@ -87,38 +88,28 @@ impl Transport for Zenoh {
 }
 
 impl<T: Transport> RelayFactory<T> for Zenoh {
-    fn publish_subscribe<'a>(
-        &'a self,
-        service: &'a str,
-        config: &'a T::PublishSubscribeConfig,
-    ) -> impl RelayBuilder<T> + 'a
-    where
-        Self: 'a,
-    {
-        PublishSubscribeRelayBuilder {}
+    type PublishSubscribeBuilder = PublishSubscribeRelayBuilder;
+    type EventBuilder = EventRelayBuilder;
+
+    fn publish_subscribe(&self, service: &str) -> Self::PublishSubscribeBuilder {
+        todo!()
     }
 
-    fn event<'a>(
-        &'a self,
-        service: &'a str,
-        config: &'a T::EventConfig,
-    ) -> impl RelayBuilder<T> + 'a
-    where
-        Self: 'a,
-    {
-        EventRelayBuilder {}
+    fn event(&self, service: &str) -> Self::EventBuilder {
+        todo!()
     }
 }
 
 impl<S: Service> Discovery<S> for Zenoh {
-    type DiscoveryError = Error;
+    type Handle = zenoh::Session;
+    type Error = Error;
 
     fn discover<
-        OnDiscovered: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
+        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::Error>,
     >(
-        &mut self,
-        on_discovered: &mut OnDiscovered,
-    ) -> Result<(), Self::DiscoveryError> {
+        handle: &mut Self::Handle,
+        process_discovery: &mut F,
+    ) -> Result<(), Self::Error> {
         todo!()
     }
 }
