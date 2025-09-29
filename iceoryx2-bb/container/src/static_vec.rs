@@ -36,6 +36,7 @@ use iceoryx2_bb_elementary_traits::{
 };
 use serde::{de::Visitor, Deserialize, Serialize};
 
+use crate::vector::internal;
 pub use crate::vector::Vector;
 
 /// Relocatable shared-memory compaitble vector with compile time fixed size
@@ -217,146 +218,26 @@ impl<T, const CAPACITY: usize> StaticVec<T, CAPACITY> {
     }
 }
 
+impl<T, const CAPACITY: usize> internal::VectorView<T> for StaticVec<T, CAPACITY> {
+    unsafe fn data(&self) -> &[MaybeUninit<T>] {
+        &self.data
+    }
+
+    unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<T>] {
+        &mut self.data
+    }
+
+    unsafe fn set_len(&mut self, len: u64) {
+        self.len = len
+    }
+}
+
 impl<T, const CAPACITY: usize> Vector<T> for StaticVec<T, CAPACITY> {
-    fn as_mut_slice(&mut self) -> &mut [T] {
-        let len = self.len();
-        unsafe {
-            core::mem::transmute::<&mut [MaybeUninit<T>], &mut [T]>(
-                &mut self.data.as_mut_slice()[0..len],
-            )
-        }
-    }
-
-    fn as_slice(&self) -> &[T] {
-        let len = self.len();
-        unsafe { core::mem::transmute::<&[MaybeUninit<T>], &[T]>(&self.data.as_slice()[0..len]) }
-    }
-
     fn capacity(&self) -> usize {
         CAPACITY
     }
 
-    fn clear(&mut self) {
-        for idx in (0..self.len()).rev() {
-            unsafe { self.data[idx].assume_init_drop() };
-        }
-
-        self.len = 0;
-    }
-
-    fn extend_from_slice(&mut self, other: &[T]) -> bool
-    where
-        T: Clone,
-    {
-        if self.capacity() < self.len() + other.len() {
-            return false;
-        }
-
-        for (i, element) in other.iter().enumerate() {
-            self.data[i + self.len()].write(element.clone());
-        }
-
-        self.len += other.len() as u64;
-
-        true
-    }
-
-    fn insert(&mut self, index: usize, element: T) -> bool {
-        if index > self.len() {
-            return false;
-        }
-
-        if index != self.len() {
-            let ptr = self.data.as_mut_ptr();
-            unsafe { core::ptr::copy(ptr.add(index), ptr.add(index + 1), self.len() - index) };
-        }
-
-        self.data[index].write(element);
-        self.len += 1;
-        true
-    }
-
-    fn is_empty(&self) -> bool {
-        self.len == 0
-    }
-
-    fn is_full(&self) -> bool {
-        self.len == CAPACITY as u64
-    }
-
     fn len(&self) -> usize {
         self.len as usize
-    }
-
-    fn pop(&mut self) -> Option<T> {
-        if self.is_empty() {
-            return None;
-        }
-
-        let value = core::mem::replace(&mut self.data[self.len() - 1], MaybeUninit::uninit());
-        self.len -= 1;
-        Some(unsafe { value.assume_init() })
-    }
-
-    fn push(&mut self, value: T) -> bool {
-        if self.is_full() {
-            return false;
-        }
-
-        self.data[self.len()].write(value);
-        self.len += 1;
-        true
-    }
-
-    fn remove(&mut self, index: usize) -> Option<T> {
-        if self.len() <= index {
-            return None;
-        }
-
-        let value = unsafe { core::ptr::read(self.data[index].as_ptr()) };
-
-        let ptr = self.data.as_mut_ptr();
-        unsafe { core::ptr::copy(ptr.add(index + 1), ptr.add(index), self.len() - index - 1) };
-
-        self.len -= 1;
-
-        Some(value)
-    }
-
-    fn resize(&mut self, new_len: usize, value: T) -> bool
-    where
-        T: Clone,
-    {
-        self.resize_with(new_len, || value.clone())
-    }
-
-    fn resize_with<F: FnMut() -> T>(&mut self, new_len: usize, mut f: F) -> bool {
-        if CAPACITY < new_len {
-            return false;
-        }
-
-        if new_len < self.len() {
-            self.truncate(new_len);
-        } else {
-            for idx in self.len()..self.capacity() {
-                self.data[idx].write(f());
-            }
-
-            self.len = new_len as u64;
-        }
-
-        true
-    }
-
-    fn truncate(&mut self, len: usize) {
-        if self.len() <= len {
-            return;
-        }
-
-        for idx in (len..self.len()).rev() {
-            unsafe { self.data[idx].assume_init_drop() };
-        }
-
-        self.len = len as u64;
     }
 }

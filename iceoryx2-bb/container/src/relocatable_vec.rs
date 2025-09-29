@@ -73,6 +73,7 @@ pub use iceoryx2_bb_elementary_traits::relocatable_container::RelocatableContain
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_log::{fail, fatal_panic};
 
+use crate::vector::internal;
 pub use crate::vector::Vector;
 
 /// **Non-movable** relocatable shared-memory compatible vector with runtime fixed size capacity.
@@ -207,164 +208,28 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
     }
 }
 
+impl<T> internal::VectorView<T> for RelocatableVec<T> {
+    unsafe fn data(&self) -> &[MaybeUninit<T>] {
+        self.verify_init("data()");
+        core::slice::from_raw_parts(self.data_ptr.as_ptr(), self.capacity())
+    }
+
+    unsafe fn data_mut(&mut self) -> &mut [MaybeUninit<T>] {
+        self.verify_init("data_mut()");
+        core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr(), self.capacity())
+    }
+
+    unsafe fn set_len(&mut self, len: u64) {
+        self.len = len;
+    }
+}
+
 impl<T> Vector<T> for RelocatableVec<T> {
-    fn as_mut_slice(&mut self) -> &mut [T] {
-        self.verify_init("as_mut_slice()");
-        unsafe { core::slice::from_raw_parts_mut(self.data_ptr.as_mut_ptr().cast(), self.len()) }
-    }
-
-    fn as_slice(&self) -> &[T] {
-        self.verify_init("as_slice()");
-        unsafe { core::slice::from_raw_parts(self.data_ptr.as_ptr().cast(), self.len()) }
-    }
-
     fn capacity(&self) -> usize {
         self.capacity as usize
     }
 
-    fn clear(&mut self) {
-        self.verify_init("clear()");
-        let ptr = unsafe { self.data_ptr.as_mut_ptr() };
-        for idx in (0..self.len()).rev() {
-            unsafe { (&mut *ptr.add(idx)).assume_init_drop() };
-        }
-
-        self.len = 0;
-    }
-
-    fn extend_from_slice(&mut self, other: &[T]) -> bool
-    where
-        T: Clone,
-    {
-        self.verify_init("extend_from_slice()");
-
-        if self.capacity() < self.len() + other.len() {
-            return false;
-        }
-
-        for (i, element) in other.iter().enumerate() {
-            unsafe { &mut *self.data_ptr.as_mut_ptr().add(i + self.len()) }.write(element.clone());
-        }
-
-        self.len += other.len() as u64;
-
-        true
-    }
-
-    fn insert(&mut self, index: usize, element: T) -> bool {
-        self.verify_init("insert()");
-
-        if index > self.len() {
-            return false;
-        }
-
-        if index != self.len() {
-            let ptr = unsafe { self.data_ptr.as_mut_ptr() };
-            unsafe { core::ptr::copy(ptr.add(index), ptr.add(index + 1), self.len() - index) };
-        }
-
-        unsafe { &mut *self.data_ptr.as_mut_ptr().add(index) }.write(element);
-        self.len += 1;
-        true
-    }
-
-    fn is_empty(&self) -> bool {
-        self.len == 0
-    }
-
-    fn is_full(&self) -> bool {
-        self.len == self.capacity
-    }
-
     fn len(&self) -> usize {
         self.len as usize
-    }
-
-    fn pop(&mut self) -> Option<T> {
-        self.verify_init("pop()");
-
-        if self.is_empty() {
-            return None;
-        }
-
-        let value = core::mem::replace(
-            unsafe { &mut *self.data_ptr.as_mut_ptr().add(self.len() - 1) },
-            MaybeUninit::uninit(),
-        );
-        self.len -= 1;
-        Some(unsafe { value.assume_init() })
-    }
-
-    fn push(&mut self, value: T) -> bool {
-        self.verify_init("push()");
-
-        if self.is_full() {
-            return false;
-        }
-
-        unsafe { &mut *self.data_ptr.as_mut_ptr().add(self.len()) }.write(value);
-        self.len += 1;
-        true
-    }
-
-    fn remove(&mut self, index: usize) -> Option<T> {
-        self.verify_init("remove()");
-
-        if self.len() <= index {
-            return None;
-        }
-
-        let ptr = unsafe { self.data_ptr.as_mut_ptr() };
-        let value = unsafe { core::ptr::read(ptr.add(index)).assume_init() };
-
-        unsafe { core::ptr::copy(ptr.add(index + 1), ptr.add(index), self.len() - index - 1) };
-
-        self.len -= 1;
-
-        Some(value)
-    }
-
-    fn resize(&mut self, new_len: usize, value: T) -> bool
-    where
-        T: Clone,
-    {
-        self.verify_init("resize()");
-        self.resize_with(new_len, || value.clone())
-    }
-
-    fn resize_with<F: FnMut() -> T>(&mut self, new_len: usize, mut f: F) -> bool {
-        self.verify_init("resize_with()");
-
-        if self.capacity() < new_len {
-            return false;
-        }
-
-        if new_len < self.len() {
-            self.truncate(new_len);
-        } else {
-            let ptr = unsafe { self.data_ptr.as_mut_ptr() };
-            for idx in self.len()..self.capacity() {
-                unsafe { &mut *ptr.add(idx) }.write(f());
-            }
-
-            self.len = new_len as u64;
-        }
-
-        true
-    }
-
-    fn truncate(&mut self, len: usize) {
-        self.verify_init("truncate()");
-
-        if self.len() <= len {
-            return;
-        }
-
-        let ptr = unsafe { self.data_ptr.as_mut_ptr() };
-        for idx in (len..self.len()).rev() {
-            unsafe { (&mut *ptr.add(idx)).assume_init_drop() };
-        }
-
-        self.len = len as u64;
     }
 }

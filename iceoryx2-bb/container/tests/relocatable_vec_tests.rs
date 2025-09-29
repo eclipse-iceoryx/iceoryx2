@@ -33,7 +33,7 @@ fn double_init_call_causes_panic() {
 fn panic_is_called_in_debug_mode_if_vec_is_not_initialized() {
     const CAPACITY: usize = 12;
     let mut sut = unsafe { RelocatableVec::<u8>::new_uninit(CAPACITY) };
-    sut.remove(0);
+    sut.push(0);
 }
 
 #[test]
