@@ -10,6 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::mem::MaybeUninit;
 use std::collections::{HashMap, HashSet};
 
 use crate::tunnel::discovery::DiscoverySubscriber;
@@ -22,6 +23,7 @@ use iceoryx2::port::publisher::{Publisher, PublisherCreateError};
 use iceoryx2::port::subscriber::{Subscriber, SubscriberCreateError};
 use iceoryx2::port::ReceiveError;
 use iceoryx2::prelude::{AllocationStrategy, PortFactory};
+use iceoryx2::sample_mut_uninit::SampleMutUninit;
 use iceoryx2::service::builder::publish_subscribe::PublishSubscribeOpenOrCreateError;
 use iceoryx2::service::builder::CustomHeaderMarker;
 use iceoryx2::service::builder::CustomPayloadMarker;
@@ -29,7 +31,7 @@ use iceoryx2::service::service_id::ServiceId;
 use iceoryx2::service::static_config::messaging_pattern::MessagingPattern;
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2::service::Service;
-use iceoryx2_bb_log::{debug, fail};
+use iceoryx2_bb_log::{debug, fail, fatal_panic, warn};
 use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryEvent;
 use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
 
@@ -37,6 +39,7 @@ use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
 pub enum Error {
     Discovery,
     Connection,
+    Propagation,
     Error,
 }
 
@@ -183,11 +186,20 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
     /// Propagate payloads between iceoryx2 and the Transport
     pub fn propagate(&mut self) -> Result<(), Error> {
         for (id, ports) in &self.ports {
-            let relay = &self.relays.get(id);
+            let relay = match self.relays.get(id) {
+                Some(relay) => relay,
+                None => {
+                    warn!("No relay available for id: {:?}", id);
+                    return Ok(());
+                }
+            };
 
             match ports {
-                Ports::PublishSubscribe(publisher, subscriber) => todo!(),
-                Ports::Event(notifier, listener) => todo!(),
+                Ports::PublishSubscribe(publisher, subscriber) => {
+                    propagate_publish_subscribe_payload(self.node.id(), subscriber, relay).unwrap();
+                    ingest_publish_subscribe_payload(publisher, relay).unwrap();
+                }
+                Ports::Event(_, _) => todo!(),
             }
         }
 
@@ -327,6 +339,71 @@ fn setup_publish_subscribe<S: Service, T: Transport + RelayFactory<T>>(
         Ports::PublishSubscribe(publisher, subscriber),
     );
     relays.insert(service.service_id().clone(), relay);
+
+    Ok(())
+}
+
+fn propagate_publish_subscribe_payload<S: Service>(
+    node_id: &iceoryx2::node::NodeId,
+    subscriber: &Subscriber<S, [CustomPayloadMarker], CustomHeaderMarker>,
+    relay: &Box<dyn Relay>,
+) -> Result<bool, Error> {
+    match unsafe { subscriber.receive_custom_payload() } {
+        Ok(Some(sample)) => {
+            if sample.header().node_id() == *node_id {
+                // Ignore samples published by the gateway itself to prevent loopback.
+                return Ok(true);
+            }
+            let ptr = sample.payload().as_ptr() as *const u8;
+            let len = sample.len();
+
+            relay.propagate(ptr, len);
+            Ok(true)
+        }
+        Ok(None) => Ok(false),
+        Err(e) => fatal_panic!("Failed to receive custom payload: {}", e),
+    }
+}
+
+fn ingest_publish_subscribe_payload<S: Service>(
+    publisher: &Publisher<S, [CustomPayloadMarker], CustomHeaderMarker>,
+    relay: &Box<dyn Relay>,
+) -> Result<(), Error> {
+    let payload_size = 1; // TODO: Get from Service
+    let mut loaned_sample: Option<
+        SampleMutUninit<S, [MaybeUninit<CustomPayloadMarker>], CustomHeaderMarker>,
+    > = None;
+
+    let ingested = relay.ingest(&mut |number_of_bytes| {
+        let number_of_elements = number_of_bytes / payload_size;
+
+        let (ptr, len) = match unsafe { publisher.loan_custom_payload(number_of_elements) } {
+            Ok(mut sample) => {
+                let payload = sample.payload_mut();
+                let ptr = payload.as_mut_ptr() as *mut u8;
+                let len = payload.len();
+
+                loaned_sample = Some(sample);
+
+                (ptr, len)
+            }
+            Err(e) => fatal_panic!("Failed to loan custom payload: {e}"),
+        };
+
+        (ptr, len)
+    });
+
+    if ingested {
+        if let Some(sample) = loaned_sample {
+            let sample = unsafe { sample.assume_init() };
+            fail!(
+                from "ingest_publish_subscribe_payload",
+                when sample.send(),
+                with Error::Propagation,
+                "Failed to send ingested payload"
+            );
+        }
+    }
 
     Ok(())
 }

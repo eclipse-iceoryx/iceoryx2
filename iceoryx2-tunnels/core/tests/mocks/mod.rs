@@ -30,8 +30,11 @@ impl Transport for MockTransport {
 }
 
 impl Relay for MockRelay {
-    fn propagate(&mut self, _data: *const u8, _len: usize, _align: usize) {}
-    fn ingest(&mut self, _data: *mut u8, _len: usize, _align: usize) {}
+    fn propagate(&self, _bytes: *const u8, _len: usize) {}
+
+    fn ingest(&self, _loan_fn: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
+        true
+    }
 }
 
 impl RelayBuilder for MockRelayBuilder {

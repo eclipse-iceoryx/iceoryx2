@@ -23,11 +23,11 @@ pub enum Error {
 pub struct PublishSubscribeRelay {}
 
 impl Relay for PublishSubscribeRelay {
-    fn propagate(&mut self, data: *const u8, len: usize, align: usize) {
+    fn propagate(&self, bytes: *const u8, len: usize) {
         todo!()
     }
 
-    fn ingest(&mut self, data: *mut u8, len: usize, align: usize) {
+    fn ingest(&self, loan_fn: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
         todo!()
     }
 }
@@ -46,11 +46,11 @@ impl RelayBuilder for PublishSubscribeRelayBuilder {
 pub struct EventRelay {}
 
 impl Relay for EventRelay {
-    fn propagate(&mut self, data: *const u8, len: usize, align: usize) {
+    fn propagate(&self, bytes: *const u8, len: usize) {
         todo!()
     }
 
-    fn ingest(&mut self, data: *mut u8, len: usize, align: usize) {
+    fn ingest(&self, loan_fn: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
         todo!()
     }
 }
