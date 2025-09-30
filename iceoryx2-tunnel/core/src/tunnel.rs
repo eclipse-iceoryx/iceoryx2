@@ -314,7 +314,7 @@ fn setup_publish_subscribe<S: Service, R: RelayFactory>(
 
     // TODO: Use fail!
     let relay = relay_builder
-        .publish_subscribe(service.name())
+        .publish_subscribe(static_config)
         .create()
         .unwrap();
 

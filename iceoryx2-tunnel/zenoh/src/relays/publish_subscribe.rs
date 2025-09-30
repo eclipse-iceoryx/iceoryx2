@@ -10,33 +10,88 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use zenoh::Session;
+use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2_bb_log::{error, fail};
+use zenoh::{
+    handlers::{FifoChannel, FifoChannelHandler},
+    pubsub::{Publisher, Subscriber},
+    qos::Reliability,
+    sample::{Locality, Sample},
+    Session, Wait,
+};
+
+use crate::keys;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
-    Error,
+    FailedToCreateEndpoint,
+}
+
+impl From<Box<dyn std::error::Error + Send + Sync>> for CreationError {
+    fn from(_: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        CreationError::FailedToCreateEndpoint
+    }
 }
 
 #[derive(Debug)]
 pub struct Builder<'a> {
     session: &'a Session,
+    static_config: &'a StaticConfig,
 }
 
-impl Builder<'_> {
-    pub fn new(session: &Session) -> Builder<'_> {
-        Builder { session }
+impl<'a> Builder<'a> {
+    pub fn new(session: &'a Session, static_config: &'a StaticConfig) -> Builder<'a> {
+        Builder {
+            session,
+            static_config,
+        }
     }
 }
 
-impl iceoryx2_tunnel_traits::RelayBuilder for Builder<'_> {
+impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
     type CreationError = CreationError;
 
     fn create(self) -> Result<Box<dyn iceoryx2_tunnel_traits::Relay>, Self::CreationError> {
-        Ok(Box::new(Relay {}))
+        let key = keys::publish_subscribe(self.static_config.service_id());
+
+        let publisher = fail!(
+            from "publish_subscribe::RelayBuilder::create()",
+            when self.session
+                .declare_publisher(key.clone())
+                .allowed_destination(Locality::Remote)
+                .reliability(Reliability::Reliable)
+                .wait(),
+            "Failed to create zenoh publisher for payloads"
+        );
+
+        // TODO(correctness): Make handler type and properties configurable
+        let subscriber = fail!(
+            from "publish_subscribe::RelayBuilder::create()",
+            when self.session
+                .declare_subscriber(key.clone())
+                .with(FifoChannel::new(10))
+                .allowed_origin(Locality::Remote)
+                .wait(),
+            "Failed to create zenoh subscriber for payloads"
+        );
+
+        fail!(
+            from "publish_subscribe::RelayBuilder::create()",
+            when announce(self.session, self.static_config),
+            "Failed to announce service"
+        );
+
+        Ok(Box::new(Relay {
+            publisher,
+            subscriber,
+        }))
     }
 }
 
-pub struct Relay {}
+pub struct Relay {
+    publisher: Publisher<'static>,
+    subscriber: Subscriber<FifoChannelHandler<Sample>>,
+}
 
 impl iceoryx2_tunnel_traits::Relay for Relay {
     fn propagate(&self, bytes: *const u8, len: usize) {
@@ -46,4 +101,44 @@ impl iceoryx2_tunnel_traits::Relay for Relay {
     fn ingest(&self, loan: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
         todo!()
     }
+}
+
+pub fn announce(session: &Session, static_config: &StaticConfig) -> Result<(), zenoh::Error> {
+    let key = keys::service_details(static_config.service_id());
+    let service_config_serialized = fail!(
+        from "announce_service()",
+        when serde_json::to_string(&static_config),
+        "failed to serialize service config"
+    );
+
+    // Notify all current hosts.
+    fail!(
+        from "announce_service()",
+        when session
+            .put(key.clone(), service_config_serialized.clone())
+            .allowed_destination(Locality::Remote)
+            .wait(),
+        "failed to share service details with remote hosts"
+    );
+
+    // Set up a queryable to respond to future hosts.
+    fail!(
+        from "announce_service()",
+        when session
+            .declare_queryable(key.clone())
+            .callback(move |query| {
+                let _ = query
+                    .reply(key.clone(), service_config_serialized.clone())
+                    .wait()
+                    .inspect_err(|e| {
+                        error!("Failed to announce service {}: {}", key, e);
+                    });
+            })
+            .allowed_origin(Locality::Remote)
+            .background()
+            .wait(),
+        "failed to set up queryable to share service details with remote hosts"
+    );
+
+    Ok(())
 }

@@ -10,29 +10,50 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::service::static_config::StaticConfig;
 use zenoh::Session;
 
 use crate::relays::{event, publish_subscribe};
 
-pub struct Factory<'a> {
-    session: &'a Session,
+/// Factory for creating relay builders.
+///
+/// The factory holds a reference to a Session and can be used in multiple builders.
+pub struct Factory<'session> {
+    /// Reference to the Zenoh session. The session must outlive the Factory.
+    session: &'session Session,
 }
 
-impl<'a> Factory<'a> {
-    pub fn new(session: &'a Session) -> Self {
+impl<'session> Factory<'session> {
+    pub fn new(session: &'session Session) -> Self {
         Factory { session }
     }
 }
 
-impl<'a> iceoryx2_tunnel_traits::RelayFactory for Factory<'a> {
-    type PublishSubscribeBuilder = publish_subscribe::Builder<'a>;
-    type EventBuilder = event::Builder;
+impl<'session> iceoryx2_tunnel_traits::RelayFactory for Factory<'session> {
+    type PublishSubscribeBuilder<'config>
+        = publish_subscribe::Builder<'config>
+    where
+        Self: 'config;
 
-    fn publish_subscribe(&self, service: &str) -> Self::PublishSubscribeBuilder {
-        Self::PublishSubscribeBuilder::new(self.session)
+    type EventBuilder<'config>
+        = event::Builder<'config>
+    where
+        Self: 'config;
+
+    fn publish_subscribe<'config>(
+        &self,
+        static_config: &'config StaticConfig,
+    ) -> Self::PublishSubscribeBuilder<'config>
+    where
+        Self: 'config,
+    {
+        publish_subscribe::Builder::new(self.session, static_config)
     }
 
-    fn event(&self, service: &str) -> Self::EventBuilder {
-        Self::EventBuilder {}
+    fn event<'config>(&self, static_config: &'config StaticConfig) -> Self::EventBuilder<'config>
+    where
+        Self: 'config,
+    {
+        event::Builder::new(self.session, static_config)
     }
 }

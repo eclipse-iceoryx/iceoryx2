@@ -10,15 +10,30 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use iceoryx2::service::static_config::StaticConfig;
+use zenoh::Session;
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     Error,
 }
 
 #[derive(Debug)]
-pub struct Builder {}
+pub struct Builder<'a> {
+    session: &'a Session,
+    static_config: &'a StaticConfig,
+}
 
-impl iceoryx2_tunnel_traits::RelayBuilder for Builder {
+impl<'a> Builder<'a> {
+    pub fn new(session: &'a Session, static_config: &'a StaticConfig) -> Builder<'a> {
+        Builder {
+            session,
+            static_config,
+        }
+    }
+}
+
+impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
     type CreationError = CreationError;
 
     fn create(self) -> Result<Box<dyn iceoryx2_tunnel_traits::Relay>, Self::CreationError> {

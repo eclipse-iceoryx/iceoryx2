@@ -12,6 +12,8 @@
 
 use core::fmt::Debug;
 
+use iceoryx2::service::static_config::StaticConfig;
+
 /// Relays data between iceoryx2 and the transport.
 ///
 /// A relay should be created for each messaging pattern.
@@ -30,15 +32,74 @@ pub trait RelayBuilder {
     fn create(self) -> Result<Box<dyn Relay>, Self::CreationError>;
 }
 
-/// Retrieve the specific builder for different messaging patterns.
+/// Factory for creating relay builders for different messaging patterns.
 ///
-/// This also defines the messaging patterns which the transport must
-/// support.
+/// This trait defines the messaging patterns that a transport implementation
+/// must support. Each builder method accepts a [`StaticConfig`] and returns
+/// a builder that can create the corresponding relay.
+///
+/// The associated types use Generic Associated Types (GATs) to allow each
+/// builder to have its own independent lifetime tied to the `StaticConfig`
+/// it borrows. This means:
+///
+/// - Multiple builders can be created from the same factory
+/// - Each builder can borrow a different `StaticConfig` with its own lifetime
+/// - The factory (and any resources it holds) must outlive all builders it creates
 pub trait RelayFactory {
-    type PublishSubscribeBuilder: RelayBuilder + Debug;
-    type EventBuilder: RelayBuilder + Debug;
+    /// Builder for publish-subscribe messaging pattern.
+    ///
+    /// The `'config` lifetime parameter allows each call to `publish_subscribe()`
+    /// to have its own independent lifetime tied to the borrowed `StaticConfig`.
+    ///
+    /// The `where Self: 'config` constraint ensures the factory and its resources
+    /// outlive the builder.
+    type PublishSubscribeBuilder<'config>: RelayBuilder + Debug + 'config
+    where
+        Self: 'config;
 
-    fn publish_subscribe(&self, service: &str) -> Self::PublishSubscribeBuilder;
+    /// Builder for event messaging pattern.
+    ///
+    /// The `'config` lifetime parameter allows each call to `event()`
+    /// to have its own independent lifetime tied to the borrowed `StaticConfig`.
+    ///
+    /// The `where Self: 'config` constraint ensures the factory and its resources
+    /// outlive the builder.
+    type EventBuilder<'config>: RelayBuilder + Debug + 'config
+    where
+        Self: 'config;
 
-    fn event(&self, service: &str) -> Self::EventBuilder;
+    /// Creates a builder for the publish-subscribe messaging pattern.
+    ///
+    /// # Arguments
+    ///
+    /// * `static_config` - Configuration for the service. The returned builder
+    ///   will borrow this config for its lifetime `'config`.
+    ///
+    /// # Lifetime
+    ///
+    /// The `where Self: 'config` constraint ensures that the factory (and any
+    /// resources it holds, like a session) outlives the `static_config`
+    /// and the returned builder.
+    fn publish_subscribe<'config>(
+        &self,
+        static_config: &'config StaticConfig,
+    ) -> Self::PublishSubscribeBuilder<'config>
+    where
+        Self: 'config;
+
+    /// Creates a builder for the event messaging pattern.
+    ///
+    /// # Arguments
+    ///
+    /// * `static_config` - Configuration for the service. The returned builder
+    ///   will borrow this config for its lifetime `'config`.
+    ///
+    /// # Lifetime
+    ///
+    /// The `where Self: 'config` constraint ensures that the factory (and any
+    /// resources it holds, like a session) outlives the `static_config`
+    /// and the returned builder.
+    fn event<'config>(&self, static_config: &'config StaticConfig) -> Self::EventBuilder<'config>
+    where
+        Self: 'config;
 }

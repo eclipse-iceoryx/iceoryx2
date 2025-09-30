@@ -151,7 +151,7 @@ mod tunnel_discovery_tests {
         assert_that!(tunnel_b.tunneled_services().contains(service_b.service_id()), eq true);
 
         const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
-        const MAX_RETRIES: usize = 1;
+        const MAX_RETRIES: usize = 5;
         U::retry(
             || {
                 tunnel_a.discover_over_transport().unwrap();
