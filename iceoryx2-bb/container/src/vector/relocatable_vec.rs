@@ -183,7 +183,7 @@ impl<T> RelocatableContainer for RelocatableVec<T> {
         if self.data_ptr.is_initialized() {
             let origin = format!("RelocatableVec<{}>::init()", core::any::type_name::<T>());
             fatal_panic!(from origin,
-                "Memory already initialized, Initializing it twice may lead to undefined behavior.");
+                "Memory already initialized. Initializing it twice may lead to undefined behavior.");
         }
 
         let ptr = match allocator.allocate(Layout::from_size_align_unchecked(

@@ -69,8 +69,7 @@ mod vector {
     }
 
     struct PolymorphicVecFactory {
-        raw_memory:
-            UnsafeCell<Box<[u8; core::mem::size_of::<LifetimeTracker>() * (SUT_CAPACITY + 1)]>>,
+        raw_memory: UnsafeCell<Box<[u8; core::mem::size_of::<LifetimeTracker>() * SUT_CAPACITY]>>,
         allocator: UnsafeCell<Option<Box<BumpAllocator>>>,
     }
 
@@ -80,7 +79,7 @@ mod vector {
         fn new() -> Self {
             Self {
                 raw_memory: UnsafeCell::new(Box::new(
-                    [0u8; core::mem::size_of::<LifetimeTracker>() * (SUT_CAPACITY + 1)],
+                    [0u8; core::mem::size_of::<LifetimeTracker>() * SUT_CAPACITY],
                 )),
                 allocator: UnsafeCell::new(None),
             }
@@ -187,7 +186,7 @@ mod vector {
     }
 
     #[test]
-    fn pop_returns_none_on_empty_when_empty<Factory: VectorTestFactory>() {
+    fn pop_returns_none_when_empty<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
 
@@ -207,6 +206,7 @@ mod vector {
             let value = sut.pop();
             assert_that!(value, is_some);
             assert_that!(value.unwrap().value, eq 4 * number + 1);
+            assert_that!(sut.len(), eq number);
         }
 
         assert_that!(sut.pop(), is_none);
@@ -449,7 +449,7 @@ mod vector {
             assert_that!(sut[number].value, eq number * 17);
         }
 
-        for number in half_capacity + 1..SUT_CAPACITY - 1 {
+        for number in half_capacity..SUT_CAPACITY - 1 {
             assert_that!(sut[number].value, eq(number + 1) * 17);
         }
     }

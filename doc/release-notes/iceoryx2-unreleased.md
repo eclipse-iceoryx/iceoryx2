@@ -67,10 +67,12 @@
 
    ```rust
    // old
+   use iceoryx2_bb_container::vec::FixedSizeVec;
    const VEC_CAPACITY: usize = 1234;
    let my_vec = FixedSizeVec::<MyType, VEC_CAPACITY>::new();
 
    // new
+   use iceoryx2_bb_container::vector::*;
    const VEC_CAPACITY: usize = 1234;
    let my_vec = StaticVec::<MyType, VEC_CAPACITY>::new();
    ```
