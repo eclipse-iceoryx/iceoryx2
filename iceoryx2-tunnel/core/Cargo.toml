@@ -15,10 +15,15 @@ version = { workspace = true }
 name = "iceoryx2_tunnel_core"
 path = "src/lib.rs"
 
+[features]
+default = ["tunnel_zenoh"]
+tunnel_zenoh = ["iceoryx2-tunnel-zenoh"]
+
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 iceoryx2-tunnel-traits = { workspace = true }
+iceoryx2-tunnel-zenoh = { workspace = true, optional = true }
 iceoryx2-services-discovery = { workspace = true }
 
 [dev-dependencies]

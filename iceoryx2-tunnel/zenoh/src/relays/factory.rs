@@ -10,8 +10,19 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod relays;
-mod transport;
+use crate::relays::{event, publish_subscribe};
 
-pub use relays::*;
-pub use transport::*;
+pub struct RelayFactory {}
+
+impl iceoryx2_tunnel_traits::RelayFactory for RelayFactory {
+    type PublishSubscribeBuilder = publish_subscribe::Builder;
+    type EventBuilder = event::Builder;
+
+    fn publish_subscribe(&self, service: &str) -> Self::PublishSubscribeBuilder {
+        Self::PublishSubscribeBuilder {}
+    }
+
+    fn event(&self, service: &str) -> Self::EventBuilder {
+        Self::EventBuilder {}
+    }
+}

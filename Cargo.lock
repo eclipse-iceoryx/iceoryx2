@@ -1633,6 +1633,7 @@ dependencies = [
  "iceoryx2-bb-testing",
  "iceoryx2-services-discovery",
  "iceoryx2-tunnel-traits",
+ "iceoryx2-tunnel-zenoh",
 ]
 
 [[package]]

@@ -109,7 +109,14 @@ mod tunnel_discovery_tests {
     }
 
     #[instantiate_tests(<iceoryx2::service::ipc::Service, MockTransport>)]
-    mod ipc {}
+    mod ipc_mock {}
     #[instantiate_tests(<iceoryx2::service::local::Service, MockTransport>)]
-    mod local {}
+    mod local_mock {}
+
+    #[cfg(feature = "tunnel_zenoh")]
+    #[instantiate_tests(<iceoryx2::service::ipc::Service, iceoryx2_tunnel_zenoh::Transport>)]
+    mod ipc_zenoh {}
+    #[cfg(feature = "tunnel_zenoh")]
+    #[instantiate_tests(<iceoryx2::service::local::Service, iceoryx2_tunnel_zenoh::Transport>)]
+    mod local_zenoh {}
 }
