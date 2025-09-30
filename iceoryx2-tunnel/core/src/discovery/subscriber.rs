@@ -39,7 +39,7 @@ impl From<ReceiveError> for DiscoveryError {
 pub struct DiscoverySubscriber<S: Service>(pub Subscriber<S, DiscoveryEvent, ()>);
 
 impl<S: Service> DiscoverySubscriber<S> {
-    pub fn new(node: &Node<S>, service_name: &str) -> Result<Self, CreationError> {
+    pub fn create(node: &Node<S>, service_name: &str) -> Result<Self, CreationError> {
         let service_name = fail!(
             from "Tunnel::<S, T>::create_discovery_subscriber",
             when service_name.try_into(),

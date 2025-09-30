@@ -131,13 +131,13 @@ impl<S: Service, T: Transport> Tunnel<S, T> {
             Some(service_name) => {
                 debug!("Discovery via Subscriber");
                 let subscriber =
-                    discovery::subscriber::DiscoverySubscriber::new(&node, service_name)?;
+                    discovery::subscriber::DiscoverySubscriber::create(&node, service_name)?;
                 (Some(subscriber), None)
             }
             None => {
                 debug!("Discovery via Tracker");
 
-                let tracker = discovery::tracker::DiscoveryTracker::new(iceoryx_config);
+                let tracker = discovery::tracker::DiscoveryTracker::create(iceoryx_config);
                 (None, Some(tracker))
             }
         };

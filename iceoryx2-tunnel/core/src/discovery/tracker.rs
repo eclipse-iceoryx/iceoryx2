@@ -29,7 +29,7 @@ impl From<SyncError> for DiscoveryError {
 pub struct DiscoveryTracker<S: Service>(Tracker<S>);
 
 impl<S: Service> DiscoveryTracker<S> {
-    pub fn new(iceoryx_config: &iceoryx2::config::Config) -> Self {
+    pub fn create(iceoryx_config: &iceoryx2::config::Config) -> Self {
         let tracker = Tracker::new(iceoryx_config);
         DiscoveryTracker(tracker)
     }
