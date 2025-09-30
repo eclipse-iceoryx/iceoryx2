@@ -23,9 +23,8 @@ mod tunnel_discovery_tests {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
     use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
-    use iceoryx2_tunnels_core::RelayFactory;
-    use iceoryx2_tunnels_core::Transport;
     use iceoryx2_tunnels_core::Tunnel;
+    use iceoryx2_tunnels_traits::Transport;
 
     // TODO: Move to iceoryx2::testing
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -39,10 +38,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_subscriber<S: Service, T: Transport>()
-    where
-        T: RelayFactory<T>,
-    {
+    fn discovers_services_via_subscriber<S: Service, T: Transport>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -84,10 +80,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_tracker<S: Service, T: Transport>()
-    where
-        T: RelayFactory<T>,
-    {
+    fn discovers_services_via_tracker<S: Service, T: Transport>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();

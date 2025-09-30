@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_tunnels_core::{Relay, RelayBuilder, RelayFactory, Transport};
+use iceoryx2_tunnels_traits::{Relay, RelayBuilder, RelayFactory, Transport};
 
 #[derive(Debug, Default)]
 pub struct MockTransportConfig {}
@@ -19,15 +19,6 @@ pub struct MockRelay {}
 
 #[derive(Debug)]
 pub struct MockRelayBuilder {}
-
-impl Transport for MockTransport {
-    type Config = MockTransportConfig;
-    type CreationError = ();
-
-    fn create(_config: &Self::Config) -> Result<Self, Self::CreationError> {
-        Ok(MockTransport {})
-    }
-}
 
 impl Relay for MockRelay {
     fn propagate(&self, _bytes: *const u8, _len: usize) {}
@@ -45,7 +36,9 @@ impl RelayBuilder for MockRelayBuilder {
     }
 }
 
-impl<T: Transport> RelayFactory<T> for MockTransport {
+pub struct MockRelayFactory {}
+
+impl RelayFactory for MockRelayFactory {
     type PublishSubscribeBuilder = MockRelayBuilder;
     type EventBuilder = MockRelayBuilder;
 
@@ -55,5 +48,19 @@ impl<T: Transport> RelayFactory<T> for MockTransport {
 
     fn event(&self, _service: &str) -> Self::EventBuilder {
         MockRelayBuilder {}
+    }
+}
+
+impl Transport for MockTransport {
+    type Config = MockTransportConfig;
+    type CreationError = ();
+    type RelayFactory = MockRelayFactory;
+
+    fn create(_config: &Self::Config) -> Result<Self, Self::CreationError> {
+        Ok(MockTransport {})
+    }
+
+    fn relay_builder(&self) -> Self::RelayFactory {
+        MockRelayFactory {}
     }
 }

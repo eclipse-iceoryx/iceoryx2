@@ -12,12 +12,16 @@
 
 use core::fmt::Debug;
 
+use crate::RelayFactory;
+
 /// Abstraction of the transport over which data in iceoryx2 is propagated.
 ///
 /// Enables implementations to define custom initialization logic.
 pub trait Transport: Sized {
     type Config: Default + Debug;
     type CreationError;
+    type RelayFactory: RelayFactory;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError>;
+    fn relay_builder(&self) -> Self::RelayFactory;
 }

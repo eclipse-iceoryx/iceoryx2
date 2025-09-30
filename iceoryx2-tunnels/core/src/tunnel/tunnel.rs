@@ -106,7 +106,7 @@ pub struct Tunnel<S: Service, T: Transport> {
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
 }
 
-impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
+impl<S: Service, T: Transport> Tunnel<S, T> {
     /// Create a new tunnel instance that uses the specified Transport
     pub fn create(
         tunnel_config: &Config,
@@ -214,7 +214,7 @@ impl<S: Service, T: Transport + RelayFactory<T>> Tunnel<S, T> {
     }
 }
 
-fn on_discovery<S: Service, T: Transport + RelayFactory<T>>(
+fn on_discovery<S: Service, T: Transport>(
     static_config: &StaticConfig,
     node: &Node<S>,
     transport: &T,
@@ -243,7 +243,7 @@ fn on_discovery<S: Service, T: Transport + RelayFactory<T>>(
     }
 }
 
-fn setup_publish_subscribe<S: Service, T: Transport + RelayFactory<T>>(
+fn setup_publish_subscribe<S: Service, T: Transport>(
     static_config: &StaticConfig,
     node: &Node<S>,
     transport: &T,
@@ -289,6 +289,7 @@ fn setup_publish_subscribe<S: Service, T: Transport + RelayFactory<T>>(
 
     // TODO: Use fail!
     let relay = transport
+        .relay_builder()
         .publish_subscribe(service.name())
         .create()
         .unwrap();

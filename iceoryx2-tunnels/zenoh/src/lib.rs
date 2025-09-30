@@ -66,28 +66,9 @@ impl RelayBuilder for EventRelayBuilder {
     }
 }
 
-pub struct Zenoh {
-    session: Session,
-}
+pub struct ZenohRelayFactory{}
 
-impl Transport for Zenoh {
-    type Config = zenoh::Config;
-    type CreationError = Error;
-
-    fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
-        let session = zenoh::open(config.clone()).wait();
-        let session = fail!(
-            from "ZenohTransport::create()",
-            when session,
-            with Error::Error,
-            "failed to create zenoh session"
-        );
-
-        Ok(Self { session })
-    }
-}
-
-impl<T: Transport> RelayFactory<T> for Zenoh {
+impl RelayFactory for ZenohRelayFactory {
     type PublishSubscribeBuilder = PublishSubscribeRelayBuilder;
     type EventBuilder = EventRelayBuilder;
 
@@ -99,6 +80,33 @@ impl<T: Transport> RelayFactory<T> for Zenoh {
         todo!()
     }
 }
+
+pub struct Zenoh {
+    session: Session,
+}
+
+impl Transport for Zenoh {
+    type Config = zenoh::Config;
+    type CreationError = Error;
+    type RelayFactory = ZenohRelayFactory;
+    
+    fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
+        let session = zenoh::open(config.clone()).wait();
+        let session = fail!(
+            from "ZenohTransport::create()",
+            when session,
+            with Error::Error,
+            "failed to create zenoh session"
+        );
+
+        Ok(Self { session })
+    }
+
+    fn relay_builder(&self) -> Self::RelayFactory
+    {
+    todo!()}
+}
+
 
 impl<S: Service> Discovery<S> for Zenoh {
     type Handle = zenoh::Session;

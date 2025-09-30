@@ -10,8 +10,6 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use crate::Transport;
-
 use core::fmt::Debug;
 
 /// Relays data between iceoryx2 and the transport.
@@ -36,7 +34,7 @@ pub trait RelayBuilder {
 ///
 /// This also defines the messaging patterns which the transport must
 /// support.
-pub trait RelayFactory<T: Transport> {
+pub trait RelayFactory {
     type PublishSubscribeBuilder: RelayBuilder + Debug;
     type EventBuilder: RelayBuilder + Debug;
 
