@@ -42,12 +42,12 @@ pub type epoll_event = crate::internal::epoll_event;
 
 pub unsafe fn epoll_addr_of_event_data(event: *const epoll_event) -> *const u8 {
     let event_ref = &*event;
-    core::ptr::addr_of!(event_ref.data).cast()
+    core::ptr::addr_of!(event_ref.data.u64_).cast()
 }
 
 pub unsafe fn epoll_addr_of_event_data_mut(event: *mut epoll_event) -> *mut u8 {
     let event_ref = &mut *event;
-    core::ptr::addr_of!(event_ref.data).cast_mut().cast()
+    core::ptr::addr_of!(event_ref.data.u64_).cast_mut().cast()
 }
 
 pub unsafe fn epoll_create(size: posix::int) -> posix::int {

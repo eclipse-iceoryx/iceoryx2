@@ -155,7 +155,6 @@ def test_wait_and_process_returns_when_timeout_has_passed(
 def test_wait_and_process_returns_triggered_listeners(
     service_type: iox2.ServiceType,
 ) -> None:
-    iox2.set_log_level(iox2.LogLevel.Trace)
     number_of_attachments = 5
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
