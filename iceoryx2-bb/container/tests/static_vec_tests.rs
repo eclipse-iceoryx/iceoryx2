@@ -56,6 +56,21 @@ fn two_vectors_with_different_content_are_not_equal() {
 }
 
 #[test]
+fn two_vectors_with_different_len_are_not_equal() {
+    let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
+    let mut sut2 = StaticVec::<usize, SUT_CAPACITY>::new();
+
+    for n in 0..SUT_CAPACITY {
+        sut1.push(4 * n + 3);
+        sut2.insert(n, 4 * n + 3);
+    }
+
+    sut2.pop();
+
+    assert_that!(sut1, ne sut2);
+}
+
+#[test]
 fn placement_default_works() {
     let mut sut = MaybeUninit::<StaticVec<usize, SUT_CAPACITY>>::uninit();
 
@@ -101,5 +116,35 @@ fn valid_after_move() {
     for i in 0..sut2.capacity() {
         let result = sut2.pop();
         assert_that!(result, eq Some((sut2.capacity() - i - 1) * 2 + 3));
+    }
+}
+
+#[test]
+fn clone_clones_empty_vec() {
+    let sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
+
+    let sut2 = sut1.clone();
+
+    assert_that!(sut1.len(), eq 0);
+    assert_that!(sut2.len(), eq 0);
+}
+
+#[test]
+fn clone_clones_filled_vec() {
+    let mut sut1 = StaticVec::<usize, SUT_CAPACITY>::new();
+    for i in 0..sut1.capacity() {
+        let element = i * 2 + 3;
+        assert_that!(sut1.push(element), eq true);
+    }
+
+    let sut2 = sut1.clone();
+
+    assert_that!(sut1.len(), eq SUT_CAPACITY);
+    assert_that!(sut2.len(), eq SUT_CAPACITY);
+
+    for i in 0..sut1.capacity() {
+        let element = i * 2 + 3;
+        assert_that!(sut1[i], eq element);
+        assert_that!(sut2[i], eq element);
     }
 }

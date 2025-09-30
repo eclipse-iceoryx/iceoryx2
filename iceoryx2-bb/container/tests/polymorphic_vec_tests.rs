@@ -34,10 +34,7 @@ impl Test {
         }
     }
 
-    fn create_sut<'a>(
-        &'a self,
-        capacity: usize,
-    ) -> Result<PolymorphicVec<'a, LifetimeTracker, BumpAllocator>, AllocationError> {
+    fn allocator<'a>(&'a self) -> &'a BumpAllocator {
         unsafe {
             if (*self.allocator.get()).is_none() {
                 *self.allocator.get() = Some(Box::new(BumpAllocator::new(
@@ -46,10 +43,14 @@ impl Test {
             }
         };
 
-        PolymorphicVec::new(
-            unsafe { (*self.allocator.get()).as_ref().unwrap() },
-            capacity,
-        )
+        unsafe { (*self.allocator.get()).as_ref().unwrap() }
+    }
+
+    fn create_sut<'a>(
+        &'a self,
+        capacity: usize,
+    ) -> Result<PolymorphicVec<'a, LifetimeTracker, BumpAllocator>, AllocationError> {
+        PolymorphicVec::new(self.allocator(), capacity)
     }
 }
 
@@ -65,7 +66,7 @@ fn try_clone_clones_empty_vec() {
 }
 
 #[test]
-fn try_clone_filled_empty_vec() {
+fn try_clone_clones_filled_vec() {
     let test = Test::new();
     let mut sut = test.create_sut(3).unwrap();
 
@@ -75,7 +76,71 @@ fn try_clone_filled_empty_vec() {
 
     let sut_clone = sut.try_clone().unwrap();
 
-    assert_that!(sut, eq sut_clone);
     assert_that!(sut.len(), eq 3);
     assert_that!(sut_clone.len(), eq 3);
+
+    for n in 0..3 {
+        assert_that!(sut[n].value, eq n + 2);
+        assert_that!(sut_clone[n].value, eq n + 2);
+    }
+}
+
+#[test]
+fn two_vectors_with_same_content_are_equal() {
+    let test = Test::new();
+    let mut sut1 = test.create_sut(4).unwrap();
+
+    for n in 0..4 {
+        sut1.push(LifetimeTracker::new_with_value(4 * n + 2));
+    }
+    let sut2 = sut1.try_clone().unwrap();
+
+    assert_that!(sut1, eq sut2);
+}
+
+#[test]
+fn two_vectors_with_different_content_are_not_equal() {
+    let test = Test::new();
+    let mut sut1 = test.create_sut(4).unwrap();
+
+    for n in 0..4 {
+        sut1.push(LifetimeTracker::new_with_value(4 * n + 2));
+    }
+    let mut sut2 = sut1.try_clone().unwrap();
+
+    sut2[2] = LifetimeTracker::new_with_value(0);
+
+    assert_that!(sut1, ne sut2);
+}
+
+#[test]
+fn two_vectors_with_different_len_are_not_equal() {
+    let test = Test::new();
+    let mut sut1 = test.create_sut(4).unwrap();
+
+    for n in 0..4 {
+        sut1.push(LifetimeTracker::new_with_value(4 * n + 2));
+    }
+    let mut sut2 = sut1.try_clone().unwrap();
+    sut2.pop();
+
+    assert_that!(sut1, ne sut2);
+}
+
+#[test]
+fn from_fn_initializes_vector() {
+    let test = Test::new();
+    let mut counter = 0;
+    let sut = PolymorphicVec::from_fn(test.allocator(), SUT_CAPACITY, |n| {
+        counter += 1;
+        LifetimeTracker::new_with_value(n)
+    })
+    .unwrap();
+
+    assert_that!(counter, eq SUT_CAPACITY);
+    assert_that!(sut.len(), eq SUT_CAPACITY);
+
+    for n in 0..SUT_CAPACITY {
+        assert_that!(sut[n].value, eq n);
+    }
 }
