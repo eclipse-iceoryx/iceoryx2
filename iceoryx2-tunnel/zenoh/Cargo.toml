@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-tunnels-zenoh"
+name = "iceoryx2-tunnel-zenoh"
 description = "iceoryx2: zenoh implementation of tunnel traits"
 categories = { workspace = true }
 edition = { workspace = true }
@@ -12,11 +12,11 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [lib]
-name = "iceoryx2_tunnels_zenoh"
+name = "iceoryx2_tunnel_zenoh"
 path = "src/lib.rs"
 
 [dependencies]
 iceoryx2 = { workspace = true }
-iceoryx2-tunnels-traits = { workspace = true }
+iceoryx2-tunnel-traits = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
 zenoh = { workspace = true }

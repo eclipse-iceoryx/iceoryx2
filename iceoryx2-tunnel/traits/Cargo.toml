@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-tunnels-traits"
+name = "iceoryx2-tunnel-traits"
 description = "iceoryx2: traits describing tunnel functionality"
 categories = { workspace = true }
 edition = { workspace = true }
@@ -12,7 +12,7 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [lib]
-name = "iceoryx2_tunnels_traits"
+name = "iceoryx2_tunnel_traits"
 path = "src/lib.rs"
 
 [dependencies]

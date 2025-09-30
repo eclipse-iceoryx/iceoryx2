@@ -12,7 +12,7 @@
 
 use iceoryx2::service::Service;
 use iceoryx2_bb_log::fail;
-use iceoryx2_tunnels_traits::{Discovery, Relay, RelayBuilder, RelayFactory, Transport};
+use iceoryx2_tunnel_traits::{Discovery, Relay, RelayBuilder, RelayFactory, Transport};
 use zenoh::{Session, Wait};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -27,7 +27,7 @@ impl Relay for PublishSubscribeRelay {
         todo!()
     }
 
-    fn ingest(&self, loan_fn: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
+    fn ingest(&self, loan: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
         todo!()
     }
 }
@@ -50,7 +50,7 @@ impl Relay for EventRelay {
         todo!()
     }
 
-    fn ingest(&self, loan_fn: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
+    fn ingest(&self, loan: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
         todo!()
     }
 }
@@ -66,7 +66,7 @@ impl RelayBuilder for EventRelayBuilder {
     }
 }
 
-pub struct ZenohRelayFactory{}
+pub struct ZenohRelayFactory {}
 
 impl RelayFactory for ZenohRelayFactory {
     type PublishSubscribeBuilder = PublishSubscribeRelayBuilder;
@@ -89,7 +89,7 @@ impl Transport for Zenoh {
     type Config = zenoh::Config;
     type CreationError = Error;
     type RelayFactory = ZenohRelayFactory;
-    
+
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
         let session = zenoh::open(config.clone()).wait();
         let session = fail!(
@@ -102,11 +102,10 @@ impl Transport for Zenoh {
         Ok(Self { session })
     }
 
-    fn relay_builder(&self) -> Self::RelayFactory
-    {
-    todo!()}
+    fn relay_builder(&self) -> Self::RelayFactory {
+        todo!()
+    }
 }
-
 
 impl<S: Service> Discovery<S> for Zenoh {
     type Handle = zenoh::Session;

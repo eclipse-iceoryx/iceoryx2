@@ -23,8 +23,8 @@ mod tunnel_discovery_tests {
     use iceoryx2_bb_testing::assert_that;
     use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
     use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
-    use iceoryx2_tunnels_core::Tunnel;
-    use iceoryx2_tunnels_traits::Transport;
+    use iceoryx2_tunnel_core::Tunnel;
+    use iceoryx2_tunnel_traits::Transport;
 
     // TODO: Move to iceoryx2::testing
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -64,7 +64,7 @@ mod tunnel_discovery_tests {
         let mut discovery_service =
             DiscoveryService::<S>::create(&discovery_service_config, &iceoryx_config).unwrap();
 
-        let tunnel_config = iceoryx2_tunnels_core::Config {
+        let tunnel_config = iceoryx2_tunnel_core::Config {
             discovery_service: Some("iox2://discovery/services/".into()),
         };
         let mut tunnel =
@@ -96,7 +96,7 @@ mod tunnel_discovery_tests {
             .open_or_create()
             .unwrap();
 
-        let tunnel_config = iceoryx2_tunnels_core::Config::default();
+        let tunnel_config = iceoryx2_tunnel_core::Config::default();
         let mut tunnel =
             Tunnel::<S, T>::create(&tunnel_config, &iceoryx_config, &T::Config::default()).unwrap();
 

@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-tunnels-core"
+name = "iceoryx2-tunnel-core"
 description = "iceoryx2: core tunnel components"
 categories = { workspace = true }
 edition = { workspace = true }
@@ -12,13 +12,13 @@ rust-version = { workspace = true }
 version = { workspace = true }
 
 [lib]
-name = "iceoryx2_tunnels_core"
+name = "iceoryx2_tunnel_core"
 path = "src/lib.rs"
 
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
-iceoryx2-tunnels-traits = { workspace = true }
+iceoryx2-tunnel-traits = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 
 [dev-dependencies]

@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_tunnels_traits::{Relay, RelayBuilder, RelayFactory, Transport};
+use iceoryx2_tunnel_traits::{Relay, RelayBuilder, RelayFactory, Transport};
 
 #[derive(Debug, Default)]
 pub struct MockTransportConfig {}

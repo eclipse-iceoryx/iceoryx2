@@ -13,7 +13,7 @@
 use iceoryx2::service::Service;
 use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
 
-use iceoryx2_tunnels_traits::Discovery;
+use iceoryx2_tunnel_traits::Discovery;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {

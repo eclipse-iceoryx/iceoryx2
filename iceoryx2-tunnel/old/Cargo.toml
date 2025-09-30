@@ -1,5 +1,5 @@
 [package]
-name = "iceoryx2-tunnels-zenoh-old"
+name = "iceoryx2-tunnel-zenoh-old"
 description = "iceoryx2: tunnel over zenoh"
 categories = { workspace = true }
 edition = { workspace = true }
