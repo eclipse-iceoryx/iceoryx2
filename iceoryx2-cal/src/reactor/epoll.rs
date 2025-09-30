@@ -47,6 +47,19 @@ fn handle_wait_error(
     }
 }
 
+fn wait_call<F: FnMut(&FileDescriptor)>(this: &Epoll, event: EpollEvent<'_>, fn_call: &mut F) {
+    if let EpollEvent::FileDescriptor(fdev) = event {
+        let native_handle = unsafe { fdev.native_fd_handle() };
+        match FileDescriptor::non_owning_new(native_handle) {
+            Some(fd) => fn_call(&fd),
+            None => {
+                warn!(from this,
+                    "The file descriptor {native_handle} is no longer valid but still attached to the reactor. Skipping attachment!");
+            }
+        }
+    }
+}
+
 impl Reactor for Epoll {
     type Guard<'reactor, 'attachment> = EpollGuard<'reactor, 'attachment>;
     type Builder = EpollBuilder;
@@ -112,9 +125,7 @@ impl Reactor for Epoll {
             self,
             "Unable to try wait on reactor::Epoll",
             self.try_wait(|event| {
-                if let EpollEvent::FileDescriptor(fdev) = event {
-                    fn_call(fdev.file_descriptor());
-                }
+                wait_call(self, event, &mut fn_call);
             }),
         )
     }
@@ -129,9 +140,7 @@ impl Reactor for Epoll {
             "Unable to wait with timeout on reactor::Epoll",
             self.timed_wait(
                 |event| {
-                    if let EpollEvent::FileDescriptor(fdev) = event {
-                        fn_call(fdev.file_descriptor());
-                    }
+                    wait_call(self, event, &mut fn_call);
                 },
                 timeout,
             ),
@@ -146,9 +155,7 @@ impl Reactor for Epoll {
             self,
             "Unable to blocking wait on reactor::Epoll",
             self.blocking_wait(|event| {
-                if let EpollEvent::FileDescriptor(fdev) = event {
-                    fn_call(fdev.file_descriptor());
-                }
+                wait_call(self, event, &mut fn_call);
             }),
         )
     }

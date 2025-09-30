@@ -383,11 +383,24 @@ impl FileDescriptorEvent<'_> {
     /// Returns `true` if the [`FileDescriptorEvent`] originated from the provided
     /// [`FileDescriptor`], otherwise `false`.
     pub fn originates_from(&self, file_descriptor: &FileDescriptor) -> bool {
-        unsafe { file_descriptor.native_handle() == self.file_descriptor().native_handle() }
+        unsafe { file_descriptor.native_handle() == self.native_fd_handle() }
     }
 
-    pub fn file_descriptor(&self) -> &FileDescriptor {
-        unsafe { &*linux::epoll_addr_of_event_data(self.data).cast() }
+    /// Returns the native handle of the corresponding [`FileDescriptor`]
+    ///
+    /// # Safety
+    ///
+    /// * the user must not modify or close the provided native handle
+    pub unsafe fn native_fd_handle(&self) -> i32 {
+        let mut native_handle: i32 = 0;
+        unsafe {
+            core::ptr::copy_nonoverlapping(
+                linux::epoll_addr_of_event_data(self.data),
+                (&mut native_handle as *mut i32).cast(),
+                core::mem::size_of::<i32>(),
+            )
+        }
+        native_handle
     }
 
     /// Returns `true` if the [`FileDescriptorEvent`] was caused by the provided [`EventType`],
