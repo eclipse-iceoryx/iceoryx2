@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod discovery;
+mod ports;
 mod tunnel;
 
 pub use tunnel::*;
