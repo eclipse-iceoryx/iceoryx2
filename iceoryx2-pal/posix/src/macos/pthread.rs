@@ -325,12 +325,13 @@ pub unsafe fn pthread_create(
         Some(thread_callback),
         (&mut thread_args as *mut CallbackArguments).cast(),
     );
+
     if result == 0 {
         ThreadStates::get_instance().add(*thread);
+        ThreadStates::get_instance().get_mut(*thread).affinity = (*attr).affinity;
+        thread_args.startup_barrier.wait(wait, wake_all);
     }
-    ThreadStates::get_instance().get_mut(*thread).affinity = (*attr).affinity;
 
-    thread_args.startup_barrier.wait(wait, wake_all);
     result
 }
 
