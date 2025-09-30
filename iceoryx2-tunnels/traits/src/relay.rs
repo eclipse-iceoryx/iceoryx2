@@ -19,7 +19,7 @@ use core::fmt::Debug;
 /// A relay should be created for each messaging pattern.
 pub trait Relay {
     fn propagate(&self, bytes: *const u8, len: usize);
-    fn ingest(&self, loan_fn: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool;
+    fn ingest(&self, loan: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool;
 }
 
 /// Builds a relay for a specific messaging pattern.

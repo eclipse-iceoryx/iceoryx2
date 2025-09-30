@@ -31,7 +31,8 @@ members = [
 
     "iceoryx2-tunnels/end-to-end-tests",
     "iceoryx2-tunnels/core",
-    "iceoryx2-tunnels/transport/zenoh",
+    "iceoryx2-tunnels/traits",
+    "iceoryx2-tunnels/zenoh",
 
     "iceoryx2-userland/record-and-replay",
 
@@ -91,7 +92,7 @@ iceoryx2-ffi-macros = { version = "0.7.0", path = "iceoryx2-ffi/ffi-macros" }
 iceoryx2-services-discovery = { version = "0.7.0", path = "iceoryx2-services/discovery"}
 iceoryx2-tunnels-end-to-end-tests = { version = "0.7.0", path = "iceoryx2-tunnels/end-to-end-tests" }
 iceoryx2-tunnels-core = { version = "0.7.0", path = "iceoryx2-tunnels/core" }
-iceoryx2-tunnels-transport-zenoh = { version = "0.7.0", path = "iceoryx2-tunnels/transport/zenoh" }
+iceoryx2-tunnels-traits = { version = "0.7.0", path = "iceoryx2-tunnels/traits" }
 iceoryx2-tunnels-zenoh = { version = "0.7.0", path = "iceoryx2-tunnels/zenoh" }
 iceoryx2-userland-record-and-replay = { version = "0.7.0", path = "iceoryx2-userland/record-and-replay" }
 

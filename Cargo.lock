@@ -1632,6 +1632,7 @@ dependencies = [
  "iceoryx2-bb-posix",
  "iceoryx2-bb-testing",
  "iceoryx2-services-discovery",
+ "iceoryx2-tunnels-traits",
 ]
 
 [[package]]
@@ -1645,26 +1646,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "iceoryx2-tunnels-transport-zenoh"
+name = "iceoryx2-tunnels-traits"
 version = "0.7.0"
 dependencies = [
  "iceoryx2",
- "iceoryx2-bb-log",
- "iceoryx2-tunnels-core",
- "zenoh",
 ]
 
 [[package]]
 name = "iceoryx2-tunnels-zenoh"
 version = "0.7.0"
 dependencies = [
- "generic-tests",
  "iceoryx2",
  "iceoryx2-bb-log",
- "iceoryx2-bb-posix",
- "iceoryx2-bb-testing",
- "iceoryx2-services-discovery",
- "serde_json",
+ "iceoryx2-tunnels-traits",
  "zenoh",
 ]
 

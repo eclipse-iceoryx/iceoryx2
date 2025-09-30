@@ -16,7 +16,7 @@ use iceoryx2::{port::subscriber::Subscriber, service::Service};
 use iceoryx2_bb_log::fail;
 use iceoryx2_services_discovery::service_discovery::Discovery as DiscoveryEvent;
 
-use crate::Discovery;
+use iceoryx2_tunnels_traits::Discovery;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {

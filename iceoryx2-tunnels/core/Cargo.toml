@@ -18,6 +18,7 @@ path = "src/lib.rs"
 [dependencies]
 iceoryx2 = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
+iceoryx2-tunnels-traits = { workspace = true }
 iceoryx2-services-discovery = { workspace = true }
 
 [dev-dependencies]

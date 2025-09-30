@@ -10,17 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::static_config::StaticConfig;
+mod discovery;
+mod relay;
+mod transport;
 
-use core::fmt::Debug;
-
-/// Enables implementation of discovery behaviour.
-pub trait Discovery<ServiceType: iceoryx2::service::Service> {
-    type Handle;
-    type DiscoveryError: Debug;
-
-    fn discover<F: FnMut(&StaticConfig) -> Result<(), Self::DiscoveryError>>(
-        handle: &mut Self::Handle,
-        process_discovery: &mut F,
-    ) -> Result<(), Self::DiscoveryError>;
-}
+pub use discovery::*;
+pub use relay::*;
+pub use transport::*;

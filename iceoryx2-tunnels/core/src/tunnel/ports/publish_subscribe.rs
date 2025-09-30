@@ -26,7 +26,7 @@ use iceoryx2::service::Service;
 use iceoryx2_bb_log::fail;
 use iceoryx2_bb_log::fatal_panic;
 
-use crate::Relay;
+use iceoryx2_tunnels_traits::Relay;
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {

@@ -10,6 +10,17 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod tunnel;
+use iceoryx2::service::{static_config::StaticConfig, Service};
 
-pub use tunnel::*;
+use core::fmt::Debug;
+
+/// Ingest discovery information
+pub trait Discovery<ServiceType: Service> {
+    type Handle;
+    type DiscoveryError: Debug;
+
+    fn discover<F: FnMut(&StaticConfig) -> Result<(), Self::DiscoveryError>>(
+        handle: &mut Self::Handle,
+        process_discovery: &mut F,
+    ) -> Result<(), Self::DiscoveryError>;
+}
