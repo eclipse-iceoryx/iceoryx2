@@ -12,6 +12,7 @@
 
 use iceoryx2_bb_posix::system_configuration::SystemInfo;
 use iceoryx2_bb_posix::thread::*;
+use iceoryx2_bb_testing::watchdog::Watchdog;
 use iceoryx2_bb_testing::{assert_that, test_requires};
 use iceoryx2_pal_posix::posix::{self, POSIX_SUPPORT_CPU_AFFINITY};
 
@@ -66,6 +67,7 @@ fn thread_creation_does_not_block() {
 #[test]
 fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
+    let _watchdog = Watchdog::new();
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
@@ -96,6 +98,7 @@ fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
 #[test]
 fn thread_set_affinity_to_one_cpu_core_on_creation_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
+    let _watchdog = Watchdog::new();
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
         let barrier = barrier.clone();
@@ -123,6 +126,7 @@ fn thread_set_affinity_to_one_cpu_core_on_creation_works() {
 fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
+    let _watchdog = Watchdog::new();
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
         let barrier = barrier.clone();
@@ -152,6 +156,7 @@ fn thread_set_affinity_to_two_cpu_cores_on_creation_works() {
 #[test]
 fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
+    let _watchdog = Watchdog::new();
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
     let thread = ThreadBuilder::new()
         .affinity(&[number_of_cpu_cores + 1])
@@ -164,6 +169,7 @@ fn thread_set_affinity_to_non_existing_cpu_cores_on_creation_fails() {
 #[test]
 fn thread_set_affinity_to_cores_greater_than_cpu_set_size_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
+    let _watchdog = Watchdog::new();
     let thread = ThreadBuilder::new()
         .affinity(&[posix::CPU_SETSIZE])
         .spawn(|| {});
@@ -175,6 +181,7 @@ fn thread_set_affinity_to_cores_greater_than_cpu_set_size_fails() {
 #[test]
 fn thread_set_affinity_to_one_core_from_handle_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
+    let _watchdog = Watchdog::new();
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
         let barrier = barrier.clone();
@@ -202,6 +209,7 @@ fn thread_set_affinity_to_one_core_from_handle_works() {
 fn thread_set_affinity_to_two_cores_from_handle_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
+    let _watchdog = Watchdog::new();
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
         let barrier = barrier.clone();
@@ -231,6 +239,7 @@ fn thread_set_affinity_to_two_cores_from_handle_works() {
 #[test]
 fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
+    let _watchdog = Watchdog::new();
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
@@ -273,6 +282,7 @@ fn thread_set_affinity_to_non_existing_cores_from_handle_fails() {
 #[test]
 fn thread_set_affinity_to_one_core_from_thread_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
+    let _watchdog = Watchdog::new();
     let barrier = Arc::new(Barrier::new(2));
     let mut thread = {
         let barrier = barrier.clone();
@@ -300,6 +310,7 @@ fn thread_set_affinity_to_one_core_from_thread_works() {
 fn thread_set_affinity_to_two_cores_from_thread_works() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     test_requires!(SystemInfo::NumberOfCpuCores.value() > 1);
+    let _watchdog = Watchdog::new();
     let barrier = Arc::new(Barrier::new(2));
     let mut thread = {
         let barrier = barrier.clone();
@@ -328,6 +339,7 @@ fn thread_set_affinity_to_two_cores_from_thread_works() {
 #[test]
 fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
+    let _watchdog = Watchdog::new();
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
     let barrier = Arc::new(Barrier::new(2));
     let mut thread = {
@@ -359,6 +371,7 @@ fn thread_set_affinity_to_non_existing_cores_from_thread_fails() {
 
 #[test]
 fn thread_destructor_does_not_block_on_empty_thread() {
+    let _watchdog = Watchdog::new();
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
         let barrier = barrier.clone();
@@ -378,6 +391,7 @@ fn thread_destructor_does_not_block_on_empty_thread() {
 
 #[test]
 fn thread_destructor_does_block_on_busy_thread() {
+    let _watchdog = Watchdog::new();
     const SLEEP_DURATION: Duration = Duration::from_millis(100);
     let barrier = Arc::new(Barrier::new(2));
     let thread = {
