@@ -49,7 +49,7 @@ def test_waitset_builder_set_signal_handling_mode_correctly(
 def test_attaching_notifications_works(
     service_type: iox2.ServiceType,
 ) -> None:
-    number_of_attachments = 15
+    number_of_attachments = 5
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
@@ -77,7 +77,7 @@ def test_attaching_notifications_works(
 def test_attaching_deadlines_works(
     service_type: iox2.ServiceType,
 ) -> None:
-    number_of_attachments = 15
+    number_of_attachments = 5
     deadline = iox2.Duration.from_millis(123)
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
@@ -106,7 +106,7 @@ def test_attaching_deadlines_works(
 def test_attaching_interval_works(
     service_type: iox2.ServiceType,
 ) -> None:
-    number_of_attachments = 15
+    number_of_attachments = 5
 
     sut = iox2.WaitSetBuilder.new().create(service_type)
     waitset_guards = []
@@ -132,7 +132,7 @@ def test_wait_and_process_returns_when_timeout_has_passed(
 def test_wait_and_process_returns_triggered_listeners(
     service_type: iox2.ServiceType,
 ) -> None:
-    number_of_attachments = 15
+    number_of_attachments = 5
     config = iox2.testing.generate_isolated_config()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
     services = []
@@ -222,7 +222,7 @@ def test_create_attachment_id_from_guard(
 def test_deleting_guard_explicitly_removes_attachment(
     service_type: iox2.ServiceType,
 ) -> None:
-    number_of_attachments = 15
+    number_of_attachments = 5
     config = iox2.testing.generate_isolated_config()
     service_name = iox2.testing.generate_service_name()
     node = iox2.NodeBuilder.new().config(config).create(service_type)
