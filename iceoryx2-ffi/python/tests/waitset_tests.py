@@ -118,6 +118,7 @@ def test_attaching_deadlines_works(
         iox2.Listener.delete(listeners[i])
     iox2.WaitSet.delete(sut)
 
+
 @pytest.mark.parametrize("service_type", service_types)
 def test_attaching_interval_works(
     service_type: iox2.ServiceType,
