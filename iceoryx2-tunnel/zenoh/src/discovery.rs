@@ -10,16 +10,22 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2::service::static_config::StaticConfig;
+pub struct Discovery {}
 
-use core::fmt::Debug;
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum DiscoveryError {
+    Error,
+}
 
-/// Ingest discovery information
-pub trait Discovery {
-    type DiscoveryError: Debug;
+impl iceoryx2_tunnel_traits::Discovery for Discovery {
+    type DiscoveryError = DiscoveryError;
 
-    fn discover<F: FnMut(&StaticConfig) -> Result<(), Self::DiscoveryError>>(
+    fn discover<
+        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
+    >(
         &mut self,
         process_discovery: &mut F,
-    ) -> Result<(), Self::DiscoveryError>;
+    ) -> Result<(), Self::DiscoveryError> {
+        todo!()
+    }
 }

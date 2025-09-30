@@ -10,8 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+mod discovery;
 mod relays;
 mod transport;
 
+pub use discovery::*;
 pub use relays::*;
 pub use transport::*;

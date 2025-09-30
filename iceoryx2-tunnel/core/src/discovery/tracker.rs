@@ -35,17 +35,16 @@ impl<S: Service> DiscoveryTracker<S> {
     }
 }
 
-impl<S: Service> Discovery<S> for DiscoveryTracker<S> {
-    type Handle = Self;
+impl<S: Service> Discovery for DiscoveryTracker<S> {
     type DiscoveryError = DiscoveryError;
 
     fn discover<
         F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
     >(
-        handle: &mut Self::Handle,
+        &mut self,
         process_discovery: &mut F,
     ) -> Result<(), Self::DiscoveryError> {
-        let tracker = &mut handle.0;
+        let tracker = &mut self.0;
         let (added, _removed) = tracker.sync().unwrap();
 
         for id in added {

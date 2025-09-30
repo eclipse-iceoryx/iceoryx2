@@ -10,11 +10,9 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-use iceoryx2_tunnel_traits::{Relay, RelayBuilder, RelayFactory, Transport};
+use iceoryx2_tunnel_traits::{Discovery, Relay, RelayBuilder, RelayFactory, Transport};
 
 #[derive(Debug, Default)]
-pub struct MockTransportConfig {}
-pub struct MockTransport {}
 pub struct MockRelay {}
 
 #[derive(Debug)]
@@ -51,16 +49,45 @@ impl RelayFactory for MockRelayFactory {
     }
 }
 
+pub struct MockTransport {
+    discovery: MockDiscovery,
+}
+
+#[derive(Debug, Default)]
+pub struct MockTransportConfig {}
+
 impl Transport for MockTransport {
     type Config = MockTransportConfig;
     type CreationError = ();
     type RelayFactory = MockRelayFactory;
+    type Discovery = MockDiscovery;
 
     fn create(_config: &Self::Config) -> Result<Self, Self::CreationError> {
-        Ok(MockTransport {})
+        Ok(MockTransport {
+            discovery: MockDiscovery {},
+        })
     }
 
     fn relay_builder(&self) -> Self::RelayFactory {
         MockRelayFactory {}
+    }
+
+    fn discovery(&mut self) -> &mut impl iceoryx2_tunnel_traits::Discovery {
+        &mut self.discovery
+    }
+}
+
+pub struct MockDiscovery {}
+
+impl Discovery for MockDiscovery {
+    type DiscoveryError = ();
+
+    fn discover<
+        F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
+    >(
+        &mut self,
+        process_discovery: &mut F,
+    ) -> Result<(), Self::DiscoveryError> {
+        todo!()
     }
 }

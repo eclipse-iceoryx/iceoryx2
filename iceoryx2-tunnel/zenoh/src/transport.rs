@@ -13,20 +13,23 @@
 use iceoryx2_bb_log::fail;
 use zenoh::{Config, Session, Wait};
 
-use crate::RelayFactory;
+use crate::{Discovery, RelayFactory};
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     FailedToCreateSession,
 }
 
 pub struct Transport {
     session: Session,
+    discovery: Discovery,
 }
 
 impl iceoryx2_tunnel_traits::Transport for Transport {
     type Config = Config;
     type CreationError = CreationError;
     type RelayFactory = RelayFactory;
+    type Discovery = Discovery;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
         let session = zenoh::open(config.clone()).wait();
@@ -37,10 +40,17 @@ impl iceoryx2_tunnel_traits::Transport for Transport {
             "failed to create zenoh session"
         );
 
-        Ok(Self { session })
+        Ok(Self {
+            session,
+            discovery: Discovery {},
+        })
     }
 
     fn relay_builder(&self) -> Self::RelayFactory {
         Self::RelayFactory {}
+    }
+
+    fn discovery(&mut self) -> &mut impl iceoryx2_tunnel_traits::Discovery {
+        &mut self.discovery
     }
 }

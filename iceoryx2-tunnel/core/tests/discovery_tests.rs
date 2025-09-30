@@ -72,7 +72,7 @@ mod tunnel_discovery_tests {
 
         // === TEST ===
         discovery_service.spin(|_| {}, |_| {}).unwrap();
-        tunnel.discover().unwrap();
+        tunnel.discover_over_iceoryx().unwrap();
 
         // === VALIDATE ===
         assert_that!(tunnel.tunneled_services().len(), eq 1);
@@ -101,7 +101,7 @@ mod tunnel_discovery_tests {
             Tunnel::<S, T>::create(&tunnel_config, &iceoryx_config, &T::Config::default()).unwrap();
 
         // === TEST ===
-        tunnel.discover().unwrap();
+        tunnel.discover_over_iceoryx().unwrap();
 
         // === VALIDATE ===
         assert_that!(tunnel.tunneled_services().len(), eq 1);

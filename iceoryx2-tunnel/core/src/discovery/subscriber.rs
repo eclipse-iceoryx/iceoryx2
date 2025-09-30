@@ -67,17 +67,16 @@ impl<S: Service> DiscoverySubscriber<S> {
     }
 }
 
-impl<S: Service> Discovery<S> for DiscoverySubscriber<S> {
-    type Handle = Self;
+impl<S: Service> Discovery for DiscoverySubscriber<S> {
     type DiscoveryError = DiscoveryError;
 
     fn discover<
         F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
     >(
-        handle: &mut Self::Handle,
+        &mut self,
         process_discovery: &mut F,
     ) -> Result<(), Self::DiscoveryError> {
-        let subscriber = &handle.0;
+        let subscriber = &self.0;
         loop {
             match subscriber.receive() {
                 Ok(Some(sample)) => {
