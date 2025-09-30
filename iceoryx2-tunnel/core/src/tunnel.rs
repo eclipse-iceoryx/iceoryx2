@@ -164,12 +164,11 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
 
     /// Discover services over iceoryx2.
     pub fn discover_over_iceoryx(&mut self) -> Result<(), DiscoveryError> {
-        let relay_builder = &self.transport.relay_builder();
         if let Some(subscriber) = &mut self.subscriber {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when subscriber.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, relay_builder, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+                    on_discovery(static_config, &mut self.node, &self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
                 "Failed to discover services via Subscriber"
@@ -179,7 +178,7 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
             fail!(
                 from "Tunnel::discover_over_iceoryx",
                 when tracker.discover(&mut |static_config| {
-                    on_discovery(static_config, &mut self.node, relay_builder, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+                    on_discovery(static_config, &mut self.node, &self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
                 }),
                 "Failed to discover services via Tracker"
@@ -194,7 +193,7 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
         fail!(
             from "Tunnel::discover_over_transport",
             when self.transport.discovery().discover(&mut |static_config| {
-                on_discovery(static_config, &self.node, &self.transport.relay_builder(), &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+                on_discovery(static_config, &self.node, &self.transport, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                 Ok(())
             }),
             with DiscoveryError::FailedToDiscoverOverTransport,
@@ -239,10 +238,10 @@ impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
     }
 }
 
-fn on_discovery<S: Service, R: RelayFactory>(
+fn on_discovery<S: Service, T: Transport>(
     static_config: &StaticConfig,
     node: &Node<S>,
-    relay_builder: &R,
+    transport: &T,
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
     relays: &mut HashMap<ServiceId, Box<dyn Relay>>,
@@ -250,7 +249,14 @@ fn on_discovery<S: Service, R: RelayFactory>(
     match static_config.messaging_pattern() {
         MessagingPattern::PublishSubscribe(_) => {
             debug!("Discovered: PublishSubscribe({})", static_config.name());
-            setup_publish_subscribe(static_config, node, relay_builder, services, ports, relays)
+            setup_publish_subscribe(
+                static_config,
+                node,
+                transport.relay_builder().publish_subscribe(static_config),
+                services,
+                ports,
+                relays,
+            )
         }
         MessagingPattern::Event(_) => {
             debug!("Discovered: Event({})", static_config.name());
@@ -268,10 +274,10 @@ fn on_discovery<S: Service, R: RelayFactory>(
     }
 }
 
-fn setup_publish_subscribe<S: Service, R: RelayFactory>(
+fn setup_publish_subscribe<S: Service, B: RelayBuilder>(
     static_config: &StaticConfig,
     node: &Node<S>,
-    relay_builder: &R,
+    builder: B,
     services: &mut HashSet<ServiceId>,
     ports: &mut HashMap<ServiceId, Ports<S>>,
     relays: &mut HashMap<ServiceId, Box<dyn Relay>>,
@@ -313,10 +319,7 @@ fn setup_publish_subscribe<S: Service, R: RelayFactory>(
     let port = ports::publish_subscribe::Ports::new(&service).unwrap();
 
     // TODO: Use fail!
-    let relay = relay_builder
-        .publish_subscribe(static_config)
-        .create()
-        .unwrap();
+    let relay = builder.create().unwrap();
 
     services.insert(service.service_id().clone());
     ports.insert(service.service_id().clone(), Ports::PublishSubscribe(port));

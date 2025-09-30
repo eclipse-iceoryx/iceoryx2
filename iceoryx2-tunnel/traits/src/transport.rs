@@ -14,7 +14,7 @@ use core::fmt::Debug;
 
 use crate::{Discovery, RelayFactory};
 
-/// Abstraction of the transport over which data in iceoryx2 is propagated.
+/// Abstraction of the transport over which data is propagated.
 ///
 /// Enables implementations to define custom initialization logic.
 pub trait Transport: Sized {
