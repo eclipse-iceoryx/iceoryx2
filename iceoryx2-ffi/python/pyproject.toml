@@ -138,4 +138,5 @@ sequence = [
 [tool.pytest.ini_options]
 addopts = [
     "--verbosity=1",
+    "-s"
 ]
