@@ -34,7 +34,7 @@ impl HeapAllocator {
         HeapAllocator {}
     }
 
-    pub const fn global() -> &'static HeapAllocator {
+    pub fn global() -> &'static HeapAllocator {
         static ALLOCATOR: HeapAllocator = HeapAllocator {};
         &ALLOCATOR
     }
