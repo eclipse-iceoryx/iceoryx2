@@ -99,7 +99,7 @@ sequence = [
 [tool.poe.tasks.check-formatting]
 sequence = [
     { shell = "black --check ../../examples/python" },
-    { shell = "black --check python-src/iceoryx2" },  
+    { shell = "black --check python-src/iceoryx2" },
     { shell = "black --check tests" },
 ]
 [tool.poe.tasks.check-linting]
@@ -115,7 +115,7 @@ sequence = [
 [tool.poe.tasks.static-analysis]
 sequence = [
     "check-imports",
-    "check-formatting", 
+    "check-formatting",
     "check-linting"
 ]
 
@@ -135,3 +135,7 @@ sequence = [
     { shell = "black tests" },
 ]
 
+[tool.pytest.ini_options]
+addopts = [
+    "--verbosity=1",
+]
