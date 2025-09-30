@@ -19,4 +19,6 @@ path = "src/lib.rs"
 iceoryx2 = { workspace = true }
 iceoryx2-tunnel-traits = { workspace = true }
 iceoryx2-bb-log = { workspace = true }
+
+serde_json = { workspace = true }
 zenoh = { workspace = true }

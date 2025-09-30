@@ -10,10 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod discovery;
-mod relays;
-mod transport;
+pub mod discovery;
+mod keys;
+pub mod relays;
+pub mod transport;
 
-pub use discovery::*;
-pub use relays::*;
-pub use transport::*;
+// TODO: Move to a separate crate?
+pub mod testing;

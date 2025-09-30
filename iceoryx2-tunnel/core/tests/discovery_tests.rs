@@ -10,12 +10,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-mod mocks;
-
 #[generic_tests::define]
 mod tunnel_discovery_tests {
 
-    use crate::mocks::*;
+    use core::time::Duration;
 
     use iceoryx2::prelude::*;
     use iceoryx2::testing::*;
@@ -24,6 +22,7 @@ mod tunnel_discovery_tests {
     use iceoryx2_services_discovery::service_discovery::Config as DiscoveryConfig;
     use iceoryx2_services_discovery::service_discovery::Service as DiscoveryService;
     use iceoryx2_tunnel_core::Tunnel;
+    use iceoryx2_tunnel_traits::testing::Testing;
     use iceoryx2_tunnel_traits::Transport;
 
     // TODO: Move to iceoryx2::testing
@@ -38,7 +37,7 @@ mod tunnel_discovery_tests {
     }
 
     #[test]
-    fn discovers_services_via_subscriber<S: Service, T: Transport>() {
+    fn discovers_services_via_subscriber<S: Service, T: Transport, U: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -74,13 +73,12 @@ mod tunnel_discovery_tests {
         discovery_service.spin(|_| {}, |_| {}).unwrap();
         tunnel.discover_over_iceoryx().unwrap();
 
-        // === VALIDATE ===
         assert_that!(tunnel.tunneled_services().len(), eq 1);
         assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
     }
 
     #[test]
-    fn discovers_services_via_tracker<S: Service, T: Transport>() {
+    fn discovers_services_via_tracker<S: Service, T: Transport, U: Testing>() {
         // === SETUP ==
         let iceoryx_config = generate_isolated_config();
         let service_name = generate_service_name();
@@ -103,20 +101,80 @@ mod tunnel_discovery_tests {
         // === TEST ===
         tunnel.discover_over_iceoryx().unwrap();
 
-        // === VALIDATE ===
         assert_that!(tunnel.tunneled_services().len(), eq 1);
         assert_that!(tunnel.tunneled_services().contains(service.service_id()), eq true);
     }
 
-    #[instantiate_tests(<iceoryx2::service::ipc::Service, MockTransport>)]
-    mod ipc_mock {}
-    #[instantiate_tests(<iceoryx2::service::local::Service, MockTransport>)]
-    mod local_mock {}
+    #[test]
+    fn discovers_services_via_transport<S: Service, T: Transport, U: Testing>() {
+        set_log_level(LogLevel::Debug);
+        // === SETUP ===
+        let service_name = generate_service_name();
+
+        // Host A
+        let iceoryx_config_a = generate_isolated_config();
+        let transport_config_a = T::Config::default();
+        let tunnel_config_a = iceoryx2_tunnel_core::Config::default();
+        let mut tunnel_a =
+            Tunnel::<S, T>::create(&tunnel_config_a, &iceoryx_config_a, &transport_config_a)
+                .unwrap();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+
+        // Host B
+        let iceoryx_config_b = generate_isolated_config();
+        let transport_config_b = T::Config::default();
+        let tunnel_config_b = iceoryx2_tunnel_core::Config::default();
+        let mut tunnel_b =
+            Tunnel::<S, T>::create(&tunnel_config_b, &iceoryx_config_b, &transport_config_b)
+                .unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 0);
+
+        // Create a service on Host B
+        let node_b = NodeBuilder::new()
+            .config(&iceoryx_config_b)
+            .create::<S>()
+            .unwrap();
+        let service_b = node_b
+            .service_builder(&service_name)
+            .publish_subscribe::<[u8]>()
+            .history_size(10)
+            .subscriber_max_buffer_size(10)
+            .open_or_create()
+            .unwrap();
+
+        // === TEST ===
+        tunnel_a.discover_over_transport().unwrap();
+        assert_that!(tunnel_a.tunneled_services().len(), eq 0);
+
+        tunnel_b.discover_over_iceoryx().unwrap();
+        assert_that!(tunnel_b.tunneled_services().len(), eq 1);
+        assert_that!(tunnel_b.tunneled_services().contains(service_b.service_id()), eq true);
+
+        const TIME_BETWEEN_RETRIES: Duration = Duration::from_millis(250);
+        const MAX_RETRIES: usize = 1;
+        U::retry(
+            || {
+                tunnel_a.discover_over_transport().unwrap();
+
+                let service_discovered = tunnel_a.tunneled_services().len() == 1;
+
+                if service_discovered {
+                    return Ok(());
+                }
+                Err("Failed to discover remote services")
+            },
+            TIME_BETWEEN_RETRIES,
+            Some(MAX_RETRIES),
+        );
+
+        assert_that!(tunnel_a.tunneled_services().len(), eq 1);
+        assert_that!(tunnel_a.tunneled_services().contains(service_b.service_id()), eq true);
+    }
 
     #[cfg(feature = "tunnel_zenoh")]
-    #[instantiate_tests(<iceoryx2::service::ipc::Service, iceoryx2_tunnel_zenoh::Transport>)]
+    #[instantiate_tests(<iceoryx2::service::ipc::Service, iceoryx2_tunnel_zenoh::Transport, iceoryx2_tunnel_zenoh::testing::Testing>)]
     mod ipc_zenoh {}
     #[cfg(feature = "tunnel_zenoh")]
-    #[instantiate_tests(<iceoryx2::service::local::Service, iceoryx2_tunnel_zenoh::Transport>)]
+    #[instantiate_tests(<iceoryx2::service::local::Service, iceoryx2_tunnel_zenoh::Transport, iceoryx2_tunnel_zenoh::testing::Testing>)]
     mod local_zenoh {}
 }

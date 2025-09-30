@@ -1651,6 +1651,7 @@ name = "iceoryx2-tunnel-traits"
 version = "0.7.0"
 dependencies = [
  "iceoryx2",
+ "iceoryx2-bb-testing",
 ]
 
 [[package]]
@@ -1660,6 +1661,7 @@ dependencies = [
  "iceoryx2",
  "iceoryx2-bb-log",
  "iceoryx2-tunnel-traits",
+ "serde_json",
  "zenoh",
 ]
 

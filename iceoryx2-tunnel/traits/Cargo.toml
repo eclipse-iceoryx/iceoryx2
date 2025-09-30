@@ -18,3 +18,5 @@ path = "src/lib.rs"
 [dependencies]
 iceoryx2 = { workspace = true }
 
+# TODO: Move to separate crate
+iceoryx2-bb-testing = { workspace = true }

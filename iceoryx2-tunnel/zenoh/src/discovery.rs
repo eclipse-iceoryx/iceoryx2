@@ -10,11 +10,57 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-pub struct Discovery {}
+use iceoryx2::service::static_config::StaticConfig;
+use iceoryx2_bb_log::{fail, warn};
+use zenoh::{
+    handlers::FifoChannelHandler,
+    query::{Querier, Reply},
+    sample::Locality,
+    Session, Wait,
+};
+
+use crate::keys;
+
+pub enum CreationError {
+    FailedToCreateQuerier,
+    FailedToMakeInitialQuery,
+}
+
+#[derive(Debug)]
+pub struct Discovery {
+    querier: Querier<'static>,
+    replies: FifoChannelHandler<Reply>,
+}
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum DiscoveryError {
-    Error,
+    FailedToProcessDiscoveredServices,
+    FailedToMakeQuery,
+    FailedToReceiveReply,
+}
+
+impl Discovery {
+    pub fn create(session: &Session) -> Result<Self, CreationError> {
+        let querier = fail!(
+            from "Discovery::create()",
+            when session
+                    .declare_querier(keys::service_discovery())
+                    .allowed_destination(Locality::Remote)
+                    .wait(),
+            with CreationError::FailedToCreateQuerier,
+            "Failed to create querier for service discovery"
+        );
+
+        // Make query immediately - replies processed in first `discover()` call
+        let replies = fail!(
+            from "Discovery::create()",
+            when querier.get().wait(),
+            with CreationError::FailedToMakeInitialQuery,
+            "Failed to make query for service discovery"
+        );
+
+        Ok(Self { querier, replies })
+    }
 }
 
 impl iceoryx2_tunnel_traits::Discovery for Discovery {
@@ -26,6 +72,47 @@ impl iceoryx2_tunnel_traits::Discovery for Discovery {
         &mut self,
         process_discovery: &mut F,
     ) -> Result<(), Self::DiscoveryError> {
-        todo!()
+        // Drain all replies from previous query
+        for reply in self.replies.drain() {
+            match reply.result() {
+                Ok(sample) => {
+                    match serde_json::from_slice::<StaticConfig>(&sample.payload().to_bytes()) {
+                        Ok(service_details) => {
+                            fail!(
+                                from &self,
+                                when process_discovery(&service_details),
+                                with DiscoveryError::FailedToProcessDiscoveredServices,
+                                "Failed to process discovered services"
+                            )
+                        }
+                        Err(e) => {
+                            warn!(
+                                "skipping discovered service config, unable to deserialize: {}",
+                                e
+                            );
+                        }
+                    }
+                }
+                Err(e) => fail!(
+                    from "Discovery::discover",
+                    when Err(e),
+                    with DiscoveryError::FailedToReceiveReply,
+                    "errorneous reply received from zenoh discovery query"
+                ),
+            }
+        }
+
+        // Make a new query for next `discover()` call
+        // NOTE: This results in all service details being resent - not optimal
+        // TODO(optimization): A solution to request all quereyables once whilst still retrieving
+        //                     querying new quereyables that appear
+        self.replies = fail!(
+            from &self,
+            when self.querier.get().wait(),
+            with DiscoveryError::FailedToMakeQuery,
+            "failed to query Zenoh for service details on remote hosts"
+        );
+
+        Ok(())
     }
 }
