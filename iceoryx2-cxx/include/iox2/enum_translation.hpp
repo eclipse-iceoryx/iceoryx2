@@ -2039,6 +2039,8 @@ constexpr auto from<int, iox2::WaitSetCreateError>(const int value) noexcept -> 
     switch (variant) {
     case iox2_waitset_create_error_e_INTERNAL_ERROR:
         return iox2::WaitSetCreateError::InternalError;
+    case iox2_waitset_create_error_e_INSUFFICIENT_RESOURCES:
+        return iox2::WaitSetCreateError::InsufficientResources;
     }
 
     IOX_UNREACHABLE();
@@ -2051,6 +2053,8 @@ from<iox2::WaitSetCreateError, iox2_waitset_create_error_e>(const iox2::WaitSetC
     switch (value) {
     case iox2::WaitSetCreateError::InternalError:
         return iox2_waitset_create_error_e_INTERNAL_ERROR;
+    case iox2::WaitSetCreateError::InsufficientResources:
+        return iox2_waitset_create_error_e_INSUFFICIENT_RESOURCES;
     }
 
     IOX_UNREACHABLE();
@@ -2105,6 +2109,8 @@ constexpr auto from<int, iox2::WaitSetAttachmentError>(const int value) noexcept
         return iox2::WaitSetAttachmentError::InsufficientCapacity;
     case iox2_waitset_attachment_error_e_INTERNAL_ERROR:
         return iox2::WaitSetAttachmentError::InternalError;
+    case iox2_waitset_attachment_error_e_INSUFFICIENT_RESOURCES:
+        return iox2::WaitSetAttachmentError::InsufficientResources;
     }
 
     IOX_UNREACHABLE();
@@ -2121,6 +2127,8 @@ from<iox2::WaitSetAttachmentError, iox2_waitset_attachment_error_e>(const iox2::
         return iox2_waitset_attachment_error_e_INSUFFICIENT_CAPACITY;
     case iox2::WaitSetAttachmentError::InternalError:
         return iox2_waitset_attachment_error_e_INTERNAL_ERROR;
+    case iox2::WaitSetAttachmentError::InsufficientResources:
+        return iox2_waitset_attachment_error_e_INSUFFICIENT_RESOURCES;
     }
 
     IOX_UNREACHABLE();

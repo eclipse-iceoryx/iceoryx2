@@ -12,6 +12,7 @@
 
 use core::ops::Deref;
 
+use iceoryx2_bb_log::fatal_panic;
 use pyo3::prelude::*;
 
 use crate::{
@@ -27,8 +28,8 @@ use crate::{
 };
 
 pub(crate) enum WaitSetType {
-    Ipc(iceoryx2::waitset::WaitSet<crate::IpcService>),
-    Local(iceoryx2::waitset::WaitSet<crate::LocalService>),
+    Ipc(Option<iceoryx2::waitset::WaitSet<crate::IpcService>>),
+    Local(Option<iceoryx2::waitset::WaitSet<crate::LocalService>>),
 }
 
 #[pyclass]
@@ -48,7 +49,7 @@ impl WaitSet {
     /// `WaitSet::capacity()` is limited by the underlying implementation.
     pub fn attach_notification(&self, attachment: &Listener) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
-            WaitSetType::Ipc(v) => {
+            WaitSetType::Ipc(Some(v)) => {
                 if let ListenerType::Ipc(Some(attachment)) = &attachment.0 {
                     let guard = v
                         .attach_notification(attachment.deref())
@@ -76,7 +77,7 @@ impl WaitSet {
                     ))
                 }
             }
-            WaitSetType::Local(v) => {
+            WaitSetType::Local(Some(v)) => {
                 if let ListenerType::Local(Some(attachment)) = &attachment.0 {
                     let guard = v
                         .attach_notification(attachment.deref())
@@ -104,6 +105,8 @@ impl WaitSet {
                     ))
                 }
             }
+            _ => fatal_panic!(from "WaitSet::attach_notification()",
+                "Accessing a deleted WaitSet."),
         }
     }
 
@@ -113,7 +116,7 @@ impl WaitSet {
     /// `WaitSet::capacity()` is limited by the underlying implementation.
     pub fn attach_notification_fd(&self, attachment: &FileDescriptor) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
-            WaitSetType::Ipc(v) => {
+            WaitSetType::Ipc(Some(v)) => {
                 let guard = v
                     .attach_notification(attachment)
                     .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
@@ -131,7 +134,7 @@ impl WaitSet {
                     _attachment: Some(attachment.0.clone()),
                 })))
             }
-            WaitSetType::Local(v) => {
+            WaitSetType::Local(Some(v)) => {
                 let guard = v
                     .attach_notification(attachment)
                     .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
@@ -149,6 +152,8 @@ impl WaitSet {
                     _attachment: Some(attachment.0.clone()),
                 })))
             }
+            _ => fatal_panic!(from "WaitSet::attach_notification_fd()",
+                "Accessing a deleted WaitSet."),
         }
     }
 
@@ -163,7 +168,7 @@ impl WaitSet {
         deadline: &Duration,
     ) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
-            WaitSetType::Ipc(v) => {
+            WaitSetType::Ipc(Some(v)) => {
                 if let ListenerType::Ipc(Some(attachment)) = &attachment.0 {
                     let guard = v
                         .attach_deadline(attachment.deref(), deadline.0)
@@ -191,7 +196,7 @@ impl WaitSet {
                     ))
                 }
             }
-            WaitSetType::Local(v) => {
+            WaitSetType::Local(Some(v)) => {
                 if let ListenerType::Local(Some(attachment)) = &attachment.0 {
                     let guard = v
                         .attach_deadline(attachment.deref(), deadline.0)
@@ -219,6 +224,8 @@ impl WaitSet {
                     ))
                 }
             }
+            _ => fatal_panic!(from "WaitSet::attach_deadline()",
+                "Accessing a deleted WaitSet."),
         }
     }
 
@@ -233,7 +240,7 @@ impl WaitSet {
         deadline: &Duration,
     ) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
-            WaitSetType::Ipc(v) => {
+            WaitSetType::Ipc(Some(v)) => {
                 let guard = v
                     .attach_deadline(attachment, deadline.0)
                     .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
@@ -251,7 +258,7 @@ impl WaitSet {
                     _attachment: Some(attachment.0.clone()),
                 })))
             }
-            WaitSetType::Local(v) => {
+            WaitSetType::Local(Some(v)) => {
                 let guard = v
                     .attach_deadline(attachment, deadline.0)
                     .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
@@ -269,6 +276,8 @@ impl WaitSet {
                     _attachment: Some(attachment.0.clone()),
                 })))
             }
+            _ => fatal_panic!(from "WaitSet::attach_deadline_fd()",
+                "Accessing a deleted WaitSet."),
         }
     }
 
@@ -276,7 +285,7 @@ impl WaitSet {
     /// informs the user in `WaitSet::wait_and_process()`.
     pub fn attach_interval(&self, interval: &Duration) -> PyResult<WaitSetGuard> {
         match &*self.0.lock() {
-            WaitSetType::Ipc(v) => {
+            WaitSetType::Ipc(Some(v)) => {
                 let guard = v
                     .attach_interval(interval.0)
                     .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
@@ -293,7 +302,7 @@ impl WaitSet {
                     _attachment: None,
                 })))
             }
-            WaitSetType::Local(v) => {
+            WaitSetType::Local(Some(v)) => {
                 let guard = v
                     .attach_interval(interval.0)
                     .map_err(|e| WaitSetAttachmentError::new_err(format!("{e:?}")))?;
@@ -310,6 +319,8 @@ impl WaitSet {
                     _attachment: None,
                 })))
             }
+            _ => fatal_panic!(from "WaitSet::attach_interval()",
+                "Accessing a deleted WaitSet."),
         }
     }
 
@@ -322,18 +333,20 @@ impl WaitSet {
     pub fn wait_and_process(&self) -> PyResult<(Vec<WaitSetAttachmentId>, WaitSetRunResult)> {
         let mut ret_val = vec![];
         let result = match &*self.0.lock() {
-            WaitSetType::Ipc(v) => v
+            WaitSetType::Ipc(Some(v)) => v
                 .wait_and_process_once(|v| {
                     ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
                     iceoryx2::prelude::CallbackProgression::Continue
                 })
                 .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
-            WaitSetType::Local(v) => v
+            WaitSetType::Local(Some(v)) => v
                 .wait_and_process_once(|v| {
                     ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
                     iceoryx2::prelude::CallbackProgression::Continue
                 })
                 .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+            _ => fatal_panic!(from "WaitSet::wait_and_process()",
+                "Accessing a deleted WaitSet."),
         };
 
         Ok((ret_val, result.into()))
@@ -351,7 +364,7 @@ impl WaitSet {
     ) -> PyResult<(Vec<WaitSetAttachmentId>, WaitSetRunResult)> {
         let mut ret_val = vec![];
         let result = match &*self.0.lock() {
-            WaitSetType::Ipc(v) => v
+            WaitSetType::Ipc(Some(v)) => v
                 .wait_and_process_once_with_timeout(
                     |v| {
                         ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Ipc(v)));
@@ -360,7 +373,7 @@ impl WaitSet {
                     timeout.0,
                 )
                 .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
-            WaitSetType::Local(v) => v
+            WaitSetType::Local(Some(v)) => v
                 .wait_and_process_once_with_timeout(
                     |v| {
                         ret_val.push(WaitSetAttachmentId(WaitSetAttachmentIdType::Local(v)));
@@ -369,6 +382,8 @@ impl WaitSet {
                     timeout.0,
                 )
                 .map_err(|e| WaitSetRunError::new_err(format!("{e:?}")))?,
+            _ => fatal_panic!(from "WaitSet::wait_and_process_with_timeout()",
+                "Accessing a deleted WaitSet."),
         };
 
         Ok((ret_val, result.into()))
@@ -378,8 +393,10 @@ impl WaitSet {
     /// Returns the capacity of the `WaitSet`
     pub fn capacity(&self) -> usize {
         match &*self.0.lock() {
-            WaitSetType::Ipc(v) => v.capacity(),
-            WaitSetType::Local(v) => v.capacity(),
+            WaitSetType::Ipc(Some(v)) => v.capacity(),
+            WaitSetType::Local(Some(v)) => v.capacity(),
+            _ => fatal_panic!(from "WaitSet::capacity()",
+                "Accessing a deleted WaitSet."),
         }
     }
 
@@ -387,8 +404,10 @@ impl WaitSet {
     /// Returns the number of attachments.
     pub fn len(&self) -> usize {
         match &*self.0.lock() {
-            WaitSetType::Ipc(v) => v.len(),
-            WaitSetType::Local(v) => v.len(),
+            WaitSetType::Ipc(Some(v)) => v.len(),
+            WaitSetType::Local(Some(v)) => v.len(),
+            _ => fatal_panic!(from "WaitSet::len()",
+                "Accessing a deleted WaitSet."),
         }
     }
 
@@ -396,8 +415,10 @@ impl WaitSet {
     /// Returns true if the `WaitSet` has no attachments, otherwise false.
     pub fn is_empty(&self) -> bool {
         match &*self.0.lock() {
-            WaitSetType::Ipc(v) => v.is_empty(),
-            WaitSetType::Local(v) => v.is_empty(),
+            WaitSetType::Ipc(Some(v)) => v.is_empty(),
+            WaitSetType::Local(Some(v)) => v.is_empty(),
+            _ => fatal_panic!(from "WaitSet::is_empty()",
+                "Accessing a deleted WaitSet."),
         }
     }
 
@@ -405,8 +426,24 @@ impl WaitSet {
     /// Returns the `SignalHandlingMode` with which the `WaitSet` was created.
     pub fn signal_handling_mode(&self) -> SignalHandlingMode {
         match &*self.0.lock() {
-            WaitSetType::Ipc(v) => v.signal_handling_mode().into(),
-            WaitSetType::Local(v) => v.signal_handling_mode().into(),
+            WaitSetType::Ipc(Some(v)) => v.signal_handling_mode().into(),
+            WaitSetType::Local(Some(v)) => v.signal_handling_mode().into(),
+            _ => fatal_panic!(from "WaitSet::signal_handling_mode()",
+                "Accessing a deleted WaitSet."),
+        }
+    }
+
+    /// Releases the `WaitSet`.
+    ///
+    /// After this call the `WaitSet` is no longer usable!
+    pub fn delete(&mut self) {
+        match &mut *self.0.lock() {
+            WaitSetType::Ipc(ref mut v) => {
+                v.take();
+            }
+            WaitSetType::Local(ref mut v) => {
+                v.take();
+            }
         }
     }
 }

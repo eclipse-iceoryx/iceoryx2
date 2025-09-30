@@ -18,6 +18,8 @@
 namespace iox2 {
 /// Defines the failures that can occur when calling [`WaitSetBuilder::create()`].
 enum class WaitSetCreateError : uint8_t {
+    /// Insufficient resources to create a [`WaitSet`].
+    InsufficientResources,
     /// An internal error has occurred.
     InternalError
 };
@@ -42,7 +44,9 @@ enum class WaitSetAttachmentError : uint8_t {
     /// The attachment is already attached.
     AlreadyAttached,
     /// An internal error has occurred.
-    InternalError
+    InternalError,
+    /// Insufficient resources to add another attachment to the [`WaitSet`].
+    InsufficientResources,
 };
 
 /// Defines the failures that can occur when calling [`WaitSet::run()`].

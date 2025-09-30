@@ -15,6 +15,8 @@
   [#832](https://github.com/eclipse-iceoryx/iceoryx2/issues/832)
 * Add a C++ string container type with fixed compile-time capacity
   [#938](https://github.com/eclipse-iceoryx/iceoryx2/issues/938)
+* Use `epoll` instead of `select` for the `WaitSet` on Linux
+  [#961](https://github.com/eclipse-iceoryx/iceoryx2/issues/961)
 
 ### Bugfixes
 

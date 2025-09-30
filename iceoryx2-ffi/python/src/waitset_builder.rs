@@ -46,14 +46,14 @@ impl WaitSetBuilder {
     pub fn create(&mut self, service_type: &ServiceType) -> PyResult<WaitSet> {
         let this = self.0.clone();
         match service_type {
-            ServiceType::Ipc => Ok(WaitSet(Parc::new(WaitSetType::Ipc(
+            ServiceType::Ipc => Ok(WaitSet(Parc::new(WaitSetType::Ipc(Some(
                 this.create::<crate::IpcService>()
                     .map_err(|e| WaitSetCreateError::new_err(format!("{e:?}")))?,
-            )))),
-            ServiceType::Local => Ok(WaitSet(Parc::new(WaitSetType::Local(
+            ))))),
+            ServiceType::Local => Ok(WaitSet(Parc::new(WaitSetType::Local(Some(
                 this.create::<crate::LocalService>()
                     .map_err(|e| WaitSetCreateError::new_err(format!("{e:?}")))?,
-            )))),
+            ))))),
         }
     }
 }

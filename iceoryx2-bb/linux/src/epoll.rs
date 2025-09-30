@@ -52,17 +52,22 @@ use core::mem::MaybeUninit;
 use core::time::Duration;
 use std::sync::atomic::Ordering;
 
+use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_log::{fail, warn};
 use iceoryx2_bb_posix::{
+    file::{AccessMode, FileBuilder, FileOpenError, FileReadError},
     file_descriptor::{FileDescriptor, FileDescriptorBased},
     signal::FetchableSignal,
     signal_set::FetchableSignalSet,
 };
+use iceoryx2_bb_system_types::file_path::FilePath;
 use iceoryx2_pal_concurrency_sync::iox_atomic::IoxAtomicUsize;
 use iceoryx2_pal_os_api::linux;
 use iceoryx2_pal_posix::posix::{self};
 
 use crate::signalfd::{SignalFd, SignalFdBuilder, SignalFdReadError, SignalInfo};
+
+const MAX_USER_WATCHES_FILE: &str = "/proc/sys/fs/epoll/max_user_watches";
 
 /// Errors that can occur when [`EpollBuilder::create()`] creates a new [`Epoll`].
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -115,6 +120,38 @@ impl core::fmt::Display for EpollAttachmentError {
 
 impl core::error::Error for EpollAttachmentError {}
 
+/// Can be emitted by [`Epoll::capacity()`] when the epoll capacity is read from the proc
+/// file system.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum EpollGetCapacityError {
+    /// The proc file containing the capacity does not exist.
+    ProcFileDoesNotExist,
+    /// The content of the proc file could not be read.
+    ProcFileReadFailure,
+    /// The process does not have the permission to open the proc file for reading.
+    InsufficientPermissions,
+    /// Insufficient memory to read from the proc file.
+    InsufficientMemory,
+    /// The process file handle limit has been reached.
+    PerProcessFileHandleLimitReached,
+    /// The system wide file handle limit has been reached.
+    SystemWideFileHandleLimitReached,
+    /// [`FetchableSignal::Interrupt`] was received (SIGINT).
+    Interrupt,
+    /// The proc file does not contain a number but something else.
+    InvalidProcFileContent,
+    /// An undocumented error occurred.
+    UnknownError,
+}
+
+impl core::fmt::Display for EpollGetCapacityError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "EpollGetCapacityError::{self:?}")
+    }
+}
+
+impl core::error::Error for EpollGetCapacityError {}
+
 /// Errors that can be returned by [`Epoll::try_wait()`], [`Epoll::timed_wait()`] or
 /// [`Epoll::blocking_wait()`].
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -133,23 +170,41 @@ impl core::fmt::Display for EpollWaitError {
 
 impl core::error::Error for EpollWaitError {}
 
+/// Defines the type of event to which [`Epoll`] shall listen with the attached
+/// [`FileDescriptor`]
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u32)]
 pub enum EventType {
+    /// Detect when the [`FileDescriptor`] has data to read.
     ReadyToRead = linux::EPOLL_EVENTS_EPOLLIN as _,
+    /// Detect when the [`FileDescriptor`] is able to write data.
     ReadyToWrite = linux::EPOLL_EVENTS_EPOLLOUT as _,
+    /// Detect when the [`FileDescriptor`]s counterpart closed the connection.
     ConnectionClosed = linux::EPOLL_EVENTS_EPOLLRDHUP as _,
+    /// Detect an exceptional condition on the [`FileDescriptor`].
     ExceptionalCondition = linux::EPOLL_EVENTS_EPOLLPRI as _,
+    /// Detect an error condition on the [`FileDescriptor`].
     ErrorCondition = linux::EPOLL_EVENTS_EPOLLERR as _,
+    /// Detect when the [`FileDescriptor`]s counterpart closed the connection.
     Hangup = linux::EPOLL_EVENTS_EPOLLHUP as _,
 }
 
+/// The input flags for the [`FileDescriptor`] attachments.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u32)]
 pub enum InputFlag {
+    /// Use edge triggered notifications instead of level triggered notifications.
+    /// See `man epoll` for more details.
     EdgeTriggeredNotification = linux::EPOLL_EVENTS_EPOLLET as _,
+    /// Enable one-shot notification for the attached [`FileDescriptor`]. If the state changed
+    /// the user is notified once in the wait calls. The user must detach and reattach the
+    /// [`FileDescriptor`] to rearm it again.
     OneShotNotification = linux::EPOLL_EVENTS_EPOLLONESHOT as _,
+    /// Ensures that the system does not enter "suspend" or "hibernate" while this event is
+    /// pending or being processed.
     BlockSuspension = linux::EPOLL_EVENTS_EPOLLWAKEUP as _,
+    /// Sets an exclusive wakeup mode for the [`FileDescriptor`]. Useful when multiple epoll
+    /// file descriptors are attached to the same target file.
     ExclusiveWakeup = linux::EPOLL_EVENTS_EPOLLEXCLUSIVE as _,
 }
 
@@ -158,6 +213,13 @@ pub enum InputFlag {
 pub struct EpollGuard<'epoll, 'file_descriptor> {
     epoll: &'epoll Epoll,
     fd: &'file_descriptor FileDescriptor,
+}
+
+impl<'epoll, 'file_descriptor> EpollGuard<'epoll, 'file_descriptor> {
+    /// Returns a reference of the attached [`FileDescriptor`]
+    pub fn file_descriptor(&self) -> &'file_descriptor FileDescriptor {
+        self.fd
+    }
 }
 
 impl Drop for EpollGuard<'_, '_> {
@@ -265,14 +327,13 @@ impl EpollBuilder {
             }
         };
 
-        let signal_fd_native_handle = unsafe { signal_fd.file_descriptor().native_handle() };
         let mut epoll_event: linux::epoll_event = unsafe { core::mem::zeroed() };
         epoll_event.events = EventType::ReadyToRead as _;
         unsafe {
             core::ptr::copy_nonoverlapping(
-                (&signal_fd_native_handle as *const i32) as *const u8,
+                (signal_fd.file_descriptor() as *const _) as *const u8,
                 linux::epoll_addr_of_event_data_mut(&mut epoll_event),
-                core::mem::size_of::<i32>(),
+                core::mem::size_of::<FileDescriptor>(),
             )
         };
 
@@ -322,16 +383,24 @@ impl FileDescriptorEvent<'_> {
     /// Returns `true` if the [`FileDescriptorEvent`] originated from the provided
     /// [`FileDescriptor`], otherwise `false`.
     pub fn originates_from(&self, file_descriptor: &FileDescriptor) -> bool {
-        let mut fd_value: i32 = 0;
+        unsafe { file_descriptor.native_handle() == self.native_fd_handle() }
+    }
+
+    /// Returns the native handle of the corresponding [`FileDescriptor`]
+    ///
+    /// # Safety
+    ///
+    /// * the user must not modify or close the provided native handle
+    pub unsafe fn native_fd_handle(&self) -> i32 {
+        let mut native_handle: i32 = 0;
         unsafe {
             core::ptr::copy_nonoverlapping(
                 linux::epoll_addr_of_event_data(self.data),
-                (&mut fd_value as *mut i32) as *mut u8,
+                (&mut native_handle as *mut i32).cast(),
                 core::mem::size_of::<i32>(),
             )
-        };
-
-        fd_value == unsafe { file_descriptor.native_handle() }
+        }
+        native_handle
     }
 
     /// Returns `true` if the [`FileDescriptorEvent`] was caused by the provided [`EventType`],
@@ -365,6 +434,82 @@ impl Epoll {
                 posix::Errno::get());
         } else {
             self.len.fetch_sub(1, Ordering::Relaxed);
+        }
+    }
+
+    /// Returns the number of wait events that can be handle at most with one
+    /// [`Epoll::try_wait()`], [`Epoll::timed_wait()`] or [`Epoll::blocking_wait()`] call.
+    pub const fn max_wait_events() -> usize {
+        512
+    }
+
+    /// Returns the maximum supported [`Epoll`] capacity for the current system.
+    pub fn capacity() -> Result<usize, EpollGetCapacityError> {
+        let origin = "Epoll::capacity()";
+        let msg = "Unable to acquire the capacity of epoll";
+        let file_path = unsafe { FilePath::new_unchecked(MAX_USER_WATCHES_FILE.as_bytes()) };
+        let proc_stat_file = match FileBuilder::new(&file_path)
+            .has_ownership(false)
+            .open_existing(AccessMode::Read)
+        {
+            Ok(file) => file,
+            Err(FileOpenError::FileDoesNotExist) => {
+                fail!(from origin, with EpollGetCapacityError::ProcFileDoesNotExist,
+                    "{msg} since the file {MAX_USER_WATCHES_FILE} does not exist.");
+            }
+            Err(FileOpenError::InsufficientPermissions) => {
+                fail!(from origin, with EpollGetCapacityError::InsufficientPermissions,
+                    "{msg} since the file {MAX_USER_WATCHES_FILE} could not be opened due to insufficient permissions.");
+            }
+            Err(FileOpenError::Interrupt) => {
+                fail!(from origin, with EpollGetCapacityError::Interrupt,
+                    "{msg} since an interrupt signal was raised while opening the file {MAX_USER_WATCHES_FILE}.");
+            }
+            Err(FileOpenError::InsufficientMemory) => {
+                fail!(from origin, with EpollGetCapacityError::InsufficientMemory,
+                    "{msg} since the file {MAX_USER_WATCHES_FILE} could not be opened due to insufficient memory.");
+            }
+            Err(FileOpenError::PerProcessFileHandleLimitReached) => {
+                fail!(from origin, with EpollGetCapacityError::PerProcessFileHandleLimitReached,
+                    "{msg} since the process file handle limit was reached while opening {MAX_USER_WATCHES_FILE}.");
+            }
+            Err(FileOpenError::SystemWideFileHandleLimitReached) => {
+                fail!(from origin, with EpollGetCapacityError::SystemWideFileHandleLimitReached,
+                    "{msg} since the system wide file handle limit was reached while opening {MAX_USER_WATCHES_FILE}.");
+            }
+            Err(e) => {
+                fail!(from origin, with EpollGetCapacityError::UnknownError,
+                    "{msg} due to an unknown error while opening {MAX_USER_WATCHES_FILE} ({e:?}).");
+            }
+        };
+
+        let mut buffer = [0u8; 32];
+        let bytes_read = match proc_stat_file.read(&mut buffer) {
+            Ok(v) => v,
+            Err(FileReadError::Interrupt) => {
+                fail!(from origin, with EpollGetCapacityError::Interrupt,
+                    "{msg} since an interrupt signal was raised while reading the file {MAX_USER_WATCHES_FILE}.");
+            }
+            Err(e) => {
+                fail!(from origin, with EpollGetCapacityError::ProcFileReadFailure,
+                    "{msg} since the content of the file {MAX_USER_WATCHES_FILE} could not be read ({e:?}).");
+            }
+        };
+
+        let file_content = match core::str::from_utf8(&buffer[0..bytes_read as usize - 1]) {
+            Ok(v) => v,
+            Err(e) => {
+                fail!(from origin, with EpollGetCapacityError::InvalidProcFileContent,
+                "{msg} since the file {MAX_USER_WATCHES_FILE} contains invalid content. Expected an UTF-8 string. ({e:?})");
+            }
+        };
+
+        match file_content.parse::<usize>() {
+            Ok(v) => Ok(v),
+            Err(e) => {
+                fail!(from origin, with EpollGetCapacityError::InvalidProcFileContent,
+                    "{msg} since the file {MAX_USER_WATCHES_FILE} contains invalid content. Expected a number. ({e:?})");
+            }
         }
     }
 
@@ -406,7 +551,10 @@ impl Epoll {
         event_call: F,
         timeout: Duration,
     ) -> Result<usize, EpollWaitError> {
-        self.wait_impl(timeout.as_millis().min(i32::MAX as _) as i32, event_call)
+        // the smallest time period epoll can wait is 1ms, to introduce some waiting for
+        // smaller time periods we always round the timeout up to the next millisecond
+        let timeout_in_ms = (timeout.as_nanos() as f64 / 1_000_000.0f64).ceil() as i32;
+        self.wait_impl(timeout_in_ms, event_call)
     }
 
     /// Blocking call, that returns the number of activated attachments and calls the provided
@@ -425,16 +573,15 @@ impl Epoll {
         mut event_call: F,
     ) -> Result<usize, EpollWaitError> {
         let msg = "Unable to wait on epoll";
-        const MAX_EVENTS: usize = 512;
 
-        let mut events: [MaybeUninit<linux::epoll_event>; MAX_EVENTS] =
-            [MaybeUninit::uninit(); MAX_EVENTS];
+        let mut events: [MaybeUninit<linux::epoll_event>; Self::max_wait_events()] =
+            [MaybeUninit::uninit(); Self::max_wait_events()];
 
         let number_of_fds = unsafe {
             linux::epoll_wait(
                 self.epoll_fd.native_handle(),
                 events.as_mut_ptr().cast(),
-                MAX_EVENTS as _,
+                Self::max_wait_events() as _,
                 timeout,
             )
         };
@@ -525,9 +672,9 @@ impl<'epoll, 'fd> EpollAttachmentBuilder<'epoll, 'fd> {
         epoll_event.events = self.events_flag;
         unsafe {
             core::ptr::copy_nonoverlapping(
-                (&self.fd.native_handle() as *const _) as *const u8,
+                (self.fd as *const _) as *const u8,
                 linux::epoll_addr_of_event_data_mut(&mut epoll_event),
-                core::mem::size_of::<i32>(),
+                core::mem::size_of::<FileDescriptor>(),
             )
         }
 
