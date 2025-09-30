@@ -20,10 +20,12 @@ use crate::{Discovery, RelayFactory};
 pub trait Transport: Sized {
     type Config: Default + Debug;
     type CreationError: Debug;
-    type RelayFactory: RelayFactory;
+    type RelayFactory<'a>: RelayFactory
+    where
+        Self: 'a; // Self must live at least as long as 'a
     type Discovery: Discovery;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError>;
-    fn discovery(&mut self) -> &mut impl Discovery;
-    fn relay_builder(&self) -> Self::RelayFactory;
+    fn discovery(&self) -> &impl Discovery;
+    fn relay_builder(&self) -> Self::RelayFactory<'_>;
 }

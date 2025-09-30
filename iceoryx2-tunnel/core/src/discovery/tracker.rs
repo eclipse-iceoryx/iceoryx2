@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::cell::RefCell;
+
 use iceoryx2::service::Service;
 use iceoryx2_services_discovery::service_discovery::{SyncError, Tracker};
 
@@ -26,12 +28,12 @@ impl From<SyncError> for DiscoveryError {
     }
 }
 
-pub struct DiscoveryTracker<S: Service>(Tracker<S>);
+pub struct DiscoveryTracker<S: Service>(RefCell<Tracker<S>>);
 
 impl<S: Service> DiscoveryTracker<S> {
     pub fn create(iceoryx_config: &iceoryx2::config::Config) -> Self {
         let tracker = Tracker::new(iceoryx_config);
-        DiscoveryTracker(tracker)
+        DiscoveryTracker(RefCell::new(tracker))
     }
 }
 
@@ -41,10 +43,10 @@ impl<S: Service> Discovery for DiscoveryTracker<S> {
     fn discover<
         F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
     >(
-        &mut self,
+        &self,
         process_discovery: &mut F,
     ) -> Result<(), Self::DiscoveryError> {
-        let tracker = &mut self.0;
+        let tracker = &mut self.0.borrow_mut();
         let (added, _removed) = tracker.sync().unwrap();
 
         for id in added {

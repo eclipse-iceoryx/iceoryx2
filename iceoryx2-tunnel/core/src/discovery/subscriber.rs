@@ -73,7 +73,7 @@ impl<S: Service> Discovery for DiscoverySubscriber<S> {
     fn discover<
         F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
     >(
-        &mut self,
+        &self,
         process_discovery: &mut F,
     ) -> Result<(), Self::DiscoveryError> {
         let subscriber = &self.0;

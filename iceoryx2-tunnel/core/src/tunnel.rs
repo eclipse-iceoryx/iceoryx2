@@ -97,7 +97,7 @@ pub struct Config {
 }
 
 /// A generic tunnel implementation that works with any implemented Transport.
-pub struct Tunnel<S: Service, T: Transport> {
+pub struct Tunnel<S: Service, T: for<'a> Transport> {
     node: Node<S>,
     transport: T,
     services: HashSet<ServiceId>,
@@ -107,21 +107,21 @@ pub struct Tunnel<S: Service, T: Transport> {
     tracker: Option<discovery::tracker::DiscoveryTracker<S>>,
 }
 
-impl<S: Service, T: Transport> Tunnel<S, T> {
+impl<S: Service, T: for<'a> Transport> Tunnel<S, T> {
     /// Create a new tunnel instance that uses the specified Transport
     pub fn create(
         tunnel_config: &Config,
         iceoryx_config: &iceoryx2::config::Config,
-        transport_config: &T::Config,
+        transport_config: &<T as Transport>::Config,
     ) -> Result<Self, CreationError> {
         let node = fail!(
-            from "Tunnel::<S, T>::create",
+            from "Tunnel::create",
             when NodeBuilder::new().config(iceoryx_config).create::<S>(),
             "failed to create node"
         );
 
         let transport = fail!(
-            from "Tunnel::<S, T>::create",
+            from "Tunnel::create",
             when Transport::create(transport_config),
             with CreationError::FailedToCreateTransport,
             "failed to instantiate the transport"
@@ -129,13 +129,13 @@ impl<S: Service, T: Transport> Tunnel<S, T> {
 
         let (subscriber, tracker) = match &tunnel_config.discovery_service {
             Some(service_name) => {
-                debug!("Discovery via Subscriber");
+                debug!("Local Discovery via Subscriber");
                 let subscriber =
                     discovery::subscriber::DiscoverySubscriber::create(&node, service_name)?;
                 (Some(subscriber), None)
             }
             None => {
-                debug!("Discovery via Tracker");
+                debug!("Local Discovery via Tracker");
 
                 let tracker = discovery::tracker::DiscoveryTracker::create(iceoryx_config);
                 (None, Some(tracker))
@@ -167,7 +167,7 @@ impl<S: Service, T: Transport> Tunnel<S, T> {
         let relay_builder = &self.transport.relay_builder();
         if let Some(subscriber) = &mut self.subscriber {
             fail!(
-                from "Tunnel::<S, T>::discover_over_iceoryx",
+                from "Tunnel::discover_over_iceoryx",
                 when subscriber.discover(&mut |static_config| {
                     on_discovery(static_config, &mut self.node, relay_builder, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
@@ -177,7 +177,7 @@ impl<S: Service, T: Transport> Tunnel<S, T> {
         }
         if let Some(tracker) = &mut self.tracker {
             fail!(
-                from "Tunnel::<S, T>::discover_over_iceoryx",
+                from "Tunnel::discover_over_iceoryx",
                 when tracker.discover(&mut |static_config| {
                     on_discovery(static_config, &mut self.node, relay_builder, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                     Ok(())
@@ -191,11 +191,10 @@ impl<S: Service, T: Transport> Tunnel<S, T> {
 
     /// Discover services over the transport.
     pub fn discover_over_transport(&mut self) -> Result<(), DiscoveryError> {
-        let relay_builder = &self.transport.relay_builder();
         fail!(
-            from "Tunnel::<S, T>::discover_over_transport",
+            from "Tunnel::discover_over_transport",
             when self.transport.discovery().discover(&mut |static_config| {
-                on_discovery(static_config, &self.node, relay_builder, &mut self.services, &mut self.ports, &mut self.relays).unwrap();
+                on_discovery(static_config, &self.node, &self.transport.relay_builder(), &mut self.services, &mut self.ports, &mut self.relays).unwrap();
                 Ok(())
             }),
             with DiscoveryError::FailedToDiscoverOverTransport,
@@ -218,12 +217,12 @@ impl<S: Service, T: Transport> Tunnel<S, T> {
             match ports {
                 Ports::PublishSubscribe(ports) => {
                     fail!(
-                        from "Tunnel::<S, T>::propagate",
+                        from "Tunnel::propagate",
                         when ports.propagate(self.node.id(), relay),
                         "Failed to propagate PublishSubscribe payload"
                     );
                     fail!(
-                        from "Tunnel::<S, T>::propagate",
+                        from "Tunnel::propagate",
                         when ports.ingest(relay),
                         "Failed to ingest PublishSubscribe payload"
                     );

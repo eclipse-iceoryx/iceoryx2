@@ -19,7 +19,7 @@ pub trait Discovery {
     type DiscoveryError: Debug;
 
     fn discover<F: FnMut(&StaticConfig) -> Result<(), Self::DiscoveryError>>(
-        &mut self,
+        &self,
         process_discovery: &mut F,
     ) -> Result<(), Self::DiscoveryError>;
 }

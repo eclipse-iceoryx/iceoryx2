@@ -10,16 +10,26 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use zenoh::Session;
+
 use crate::relays::{event, publish_subscribe};
 
-pub struct RelayFactory {}
+pub struct Factory<'a> {
+    session: &'a Session,
+}
 
-impl iceoryx2_tunnel_traits::RelayFactory for RelayFactory {
-    type PublishSubscribeBuilder = publish_subscribe::Builder;
+impl<'a> Factory<'a> {
+    pub fn new(session: &'a Session) -> Self {
+        Factory { session }
+    }
+}
+
+impl<'a> iceoryx2_tunnel_traits::RelayFactory for Factory<'a> {
+    type PublishSubscribeBuilder = publish_subscribe::Builder<'a>;
     type EventBuilder = event::Builder;
 
     fn publish_subscribe(&self, service: &str) -> Self::PublishSubscribeBuilder {
-        Self::PublishSubscribeBuilder {}
+        Self::PublishSubscribeBuilder::new(self.session)
     }
 
     fn event(&self, service: &str) -> Self::EventBuilder {

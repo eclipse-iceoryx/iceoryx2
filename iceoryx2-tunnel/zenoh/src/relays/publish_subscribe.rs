@@ -10,15 +10,25 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use zenoh::Session;
+
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     Error,
 }
 
 #[derive(Debug)]
-pub struct Builder {}
+pub struct Builder<'a> {
+    session: &'a Session,
+}
 
-impl iceoryx2_tunnel_traits::RelayBuilder for Builder {
+impl Builder<'_> {
+    pub fn new(session: &Session) -> Builder<'_> {
+        Builder { session }
+    }
+}
+
+impl iceoryx2_tunnel_traits::RelayBuilder for Builder<'_> {
     type CreationError = CreationError;
 
     fn create(self) -> Result<Box<dyn iceoryx2_tunnel_traits::Relay>, Self::CreationError> {

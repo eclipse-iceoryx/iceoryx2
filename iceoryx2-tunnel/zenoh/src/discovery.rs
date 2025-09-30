@@ -10,6 +10,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
+use core::cell::RefCell;
+
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_log::{fail, warn};
 use zenoh::{
@@ -29,7 +31,7 @@ pub enum CreationError {
 #[derive(Debug)]
 pub struct Discovery {
     querier: Querier<'static>,
-    replies: FifoChannelHandler<Reply>,
+    replies: RefCell<FifoChannelHandler<Reply>>,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -59,7 +61,10 @@ impl Discovery {
             "Failed to make query for service discovery"
         );
 
-        Ok(Self { querier, replies })
+        Ok(Self {
+            querier,
+            replies: RefCell::new(replies),
+        })
     }
 }
 
@@ -69,11 +74,11 @@ impl iceoryx2_tunnel_traits::Discovery for Discovery {
     fn discover<
         F: FnMut(&iceoryx2::service::static_config::StaticConfig) -> Result<(), Self::DiscoveryError>,
     >(
-        &mut self,
+        &self,
         process_discovery: &mut F,
     ) -> Result<(), Self::DiscoveryError> {
         // Drain all replies from previous query
-        for reply in self.replies.drain() {
+        for reply in self.replies.borrow_mut().drain() {
             match reply.result() {
                 Ok(sample) => {
                     match serde_json::from_slice::<StaticConfig>(&sample.payload().to_bytes()) {
@@ -106,12 +111,13 @@ impl iceoryx2_tunnel_traits::Discovery for Discovery {
         // NOTE: This results in all service details being resent - not optimal
         // TODO(optimization): A solution to request all quereyables once whilst still retrieving
         //                     querying new quereyables that appear
-        self.replies = fail!(
+        let next_query = fail!(
             from &self,
             when self.querier.get().wait(),
             with DiscoveryError::FailedToMakeQuery,
             "failed to query Zenoh for service details on remote hosts"
         );
+        *self.replies.borrow_mut() = next_query;
 
         Ok(())
     }
