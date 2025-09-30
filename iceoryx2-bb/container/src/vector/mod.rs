@@ -13,8 +13,11 @@
 use core::mem::MaybeUninit;
 use core::ops::{Deref, DerefMut};
 
+/// Runtime fixed-capacity vector where the user can provide a stateful allocator.
 pub mod polymorphic_vec;
+/// Runtime fixed-capacity shared-memory compatible vector
 pub mod relocatable_vec;
+/// Compile-time fixed-capacity shared-memory compatible vector
 pub mod static_vec;
 
 pub use polymorphic_vec::*;
@@ -95,6 +98,10 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
     /// Inserts an element at the provided index and shifting all elements
     /// after the index to the right.
     fn insert(&mut self, index: usize, element: T) -> bool {
+        if self.is_full() {
+            return false;
+        }
+
         let len = self.len();
         if index > len {
             return false;
@@ -189,7 +196,7 @@ pub trait Vector<T>: Deref<Target = [T]> + DerefMut + internal::VectorView<T> {
         } else {
             let len = self.len();
             let data = unsafe { self.data_mut() };
-            for item in data.iter_mut().take(capacity).skip(len) {
+            for item in data.iter_mut().take(new_len).skip(len) {
                 item.write(f());
             }
 

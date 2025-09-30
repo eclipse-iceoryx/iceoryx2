@@ -10,7 +10,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
-//! Relocatable shared-memory compaitble vector with compile time fixed size
+//! Relocatable shared-memory compatible vector with compile time fixed size
 //! capacity. It is memory-layout compatible to the C++ container in the
 //! iceoryx2-bb-container C++ library and can be used for zero-copy
 //! cross-language communication.
@@ -40,7 +40,7 @@ use serde::{de::Visitor, Deserialize, Serialize};
 use crate::vector::internal;
 pub use crate::vector::Vector;
 
-/// Relocatable shared-memory compaitble vector with compile time fixed size
+/// Relocatable shared-memory compatible vector with compile time fixed size
 /// capacity. It is memory-layout compatible to the C++ container in the
 /// iceoryx2-bb-container C++ library and can be used for zero-copy
 /// cross-language communication.

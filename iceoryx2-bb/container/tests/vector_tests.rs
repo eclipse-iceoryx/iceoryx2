@@ -365,6 +365,23 @@ mod vector {
     }
 
     #[test]
+    fn resize_with_calls_callback_only_for_the_newly_inserted_elements<
+        Factory: VectorTestFactory,
+    >() {
+        let half_capacity = SUT_CAPACITY / 2;
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        let mut counter = 0;
+        assert_that!(sut.resize_with(half_capacity, || {
+            counter += 1;
+            LifetimeTracker::new()
+        }), eq true);
+
+        assert_that!(counter, eq half_capacity);
+    }
+
+    #[test]
     fn resize_with_fails_if_len_greater_than_capacity<Factory: VectorTestFactory>() {
         let factory = Factory::new();
         let mut sut = factory.create_sut();
@@ -507,6 +524,18 @@ mod vector {
         for number in half_capacity + 1..SUT_CAPACITY {
             assert_that!(sut[number].value, eq number - 1);
         }
+    }
+
+    #[test]
+    fn insert_into_full_vec_fails<Factory: VectorTestFactory>() {
+        let factory = Factory::new();
+        let mut sut = factory.create_sut();
+
+        for _ in 0..SUT_CAPACITY {
+            sut.push(LifetimeTracker::new());
+        }
+
+        assert_that!(sut.insert(0, LifetimeTracker::new()), eq false);
     }
 
     #[test]
