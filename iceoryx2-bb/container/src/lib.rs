@@ -104,6 +104,9 @@ pub mod semantic_string;
 /// A container to store key-value pairs.
 pub mod flatmap;
 
+/// A trait that defines the interface of a string and several string variants.
+pub mod string;
+
 #[doc(hidden)]
 pub(crate) mod vec;
 /// A trait that defines the interface of a vector and several vector variants.
