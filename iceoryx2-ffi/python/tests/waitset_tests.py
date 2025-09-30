@@ -24,6 +24,8 @@ def test_newly_created_waitset_is_empty(
     assert sut.len == 0
     assert sut.is_empty
 
+    iox2.WaitSet.delete(sut)
+
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_waitset_builder_set_signal_handling_mode_correctly(
@@ -43,6 +45,9 @@ def test_waitset_builder_set_signal_handling_mode_correctly(
     assert (
         sut_2.signal_handling_mode == iox2.SignalHandlingMode.HandleTerminationRequests
     )
+
+    iox2.WaitSet.delete(sut_1)
+    iox2.WaitSet.delete(sut_2)
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -71,6 +76,12 @@ def test_attaching_notifications_works(
         waitset_guards.append(guard)
         assert sut.len == i + 1
         assert not sut.is_empty
+
+    for i in range(0, number_of_attachments):
+        iox2.WaitSetGuard.delete(waitset_guards[i])
+    for i in range(0, number_of_attachments):
+        iox2.Listener.delete(listeners[i])
+    iox2.WaitSet.delete(sut)
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -101,6 +112,11 @@ def test_attaching_deadlines_works(
         assert sut.len == i + 1
         assert not sut.is_empty
 
+    for i in range(0, number_of_attachments):
+        iox2.WaitSetGuard.delete(waitset_guards[i])
+    for i in range(0, number_of_attachments):
+        iox2.Listener.delete(listeners[i])
+    iox2.WaitSet.delete(sut)
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_attaching_interval_works(
@@ -116,16 +132,23 @@ def test_attaching_interval_works(
         assert sut.len == i + 1
         assert not sut.is_empty
 
+    for i in range(0, number_of_attachments):
+        iox2.WaitSetGuard.delete(waitset_guards[i])
+    iox2.WaitSet.delete(sut)
+
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_wait_and_process_returns_when_timeout_has_passed(
     service_type: iox2.ServiceType,
 ) -> None:
     sut = iox2.WaitSetBuilder.new().create(service_type)
-    _guard = sut.attach_interval(iox2.Duration.from_secs(123))
+    guard = sut.attach_interval(iox2.Duration.from_secs(123))
     (triggers, result) = sut.wait_and_process_with_timeout(iox2.Duration.from_millis(1))
     assert len(triggers) == 0
     assert result == iox2.WaitSetRunResult.AllEventsHandled
+
+    iox2.WaitSetGuard.delete(guard)
+    iox2.WaitSet.delete(sut)
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -176,6 +199,14 @@ def test_wait_and_process_returns_triggered_listeners(
         for i in range(0, 1):
             assert not triggers[i].has_event_from(waitset_guards[k])
 
+    for i in range(0, number_of_attachments):
+        iox2.WaitSetGuard.delete(waitset_guards[i])
+    for i in range(0, number_of_attachments):
+        iox2.Listener.delete(listeners[i])
+    for i in range(0, number_of_attachments):
+        iox2.Notifier.delete(notifiers[i])
+    iox2.WaitSet.delete(sut)
+
 
 @pytest.mark.parametrize("service_type", service_types)
 def test_reports_missed_deadline(
@@ -195,6 +226,9 @@ def test_reports_missed_deadline(
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
     assert triggers[0].has_missed_deadline(guard)
+
+    iox2.WaitSetGuard.delete(guard)
+    iox2.WaitSet.delete(sut)
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -216,6 +250,9 @@ def test_create_attachment_id_from_guard(
     assert result == iox2.WaitSetRunResult.AllEventsHandled
 
     assert triggers[0] == attachment_id
+
+    iox2.WaitSetGuard.delete(guard)
+    iox2.WaitSet.delete(sut)
 
 
 @pytest.mark.parametrize("service_type", service_types)
@@ -249,3 +286,7 @@ def test_deleting_guard_explicitly_removes_attachment(
 
     assert sut.len == 0
     assert sut.is_empty
+
+    for i in range(0, number_of_attachments):
+        iox2.Listener.delete(listeners[i])
+    iox2.WaitSet.delete(sut)
