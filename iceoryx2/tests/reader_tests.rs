@@ -17,6 +17,7 @@ mod reader {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_container::flatmap::__internal_default_eq_comparison;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
     use iceoryx2_bb_testing::assert_that;
     use std::collections::HashSet;
@@ -121,6 +122,7 @@ mod reader {
     // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn handle_can_be_acquired_for_existing_key_value_pair_with_custom_key_type<Sut: Service>() {
+        type KeyType = u64;
         type ValueType = u64;
         let service_name = generate_name();
         let config = generate_isolated_config();
@@ -128,14 +130,18 @@ mod reader {
 
         let sut = node
             .service_builder(&service_name)
-            .blackboard_creator::<u64>()
+            .blackboard_creator::<KeyType>()
             .add::<ValueType>(0, 0)
             .create()
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(&0, &type_details);
+        let entry_handle = reader.__internal_entry(
+            &0,
+            &__internal_default_eq_comparison::<KeyType>,
+            &type_details,
+        );
         assert_that!(entry_handle, is_ok);
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
@@ -152,20 +158,27 @@ mod reader {
     // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn handle_cannot_be_acquired_for_non_existing_key_with_custom_key_type<Sut: Service>() {
+        type KeyType = u64;
+        type ValueType = u64;
+
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
             .service_builder(&service_name)
-            .blackboard_creator::<u64>()
-            .add::<u64>(0, 0)
+            .blackboard_creator::<KeyType>()
+            .add::<ValueType>(0, 0)
             .create()
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
 
-        let type_details = TypeDetail::new::<u64>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(&9, &type_details);
+        let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
+        let entry_handle = reader.__internal_entry(
+            &9,
+            &__internal_default_eq_comparison::<KeyType>,
+            &type_details,
+        );
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),
@@ -176,20 +189,26 @@ mod reader {
     // TODO [#817] replace u64 with CustomKeyMarker
     #[test]
     fn handle_cannot_be_acquired_for_wrong_value_type_with_custom_key_type<Sut: Service>() {
+        type KeyType = u64;
+
         let service_name = generate_name();
         let config = generate_isolated_config();
         let node = NodeBuilder::new().config(&config).create::<Sut>().unwrap();
 
         let sut = node
             .service_builder(&service_name)
-            .blackboard_creator::<u64>()
+            .blackboard_creator::<KeyType>()
             .add::<u64>(0, 0)
             .create()
             .unwrap();
         let reader = sut.reader_builder().create().unwrap();
 
         let type_details = TypeDetail::new::<i64>(TypeVariant::FixedSize);
-        let entry_handle = reader.__internal_entry(&0, &type_details);
+        let entry_handle = reader.__internal_entry(
+            &0,
+            &__internal_default_eq_comparison::<KeyType>,
+            &type_details,
+        );
         assert_that!(entry_handle, is_err);
         assert_that!(
             entry_handle.err().unwrap(),

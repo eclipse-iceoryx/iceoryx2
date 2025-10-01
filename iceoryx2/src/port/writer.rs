@@ -581,19 +581,10 @@ impl<
 }
 
 // TODO [#817] replace u64 with CustomKeyMarker
-// TODO: replace key with key_ptr, replace __internal_default_eq_comparison with key_eq_func argument
+// TODO: replace key with key_ptr
 impl<Service: service::Service> Writer<Service, u64> {
     #[doc(hidden)]
-    pub fn __internal_entry(
-        &self,
-        key: &u64,
-        type_details: &TypeDetail,
-    ) -> Result<__InternalEntryHandleMut<Service>, EntryHandleMutError> {
-        self.__internal_entry_impl(key, &__internal_default_eq_comparison::<u64>, type_details)
-    }
-
-    #[doc(hidden)]
-    pub fn __internal_entry_impl<F: Fn(*const u8, *const u8) -> bool>(
+    pub fn __internal_entry<F: Fn(*const u8, *const u8) -> bool>(
         &self,
         key: &u64,
         key_eq_func: &F,

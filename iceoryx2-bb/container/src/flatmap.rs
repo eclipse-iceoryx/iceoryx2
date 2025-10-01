@@ -210,6 +210,7 @@ impl<K: Eq, V: Clone, Ptr: GenericPointer> MetaFlatMap<K, V, Ptr> {
 }
 
 #[doc(hidden)]
+// TODO: safety
 pub fn __internal_default_eq_comparison<T: Eq>(lhs: *const u8, rhs: *const u8) -> bool {
     unsafe { *lhs.cast::<T>() == *rhs.cast::<T>() }
 }
@@ -249,6 +250,7 @@ impl<K: Eq, V: Clone> FlatMap<K, V> {
     /// Inserts a new key-value pair into the [`FlatMap`]. On success, the method returns [`Ok`],
     /// otherwise a [`FlatMapError`] describing the failure.
     pub fn insert(&mut self, id: K, value: V) -> Result<(), FlatMapError> {
+        // TODO: safety explanation for __internal_default_eq_comparison (also in other methods using this function)
         unsafe { self.insert_impl(id, value, &__internal_default_eq_comparison::<K>) }
     }
 

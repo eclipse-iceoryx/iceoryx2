@@ -24,6 +24,7 @@ mod service_blackboard {
     use iceoryx2::service::static_config::message_type_details::{TypeDetail, TypeVariant};
     use iceoryx2::service::Service;
     use iceoryx2::testing::*;
+    use iceoryx2_bb_container::flatmap::__internal_default_eq_comparison;
     use iceoryx2_bb_container::string::*;
     use iceoryx2_bb_posix::system_configuration::SystemInfo;
     use iceoryx2_bb_posix::unique_system_id::UniqueSystemId;
@@ -1658,6 +1659,7 @@ mod service_blackboard {
     // TODO [#817] move the following tests to testing.rs and replace u64 with CustomKeyMarker
     #[test]
     fn loan_uninit_and_write_works_with_custom_key_type<S: Service>() {
+        type KeyType = u64;
         type ValueType = u64;
 
         let service_name = generate_name();
@@ -1665,7 +1667,7 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let service = node
             .service_builder(&service_name)
-            .blackboard_creator::<u64>()
+            .blackboard_creator::<KeyType>()
             .add_with_default::<ValueType>(0)
             .create()
             .unwrap();
@@ -1674,11 +1676,23 @@ mod service_blackboard {
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
-        let entry_handle = reader.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle = reader
+            .__internal_entry(
+                &0,
+                &__internal_default_eq_comparison::<KeyType>,
+                &type_details,
+            )
+            .unwrap();
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
 
-        let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle_mut = writer
+            .__internal_entry(
+                &0,
+                &__internal_default_eq_comparison::<KeyType>,
+                &type_details,
+            )
+            .unwrap();
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
         let write_ptr = entry_value_uninit.write_cell();
@@ -1710,6 +1724,7 @@ mod service_blackboard {
 
     #[test]
     fn write_and_update_internal_cell_works_with_custom_key_type<S: Service>() {
+        type KeyType = u64;
         type ValueType = u64;
 
         let service_name = generate_name();
@@ -1717,7 +1732,7 @@ mod service_blackboard {
         let node = NodeBuilder::new().config(&config).create::<S>().unwrap();
         let service = node
             .service_builder(&service_name)
-            .blackboard_creator::<u64>()
+            .blackboard_creator::<KeyType>()
             .add_with_default::<ValueType>(0)
             .create()
             .unwrap();
@@ -1726,11 +1741,23 @@ mod service_blackboard {
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
 
-        let entry_handle = reader.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle = reader
+            .__internal_entry(
+                &0,
+                &__internal_default_eq_comparison::<KeyType>,
+                &type_details,
+            )
+            .unwrap();
         let mut read_value: ValueType = 9;
         let read_value_ptr: *mut ValueType = &mut read_value;
 
-        let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle_mut = writer
+            .__internal_entry(
+                &0,
+                &__internal_default_eq_comparison::<KeyType>,
+                &type_details,
+            )
+            .unwrap();
         let write_value: ValueType = 5;
         let write_value_ptr: *const ValueType = &write_value;
 
@@ -1772,6 +1799,7 @@ mod service_blackboard {
     fn entry_handle_mut_can_be_reused_after_entry_value_uninit_was_discarded_with_custom_key_type<
         Sut: Service,
     >() {
+        type KeyType = u64;
         type ValueType = u32;
 
         let service_name = generate_name();
@@ -1780,7 +1808,7 @@ mod service_blackboard {
 
         let sut = node
             .service_builder(&service_name)
-            .blackboard_creator::<u64>()
+            .blackboard_creator::<KeyType>()
             .add::<ValueType>(0, 0)
             .create()
             .unwrap();
@@ -1789,7 +1817,13 @@ mod service_blackboard {
         let entry_handle = reader.entry::<ValueType>(&0).unwrap();
 
         let type_details = TypeDetail::new::<ValueType>(TypeVariant::FixedSize);
-        let entry_handle_mut = writer.__internal_entry(&0, &type_details).unwrap();
+        let entry_handle_mut = writer
+            .__internal_entry(
+                &0,
+                &__internal_default_eq_comparison::<KeyType>,
+                &type_details,
+            )
+            .unwrap();
         let entry_value_uninit =
             entry_handle_mut.loan_uninit(type_details.size(), type_details.alignment());
         let entry_handle_mut = entry_value_uninit.discard();

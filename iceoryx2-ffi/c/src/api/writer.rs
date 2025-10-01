@@ -257,7 +257,7 @@ pub unsafe extern "C" fn iox2_writer_entry(
     let writer = &mut *writer_handle.as_type();
 
     match writer.service_type {
-        iox2_service_type_e::IPC => match writer.value.as_ref().ipc.__internal_entry_impl(
+        iox2_service_type_e::IPC => match writer.value.as_ref().ipc.__internal_entry(
             &key,
             &|lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs),
             &value_type_details,
@@ -274,7 +274,7 @@ pub unsafe extern "C" fn iox2_writer_entry(
             }
             Err(error) => return error.into_c_int(),
         },
-        iox2_service_type_e::LOCAL => match writer.value.as_ref().local.__internal_entry_impl(
+        iox2_service_type_e::LOCAL => match writer.value.as_ref().local.__internal_entry(
             &key,
             &|lhs: *const u8, rhs: *const u8| key_eq_func(lhs, rhs),
             &value_type_details,
