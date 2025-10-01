@@ -31,6 +31,7 @@ use core::alloc::Layout;
 use core::hash::Hash;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
+use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::static_assert_eq;
@@ -629,20 +630,13 @@ impl<
                 let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                     self.builder.base.shared_node.config(),
                 );
-                let mgmt_name = match self
+                let mgmt_name = self
                     .builder
                     .config_details()
                     .type_details
                     .type_name
-                    .as_str()
-                {
-                    Ok(s) => s,
-                    Err(_) => {
-                        fail!(from self,
-                              with BlackboardCreateError::InternalFailure,
-                              "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
-                    }
-                };
+                    .as_str();
+
                 // The name is set to be able to remove the concept when a node dies. Safe since the
                 // same name is set in ServiceInternal::__internal_remove_node_from_service.
                 unsafe {
@@ -883,20 +877,12 @@ impl<
                     let mut mgmt_config = blackboard_mgmt_config::<ServiceType, Mgmt<KeyType>>(
                         self.builder.base.shared_node.config(),
                     );
-                    let mgmt_name = match self
+                    let mgmt_name = self
                         .builder
                         .config_details()
                         .type_details
                         .type_name
-                        .as_str()
-                    {
-                        Ok(s) => s,
-                        Err(_) => {
-                            fail!(from self,
-                              with BlackboardOpenError::InternalFailure,
-                              "{} due to a failure while extracting the blackboard mgmt segment name.", msg);
-                        }
-                    };
+                        .as_str();
                     // The name was set in create_impl to be able to remove the concept when a node
                     // dies. Safe since the same name is set in
                     // ServiceInternal::__internal_remove_node_from_service.

@@ -322,6 +322,11 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
 
         Self::from_bytes(core::slice::from_raw_parts(ptr.cast(), string_length))
     }
+
+    /// Returns the capacity of the [`StaticString`]
+    pub const fn capacity() -> usize {
+        CAPACITY
+    }
 }
 
 impl<const CAPACITY: usize> String for StaticString<CAPACITY> {

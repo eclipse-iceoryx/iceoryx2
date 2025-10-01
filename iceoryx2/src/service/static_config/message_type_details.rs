@@ -12,7 +12,7 @@
 
 use core::alloc::Layout;
 
-use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::math::align;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -51,7 +51,7 @@ pub enum TypeVariant {
 }
 
 /// A fixed-size string type used to store type names.
-pub type TypeNameString = FixedSizeByteString<MAX_TYPE_NAME_LENGTH>;
+pub type TypeNameString = StaticString<MAX_TYPE_NAME_LENGTH>;
 
 /// Contains all type details required to connect to a [`crate::service::Service`]
 #[derive(Default, Debug, Clone, Eq, Hash, PartialEq, ZeroCopySend, Serialize, Deserialize)]

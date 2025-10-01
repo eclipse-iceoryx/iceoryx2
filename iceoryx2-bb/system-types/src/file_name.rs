@@ -79,7 +79,7 @@ semantic_string! {
 #[derive(Debug, Clone, Eq, ZeroCopySend)]
 #[repr(C)]
 pub struct RestrictedFileName<const CAPACITY: usize> {
-    value: iceoryx2_bb_container::byte_string::FixedSizeByteString<CAPACITY>,
+    value: iceoryx2_bb_container::string::StaticString<CAPACITY>,
 }
 
 impl<const CAPACITY: usize>
@@ -91,13 +91,13 @@ impl<const CAPACITY: usize>
         static_assert_ge::<{ CAPACITY }, 1>();
 
         Self {
-            value: iceoryx2_bb_container::byte_string::FixedSizeByteString::new(),
+            value: iceoryx2_bb_container::string::StaticString::new(),
         }
     }
 
     unsafe fn get_mut_string(
         &mut self,
-    ) -> &mut iceoryx2_bb_container::byte_string::FixedSizeByteString<CAPACITY> {
+    ) -> &mut iceoryx2_bb_container::string::StaticString<CAPACITY> {
         &mut self.value
     }
 
@@ -164,7 +164,7 @@ impl<const CAPACITY: usize> serde::Serialize for RestrictedFileName<CAPACITY> {
 impl<const CAPACITY: usize> iceoryx2_bb_container::semantic_string::SemanticString<CAPACITY>
     for RestrictedFileName<CAPACITY>
 {
-    fn as_string(&self) -> &iceoryx2_bb_container::byte_string::FixedSizeByteString<CAPACITY> {
+    fn as_string(&self) -> &iceoryx2_bb_container::string::StaticString<CAPACITY> {
         &self.value
     }
 
@@ -174,11 +174,12 @@ impl<const CAPACITY: usize> iceoryx2_bb_container::semantic_string::SemanticStri
 
     unsafe fn new_unchecked(bytes: &[u8]) -> Self {
         Self {
-            value: iceoryx2_bb_container::byte_string::FixedSizeByteString::new_unchecked(bytes),
+            value: iceoryx2_bb_container::string::StaticString::from_bytes_unchecked(bytes),
         }
     }
 
     unsafe fn insert_bytes_unchecked(&mut self, idx: usize, bytes: &[u8]) {
+        use iceoryx2_bb_container::string::String;
         self.value.insert_bytes_unchecked(idx, bytes);
     }
 }
@@ -298,6 +299,7 @@ impl<const CAPACITY: usize> core::ops::Deref for RestrictedFileName<CAPACITY> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
+        use iceoryx2_bb_container::string::String;
         self.value.as_bytes()
     }
 }

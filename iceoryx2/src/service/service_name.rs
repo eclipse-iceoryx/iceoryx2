@@ -23,13 +23,10 @@
 //! ```
 
 use crate::constants::MAX_SERVICE_NAME_LENGTH;
-use iceoryx2_bb_container::byte_string::{
-    FixedSizeByteString, FixedSizeByteStringModificationError,
-};
+use iceoryx2_bb_container::string::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 
-use iceoryx2_bb_log::fatal_panic;
 use serde::{de::Visitor, Deserialize, Serialize};
 
 /// Prefix used to identify internal iceoryx2 services.
@@ -56,17 +53,18 @@ impl core::fmt::Display for ServiceNameError {
 
 impl core::error::Error for ServiceNameError {}
 
-impl From<FixedSizeByteStringModificationError> for ServiceNameError {
-    fn from(error: FixedSizeByteStringModificationError) -> Self {
+impl From<StringModificationError> for ServiceNameError {
+    fn from(error: StringModificationError) -> Self {
         match error {
-            FixedSizeByteStringModificationError::InsertWouldExceedCapacity => {
+            StringModificationError::InsertWouldExceedCapacity => {
                 ServiceNameError::ExceedsMaximumLength
             }
+            StringModificationError::InvalidCharacter => ServiceNameError::InvalidContent,
         }
     }
 }
 
-type ServiceNameString = FixedSizeByteString<MAX_SERVICE_NAME_LENGTH>;
+type ServiceNameString = StaticString<MAX_SERVICE_NAME_LENGTH>;
 
 /// The name of a [`Service`](crate::service::Service).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, ZeroCopySend)]
@@ -105,9 +103,7 @@ impl ServiceName {
 
     /// Returns a str reference to the [`ServiceName`]
     pub fn as_str(&self) -> &str {
-        fatal_panic!(from self,
-             when self.value.as_str(),
-             "This should never happen! The underlying service name does not contain a valid UTF-8 string.")
+        self.value.as_str()
     }
 
     /// Checks if a service is an internal iceoryx2 service.

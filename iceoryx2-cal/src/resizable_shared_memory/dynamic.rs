@@ -27,6 +27,7 @@ use crate::shm_allocator::pool_allocator::PoolAllocator;
 use crate::shm_allocator::ShmAllocationError;
 use iceoryx2_bb_container::semantic_string::SemanticString;
 use iceoryx2_bb_container::slotmap::{SlotMap, SlotMapKey};
+use iceoryx2_bb_container::string::String;
 use iceoryx2_bb_elementary_traits::allocator::AllocationError;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_log::{fail, warn};
@@ -535,7 +536,7 @@ where
             }
 
             let segment_id_value = fatal_panic!(from origin,
-                    when String::from_utf8_lossy(raw_segment_id.as_bytes()).parse::<u64>(),
+                    when std::string::String::from_utf8_lossy(raw_segment_id.as_bytes()).parse::<u64>(),
                     "This should never happen! {msg} since the segment_id raw value is not an unsigned integer.");
 
             if segment_id_value > SegmentId::max_segment_id() as u64 {

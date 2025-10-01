@@ -90,8 +90,6 @@
 
 extern crate alloc;
 
-/// A byte string similar to [`std::string::String`] but it does not support UTF-8
-pub mod byte_string;
 /// A queue similar to [`std::collections::VecDeque`]
 pub mod queue;
 /// A container with persistent unique keys to access values.

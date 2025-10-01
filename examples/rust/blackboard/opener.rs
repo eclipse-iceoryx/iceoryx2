@@ -12,7 +12,7 @@
 
 use core::time::Duration;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+use iceoryx2_bb_container::string::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let reader = service.reader_builder().create()?;
 
     let entry_handle_0 = reader.entry::<u64>(&0)?;
-    let entry_handle_5 = reader.entry::<FixedSizeByteString<30>>(&5)?;
+    let entry_handle_5 = reader.entry::<StaticString<30>>(&5)?;
     let entry_handle_9 = reader.entry::<f32>(&9)?;
 
     while node.wait(CYCLE_TIME).is_ok() {

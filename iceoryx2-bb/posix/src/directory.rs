@@ -33,8 +33,8 @@
 //!
 //! Directory::remove(&dir_name).unwrap();
 //! ```
-use iceoryx2_bb_container::byte_string::strnlen;
 use iceoryx2_bb_container::semantic_string::SemanticString;
+use iceoryx2_bb_container::string::strnlen;
 use iceoryx2_bb_elementary::enum_gen;
 use iceoryx2_bb_elementary::scope_guard::ScopeGuardBuilder;
 use iceoryx2_bb_log::{error, fail, fatal_panic, trace};

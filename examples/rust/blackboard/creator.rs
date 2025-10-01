@@ -12,7 +12,7 @@
 
 use core::time::Duration;
 use iceoryx2::prelude::*;
-use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+use iceoryx2_bb_container::string::*;
 
 const CYCLE_TIME: Duration = Duration::from_secs(1);
 
@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         .service_builder(&"My/Funk/ServiceName".try_into()?)
         .blackboard_creator::<KeyType>()
         .add_with_default::<u64>(0)
-        .add::<FixedSizeByteString<30>>(5, "Groovy".try_into()?)
+        .add::<StaticString<30>>(5, "Groovy".try_into()?)
         .add_with_default::<f32>(9)
         .create()?;
 
@@ -34,7 +34,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
     let writer = service.writer_builder().create()?;
 
     let entry_handle_mut_0 = writer.entry::<u64>(&0)?;
-    let mut entry_handle_mut_5 = writer.entry::<FixedSizeByteString<30>>(&5)?;
+    let mut entry_handle_mut_5 = writer.entry::<StaticString<30>>(&5)?;
     let entry_handle_mut_9 = writer.entry::<f32>(&9)?;
 
     let mut counter = 0;
@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn core::error::Error>> {
         let entry_value_uninit = entry_handle_mut_5.loan_uninit();
         let value = format!("Funky {}", counter);
         let entry_value =
-            entry_value_uninit.write(FixedSizeByteString::<30>::from_bytes(value.as_bytes())?);
+            entry_value_uninit.write(StaticString::<30>::from_bytes(value.as_bytes())?);
         entry_handle_mut_5 = entry_value.update();
         println!("Write new value for key 5: {}", value);
 

@@ -11,13 +11,11 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use crate::constants::MAX_NODE_NAME_LENGTH;
-use iceoryx2_bb_container::{
-    byte_string::FixedSizeByteString, semantic_string::SemanticStringError,
-};
+use iceoryx2_bb_container::{semantic_string::SemanticStringError, string::*};
 use iceoryx2_bb_log::fail;
 use serde::{de::Visitor, Deserialize, Serialize};
 
-type NodeNameString = FixedSizeByteString<MAX_NODE_NAME_LENGTH>;
+type NodeNameString = StaticString<MAX_NODE_NAME_LENGTH>;
 
 /// Represent the name for a [`crate::node::Node`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]

@@ -443,7 +443,7 @@ impl<S: Service, R: ServiceResource> Drop for ServiceState<S, R> {
 pub mod internal {
     use builder::event::EventOpenError;
     use dynamic_config::{PortCleanupAction, RemoveDeadNodeResult};
-    use iceoryx2_bb_container::byte_string::FixedSizeByteString;
+    use iceoryx2_bb_container::string::*;
     use iceoryx2_bb_log::error;
     use port_factory::PortFactory;
 
@@ -581,7 +581,7 @@ pub mod internal {
         config: &config::Config,
         blackboard_name: &FileName,
         blackboard_payload_config: &<S::BlackboardPayload as NamedConceptMgmt>::Configuration,
-        blackboard_mgmt_name: &FixedSizeByteString<MAX_TYPE_NAME_LENGTH>,
+        blackboard_mgmt_name: &StaticString<MAX_TYPE_NAME_LENGTH>,
         origin: &str,
         msg: &str,
     ) {
@@ -600,37 +600,29 @@ pub mod internal {
             }
         }
 
-        match blackboard_mgmt_name.as_str() {
-            Ok(s) => {
-                // u64 is just a placeholder needed for the DynamicStorageConfiguration; it is
-                // overwritten right below
-                let mut blackboard_mgmt_config =
-                    crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
-                // Safe since the same type name is set when creating the BlackboardMgmt in
-                // Creator::create_impl so we can safely remove the concept.
-                unsafe {
-                    <S::BlackboardMgmt<u64> as DynamicStorage::<u64>>::__internal_set_type_name_in_config(
-                                            &mut blackboard_mgmt_config,
-                                    s
-                                        )
-                };
-                match unsafe {
-                    <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
-                        blackboard_name,
-                        &blackboard_mgmt_config,
-                    )
-                } {
-                    Ok(true) => {
-                        trace!(from origin, "Remove blackboard mgmt segment.");
-                    }
-                    _ => {
-                        error!(from origin,
-                                            "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
-                    }
-                }
+        // u64 is just a placeholder needed for the DynamicStorageConfiguration; it is
+        // overwritten right below
+        let mut blackboard_mgmt_config =
+            crate::service::config_scheme::blackboard_mgmt_config::<S, u64>(config);
+        // Safe since the same type name is set when creating the BlackboardMgmt in
+        // Creator::create_impl so we can safely remove the concept.
+        unsafe {
+            <S::BlackboardMgmt<u64> as DynamicStorage<u64>>::__internal_set_type_name_in_config(
+                &mut blackboard_mgmt_config,
+                blackboard_mgmt_name.as_str(),
+            )
+        };
+        match unsafe {
+            <S::BlackboardMgmt<u64> as NamedConceptMgmt>::remove_cfg(
+                blackboard_name,
+                &blackboard_mgmt_config,
+            )
+        } {
+            Ok(true) => {
+                trace!(from origin, "Remove blackboard mgmt segment.");
             }
-            Err(_) => {
-                error!(from origin, "{} since the blackboard mgmt segment name cannot be acquired.", msg);
+            _ => {
+                error!(from origin, "{} since the blackboard mgmt segment cannot be removed - service seems to be in a corrupted state.", msg);
             }
         }
     }
@@ -748,7 +740,7 @@ pub mod internal {
                     &blackboard_payload_config,
                 );
                 let mut is_blackboard = false;
-                let mut blackboard_mgmt_name = FixedSizeByteString::<MAX_TYPE_NAME_LENGTH>::new();
+                let mut blackboard_mgmt_name = StaticString::<MAX_TYPE_NAME_LENGTH>::new();
                 if let Ok(true) = blackboard_payload {
                     is_blackboard = true;
 
