@@ -258,7 +258,7 @@ pub trait SemanticString<const CAPACITY: usize>:
             return Ok(None);
         }
 
-        Ok(self.remove(self.len() - 1)?)
+        self.remove(self.len() - 1)
     }
 
     /// Adds a single byte at the end. When the capacity is exceeded, the byte is an

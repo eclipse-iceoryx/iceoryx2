@@ -29,6 +29,7 @@
 //! println!("removed byte {}", some_string.remove(0));
 //! ```
 
+use core::str::FromStr;
 use core::{
     cmp::Ordering,
     fmt::{Debug, Display},
@@ -47,6 +48,8 @@ use crate::string::{
     as_escaped_string, internal::StringView, strnlen, String, StringModificationError,
 };
 
+/// Variant of the [`String`] that has a compile-time fixed capacity and is
+/// shared-memory compatible.
 #[derive(PlacementDefault, ZeroCopySend, Clone, Copy)]
 #[repr(C)]
 pub struct StaticString<const CAPACITY: usize> {
@@ -249,6 +252,14 @@ impl<const CAPACITY: usize> StringView for StaticString<CAPACITY> {
     }
 }
 
+impl<const CAPACITY: usize> FromStr for StaticString<CAPACITY> {
+    type Err = StringModificationError;
+
+    fn from_str(s: &str) -> Result<Self, StringModificationError> {
+        Self::from_bytes(s.as_bytes())
+    }
+}
+
 impl<const CAPACITY: usize> StaticString<CAPACITY> {
     /// Creates a new and empty [`StaticString`]
     pub const fn new() -> Self {
@@ -291,12 +302,6 @@ impl<const CAPACITY: usize> StaticString<CAPACITY> {
             new_self.insert_bytes_unchecked(0, &bytes[0..core::cmp::min(bytes.len(), CAPACITY)])
         };
         new_self
-    }
-
-    /// Creates a new [`StaticString`] from a string slice. If the string slice does not fit
-    /// into the [`StaticString`] an error will be returned.
-    pub fn from_str(s: &str) -> Result<Self, StringModificationError> {
-        Self::from_bytes(s.as_bytes())
     }
 
     /// Creates a new [`StaticString`] from a string slice. If the string slice does not fit

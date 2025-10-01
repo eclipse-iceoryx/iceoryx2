@@ -28,9 +28,9 @@ pub unsafe fn strnlen(ptr: *const core::ffi::c_char, len: usize) -> usize {
 }
 
 /// Adds escape characters to the string so that it can be used for console output.
-pub fn as_escaped_string(bytes: &[u8]) -> std::string::String {
+pub fn as_escaped_string(bytes: &[u8]) -> alloc::string::String {
     unsafe {
-        std::string::String::from_utf8_unchecked(
+        alloc::string::String::from_utf8_unchecked(
             bytes
                 .iter()
                 .flat_map(|c| match *c {

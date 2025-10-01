@@ -11,14 +11,17 @@
 // SPDX-License-Identifier: Apache-2.0 OR MIT
 
 use core::mem::MaybeUninit;
-use iceoryx2_bb_log::{fail, fatal_panic};
-use std::{
+use core::{
     fmt::Debug,
     hash::Hash,
     ops::{Deref, DerefMut},
 };
+use iceoryx2_bb_log::{fail, fatal_panic};
 
+/// Compile-time fixed-capacity string variant that is shared-memory compatible.
 pub mod static_string;
+
+/// String helper functions
 pub mod utils;
 
 pub use static_string::*;
@@ -65,8 +68,9 @@ pub(crate) mod internal {
 
 /// A UTF-8 string trait.
 /// The string class uses Unicode (ISO/IEC 10646) terminology throughout its interface. In particular:
-/// - A code point is the numerical index assigned to a character in the Unicode standard.
-/// - A code unit is the basic component of a character encoding system. For UTF-8, the code unit has a size of 8-bits
+///   - A code point is the numerical index assigned to a character in the Unicode standard.
+///   - A code unit is the basic component of a character encoding system. For UTF-8, the code unit has a size of 8-bits
+///
 /// For example, the code point U+0041 represents the letter 'A' and can be encoded in a single 8-bit code unit in
 /// UTF-8. The code point U+1F4A9 requires four 8-bit code units in the UTF-8 encoding.
 ///
