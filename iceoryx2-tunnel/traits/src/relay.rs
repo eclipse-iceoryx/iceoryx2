@@ -18,8 +18,14 @@ use iceoryx2::service::static_config::StaticConfig;
 ///
 /// A relay should be created for each messaging pattern.
 pub trait Relay {
-    fn propagate(&self, bytes: *const u8, len: usize);
-    fn ingest(&self, loan: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool;
+    type PropagationError: Debug;
+    type IngestionError: Debug;
+
+    fn propagate(&self, bytes: *const u8, len: usize) -> Result<(), Self::PropagationError>;
+    fn ingest(
+        &self,
+        loan: &mut dyn FnMut(usize) -> (*mut u8, usize),
+    ) -> Result<bool, Self::IngestionError>;
 }
 
 /// Builds a relay for a specific messaging pattern.
@@ -28,8 +34,19 @@ pub trait Relay {
 /// propagation of data on different messaging patterns.
 pub trait RelayBuilder {
     type CreationError: Debug;
+    type Relay: Relay;
 
-    fn create(self) -> Result<Box<dyn Relay>, Self::CreationError>;
+    fn create(
+        self,
+    ) -> Result<
+        Box<
+            dyn Relay<
+                PropagationError = <Self::Relay as Relay>::PropagationError,
+                IngestionError = <Self::Relay as Relay>::IngestionError,
+            >,
+        >,
+        Self::CreationError,
+    >;
 }
 
 /// Factory for creating relay builders for different messaging patterns.

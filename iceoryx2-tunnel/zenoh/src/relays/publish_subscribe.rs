@@ -13,6 +13,7 @@
 use iceoryx2::service::static_config::StaticConfig;
 use iceoryx2_bb_log::{error, fail};
 use zenoh::{
+    bytes::ZBytes,
     handlers::{FifoChannel, FifoChannelHandler},
     pubsub::{Publisher, Subscriber},
     qos::Reliability,
@@ -25,6 +26,15 @@ use crate::keys;
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
     FailedToCreateEndpoint,
+}
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum PropagationError {
+    FailedToPutPayload,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum IngestionError {
+    Error,
 }
 
 impl From<Box<dyn std::error::Error + Send + Sync>> for CreationError {
@@ -50,8 +60,19 @@ impl<'a> Builder<'a> {
 
 impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
     type CreationError = CreationError;
+    type Relay = Relay;
 
-    fn create(self) -> Result<Box<dyn iceoryx2_tunnel_traits::Relay>, Self::CreationError> {
+    fn create(
+        self,
+    ) -> Result<
+        Box<
+            dyn iceoryx2_tunnel_traits::Relay<
+                PropagationError = <Self::Relay as iceoryx2_tunnel_traits::Relay>::PropagationError,
+                IngestionError = <Self::Relay as iceoryx2_tunnel_traits::Relay>::IngestionError,
+            >,
+        >,
+        Self::CreationError,
+    > {
         let key = keys::publish_subscribe(self.static_config.service_id());
 
         let publisher = fail!(
@@ -94,12 +115,45 @@ pub struct Relay {
 }
 
 impl iceoryx2_tunnel_traits::Relay for Relay {
-    fn propagate(&self, bytes: *const u8, len: usize) {
-        todo!()
+    type PropagationError = PropagationError;
+    type IngestionError = PropagationError;
+
+    fn propagate(&self, bytes: *const u8, len: usize) -> Result<(), Self::PropagationError> {
+        let payload = unsafe { ZBytes::from(core::slice::from_raw_parts(bytes, len)) };
+        fail!(
+            from "publish_subscribe::Relay::propagate",
+            when self.publisher.put(payload).wait(),
+            with PropagationError::FailedToPutPayload,
+            "Failed to propagate payload over relay"
+        );
+        Ok(())
     }
 
-    fn ingest(&self, loan: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
-        todo!()
+    fn ingest(
+        &self,
+        loan: &mut dyn FnMut(usize) -> (*mut u8, usize),
+    ) -> Result<bool, Self::IngestionError> {
+        for zenoh_sample in self.subscriber.drain() {
+            let zenoh_payload = zenoh_sample.payload();
+            let (loaned_ptr, loan_size) = loan(zenoh_payload.len());
+
+            assert!(
+                loan_size >= zenoh_payload.len(),
+                "loan_size ({}) is too small for received payload ({})",
+                loan_size,
+                zenoh_payload.len()
+            );
+
+            unsafe {
+                core::ptr::copy_nonoverlapping(
+                    zenoh_payload.to_bytes().as_ptr(),
+                    loaned_ptr,
+                    zenoh_payload.len(),
+                );
+            }
+        }
+
+        Ok(false)
     }
 }
 

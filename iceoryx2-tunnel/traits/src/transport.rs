@@ -12,7 +12,7 @@
 
 use core::fmt::Debug;
 
-use crate::{Discovery, RelayFactory};
+use crate::{Discovery, Relay, RelayFactory};
 
 /// Abstraction of the transport over which data is propagated.
 ///
@@ -20,10 +20,12 @@ use crate::{Discovery, RelayFactory};
 pub trait Transport: Sized {
     type Config: Default + Debug;
     type CreationError: Debug;
+    type Discovery: Discovery;
     type RelayFactory<'a>: RelayFactory
     where
         Self: 'a; // Self must live at least as long as 'a
-    type Discovery: Discovery;
+    type PublishSubscribeRelay: Relay;
+    type EventRelay: Relay;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError>;
     fn discovery(&self) -> &impl Discovery;

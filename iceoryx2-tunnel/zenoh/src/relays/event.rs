@@ -18,6 +18,16 @@ pub enum CreationError {
     Error,
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum PropagationError {
+    Error,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum IngestionError {
+    Error,
+}
+
 #[derive(Debug)]
 pub struct Builder<'a> {
     session: &'a Session,
@@ -35,20 +45,37 @@ impl<'a> Builder<'a> {
 
 impl<'a> iceoryx2_tunnel_traits::RelayBuilder for Builder<'a> {
     type CreationError = CreationError;
+    type Relay = Relay;
 
-    fn create(self) -> Result<Box<dyn iceoryx2_tunnel_traits::Relay>, Self::CreationError> {
-        Ok(Box::new(Relay {}))
+    fn create(
+        self,
+    ) -> Result<
+        Box<
+            dyn iceoryx2_tunnel_traits::Relay<
+                PropagationError = <Self::Relay as iceoryx2_tunnel_traits::Relay>::PropagationError,
+                IngestionError = <Self::Relay as iceoryx2_tunnel_traits::Relay>::IngestionError,
+            >,
+        >,
+        Self::CreationError,
+    > {
+        todo!()
     }
 }
 
 pub struct Relay {}
 
 impl iceoryx2_tunnel_traits::Relay for Relay {
-    fn propagate(&self, bytes: *const u8, len: usize) {
+    type PropagationError = PropagationError;
+    type IngestionError = IngestionError;
+
+    fn propagate(&self, bytes: *const u8, len: usize) -> Result<(), Self::PropagationError> {
         todo!()
     }
 
-    fn ingest(&self, loan: &mut dyn FnMut(usize) -> (*mut u8, usize)) -> bool {
+    fn ingest(
+        &self,
+        loan: &mut dyn FnMut(usize) -> (*mut u8, usize),
+    ) -> Result<bool, Self::IngestionError> {
         todo!()
     }
 }

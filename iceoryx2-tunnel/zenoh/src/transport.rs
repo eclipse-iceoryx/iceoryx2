@@ -13,7 +13,10 @@
 use iceoryx2_bb_log::fail;
 use zenoh::{Config, Session, Wait};
 
-use crate::{discovery::Discovery, relays::Factory};
+use crate::{
+    discovery::Discovery,
+    relays::{event, publish_subscribe, Factory},
+};
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum CreationError {
@@ -29,11 +32,13 @@ pub struct Transport {
 impl iceoryx2_tunnel_traits::Transport for Transport {
     type Config = Config;
     type CreationError = CreationError;
+    type Discovery = Discovery;
     type RelayFactory<'a>
         = Factory<'a>
     where
         Self: 'a;
-    type Discovery = Discovery;
+    type PublishSubscribeRelay = publish_subscribe::Relay;
+    type EventRelay = event::Relay;
 
     fn create(config: &Self::Config) -> Result<Self, Self::CreationError> {
         let session = zenoh::open(config.clone()).wait();
