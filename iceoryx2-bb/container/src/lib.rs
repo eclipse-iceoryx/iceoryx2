@@ -39,7 +39,7 @@
 //!
 //! ```
 //! use iceoryx2_bb_container::byte_string::*;
-//! use iceoryx2_bb_container::vec::*;
+//! use iceoryx2_bb_container::vector::*;
 //!
 //! const TEXT_CAPACITY: usize = 123;
 //! const DATA_CAPACITY: usize = 456;
@@ -47,13 +47,13 @@
 //! #[repr(C)]
 //! struct MyMessageType {
 //!     some_text: FixedSizeByteString<TEXT_CAPACITY>,
-//!     some_data: FixedSizeVec<u64, DATA_CAPACITY>,
+//!     some_data: StaticVec<u64, DATA_CAPACITY>,
 //! }
 //!
 //! # fn main() -> Result<(), Box<dyn core::error::Error>> {
 //! let my_message = MyMessageType {
 //!     some_text: FixedSizeByteString::from_bytes(b"Hello World")?,
-//!     some_data: FixedSizeVec::new(),
+//!     some_data: StaticVec::new(),
 //! };
 //! # Ok(())
 //! # }
@@ -100,7 +100,11 @@ pub mod slotmap;
 /// ruleset on their content can be realized.
 #[macro_use]
 pub mod semantic_string;
+
 /// A container to store key-value pairs.
 pub mod flatmap;
-/// A vector similar to [`std::vec::Vec`]
-pub mod vec;
+
+#[doc(hidden)]
+pub(crate) mod vec;
+/// A trait that defines the interface of a vector and several vector variants.
+pub mod vector;

@@ -27,10 +27,11 @@ use crate::service::{self, config_scheme::connection_config, naming_scheme::conn
 use alloc::sync::Arc;
 use iceoryx2_bb_container::slotmap::SlotMap;
 use iceoryx2_bb_container::slotmap::SlotMapKey;
-use iceoryx2_bb_container::vec::Vec;
+use iceoryx2_bb_container::vector::polymorphic_vec::*;
 use iceoryx2_bb_elementary::cyclic_tagger::*;
 use iceoryx2_bb_log::fatal_panic;
 use iceoryx2_bb_log::{error, fail, warn};
+use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::named_concept::NamedConceptBuilder;
 use iceoryx2_cal::zero_copy_connection::*;
 
@@ -111,12 +112,13 @@ impl<Service: service::Service> Connection<Service> {
 
 #[derive(Debug)]
 pub(crate) struct Receiver<Service: service::Service> {
-    pub(crate) connections: Vec<UnsafeCell<Option<SlotMapKey>>>,
+    pub(crate) connections: PolymorphicVec<'static, UnsafeCell<Option<SlotMapKey>>, HeapAllocator>,
     pub(crate) receiver_port_id: u128,
     pub(crate) service_state: Arc<ServiceState<Service, NoResource>>,
     pub(crate) buffer_size: usize,
     pub(crate) tagger: CyclicTagger,
-    pub(crate) to_be_removed_connections: Option<UnsafeCell<Vec<SlotMapKey>>>,
+    pub(crate) to_be_removed_connections:
+        Option<UnsafeCell<PolymorphicVec<'static, SlotMapKey, HeapAllocator>>>,
     pub(crate) degradation_callback: Option<DegradationCallback<'static>>,
     pub(crate) message_type_details: MessageTypeDetails,
     pub(crate) receiver_max_borrowed_samples: usize,
@@ -333,7 +335,11 @@ impl<Service: service::Service> Receiver<Service> {
             let to_be_removed_connections = unsafe { &mut *to_be_removed_connections.get() };
 
             if !to_be_removed_connections.is_empty() {
-                let mut clean_connections = Vec::new(to_be_removed_connections.capacity());
+                let mut clean_connections = PolymorphicVec::new(
+                    HeapAllocator::global(),
+                    to_be_removed_connections.capacity(),
+                )
+                .expect("Heap allocator provides memory.");
                 let connection_storage = unsafe { &mut *self.connection_storage.get() };
 
                 for (n, connection_key) in to_be_removed_connections.iter().enumerate() {

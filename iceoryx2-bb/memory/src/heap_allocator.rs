@@ -33,6 +33,11 @@ impl HeapAllocator {
     pub const fn new() -> HeapAllocator {
         HeapAllocator {}
     }
+
+    pub fn global() -> &'static HeapAllocator {
+        static ALLOCATOR: HeapAllocator = HeapAllocator {};
+        &ALLOCATOR
+    }
 }
 
 impl BaseAllocator for HeapAllocator {

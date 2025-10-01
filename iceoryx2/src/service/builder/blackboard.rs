@@ -31,7 +31,7 @@ use core::alloc::Layout;
 use core::hash::Hash;
 use iceoryx2_bb_container::flatmap::RelocatableFlatMap;
 use iceoryx2_bb_container::queue::RelocatableContainer;
-use iceoryx2_bb_container::vec::RelocatableVec;
+use iceoryx2_bb_container::vector::relocatable_vec::*;
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::static_assert::static_assert_eq;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -673,7 +673,7 @@ impl<
                                 };
                                 (*self.builder.internals[i].value_writer)(mem.data_ptr);
                                 // write offset to value in payload_shm to entries vector
-                                let res = unsafe {entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: IoxAtomicU64::new(mem.offset.offset() as u64)})};
+                                let res = entry.entries.push(Entry{type_details: self.builder.internals[i].value_type_details.clone(), offset: IoxAtomicU64::new(mem.offset.offset() as u64)});
                                 if !res {
                                     error!(from self, "Writing the value offset to the blackboard management segment failed.");
                                     return false

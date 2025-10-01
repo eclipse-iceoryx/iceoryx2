@@ -76,12 +76,13 @@ use core::{
     any::TypeId, cell::UnsafeCell, fmt::Debug, marker::PhantomData, mem::MaybeUninit,
     sync::atomic::Ordering,
 };
-use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vec::Vec};
+use iceoryx2_bb_container::{queue::Queue, slotmap::SlotMap, vector::polymorphic_vec::*};
 
 use iceoryx2_bb_elementary::{cyclic_tagger::CyclicTagger, CallbackProgression};
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
 use iceoryx2_bb_lock_free::mpmc::container::{ContainerHandle, ContainerState};
 use iceoryx2_bb_log::{fail, fatal_panic, warn};
+use iceoryx2_bb_memory::heap_allocator::HeapAllocator;
 use iceoryx2_cal::{
     arc_sync_policy::ArcSyncPolicy,
     dynamic_storage::DynamicStorage,
@@ -449,14 +450,20 @@ impl<
             number_of_to_be_removed_connections + number_of_active_connections;
 
         let response_receiver = Receiver {
-            connections: Vec::from_fn(number_of_active_connections, |_| UnsafeCell::new(None)),
+            connections: PolymorphicVec::from_fn(
+                HeapAllocator::global(),
+                number_of_active_connections,
+                |_| UnsafeCell::new(None),
+            )
+            .expect("Heap allocator provides memory."),
             receiver_port_id: client_id.value(),
             service_state: service.clone(),
             buffer_size: static_config.max_response_buffer_size,
             tagger: CyclicTagger::new(),
-            to_be_removed_connections: Some(UnsafeCell::new(Vec::new(
-                number_of_to_be_removed_connections,
-            ))),
+            to_be_removed_connections: Some(UnsafeCell::new(
+                PolymorphicVec::new(HeapAllocator::global(), number_of_to_be_removed_connections)
+                    .expect("Heap allocator provides memory."),
+            )),
             degradation_callback: client_factory.response_degradation_callback,
             message_type_details: static_config.response_message_type_details.clone(),
             receiver_max_borrowed_samples: static_config

@@ -99,7 +99,7 @@
 
 use core::ops::Deref;
 
-use iceoryx2_bb_container::{semantic_string::SemanticString, vec::FixedSizeVec};
+use iceoryx2_bb_container::{semantic_string::SemanticString, vector::static_vec::*};
 use iceoryx2_bb_derive_macros::ZeroCopySend;
 use iceoryx2_bb_elementary::CallbackProgression;
 use iceoryx2_bb_elementary_traits::zero_copy_send::ZeroCopySend;
@@ -173,8 +173,8 @@ mod value {
 /// Value type used for service attributes.
 pub type AttributeValue = value::FixedString;
 
-type KeyStorage = FixedSizeVec<AttributeKey, MAX_ATTRIBUTES>;
-type AttributeStorage = FixedSizeVec<Attribute, MAX_ATTRIBUTES>;
+type KeyStorage = StaticVec<AttributeKey, MAX_ATTRIBUTES>;
+type AttributeStorage = StaticVec<Attribute, MAX_ATTRIBUTES>;
 
 /// Represents a single service attribute (key-value) pair that can be defined when the service
 /// is being created.

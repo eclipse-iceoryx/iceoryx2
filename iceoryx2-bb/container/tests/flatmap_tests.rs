@@ -65,9 +65,12 @@ mod flat_map {
     fn drop_called_for_keys_and_values() {
         let state = LifetimeTracker::start_tracking();
         let mut map = FixedSizeFlatMap::<LifetimeTracker, LifetimeTracker, CAPACITY>::new();
-        for _ in 0..CAPACITY {
+        for n in 0..CAPACITY {
             assert_that!(
-                map.insert(LifetimeTracker::default(), LifetimeTracker::default()),
+                map.insert(
+                    LifetimeTracker::new_with_value(n),
+                    LifetimeTracker::new_with_value(n)
+                ),
                 is_ok
             );
         }
