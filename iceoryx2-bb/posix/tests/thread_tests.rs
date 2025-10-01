@@ -69,15 +69,17 @@ fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
     test_requires!(POSIX_SUPPORT_CPU_AFFINITY);
     let _watchdog = Watchdog::new();
     let number_of_cpu_cores = SystemInfo::NumberOfCpuCores.value();
-    let barrier = Arc::new(Barrier::new(2));
+    let init_barrier = Arc::new(Barrier::new(2));
+    let test_barrier = Arc::new(Barrier::new(2));
     let thread = {
-        let barrier = barrier.clone();
+        let thread_init_barrier = init_barrier.clone();
+        let thread_test_barrier = test_barrier.clone();
         ThreadBuilder::new()
             .spawn(move || {
-                barrier.wait();
+                thread_init_barrier.wait();
                 let handle = ThreadHandle::from_self();
                 let affinity_result = handle.get_affinity();
-                barrier.wait();
+                thread_test_barrier.wait();
                 let affinity = affinity_result.unwrap();
                 for core in 0..number_of_cpu_cores {
                     assert_that!(affinity, contains core);
@@ -86,9 +88,9 @@ fn thread_affinity_is_set_to_all_existing_cores_when_nothing_was_configured() {
             .unwrap()
     };
 
-    barrier.wait();
+    init_barrier.wait();
     let affinity = thread.get_affinity().unwrap();
-    barrier.wait();
+    test_barrier.wait();
 
     for core in 0..number_of_cpu_cores {
         assert_that!(affinity, contains core);
